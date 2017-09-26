@@ -243,6 +243,10 @@ public:
                                                         integration points. Only determined when
                                                         needed (ADER-DG with non-aliased predictor
                                                         for the Navier-Stokes equations). */
+  vector<su2double> gridVelocities;         /*!< \brief Vector of the grid velocities in the
+                                                        integration points of this element. */
+  vector<su2double> gridVelocitiesSolDOFs;  /*!< \brief Vector of the grid velocities in the
+                                                        solution DOFs of this element. */
   vector<su2double> massMatrix;             /*!< \brief Mass matrix for this element. */
   vector<su2double> invMassMatrix;          /*!< \brief Inverse mass matrix for this element. */
   vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
@@ -251,6 +255,7 @@ public:
                                                         the ADER-DG scheme. */
 
   vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
+  vector<su2double> coorSolDOFs;            /*!< \brief The coordinates of the solution DOFs of this element. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
                                                         the integration points of this element. */
   vector<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
@@ -364,6 +369,7 @@ public:
                                                        integration points of the face. */
 
   vector<su2double> coorIntegrationPoints;  /*!< \brief Coordinates for the integration points of this face. */
+  vector<su2double> gridVelocities;         /*!< \brief Grid velocities in the integration points of this face. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
                                                         the integration points of this face. */
 
@@ -413,6 +419,7 @@ public:
   vector<su2double> metricCoorDerivFace;   /*!< \brief The terms drdx, dsdx, etc. in the integration
                                                        points of the face. */
   vector<su2double> coorIntegrationPoints; /*!< \brief The coordinates of the integration points of the face. */
+  vector<su2double> gridVelocities;         /*!< \brief Grid velocities in the integration points of this face. */
   vector<su2double> wallDistance;          /*!< \brief The wall distances of the integration points
                                                        of the face. */
 
@@ -814,6 +821,11 @@ public:
   * \brief Function to compute the coordinates of the integration points.
   */
   void CoordinatesIntegrationPoints(void);
+
+ /*!
+  * \brief Function to compute the coordinates of solution DOFs.
+  */
+  void CoordinatesSolDOFs(void);
 
  /*!
   * \brief Function to compute the distance to the nearest viscous wall.

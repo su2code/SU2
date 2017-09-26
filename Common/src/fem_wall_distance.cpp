@@ -174,22 +174,16 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 4: Determine the wall distance of the DOFs of locally owned   ---*/
-  /*---         volume elements.                                           ---*/
+  /*--- Step 4: Determine the wall distance of the solution DOFs of        ---*/
+  /*---         locally owned volume elements.                             ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Loop over the owned elements to compute the wall distance
         in the integration points. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
-    /* Store the grid DOFs and the number of solDOFS a bit easier. */
-    const unsigned short nDOFsGrid = volElem[l].nDOFsGrid;
+    /* Store the number of solDOFS a bit easier. */
     const unsigned short nDOFsSol  = volElem[l].nDOFsSol;
-    const unsigned long  *DOFsGrid = volElem[l].nodeIDsGrid.data();
-
-    /* Get the required data from the corresponding standard element. */
-    const unsigned short ind = volElem[l].indStandardElement;
-    const su2double     *lag = standardElementsGrid[ind].GetBasisFunctionsSolDOFs();
 
     /* Allocate the memory for the wall distance of the solution DOFs. */
     volElem[l].wallDistanceSolDOFs.resize(nDOFsSol);
@@ -207,19 +201,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
             and determine the wall distance. ---*/
       for(unsigned short i=0; i<nDOFsSol; ++i) {
 
-        /* Interpolate the coordinates of the solution DOFs. Note that in case
-           the polynomial degree of the grid and solution is the same the grid
-           DOFs and solution DOFs coincide and the interpolation boils down
-           to a copy of the coordinates. */
-        su2double coor[3];
-        const unsigned short jj = i*nDOFsGrid;
-        for(unsigned short j=0; j<nDim; ++j) {
-          coor[j] = 0.0;
-          for(unsigned short k=0; k<nDOFsGrid; ++k)
-            coor[j] += lag[jj+k]*meshPoints[DOFsGrid[k]].coor[j];
-        }
-
-        /* Compute the distance to the wall. */
+        const su2double *coor = volElem[l].coorSolDOFs.data() + i*nDim;
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;

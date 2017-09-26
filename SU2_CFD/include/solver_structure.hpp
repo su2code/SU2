@@ -457,7 +457,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the pressure laplacian using in a incompressible solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1298,21 +1298,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Index of the grid point.
@@ -1868,7 +1868,7 @@ public:
    * \param[in] solution - Container vector with all the solutions.
    */
   virtual void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4317,7 +4317,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -4332,7 +4332,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
    * \param[in] iPoint - Index of the grid point
@@ -6579,7 +6579,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -6594,7 +6594,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11882,16 +11882,15 @@ protected:
                                                                        adjacent to elements of the lower time level. */
 
   unsigned long nMeshPoints;    /*!< \brief Number of mesh points in the local part of the grid. */
-  const CPointFEM *meshPoints;  /*!< \brief Array of the points of the FEM mesh. */
+  CPointFEM *meshPoints;        /*!< \brief Array of the points of the FEM mesh. */
 
   const unsigned long *nMatchingInternalFacesWithHaloElem;  /*!< \brief Number of local matching internal faces per time level
                                                                         between an owned and a halo element. Cumulative storage. */
   const unsigned long *nMatchingInternalFacesLocalElem;     /*!< \brief Number of local matching internal faces per time level
                                                                         between local elements. Cumulative storage. */
 
-  const CInternalFaceElementFEM *matchingInternalFaces;              /*!< \brief Array of the local matching internal faces. */
-
-  const CBoundaryFEM *boundaries;     /*!< \brief Array of the boundaries of the FEM mesh. */
+  CInternalFaceElementFEM *matchingInternalFaces;    /*!< \brief Array of the local matching internal faces. */
+  CBoundaryFEM *boundaries;                          /*!< \brief Array of the boundaries of the FEM mesh. */
 
   unsigned short nStandardBoundaryFacesSol; /*!< \brief Number of standard boundary faces used for solution of the DG solver. */
   unsigned short nStandardElementsSol;      /*!< \brief Number of standard volume elements used for solution of the DG solver. */
@@ -12944,6 +12943,7 @@ protected:
    * \param[in]  config      - Definition of the particular problem.
    * \param[in]  nPoints     - Number of points for which the flux must be computed.
    * \param[in]  normalsFace - The normals in the points.
+   * \param[in]  gridVelFace - The grid velocities in the points.
    * \param[in]  solL        - Solution in the left state of the points.
    * \param[in]  solR        - Solution in the right state of the points.
    * \param[out] fluxes      - Inviscid fluxes in the points.
@@ -12952,6 +12952,7 @@ protected:
   void ComputeInviscidFluxesFace(CConfig             *config,
                                  const unsigned long nPoints,
                                  const su2double     *normalsFace,
+                                 const su2double     *gridVelFace,
                                  const su2double     *solL,
                                  const su2double     *solR,
                                  su2double           *fluxes,
