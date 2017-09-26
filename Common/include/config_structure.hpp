@@ -362,6 +362,13 @@ private:
   su2double **RK_aMat;        /*!< \brief Runge-Kutta matrix (usually denoted a in Butcher tableau). */
   su2double *RK_bVec;         /*!< \brief Runge-Kutta weight vector (usually denoted b in Butcher tableau). */
   su2double *RK_cVec;         /*!< \brief Runge-Kutta node vector (usually denoted c in Butcher tableau). */
+  unsigned short nRKAmatImp;       /*!< \brief Number of coeffs in lower triangular part of A matrix for explicit Runge-Kutta method. */
+  unsigned short nRKBvecImp;	/*!< \brief Number of coeffs in b vector for explicit Runge-Kutta method. */
+  unsigned short nRKCvecImp;	/*!< \brief Number of coeffs in c vector for explicit Runge-Kutta method. */
+  su2double *RK_aMat_read_imp;      /*!< \brief Space to read A matrix coefficients. */
+  su2double **RK_aMat_imp;        /*!< \brief Runge-Kutta matrix (usually denoted a in Butcher tableau). */
+  su2double *RK_bVec_imp;         /*!< \brief Runge-Kutta weight vector (usually denoted b in Butcher tableau). */
+  su2double *RK_cVec_imp;         /*!< \brief Runge-Kutta node vector (usually denoted c in Butcher tableau). */
   unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
   su2double
@@ -2599,6 +2606,19 @@ public:
    * \return Pointer to the vector of coefficients
    */
   const su2double* Get_RK_bVec(void);
+
+  /*!
+   * \brief Get a row of the a matrix coefficients for the implicit Runge-Kutta integration scheme.
+   * \param[in] val_step - Index of the step.
+   * \return Pointer to a row of coefficients
+   */
+  const su2double* Get_RK_aMat_row_imp(unsigned short val_step);
+
+  /*!
+   * \brief Get the b vector for the Runge-Kutta integration scheme.
+   * \return Pointer to the vector of coefficients
+   */
+  const su2double* Get_RK_bVec_imp(void);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.

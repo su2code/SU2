@@ -6670,12 +6670,11 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
 void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) {
 
-  su2double *Residual, *local_Res_TruncError, Vol, Delta, Res, ktmp, du, dt;
-  unsigned short iVar, iStep, IterLinSol=0;
+  su2double *Residual, *local_Res_TruncError, Vol, dt;
+  unsigned short iVar, IterLinSol=0;
   unsigned long iPoint, total_index, jPoint;
 
-  const su2double *RK_coeff_exp;
-  su2double RK_coeff_imp[4]; // FIXME: input implicit part too!
+  const su2double *RK_coeff_exp, *RK_coeff_imp;
 
   bool adjoint = config->GetContinuous_Adjoint();
 
@@ -6696,9 +6695,12 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
   // which substeps the Jacobian is evaluated on.  So, I copy the
   // first substep Jacobian here for use throughout the rest of the RK
   // steps.  This should be replaced by proper control on when the
-  // Jacobian is evaluated such that it isn't update after the first
-  // substep.
-  su2double* blkij = new su2double [nVar*nVar]; 
+  // Jacobian is evaluated such that it isn't updated after the first
+  // substep.  Note that once this is done, we'll need to be careful
+  // b/c the Jacobian gets modified below.  These modifications will
+  // have to be undone after each step, which is currently unnecessary
+  // b/c of this hack.
+  su2double* blkij = new su2double [nVar*nVar];
   if (iRKStep==0) {
     LinSysDeltaU.SetValZero();
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -6715,10 +6717,6 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
       }
     }
   }
-
-  // FOR TESTING ONLY
-  // Zero out the Jacobian---becomes just explicit RK
-  //Jacobian.SetValZero();
 
   // Step 0: Initialize full residual
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -6758,30 +6756,18 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
 
   // Step 2: Form RHS for linear solve
 
-
   // Get coefficients, which depend on step
   if (!final_step) {
     // If not on the final substep, use (a row of) aMat coefficients
     // to update state
     // NB: this fcn gives the (iRKStep+1)th row of A
     RK_coeff_exp = config->Get_RK_aMat_row(iRKStep);
+    RK_coeff_imp = config->Get_RK_aMat_row_imp(iRKStep);
   } else {
     // On final substep, use bVec to update state
     RK_coeff_exp = config->Get_RK_bVec();
+    RK_coeff_imp = config->Get_RK_bVec_imp();
   }
-
-  // FIXME: Make like explicit coeffs above
-  su2double alpha = 1.0 - sqrt(2.0)/2.0;
-  if (iRKStep==0) {
-    RK_coeff_imp[0] = alpha;
-  } else if (iRKStep==1) {
-    RK_coeff_imp[0] = 1.0 - alpha;
-    RK_coeff_imp[1] = alpha;
-  } else if (iRKStep==2) {
-    RK_coeff_imp[0] = 1.0 - alpha;
-    RK_coeff_imp[1] = alpha;
-  }
-
 
   // Explicit part
   LinSysAux.SetValZero();
@@ -6793,8 +6779,6 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
   for (unsigned int jj=0; jj<iRKStep; jj++) {
     LinSysAux.Plus_AX(RK_coeff_imp[jj], LinSysKimp[jj]);
   }
-
-  //std::cout << "LinSysAux.norm() = " << LinSysAux.norm() << std::endl;
 
   // Step 3: Form and solve the linear system for dU
   // NB: What this looks like depends on step...
@@ -6815,12 +6799,12 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
     LinSysDeltaU.SetValZero();
 
     CSysSolve system;
-    IterLinSol = system.Solve(Jacobian, LinSysAux, LinSysDeltaU, geometry, config);
+    IterLinSol = system.Solve(Jacobian, LinSysAux, LinSysDeltaU,
+                              geometry, config);
     SetIterLinSolver(IterLinSol);
 
     // Negative b/c residual is positive on LHS
     LinSysDeltaU *= (-1.0/RK_coeff_imp[iRKStep]);
-    //std::cout << "LinSysDeltaU.norm() = " << LinSysDeltaU.norm() << std::endl;
 
   } else {
 
@@ -6840,11 +6824,10 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
       }
     }
 
-    //std::cout << "Final LinSysDeltaU.norm() = " << LinSysDeltaU.norm() << std::endl;
-
   }
 
-  // Step 4: Update solution in preparation for next substep (or to complete step)
+  // Step 4: Update solution in preparation for next substep (or to
+  // complete step)
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {

@@ -433,6 +433,11 @@ void CConfig::SetPointersNull(void) {
   RK_bVec             = NULL;
   RK_cVec             = NULL;
 
+  RK_aMat_imp         = NULL;
+  RK_aMat_read_imp    = NULL;
+  RK_bVec_imp         = NULL;
+  RK_cVec_imp         = NULL;
+
   MG_CorrecSmooth     = NULL;
   MG_PreSmooth        = NULL;
   MG_PostSmooth       = NULL;
@@ -929,6 +934,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("RK_AMAT_LOWER", nRKAmat, RK_aMat_read);
   addDoubleListOption("RK_BVEC", nRKBvec, RK_bVec);
   addDoubleListOption("RK_CVEC", nRKCvec, RK_cVec);
+
+  /* DESCRIPTION: Runge-Kutta coefficients (for implicit part of imex scheme) */
+  addDoubleListOption("RK_AMAT_LOWER_IMP", nRKAmatImp, RK_aMat_read_imp);
+  addDoubleListOption("RK_BVEC_IMP", nRKBvecImp, RK_bVec_imp);
+  addDoubleListOption("RK_CVEC_IMP", nRKCvecImp, RK_cVec_imp);
 
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
@@ -2955,21 +2965,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   for (iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1];
 
-  // TODO: This sets default number of steps if we don't set
-  // RK_ALPHA_COEFF in the config file...  make it default to 4.
-  if (nRKStep == 0) {
-    //nRKStep = 4;  // For RK4
-    //nRKStep = 3;  // For testing ImplicitRK
-    //nRKStep = 2;  // For RK2
-    //nRKStep = 1;
-    nRKStep = 0;
-    //RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
-    // Must not be doing RK.  Set associated vectors to NULL
-    // RK_aMat = NULL;
-    // RK_bVec = NULL;
-    // RK_cVec = NULL;
-  }
-
+  // If set number of RK steps or any of coefficient vectors, check
+  // for consistency and put Butcher tableau coefficients into matrix
   if (nRKStep != 0 || nRKBvec != 0 || nRKCvec != 0 || nRKAmat != 0) {
     // check for consistency
     if (nRKStep != nRKBvec) {
@@ -2988,8 +2985,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       exit(EXIT_FAILURE);
     }
 
-    cout << "Hola... trying to add RK_aMat!" << endl;
-
     // If consistent, translate A mat input to full matrix
     unsigned short count = 0;
     RK_aMat = new su2double* [nRKStep];
@@ -3005,12 +3000,53 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
 
-    cout << "Hola... DONE!" << endl;
+  }
+
+  // If set any of implicit coefficient vectors, check
+  // for consistency and put Butcher tableau coefficients into matrix
+  if (nRKBvecImp != 0 || nRKCvecImp != 0 || nRKAmatImp != 0) {
+    // check for consistency
+
+    // Used for EDIRK s.t. the number of implicit steps is one less
+    // than total number of steps
+    unsigned short nImp = nRKStep - 1;
+
+    if (nImp != nRKBvecImp) {
+      cout << "Number of RK steps inconsistent with RK_BVEC_IMP entry." << endl;
+      cout << "nRKStep = " << nRKStep << ", nRKBvecImp = " << nRKBvecImp << endl;
+      exit(EXIT_FAILURE);
+    }
+    if (nImp != nRKCvecImp) {
+      cout << "Number of RK steps inconsistent with RK_CVEC_IMP entry." << endl;
+      cout << "nRKStep = " << nRKStep << ", nRKCvecImp = " << nRKCvecImp << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    unsigned short namat_expected = (nImp*nImp + nImp)/2;
+    if (nRKAmatImp != namat_expected) {
+      cout << "Number of RK steps inconsistent with RK_AMAT_LOWER_IMP entry." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    // If consistent, translate A mat input to full matrix
+    unsigned short count = 0;
+    RK_aMat_imp = new su2double* [nImp];
+    for (unsigned int iRKStep = 0; iRKStep < nImp; iRKStep++) {
+      RK_aMat_imp[iRKStep] = new su2double [nImp];
+      for (unsigned int jRKStep = 0; jRKStep < nImp; jRKStep++) {
+        if (iRKStep>=jRKStep) {
+          RK_aMat_imp[iRKStep][jRKStep] = RK_aMat_read_imp[count];
+          count++;
+        } else {
+          RK_aMat_imp[iRKStep][jRKStep] = 0.0;
+        }
+      }
+    }
 
   }
 
 
-  
+
   if (nIntCoeffs == 0) {
 	nIntCoeffs = 2;
 	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
@@ -4418,6 +4454,48 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "  cVec = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << " " << RK_cVec[iRKStep];
+          }
+          cout << "]" << endl;
+          break;
+        case RUNGE_KUTTA_LIMEX_EDIRK:
+          cout << "Linearized IMEX w/ EDIRK for the flow equations." << endl;
+          cout << "Number of steps: " << nRKStep << endl;
+          cout << "Explicit RK coefficients: " << endl;
+          cout << "  Amat = " << endl;
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << "    [";
+            for (unsigned short jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
+              cout << " " << RK_aMat[iRKStep][jRKStep];
+            }
+            cout << "]" << endl;
+          }
+          cout << "  bVec = [";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << " " << RK_bVec[iRKStep];
+          }
+          cout << "]" << endl;
+          cout << "  cVec = [";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << " " << RK_cVec[iRKStep];
+          }
+          cout << "]" << endl;
+          cout << "Implicit RK coefficients: " << endl;
+          cout << "  AmatImp = " << endl;
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep-1; iRKStep++) {
+            cout << "    [";
+            for (unsigned short jRKStep = 0; jRKStep < nRKStep-1; jRKStep++) {
+              cout << " " << RK_aMat_imp[iRKStep][jRKStep];
+            }
+            cout << "]" << endl;
+          }
+          cout << "  bVecImp = [";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep-1; iRKStep++) {
+            cout << " " << RK_bVec_imp[iRKStep];
+          }
+          cout << "]" << endl;
+          cout << "  cVecImp = [";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep-1; iRKStep++) {
+            cout << " " << RK_cVec_imp[iRKStep];
           }
           cout << "]" << endl;
           break;
