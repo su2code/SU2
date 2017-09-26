@@ -4202,8 +4202,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
-              case VENKATAKRISHNAN_MOD:
-                cout << "Modified Venkatakrishnan slope-limiting method, with constant:. "<< endl;
+              case VENKATAKRISHNAN_2NDLIM:
+                cout << "Venkatakrishnan slope-limiting method + 2ND Limiter, with constant:. "<< endl;
                 break;
                     
             }

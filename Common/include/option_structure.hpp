@@ -633,14 +633,14 @@ enum ENUM_LIMITER {
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
   SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
-  VENKATAKRISHNAN_MOD = 4	/*!< \brief Slope limiter using Venkatakrisnan Modified method. */
+  VENKATAKRISHNAN_2NDLIM = 4	/*!< \brief Slope limiter using Venkatakrisnan + 2nd limiter method. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES)
 ("WALL_DISTANCE", SOLID_WALL_DISTANCE)
-("VENKATAKRISHNAN_MOD", VENKATAKRISHNAN_MOD);
+("VENKATAKRISHNAN_2NDLIM", VENKATAKRISHNAN_2NDLIM);
 
 /*!
  * \brief types of turbulent models
