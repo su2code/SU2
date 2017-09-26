@@ -103,6 +103,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   nPointID = new unsigned long[ray_N_phi];
   PointID = new unsigned long*[ray_N_phi];
   signal.original_len = new unsigned long[ray_N_phi];
+  signal.final_len = new unsigned long[ray_N_phi];
   signal.x = new su2double*[ray_N_phi];
   signal.original_p = new su2double*[ray_N_phi];
   signal.original_T = new su2double*[ray_N_phi];
