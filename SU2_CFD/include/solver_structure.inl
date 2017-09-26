@@ -531,7 +531,7 @@ inline void CSolver::Viscous_Residual(CGeometry *geometry,
 inline void CSolver::AddStiffMatrix(su2double ** StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) { }
                      
 inline void CSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, 
-                          CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) { }
+                                     CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
                      
 inline void CSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, 
                           CNumerics *numerics, CConfig *config, unsigned short iMesh) { }
@@ -702,7 +702,7 @@ inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
                   
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                   unsigned short val_marker) { }
@@ -726,7 +726,7 @@ inline void CSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker, bool inlet_surface) { }
 
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                    CConfig *config, unsigned short val_marker) { }
+                                  CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                   CConfig *config, unsigned short val_marker) { }
@@ -806,7 +806,7 @@ inline void CSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_con
                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
 inline void CSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-                     CConfig *config, unsigned short iMesh) { }
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) { }
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { }
 

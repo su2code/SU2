@@ -1706,7 +1706,7 @@ void CAdjIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver
 }
 
 
-void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL,
   *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j, Non_Physical = 1.0;
@@ -1802,7 +1802,7 @@ void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 }
 
 void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                      CConfig *config, unsigned short iMesh) {
+                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned short iVar;
   unsigned long iPoint;
@@ -3248,7 +3248,7 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
   
 }
 
-void CAdjIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iVar, iDim;
@@ -4170,7 +4170,7 @@ void CAdjIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                   CConfig *config, unsigned short iMesh) {
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned long iPoint, jPoint, iEdge;
   
@@ -4619,7 +4619,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
 }
 
-void CAdjIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim, iVar, jVar;
   unsigned long iVertex, iPoint, total_index;
