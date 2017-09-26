@@ -7101,7 +7101,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
     /*--- Venkatakrishnan Modified limiter ---*/
     /*---  Simple and Parameter-Free Second Slope Limiter for Unstructured Grid Aerodynamic Simulations. AIAA-J 2012 ---*/
 
-    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_MOD) {
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_2NDLIM) {
     
     /*-- Local Variables ---*/
     unsigned short nNeigh, iNeigh;
@@ -7111,7 +7111,11 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
     
     /*-- Get limiter parameters from the configuration file ---*/
 
+    dave = config->GetRefElemLength();
     LimK = config->GetLimiterCoeff();
+    eps1 = LimK*dave;
+    eps2 = eps1*eps1*eps1;
+
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         
@@ -7161,7 +7165,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             velocity2 += Local_Primitive[iDim+1]*Local_Primitive[iDim+1];
         } 
         Local_Mach_j = sqrt(velocity2)/Local_Primitive[nDim+4];
-        
+
         /*--- Search the neighboors for the maximum Mach ---*/
         
         nNeigh = geometry->node[jPoint]->GetnPoint();
@@ -7180,10 +7184,6 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
         /*--- End  ---*/
         
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-
-            /*--- Wang, Z. J., “A Fast Nested Multi-Grid Viscous Flow Solver for Adaptive Cartesian/Quad Grids,” corrected expression ---*/
-            eps1 = LimK * (node[iPoint]->GetSolution_Max(iVar) - node[iPoint]->GetSolution_Min(iVar));
-            eps2 = eps1 * eps1;
             
             AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
             AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
@@ -7214,10 +7214,6 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             
             /*-- Repeat for point j on the edge ---*/
             
-            /*--- Wang, Z. J., “A Fast Nested Multi-Grid Viscous Flow Solver for Adaptive Cartesian/Quad Grids,” corrected expression ---*/
-            eps1 = LimK * (node[jPoint]->GetSolution_Max(iVar) - node[jPoint]->GetSolution_Min(iVar));
-            eps2 = eps1 * eps1;
-
             dm = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
                 dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
