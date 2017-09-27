@@ -2735,7 +2735,9 @@ void UgpWithCvCompFlow::calcJacobianA(su2double (*A)[5], const su2double *vel, s
 #endif
 
 
-CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
+CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) :
+                             ch1(3.0), ch2(1.0), ch3(2.0), cnu(0.09), phi_max(1.0), Const_DES(5.0), k2(pow(0.41,2.0)),
+                             CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -2746,7 +2748,7 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   Gamma_Minus_One = Gamma - 1.0;
   
   dissipation = 1.0;
-  low_dissipation = val_low_dissipation;
+  roe_low_dissipation = val_low_dissipation;
   TimeScale = config->GetLength_Ref() / config->GetModVel_FreeStream();
   
   Diff_U = new su2double [nVar];
@@ -2819,7 +2821,9 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-  
+  Laminar_Viscosity_i  = V_i[nDim+5]/V_i[nDim+2];
+  Eddy_Viscosity_i = V_i[nDim+6]/V_i[nDim+2];
+      
   /*--- Primitive variables at point j ---*/
   
   for (iDim = 0; iDim < nDim; iDim++)
@@ -2829,7 +2833,9 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
-  
+  Laminar_Viscosity_j  = V_j[nDim+5]/V_j[nDim+2];
+  Eddy_Viscosity_j = V_j[nDim+6]/V_j[nDim+2];
+      
   /*--- Recompute conservative variables ---*/
   
   U_i[0] = Density_i; U_j[0] = Density_j;
@@ -2934,8 +2940,10 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = U_j[iVar]-U_i[iVar];
   
-  if (low_dissipation)
-    ComputeDissipation(config);
+  if (roe_low_dissipation)
+    SetRoe_Dissipation(PrimVar_Grad_i, PrimVar_Grad_j, Laminar_Viscosity_i, Laminar_Viscosity_j,
+                       Eddy_Viscosity_i, Eddy_Viscosity_j, Vorticity_i, Vorticity_j, 
+                       Sensor_i, Sensor_j, StrainMag_i, StrainMag_j, dissipation);
   
   /*--- Roe's Flux approximation ---*/
   
@@ -2980,7 +2988,13 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
 }
 
-void CUpwRoe_Flow::ComputeDissipation(CConfig *config){
+void CUpwRoe_Flow::SetRoe_Dissipation(su2double **PrimVar_Grad_i, su2double **PrimVar_Grad_j,
+                                      const su2double Laminar_Viscosity_i, const su2double Laminar_Viscosity_j,
+                                      const su2double Eddy_Viscosity_i,const  su2double Eddy_Viscosity_j,
+                                      su2double* Vorticity_i, su2double* Vorticity_j,
+                                      const su2double Sensor_i, const su2double Sensor_j,
+                                      const su2double StrainMag_i, const su2double StrainMag_j,
+                                      su2double& dissipation){
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
     
@@ -2990,13 +3004,13 @@ void CUpwRoe_Flow::ComputeDissipation(CConfig *config){
     
     for(iDim=0;iDim<nDim;++iDim){
       for(jDim=0;jDim<nDim;++jDim){
-        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];}}
+        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];
+      }
+    }
     
     uijuij=sqrt(fabs(uijuij));
     uijuij=max(uijuij,1e-10);
-    
-    Laminar_Viscosity_i = V_i[nDim+5]/V_i[nDim+2];
-    Eddy_Viscosity_i = V_i[nDim+6]/V_i[nDim+2];
+
     r_d= (Eddy_Viscosity_i+Laminar_Viscosity_i)/(uijuij*k2*pow(dist_i, 2.0));
     f_d_i= 1.0-tanh(pow(8.0*r_d,3.0));
     
@@ -3006,13 +3020,13 @@ void CUpwRoe_Flow::ComputeDissipation(CConfig *config){
     
     for(iDim=0;iDim<nDim;++iDim){
       for(jDim=0;jDim<nDim;++jDim){
-        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_j[1+iDim][jDim];}}
+        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_j[1+iDim][jDim];
+      }
+    }
     
     uijuij=sqrt(fabs(uijuij));
     uijuij=max(uijuij,1e-10);
     
-    Laminar_Viscosity_j = V_j[nDim+5]/V_j[nDim+2];
-    Eddy_Viscosity_j = V_j[nDim+6]/V_j[nDim+2];
     r_d= (Eddy_Viscosity_j+Laminar_Viscosity_j)/(uijuij*k2*pow(dist_j, 2.0));
     f_d_j= 1.0-tanh(pow(8.0*r_d,3.0));
     
@@ -3038,11 +3052,9 @@ void CUpwRoe_Flow::ComputeDissipation(CConfig *config){
     Delta=sqrt(Delta);
     
     /*--- For iPoint ---*/
-    
-    Laminar_Viscosity_i = V_i[nDim+5] /V_i[nDim+2];
-    Eddy_Viscosity_i    = V_i[nDim+6]/V_i[nDim+2];
+
     Omega = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < 3; iDim++){
       Omega += Vorticity_i[iDim]*Vorticity_i[iDim];
     }
     Omega = sqrt(Omega);
@@ -3062,11 +3074,9 @@ void CUpwRoe_Flow::ComputeDissipation(CConfig *config){
     phi_hybrid_i = phi_max * tanh(pow(Aaux,ch1));
     
     /*--- For jPoint ---*/
-    
-    Laminar_Viscosity_j = V_j[nDim+5] /V_j[nDim+2];
-    Eddy_Viscosity_j    = V_j[nDim+6]/V_j[nDim+2];
+
     Omega = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < 3; iDim++){
       Omega += Vorticity_j[iDim]*Vorticity_j[iDim];
     }
     Omega = sqrt(Omega);
