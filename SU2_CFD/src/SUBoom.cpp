@@ -2196,14 +2196,6 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     else p_rise2[iPhi] = signal.final_p[iPhi][Msig-1];
     cout << "p_rise = " << p_rise[iPhi] << ", p_max = " << p_max[iPhi] << ", p_int2 = " << p_int2[iPhi] << "." << endl;
 
-    /*---Write boom strength metrics to file---*/
-    sigFile.open("pboomSU2", ios::out);
-    if(iPhi == 0) sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
-    sigFile << ray_phi[iPhi] << ", " << p_max[iPhi] << "," << p_rise[iPhi] << "," << p_rise2[iPhi] << "," << p_int2[iPhi] << endl;
-    sigFile.close();
-
-
-
   /*---Clean up---*/
   for(unsigned short j = 0; j < 4; j++){
       delete [] x_of_z[j];

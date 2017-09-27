@@ -574,6 +574,18 @@ geometry_container[ZONE_0]->SetCoord_CG();
               }
             }
 
+            /*---Write boom strength metrics to file---*/
+            if (rank == MASTER_NODE){
+              ofstream sigFile;
+	          sigFile.open("boomSU2", ios::out);
+	          sigFile << "Objective_Function= " << Objective_Function << endl;
+			  sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
+			  for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+			    sigFile << boom.ray_phi[iPhi] << ", " << boom.p_max[iPhi] << "," << boom.p_rise[iPhi] << "," << boom.p_rise2[iPhi] << "," << boom.p_int2[iPhi] << endl;
+			  }
+			  sigFile.close();
+			}
+
             if (rank==MASTER_NODE){
               SU2_TYPE::SetDerivative(Objective_Function,1.0);
             }else{
@@ -634,6 +646,17 @@ geometry_container[ZONE_0]->SetCoord_CG();
               }
               cout << "Propagation complete." << endl;
             }
+
+            /*---Write boom strength metrics to file---*/
+            if (rank == MASTER_NODE){
+              ofstream sigFile;
+	          sigFile.open("boomSU2", ios::out);
+			  sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
+			  for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+			    sigFile << boom.ray_phi[iPhi] << ", " << boom.p_max[iPhi] << "," << boom.p_rise[iPhi] << "," << boom.p_rise2[iPhi] << "," << boom.p_int2[iPhi] << endl;
+			  }
+			  sigFile.close();
+			}
           }
        }
 
