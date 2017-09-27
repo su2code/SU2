@@ -404,7 +404,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
   unsigned long nMarker = config->GetnMarker_All();
   unsigned long iMarker, iVertex, iPoint, *iPointmin, itmp;
   unsigned long jElem;
-  unsigned short iElem, nElem, nNearest, *iPointmax, *ixmin;
+  unsigned short iElem, nElem, nNearest, *iPointmax, *nNearest_loc, *ixmin;
 
   bool inside=false;
 
@@ -428,6 +428,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     iPointmax = new unsigned short[1];
     ixmin = new unsigned short[1];
     nPanel = new unsigned long[1];
+    nNearest_loc = new unsigned short[1];
     startline = new bool[1];
     endline = new bool[1];
     p0 = new su2double[2];
@@ -441,6 +442,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     ixmin[0] = 0;
     startline[0] = false;
     endline[0] = false;
+    nNearest_loc[0] = 0;
   }
   else{
     nNearest = 16;
@@ -452,6 +454,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     iPointmax = new unsigned short[nPhi];
     ixmin = new unsigned short[nPhi];
     nPanel = new unsigned long[nPhi];
+    nNearest_loc = new unsigned short[nPhi];
     startline = new bool[nPhi];
     endline = new bool[nPhi];
     p0 = new su2double[3];
@@ -467,6 +470,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       ixmin[i] = 0;
       startline[i] = false;
       endline[i] = false;
+      nNearest_loc[i] = 0;
     }
   }
 
@@ -496,6 +500,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                   r2min[iPointmax[0]] = r2;
                   xmin[iPointmax[0]] = x;
                   startline[0] = true;
+                  nNearest_loc[0]++;
                 }
                 for(unsigned short j = 0; j < nNearest; j++){
                   if(r2min[j] > r2min[iPointmax[0]]) iPointmax[0] = j;
@@ -512,6 +517,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     r2min[2*i+1] = r2;
                     xmin[2*i+1] = x;
                     startline[i] = true;
+                    nNearest_loc[i]++;
                     /*--- Now sort min values based on r2 ---*/
                     if(r2min[2*i+1] < r2min[2*i]){
                       itmp = iPointmin[2*i+1];
@@ -544,7 +550,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 
   if(nDim == 2){
     if(startline[0]){
-      for(unsigned short iNearest = 0; iNearest < nNearest; iNearest++){
+      for(unsigned short iNearest = 0; iNearest < nNearest_loc[0]; iNearest++){
         Coord = geometry->node[iPointmin[iNearest]]->GetCoord();
         nElem = geometry->node[iPointmin[iNearest]]->GetnElem();
         for(iElem = 0; iElem < nElem; iElem++){
@@ -576,7 +582,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     Coord_original = new su2double**[nPhi];
     for(int i = 0; i < nPhi; i++){
       if(startline[i]){
-        for(unsigned short iNearest = 0; iNearest < nNearest; iNearest++){
+        for(unsigned short iNearest = 0; iNearest < nNearest_loc[i]; iNearest++){
           Coord = geometry->node[iPointmin[i*nNearest+iNearest]]->GetCoord();
           nElem = geometry->node[iPointmin[i*nNearest+iNearest]]->GetnElem();
           for(iElem = 0; iElem < nElem; iElem++){
