@@ -291,7 +291,7 @@ public:
    */
   void SetConservative_ZeroOrder(su2double *val_u_i, su2double *val_u_j);
     
-  void SetRoeDissipation(double val_dissipation);
+  void SetRoeDissipation(su2double val_dissipation);
   
   /*!
    * \brief Set the value of the primitive variables.
