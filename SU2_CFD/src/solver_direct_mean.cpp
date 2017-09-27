@@ -4705,7 +4705,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dist_i, Dist_j;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dist_i, Dist_j,
+      *Vorticity_i, *Vorticity_j, StrainMag_i, StrainMag_j;
   
   su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
   
@@ -4812,6 +4813,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Sensor_i = node[iPoint]->GetSensor();
           Sensor_j = node[jPoint]->GetSensor();
           numerics->SetSensor(Sensor_i, Sensor_j);
+        }
+        if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
+          Vorticity_i = node[iPoint]->GetVorticity();
+          Vorticity_j = node[jPoint]->GetVorticity();
+          numerics->SetVorticity(Vorticity_i, Vorticity_j);
+          
+          StrainMag_i = node[iPoint]->GetStrainMag();
+          StrainMag_j = node[jPoint]->GetStrainMag();
+          numerics->SetStrainMag(StrainMag_i, StrainMag_j);
         }
       }
 

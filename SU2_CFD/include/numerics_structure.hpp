@@ -1479,7 +1479,7 @@ public:
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement, low_dissipation;
+  bool implicit, grid_movement, roe_low_dissipation;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -1493,9 +1493,9 @@ private:
   unsigned short roe_low_diss;
   
   su2double uijuij, r_d, f_d_i, f_d_j, Ducros_ij;
-  const su2double k2 = pow(0.41,2.0);
-  const su2double ch1 = 3.0, ch2 = 1.0, ch3 = 2.0, cnu = 0.09, phi_max = 1.0;
-  const su2double Const_DES=0.65;
+  const su2double k2;
+  const su2double ch1, ch2, ch3, cnu, phi_max;
+  const su2double Const_DES;
   su2double Omega;
   su2double phi1, phi2, Baux, Gaux, TimeScale, Kaux, Lturb, Aaux, phi_hybrid_i, phi_hybrid_j,Omega_2, StrainMag, inv_TimeScale;
   
@@ -1523,7 +1523,12 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
-  void ComputeDissipation(CConfig *config);
+  void SetRoe_Dissipation(su2double **PrimVar_Grad_i, su2double **PrimVar_Grad_j,
+                          const su2double Laminar_Viscosity_i, const su2double Laminar_Viscosity_j,
+                          const su2double Eddy_Viscosity_i, const su2double Eddy_Viscosity_j,
+                          su2double *Vorticity_i, su2double *Vorticity_j,
+                          const su2double Sensor_i, const su2double Sensor_j, const su2double StrainMag_i, const su2double StrainMag_j,
+                          su2double& dissipation);
   
 };
 
