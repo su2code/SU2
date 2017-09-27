@@ -707,7 +707,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   su2double ux, uy, uz, StaticEnergy, p;
 
   su2double *isoparams;
-  su2double *X_donor;
+  su2double *X_donor, *X_donor_tmp;
   su2double *Coord = new su2double[nDim];
 
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
