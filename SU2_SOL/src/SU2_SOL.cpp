@@ -535,7 +535,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
 */
 
             if (rank == MASTER_NODE)
-               cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
+               cout << endl <<"------------------------- Computing Sonic Boom (Primal+Adjoint) -----------------------" << endl;
 
             AD::StartRecording();
 			SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
@@ -615,7 +615,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
           }
 		  else{
             if (rank == MASTER_NODE)
-              cout << endl <<"------------------------- Computing Far Field Noise (Primal Only) -----------------------" << endl;
+              cout << endl <<"------------------------- Computing Sonic Boom (Primal Only) -----------------------" << endl;
 ////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
             SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
