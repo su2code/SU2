@@ -2735,7 +2735,7 @@ void UgpWithCvCompFlow::calcJacobianA(su2double (*A)[5], const su2double *vel, s
 #endif
 
 
-CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -2744,6 +2744,10 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
+  
+  dissipation = 1.0;
+  low_dissipation = val_low_dissipation;
+  TimeScale = config->GetLength_Ref() / config->GetModVel_FreeStream();
   
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
@@ -2930,6 +2934,9 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = U_j[iVar]-U_i[iVar];
   
+  if (low_dissipation)
+    ComputeDissipation(config);
+  
   /*--- Roe's Flux approximation ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2942,26 +2949,13 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
-        
-        /*--- Apply Roe Low Dissipation ---*/
-          
-        if (roe_low_diss != NO_ROELOWDISS){
-          val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*dissipation;
-          if(implicit){
-            val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-            val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-          }
-        }
-        else{
-          val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-          if(implicit) {
-            val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-            val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-            
-          }
+
+        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*dissipation;
+        if(implicit){
+          val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+          val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
         }
     }
-    
   }
   
   /*--- Jacobian contributions due to grid motion ---*/
@@ -2986,6 +2980,123 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
 }
 
+void CUpwRoe_Flow::ComputeDissipation(CConfig *config){
+  
+  if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
+    
+    /*--- For iPoint ---*/
+    
+    uijuij=0.0;
+    
+    for(iDim=0;iDim<nDim;++iDim){
+      for(jDim=0;jDim<nDim;++jDim){
+        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];}}
+    
+    uijuij=sqrt(fabs(uijuij));
+    uijuij=max(uijuij,1e-10);
+    
+    Laminar_Viscosity_i = V_i[nDim+5]/V_i[nDim+2];
+    Eddy_Viscosity_i = V_i[nDim+6]/V_i[nDim+2];
+    r_d= (Eddy_Viscosity_i+Laminar_Viscosity_i)/(uijuij*k2*pow(dist_i, 2.0));
+    f_d_i= 1.0-tanh(pow(8.0*r_d,3.0));
+    
+    /*--- For jPoint ---*/
+    
+    uijuij=0.0;
+    
+    for(iDim=0;iDim<nDim;++iDim){
+      for(jDim=0;jDim<nDim;++jDim){
+        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_j[1+iDim][jDim];}}
+    
+    uijuij=sqrt(fabs(uijuij));
+    uijuij=max(uijuij,1e-10);
+    
+    Laminar_Viscosity_j = V_j[nDim+5]/V_j[nDim+2];
+    Eddy_Viscosity_j = V_j[nDim+6]/V_j[nDim+2];
+    r_d= (Eddy_Viscosity_j+Laminar_Viscosity_j)/(uijuij*k2*pow(dist_j, 2.0));
+    f_d_j= 1.0-tanh(pow(8.0*r_d,3.0));
+    
+    dissipation = max(0.05,1.0 - (0.5 * (f_d_i + f_d_j)));
+    
+    if (roe_low_diss == FD_DUCROS){
+      
+      /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
+      
+      if (0.5*(Sensor_i + Sensor_j) > 0.65)
+        Ducros_ij = 1.0;
+      else
+        Ducros_ij = 0.05;
+      
+      dissipation = max(Ducros_ij, dissipation);
+    }
+  }
+  else if (roe_low_diss == NTS || roe_low_diss == NTS_DUCROS){
+
+    Delta = 0.0;
+    for (iDim=0;iDim<nDim;++iDim)
+        Delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+    Delta=sqrt(Delta);
+    
+    /*--- For iPoint ---*/
+    
+    Laminar_Viscosity_i = V_i[nDim+5] /V_i[nDim+2];
+    Eddy_Viscosity_i    = V_i[nDim+6]/V_i[nDim+2];
+    Omega = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Omega += Vorticity_i[iDim]*Vorticity_i[iDim];
+    }
+    Omega = sqrt(Omega);
+    
+    Omega_2 = pow(Omega,2.0);
+    StrainMag = pow(StrainMag_i,2.0);
+    Baux = (ch3 * Omega * max(StrainMag_i, Omega)) / max(sqrt((StrainMag+Omega_2)*0.5),1E-20);
+    Gaux = tanh(pow(Baux,4.0));
+
+    
+    inv_TimeScale = 1.0/TimeScale;
+    
+    Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
+    
+    Lturb = sqrt((Eddy_Viscosity_i + Laminar_Viscosity_i)/(pow(cnu,1.5)*Kaux));
+    Aaux = ch2 * max(((Const_DES*Delta)/(Lturb*Gaux)) - 0.5, 0.0);
+    phi_hybrid_i = phi_max * tanh(pow(Aaux,ch1));
+    
+    /*--- For jPoint ---*/
+    
+    Laminar_Viscosity_j = V_j[nDim+5] /V_j[nDim+2];
+    Eddy_Viscosity_j    = V_j[nDim+6]/V_j[nDim+2];
+    Omega = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Omega += Vorticity_j[iDim]*Vorticity_j[iDim];
+    }
+    Omega = sqrt(Omega);
+    
+    Omega_2 = pow(Omega,2.0);
+    StrainMag = pow(StrainMag_j,2.0);
+    Baux = (ch3 * Omega * max(StrainMag_j, Omega)) / max(sqrt((StrainMag+Omega_2)*0.5),1E-20);
+    Gaux = tanh(pow(Baux,4.0));
+    
+    inv_TimeScale = 1.0/TimeScale;
+    
+    Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
+    
+    Lturb = sqrt((Eddy_Viscosity_j + Laminar_Viscosity_j)/(pow(cnu,1.5)*Kaux));
+    Aaux = ch2 * max(((Const_DES*Delta)/(Lturb*Gaux)) - 0.5, 0.0);
+    phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
+    
+    if (roe_low_diss == NTS){
+      dissipation = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
+    } else if (roe_low_diss == NTS_DUCROS){
+      
+      phi1 = 0.5*(Sensor_i+Sensor_j);
+      phi2 = 0.5*(phi_hybrid_i+phi_hybrid_j);
+      
+      dissipation = min(max(phi1 + phi2 - (phi1*phi2),0.05),1.0);
+      
+    }
+  }
+
+}
 
 CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 

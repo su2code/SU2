@@ -1061,7 +1061,7 @@ void CIncEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config
   }
 }
 
-void CIncEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -2142,7 +2142,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetPressure_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -2860,7 +2860,7 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
 }
 
-void CIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetPressure_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   su2double Pressure_i = 0.0, Pressure_j = 0.0;
@@ -2929,7 +2929,7 @@ void CIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -6406,7 +6406,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetPressure_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }

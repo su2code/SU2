@@ -714,9 +714,11 @@ inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
 
-inline void CSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPressure_Sensor(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetDucros_Sensor(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 

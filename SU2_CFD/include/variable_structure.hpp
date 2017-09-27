@@ -72,7 +72,7 @@ protected:
   Max_Lambda_Inv,    /*!< \brief Maximun inviscid eingenvalue. */
   Max_Lambda_Visc,  /*!< \brief Maximun viscous eingenvalue. */
   Lambda;        /*!< \brief Value of the eingenvalue. */
-  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme. */
+  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
   su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
