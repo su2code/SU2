@@ -293,8 +293,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
    
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
-    
-    
+  
   nDim = geom->GetnDim();
   
   if( val_marker != -1 )
