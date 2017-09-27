@@ -846,7 +846,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
 
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
-        Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        Coord_elem[iNode][iDim] = geometry->node[jNode]->GetCoord(iDim);
       }
     }
 
