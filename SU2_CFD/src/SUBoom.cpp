@@ -700,8 +700,8 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 
 void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned short iPhi){
   unsigned short iDim, iNode, nNode;
-  unsigned long jElem, jNode;
-  unsigned long pointCount = 0;
+  unsigned long jElem, jNode, *jNode_list;
+  unsigned long pointCount = 0, jNodeCount;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
   su2double rho_i, rho_ux_i, rho_uy_i, rho_uz_i, rho_E_i, TKE_i;
   su2double ux, uy, uz, StaticEnergy, p;
@@ -727,6 +727,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
       Coord[j] = Coord_original[iPhi][i][j];
     }
     X_donor = new su2double[nDim*nNode];
+    jNode_list = new unsigned long[nNode];
+    jNodeCount = 0;
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){  
@@ -757,6 +759,10 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         }
         nNode--;
       }
+      else{
+        jNode_list[jNodeCount] = jNode;
+        jNodeCount++;
+      }
     }
 
     /*--- Compute isoparameters ---*/
@@ -770,7 +776,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
       if(isoparams[iNode]*isoparams[iNode] > 0.0){
-        jNode = geometry->elem[jElem]->GetNode(iNode);
+        //jNode = geometry->elem[jElem]->GetNode(iNode);
+        jNode = jNode_list[jNodeCount];
 
         /*---Extract conservative flow data---*/
         rho = solver->node[jNode]->GetSolution(nDim);
