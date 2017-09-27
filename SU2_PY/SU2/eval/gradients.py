@@ -839,8 +839,6 @@ def directdiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-    if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("boom.in")
 
     # output redirection
     with redirect_folder('DIRECTDIFF',pull,link) as push:
