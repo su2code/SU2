@@ -635,7 +635,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
       jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
       /*--- Don't extract boundary elements ---*/
       boundary = false;
-        if(jElem < nElem_tot){
+        ////if(jElem < nElem_tot){
           x_i = geometry->elem[jElem]->GetCG(0);
 
           if(x_i > x_m1){
@@ -685,7 +685,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
           }
         }
       //}
-    }
+    ////}
     if(!inside){
       end = true;
     }
@@ -875,11 +875,12 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
           break;
         }
       }
-      for(iNode = 0; iNode < nNodeFace; iNode++){
-        delete [] Coord_face[iNode];
-      }
-      delete [] Coord_face;
     }
+
+    for(iNode = 0; iNode < nNodeFace; iNode++){
+      delete [] Coord_face[iNode];
+    }
+    delete [] Coord_face;
   }
 
   
