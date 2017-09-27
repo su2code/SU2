@@ -1481,7 +1481,7 @@ public:
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement;
+  bool implicit, grid_movement, low_dissipation;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -1491,8 +1491,15 @@ private:
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
-  unsigned short iDim, iVar, jVar, kVar;
+  unsigned short iDim, jDim, iVar, jVar, kVar;
   unsigned short roe_low_diss;
+  
+  su2double uijuij, r_d, f_d_i, f_d_j, Ducros_ij;
+  const su2double k2 = pow(0.41,2.0);
+  const su2double ch1 = 3.0, ch2 = 1.0, ch3 = 2.0, cnu = 0.09, phi_max = 1.0;
+  const su2double Const_DES=0.65;
+  su2double Omega;
+  su2double phi1, phi2, Baux, Gaux, TimeScale, Kaux, Lturb, Aaux, phi_hybrid_i, phi_hybrid_j,Omega_2, StrainMag, inv_TimeScale;
   
 public:
   
@@ -1502,7 +1509,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
   /*!
    * \brief Destructor of the class.
@@ -1517,6 +1524,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+  void ComputeDissipation(CConfig *config);
+  
 };
 
 
