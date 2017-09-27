@@ -153,10 +153,10 @@ int main(int argc, char *argv[]) {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
-
-  /*--- Definition of the output class (one for all the zones) ---*/
-  output = new COutput();
-
+  
+	/*--- Definition of the output class (one for all the zones) ---*/
+	output = new COutput(config_container[ZONE_0]);
+  
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
 
