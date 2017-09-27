@@ -13,7 +13,7 @@ notifications:
     email:
         recipients:
             - molinaedu85@gmail.com
-            - economon@stanford.edu
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
