@@ -896,6 +896,10 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
 
 int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1){
 
+  if((Coord_i[1]>r0 && Coord_ip1[1]>r0) || (Coord_i[1]<r0 && Coord_ip1[1]<r0)){
+    return 0;
+  }
+
   su2double line[2][2] = {{-1.0, -r0}, {1.0E3, -r0}};
   su2double u[2] = {line[1][0]-line[0][0], line[1][1]-line[0][1]};
   su2double v[2] = {Coord_ip1[0]-Coord_i[0], Coord_ip1[1]-Coord_i[1]};
