@@ -290,9 +290,7 @@ public:
    * \param[in] val_u_j - Value of the conservative variable at point j.
    */
   void SetConservative_ZeroOrder(su2double *val_u_i, su2double *val_u_j);
-    
-  void SetRoeDissipation(su2double val_dissipation);
-  
+
   /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_v_i - Value of the primitive variable at point i.
