@@ -734,6 +734,31 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
       }
     }
 
+    /*--- Check if all nodes in domain ---*/
+    for(iNode = 0; iNode < nNode; iNode++){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      if(!geometry->node[jNode]->GetDomain()){
+        X_donor_tmp = new su2double[nDim*nNode];
+        for(jNode = 0; jNode < nNode; jNode++){
+          for(iDim = 0; iDim < nDim; iDim++){
+            X_donor_tmp[iDim*nNode+iNode] = X_donor[iDim*nNode+iNode];
+          }
+        }
+        X_donor = new su2double[nDim*(nNode-1)];
+        for(jNode = 0; jNode < nNode-1; jNode++){
+          for(iDim = 0; iDim < nDim; iDim++){
+            if(jNode < iNode){
+              X_donor[iDim*(nNode-1)+jNode] = X_donor_tmp[iDim*nNode+jNode];
+            }
+            else{
+              X_donor[iDim*(nNode-1)+jNode] = X_donor_tmp[iDim*nNode+jNode+1];
+            }
+          }
+        }
+        nNode--;
+      }
+    }
+
     /*--- Compute isoparameters ---*/
     isoparams = new su2double[nNode];
     Isoparameters(nDim, nNode, X_donor, Coord, isoparams);
@@ -807,16 +832,12 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     nNode = geometry->elem[jElem]->GetnNodes();
     su2double **Coord_elem = new su2double*[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
-      iPoint = geometry->elem[jElem]->GetNode(iNode);
-      if(!geometry->node[iPoint]->GetDomain()){
-        return false;
-      }
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
         Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
       }
     }
-    
+
     count = 0;
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
