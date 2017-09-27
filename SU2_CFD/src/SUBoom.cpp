@@ -827,7 +827,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
   bool inside = false;
   unsigned long iPoint;
-  unsigned short iNode, nNode, count, intersect;
+  unsigned short iNode, jNode, nNode, count, intersect;
 
   su2double *pp0 = new su2double[nDim];
   su2double *pp1 = new su2double[nDim];
@@ -839,6 +839,11 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     nNode = geometry->elem[jElem]->GetnNodes();
     su2double **Coord_elem = new su2double*[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      if(!geometry->node[jNode]->GetDomain()){
+        return false;
+      }
+
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
         Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
