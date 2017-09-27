@@ -847,8 +847,9 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
 
     su2double **Coord_face;
     count = 0;
+    unsigned short nNodeFace = 0; 
     for(unsigned short iFace = 0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++){
-      unsigned short nNodeFace = geometry->elem[jElem]->GetnNodesFace(iFace);
+      nNodeFace = geometry->elem[jElem]->GetnNodesFace(iFace);
       Coord_face = new su2double*[nNodeFace];
       for(iNode = 0; iNode < nNodeFace; iNode++){
         Coord_face[iNode] = new su2double[3];
