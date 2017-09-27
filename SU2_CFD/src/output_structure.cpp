@@ -5644,7 +5644,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_surface) ConvHist_file[0] << output_surface;
+            if (output_surface) ConvHist_file[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
             if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
