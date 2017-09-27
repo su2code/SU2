@@ -1448,7 +1448,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
-  unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
+  unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag = 0, Target_Flag = 0;
   int Marker_Donor = -1, Marker_Target = -1;
 
   su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
