@@ -500,7 +500,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                   r2min[iPointmax[0]] = r2;
                   xmin[iPointmax[0]] = x;
                   startline[0] = true;
-                  nNearest_loc[0]++;
+                  if(nNearest_loc[0] < nNearest) nNearest_loc[0]++;
                 }
                 for(unsigned short j = 0; j < nNearest; j++){
                   if(r2min[j] > r2min[iPointmax[0]]) iPointmax[0] = j;
