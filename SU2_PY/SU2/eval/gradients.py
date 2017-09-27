@@ -556,9 +556,6 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-    if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("boom.in")
-
     # Use custom variable
     if ('CUSTOM' in konfig.DV_KIND and 'OUTFLOW_GENERALIZED' in grads.keys()):
         import downstream_function
