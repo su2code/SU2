@@ -420,7 +420,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 
 
   if(nDim == 2){
-    nNearest = 8;
+    nNearest = 16;
     y0 = new su2double[1];
     r2min = new su2double[nNearest];
     xmin = new su2double[nNearest];
@@ -445,7 +445,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     nNearest_loc[0] = 0;
   }
   else{
-    nNearest = 16;
+    nNearest = 32;
     y0 = new su2double[nPhi];
     z0 = new su2double[nPhi];
     r2min = new su2double[nNearest*nPhi];
