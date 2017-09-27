@@ -727,8 +727,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
       Coord[j] = Coord_original[iPhi][i][j];
     }
     X_donor = new su2double[nDim*nNode];
-    jNode_list = new unsigned long[nNode];
-    jNodeCount = 0;
+    //jNode_list = new unsigned long[nNode];
+    //jNodeCount = 0;
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){  
@@ -737,7 +737,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     }
 
     /*--- Check if all nodes in domain ---*/
-    for(iNode = 0; iNode < nNode; iNode++){
+    /*for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
         X_donor_tmp = new su2double[nDim*nNode];
@@ -763,7 +763,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         jNode_list[jNodeCount] = jNode;
         jNodeCount++;
       }
-    }
+    }*/
 
     /*--- Compute isoparameters ---*/
     isoparams = new su2double[nNode];
@@ -776,37 +776,39 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
       if(isoparams[iNode]*isoparams[iNode] > 0.0){
-        //jNode = geometry->elem[jElem]->GetNode(iNode);
-        jNode = jNode_list[iNode];
+        jNode = geometry->elem[jElem]->GetNode(iNode);
+        //jNode = jNode_list[iNode];
+        if(geometry->node[jNode]->GetDomain()){
 
-        /*---Extract conservative flow data---*/
-        rho = solver->node[jNode]->GetSolution(nDim);
-        rho_ux = solver->node[jNode]->GetSolution(nDim+1);
-        rho_uy = solver->node[jNode]->GetSolution(nDim+2);
-        if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
-        rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
-        TKE = 0.0;
+          /*---Extract conservative flow data---*/
+          rho = solver->node[jNode]->GetSolution(nDim);
+          rho_ux = solver->node[jNode]->GetSolution(nDim+1);
+          rho_uy = solver->node[jNode]->GetSolution(nDim+2);
+          if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
+          rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
+          TKE = 0.0;
 
-        //Register conservative variables as input for adjoint computation
-        if (config->GetAD_Mode()){
-          AD::RegisterInput(rho );
-          AD::RegisterInput(rho_ux );
-          AD::RegisterInput(rho_uy );
-          if (nDim==3) AD::RegisterInput(rho_uz );
-          AD::RegisterInput(rho_E );
-          AD::RegisterInput(TKE );
+          //Register conservative variables as input for adjoint computation
+          if (config->GetAD_Mode()){
+            AD::RegisterInput(rho );
+            AD::RegisterInput(rho_ux );
+            AD::RegisterInput(rho_uy );
+            if (nDim==3) AD::RegisterInput(rho_uz );
+            AD::RegisterInput(rho_E );
+            AD::RegisterInput(TKE );
+          }
+
+          /*---Compute pressure---*/
+          rho_i += rho*isoparams[iNode];
+          rho_ux_i += rho_ux*isoparams[iNode];
+          rho_uy_i += rho_uy*isoparams[iNode];
+          if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
+          rho_E_i += rho_E*isoparams[iNode];
+          TKE_i += TKE*isoparams[iNode];
+
+          PointID[iPhi][pointCount] = geometry->node[jNode]->GetGlobalIndex();
+          pointCount++;
         }
-
-        /*---Compute pressure---*/
-        rho_i += rho*isoparams[iNode];
-        rho_ux_i += rho_ux*isoparams[iNode];
-        rho_uy_i += rho_uy*isoparams[iNode];
-        if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
-        rho_E_i += rho_E*isoparams[iNode];
-        TKE_i += TKE*isoparams[iNode];
-
-        PointID[iPhi][pointCount] = geometry->node[jNode]->GetGlobalIndex();
-        pointCount++;
       }
     }
     
