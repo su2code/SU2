@@ -32,6 +32,7 @@
  */
 
 #include "../include/grid_movement_structure.hpp"
+#include "../include/adt_structure.hpp"
 #include <list>
 
 using namespace std;
@@ -411,125 +412,101 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   
 }
 
+
+
 void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
+  
+  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
+  unsigned short iMarker, iDim;
+  su2double dist, MaxDistance_Local, MinDistance_Local;
+  int rankID;
 
-  su2double *coord, dist2, dist;
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall;
-
-  int rank = MASTER_NODE;
-  int iProcessor, nProcessor = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+  /*--- Initialize min and max distance ---*/
 
   MaxDistance = -1E22; MinDistance = 1E22;
-
-  if (rank == MASTER_NODE)
-    cout << "Computing distances to the nearest solid surface." << endl;
-
-  unsigned long nLocalVertex_SolidWall = 0, MaxLocalVertex_SolidWall = 0;
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-  /*--- Count the total number of nodes on deforming boundaries within the
-   local partition. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-        config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
-        config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)
-    	nLocalVertex_SolidWall += geometry->GetnVertex(iMarker);
-
-  /*--- Communicate to all processors the maximum number of deforming boundary nodes
-         on any single partition, and the number of deforming nodes on each partition. ---*/
-
-  Buffer_Send_nVertex[0] = nLocalVertex_SolidWall;
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &MaxLocalVertex_SolidWall, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MaxLocalVertex_SolidWall = nLocalVertex_SolidWall;
-  Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
-#endif
-
-  /*--- Create and initialize to zero some buffers to hold the coordinates
-   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
-
-  unsigned long nBuffer = MaxLocalVertex_SolidWall*nDim;
-  su2double *Buffer_Send_Coord    = new su2double [nBuffer];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*nBuffer];
-
-  for (iVertex = 0; iVertex < MaxLocalVertex_SolidWall; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes on
-   the local partition and broadcast them to all partitions. ---*/
-
+  
+  /*--- Compute the total number of nodes on no-slip boundaries ---*/
+  
   nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-        config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
-        config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-#else
-  for (iVertex = 0; iVertex < MaxLocalVertex_SolidWall; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
-#endif
-
-  /*--- Loop over all interior mesh nodes on the local partition and compute
-   the distances to each of the deforming boundary nodes in the entire mesh.
-   Store the minimum distance to the wall for each interior mesh node. ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = EPS*EPS;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim]);
-
-        if (dist2 < dist) dist = dist2;
-      }
-
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
-
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-
+  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      nVertex_SolidWall += geometry->GetnVertex(iMarker);
+    }
   }
-
-  su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
-  su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
-
+  
+  /*--- Allocate the vectors to hold boundary node coordinates
+   and its local ID. ---*/
+  
+  vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
+  vector<unsigned long> PointIDs(nVertex_SolidWall);
+  
+  /*--- Retrieve and store the coordinates of the no-slip boundary nodes
+   and their local point IDs. ---*/
+  
+  ii = 0; jj = 0;
+  for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        PointIDs[jj++] = iPoint;
+        for (iDim=0; iDim<nDim; ++iDim)
+          Coord_bound[ii++] = geometry->node[iPoint]->GetCoord(iDim);
+      }
+    }
+  }
+  
+  /*--- Build the ADT of the boundary nodes. ---*/
+  
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  
+  /*--- Loop over all interior mesh nodes and compute the distances to each
+   of the no-slip boundary nodes. Store the minimum distance to the wall
+   for each interior mesh node. ---*/
+  
+  if( WallADT.IsEmpty() ) {
+    
+    /*--- No solid wall boundary nodes in the entire mesh.
+     Set the wall distance to zero for all nodes. ---*/
+    
+    for (iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint)
+      geometry->node[iPoint]->SetWall_Distance(0.0);
+  }
+  else {
+    
+    /*--- Solid wall boundary nodes are present. Compute the wall
+     distance for all nodes. ---*/
+    
+    for(iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint) {
+      
+      WallADT.DetermineNearestNode(geometry->node[iPoint]->GetCoord(), dist,
+                                   pointID, rankID);
+      geometry->node[iPoint]->SetWall_Distance(dist);
+      
+      MaxDistance = max(MaxDistance, dist);
+      
+      /*--- To discard points on the surface we use > EPS ---*/
+       
+      if (sqrt(dist) > EPS)  MinDistance = min(MinDistance, dist);
+      
+    }
+    
+    MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
+    MinDistance_Local = MinDistance; MinDistance = 0.0;
+    
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #else
-  MaxDistance = MaxDistance_Local;
-  MinDistance = MinDistance_Local;
+    MaxDistance = MaxDistance_Local;
+    MinDistance = MinDistance_Local;
 #endif
-
-  /*--- Deallocate the buffers needed for the MPI communication. ---*/
-
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-
+    
+  }
+  
 }
 
 su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
