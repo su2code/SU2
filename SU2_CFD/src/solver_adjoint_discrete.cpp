@@ -166,6 +166,22 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
  }
  }
 
+  if(config->GetKind_ObjFunc()==BOOM){
+    string  text_line;
+    ifstream Boom_AdjointFile;
+    char filename [64];
+    SPRINTF (filename, "Adj_Boom.dat");
+    Boom_AdjointFile.open(filename , ios::in);
+    if (Boom_AdjointFile.fail()) {
+      cout << "There is no flow restart file!! " <<  filename  << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    nPanel = 0;
+    Boom_AdjointFile >> nPanel;
+    Boom_AdjointFile.close();
+
+  }
+
  dJdU_CAA = new su2double* [nPanel];
  for(int iPanel = 0;  iPanel< nPanel; iPanel++)
  {
@@ -985,7 +1001,8 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
 
 //  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
 
-  /*--- The first line is the header ---*/
+  /*--- The first line is nPanel ---*/
+  Boom_AdjointFile >> nPanel;
 
   while (getline (Boom_AdjointFile, text_line)) {
     istringstream point_line(text_line);
@@ -998,11 +1015,20 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
 
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
-      LocalPointIndex[iPoint_Local] =  iPanel;
-      for (iVar=0; iVar<nDim+3; iVar++){
-          point_line >> dJdU_CAA[iPanel][iVar];
+      if(LocalPointIndex[iPoint_Local] < 0){
+        LocalPointIndex[iPoint_Local] =  iPanel;
+        for (iVar=0; iVar<nDim+3; iVar++){
+            point_line >> dJdU_CAA[iPanel][iVar];
+          }
+        iPanel++;
+      }
+      else{
+        su2double dJdU_tmp = 0.0;
+        for(iVar=0; iVar<nDim+3; iVar++){
+          point_line >> dJdU_tmp;
+          dJdU_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
         }
-     iPanel++;
+      }
     }
 
 

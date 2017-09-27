@@ -66,7 +66,7 @@ public:
 
   /*---Sensitivity---*/
   unsigned short nDim;
-  unsigned long *nPanel, nSig, *nPointID, nPointID_tot;
+  unsigned long *nPanel, nSig, *nPointID, nPanel_tot, nPointID_tot;
   unsigned long **PointID;
   su2double ***dJdU;
 

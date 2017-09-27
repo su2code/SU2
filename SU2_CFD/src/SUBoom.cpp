@@ -210,7 +210,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
   /*---Now write to file---*/
   if(rank == MASTER_NODE){
-    unsigned long nPanel_tot = 0;
+    nPanel_tot = 0;
     ofstream sigFile;
     sigFile.precision(15);
     sigFile.open("signal_original.dat");
@@ -2283,6 +2283,12 @@ void SUBoom::WriteSensitivities(){
 
   if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];
 
+    if(rank == MASTER_NODE){
+      Boom_AdjointFile.precision(15);
+      Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
+      Boom_AdjointFile << nPanel_tot << endl;
+    }
+
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
 
     Buffer_Send_nPointID[0]=nPointID[iPhi]; 
@@ -2328,8 +2334,6 @@ void SUBoom::WriteSensitivities(){
 #endif
 
     if (rank == MASTER_NODE){
-      Boom_AdjointFile.precision(15);
-      Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
       /*--- Loop through all of the collected data and write each node's values ---*/
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -2349,8 +2353,6 @@ void SUBoom::WriteSensitivities(){
         }
       }
 
-      Boom_AdjointFile.close();
-
       delete [] Buffer_Recv_dJdU;
       delete [] Buffer_Recv_GlobalIndex;
     }
@@ -2359,6 +2361,9 @@ void SUBoom::WriteSensitivities(){
   delete [] Buffer_Send_GlobalIndex;
 
   }
+  
+  if(rank == MASTER_NODE)
+    Boom_AdjointFile.close();
 
   /*---Clear up  memory from dJdU---*/
   /*for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
