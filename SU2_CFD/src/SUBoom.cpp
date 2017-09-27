@@ -808,12 +808,15 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     su2double **Coord_elem = new su2double*[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
       iPoint = geometry->elem[jElem]->GetNode(iNode);
+      if(!geometry->node[iPoint]->GetDomain()){
+        return false;
+      }
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
         Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
       }
     }
-
+    
     count = 0;
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
