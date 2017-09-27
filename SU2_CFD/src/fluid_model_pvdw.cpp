@@ -78,13 +78,10 @@ void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
   A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
   B= b*P/(T*Gas_Constant);
 
-//    Z= max(B, 0.99);
-
-//  cout <<"Before  "<< P <<" "<< T << endl;
-  if (Zed > 0.1)
-    Z=min(Zed, 0.99);
-  else
-    Z=0.99;
+	if (Zed > 0.1)
+		Z=min(Zed, 0.99);
+	else
+		Z=0.99;
 
   do{
     F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
@@ -109,7 +106,7 @@ void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
     su2double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
   SetTDState_rhoe(Density, e);
 
-//  cout <<"After  "<< Pressure <<" "<< Temperature << endl;
+
 
 }
 
@@ -126,21 +123,14 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     su2double v, T, rho, f, fmid, rtb;
     su2double x1,x2,xmid, dx, fx1, fx2;
     su2double toll = 1e-5, FACTOR=0.2;
-    unsigned short count=0, NTRY=10, ITMAX=100;
+    unsigned short count=0, NTRY=100, ITMAX=100;
     su2double cons_s, cons_h;
 
-//    cout <<"Before  "<< h <<" "<< s << endl;
 
     T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-    if (Zed<0.9999) {
-      x1 = Zed*v;
-      x2 = v;
-
-    } else {
-      x1 = 0.5*v;
-      x2 = v;
-    }
+    x1 = 0.2*v;
+    x2 = 0.35*v;
     fx1 = log(x1-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
     fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x2)/Gas_Constant/(1/Gamma_Minus_One+ x2/(x2-b)))/Gamma_Minus_One;
 
@@ -192,25 +182,6 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     cout<< "TD consistency not verified in hs call"<< endl;
   }
 
-//  cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy<<" "<< fmid <<" "<< f<< " "<< count<< endl;
-
-
-
-
-//  T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
-//  do{
-//    f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;
-//    f1= 1.0/(v-b);
-//    dv= f/f1;
-//    v-= 1.0*dv;
-//    T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
-//    count++;
-//  }while(abs(dv/v) > toll && count < nmax);
-
-
-
-
-
 }
 
 void CVanDerWaalsGas::SetEnergy_Prho (su2double P, su2double rho ) {
@@ -228,10 +199,10 @@ void CVanDerWaalsGas::SetTDState_rhoT (su2double rho, su2double T) {
 
 void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 
-  su2double T, rho, cons_P, cons_s;
-  su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
-  su2double toll = 1e-5, FACTOR=0.2;
-  unsigned short count=0, NTRY=10, ITMAX=100;
+	su2double T, rho, cons_P, cons_s;
+	su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
+	su2double toll = 1e-5, FACTOR=0.2;
+	unsigned short count=0, NTRY=100, ITMAX=100;
 
   T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
     rho = P/(T*Gas_Constant);
@@ -304,5 +275,20 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 }
 
 
+void CVanDerWaalsGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
 
+	su2double dPdT_rho,dPdrho_T, dPds_rho;
+
+	SetTDState_Prho(P, rho);
+
+	dPdT_rho= Gas_Constant*rho/(1.0 -rho*b);
+	dPdrho_T= Gas_Constant*Temperature/(1.0 -rho*b)/(1.0 -rho*b) -2.0*rho*a;
+
+	dhdrho_P= -dPdrho_e/dPde_rho -P/rho/rho;
+  dhdP_rho= 1.0/dPde_rho +1.0/rho;
+  dPds_rho= rho*rho*(SoundSpeed2 - dPdrho_T)/dPdT_rho;
+  dsdP_rho= 1.0/dPds_rho;
+  dsdrho_P= -SoundSpeed2/dPds_rho;
+
+}
 
