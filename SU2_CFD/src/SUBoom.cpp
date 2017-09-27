@@ -2293,31 +2293,31 @@ void SUBoom::WriteSensitivities(){
 #endif
 
     if (rank == MASTER_NODE){
-    Boom_AdjointFile.precision(15);
-    Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
+      Boom_AdjointFile.precision(15);
+      Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
 
-    /*--- Loop through all of the collected data and write each node's values ---*/
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
-          Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
-          Boom_AdjointFile  << scientific << Global_Index << "\t";
+      /*--- Loop through all of the collected data and write each node's values ---*/
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
+            Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
+            Boom_AdjointFile  << scientific << Global_Index << "\t";
 
-         for (iVar = 0; iVar < nVar; iVar++){
-           /*--- Current index position and global index ---*/
-           Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
+           for (iVar = 0; iVar < nVar; iVar++){
+             /*--- Current index position and global index ---*/
+             Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
 
-           /*--- Write to file---*/
-           Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
-         }
-         Boom_AdjointFile  << endl;
+             /*--- Write to file---*/
+             Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
+           }
+           Boom_AdjointFile  << endl;
 
+        }
       }
-    }
 
-    Boom_AdjointFile.close();
+      Boom_AdjointFile.close();
 
-    delete [] Buffer_Recv_dJdU;
-    delete [] Buffer_Recv_GlobalIndex;
+      delete [] Buffer_Recv_dJdU;
+      delete [] Buffer_Recv_GlobalIndex;
     }
 
   delete [] Buffer_Send_dJdU;
@@ -2326,15 +2326,19 @@ void SUBoom::WriteSensitivities(){
   }
 
   /*---Clear up  memory from dJdU---*/
-  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+  /*for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     for (unsigned short i=0; i<nDim+3; i++){
-      delete [] dJdU[iPhi][i];
+      if(nPointID[iPhi] > 0){
+        delete [] dJdU[iPhi][i];
+      }
     }
     delete [] dJdU[iPhi];
     delete [] PointID[iPhi];
+
   }
   delete [] dJdU;
   delete [] PointID;
+  delete [] nPointID;*/
 
   if (rank == MASTER_NODE)
     cout << "\nFinished writing boom adjoint file." << endl;
