@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
 
     config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
-//    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
