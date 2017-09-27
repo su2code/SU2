@@ -1169,7 +1169,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     isoparams[2]=0.25*(1+xi)*(1+eta);
     isoparams[3]=0.25*(1-xi)*(1+eta);
   }
-/*  if (nDonor<4) {
+  if (nDonor<4) {
     tmp = 0.0; // value for normalization
     tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
     k=0; // index for maximum value
@@ -1189,7 +1189,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     else {
       isoparams[k] = 1.0;
     }
-  }*/
+  }
   
   if (A2 != NULL) delete [] A2;
 
