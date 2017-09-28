@@ -732,10 +732,10 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
     for(iNode = 0; iNode < nNode; iNode++){
-      //jNode = geometry->elem[jElem]->GetNode(iNode);
-      //if(geometry->node[jNode]->GetDomain()){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      if(geometry->node[jNode]->GetDomain()){
         nPointID[iPhi]++;
-      //}
+      }
     }
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
@@ -761,7 +761,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     }
 
     /*--- Check if all nodes in domain ---*/
-    /*for(iNode = 0; iNode < nNode; iNode++){
+    for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
         X_donor_tmp = new su2double[nDim*nNode];
@@ -787,7 +787,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         jNode_list[jNodeCount] = jNode;
         jNodeCount++;
       }
-    }*/
+    }
 
     /*--- Compute isoparameters ---*/
     isoparams = new su2double[nNode];
@@ -800,8 +800,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
       //if(isoparams[iNode]*isoparams[iNode] > 0.0){
-        jNode = geometry->elem[jElem]->GetNode(iNode);
-        //jNode = jNode_list[iNode];
+        //jNode = geometry->elem[jElem]->GetNode(iNode);
+        jNode = jNode_list[iNode];
 
           /*---Extract conservative flow data---*/
           rho = solver->node[jNode]->GetSolution(nDim);
@@ -849,7 +849,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 }
 
 bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
-  bool inside = false;
+  bool inside = false, *inDomain;
   unsigned long iPoint, jNode;
   unsigned short iNode, nNode, count, intersect;
 
@@ -862,11 +862,13 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     /*--- Store node coordinates ---*/
     nNode = geometry->elem[jElem]->GetnNodes();
     su2double **Coord_elem = new su2double*[nNode];
+    inDomain = new bool[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      /*if(!geometry->node[jNode]->GetDomain()){
-        return false;
-      }*/
+      if(!geometry->node[jNode]->GetDomain()){
+        inDomain[iNode] = false;
+        //return false;
+      }
 
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
@@ -878,28 +880,36 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-      intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
-      if(intersect == 1){
-        if(count == 0){
+      if(inDomain[iEdge] && inDomain[iEdge_p1]){
+        intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
+        if(intersect == 1){
+          if(count == 0){
+            p0[0] = pp0[0];
+            p0[1] = pp0[1];
+          }
+          else{
+            p1[0] = pp0[0];
+            p1[1] = pp0[1];
+          }
+        }
+        else if(intersect == 2){
           p0[0] = pp0[0];
           p0[1] = pp0[1];
+          p1[0] = pp1[0];
+          p1[1] = pp1[1];
         }
-        else{
-          p1[0] = pp0[0];
-          p1[1] = pp0[1];
+        count += intersect;
+        if(count > 1){
+          inside = true;
+          break;
         }
       }
-      else if(intersect == 2){
-        p0[0] = pp0[0];
-        p0[1] = pp0[1];
-        p1[0] = pp1[0];
-        p1[1] = pp1[1];
-      }
-      count += intersect;
-      if(count > 1){
-        inside = true;
-        break;
-      }
+    }
+
+    if(count == 1){
+      p1[0] = p0[0];
+      p1[1] = p0[1];
+      inside = true;
     }
 
     for(iNode = 0; iNode < nNode; iNode++){
