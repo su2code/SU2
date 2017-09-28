@@ -1916,12 +1916,12 @@ void SUBoom::CreateSignature(unsigned short iPhi){
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
         pp[1][j] = pp[1][j+1];
-	    ll[j] = ll[j+1];
-	    mm[j] = mm[j+1];
+	      ll[j] = ll[j+1];
+	      mm[j] = mm[j+1];
         //ll[i] = tol_l;
         //mm[i] = (pp[1][i] - pp[0][i])/ll[i];
       }
-      i -= 1;
+      //i -= 1;
       M -= 1;
     }
     else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
@@ -2102,7 +2102,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l || m[i] >= tol_m || m[i] <= -tol_m){
+    if(l[i] <= tol_l || m[i] >= tol_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
