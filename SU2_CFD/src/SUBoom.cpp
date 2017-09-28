@@ -125,15 +125,12 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     if(startline[iPhi]){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
-    nPointID_loc += nPointID[iPhi];
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPointID_loc, nPointID_tot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
+  nPointID_proc = new su2double[nProcessor];
   unsigned long iPanel, panelCount, totSig, maxSig;
   unsigned long *nPanel_loc = new unsigned long[nProcessor];
+  nPointID_tot = 0;
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
       signal.original_p[iPhi][iPanel] = signal.original_p[iPhi][iPanel]*Pressure_Ref - Pressure_FreeStream;
@@ -145,6 +142,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_DOUBLE, nPointID_proc, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
     su2double* Buffer_Recv_Press = NULL;
@@ -182,6 +180,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           signal.original_p[iPhi][panelCount] = Buffer_Recv_Press[iProcessor*maxSig+iPanel];
           panelCount++;
         }
+        nPointID_tot += nPointID_proc[iProcessor];
       }
 
       /*---Sort signal in order of x-coordinate---*/
