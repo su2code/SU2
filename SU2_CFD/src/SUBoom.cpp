@@ -563,7 +563,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
           jElem = geometry->node[iPointmin[iNearest]]->GetElem(iElem);
           inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
           if(inside){
-            if(nPanel[0] == 0){
+            //if(nPanel[0] == 0){
               nPanel[0] = 1;
               pointID_original = new unsigned long*[1];
               pointID_original[0] = new unsigned long[nPanel[0]];
@@ -574,18 +574,18 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               pointID_original[0][0] = jElem;
               Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
               Coord_original[0][0][1] = -r0;
-            }
-            else{
-              mintmp = (p0[0] + p1[0])/2;
+            //}
+            /*else{
+              mintmp = (p0[0] + p1[0])/2.0;
               if(mintmp < Coord_original[0][0][0]){
                 pointID_original[0][0] = jElem;
                 Coord_original[0][0][0] = mintmp;
               }
-            }
-            ////break;
+            }*/
+            break;
           }
         }
-        ////if(inside) break;
+        if(inside) break;
       }
       if(!inside) startline[0] = false;
     }
@@ -725,7 +725,13 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
     jElem = pointID_original[iPhi][i];
-    nPointID[iPhi] += geometry->elem[jElem]->GetnNodes();
+    nNode = geometry->elem[jElem]->GetnNodes();
+    for(iNode = 0; iNode < nNode; iNode++){
+      jNode = geoemtry->elem[jElem]->GetNode(iNode);
+      if(geometry->node[jNode]->GetDomain()){
+        nPointID[iPhi]++;
+      }
+    }
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
 
@@ -740,8 +746,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
       Coord[j] = Coord_original[iPhi][i][j];
     }
     X_donor = new su2double[nDim*nNode];
-    //jNode_list = new unsigned long[nNode];
-    //jNodeCount = 0;
+    jNode_list = new unsigned long[nNode];
+    jNodeCount = 0;
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){  
@@ -750,7 +756,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     }
 
     /*--- Check if all nodes in domain ---*/
-    /*for(iNode = 0; iNode < nNode; iNode++){
+    for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
         X_donor_tmp = new su2double[nDim*nNode];
@@ -776,7 +782,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         jNode_list[jNodeCount] = jNode;
         jNodeCount++;
       }
-    }*/
+    }
 
     /*--- Compute isoparameters ---*/
     isoparams = new su2double[nNode];
@@ -789,8 +795,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
       //if(isoparams[iNode]*isoparams[iNode] > 0.0){
-        jNode = geometry->elem[jElem]->GetNode(iNode);
-        //jNode = jNode_list[iNode];
+        //jNode = geometry->elem[jElem]->GetNode(iNode);
+        jNode = jNode_list[iNode];
 
           /*---Extract conservative flow data---*/
           rho = solver->node[jNode]->GetSolution(nDim);
