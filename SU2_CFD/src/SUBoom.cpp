@@ -420,7 +420,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 
 
   if(nDim == 2){
-    nNearest = 16;
+    nNearest = 128;
     y0 = new su2double[1];
     r2min = new su2double[nNearest];
     xmin = new su2double[nNearest];
@@ -445,7 +445,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     nNearest_loc[0] = 0;
   }
   else{
-    nNearest = 32;
+    nNearest = 256;
     y0 = new su2double[nPhi];
     z0 = new su2double[nPhi];
     r2min = new su2double[nNearest*nPhi];
@@ -460,8 +460,8 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     p0 = new su2double[3];
     p1 = new su2double[3];
     for(int i = 0; i < nPhi; i++){
-      y0[i] = r0*sin(phi[i]);
-      z0[i] = r0*cos(phi[i]);
+      y0[i] = r0*sind(phi[i]);
+      z0[i] = r0*cosd(phi[i]);
       for(unsigned short j = 0; j < nNearest; j++){
         r2min[nNearest*i+j] = 1.0E6;
         xmin[nNearest*i+j] = 1.0E6;
@@ -597,8 +597,8 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 
               pointID_original[i][0] = jElem;
               Coord_original[i][0][0] = (p0[0] + p1[0])/2.0;
-              Coord_original[i][0][1] = -r0*sin(phi[i]);
-              Coord_original[i][0][2] = -r0*cos(phi[i]);
+              Coord_original[i][0][1] = -r0*sind(phi[i]);
+              Coord_original[i][0][2] = -r0*cosd(phi[i]);
 
               break;
             }
@@ -682,8 +682,8 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
               Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
             }
             else{
-              Coord_original[iPhi][0][1] = -r0*sin(ray_phi[iPhi]);
-              Coord_original[iPhi][0][2] = -r0*cos(ray_phi[iPhi]);
+              Coord_original[iPhi][0][1] = -r0*sind(ray_phi[iPhi]);
+              Coord_original[iPhi][0][2] = -r0*cosd(ray_phi[iPhi]);
             }
 
             break;
@@ -998,7 +998,7 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
   }
   else{
     unsigned short i0, i1, i2;
-    su2double p0[3] = {-1.0, -r0*sin(phi), -r0*cos(phi)};
+    su2double p0[3] = {-1.0, -r0*sind(phi), -r0*cosd(phi)};
     su2double d = -Coord_i[0][0]*normal[0] - Coord_i[0][1]*normal[1] - Coord_i[0][2]*normal[2];
     su2double t = -(p0[0]*normal[0] + p0[1]*normal[1] + p0[2]*normal[2] + d)/(normal[0]);
 
@@ -2361,7 +2361,7 @@ void SUBoom::WriteSensitivities(){
   delete [] Buffer_Send_GlobalIndex;
 
   }
-  
+
   if(rank == MASTER_NODE)
     Boom_AdjointFile.close();
 
