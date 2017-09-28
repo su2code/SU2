@@ -956,7 +956,25 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
 
 int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1){
 
-  su2double line[2][2] = {{-1.0, -r0}, {1.0E3, -r0}};
+  /*--- Interpolate if point between yi and yi+1 ---*/
+  if((Coord_i[1] > -r0 && Coord_ip1[1] < -r0) || (Coord_i[1] < -r0 && Coord_ip1[1] > -r0)){
+    su2double t = (-r0-Coord_i[1])/(Coord_ip1[1]-Coord_i[1]);
+    p0[0] = Coord_i[0] + t*(Coord_ip1[0]-Coord_i[0]);
+    return 1;
+  }
+  /*--- Colinear segments at r0 ---*/
+  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8){
+    p0[0] = Coord_i[0];
+    p0[1] = -r0;
+    p1[0] = Coord_ip1[0];
+    p1[1] = -r0;
+    return 2;
+  }
+  else{
+    return 0;
+  }
+
+  /*su2double line[2][2] = {{-1.0, -r0}, {1.0E3, -r0}};
   su2double u[2] = {line[1][0]-line[0][0], line[1][1]-line[0][1]};
   su2double v[2] = {Coord_ip1[0]-Coord_i[0], Coord_ip1[1]-Coord_i[1]};
   su2double w[2] = {line[0][0]-Coord_i[0], line[0][1]-Coord_i[1]};
@@ -969,7 +987,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
       return 0;
     }
     /*--- Get overlap of collinear segments ---*/
-    su2double t0, t1;
+    /*su2double t0, t1;
     su2double w2[2] = {line[1][0]-Coord_i[0], line[1][1]-Coord_i[1]};
     if(abs(v[0]) > 1.0E-8){
       t0 = w[0]/v[0];
@@ -997,7 +1015,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
   }
 
   /*--- Segments not parallel and may intersect at a point ---*/
-  su2double s = vpw/upv, t = upw/upv;
+  /*su2double s = vpw/upv, t = upw/upv;
   if(s < 0 || s > 1 || t < 0 || t > 1){
     return 0;
   }
@@ -1005,7 +1023,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
   p0[0] = line[0][0] + s*u[0];
   p0[1] = line[0][1] + s*u[1];
 
-  return 1;
+  return 1;*/
 
 }
 
