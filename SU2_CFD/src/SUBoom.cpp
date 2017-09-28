@@ -183,7 +183,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       MergeSort(signal.x[iPhi], signal.original_p[iPhi], 0, totSig-1);
 
       /*---Check for duplicate points---*/
-      for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
+      /*for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
         if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-8){
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
@@ -192,7 +192,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           iPanel--;
           nPanel[iPhi]--;
         }
-      }
+      }*/
 
       if(nPanel[iPhi] != totSig){
         cout << "Eliminating duplicate points." << endl;
