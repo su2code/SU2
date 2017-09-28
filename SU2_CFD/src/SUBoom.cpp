@@ -127,7 +127,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     }
   }
 
-  nPointID_proc = new su2double[nProcessor];
+  nPointID_proc = new unsigned long[nProcessor];
   unsigned long iPanel, panelCount, totSig, maxSig;
   unsigned long *nPanel_loc = new unsigned long[nProcessor];
   nPointID_tot = 0;
@@ -142,7 +142,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_DOUBLE, nPointID_proc, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_UNSIGNED_LONG, nPointID_proc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
     su2double* Buffer_Recv_Press = NULL;
