@@ -3568,7 +3568,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_TurboSolution(CConfig *config);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
 
 };
 
@@ -7677,6 +7683,13 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
   
 };
 

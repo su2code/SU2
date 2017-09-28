@@ -946,14 +946,14 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
 }
 
-CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  slau_low_diss = config->GetKind_RoeLowDiss();
+  slau_low_diss = val_low_dissipation;
   
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
@@ -1075,13 +1075,11 @@ void CUpwSLAU_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
       else BetaR = 1.0;
   }
     
-    
-  if (slau_low_diss != NO_ROELOWDISS){
-    pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + dissipation*(1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
+  if (slau_low_diss){
+    SetRoe_Dissipation(Coord_i, Coord_j, Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
   }
-  else{
-    pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + (1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
-  }
+  
+  pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + Dissipation_ij*(1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
   
   val_residual[0] = 0.5*(mF+fabs(mF)) + 0.5*(mF-fabs(mF));
   
@@ -1147,14 +1145,14 @@ void CUpwSLAU_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
 }
 
-CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwSLAU2_Flow::CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  slau_low_diss = config->GetKind_RoeLowDiss();
+  slau_low_dissipation = val_low_dissipation;
   
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
@@ -1274,13 +1272,13 @@ void CUpwSLAU2_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     else BetaR = 1.0;
   }
   
+  if (slau_low_dissipation){
+    SetRoe_Dissipation(Coord_i, Coord_j, Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+  }
+  
   /*--- Pressure Flux ---*/
-  if (slau_low_diss != NO_ROELOWDISS){
-    pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + dissipation * sqrt(aux_slau/2.0) * (BetaL + BetaR - 1.0) * aF * 0.5 * (Density_i + Density_j);
-  }
-  else{
-    pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + sqrt(aux_slau/2.0) * (BetaL + BetaR - 1.0) * aF * 0.5 * (Density_i + Density_j);
-  }
+  
+  pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + Dissipation_ij * sqrt(aux_slau/2.0) * (BetaL + BetaR - 1.0) * aF * 0.5 * (Density_i + Density_j);
   
   val_residual[0] = 0.5*(mF+fabs(mF)) + 0.5*(mF-fabs(mF));
   
@@ -2736,20 +2734,17 @@ void UgpWithCvCompFlow::calcJacobianA(su2double (*A)[5], const su2double *vel, s
 
 
 CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation) :
-                             ch1(3.0), ch2(1.0), ch3(2.0), cnu(0.09), phi_max(1.0), Const_DES(5.0), k2(pow(0.41,2.0)),
                              CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
-  roe_low_diss = config->GetKind_RoeLowDiss();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  dissipation = 1.0;
+  Dissipation_ij = 1.0;
   roe_low_dissipation = val_low_dissipation;
-  TimeScale = config->GetLength_Ref() / config->GetModVel_FreeStream();
   
   Diff_U = new su2double [nVar];
   Velocity_i = new su2double [nDim];
@@ -2821,9 +2816,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-  Laminar_Viscosity_i  = V_i[nDim+5]/V_i[nDim+2];
-  Eddy_Viscosity_i = V_i[nDim+6]/V_i[nDim+2];
-      
+ 
   /*--- Primitive variables at point j ---*/
   
   for (iDim = 0; iDim < nDim; iDim++)
@@ -2833,9 +2826,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
-  Laminar_Viscosity_j  = V_j[nDim+5]/V_j[nDim+2];
-  Eddy_Viscosity_j = V_j[nDim+6]/V_j[nDim+2];
-      
+
   /*--- Recompute conservative variables ---*/
   
   U_i[0] = Density_i; U_j[0] = Density_j;
@@ -2941,9 +2932,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     Diff_U[iVar] = U_j[iVar]-U_i[iVar];
   
   if (roe_low_dissipation)
-    SetRoe_Dissipation(PrimVar_Grad_i, PrimVar_Grad_j, Laminar_Viscosity_i, Laminar_Viscosity_j,
-                       Eddy_Viscosity_i, Eddy_Viscosity_j, Vorticity_i, Vorticity_j, 
-                       Sensor_i, Sensor_j, StrainMag_i, StrainMag_j, dissipation);
+    SetRoe_Dissipation(Coord_i, Coord_j, Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
   
   /*--- Roe's Flux approximation ---*/
   
@@ -2958,7 +2947,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
-        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*dissipation;
+        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*Dissipation_ij;
         if(implicit){
           val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
           val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
@@ -2986,126 +2975,6 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
   
-}
-
-void CUpwRoe_Flow::SetRoe_Dissipation(su2double **PrimVar_Grad_i, su2double **PrimVar_Grad_j,
-                                      const su2double Laminar_Viscosity_i, const su2double Laminar_Viscosity_j,
-                                      const su2double Eddy_Viscosity_i,const  su2double Eddy_Viscosity_j,
-                                      su2double* Vorticity_i, su2double* Vorticity_j,
-                                      const su2double Sensor_i, const su2double Sensor_j,
-                                      const su2double StrainMag_i, const su2double StrainMag_j,
-                                      su2double& dissipation){
-  
-  if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
-    
-    /*--- For iPoint ---*/
-    
-    uijuij=0.0;
-    
-    for(iDim=0;iDim<nDim;++iDim){
-      for(jDim=0;jDim<nDim;++jDim){
-        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];
-      }
-    }
-    
-    uijuij=sqrt(fabs(uijuij));
-    uijuij=max(uijuij,1e-10);
-
-    r_d= (Eddy_Viscosity_i+Laminar_Viscosity_i)/(uijuij*k2*pow(dist_i, 2.0));
-    f_d_i= 1.0-tanh(pow(8.0*r_d,3.0));
-    
-    /*--- For jPoint ---*/
-    
-    uijuij=0.0;
-    
-    for(iDim=0;iDim<nDim;++iDim){
-      for(jDim=0;jDim<nDim;++jDim){
-        uijuij+= PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_j[1+iDim][jDim];
-      }
-    }
-    
-    uijuij=sqrt(fabs(uijuij));
-    uijuij=max(uijuij,1e-10);
-    
-    r_d= (Eddy_Viscosity_j+Laminar_Viscosity_j)/(uijuij*k2*pow(dist_j, 2.0));
-    f_d_j= 1.0-tanh(pow(8.0*r_d,3.0));
-    
-    dissipation = max(0.05,1.0 - (0.5 * (f_d_i + f_d_j)));
-    
-    if (roe_low_diss == FD_DUCROS){
-      
-      /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
-      
-      if (0.5*(Sensor_i + Sensor_j) > 0.65)
-        Ducros_ij = 1.0;
-      else
-        Ducros_ij = 0.05;
-      
-      dissipation = max(Ducros_ij, dissipation);
-    }
-  }
-  else if (roe_low_diss == NTS || roe_low_diss == NTS_DUCROS){
-
-    Delta = 0.0;
-    for (iDim=0;iDim<nDim;++iDim)
-        Delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
-    Delta=sqrt(Delta);
-    
-    /*--- For iPoint ---*/
-
-    Omega = 0.0;
-    for (iDim = 0; iDim < 3; iDim++){
-      Omega += Vorticity_i[iDim]*Vorticity_i[iDim];
-    }
-    Omega = sqrt(Omega);
-    
-    Omega_2 = pow(Omega,2.0);
-    StrainMag = pow(StrainMag_i,2.0);
-    Baux = (ch3 * Omega * max(StrainMag_i, Omega)) / max(sqrt((StrainMag+Omega_2)*0.5),1E-20);
-    Gaux = tanh(pow(Baux,4.0));
-
-    
-    inv_TimeScale = 1.0/TimeScale;
-    
-    Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
-    
-    Lturb = sqrt((Eddy_Viscosity_i + Laminar_Viscosity_i)/(pow(cnu,1.5)*Kaux));
-    Aaux = ch2 * max(((Const_DES*Delta)/(Lturb*Gaux)) - 0.5, 0.0);
-    phi_hybrid_i = phi_max * tanh(pow(Aaux,ch1));
-    
-    /*--- For jPoint ---*/
-
-    Omega = 0.0;
-    for (iDim = 0; iDim < 3; iDim++){
-      Omega += Vorticity_j[iDim]*Vorticity_j[iDim];
-    }
-    Omega = sqrt(Omega);
-    
-    Omega_2 = pow(Omega,2.0);
-    StrainMag = pow(StrainMag_j,2.0);
-    Baux = (ch3 * Omega * max(StrainMag_j, Omega)) / max(sqrt((StrainMag+Omega_2)*0.5),1E-20);
-    Gaux = tanh(pow(Baux,4.0));
-    
-    inv_TimeScale = 1.0/TimeScale;
-    
-    Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
-    
-    Lturb = sqrt((Eddy_Viscosity_j + Laminar_Viscosity_j)/(pow(cnu,1.5)*Kaux));
-    Aaux = ch2 * max(((Const_DES*Delta)/(Lturb*Gaux)) - 0.5, 0.0);
-    phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
-    
-    if (roe_low_diss == NTS){
-      dissipation = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
-    } else if (roe_low_diss == NTS_DUCROS){
-      
-      phi1 = 0.5*(Sensor_i+Sensor_j);
-      phi2 = 0.5*(phi_hybrid_i+phi_hybrid_j);
-      
-      dissipation = min(max(phi1 + phi2 - (phi1*phi2),0.05),1.0);
-      
-    }
-  }
-
 }
 
 CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

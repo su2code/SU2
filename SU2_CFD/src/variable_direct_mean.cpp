@@ -305,9 +305,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Solution_Avg = NULL;
   
   Solution_RMS = NULL;
-  
-  Roe_Dissipation = 0.0;
-  
+    
     /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
@@ -580,7 +578,10 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
     Viscosity_Inf   = config->GetViscosity_FreeStreamND();
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
+    
+    inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
   
+    Roe_Dissipation = 0.0;
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
@@ -591,6 +592,8 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
     Viscosity_Inf   = config->GetViscosity_FreeStreamND();
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
+    
+    Roe_Dissipation = 0.0;
 }
 
 CNSVariable::~CNSVariable(void) { }
@@ -646,6 +649,79 @@ bool CNSVariable::SetStrainMag(void) {
   AD::EndPreacc();
 
   return false;
+  
+}
+
+void CNSVariable::SetRoe_Dissipation_NTS(){
+  
+  static const su2double cnu = pow(0.09, 1.5), ch3 = 2.0;
+  
+  unsigned short iDim;
+  su2double Omega = 0, Omega_2 = 0, Baux, Gaux, Lturb, Kaux;
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Vorticity, 3);
+  AD::SetPreaccIn(StrainMag);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(Primitive[nDim+5]);  
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+6]);
+
+  for (iDim = 0; iDim < 3; iDim++){
+    Omega += Vorticity[iDim]*Vorticity[iDim];
+  }
+  Omega = sqrt(Omega);
+  
+  Omega_2 = pow(Omega,2.0);
+  Baux = (ch3 * Omega * max(StrainMag, Omega)) / max(sqrt((pow(StrainMag,2)+Omega_2)*0.5),1E-20);
+  Gaux = tanh(pow(Baux,4.0));
+  
+  Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
+  
+  Lturb = sqrt((GetEddyViscosity() + GetLaminarViscosity())/(cnu*Kaux));
+  
+  Roe_Dissipation = Lturb*Gaux;
+  
+  AD::SetPreaccOut(Roe_Dissipation);
+  AD::EndPreacc();
+  
+//  Aaux = ch2 * max(((Const_DES*Delta)/(Lturb*Gaux)) - 0.5, 0.0);
+//  Roe_Dissipation = phi_max * tanh(pow(Aaux,ch1));
+
+}
+
+void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
+  
+  /*--- Constants for Roe Dissipation ---*/
+  
+  static const su2double k2 = pow(0.41,2.0);
+  
+  su2double uijuij = 0, r_d;
+  unsigned short iDim, jDim;
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Gradient_Primitive, nVar, nDim);
+  AD::SetPreaccIn(val_wall_dist);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(Primitive[nDim+5]);  
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+6]);
+  
+  for(iDim=0;iDim<nDim;++iDim){
+    for(jDim=0;jDim<nDim;++jDim){
+      uijuij+= Gradient_Primitive[1+iDim][jDim]*Gradient_Primitive[1+iDim][jDim];
+    }
+  }
+  
+  uijuij=sqrt(fabs(uijuij));
+  uijuij=max(uijuij,1e-10);
+
+  r_d = (GetEddyViscosity()+GetLaminarViscosity())/(uijuij*k2*pow(val_wall_dist, 2.0));
+  
+  Roe_Dissipation = 1.0-tanh(pow(8.0*r_d,3.0));
+  
+  AD::SetPreaccOut(Roe_Dissipation);
+  AD::EndPreacc();
   
 }
 

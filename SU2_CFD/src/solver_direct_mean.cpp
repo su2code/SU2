@@ -4344,8 +4344,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool roe_low_dissipation  = (config->GetKind_RoeLowDiss() == FD_DUCROS || config->GetKind_RoeLowDiss() == NTS_DUCROS)
-                              && (config->GetKind_Upwind_Flow() == ROE);
+  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -4410,7 +4410,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Roe Low Dissipation Sensor ---*/
   
   if (roe_low_dissipation){
-    SetDucros_Sensor(geometry, config);
+    SetRoe_Dissipation(geometry, config);
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+      SetDucros_Sensor(geometry, config);
+    }
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -4705,8 +4708,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dist_i, Dist_j,
-      *Vorticity_i, *Vorticity_j, StrainMag_i, StrainMag_j;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
   
   su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
   
@@ -4724,7 +4726,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool low_mach_corr    = config->Low_Mach_Correction();
-  bool kind_dissipation = config->GetKind_RoeLowDiss();
+  unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
     
   /*--- Loop over all the edges ---*/
 
@@ -4788,40 +4790,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-      }
-      
-      
-      /*--- Roe Low Dissipation Scheme ---*/
-      
-      if (kind_dissipation != NO_ROELOWDISS){
-        
-        Gradient_i = node[iPoint]->GetGradient_Primitive();
-        Gradient_j = node[jPoint]->GetGradient_Primitive();
-        numerics->SetPrimVarGradient(Gradient_i, Gradient_j);
-        
-        if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
-          Dist_i = geometry->node[iPoint]->GetWall_Distance();
-          Dist_j = geometry->node[jPoint]->GetWall_Distance();
-        } else {
-          Dist_i = node[iPoint]->GetDES_LengthScale();
-          Dist_j = node[jPoint]->GetDES_LengthScale();
-        }
-        numerics->SetDistance(Dist_i, Dist_j);
-        
-        if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
-          Sensor_i = node[iPoint]->GetSensor();
-          Sensor_j = node[jPoint]->GetSensor();
-          numerics->SetSensor(Sensor_i, Sensor_j);
-        }
-        if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
-          Vorticity_i = node[iPoint]->GetVorticity();
-          Vorticity_j = node[jPoint]->GetVorticity();
-          numerics->SetVorticity(Vorticity_i, Vorticity_j);
-          
-          StrainMag_i = node[iPoint]->GetStrainMag();
-          StrainMag_j = node[jPoint]->GetStrainMag();
-          numerics->SetStrainMag(StrainMag_i, StrainMag_j);
         }
       }
 
@@ -4918,6 +4886,26 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
       
+    }
+    
+    /*--- Roe Low Dissipation Scheme ---*/
+    
+    if (kind_dissipation != NO_ROELOWDISS){
+      
+      Dissipation_i = node[iPoint]->GetRoe_Dissipation();
+      Dissipation_j = node[jPoint]->GetRoe_Dissipation();
+      numerics->SetDissipation(Dissipation_i, Dissipation_j);
+            
+      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+        Sensor_i = node[iPoint]->GetSensor();
+        Sensor_j = node[jPoint]->GetSensor();
+        numerics->SetSensor(Sensor_i, Sensor_j);
+      }
+      if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
+        Coord_i = geometry->node[iPoint]->GetCoord();
+        Coord_j = geometry->node[jPoint]->GetCoord();
+        numerics->SetCoord(Coord_i, Coord_j);
+      }
     }
       
     /*--- Compute the residual ---*/
@@ -16033,8 +16021,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool roe_low_dissipation  = (config->GetKind_RoeLowDiss() == FD_DUCROS || config->GetKind_RoeLowDiss() == NTS_DUCROS)
-                              && (config->GetKind_Upwind_Flow() == ROE);
+  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -16076,7 +16064,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Roe Low Dissipation Sensor ---*/
   
   if (roe_low_dissipation){
-    SetDucros_Sensor(geometry, config);
+    SetRoe_Dissipation(geometry, config);
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+      SetDucros_Sensor(geometry, config);
+    }
   }
   
   /*--- Compute gradient of the primitive variables ---*/
@@ -17435,6 +17426,31 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         }
       }
       
+    }
+  }
+}
+
+void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
+  
+  unsigned long iPoint;
+  su2double wall_distance;
+  
+  unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    
+    if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
+      if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
+        wall_distance = geometry->node[iPoint]->GetWall_Distance();
+      } else {
+        wall_distance = node[iPoint]->GetDES_LengthScale();
+      }
+      
+      node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
+    }
+    
+    if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS){
+      node[iPoint]->SetRoe_Dissipation_NTS();
     }
   }
 }

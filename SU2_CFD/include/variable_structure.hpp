@@ -272,7 +272,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetRoe_Dissipation(su2double val_roe_dissipation);
+  virtual void SetRoe_Dissipation_FD(su2double val_wall_dist);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation_NTS();
   
   /*!
    * \brief A virtual member.
@@ -2757,8 +2762,6 @@ protected:
   
   su2double *Solution_RMS;
   
-  su2double Roe_Dissipation;
-  
 public:
   
   /*!
@@ -2824,18 +2827,7 @@ public:
    * \return Pointer to the old solution vector.
    */
   su2double GetSolution_RMS(unsigned short val_var);
-  
-    /*!
-   * \brief Get the Roe Dissipation Coefficient.
-   * \return Value of the Roe Dissipation.
-   */
-  su2double GetRoe_Dissipation(void);
-  
-  /*!
-   * \brief Set the new solution for Roe Dissipation.
-   */
-  void SetRoe_Dissipation(su2double val_roe_dissipation);
-  
+
   /*!
    * \brief Set the new solution container for Calculate Averages
    */
@@ -3465,6 +3457,9 @@ private:
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
+  su2double inv_TimeScale;
+  
+  su2double Roe_Dissipation;
   
 public:
   
@@ -3623,6 +3618,22 @@ public:
    * \brief Set the DES Length Scale.
    */
   void SetDES_LengthScale(su2double val_des_lengthscale);
+  
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation_NTS();
+    
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation_FD(su2double wall_distance);
+    
+  /*!
+ * \brief Get the Roe Dissipation Coefficient.
+ * \return Value of the Roe Dissipation.
+ */
+  su2double GetRoe_Dissipation(void);
   
 };
 
