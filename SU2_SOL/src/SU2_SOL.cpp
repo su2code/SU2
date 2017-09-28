@@ -170,13 +170,13 @@ int main(int argc, char *argv[]) {
 if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
 geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-//if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-//geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-//if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-//geometry_container[ZONE_0]->SetPoint_Connectivity();
+if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
