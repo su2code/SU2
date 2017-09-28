@@ -3375,7 +3375,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry[iZone], config);
+  //Set_MPI_Solution(geometry[iZone], config);
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
