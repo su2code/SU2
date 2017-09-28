@@ -170,13 +170,13 @@ int main(int argc, char *argv[]) {
 if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
 geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+//if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+//geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-geometry_container[ZONE_0]->SetPoint_Connectivity();
+//if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+//geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
@@ -204,7 +204,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
 if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
 geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
+//geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
