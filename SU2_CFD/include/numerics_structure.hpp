@@ -198,8 +198,8 @@ public:
   *WindGustDer_j;      /*!< \brief Wind gust derivatives at point j. */
   su2double *Vorticity_i, *Vorticity_j;  /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
-  
-  su2double dissipation;
+  su2double Dissipation_i, Dissipation_j;
+  su2double Dissipation_ij;
     
   su2double *l, *m;
 
@@ -710,6 +710,13 @@ public:
    * \param[in] iRho_s
    */
   void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j);
+  
+  /*!
+  * \brief Sets the values of the roe dissipation.
+  * \param[in] diss_i - Dissipation value at node i
+  * \param[in] diss_j - Dissipation value at node j
+  */
+  void SetDissipation(su2double diss_i, su2double diss_j);
   
   /*!
    * \brief Get the inviscid fluxes.
@@ -1418,6 +1425,12 @@ public:
    */
   void CreateBasis(su2double *val_Normal);
   
+  
+  void SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
+                          const su2double Dissipation_i, const su2double Dissipation_j,
+                          const su2double Sensor_i, const su2double Sensor_j,
+                          su2double& Dissipation_ij, CConfig *config);
+  
 };
 
 /*!
@@ -1489,15 +1502,7 @@ private:
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
-  unsigned short iDim, jDim, iVar, jVar, kVar;
-  unsigned short roe_low_diss;
-  
-  su2double uijuij, r_d, f_d_i, f_d_j, Ducros_ij;
-  const su2double k2;
-  const su2double ch1, ch2, ch3, cnu, phi_max;
-  const su2double Const_DES;
-  su2double Omega;
-  su2double phi1, phi2, Baux, Gaux, TimeScale, Kaux, Lturb, Aaux, phi_hybrid_i, phi_hybrid_j,Omega_2, StrainMag, inv_TimeScale;
+  unsigned short iVar, jVar, kVar, iDim;
   
 public:
   
@@ -1522,13 +1527,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-  
-  void SetRoe_Dissipation(su2double **PrimVar_Grad_i, su2double **PrimVar_Grad_j,
-                          const su2double Laminar_Viscosity_i, const su2double Laminar_Viscosity_j,
-                          const su2double Eddy_Viscosity_i, const su2double Eddy_Viscosity_j,
-                          su2double *Vorticity_i, su2double *Vorticity_j,
-                          const su2double Sensor_i, const su2double Sensor_j, const su2double StrainMag_i, const su2double StrainMag_j,
-                          su2double& dissipation);
   
 };
 
@@ -1984,7 +1982,7 @@ public:
  */
 class CUpwSLAU_Flow : public CNumerics {
 private:
-  bool implicit;
+  bool implicit, slau_low_diss;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -1997,7 +1995,6 @@ private:
   unsigned short iDim, iVar, jVar, kVar;
   su2double mL, mR, mF, pF;
   su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
-  unsigned short slau_low_diss;
   
 public:
   
@@ -2007,7 +2004,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
   /*!
    * \brief Destructor of the class.
@@ -2033,7 +2030,7 @@ public:
  */
 class CUpwSLAU2_Flow : public CNumerics {
 private:
-  bool implicit;
+  bool implicit, slau_low_dissipation;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -2046,7 +2043,6 @@ private:
   unsigned short iDim, iVar, jVar, kVar;
   su2double mL, mR, mF, pF;
   su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
-  unsigned short slau_low_diss;
   
 public:
   
@@ -2056,7 +2052,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
   /*!
    * \brief Destructor of the class.
