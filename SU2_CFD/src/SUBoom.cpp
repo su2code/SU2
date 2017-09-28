@@ -800,8 +800,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
       //if(isoparams[iNode]*isoparams[iNode] > 0.0){
-        //jNode = geometry->elem[jElem]->GetNode(iNode);
-        jNode = jNode_list[iNode];
+        jNode = geometry->elem[jElem]->GetNode(iNode);
+        //jNode = jNode_list[iNode];
 
           /*---Extract conservative flow data---*/
           rho = solver->node[jNode]->GetSolution(nDim);
