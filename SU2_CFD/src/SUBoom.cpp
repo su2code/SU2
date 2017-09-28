@@ -119,11 +119,13 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
     cout << "Extract pressure signature." << endl;
+  nPointID_loc = 0;
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     nPointID[iPhi] = 0;
     if(startline[iPhi]){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
+    nPointID_loc += nPointID[iPhi];
   }
 
   unsigned long iPanel, panelCount, totSig, maxSig;
@@ -139,6 +141,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nPointID_loc, &nPointID_tot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
     su2double* Buffer_Recv_Press = NULL;
@@ -2305,7 +2308,7 @@ void SUBoom::WriteSensitivities(){
     if(rank == MASTER_NODE){
       Boom_AdjointFile.precision(15);
       Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
-      Boom_AdjointFile << nPanel_tot << endl;
+      Boom_AdjointFile << nPointID_tot << endl;
     }
 
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
