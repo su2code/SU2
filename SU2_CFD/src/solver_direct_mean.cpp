@@ -12013,7 +12013,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               
               //6.5% scale
 							y_max = 0.06342022;
-							y_min = -0.0634202;
+							y_min = -0.06342022;
 							z_max = 0.234497;
 							z_min = 0.23371722;
 							
