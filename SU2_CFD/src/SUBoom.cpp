@@ -864,9 +864,9 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     su2double **Coord_elem = new su2double*[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      if(!geometry->node[jNode]->GetDomain()){
+      /*if(!geometry->node[jNode]->GetDomain()){
         return false;
-      }
+      }*/
 
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
@@ -2265,8 +2265,8 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     sigFile.precision(15);
     sigFile.open("signal_final.dat", ios::out);
     if(iPhi == 0) sigFile << "# phi, T, p" << endl;
-    p_max[iPhi] = -1E10;
-    p_int2[iPhi] = 0;
+    p_max[iPhi] = -1.0E10;
+    p_int2[iPhi] = 0.0;
     for(int j = 0; j < Msig; j++){
       signal.final_T[iPhi][j] = ground_signal[0][j]*scale_T;
       signal.final_p[iPhi][j] = ground_signal[1][j]*scale_p;
