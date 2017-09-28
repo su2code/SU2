@@ -563,6 +563,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
           jElem = geometry->node[iPointmin[iNearest]]->GetElem(iElem);
           inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
           if(inside){
+            if(nPanel[0] == 0){
               nPanel[0] = 1;
               pointID_original = new unsigned long*[1];
               pointID_original[0] = new unsigned long[nPanel[0]];
@@ -573,12 +574,18 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               pointID_original[0][0] = jElem;
               Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
               Coord_original[0][0][1] = -r0;
-
-              break;
-
+            }
+            else{
+              mintmp = (p0[0] + p1[0])/2;
+              if(mintmp < Coord_original[0][0][0]){
+                pointID_original[0][0] = jElem;
+                Coord_original[0][0][0] = mintmp;
+              }
+            }
+            ////break;
           }
         }
-        if(inside) break;
+        ////if(inside) break;
       }
       if(!inside) startline[0] = false;
     }
