@@ -731,12 +731,12 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
-    /*for(iNode = 0; iNode < nNode; iNode++){
-      jNode = geometry->elem[jElem]->GetNode(iNode);
-      if(geometry->node[jNode]->GetDomain()){
+    for(iNode = 0; iNode < nNode; iNode++){
+      //jNode = geometry->elem[jElem]->GetNode(iNode);
+      //if(geometry->node[jNode]->GetDomain()){
         nPointID[iPhi]++;
-      }
-    }*/
+      //}
+    }
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
 
@@ -864,9 +864,9 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     su2double **Coord_elem = new su2double*[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      if(!geometry->node[jNode]->GetDomain()){
+      /*if(!geometry->node[jNode]->GetDomain()){
         return false;
-      }
+      }*/
 
       Coord_elem[iNode] = new su2double[nDim];
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
