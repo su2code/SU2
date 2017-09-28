@@ -12012,10 +12012,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //z_min = 0.44939214;
               
               //6.5% scale
-							y_max = 0.0634202199518;
-							y_min = -0.0634202199518;
-							z_max = 0.2344128;
-							z_min = 0.23363302;
+							y_max = 0.06342022;
+							y_min = -0.0634202;
+							z_max = 0.234497;
+							z_min = 0.23371722;
 							
 							z = ScaleCoordinate(z_max, z_min, Coord[2]);
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, z);
@@ -12029,8 +12029,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //z_min = 0.00000000;
               
               //6.5% scale
-							y_max = 0.0634202199518;
-							y_min = -0.0634202199518;
+							y_max = 0.06342022;
+							y_min = -0.06342022;
 							z_max = 0.00077978;
 							z_min = 0.0;
 							
@@ -12048,7 +12048,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //6.5% scale
               y_max = 0.0842;
 							y_min = 0.08342022;
-							z_max = 0.213633019741;
+							z_max = 0.21371559;
 							z_min = 0.02077978;
 							
 							y = ScaleCoordinate(y_max, y_min, Coord[1]);
@@ -12065,7 +12065,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //6.5% scale
               y_max = -0.08342022;
 							y_min = -0.0842;
-							z_max = 0.213633019741;
+							z_max = 0.21371559;
 							z_min = 0.02077978;
 							
 							y = ScaleCoordinate(y_max, y_min, Coord[1]);
