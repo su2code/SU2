@@ -727,7 +727,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
     for(iNode = 0; iNode < nNode; iNode++){
-      jNode = geoemtry->elem[jElem]->GetNode(iNode);
+      jNode = geometry->elem[jElem]->GetNode(iNode);
       if(geometry->node[jNode]->GetDomain()){
         nPointID[iPhi]++;
       }
