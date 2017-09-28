@@ -864,6 +864,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     su2double **Coord_elem = new su2double*[nNode];
     inDomain = new bool[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
+      inDomain[iNode] = true;
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
         inDomain[iNode] = false;
