@@ -9465,10 +9465,15 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
+  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
+  unsigned short iMarker, iDim;
+  su2double dist;
+  int rankID;
+
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
 
-  unsigned long nVertex_SolidWall = 0;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+  nVertex_SolidWall = 0;
+  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += GetnVertex(iMarker);
@@ -9484,14 +9489,14 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   /*--- Retrieve and store the coordinates of the no-slip boundary nodes
    and their local point IDs. ---*/
 
-  unsigned long ii = 0, jj = 0;
-  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+  ii = 0; jj = 0;
+  for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-      for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
-        unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
+      for (iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
-        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        for (iDim=0; iDim<nDim; ++iDim)
           Coord_bound[ii++] = node[iPoint]->GetCoord(iDim);
       }
     }
@@ -9505,12 +9510,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall
    for each interior mesh node. ---*/
 
-  if( WallADT.IsEmpty() ) {
+  if ( WallADT.IsEmpty() ) {
   
     /*--- No solid wall boundary nodes in the entire mesh.
      Set the wall distance to zero for all nodes. ---*/
     
-    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
+    for (iPoint=0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
   else {
@@ -9518,11 +9523,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
     
-    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
-      
-      su2double dist;
-      unsigned long pointID;
-      int rankID;
+    for (iPoint=0; iPoint<GetnPoint(); ++iPoint) {
       
       WallADT.DetermineNearestNode(node[iPoint]->GetCoord(), dist,
                                    pointID, rankID);
