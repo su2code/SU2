@@ -695,7 +695,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short iPhi){
   bool inside, end = false;
   unsigned short iElem, nElem;
-  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetGlobal_nElem();
+  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
   su2double x_i, x_m1;
 
   unsigned long *pointID_tmp;
