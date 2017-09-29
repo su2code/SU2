@@ -595,6 +595,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                       Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
                     }
                   }
+                  startline[0] = true;
                   //break;
                 }
               }
@@ -946,7 +947,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-      //if(inDomain[iEdge] && inDomain[iEdge_p1]){
+      if(inDomain[iEdge] && inDomain[iEdge_p1]){
         intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
         if(intersect == 1){
           if(count == 0){
@@ -969,7 +970,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
           inside = true;
           break;
         }
-      //}
+      }
     }
 
     if(count == 1){
