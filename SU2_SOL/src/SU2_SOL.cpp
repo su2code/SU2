@@ -201,10 +201,10 @@ geometry_container[ZONE_0]->SetCoord_CG();
 
 /*--- Create the dual control volume structures ---*/
 
-//if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-//geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-//geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
+geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
