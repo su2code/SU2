@@ -66,7 +66,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous = config->GetViscous();
@@ -117,7 +116,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-  if ((nMGSmooth > 0) || low_fidelity) {
+  if (nMGSmooth > 0) {
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
@@ -231,7 +230,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool viscous = config->GetViscous();
@@ -280,7 +278,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
     nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-  if ((nMGSmooth > 0) || low_fidelity) {
+  if (nMGSmooth > 0) {
     Residual_Sum = new su2double [nVar];
     Residual_Old = new su2double [nVar];
   }
@@ -518,7 +516,7 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
 
 CNSVariable::~CNSVariable(void) { }
 
-bool CNSVariable::SetVorticity(bool val_limiter) {
+bool CNSVariable::SetVorticity(void) {
   
   Vorticity[0] = 0.0; Vorticity[1] = 0.0;
   
@@ -533,7 +531,7 @@ bool CNSVariable::SetVorticity(bool val_limiter) {
   
 }
 
-bool CNSVariable::SetStrainMag(bool val_limiter) {
+bool CNSVariable::SetStrainMag(void) {
   
   su2double Div;
   unsigned short iDim;

@@ -67,6 +67,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
@@ -102,6 +103,7 @@ libSU2Core_sources = \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
   ../src/output_structure.cpp \
+  ../src/output_physics.cpp \
   ../src/output_tecplot.cpp \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
