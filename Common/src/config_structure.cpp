@@ -303,7 +303,9 @@ void CConfig::SetPointersNull(void) {
   Marker_Analyze              = NULL;   Marker_WallFunctions     = NULL;
   Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
 
-  Kind_WallFunctions = NULL;
+  Kind_WallFunctions       = NULL;
+  IntInfo_WallFunctions    = NULL;
+  DoubleInfo_WallFunctions = NULL;
   
   /*--- Marker Pointers ---*/
 
@@ -804,7 +806,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief MARKER_WALL_FUNCTIONS\n DESCRIPTION: Viscous wall markers for which wall functions must be applied.
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
-  addWallFunctionOption("MARKER_WALL_FUNCTIONS", nMarker_WallFunctions, Marker_WallFunctions, Kind_WallFunctions);
+  addWallFunctionOption("MARKER_WALL_FUNCTIONS", nMarker_WallFunctions, Marker_WallFunctions,
+                        Kind_WallFunctions, IntInfo_WallFunctions, DoubleInfo_WallFunctions);
 
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
@@ -5672,6 +5675,22 @@ CConfig::~CConfig(void) {
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
+  if (IntInfo_WallFunctions != NULL) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
+      if (IntInfo_WallFunctions[iMarker] != NULL)
+        delete[] IntInfo_WallFunctions[iMarker];
+    }
+    delete[] IntInfo_WallFunctions;
+  }
+
+  if (DoubleInfo_WallFunctions != NULL) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
+      if (DoubleInfo_WallFunctions[iMarker] != NULL) 
+        delete[] DoubleInfo_WallFunctions[iMarker];
+    }
+    delete[] DoubleInfo_WallFunctions;
+  }
+
   if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
   if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
 
@@ -6724,6 +6743,32 @@ unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {
   }
 
   return WallFunction;
+}
+
+unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
+  unsigned short *intInfo = NULL;
+
+  for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
+    if(Marker_WallFunctions[iMarker] == val_marker) {
+      intInfo = IntInfo_WallFunctions[iMarker];
+      break;
+    }
+  }
+
+  return intInfo;
+}
+
+su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
+  su2double *doubleInfo = NULL;
+
+  for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
+    if(Marker_WallFunctions[iMarker] == val_marker) {
+      doubleInfo = DoubleInfo_WallFunctions[iMarker];
+      break;
+    } 
+  } 
+
+  return doubleInfo;
 }
 
 su2double CConfig::GetEngineInflow_Target(string val_marker) {
