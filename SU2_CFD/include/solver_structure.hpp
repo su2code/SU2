@@ -3575,6 +3575,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
 };
 
@@ -8537,6 +8545,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
   
 };
 

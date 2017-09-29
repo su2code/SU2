@@ -579,9 +579,9 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
     
-    inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
-  
+    inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
     Roe_Dissipation = 0.0;
+    Vortex_Tilting  = 0.0;
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
@@ -593,7 +593,9 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
     Prandtl_Lam     = config->GetPrandtl_Lam();
     Prandtl_Turb    = config->GetPrandtl_Turb();
     
+    inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
     Roe_Dissipation = 0.0;
+    Vortex_Tilting  = 0.0;
 }
 
 CNSVariable::~CNSVariable(void) { }
@@ -684,9 +686,6 @@ void CNSVariable::SetRoe_Dissipation_NTS(){
   
   AD::SetPreaccOut(Roe_Dissipation);
   AD::EndPreacc();
-  
-//  Aaux = ch2 * max(((Const_DES*Delta)/(Lturb*Gaux)) - 0.5, 0.0);
-//  Roe_Dissipation = phi_max * tanh(pow(Aaux,ch1));
 
 }
 
@@ -816,5 +815,55 @@ void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
     Setdktdrho_T( FluidModel->Getdktdrho_T() );
     SetdktdT_rho( FluidModel->GetdktdT_rho() );
 
+}
+
+void CNSVariable::SetVortex_Tilting(){
+  
+  su2double Strain[3][3], ratio_Omega[3], Omega, StrainDotVort[3], numVecVort[3];
+  su2double numerator, trace0, trace1, denominator;
+  unsigned short iDim;
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Gradient_Primitive, nVar, nDim);
+  AD::SetPreaccIn(Vorticity, 3);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(Primitive[nDim+5]);  
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+6]);
+  
+  Strain[0][0] = Gradient_Primitive[1][0];
+  Strain[1][0] = 0.5*(Gradient_Primitive[2][0] + Gradient_Primitive[1][1]);
+  Strain[0][1] = 0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]);
+  Strain[1][1] = Gradient_Primitive[2][1];
+  if (nDim == 3){
+    Strain[0][2] = 0.5*(Gradient_Primitive[3][0] + Gradient_Primitive[1][2]);
+    Strain[1][2] = 0.5*(Gradient_Primitive[3][1] + Gradient_Primitive[2][2]);
+    Strain[2][0] = 0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]);
+    Strain[2][1] = 0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]);
+    Strain[2][2] = Gradient_Primitive[3][2];
+  }
+  
+  Omega = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);  
+  for (iDim = 0; iDim < 3; iDim++){
+    ratio_Omega[iDim] = Vorticity[iDim]/Omega;
+  }
+  
+  StrainDotVort[0] = Strain[0][0]*Vorticity[0]+Strain[0][1]*Vorticity[1]+Strain[0][2]*Vorticity[2];
+  StrainDotVort[1] = Strain[1][0]*Vorticity[0]+Strain[1][1]*Vorticity[1]+Strain[1][2]*Vorticity[2];
+  StrainDotVort[2] = Strain[2][0]*Vorticity[0]+Strain[2][1]*Vorticity[1]+Strain[2][2]*Vorticity[2];
+  
+  numVecVort[0] = StrainDotVort[1]*Vorticity[2] - StrainDotVort[2]*Vorticity[1];
+  numVecVort[1] = StrainDotVort[2]*Vorticity[0] - StrainDotVort[0]*Vorticity[2];
+  numVecVort[2] = StrainDotVort[0]*Vorticity[1] - StrainDotVort[1]*Vorticity[0];
+  
+  numerator = sqrt(6.0) * sqrt(numVecVort[0]*numVecVort[0] + numVecVort[1]*numVecVort[1] + numVecVort[2]*numVecVort[2]);
+  trace0 = 3.0*(pow(Strain[0][0],2.0) + pow(Strain[1][1],2.0) + pow(Strain[2][2],2.0));
+  trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
+  denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
+  
+  Vortex_Tilting = (numerator/denominator) * max(1.0,0.2*GetLaminarViscosity()/GetEddyViscosity()); 
+  
+  AD::SetPreaccOut(Vortex_Tilting);
+  AD::EndPreacc();
 }
 

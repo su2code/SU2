@@ -2108,6 +2108,17 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+  
+  /*!
+   * \brief Virtual member. 
+   */
+  virtual void SetVortex_Tilting();
+  
+  /*!
+   * \brief Virtual member. 
+   * \return Value of the vortex tilting.
+   */
+  virtual su2double GetVortex_Tilting();
 };
 
 /*!
@@ -3462,9 +3473,9 @@ private:
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
-  su2double inv_TimeScale;
-  
-  su2double Roe_Dissipation;
+  su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
+  su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
+  su2double Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
   
 public:
   
@@ -3646,6 +3657,17 @@ public:
  */
   void SetRoe_Dissipation(su2double val_dissipation);
   
+  /*!
+   * \brief Set the vortex tilting measure for computation of the DDES length scale
+   */
+  void SetVortex_Tilting();
+  
+  /*!
+   * \brief Get the value of the vortex tilting measure for DES length scale computation. 
+   * \return Value of the vortex tilting.
+   */
+  su2double GetVortex_Tilting();
+  
 };
 
 /*!
@@ -3805,7 +3827,8 @@ class CTurbSAVariable : public CTurbVariable {
 
 private:
   su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
-
+  su2double DES_LengthScale;
+  
 public:
   /*!
    * \brief Constructor of the class.
@@ -3852,6 +3875,17 @@ public:
    * \param[in] val_gamma - New value of the intermittency.
    */
   void SetGammaBC(su2double val_gamma);
+  
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);  
   
 };
 
