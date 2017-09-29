@@ -449,6 +449,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       r2min[j] = 1.0E6;
       xmin[j] = 1.0E6;
     }
+    nPanel[0] = 0;
     iPointmax[0] = 0;
     ixmin[0] = 0;
     startline[0] = false;
@@ -477,6 +478,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
         r2min[nNearest*i+j] = 1.0E6;
         xmin[nNearest*i+j] = 1.0E6;
       }
+      nPanel[i] = 0;
       iPointmax[i] = 0;
       ixmin[i] = 0;
       startline[i] = false;
