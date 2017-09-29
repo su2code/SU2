@@ -122,7 +122,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   nPointID_loc = 0;
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     nPointID[iPhi] = 0;
-    if(startline[iPhi]){      
+    if(nPanel[iPhi]){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
   }
