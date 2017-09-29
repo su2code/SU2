@@ -595,6 +595,8 @@ inline void CVariable::AddSolution_Avg(unsigned short val_var, su2double val_sol
 
 inline void CVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) { }
 
+inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline su2double CEulerVariable::GetSolution_Avg(unsigned short val_var) { return Solution_Avg[val_var]; }
@@ -823,6 +825,8 @@ inline void CNSVariable::SetdktdT_rho(su2double dktdT_rho) {
 inline void CNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+6] = eddy_visc; }
 
 inline void CNSVariable::SetWallTemperature(su2double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
+
+inline void CNSVariable::SetRoe_Dissipation(su2double val_dissipation) { Roe_Dissipation = val_dissipation; }
 
 inline su2double *CAdjEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 

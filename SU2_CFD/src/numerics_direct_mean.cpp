@@ -2743,7 +2743,6 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  Dissipation_ij = 1.0;
   roe_low_dissipation = val_low_dissipation;
   
   Diff_U = new su2double [nVar];

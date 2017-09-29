@@ -4933,6 +4933,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       node[jPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
     }
     
+    /*--- Set the final value of the Roe dissipation coefficient ---*/
+    
+    if (kind_dissipation != NO_ROELOWDISS){
+      node[iPoint]->SetRoe_Dissipation(numerics->GetDissipation());
+      node[jPoint]->SetRoe_Dissipation(numerics->GetDissipation());      
+    }
+    
   }
 
   /*--- Warning message about non-physical reconstructions ---*/

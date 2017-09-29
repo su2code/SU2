@@ -719,6 +719,11 @@ public:
   void SetDissipation(su2double diss_i, su2double diss_j);
   
   /*!
+  * \brief Get the final Roe dissipation factor.
+  */
+  su2double GetDissipation();
+  
+  /*!
    * \brief Get the inviscid fluxes.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
