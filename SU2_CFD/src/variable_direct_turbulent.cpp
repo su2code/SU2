@@ -97,6 +97,8 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
     Solution_time_n[0]  = val_nu_tilde;
     Solution_time_n1[0] = val_nu_tilde;
   }
+  
+  DES_LengthScale = 0.0;
 
 }
 

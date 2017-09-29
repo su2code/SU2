@@ -15812,7 +15812,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev   = 0.0;   Total_CMy_Prev      = 0.0;   Total_CMz_Prev      = 0.0;
   Total_AeroCD     = 0.0;   Total_SolidCD     = 0.0;   Total_IDR   = 0.0; Total_IDC           = 0.0;
-
+  Total_Custom_ObjFunc = 0.0;
+  
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf     = config->GetDensity_FreeStreamND();
