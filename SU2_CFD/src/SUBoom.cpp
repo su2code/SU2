@@ -982,6 +982,8 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
           p0[1] = pp0[1];
           p1[0] = pp1[0];
           p1[1] = pp1[1];
+          inside = true;
+          break;
         }
         count += intersect;
         if(count > 1){
