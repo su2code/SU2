@@ -597,6 +597,10 @@ inline void CVariable::AddSolution_RMS(unsigned short val_var, su2double val_sol
 
 inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
 
+inline void CVariable::SetVortex_Tilting() { }
+
+inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline su2double CEulerVariable::GetSolution_Avg(unsigned short val_var) { return Solution_Avg[val_var]; }
@@ -827,6 +831,8 @@ inline void CNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+
 inline void CNSVariable::SetWallTemperature(su2double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
 
 inline void CNSVariable::SetRoe_Dissipation(su2double val_dissipation) { Roe_Dissipation = val_dissipation; }
+
+inline su2double CNSVariable::GetVortex_Tilting() { return Vortex_Tilting; }
 
 inline su2double *CAdjEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -1146,6 +1152,10 @@ inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_v
 inline su2double CTurbSAVariable::GetGammaBC(void) { return gamma_BC; }
 
 inline void CTurbSAVariable::SetGammaBC(su2double val_gamma) { gamma_BC = val_gamma; }
+
+inline su2double CTurbSAVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
+
+inline void CTurbSAVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
 
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 
