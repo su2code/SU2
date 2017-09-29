@@ -709,10 +709,11 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
     jElem_m1 = pointID_original[iPhi][nPanel[iPhi]-1];
     //x_m1 = geometry->elem[jElem_m1]->GetCG(0);
     nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
-    inside = false;
+    ////inside = false;
     inside_i = false;
 
     for(iElem = 0; iElem < nElem; iElem++){
+      inside = false;
       jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
       /*--- Don't extract boundary elements ---*/
       if(jElem < nElem_tot){
@@ -757,8 +758,8 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
                 Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
               }
               else{
-                Coord_original[iPhi][0][1] = -r0*sin(ray_phi[iPhi]);
-                Coord_original[iPhi][0][2] = -r0*cos(ray_phi[iPhi]);
+                Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0*sin(ray_phi[iPhi]);
+                Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
               }
 
               inside_i = true;
@@ -775,7 +776,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
         ////}
       }
     }
-    if(!inside){
+    if(!inside_i){
       end = true;
     }
   }
