@@ -727,38 +727,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     switch (config->GetKind_Turb_Model()) {
         
-      case SA:
+      case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
         }
         
         break;
-
-      case SA_E:
-            
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-                node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-        }
-            
-        break;
-
-      case SA_COMP:
-            
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-                node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-        }
-            
-        break;
-
-      case SA_E_COMP:
-            
-            for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-                node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
-            }
-            
-            break;
-      
+        
       case SA_NEG:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2967,14 +2943,15 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
       EddyViscosity, KinematicViscosity_Turb, Wall_Distance, DES_LengthScale;
   
   su2double MaxDelta, Delta_Aux, distDES, uijuij, k2, r_d, f_d,
-      Delta_DDES, Delta_Aux_DDES, Omega, ln_max, ln[3],
+      Delta_DDES, Delta_Aux_DDES, Omega, ln_max, ln[3] = {0.0, 0.0, 0.0},
       aux_ln, f_kh, Delta_min, Delta_w, alpha2, f_b, f_d_tilde;
   
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5, cw_iddes = 0.15;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1, Ji, Ji_2, Ji_3, fv1, fv2, ft2, psi_2;
-  su2double *Coord_i, *Coord_j, **PrimVar_Grad, *Vorticity, Delta[3], ratio_Omega[3], VortexTilting_Measure;
+  su2double *Coord_i, *Coord_j, **PrimVar_Grad, *Vorticity, Delta[3] = {0.0,0.0,0.0},
+      ratio_Omega[3] = {0.0, 0.0, 0.0}, VortexTilting_Measure;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     
