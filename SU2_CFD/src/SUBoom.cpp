@@ -695,7 +695,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 }
 
 void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short iPhi){
-  bool inside, inside_i, end = false;
+  bool inside, inside_iPanel, addPanel, end = false;
   unsigned short iElem, nElem;
   unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
   su2double x_i, x_m1;
@@ -710,7 +710,8 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
     //x_m1 = geometry->elem[jElem_m1]->GetCG(0);
     nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
     ////inside = false;
-    inside_i = false;
+    inside_iPanel = false;
+    addPanel = true;
 
     for(iElem = 0; iElem < nElem; iElem++){
       inside = false;
@@ -722,7 +723,12 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
         ////if(x_i > x_m1){
           inside = InsideElem(geometry, r0, ray_phi[iPhi], jElem, p0, p1);
           if(inside){
-            if(!inside_i){ // If no point allocated for this panel
+            for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+              if(jElem == pointID_original[iPhi][iPanel]){
+                addPanel = false;
+              }
+            }
+            if(addPanel){ // If no point allocated for this panel
               nPanel[iPhi]++;
 
               pointID_tmp = new unsigned long[nPanel[iPhi]-1];
@@ -762,13 +768,8 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
                 Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
               }
 
-              inside_i = true;
-            }
-            else{ // Check if this point is ahead of old point
-              if((p0[0] + p1[0])/2.0 > Coord_original[iPhi][nPanel[iPhi]-1][0]){
-                pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
-                Coord_original[iPhi][nPanel[iPhi]-1][0] = (p0[0] + p1[0])/2.0;
-              }
+              inside_iPanel = true;
+              break;
             }
 
             ////break;
@@ -776,7 +777,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
         ////}
       }
     }
-    if(!inside_i){
+    if(!inside_iPanel){
       end = true;
     }
   }
