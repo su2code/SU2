@@ -33,7 +33,9 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
-
+#include <iomanip>
+#include <sys/types.h>
+#include <sys/stat.h>
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -584,21 +586,24 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
   
-  unsigned short iMarker, iNode, jNode, iDim;
+  unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
-  long MinDist_Point, MinDistAngle_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex;
-  su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
-  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MaxAngle = 30, *VarCoord = NULL, CosValue, Variable_Interp;
-  vector<su2double> Xcoord, Ycoord, Zcoord, Variable;
+  long MinDist_Point;
+  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, PointIndex, jVertex;
+  su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
+  *VarCoord = NULL, Variable_Interp;
+  passivedouble MinDist_Value, Dist_Value, Segment[3] = {0.0, 0.0, 0.0}, Tolerance = 1E-10;
+  vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
+  vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
   int rank = MASTER_NODE;
   su2double **Coord_Variation = NULL;
   
 #ifdef HAVE_MPI
-  unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+  unsigned long nLocalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
   int nProcessor, iProcessor;
+  
   su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -622,7 +627,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     
     Coord_Variation = new su2double *[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      Coord_Variation[iPoint] = new su2double [nDim];
+    Coord_Variation[iPoint] = new su2double [nDim];
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_GeoEval(iMarker) == YES) {
@@ -630,7 +635,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
           iPoint = vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < nDim; iDim++)
-            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+          Coord_Variation[iPoint][iDim] = VarCoord[iDim];
         }
       }
     }
@@ -639,9 +644,13 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+      
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+        PointIndex=0;
+        
         for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          
           for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
             jPoint = bound[iMarker][iElem]->GetNode(jNode);
             
@@ -669,20 +678,35 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
               
               if (nDim == 2) {
-                Xcoord.push_back(Segment_P0[0]);    Xcoord.push_back(Segment_P1[0]);
-                Ycoord.push_back(Segment_P0[2]);    Ycoord.push_back(Segment_P1[2]);
-                Zcoord.push_back(Segment_P0[1]);    Zcoord.push_back(Segment_P1[1]);
-                Variable.push_back(Variable_P0);    Variable.push_back(Variable_P1);
+                
+                Xcoord_Index0.push_back(Segment_P0[0]);    Xcoord_Index1.push_back(Segment_P1[0]);
+                Ycoord_Index0.push_back(Segment_P0[2]);    Ycoord_Index1.push_back(Segment_P1[2]);
+                Zcoord_Index0.push_back(Segment_P0[1]);    Zcoord_Index1.push_back(Segment_P1[1]);
+                Variable_Index0.push_back(Variable_P0);    Variable_Index1.push_back(Variable_P1);
+                PointIndex++;
+                
               }
               /*--- In 3D compute the intersection ---*/
               
               else if (nDim == 3) {
+                
                 intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+                
                 if (intersect == true) {
-                  Xcoord.push_back(Intersection[0]);
-                  Ycoord.push_back(Intersection[1]);
-                  Zcoord.push_back(Intersection[2]);
-                  Variable.push_back(Variable_Interp);
+                  
+                  if (PointIndex == 0) {
+                    Xcoord_Index0.push_back(Intersection[0]);
+                    Ycoord_Index0.push_back(Intersection[1]);
+                    Zcoord_Index0.push_back(Intersection[2]);
+                    Variable_Index0.push_back(Variable_Interp);
+                  }
+                  if (PointIndex == 1) {
+                    Xcoord_Index1.push_back(Intersection[0]);
+                    Ycoord_Index1.push_back(Intersection[1]);
+                    Zcoord_Index1.push_back(Intersection[2]);
+                    Variable_Index1.push_back(Variable_Interp);
+                  }
+                  PointIndex++;
                 }
               }
               
@@ -690,6 +714,9 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
             
           }
         }
+        
+        
+        
       }
     }
   }
@@ -697,58 +724,65 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   if (original_surface == false) {
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      delete [] Coord_Variation[iPoint];
+    delete [] Coord_Variation[iPoint];
     delete [] Coord_Variation;
     
   }
-  
   
 #ifdef HAVE_MPI
   
   /*--- Copy the coordinates of all the points in the plane to the master node ---*/
   
-  nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
+  nLocalVertex = 0, MaxLocalVertex = 0;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   Buffer_Send_nVertex = new unsigned long [1];
   Buffer_Receive_nVertex = new unsigned long [nProcessor];
   
-  nLocalVertex = Xcoord.size();
+  nLocalVertex = Xcoord_Index0.size();
   
   Buffer_Send_nVertex[0] = nLocalVertex;
   
-  SU2_MPI::Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
-  Buffer_Send_Coord = new su2double [MaxLocalVertex*4];
-  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*4];
-  nBuffer = MaxLocalVertex*4;
+  Buffer_Send_Coord = new su2double [MaxLocalVertex*8];
+  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*8];
+  nBuffer = MaxLocalVertex*8;
   
   for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*4 + 0] = Xcoord[iVertex];
-    Buffer_Send_Coord[iVertex*4 + 1] = Ycoord[iVertex];
-    Buffer_Send_Coord[iVertex*4 + 2] = Zcoord[iVertex];
-    Buffer_Send_Coord[iVertex*4 + 3] = Variable[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 0] = Xcoord_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 1] = Ycoord_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 2] = Zcoord_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 3] = Variable_Index0[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 4] = Xcoord_Index1[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 5] = Ycoord_Index1[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 6] = Zcoord_Index1[iVertex];
+    Buffer_Send_Coord[iVertex*8 + 7] = Variable_Index1[iVertex];
   }
   
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
   
   /*--- Clean the vectors before adding the new vertices only to the master node ---*/
   
-  Xcoord.clear();
-  Ycoord.clear();
-  Zcoord.clear();
-  Variable.clear();
+  Xcoord_Index0.clear();     Xcoord_Index1.clear();
+  Ycoord_Index0.clear();     Ycoord_Index1.clear();
+  Zcoord_Index0.clear();     Zcoord_Index1.clear();
+  Variable_Index0.clear();   Variable_Index1.clear();
   
   /*--- Copy the boundary to the master node vectors ---*/
+  
   if (rank == MASTER_NODE) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 0] );
-        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 1] );
-        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 2] );
-        Variable.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 3] );
+        Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 0] );
+        Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 1] );
+        Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 2] );
+        Variable_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 3] );
+        Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 4] );
+        Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 5] );
+        Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 6] );
+        Variable_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 7] );
       }
     }
   }
@@ -758,119 +792,402 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
 #endif
   
-  if ((rank == MASTER_NODE) && (Xcoord.size() != 0)) {
+  
+  
+  if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
     
-    /*--- Create a list with the duplicated points ---*/
+    /*--- Remove edges with zero length ---*/
     
-    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
-      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
-        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
-        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
-        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        if (Dist_Value < 1E-6) {
-          Duplicate.push_back (jVertex);
-        }
-      }
-    }
+    bool Remove;
     
-    sort(Duplicate.begin(), Duplicate.end());
-    it = unique(Duplicate.begin(), Duplicate.end());
-    Duplicate.resize(it - Duplicate.begin());
-    
-    /*--- Remove duplicated points (starting from the back) ---*/
-    
-    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
-      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
-      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
-      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
-      Variable.erase (Variable.begin() + Duplicate[iVertex-1]);
-    }
-    
-    if (Xcoord.size() != 1) {
+    do {
       
-      /*--- Find the trailing edge ---*/
+      Remove = false;
       
-      Trailing_Point = 0; Trailing_Coord = Xcoord[0];
-      for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-        if (Xcoord[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
-        }
-      }
-      
-      /*--- Add the trailing edge to the list, and remove from the original list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]); Variable_Airfoil.push_back(Variable[Trailing_Point]);
-      Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point); Variable.erase (Variable.begin() + Trailing_Point);
-      
-      /*--- Find the next point using the right hand side rule ---*/
-      MinDist_Value = 1E6; MinDist_Point = 0;
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
-        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
-        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
         
-        if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
+        Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[iVertex]);
+        Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[iVertex]);
+        Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[iVertex]);
+        
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        
+        if (Dist_Value <= Tolerance) {
+          
+          /*--- Remove edge with repeated points ---*/
+          
+          Xcoord_Index0.erase (Xcoord_Index0.begin() + iVertex);
+          Ycoord_Index0.erase (Ycoord_Index0.begin() + iVertex);
+          Zcoord_Index0.erase (Zcoord_Index0.begin() + iVertex);
+          Variable_Index0.erase (Variable_Index0.begin() + iVertex);
+          
+          Xcoord_Index1.erase (Xcoord_Index1.begin() + iVertex);
+          Ycoord_Index1.erase (Ycoord_Index1.begin() + iVertex);
+          Zcoord_Index1.erase (Zcoord_Index1.begin() + iVertex);
+          Variable_Index1.erase (Variable_Index1.begin() + iVertex);
+          
+          Remove = true; break;
+          
+        }
+        
+        if (Remove) break;
+        
       }
       
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);  Variable_Airfoil.push_back(Variable[MinDist_Point]);
-      Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);    Variable.erase (Variable.begin() + MinDist_Point);
+    } while (Remove == true);
+    
+    
+    /*--- Remove repeated edges computing distance ---*/
+    
+    do {
+      
+      Remove = false;
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
+        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+          
+          /*--- First check ---*/
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          
+          /*--- Compute the distance to each point ---*/
+          
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          
+          /*--- Check the second point ---*/
+          
+          if (Dist_Value <= Tolerance) {
+            
+            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+            
+            /*--- Compute the distance to each point ---*/
+            
+            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+            
+            if (Dist_Value <= Tolerance) {
+              
+              /*--- Remove repeated point ---*/
+              
+              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
+              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
+              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
+              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
+              
+              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
+              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
+              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
+              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
+              
+              Remove = true; break;
+              
+            }
+            
+          }
+          
+          /*--- Second check ---*/
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+          
+          /*--- Compute the distance to each point ---*/
+          
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          
+          /*--- Check the second point ---*/
+          
+          if (Dist_Value <= Tolerance) {
+            
+            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+            
+            /*--- Compute the distance to each point ---*/
+            
+            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+            
+            if (Dist_Value <= Tolerance) {
+              
+              /*--- Remove repeated point ---*/
+              
+              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
+              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
+              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
+              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
+              
+              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
+              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
+              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
+              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
+              
+              Remove = true; break;
+            }
+          }
+          if (Remove) break;
+        }
+        if (Remove) break;
+      }
+      
+    } while (Remove == true);
+    
+    if (Xcoord_Index0.size() != 1) {
+      
+      if (config->GetGeo_Description() == FUSELAGE) {
+        
+        /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
+        
+        su2double Angle = -0.5*PI_NUMBER;
+        
+        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+          
+          su2double XCoord = Xcoord_Index0[iVertex]*cos(Angle) - Ycoord_Index0[iVertex]*sin(Angle);
+          su2double YCoord = Ycoord_Index0[iVertex]*cos(Angle) + Xcoord_Index0[iVertex]*sin(Angle);
+          su2double ZCoord = Zcoord_Index0[iVertex];
+          
+          Xcoord_Index0[iVertex] = XCoord;
+          Ycoord_Index0[iVertex] = YCoord;
+          Zcoord_Index0[iVertex] = ZCoord;
+          
+          XCoord = Xcoord_Index1[iVertex]*cos(Angle) - Ycoord_Index1[iVertex]*sin(Angle);
+          YCoord = Ycoord_Index1[iVertex]*cos(Angle) + Xcoord_Index1[iVertex]*sin(Angle);
+          ZCoord = Zcoord_Index1[iVertex];
+          Xcoord_Index1[iVertex] = XCoord;
+          Ycoord_Index1[iVertex] = YCoord;
+          Zcoord_Index1[iVertex] = ZCoord;
+          
+        }
+        
+      }
+      
+      /*--- Identify the extreme of the curve and close it ---*/
+      
+      Conection_Index0.reserve(Xcoord_Index0.size()+1);
+      Conection_Index1.reserve(Xcoord_Index0.size()+1);
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        Conection_Index0[iVertex] = 0;
+        Conection_Index1[iVertex] = 0;
+      }
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
+        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index0[jVertex]++; }
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index1[jVertex]++; }
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index0[jVertex]++; }
+          
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index1[jVertex]++; }
+          
+        }
+      }
+      
+      /*--- Connect extremes of the curves ---*/
+      
+      vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
+      vector<bool> AddExtra;
+      unsigned long VertexDonor;
+      bool FoundVertex;
+      
+      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        if (Conection_Index0[iVertex] == 0) {
+          XcoordExtra.push_back(Xcoord_Index0[iVertex]);
+          YcoordExtra.push_back(Ycoord_Index0[iVertex]);
+          ZcoordExtra.push_back(Zcoord_Index0[iVertex]);
+          VariableExtra.push_back(Variable_Index0[iVertex]);
+          AddExtra.push_back(true);
+        }
+        if (Conection_Index1[iVertex] == 0) {
+          XcoordExtra.push_back(Xcoord_Index1[iVertex]);
+          YcoordExtra.push_back(Ycoord_Index1[iVertex]);
+          ZcoordExtra.push_back(Zcoord_Index1[iVertex]);
+          VariableExtra.push_back(Variable_Index1[iVertex]);
+          AddExtra.push_back(true);
+        }
+      }
+      
+      /*---Compute min distance from the points ---*/
+      
+      if (XcoordExtra.size() > 1) {
+        
+        for (iVertex = 0; iVertex < XcoordExtra.size()-1; iVertex++) {
+          
+          su2double MinDist = 1E6;
+          FoundVertex = false;
+          VertexDonor = 0;
+          
+          for (jVertex = iVertex+1; jVertex <XcoordExtra.size(); jVertex++) {
+            Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iVertex])-SU2_TYPE::GetValue(XcoordExtra[jVertex]), 2.0));
+            if ((Dist_Value < MinDist) && (AddExtra[iVertex]) && (AddExtra[jVertex])) {
+              VertexDonor = jVertex;
+              FoundVertex = true;
+            }
+          }
+          
+          if (FoundVertex) {
+            
+            /*--- Add first point of the new edge ---*/
+            
+            Xcoord_Index0.push_back (XcoordExtra[iVertex]);
+            Ycoord_Index0.push_back (YcoordExtra[iVertex]);
+            Zcoord_Index0.push_back (ZcoordExtra[iVertex]);
+            Variable_Index0.push_back (VariableExtra[iVertex]);
+            AddExtra[iVertex] = false;
+            
+            /*--- Add second (closest)  point of the new edge ---*/
+            
+            Xcoord_Index1.push_back (XcoordExtra[VertexDonor]);
+            Ycoord_Index1.push_back (YcoordExtra[VertexDonor]);
+            Zcoord_Index1.push_back (ZcoordExtra[VertexDonor]);
+            Variable_Index1.push_back (VariableExtra[VertexDonor]);
+            AddExtra[VertexDonor] = false;
+            
+          }
+          
+        }
+        
+      }
+      
+      else if (XcoordExtra.size() == 1) {
+        cout <<"There cutting system has failed, there is an incomplete curve (not used)." << endl;
+      }
+      
+      Trailing_Point = 0; Trailing_Coord = Xcoord_Index0[0];
+      for (iVertex = 1; iVertex < Xcoord_Index0.size(); iVertex++) {
+        if (Xcoord_Index0[iVertex] > Trailing_Coord) {
+          Trailing_Point = iVertex; Trailing_Coord = Xcoord_Index0[iVertex];
+        }
+      }
+      
+      /*--- Add the trailing edge to the list and the contect points to the trailing edge and remove from the original list ---*/
+      
+      Xcoord_Airfoil.push_back(Xcoord_Index0[Trailing_Point]);
+      Ycoord_Airfoil.push_back(Ycoord_Index0[Trailing_Point]);
+      Zcoord_Airfoil.push_back(Zcoord_Index0[Trailing_Point]);
+      Variable_Airfoil.push_back(Variable_Index0[Trailing_Point]);
+      
+      Xcoord_Airfoil.push_back(Xcoord_Index1[Trailing_Point]);
+      Ycoord_Airfoil.push_back(Ycoord_Index1[Trailing_Point]);
+      Zcoord_Airfoil.push_back(Zcoord_Index1[Trailing_Point]);
+      Variable_Airfoil.push_back(Variable_Index1[Trailing_Point]);
+      
+      Xcoord_Index0.erase (Xcoord_Index0.begin() + Trailing_Point);
+      Ycoord_Index0.erase (Ycoord_Index0.begin() + Trailing_Point);
+      Zcoord_Index0.erase (Zcoord_Index0.begin() + Trailing_Point);
+      Variable_Index0.erase (Variable_Index0.begin() + Trailing_Point);
+      
+      Xcoord_Index1.erase (Xcoord_Index1.begin() + Trailing_Point);
+      Ycoord_Index1.erase (Ycoord_Index1.begin() + Trailing_Point);
+      Zcoord_Index1.erase (Zcoord_Index1.begin() + Trailing_Point);
+      Variable_Index1.erase (Variable_Index1.begin() + Trailing_Point);
       
       /*--- Algorithm for the rest of the points ---*/
+      
       do {
         
         /*--- Last added point in the list ---*/
+        
         Airfoil_Point = Xcoord_Airfoil.size() - 1;
         
-        /*--- Compute the slope of the curve ---*/
-        Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
-        Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
-        Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
-        Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
-        Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
+        /*--- Find the closest point  ---*/
         
-        /*--- Find the closest point with the right slope ---*/
-        MinDist_Value = 1E6; MinDistAngle_Value = 180;
-        MinDist_Point = -1; MinDistAngle_Point = -1;
-        for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+        MinDist_Value = 1E6;
+        MinDist_Point = -1;
+        
+        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
           
-          Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
-          Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
-          Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
           
           /*--- Compute the distance to each point ---*/
+          
           Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= MinDist_Value) {
+            MinDist_Point = iVertex;
+            MinDist_Value = Dist_Value;
+            Index = 0;
+          }
           
-          /*--- Compute the angle of the point ---*/
-          Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+          /*--- Same with the second index  ---*/
           
-          /*--- Clip the value of the cosine, this is important due to the round errors ---*/
-          CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
-          if (CosValue >= 1.0) CosValue = 1.0;
-          if (CosValue <= -1.0) CosValue = -1.0;
+          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
+          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
+          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
           
-          Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
+          /*--- Compute the distance to each point ---*/
           
-          if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-          if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          if (Dist_Value <= MinDist_Value) {
+            MinDist_Point = iVertex;
+            MinDist_Value = Dist_Value;
+            Index = 1;
+          }
           
         }
         
-        if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
+        /*--- Add and remove the min distance to the list and the next point in the edge ---*/
         
-        /*--- Add and remove the min distance to the list ---*/
-        Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);    Variable_Airfoil.push_back(Variable[MinDist_Point]);
-        Xcoord.erase(Xcoord.begin() + MinDist_Point);     Ycoord.erase(Ycoord.begin() + MinDist_Point);     Zcoord.erase(Zcoord.begin() + MinDist_Point);       Variable.erase(Variable.begin() + MinDist_Point);
+        if (MinDist_Value < Tolerance) {
+          
+          if (Index == 0) {
+            
+            Xcoord_Airfoil.push_back(Xcoord_Index1[MinDist_Point]);
+            Ycoord_Airfoil.push_back(Ycoord_Index1[MinDist_Point]);
+            Zcoord_Airfoil.push_back(Zcoord_Index1[MinDist_Point]);
+            Variable_Airfoil.push_back(Variable_Index1[MinDist_Point]);
+          }
+          
+          if (Index == 1) {
+            
+            Xcoord_Airfoil.push_back(Xcoord_Index0[MinDist_Point]);
+            Ycoord_Airfoil.push_back(Ycoord_Index0[MinDist_Point]);
+            Zcoord_Airfoil.push_back(Zcoord_Index0[MinDist_Point]);
+            Variable_Airfoil.push_back(Variable_Index0[MinDist_Point]);
+          }
+          
+          Xcoord_Index0.erase(Xcoord_Index0.begin() + MinDist_Point);
+          Ycoord_Index0.erase(Ycoord_Index0.begin() + MinDist_Point);
+          Zcoord_Index0.erase(Zcoord_Index0.begin() + MinDist_Point);
+          Variable_Index0.erase(Variable_Index0.begin() + MinDist_Point);
+          
+          Xcoord_Index1.erase(Xcoord_Index1.begin() + MinDist_Point);
+          Ycoord_Index1.erase(Ycoord_Index1.begin() + MinDist_Point);
+          Zcoord_Index1.erase(Zcoord_Index1.begin() + MinDist_Point);
+          Variable_Index1.erase(Variable_Index1.begin() + MinDist_Point);
+          
+        }
+        else { break; }
         
-      } while (Xcoord.size() != 0);
+      } while (Xcoord_Index0.size() != 0);
       
       /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
       
-      Xcoord.clear(); Ycoord.clear(); Zcoord.clear(); Variable.clear();
+      Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();
+      Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();
       
     }
-    
     
   }
   
@@ -879,7 +1196,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
-
+  
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
@@ -888,26 +1205,29 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
 }
 
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
-
-    unsigned short iMesh;
-    geometry_container[MESH_0]->Set_MPI_Coord(config);
-
-    geometry_container[MESH_0]->SetCoord_CG();
-    geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-        /*--- Update the control volume structures ---*/
-
-        geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
-        geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
-        geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
-
-    }
-
-    if (config->GetKind_Solver() == DISC_ADJ_RANS)
-      geometry_container[MESH_0]->ComputeWall_Distance(config);
-
+  
+  unsigned short iMesh;
+  geometry_container[MESH_0]->Set_MPI_Coord(config);
+  if (config->GetGrid_Movement()){
+    geometry_container[MESH_0]->Set_MPI_GridVel(config);
+  }
+  
+  geometry_container[MESH_0]->SetCoord_CG();
+  geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
+  geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+  
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    /*--- Update the control volume structures ---*/
+    
+    geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
+    geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
+    
+  }
+  
+  if (config->GetKind_Solver() == DISC_ADJ_RANS)
+  geometry_container[MESH_0]->ComputeWall_Distance(config);
+  
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -1326,6 +1646,30 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+
+  /*--- Arrays for defining the tutbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
@@ -1338,6 +1682,30 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ending_node   = NULL;
   npoint_procs  = NULL;
   
+  /*--- Arrays for defining the tutbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
+
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
@@ -1408,9 +1776,13 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   if ((config->GetKind_SU2() == SU2_DEF) && (rank == MASTER_NODE)) {
 
+    string str = "boundary.dat";
+
+    str = config->GetMultizone_FileName(str, val_iZone);
+
     /*--- Open .su2 grid file ---*/
     
-    boundary_file.open("boundary.su2", ios::out);
+    boundary_file.open(str.c_str(), ios::out);
     
     /*--- Loop through and write the boundary info ---*/
     
@@ -1421,7 +1793,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       Grid_Marker = config->GetMarker_All_TagBound(iMarker);
       boundary_file << "MARKER_TAG= " << Grid_Marker << endl;
       boundary_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-      
+      boundary_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       if (nDim == 2) {
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
@@ -1467,6 +1839,30 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+
+  /*--- Arrays for defining the tutbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
 
   /*--- Local variables and counters for the following communications. ---*/
   
@@ -4273,6 +4669,65 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nPoint << " vertices including ghost points. " << endl;
   
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
+    }
+
+  /*--- initialize pointers for turbomachinery computations  ---*/
+  nSpanWiseSections       = new unsigned short[2];
+  SpanWiseValue           = new su2double*[2];
+  for (iMarker = 0; iMarker < 2; iMarker++){
+    nSpanWiseSections[iMarker]      = 0;
+    SpanWiseValue[iMarker]          = NULL;
+  }
+
+  nVertexSpan                       = new long* [nMarker];
+  nTotVertexSpan                    = new unsigned long* [nMarker];
+  turbovertex                       = new CTurboVertex***[nMarker];
+  AverageTurboNormal                = new su2double**[nMarker];
+  AverageNormal                     = new su2double**[nMarker];
+  AverageGridVel                    = new su2double**[nMarker];
+  AverageTangGridVel                = new su2double*[nMarker];
+  SpanArea                          = new su2double*[nMarker];
+  TurboRadius                       = new su2double*[nMarker];
+  MaxAngularCoord                   = new su2double*[nMarker];
+  MinAngularCoord                   = new su2double*[nMarker];
+  MinRelAngularCoord                = new su2double*[nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    nVertexSpan[iMarker]            = NULL;
+    nTotVertexSpan[iMarker]         = NULL;
+    turbovertex[iMarker]            = NULL;
+    AverageTurboNormal[iMarker]     = NULL;
+    AverageNormal[iMarker]          = NULL;
+    AverageGridVel[iMarker]         = NULL;
+    AverageTangGridVel[iMarker]     = NULL;
+    SpanArea[iMarker]               = NULL;
+    TurboRadius[iMarker]            = NULL;
+    MaxAngularCoord[iMarker]        = NULL;
+    MinAngularCoord[iMarker]        = NULL;
+    MinRelAngularCoord[iMarker]     = NULL;
+  }
+
+  /*--- initialize pointers for turbomachinery performance computation  ---*/
+  nTurboPerf            = config->GetnMarker_TurboPerformance();
+  TangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
+  SpanAreaIn 			= new su2double*[config->GetnMarker_TurboPerformance()];
+  TurboRadiusIn 		= new su2double*[config->GetnMarker_TurboPerformance()];
+  TangGridVelOut  		= new su2double*[config->GetnMarker_TurboPerformance()];
+  SpanAreaOut 			= new su2double*[config->GetnMarker_TurboPerformance()];
+  TurboRadiusOut 		= new su2double*[config->GetnMarker_TurboPerformance()];
+
+  for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
+    TangGridVelIn[iMarker]		= NULL;
+    SpanAreaIn[iMarker]			= NULL;
+    TurboRadiusIn[iMarker]		= NULL;
+    TangGridVelOut[iMarker]		= NULL;
+    SpanAreaOut[iMarker]		= NULL;
+    TurboRadiusOut[iMarker]		= NULL;
+  }
+
   /*--- Release all of the temporary memory ---*/
   
   delete [] nDim_s;
@@ -4771,8 +5226,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-      config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
-
+	  config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
     }
     
     /*--- Send-Receive boundaries definition ---*/
@@ -4790,7 +5246,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_CHT(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
-      config->SetMarker_All_Out_1D(iMarker, NO);
+      config->SetMarker_All_Turbomachinery(iMarker, NO);
+      config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
+      config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
@@ -4946,10 +5404,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           getline (mesh_file, text_line);
           text_line.erase (0,11); string::size_type position;
           for (iChar = 0; iChar < 20; iChar++) {
-            position = text_line.find( " ", 0 );
-            if (position != string::npos) text_line.erase (position,1); position = text_line.find( "\r", 0 );
-            if (position != string::npos) text_line.erase (position,1); position = text_line.find( "\n", 0 );
-            if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( " ", 0 );  if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
+            position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
           }
           Marker_Tag = text_line.c_str();
           
@@ -6715,7 +7172,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
-            config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+            config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+            config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+            config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
             
             if (duplicate) {
               Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag_Duplicate)] = Marker_Tag_Duplicate;
@@ -6732,7 +7191,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               config->SetMarker_All_CHT(iMarker+1, config->GetMarker_CfgFile_CHT(Marker_Tag_Duplicate));
               config->SetMarker_All_PerBound(iMarker+1, config->GetMarker_CfgFile_PerBound(Marker_Tag_Duplicate));
               config->SetMarker_All_SendRecv(iMarker+1, NONE);
-              config->SetMarker_All_Out_1D(iMarker+1, config->GetMarker_CfgFile_Out_1D(Marker_Tag_Duplicate));
 
               boundary_marker_count++;
               iMarker++;
@@ -6777,8 +7235,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         
       }
     }
-    
-    while (getline (mesh_file, text_line)) {
+
+    while (getline (mesh_file, text_line) && (found_transform == false)) {
       
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
       
@@ -8453,8 +8911,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-            config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
+            config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+            config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+            config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
             
           }
           iMarker++;
@@ -9073,7 +9533,9 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea;
+  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea, CoordX = 0.0, CoordY = 0.0, CoordZ = 0.0, MinCoordX = 1E10, MinCoordY = 1E10,
+  MinCoordZ = 1E10, MaxCoordX = -1E10, MaxCoordY = -1E10, MaxCoordZ = -1E10, TotalMinCoordX = 1E10, TotalMinCoordY = 1E10,
+  TotalMinCoordZ = 1E10, TotalMaxCoordX = -1E10, TotalMaxCoordY = -1E10, TotalMaxCoordZ = -1E10;
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
@@ -9103,6 +9565,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
         if (node[iPoint]->GetDomain()) {
           Normal = vertex[iMarker][iVertex]->GetNormal();
+          CoordX = node[iPoint]->GetCoord(0);
+          CoordY = node[iPoint]->GetCoord(1);
+          if (nDim == 3) CoordZ = node[iPoint]->GetCoord(2);
 
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
           else AxiFactor = 1.0;
@@ -9113,7 +9578,18 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
           if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+          
+          if (CoordX < MinCoordX) MinCoordX = CoordX;
+          if (CoordX > MaxCoordX) MaxCoordX = CoordX;
 
+          if (CoordY < MinCoordY) MinCoordY = CoordY;
+          if (CoordY > MaxCoordY) MaxCoordY = CoordY;
+
+          if (nDim == 3) {
+            if (CoordZ < MinCoordZ) MinCoordZ = CoordZ;
+            if (CoordZ > MaxCoordZ) MaxCoordZ = CoordZ;
+          }
+          
         }
       }
   }
@@ -9122,11 +9598,29 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&MinCoordX, &TotalMinCoordX, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordY, &TotalMinCoordY, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordZ, &TotalMinCoordZ, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&MaxCoordX, &TotalMaxCoordX, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordY, &TotalMaxCoordY, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
   SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   TotalPositiveXArea = PositiveXArea;
   TotalPositiveYArea = PositiveYArea;
   TotalPositiveZArea = PositiveZArea;
+  
+  TotalMinCoordX = MinCoordX;
+  TotalMinCoordY = MinCoordY;
+  TotalMinCoordZ = MinCoordZ;
+
+  TotalMaxCoordX = MaxCoordX;
+  TotalMaxCoordY = MaxCoordY;
+  TotalMaxCoordZ = MaxCoordZ;
+
   TotalWettedArea    = WettedArea;
 #endif
     
@@ -9150,7 +9644,31 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
     if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
-    if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+    
+    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
+    
+    cout << " y-direction = "<< TotalMaxCoordY;
+    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
+    
+    if (nDim == 3) {
+    	cout << ", z-direction = "<< TotalMaxCoordZ;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
+    }
+    else cout << "." << endl;
+    
+    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    
+    cout << " y-direction = "<< TotalMinCoordY;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    
+    if (nDim == 3) {
+    	cout << ", z-direction = "<< TotalMinCoordZ;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
+    }
+    else cout << "." << endl;
 
   }
   
@@ -9528,6 +10046,1651 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
       }
   }
 }
+
+void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
+  unsigned long iPoint, iVertex;
+  long jVertex;
+  int nSpan, nSpan_loc;
+  su2double *coord, *valueSpan, min, max, radius, delta;
+  int rank = MASTER_NODE;
+  short SendRecv;
+  bool isPeriodic;
+  unsigned short SpanWise_Kind = config->GetKind_SpanWise();
+  
+#ifdef HAVE_MPI
+  unsigned short iSize;
+  int size, nSpan_max;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
+  su2double MyMin, MyMax, *MyTotValueSpan =NULL,*MyValueSpan =NULL;
+#endif
+
+  nSpan = 0;
+  nSpan_loc = 0;
+  if (nDim == 2){
+    nSpanWiseSections[marker_flag-1] = 1;
+    //TODO (turbo) make it more genral
+    if(marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
+
+    /*---Initilize the vector of span-wise values that will be ordered ---*/
+    SpanWiseValue[marker_flag -1] = new su2double[1];
+    for (iSpan = 0; iSpan < 1; iSpan++){
+      SpanWiseValue[marker_flag -1][iSpan] = 0;
+    }
+  }
+  else{
+    if(SpanWise_Kind == AUTOMATIC){
+      /*--- loop to find inflow of outflow marker---*/
+      for (iMarker = 0; iMarker < nMarker; iMarker++){
+        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                iPoint = vertex[iMarker][iVertex]->GetNode();
+
+                /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
+                 * in order to caount the number of Span ---*/
+                for (jMarker = 0; jMarker < nMarker; jMarker++){
+                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
+                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                    jVertex = node[iPoint]->GetVertex(jMarker);
+                    if (jVertex != -1) {
+                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
+                      if (isPeriodic && (SendRecv < 0)){
+                        nSpan++;
+
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      /*--- storing the local number of span---*/
+      nSpan_loc = nSpan;
+      /*--- if parallel computing the global number of span---*/
+#ifdef HAVE_MPI
+      nSpan_max = nSpan;
+      My_nSpan						 = nSpan;											nSpan								 = 0;
+      My_MaxnSpan          = nSpan_max;                     nSpan_max            = 0;
+      SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&My_MaxnSpan, &nSpan_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+
+
+      /*--- initialize the vector that will contain the disordered values span-wise ---*/
+      nSpanWiseSections[marker_flag -1] = nSpan;
+      valueSpan = new su2double[nSpan];
+
+      for (iSpan = 0; iSpan < nSpan; iSpan ++ ){
+        valueSpan[iSpan] = -1001.0;
+      }
+
+
+      /*--- store the local span-wise value for each processor ---*/
+      nSpan_loc = 0;
+      for (iMarker = 0; iMarker < nMarker; iMarker++){
+        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                iPoint = vertex[iMarker][iVertex]->GetNode();
+                for (jMarker = 0; jMarker < nMarker; jMarker++){
+                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
+                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                    jVertex = node[iPoint]->GetVertex(jMarker);
+                    if (jVertex != -1) {
+                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
+                      if (isPeriodic && (SendRecv < 0)){
+                        coord = node[iPoint]->GetCoord();
+                        switch (config->GetKind_TurboMachinery(val_iZone)){
+                        case CENTRIFUGAL:
+                          valueSpan[nSpan_loc] = coord[2];
+                          break;
+                        case CENTRIPETAL:
+                          valueSpan[nSpan_loc] = coord[2];
+                          break;
+                        case AXIAL:
+                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                          break;
+                        case CENTRIPETAL_AXIAL:
+                          if (marker_flag == OUTFLOW){
+                            valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                          }
+                          else{
+                            valueSpan[nSpan_loc] = coord[2];
+                          }
+                          break;
+                        case AXIAL_CENTRIFUGAL:
+                          if (marker_flag == INFLOW){
+                            valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                          }
+                          else{
+                            valueSpan[nSpan_loc] = coord[2];
+                          }
+                          break;
+
+                        }
+                        nSpan_loc++;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      /*--- Gather the span-wise values on all the processor ---*/
+
+#ifdef HAVE_MPI
+      MyTotValueSpan    				= new su2double[nSpan_max*size];
+      MyValueSpan								= new su2double[nSpan_max];
+      My_nSpan_loc							= new int[size];
+      for(iSpan = 0; iSpan < nSpan_max; iSpan++){
+        MyValueSpan[iSpan] = -1001.0;
+        for (iSize = 0; iSize< size; iSize++){
+          MyTotValueSpan[iSize*nSpan_max + iSpan] = -1001.0;
+        }
+      }
+
+      for(iSpan = 0; iSpan <nSpan_loc; iSpan++){
+        MyValueSpan[iSpan] = valueSpan[iSpan];
+      }
+
+      for(iSpan = 0; iSpan <nSpan; iSpan++){
+        valueSpan[iSpan] = -1001.0;
+      }
+
+      SU2_MPI::Allgather(MyValueSpan, nSpan_max , MPI_DOUBLE, MyTotValueSpan, nSpan_max, MPI_DOUBLE, MPI_COMM_WORLD);
+      SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc, 1, MPI_INT, MPI_COMM_WORLD);
+
+      jSpan = 0;
+      for (iSize = 0; iSize< size; iSize++){
+        for(iSpan = 0; iSpan < My_nSpan_loc[iSize]; iSpan++){
+          valueSpan[jSpan] = MyTotValueSpan[iSize*nSpan_max + iSpan];
+          jSpan++;
+        }
+      }
+
+      delete [] MyTotValueSpan; delete [] MyValueSpan; delete [] My_nSpan_loc;
+
+#endif
+
+      // check if the value are gathered correctly
+      //
+      //  for (iSpan = 0; iSpan < nSpan; iSpan++){
+      //  	if(rank == MASTER_NODE){
+      //  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
+      //  	}
+      //  }
+
+
+      /*--- Find the minimum value among the span-wise values  ---*/
+      min = 10.0E+06;
+      for (iSpan = 0; iSpan < nSpan; iSpan++){
+        if(valueSpan[iSpan]< min) min = valueSpan[iSpan];
+      }
+
+      /*---Initilize the vector of span-wise values that will be ordered ---*/
+      SpanWiseValue[marker_flag -1] = new su2double[nSpan];
+      for (iSpan = 0; iSpan < nSpan; iSpan++){
+        SpanWiseValue[marker_flag -1][iSpan] = 0;
+      }
+
+      /*---Ordering the vector of span-wise values---*/
+      SpanWiseValue[marker_flag -1][0] = min;
+      for (iSpan = 1; iSpan < nSpan; iSpan++){
+        min = 10.0E+06;
+        for (jSpan = 0; jSpan < nSpan; jSpan++){
+          if((valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) < min && (valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) > EPS){
+            min    = valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1];
+            kSpan = jSpan;
+          }
+        }
+        SpanWiseValue[marker_flag -1][iSpan] = valueSpan[kSpan];
+      }
+
+      delete [] valueSpan;
+    }
+    /*--- Compute equispaced Span-wise sections using number of section specified by the User---*/
+    else{
+      /*--- Initialize number of span---*/
+      nSpanWiseSections[marker_flag-1] = config->Get_nSpanWiseSections_User();
+      SpanWiseValue[marker_flag -1] = new su2double[config->Get_nSpanWiseSections_User()];
+      for (iSpan = 0; iSpan < config->Get_nSpanWiseSections_User(); iSpan++){
+        SpanWiseValue[marker_flag -1][iSpan] = 0;
+      }
+      /*--- Compute maximum and minimum value span-wise---*/
+      min = 10.0E+06;
+      max = -10.0E+06;
+      for (iMarker = 0; iMarker < nMarker; iMarker++){
+        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+                iPoint = vertex[iMarker][iVertex]->GetNode();
+                for (jMarker = 0; jMarker < nMarker; jMarker++){
+                  if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
+                    SendRecv = config->GetMarker_All_SendRecv(jMarker);
+                    jVertex = node[iPoint]->GetVertex(jMarker);
+                    if (jVertex != -1) {
+                      isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
+                      if (isPeriodic && (SendRecv < 0)){
+                        coord = node[iPoint]->GetCoord();
+                        switch (config->GetKind_TurboMachinery(val_iZone)){
+                        case CENTRIFUGAL: case CENTRIPETAL:
+                          if (coord[2] < min) min = coord[2];
+                          if (coord[2] > max) max = coord[2];
+                          break;
+                        case AXIAL:
+                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                          if (radius < min) min = radius;
+                          if (radius > max) max = radius;
+                          break;
+                        case CENTRIPETAL_AXIAL:
+                          if (marker_flag == OUTFLOW){
+                            radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                            if (radius < min) min = radius;
+                            if (radius > max) max = radius;
+                          }
+                          else{
+                            if (coord[2] < min) min = coord[2];
+                            if (coord[2] > max) max = coord[2];
+                          }
+                          break;
+
+                        case AXIAL_CENTRIFUGAL:
+                          if (marker_flag == INFLOW){
+                            radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                            if (radius < min) min = radius;
+                            if (radius > max) max = radius;
+                          }
+                          else{
+                            if (coord[2] < min) min = coord[2];
+                            if (coord[2] > max) max = coord[2];
+                          }
+                          break;
+                        }
+
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      /*--- compute global minimum and maximum value on span-wise ---*/
+#ifdef HAVE_MPI
+      MyMin= min;			min = 0;
+      MyMax= max;			max = 0;
+      SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+      //  	cout <<"min  " <<  min << endl;
+      //  	cout <<"max  " << max << endl;
+      /*--- compute height value for each spanwise section---*/
+      delta = (max - min)/(nSpanWiseSections[marker_flag-1] -1);
+      for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+        SpanWiseValue[marker_flag - 1][iSpan]= min + delta*iSpan;
+      }
+    }
+
+
+    if(marker_flag == OUTFLOW){
+      if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
+        if(rank == MASTER_NODE){
+          cout << " At the moment only turbomachinery with the same amount of span-wise section can be simulated" << endl;
+          cout <<"nSpan inflow "<< nSpanWiseSections[INFLOW] << " nSpan outflow " << nSpanWiseSections[OUTFLOW]<<endl;
+        }
+        exit(EXIT_FAILURE);
+      }
+      else{
+        config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW -1]);
+      }
+    }
+
+
+
+  }
+
+}
+void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
+  unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
+  unsigned long nVert, nVertMax;
+  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
+  su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
+  int rank = MASTER_NODE;
+  bool **checkAssign;
+  min    =  10.0E+06;
+  minInt =  10.0E+06;
+  max    = -10.0E+06;
+  
+  su2double radius;
+  long iVertex, iSpanVertex, jSpanVertex, kSpanVertex = 0;
+  int *nTotVertex_gb, *nVertexSpanHalo;
+  su2double **x_loc, **y_loc, **z_loc, **angCoord_loc, **deltaAngCoord_loc, **angPitch, **deltaAngPitch, *minIntAngPitch,
+  *minAngPitch, *maxAngPitch;
+  int       **rank_loc;
+#ifdef HAVE_MPI
+  unsigned short iSize, kSize = 0, jSize;
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  su2double MyMin,MyIntMin, MyMax;
+  su2double *x_gb = NULL, *y_gb = NULL, *z_gb = NULL, *angCoord_gb = NULL, *deltaAngCoord_gb = NULL;
+  bool *checkAssign_gb =NULL;
+  unsigned long My_nVert;
+
+#endif
+  string multizone_filename;
+
+  x_loc              = new su2double*[nSpanWiseSections[marker_flag-1]];
+  y_loc              = new su2double*[nSpanWiseSections[marker_flag-1]];
+  z_loc              = new su2double*[nSpanWiseSections[marker_flag-1]];
+  angCoord_loc       = new su2double*[nSpanWiseSections[marker_flag-1]];
+  deltaAngCoord_loc  = new su2double*[nSpanWiseSections[marker_flag-1]];
+  angPitch           = new su2double*[nSpanWiseSections[marker_flag-1]];
+  deltaAngPitch      = new su2double*[nSpanWiseSections[marker_flag-1]];
+  rank_loc           = new int*[nSpanWiseSections[marker_flag-1]];
+  minAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
+  minIntAngPitch     = new su2double[nSpanWiseSections[marker_flag-1]];
+  maxAngPitch        = new su2double[nSpanWiseSections[marker_flag-1]];
+
+  nTotVertex_gb      = new int[nSpanWiseSections[marker_flag-1]];
+  nVertexSpanHalo    = new int[nSpanWiseSections[marker_flag-1]];
+  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+    nTotVertex_gb[iSpan]   = -1;
+    nVertexSpanHalo[iSpan] = 0;
+    minAngPitch[iSpan]     = 10.0E+06;
+    minIntAngPitch[iSpan]  = 10.0E+06;
+    maxAngPitch[iSpan]     = -10.0E+06;
+  }
+
+  /*--- Initialize auxiliary pointers ---*/
+  TurboNormal        = new su2double[3];
+  NormalArea         = new su2double[3];
+  ordered            = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  disordered         = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  oldVertex3D        = new unsigned long* [nSpanWiseSections[marker_flag-1]];
+  area               = new su2double* [nSpanWiseSections[marker_flag-1]];
+  unitnormal         = new su2double** [nSpanWiseSections[marker_flag-1]];
+  checkAssign        = new bool* [nSpanWiseSections[marker_flag-1]];
+
+  /*--- Initialize the new Vertex structure. The if statement ensures that these vectors are initialized
+   * only once even if the routine is called more than once.---*/
+
+  if (allocate){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+            nVertexSpan[iMarker]                 = new long[nSpanWiseSections[marker_flag-1]];
+            turbovertex[iMarker]                 = new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
+            nTotVertexSpan[iMarker]              = new unsigned long [nSpanWiseSections[marker_flag-1] +1];
+            MaxAngularCoord[iMarker]             = new su2double [nSpanWiseSections[marker_flag-1]];
+            MinAngularCoord[iMarker]             = new su2double [nSpanWiseSections[marker_flag-1]];
+            MinRelAngularCoord[iMarker]          = new su2double [nSpanWiseSections[marker_flag-1]];
+            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+              nVertexSpan[iMarker][iSpan]        = 0;
+              turbovertex[iMarker][iSpan]        = NULL;
+              MinAngularCoord[iMarker][iSpan]    = 10.0E+06;
+              MaxAngularCoord[iMarker][iSpan]    = -10.0E+06;
+              MinRelAngularCoord[iMarker][iSpan] = 10.0E+06;
+            }
+            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1] +1; iSpan++){
+              nTotVertexSpan[iMarker][iSpan]     = 0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //this works only for turbomachinery rotating around the Z-Axes.
+  // the reordering algorithm pitch-wise assumes that X-coordinate of each boundary vertex is positive so that reordering can be based on the Y-coordinate.
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+
+            /*--- compute the amount of vertexes for each span-wise section to initialize the CTurboVertex pointers and auxiliary pointers  ---*/
+            for (iVertex = 0; (unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (nDim == 3){
+                dist = 10E+06;
+                jSpan = -1;
+                coord = node[iPoint]->GetCoord();
+
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case CENTRIFUGAL: case CENTRIPETAL:
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
+                    }
+                  }
+                  break;
+                case AXIAL:
+                  radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
+                    }
+                  }
+                  break;
+                case CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }
+                  else{
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }
+                  break;
+
+                case AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }
+                  else{
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }
+                  break;
+                }
+              }
+
+              /*--- 2D problem do not need span-wise separation---*/
+              else{
+                jSpan = 0;
+              }
+
+              if(node[iPoint]->GetDomain()){
+                nVertexSpan[iMarker][jSpan]++;
+              }
+              nVertexSpanHalo[jSpan]++;
+            }
+
+            /*--- initialize the CTurboVertex pointers and auxiliary pointers  ---*/
+            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+              if (allocate){
+                turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
+                for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
+                  turbovertex[iMarker][iSpan][iVertex] = NULL;
+                }
+              }
+              ordered[iSpan]                           = new unsigned long [nVertexSpanHalo[iSpan]];
+              disordered[iSpan]                        = new unsigned long [nVertexSpanHalo[iSpan]];
+              oldVertex3D[iSpan]                       = new unsigned long [nVertexSpanHalo[iSpan]];
+              checkAssign[iSpan]                       = new bool [nVertexSpanHalo[iSpan]];
+              area[iSpan]                              = new su2double [nVertexSpanHalo[iSpan]];
+              unitnormal[iSpan]                        = new su2double* [nVertexSpanHalo[iSpan]];
+              for (iVertex = 0; iVertex < nVertexSpanHalo[iSpan]; iVertex++){
+                unitnormal[iSpan][iVertex]             = new su2double [nDim];
+              }
+              angPitch[iSpan]                          = new su2double [nVertexSpanHalo[iSpan]];
+              deltaAngPitch[iSpan]                     = new su2double [nVertexSpanHalo[iSpan]];
+              nVertexSpanHalo[iSpan]                   = 0;
+            }
+
+            /*--- store the vertexes in a ordered manner in span-wise directions but not yet ordered pitch-wise ---*/
+            for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if(nDim == 3){
+                dist  = 10E+06;
+                jSpan = -1;
+
+                coord = node[iPoint]->GetCoord();
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case CENTRIFUGAL: case CENTRIPETAL:
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
+                    }
+                  }
+                  break;
+                case AXIAL:
+                  radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                    if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                      dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                      jSpan=iSpan;
+                    }
+                  }
+                  break;
+                case CENTRIPETAL_AXIAL:
+                  if(marker_flag == OUTFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }else{
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }
+                  break;
+
+                case AXIAL_CENTRIFUGAL:
+                  if(marker_flag == INFLOW){
+                    radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }else{
+                    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+                      if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+                        dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+                        jSpan=iSpan;
+                      }
+                    }
+                  }
+                  break;
+                }
+              }
+              /*--- 2D problem do not need span-wise separation---*/
+              else{
+                jSpan = 0;
+              }
+              /*--- compute the face area associated with the vertex ---*/
+              vertex[iMarker][iVertex]->GetNormal(NormalArea);
+              for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] = -NormalArea[iDim];
+              Area = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Area += NormalArea[iDim]*NormalArea[iDim];
+              Area = sqrt(Area);
+              for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] /= Area;
+              /*--- store all the all the info into the auxiliary containers ---*/
+              disordered[jSpan][nVertexSpanHalo[jSpan]]  = iPoint;
+              oldVertex3D[jSpan][nVertexSpanHalo[jSpan]] = iVertex;
+              area[jSpan][nVertexSpanHalo[jSpan]]        = Area;
+              for (iDim = 0; iDim < nDim; iDim++){
+                unitnormal[jSpan][nVertexSpanHalo[jSpan]][iDim] = NormalArea[iDim];
+              }
+              checkAssign[jSpan][nVertexSpanHalo[jSpan]] = false;
+              nVertexSpanHalo[jSpan]++;
+            }
+
+            /*--- using the auxiliary container reordered the vertexes pitch-wise direction at each span ---*/
+            // the reordering algorithm can be based on the Y-coordinate.
+            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+
+              /*--- find the local minimum and maximum pitch-wise for each processor---*/
+              min    = 10E+06;
+              minInt = 10E+06;
+              max    = -10E+06;
+              for(iSpanVertex = 0; iSpanVertex < nVertexSpanHalo[iSpan]; iSpanVertex++){
+                iPoint = disordered[iSpan][iSpanVertex];
+                coord = node[iPoint]->GetCoord();
+                /*--- find nodes at minimum pitch among all nodes---*/
+                if (coord[1]<min){
+                  min = coord[1];
+                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                    MinAngularCoord[iMarker][iSpan] = coord[1];
+                  }
+                  else{
+                  MinAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
+                  }
+                  minAngPitch[iSpan]= MinAngularCoord[iMarker][iSpan];
+                  kSpanVertex =iSpanVertex;
+                }
+
+                /*--- find nodes at minimum pitch among the internal nodes---*/
+                if (coord[1]<minInt){
+                  if(node[iPoint]->GetDomain()){
+                    minInt = coord[1];
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                      minIntAngPitch[iSpan] = coord[1];
+                    }
+                    else{
+                      minIntAngPitch[iSpan] = atan(coord[1]/coord[0]);
+                    }
+                  }
+                }
+
+                /*--- find nodes at maximum pitch among the internal nodes---*/
+                if (coord[1]>max){
+                  if(node[iPoint]->GetDomain()){
+                    max =coord[1];
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                      MaxAngularCoord[iMarker][iSpan] = coord[1];
+                    }
+                    else{
+                      MaxAngularCoord[iMarker][iSpan] = atan(coord[1]/coord[0]);
+                    }
+                    maxAngPitch[iSpan]= MaxAngularCoord[iMarker][iSpan];
+                  }
+                }
+              }
+
+              iInternalVertex = 0;
+
+              /*--- reordering the vertex pitch-wise, store the ordered vertexes span-wise and pitch-wise---*/
+              for(iSpanVertex = 0; iSpanVertex<nVertexSpanHalo[iSpan]; iSpanVertex++){
+                dist = 10E+06;
+                ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
+                checkAssign[iSpan][kSpanVertex] = true;
+                coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
+                target = coord[1];
+                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                   angPitch[iSpan][iSpanVertex]=coord[1];
+                }
+                else{
+                  angPitch[iSpan][iSpanVertex]=atan(coord[1]/coord[0]);
+                }
+                if(iSpanVertex == 0){
+                  deltaAngPitch[iSpan][iSpanVertex]=0.0;
+                }
+                else{
+                  deltaAngPitch[iSpan][iSpanVertex]= angPitch[iSpan][iSpanVertex] - angPitch[iSpan][iSpanVertex - 1];
+                }
+                /*---create turbovertex structure only for the internal nodes---*/
+                if(node[ordered[iSpan][iSpanVertex]]->GetDomain()){
+                  if (allocate){
+                    turbovertex[iMarker][iSpan][iInternalVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
+                  }
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetArea(area[iSpan][kSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetNormal(unitnormal[iSpan][kSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetAngularCoord(angPitch[iSpan][iSpanVertex]);
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
+                  switch (config->GetKind_TurboMachinery(val_iZone)){
+                  case CENTRIFUGAL:
+                    Normal2 = 0.0;
+                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == INFLOW){
+                      TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }else{
+                      TurboNormal[0] = coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }
+                    break;
+                  case CENTRIPETAL:
+                    Normal2 = 0.0;
+                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == OUTFLOW){
+                      TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }else{
+                      TurboNormal[0] = coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }
+                    break;
+                  case AXIAL:
+                    Normal2 = 0.0;
+                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if(nDim == 3){
+                      if (marker_flag == INFLOW){
+                        TurboNormal[0] = coord[0]/sqrt(Normal2);
+                        TurboNormal[1] = coord[1]/sqrt(Normal2);
+                        TurboNormal[2] = 0.0;
+                      }else{
+                        TurboNormal[0] = coord[0]/sqrt(Normal2);
+                        TurboNormal[1] = coord[1]/sqrt(Normal2);
+                        TurboNormal[2] = 0.0;
+                      }
+                    }
+                    else{
+                      if (marker_flag == INFLOW){
+                        TurboNormal[0] = -1.0;
+                        TurboNormal[1] = 0.0;
+                        TurboNormal[2] = 0.0;
+                      }else{
+                        TurboNormal[0] = 1.0;
+                        TurboNormal[1] = 0.0;
+                        TurboNormal[2] = 0.0;
+                      }
+                    }
+
+                    break;
+                  case CENTRIPETAL_AXIAL:
+                    Normal2 = 0.0;
+                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == INFLOW){
+                      TurboNormal[0] = coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }else{
+                      TurboNormal[0] = coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }
+                    break;
+
+                  case AXIAL_CENTRIFUGAL:
+                    Normal2 = 0.0;
+                    for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                    if (marker_flag == INFLOW){
+                      TurboNormal[0] = coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }else{
+                      TurboNormal[0] = coord[0]/sqrt(Normal2);
+                      TurboNormal[1] = coord[1]/sqrt(Normal2);
+                      TurboNormal[2] = 0.0;
+                    }
+                    break;
+
+                  }
+                  turbovertex[iMarker][iSpan][iInternalVertex]->SetTurboNormal(TurboNormal);
+                  iInternalVertex++;
+                }
+
+
+                for(jSpanVertex = 0; jSpanVertex<nVertexSpanHalo[iSpan]; jSpanVertex++){
+                  coord = node[disordered[iSpan][jSpanVertex]]->GetCoord();
+                  if(dist >= (coord[1] - target) && !checkAssign[iSpan][jSpanVertex] && (coord[1] - target) >= 0.0){
+                    dist= coord[1] - target;
+                    kSpanVertex =jSpanVertex;
+                  }
+                }
+              }
+            }
+
+            for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+
+              delete [] ordered[iSpan];
+              delete [] disordered[iSpan];
+              delete [] oldVertex3D[iSpan];
+              delete [] checkAssign[iSpan];
+              delete [] area[iSpan];
+              delete [] angPitch[iSpan];
+              delete [] deltaAngPitch[iSpan];
+
+              for(iVertex=0; iVertex < nVertexSpanHalo[iSpan]; iVertex++){
+                delete [] unitnormal[iSpan][iVertex];
+              }
+              delete [] unitnormal[iSpan];
+            }
+          }
+        }
+      }
+    }
+
+  /*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
+  nVertMax = 0;
+
+  /*--- compute global max and min pitch per span ---*/
+  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+    nVert    = 0;
+
+#ifdef HAVE_MPI
+    MyMin     = minAngPitch[iSpan];      minAngPitch[iSpan]    = 10.0E+6;
+    MyIntMin  = minIntAngPitch[iSpan];   minIntAngPitch[iSpan] = 10.0E+6;
+    MyMax     = maxAngPitch[iSpan];      maxAngPitch[iSpan]    = -10.0E+6;
+
+    SU2_MPI::Allreduce(&MyMin, &minAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyIntMin, &minIntAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyMax, &maxAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+
+    /*--- compute the relative angular pitch with respect to the minimum value ---*/
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+            nVert = nVertexSpan[iMarker][iSpan];
+            MinAngularCoord[iMarker][iSpan]    = minAngPitch[iSpan];
+            MaxAngularCoord[iMarker][iSpan]    = maxAngPitch[iSpan];
+            MinRelAngularCoord[iMarker][iSpan] = minIntAngPitch[iSpan] - minAngPitch[iSpan];
+            for(iSpanVertex = 0; iSpanVertex< nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+             turbovertex[iMarker][iSpan][iSpanVertex]->SetRelAngularCoord(MinAngularCoord[iMarker][iSpan]);
+            }
+          }
+        }
+      }
+    }
+
+
+#ifdef HAVE_MPI
+    My_nVert = nVert;nVert = 0;
+    SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+    /*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
+    if(nVert > nVertMax){
+      SetnVertexSpanMax(marker_flag,nVert);
+    }
+    /*--- for all the processor should be known the amount of total turbovertex per span  ---*/
+    nTotVertex_gb[iSpan]= nVert;
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+            nTotVertexSpan[iMarker][iSpan]= nVert;
+            nTotVertexSpan[iMarker][nSpanWiseSections[marker_flag-1]]+= nVert;
+          }
+        }
+      }
+    }
+  }
+
+
+  /*--- Printing Tec file to check the global ordering of the turbovertex pitch-wise ---*/
+  /*--- Send all the info to the MASTERNODE ---*/
+
+  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+    x_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
+    y_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
+    z_loc[iSpan]             = new su2double[nTotVertex_gb[iSpan]];
+    angCoord_loc[iSpan]      = new su2double[nTotVertex_gb[iSpan]];
+    deltaAngCoord_loc[iSpan] = new su2double[nTotVertex_gb[iSpan]];
+    rank_loc[iSpan]          = new int[nTotVertex_gb[iSpan]];
+    for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
+      x_loc[iSpan][iSpanVertex]             = -1.0;
+      y_loc[iSpan][iSpanVertex]             = -1.0;
+      z_loc[iSpan][iSpanVertex]             = -1.0;
+      angCoord_loc[iSpan][iSpanVertex]      = -1.0;
+      deltaAngCoord_loc[iSpan][iSpanVertex] = -1.0;
+      rank_loc[iSpan][iSpanVertex]          = -1;
+    }
+  }
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+          for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+            for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+              iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+              coord  = node[iPoint]->GetCoord();
+              x_loc[iSpan][iSpanVertex]   = coord[0];
+              y_loc[iSpan][iSpanVertex]   = coord[1];
+              if (nDim == 3){
+                z_loc[iSpan][iSpanVertex] = coord[2];
+              }
+              else{
+                z_loc[iSpan][iSpanVertex] = 0.0;
+              }
+              angCoord_loc[iSpan][iSpanVertex]      = turbovertex[iMarker][iSpan][iSpanVertex]->GetRelAngularCoord();
+              deltaAngCoord_loc[iSpan][iSpanVertex] = turbovertex[iMarker][iSpan][iSpanVertex]->GetDeltaAngularCoord();
+            }
+          }
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+
+  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+    if (rank == MASTER_NODE){
+      x_gb                = new su2double[nTotVertex_gb[iSpan]*size];
+      y_gb                = new su2double[nTotVertex_gb[iSpan]*size];
+      z_gb                = new su2double[nTotVertex_gb[iSpan]*size];
+      angCoord_gb         = new su2double[nTotVertex_gb[iSpan]*size];
+      deltaAngCoord_gb    = new su2double[nTotVertex_gb[iSpan]*size];
+      checkAssign_gb      = new bool[nTotVertex_gb[iSpan]*size];
+
+     for(iSize= 0; iSize < size; iSize++){
+       for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+         checkAssign_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] = false;
+       }
+     }
+    }
+    SU2_MPI::Gather(y_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, y_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(x_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, x_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(z_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, z_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(angCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, angCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(deltaAngCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, deltaAngCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE){
+      for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
+        x_loc[iSpan][iSpanVertex]             = -1.0;
+        y_loc[iSpan][iSpanVertex]             = -1.0;
+        z_loc[iSpan][iSpanVertex]             = -1.0;
+        angCoord_loc[iSpan][iSpanVertex]      = -1.0;
+        deltaAngCoord_loc[iSpan][iSpanVertex] = -1.0;
+      }
+
+
+
+      min = 10.0E+06;
+      for(iSize= 0; iSize < size; iSize++){
+        if (angCoord_gb[iSize*nTotVertex_gb[iSpan]] < min && angCoord_gb[iSize*nTotVertex_gb[iSpan]] >= 0.0){
+          kSize = iSize;
+          min = angCoord_gb[iSize*nTotVertex_gb[iSpan]];
+        }
+      }
+
+      kSpanVertex = 0;
+      for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+        x_loc[iSpan][iSpanVertex]              = x_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
+        y_loc[iSpan][iSpanVertex]              = y_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
+        z_loc[iSpan][iSpanVertex]              = z_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
+        angCoord_loc[iSpan][iSpanVertex]       = angCoord_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
+        deltaAngCoord_loc[iSpan][iSpanVertex]  = deltaAngCoord_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex];
+        rank_loc[iSpan][iSpanVertex]           = kSize;
+        target = angCoord_loc[iSpan][iSpanVertex];
+        checkAssign_gb[kSize*nTotVertex_gb[iSpan] + kSpanVertex] = true;
+        min = 10.0E+06;
+        for(jSize= 0; jSize < size; jSize++){
+          for(jSpanVertex = 0; jSpanVertex < nTotVertex_gb[iSpan]; jSpanVertex++){
+            if (angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex] < min && (angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex] - target) >= 0.0 && !checkAssign_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex]){
+              kSize = jSize;
+              kSpanVertex = jSpanVertex;
+              min = angCoord_gb[jSize*nTotVertex_gb[iSpan] + jSpanVertex];
+            }
+          }
+        }
+      }
+
+
+      delete [] x_gb;	delete [] y_gb; delete [] z_gb;	 delete [] angCoord_gb; delete [] deltaAngCoord_gb; delete[] checkAssign_gb;
+
+    }
+  }
+
+#endif
+
+  if (rank == MASTER_NODE){
+    if (marker_flag == INFLOW && val_iZone ==0){
+      std::string sPath = "TURBOMACHINERY";
+      mode_t nMode = 0733; // UNIX style permissions
+      int nError = 0;
+#if defined(_WIN32)
+      nError = _mkdir(sPath.c_str()); // can be used on Windows
+#else
+      nError = mkdir(sPath.c_str(),nMode); // can be used on non-Windows
+#endif
+      if (nError != 0) {
+        cout << "TURBOMACHINERY folder creation failed." <<endl;
+      }
+    }
+    if (marker_flag == INFLOW){
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
+    }
+    else{
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
+    }
+    char buffer[50];
+
+    if (GetnZone() > 1){
+      unsigned short lastindex = multizone_filename.find_last_of(".");
+      multizone_filename = multizone_filename.substr(0, lastindex);
+      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+      multizone_filename.append(string(buffer));
+    }
+
+    // File to print the vector x_loc, y_loc, z_loc, globIdx_loc to check vertex ordering
+    ofstream myfile;
+    myfile.open (multizone_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::uppercase | ios::scientific);
+    myfile.precision(8);
+
+    myfile << "TITLE = \"Global index visualization file\"" << endl;
+    myfile << "VARIABLES =" << endl;
+    myfile.width(10); myfile << "\"iSpan\"";
+    myfile.width(20); myfile << "\"x_coord\"" ;
+    myfile.width(20); myfile << "\"y_coord\"" ;
+    myfile.width(20); myfile << "\"z_coord\"" ;
+    myfile.width(20); myfile << "\"radius\"" ;
+    myfile.width(20); myfile << "\"Relative Angular Coord \"" ;
+    myfile.width(20); myfile << "\"Delta Angular Coord \"" ;
+    myfile.width(20); myfile << "\"processor\"" <<endl;
+    for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+      for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+        radius = sqrt(x_loc[iSpan][iSpanVertex]*x_loc[iSpan][iSpanVertex] + y_loc[iSpan][iSpanVertex]*y_loc[iSpan][iSpanVertex]);
+        myfile.width(10); myfile << iSpan;
+        myfile.width(20); myfile << x_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << y_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << z_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << radius;
+        if (nDim ==2 && config->GetKind_TurboMachinery(val_iZone)){
+          myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex];
+          myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex];
+        }
+        else{
+          myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
+          myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex]*180.0/PI_NUMBER;
+        }
+        myfile.width(20); myfile << rank_loc[iSpan][iSpanVertex]<<endl;
+      }
+      myfile << endl;
+    }
+  }
+
+
+  for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+    delete [] x_loc[iSpan];
+    delete [] y_loc[iSpan];
+    delete [] z_loc[iSpan];
+    delete [] angCoord_loc[iSpan];
+    delete [] deltaAngCoord_loc[iSpan];
+    delete [] rank_loc[iSpan];
+
+  }
+
+
+  delete [] area;
+  delete [] ordered;
+  delete [] disordered;
+  delete [] oldVertex3D;
+  delete [] checkAssign;
+  delete [] TurboNormal;
+  delete [] unitnormal;
+  delete [] NormalArea;
+  delete [] x_loc;
+  delete [] y_loc;
+  delete [] z_loc;
+  delete [] angCoord_loc;
+  delete [] nTotVertex_gb;
+  delete [] nVertexSpanHalo;
+  delete [] angPitch;
+  delete [] deltaAngPitch;
+  delete [] deltaAngCoord_loc;
+  delete [] rank_loc;
+  delete [] minAngPitch;
+  delete [] maxAngPitch;
+
+}
+
+
+void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag) {
+  unsigned short iMarker, iMarkerTP, iSpan, iDim;
+  long iSpanVertex, iPoint;
+  su2double *coord, *TurboNormal, Normal2;
+
+  /*--- Initialize auxiliary pointers ---*/
+  TurboNormal      = new su2double[3];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+          for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+            for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+              iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+              coord  = node[iPoint]->GetCoord();
+              /*--- compute appropriate turbo normal ---*/
+              switch (config->GetKind_TurboMachinery(val_iZone)){
+              case CENTRIFUGAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              case CENTRIPETAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == OUTFLOW){
+                  TurboNormal[0] = -coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = -coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              case AXIAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if(nDim == 3){
+                  if (marker_flag == INFLOW){
+                    TurboNormal[0] = coord[0]/sqrt(Normal2);
+                    TurboNormal[1] = coord[1]/sqrt(Normal2);
+                    TurboNormal[2] = 0.0;
+                  }else{
+                    TurboNormal[0] = coord[0]/sqrt(Normal2);
+                    TurboNormal[1] = coord[1]/sqrt(Normal2);
+                    TurboNormal[2] = 0.0;
+                  }
+                }
+                else{
+                  if (marker_flag == INFLOW){
+                    TurboNormal[0] = -1.0;
+                    TurboNormal[1] = 0.0;
+                    TurboNormal[2] = 0.0;
+                  }else{
+                    TurboNormal[0] = 1.0;
+                    TurboNormal[1] = 0.0;
+                    TurboNormal[2] = 0.0;
+                  }
+                }
+
+                break;
+              case CENTRIPETAL_AXIAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+
+              case AXIAL_CENTRIFUGAL:
+                Normal2 = 0.0;
+                for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+                if (marker_flag == INFLOW){
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }else{
+                  TurboNormal[0] = coord[0]/sqrt(Normal2);
+                  TurboNormal[1] = coord[1]/sqrt(Normal2);
+                  TurboNormal[2] = 0.0;
+                }
+                break;
+              }
+
+              /*--- store the new turbo normal ---*/
+              turbovertex[iMarker][iSpan][iSpanVertex]->SetTurboNormal(TurboNormal);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  delete [] TurboNormal;
+}
+
+void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
+
+  unsigned short iMarker, iMarkerTP, iSpan, iDim;
+  unsigned long iPoint;
+  su2double *TurboNormal,*coord, *Normal, turboNormal2, Normal2, *gridVel, TotalArea, TotalRadius, radius;
+  su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
+  long iVertex;
+  /*-- Variables declaration and allocation ---*/
+  TotalTurboNormal = new su2double[nDim];
+  TotalNormal      = new su2double[nDim];
+  TurboNormal      = new su2double[nDim];
+  TotalGridVel     = new su2double[nDim];
+  Normal           = new su2double[nDim];
+
+  bool grid_movement        = config->GetGrid_Movement();
+#ifdef HAVE_MPI
+  int rank, size;
+  su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Intialization of the vector for the interested boundary ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+          if(allocate){
+            AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
+            AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
+            AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
+            AverageTangGridVel[iMarker]               = new su2double [nSpanWiseSections[marker_flag-1] + 1];
+            SpanArea[iMarker]                         = new su2double [nSpanWiseSections[marker_flag-1] + 1];
+            TurboRadius[iMarker]                      = new su2double [nSpanWiseSections[marker_flag-1] + 1];
+            for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++){
+              AverageTurboNormal[iMarker][iSpan]      = new su2double [nDim];
+              AverageNormal[iMarker][iSpan]           = new su2double [nDim];
+              AverageGridVel[iMarker][iSpan]          = new su2double [nDim];
+            }
+          }
+          for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++){
+            AverageTangGridVel[iMarker][iSpan]          = 0.0;
+            SpanArea[iMarker][iSpan]                    = 0.0;
+            TurboRadius[iMarker][iSpan]                 = 0.0;
+            for(iDim=0; iDim < nDim; iDim++){
+              AverageTurboNormal[iMarker][iSpan][iDim]  = 0.0;
+              AverageNormal[iMarker][iSpan][iDim]       = 0.0;
+              AverageGridVel[iMarker][iSpan][iDim]      = 0.0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
+  /*--- start computing the average quantities span wise --- */
+  for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+
+    /*--- Forces initialization for contenitors to zero ---*/
+    for (iDim=0; iDim<nDim; iDim++) {
+      TotalTurboNormal[iDim]	=0.0;
+      TotalNormal[iDim]         =0.0;
+      TotalGridVel[iDim]        =0.0;
+    }
+    TotalArea = 0.0;
+    TotalRadius = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+            for(iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
+              iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
+              turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
+              turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
+              coord  = node[iPoint]->GetCoord();
+
+              if (nDim == 3){
+                radius = sqrt(coord[0]*coord[0] + coord[1]*coord[1]);
+              }
+              else{
+                radius = 0.0;
+              }
+              Area = turbovertex[iMarker][iSpan][iVertex]->GetArea();
+              TotalArea   += Area;
+              TotalRadius += radius;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                TotalTurboNormal[iDim]  +=TurboNormal[iDim];
+                TotalNormal[iDim]       +=Normal[iDim];
+              }
+              if (grid_movement){
+                gridVel = node[iPoint]->GetGridVel();
+                for (iDim = 0; iDim < nDim; iDim++) TotalGridVel[iDim] +=gridVel[iDim];
+              }
+            }
+          }
+        }
+      }
+    }
+
+#ifdef HAVE_MPI
+
+    MyTotalArea            = TotalArea;                 TotalArea            = 0;
+    MyTotalRadius          = TotalRadius;               TotalRadius          = 0;
+    SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalRadius, &TotalRadius, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    MyTotalTurboNormal     = new su2double[nDim];
+    MyTotalNormal          = new su2double[nDim];
+    MyTotalGridVel         = new su2double[nDim];
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      MyTotalTurboNormal[iDim]	= TotalTurboNormal[iDim];
+      TotalTurboNormal[iDim]    = 0.0;
+      MyTotalNormal[iDim]       = TotalNormal[iDim];
+      TotalNormal[iDim]         = 0.0;
+      MyTotalGridVel[iDim]      = TotalGridVel[iDim];
+      TotalGridVel[iDim]        = 0.0;
+    }
+
+    SU2_MPI::Allreduce(MyTotalTurboNormal, TotalTurboNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    delete [] MyTotalTurboNormal;delete [] MyTotalNormal; delete [] MyTotalGridVel;
+
+#endif
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+
+
+            SpanArea[iMarker][iSpan]           = TotalArea;
+            TurboRadius[iMarker][iSpan]        = TotalRadius/nTotVertexSpan[iMarker][iSpan];
+
+            turboNormal2    = 0.0;
+            Normal2         = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++){
+              turboNormal2 += TotalTurboNormal[iDim]*TotalTurboNormal[iDim];
+              Normal2      += TotalNormal[iDim]*TotalNormal[iDim];
+            }
+            for (iDim = 0; iDim < nDim; iDim++){
+              AverageTurboNormal[iMarker][iSpan][iDim] = TotalTurboNormal[iDim]/sqrt(turboNormal2);
+              AverageNormal[iMarker][iSpan][iDim]      = TotalNormal[iDim]/sqrt(Normal2);
+            }
+            if (grid_movement){
+              for (iDim = 0; iDim < nDim; iDim++){
+                AverageGridVel[iMarker][iSpan][iDim]   =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
+              }
+              switch (config->GetKind_TurboMachinery(val_iZone)){
+              case CENTRIFUGAL:case CENTRIPETAL:
+                if (marker_flag == INFLOW ){
+                  AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+                }
+                else{
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                break;
+              case AXIAL:
+                if (marker_flag == INFLOW && nDim == 2){
+                  AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1] + AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                else{
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                  break;
+              case CENTRIPETAL_AXIAL:
+                if (marker_flag == OUTFLOW){
+                  AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+                }
+                else{
+                  AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+                }
+                break;
+              case AXIAL_CENTRIFUGAL:
+                if (marker_flag == INFLOW)
+                {
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }else
+                {
+                  AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+                }
+                break;
+
+              default:
+                cout << "Tang grid velocity NOT IMPLEMENTED YET for this configuration"<<endl;
+                exit(EXIT_FAILURE);
+                break;
+              }
+            }
+
+            /*--- Compute the 1D average values ---*/
+            AverageTangGridVel[iMarker][nSpanWiseSections[marker_flag-1]]             += AverageTangGridVel[iMarker][iSpan]/nSpanWiseSections[marker_flag-1];
+            SpanArea[iMarker][nSpanWiseSections[marker_flag-1]]                       += SpanArea[iMarker][iSpan];
+            for(iDim=0; iDim < nDim; iDim++){
+              AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]     += AverageTurboNormal[iMarker][iSpan][iDim];
+              AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]          += AverageNormal[iMarker][iSpan][iDim];
+              AverageGridVel[iMarker][nSpanWiseSections[marker_flag-1]][iDim]         += AverageGridVel[iMarker][iSpan][iDim]/nSpanWiseSections[marker_flag-1];
+
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Normalize 1D normals---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+          turboNormal2 = 0.0;
+          Normal2 		= 0.0;
+
+          for (iDim = 0; iDim < nDim; iDim++){
+            turboNormal2 += AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]*AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim];
+            Normal2      += AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]*AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim];
+          }
+          for (iDim = 0; iDim < nDim; iDim++){
+            AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim] /=sqrt(turboNormal2);
+            AverageNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim] /=sqrt(Normal2);
+          }
+        }
+      }
+    }
+  }
+
+
+  delete [] TotalTurboNormal;
+  delete [] TotalNormal;
+  delete [] TotalGridVel;
+  delete [] TurboNormal;
+  delete [] Normal;
+
+}
+
+
+void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
+
+  unsigned short iMarker, iMarkerTP;
+  unsigned short iSpan, iDim;
+  int rank = MASTER_NODE;
+  int markerTP;
+  su2double nBlades;
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+
+#ifdef HAVE_MPI
+  int size = SINGLE_NODE;
+  unsigned short i, n1, n2, n1t, n2t;
+#endif
+
+  su2double tangGridVelIn, tangGridVelOut;
+  su2double areaIn, areaOut, pitchIn, Pitch;
+  su2double radiusIn, radiusOut, *turboNormal;
+
+  turboNormal = new su2double[nDim];
+  Pitch = 0.0;
+
+  if(allocate){
+    for (iMarkerTP=0; iMarkerTP < config->GetnMarker_TurboPerformance(); iMarkerTP++){
+      SpanAreaIn[iMarkerTP]       = new su2double[config->GetnSpanMaxAllZones() +1];
+      TangGridVelIn[iMarkerTP]    = new su2double[config->GetnSpanMaxAllZones() +1];
+      TurboRadiusIn[iMarkerTP]    = new su2double[config->GetnSpanMaxAllZones() +1];
+      SpanAreaOut[iMarkerTP]      = new su2double[config->GetnSpanMaxAllZones() +1];
+      TangGridVelOut[iMarkerTP]   = new su2double[config->GetnSpanMaxAllZones() +1];
+      TurboRadiusOut[iMarkerTP]   = new su2double[config->GetnSpanMaxAllZones() +1];
+
+      for (iSpan= 0; iSpan < config->GetnSpanMaxAllZones() + 1 ; iSpan++){
+        SpanAreaIn[iMarkerTP][iSpan]       = 0.0;
+        TangGridVelIn[iMarkerTP][iSpan]    = 0.0;
+        TurboRadiusIn[iMarkerTP][iSpan]    = 0.0;
+        SpanAreaOut[iMarkerTP][iSpan]      = 0.0;
+        TangGridVelOut[iMarkerTP][iSpan]   = 0.0;
+        TurboRadiusOut[iMarkerTP][iSpan]   = 0.0;
+      }
+    }
+  }
+
+
+
+  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+#ifdef HAVE_MPI
+    unsigned short i, n1, n2, n1t,n2t;
+    int size;
+    su2double *TurbGeoIn= NULL,*TurbGeoOut= NULL;
+    su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
+    int *TotMarkerTP;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    n1          = 6;
+    n2          = 3;
+    n1t         = n1*size;
+    n2t         = n2*size;
+    TurbGeoIn  = new su2double[n1];
+    TurbGeoOut = new su2double[n2];
+
+    for (i=0;i<n1;i++)
+      TurbGeoIn[i]    = -1.0;
+    for (i=0;i<n2;i++)
+      TurbGeoOut[i]   = -1.0;
+#endif
+    pitchIn           =  0.0;
+    areaIn            = -1.0;
+    tangGridVelIn     = -1.0;
+    radiusIn          = -1.0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      turboNormal[iDim] = -1.0;
+    }
+
+    areaOut           = -1.0;
+    tangGridVelOut    = -1.0;
+    radiusOut         = -1.0;
+
+    markerTP          = -1;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+            markerTP          = iMarkerTP;
+            if (iSpan < nSpanWiseSections){
+              pitchIn         = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            }
+            areaIn            = SpanArea[iMarker][iSpan];
+            tangGridVelIn     = AverageTangGridVel[iMarker][iSpan];
+            radiusIn          = TurboRadius[iMarker][iSpan];
+            for(iDim = 0; iDim < nDim; iDim++) turboNormal[iDim] = AverageTurboNormal[iMarker][iSpan][iDim];
+
+
+#ifdef HAVE_MPI
+            TurbGeoIn[0]  = areaIn;
+            TurbGeoIn[1]  = tangGridVelIn;
+            TurbGeoIn[2]  = radiusIn;
+            TurbGeoIn[3]  = turboNormal[0];
+            TurbGeoIn[4]  = turboNormal[1];
+            TurbGeoIn[5]  = pitchIn;
+#endif
+          }
+
+          /*--- retrieve outlet information ---*/
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
+            if (iSpan < nSpanWiseSections){
+              pitchIn       = MaxAngularCoord[iMarker][iSpan] - MinAngularCoord[iMarker][iSpan];
+            }
+            areaOut         = SpanArea[iMarker][iSpan];
+            tangGridVelOut  = AverageTangGridVel[iMarker][iSpan];
+            radiusOut       = TurboRadius[iMarker][iSpan];
+#ifdef HAVE_MPI
+            TurbGeoOut[0]  = areaOut;
+            TurbGeoOut[1]  = tangGridVelOut;
+            TurbGeoOut[2]  = radiusOut;
+#endif
+          }
+        }
+      }
+    }
+
+#ifdef HAVE_MPI
+    TotTurbGeoIn       = new su2double[n1t];
+    TotTurbGeoOut      = new su2double[n2t];
+    for (i=0;i<n1t;i++)
+      TotTurbGeoIn[i]  = -1.0;
+    for (i=0;i<n2t;i++)
+      TotTurbGeoOut[i] = -1.0;
+    TotMarkerTP = new int[size];
+    for(i=0; i<size; i++){
+      TotMarkerTP[i]    = -1;
+    }
+
+    SU2_MPI::Allgather(TurbGeoIn, n1, MPI_DOUBLE, TotTurbGeoIn, n1, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(TurbGeoOut, n2, MPI_DOUBLE,TotTurbGeoOut, n2, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MPI_COMM_WORLD);
+
+    delete [] TurbGeoIn, delete [] TurbGeoOut;
+
+
+    for (i=0;i<size;i++){
+      if(TotTurbGeoIn[n1*i] > 0.0){
+        areaIn              = 0.0;
+        areaIn              = TotTurbGeoIn[n1*i];
+        tangGridVelIn       = 0.0;
+        tangGridVelIn       = TotTurbGeoIn[n1*i+1];
+        radiusIn            = 0.0;
+        radiusIn            = TotTurbGeoIn[n1*i+2];
+        turboNormal[0]      = 0.0;
+        turboNormal[0]      = TotTurbGeoIn[n1*i+3];
+        turboNormal[1]      = 0.0;
+        turboNormal[1]      = TotTurbGeoIn[n1*i+4];
+        pitchIn             = 0.0;
+        pitchIn             = TotTurbGeoIn[n1*i+5];
+
+        markerTP            = -1;
+        markerTP            = TotMarkerTP[i];
+      }
+
+      if(TotTurbGeoOut[n2*i] > 0.0){
+        areaOut             = 0.0;
+        areaOut             = TotTurbGeoOut[n2*i];
+        tangGridVelOut      = 0.0;
+        tangGridVelOut      = TotTurbGeoOut[n2*i+1];
+        radiusOut           = 0.0;
+        radiusOut           = TotTurbGeoOut[n2*i+2];
+      }
+    }
+
+    delete [] TotTurbGeoIn, delete [] TotTurbGeoOut; delete [] TotMarkerTP;
+
+
+#endif
+
+    Pitch +=pitchIn/nSpanWiseSections;
+
+    if (iSpan == nSpanWiseSections) {
+      config->SetFreeStreamTurboNormal(turboNormal);
+      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2){
+        nBlades = 1/Pitch;
+      }
+      else{
+        nBlades = 2*PI_NUMBER/Pitch;
+      }
+      config->SetnBlades(config->GetiZone(), nBlades);
+    }
+
+    if (rank == MASTER_NODE){
+      /*----Quantities needed for computing the turbomachinery performance -----*/
+      SpanAreaIn[markerTP -1][iSpan]       = areaIn;
+      TangGridVelIn[markerTP -1][iSpan]    = tangGridVelIn;
+      TurboRadiusIn[markerTP -1][iSpan]    = radiusIn;
+
+      SpanAreaOut[markerTP -1][iSpan]      = areaOut;
+      TangGridVelOut[markerTP -1][iSpan]   = tangGridVelOut;
+      TurboRadiusOut[markerTP -1][iSpan]   = radiusOut;
+    }
+  }
+  delete [] turboNormal;
+
+}
+
 
 void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
@@ -11212,98 +13375,6 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
   
 }
 
-void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) {
-  
-  ofstream STL_File;
-  unsigned long this_node, iNode, nNode, iElem;
-  unsigned short iDim, iMarker;
-  su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
-  
-  /*---	STL format:
-   solid NAME
-   ...
-   facet normal 0.00 0.00 1.00
-   outer loop
-   vertex  2.00  2.00  0.00
-   vertex -1.00  1.00  0.00
-   vertex  0.00 -1.00  0.00
-   endloop
-   endfacet
-   ...
-   end solid
-   ---*/
-  
-  /*--- Open the STL file ---*/
-  
-  if (new_file) STL_File.open(mesh_filename, ios::out);
-  else STL_File.open(mesh_filename, ios::out | ios::app);
-  
-  /*--- Write the header of the file ---*/
-  
-  STL_File << "solid surface_mesh" << endl;
-  
-  /*--- Write facets of surface markers ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Plotting(iMarker) == YES)
-      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-        
-        /*--- number of nodes for this elemnt ---*/
-        
-        nNode = bound[iMarker][iElem]->GetnNodes();
-        
-        /*--- Calculate Normal Vector ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          p[0] = node[bound[iMarker][iElem]->GetNode(0)]      ->GetCoord(iDim);
-          p[1] = node[bound[iMarker][iElem]->GetNode(1)]      ->GetCoord(iDim);
-          p[2] = node[bound[iMarker][iElem]->GetNode(nNode-1)]->GetCoord(iDim);
-          u[iDim] = p[1]-p[0];
-          v[iDim] = p[2]-p[0];
-        }
-        
-        n[0] = u[1]*v[2]-u[2]*v[1];
-        n[1] = u[2]*v[0]-u[0]*v[2];
-        n[2] = u[0]*v[1]-u[1]*v[0];
-        a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
-        
-        /*--- Print normal vector ---*/
-        
-        STL_File << "  facet normal ";
-        for (iDim = 0; iDim < nDim; iDim++) {
-          STL_File << n[iDim]/a << " ";
-        }
-        STL_File << endl;
-        
-        /*--- STL Facet Loop --*/
-        
-        STL_File << "    outer loop" << endl;
-        
-        /*--- Print Nodes for Facet ---*/
-        
-        for (iNode = 0; iNode < nNode; iNode++) {
-          this_node = bound[iMarker][iElem]->GetNode(iNode);
-          STL_File << "      vertex ";
-          for (iDim = 0; iDim < nDim; iDim++)
-            STL_File << node[this_node]->GetCoord(iDim) << " ";
-          if (nDim==2)
-            STL_File << 0.0 << " ";
-          STL_File <<  endl;
-        }
-        STL_File << "    endloop" << endl;
-        STL_File << "  endfacet" << endl;
-      }
-  
-  /*--- Done with Surface Mesh ---*/
-  
-  STL_File << "endsolid" << endl;
-  
-  /*--- Close the file ---*/
-  
-  STL_File.close();
-  
-}
-
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
 #ifdef HAVE_MPI
@@ -11616,7 +13687,7 @@ void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
   
 }
 
-void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
+void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
@@ -11638,7 +13709,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   /*--- Print some information to the console ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && print) {
     cout << " Rotational origin (x, y, z): ( " << Center[0] << ", " << Center[1];
     cout << ", " << Center[2] << " )" << endl;
     cout << " Angular velocity about x, y, z axes: ( " << Omega[0] << ", ";
@@ -11657,13 +13728,17 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
     
     Distance[0] = (Coord[0]-Center[0])/L_Ref;
     Distance[1] = (Coord[1]-Center[1])/L_Ref;
-    Distance[2] = (Coord[2]-Center[2])/L_Ref;
+    Distance[2] = 0.0;
+    if (nDim == 3)
+    	Distance[2] = (Coord[2]-Center[2])/L_Ref;
     
     /*--- Calculate the angular velocity as omega X r ---*/
     
     RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
     RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    RotVel[2] = 0.0;
+    if (nDim == 3)
+    	RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
     
     /*--- Store the grid velocity at this node ---*/
     
@@ -11673,7 +13748,30 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
 }
 
-void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
+void CPhysicalGeometry::SetShroudVelocity(CConfig *config) {
+
+  unsigned long iPoint, iVertex;
+  unsigned short iMarker, iMarkerShroud;
+  su2double RotVel[3];
+
+  RotVel[0] = 0.0;
+  RotVel[1] = 0.0;
+  RotVel[2] = 0.0;
+
+  /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
+      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+        for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          node[iPoint]->SetGridVel(RotVel);
+        }
+      }
+    }
+  }
+}
+
+void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned short iDim;
   unsigned long iPoint;
@@ -11686,13 +13784,13 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config) {
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0] = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
-  xDot[1] = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
-  xDot[2] = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  xDot[0] = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
+  xDot[1] = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
+  xDot[2] = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
   
   /*--- Print some information to the console ---*/
   
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE && print) {
     cout << " Non-dim. translational velocity: (" << xDot[0] << ", " << xDot[1];
     cout << ", " << xDot[2] << ")." << endl;
   }
@@ -12916,7 +15014,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
-  bool wrt_residuals = config->GetWrt_Residuals();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
@@ -12967,6 +15064,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
+	if (config->GetnZone() > 1){
+		filename = config->GetMultizone_FileName(filename, config->GetiZone());
+	}
+
   if (config->GetRead_Binary_Restart()) {
 
     char str_buf[CGNS_STRING_SIZE], fname[100];
@@ -12976,7 +15077,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     int *Restart_Vars = new int[5];
     passivedouble *Restart_Data = NULL;
     int Restart_Iter = 0;
-    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+    passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
@@ -13032,7 +15134,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+    fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
 
     /*--- Read the external iteration. ---*/
 
@@ -13040,7 +15142,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+    fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
     
     /*--- Close the file. ---*/
 
@@ -13201,14 +15303,21 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
       disp = (nRestart_Vars*sizeof(int) + nFields*CGNS_STRING_SIZE*sizeof(char) +
               nFields*Restart_Vars[2]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }
 
     /*--- Communicate metadata. ---*/
 
     SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
+              doesn't work with passive data)---*/
+
+    for (unsigned short iVar = 0; iVar < 8; iVar++)
+      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
+
+    SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
     /*--- All ranks close the file after writing. ---*/
     
@@ -13337,11 +15446,18 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
-    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
+    if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
   }
   
   /*--- The first line is the header ---*/
+
   getline (restart_file, text_line);
   
   for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
@@ -13419,7 +15535,7 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
 }
 
-su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, jVertex, n, Trailing_Point, Leading_Point;
   su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
@@ -13458,10 +15574,8 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     XValue = Xcoord_Airfoil_[iVertex];
     ZValue = Zcoord_Airfoil_[iVertex];
-    
     Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
     Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
-    
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
@@ -13471,6 +15585,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
     Tangent[2] = Zcoord_Airfoil_[iVertex] - Zcoord_Airfoil_[iVertex-1];
     Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+
     Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
     
     BiNormal[0] = Plane_Normal[0];
@@ -13486,9 +15601,11 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
-    if (Normal[index] >= 0.0) {
+    /*--- Removing the trailing edge from list of points that we are going to use in the interpolation,
+			to be sure that a blunt trailing edge do not affect the interpolation ---*/
+
+    if ((Normal[index] >= 0.0) && (fabs(Xcoord_Airfoil_[iVertex]) > MaxDistance*0.01)) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
       Ycoord.push_back(Ycoord_Airfoil_[iVertex]);
       Zcoord.push_back(Zcoord_Airfoil_[iVertex]);
@@ -13509,22 +15626,25 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   }
   
   n = Xcoord.size();
-  zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
-  zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
-  Z2coord.resize(n+1);
-  SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
-  
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
-  
-  MaxThickness_Value = 0.0;
-  for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
-    if (Zcoord_Normal[iVertex] < 0.0) {
-      Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
-      if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
+  if (n > 1) {
+    zp1 = (Zcoord[1]-Zcoord[0])/(Xcoord[1]-Xcoord[0]);
+    zpn = (Zcoord[n-1]-Zcoord[n-2])/(Xcoord[n-1]-Xcoord[n-2]);
+    Z2coord.resize(n+1);
+    SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+    
+    /*--- Compute the thickness (we add a fabs because we can not guarantee the
+     right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+    
+    MaxThickness_Value = 0.0;
+    for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
+      if (Zcoord_Normal[iVertex] < 0.0) {
+        Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
+        if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
+      }
     }
   }
-  
+  else { MaxThickness_Value = 0.0; }
+
   return MaxThickness_Value;
   
 }
@@ -13532,14 +15652,12 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
 su2double CPhysicalGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
                                               su2double *LeadingEdge_i, su2double *TrailingEdge_i) {
 
-  su2double Dihedral = 0.0, Dihedral_Leading = 0.0, Dihedral_Trailing = 0.0;
+  // su2double Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
+  su2double Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
 
-  Dihedral_Leading = atan((LeadingEdge_i[2] - LeadingEdge_im1[2]) / (LeadingEdge_i[1] - LeadingEdge_im1[1]))*180/PI_NUMBER;
-  Dihedral_Trailing = atan((TrailingEdge_i[2] - TrailingEdge_im1[2]) / (TrailingEdge_i[1] - TrailingEdge_im1[1]))*180/PI_NUMBER;
+  // su2double Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
 
-  Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
-
-  return Dihedral;
+  return Dihedral_Trailing;
 
 }
 
@@ -13547,23 +15665,21 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
                                                su2double *LeadingEdge_i, su2double *TrailingEdge_i,
                                                su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) {
 
-  su2double Curvature = 0.0, Curvature_Leading = 0.0, Curvature_Trailing = 0.0;
-
   su2double A[2], B[2], C[2], BC[2], AB[2], AC[2], BC_MOD, AB_MOD,  AC_MOD, AB_CROSS_AC;
 
-  A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
-  B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
-  C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
+  // A[0] = LeadingEdge_im1[1];     A[1] = LeadingEdge_im1[2];
+  // B[0] = LeadingEdge_i[1];           B[1] = LeadingEdge_i[2];
+  // C[0] = LeadingEdge_ip1[1];      C[1] = LeadingEdge_ip1[2];
 
-  BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
-  AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
-  AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
-  BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
-  AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
-  AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
-  AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
+  // BC[0] = C[0] - B[0]; BC[1] = C[1] - B[1];
+  // AB[0] = B[0] - A[0]; AB[1] = B[1] - A[1];
+  // AC[0] = C[0] - A[0]; AC[1] = C[1] - A[1];
+  // BC_MOD = sqrt(BC[0]*BC[0] + BC[1]*BC[1] );
+  // AB_MOD = sqrt(AB[0]*AB[0] + AB[1]*AB[1] );
+  // AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
+  // AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
 
-  Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+  // su2double Curvature_Leading = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
 
   A[0] = TrailingEdge_im1[1];      A[1] = TrailingEdge_im1[2];
   B[0] = TrailingEdge_i[1];                B[1] = TrailingEdge_i[2];
@@ -13577,15 +15693,15 @@ su2double CPhysicalGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2do
   AC_MOD = sqrt(AC[0]*AC[0] + AC[1]*AC[1] );
   AB_CROSS_AC = AB[0]* AC[1] - AB[1]* AC[0];
 
-  Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
+  su2double Curvature_Trailing = fabs(1.0/(0.5*BC_MOD*AB_MOD*AC_MOD/AB_CROSS_AC));
 
-  Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
+  // su2double Curvature = 0.5*(Curvature_Leading + Curvature_Trailing);
 
-  return Curvature;
+  return Curvature_Trailing;
 
 }
 
-su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point, Leading_Point;
   su2double MaxDistance, Distance, Twist = 0.0;
   
@@ -13602,13 +15718,11 @@ su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane
   
   Twist = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
 
-  if (fabs(Twist) < 0.01) Twist = 0.0;
-
   return Twist;
 
 }
 
-void CPhysicalGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection,
+void CPhysicalGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
                                                 vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
 
   unsigned long iVertex, Trailing_Point, Leading_Point;
@@ -13636,7 +15750,35 @@ void CPhysicalGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2doubl
   
 }
 
-su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+void CPhysicalGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+                                                vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point, Leading_Point;
+  su2double MaxDistance, Distance;
+
+  MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0));
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+
+  LeadingEdge[0] = Xcoord_Airfoil[Leading_Point];
+  LeadingEdge[1] = Ycoord_Airfoil[Leading_Point];
+  LeadingEdge[2] = Zcoord_Airfoil[Leading_Point];
+
+  MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
+  for (iVertex = 1; iVertex < Zcoord_Airfoil.size(); iVertex++) {
+    Distance = sqrt(pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+
+  TrailingEdge[0] = 0.5*(Xcoord_Airfoil[Trailing_Point]+Xcoord_Airfoil[Leading_Point]);
+  TrailingEdge[1] = 0.5*(Ycoord_Airfoil[Trailing_Point]+Ycoord_Airfoil[Leading_Point]);
+  TrailingEdge[2] = 0.5*(Zcoord_Airfoil[Trailing_Point]+Zcoord_Airfoil[Leading_Point]);
+
+}
+
+su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex, Trailing_Point;
   su2double MaxDistance, Distance, Chord = 0.0;
   
@@ -13657,11 +15799,103 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   
 }
 
-su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+su2double CPhysicalGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point;
+  su2double MaxDistance, Distance, Width = 0.0;
+
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Distance = fabs(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point]);
+    if (MaxDistance < Distance) { MaxDistance = Distance; }
+  }
+
+  Width = MaxDistance;
+  return Width;
+
+}
+
+su2double CPhysicalGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point;
+  su2double MinDistance, Distance, WaterLineWidth = 0.0;
+  su2double WaterLine = config->GetGeo_Waterline_Location();
+
+  MinDistance = 1E10; WaterLineWidth = 0; Trailing_Point = 0;
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    Distance = fabs(Zcoord_Airfoil[iVertex] - WaterLine);
+    if (Distance < MinDistance) {
+    	MinDistance = Distance;
+    	WaterLineWidth = fabs(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point]);
+    }
+  }
+
+  return WaterLineWidth;
+
+}
+
+su2double CPhysicalGeometry::Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point;
+  su2double MaxDistance, Distance, Height = 0.0;
+
+  MaxDistance = 0.0; Trailing_Point = 0;
+  for (iVertex = 1; iVertex < Zcoord_Airfoil.size(); iVertex++) {
+    Distance = sqrt(pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    if (MaxDistance < Distance) { MaxDistance = Distance; }
+  }
+
+  Height = MaxDistance;
+
+  return Height;
+
+}
+
+su2double CPhysicalGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point, Leading_Point;
+  su2double MaxDistance, Distance, LERadius = 0.0, X1, X2, X3, Y1, Y2, Y3, Ma, Mb, Xc, Yc, Radius;
+  
+  /*--- Find the leading and trailing edges and compute the radius of curvature ---*/
+  
+  MaxDistance = 0.0; Trailing_Point = 0;  Leading_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+  
+  X1 = Xcoord_Airfoil[Leading_Point-3];
+  Y1 = Zcoord_Airfoil[Leading_Point-3];
+
+  X2 = Xcoord_Airfoil[Leading_Point];
+  Y2 = Zcoord_Airfoil[Leading_Point];
+  
+  X3 = Xcoord_Airfoil[Leading_Point+3];
+  Y3 = Zcoord_Airfoil[Leading_Point+3];
+  
+  if (X2 != X1) Ma = (Y2-Y1) / (X2-X1); else Ma = 0.0;
+  if (X3 != X2) Mb = (Y3-Y2) / (X3-X2); else Mb = 0.0;
+
+  if (Mb != Ma) Xc = (Ma*Mb*(Y1-Y3)+Mb*(X1+X2)-Ma*(X2+X3))/(2.0*(Mb-Ma)); else Xc = 0.0;
+  if (Ma != 0.0) Yc = -(1.0/Ma)*(Xc-0.5*(X1+X2))+0.5*(Y1+Y2); else Yc = 0.0;
+  
+  Radius = sqrt((Xc-X1)*(Xc-X1)+(Yc-Y1)*(Yc-Y1));
+  if (Radius != 0.0) LERadius = 1.0/Radius; else LERadius = 0.0;
+
+  return LERadius;
+  
+}
+
+su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc) {
 
   unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, Leading_Point;
   su2double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
   vector<su2double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
+  su2double Zcoord_Up, Zcoord_Down, ZLoc_, YLoc_;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   
@@ -13724,7 +15958,6 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
     if (Normal[index] >= 0.0) {
       Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13764,29 +15997,46 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   }
   
   n_Upper = Xcoord_Upper.size();
-  zp1 = (Zcoord_Upper[1]-Zcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
-  zpn = (Zcoord_Upper[n_Upper-1]-Zcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
-  Z2coord_Upper.resize(n_Upper+1);
-  SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  if (n_Upper > 1) {
+    zp1 = (Zcoord_Upper[1]-Zcoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
+    zpn = (Zcoord_Upper[n_Upper-1]-Zcoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
+    Z2coord_Upper.resize(n_Upper+1);
+    SetSpline(Xcoord_Upper, Zcoord_Upper, n_Upper, zp1, zpn, Z2coord_Upper);
+  }
   
   n_Lower = Xcoord_Lower.size();
-  zp1 = (Zcoord_Lower[1]-Zcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
-  zpn = (Zcoord_Lower[n_Lower-1]-Zcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
-  Z2coord_Lower.resize(n_Lower+1);
-  SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  if (n_Lower > 1) {
+    zp1 = (Zcoord_Lower[1]-Zcoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
+    zpn = (Zcoord_Lower[n_Lower-1]-Zcoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
+    Z2coord_Lower.resize(n_Lower+1);
+    SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
+  }
   
-  /*--- Compute the thickness (we add a fabs because we can not guarantee the
-   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
-  
-  Thickness_Location = - Chord*(1.0-Location);
-  
-  Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location) - GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
-  
+  if ((n_Upper > 1) && (n_Lower > 1)) {
+    
+    Thickness_Location = - Chord*(1.0-Location);
+    
+    Zcoord_Up = GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location);
+    Zcoord_Down = GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location);
+    
+    YLoc_ = Thickness_Location;
+    ZLoc_ = 0.5*(Zcoord_Up + Zcoord_Down);
+    
+    ZLoc = sin(-AoA*PI_NUMBER/180.0)*YLoc_ + cos(-AoA*PI_NUMBER/180.0)*ZLoc_ + Zcoord_Trailing;
+    
+    /*--- Compute the thickness (we add a fabs because we can not guarantee the
+     right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+    
+    Thickness_Value = fabs(Zcoord_Up - Zcoord_Down);
+    
+  }
+  else { Thickness_Value = 0.0; }
+
   return Thickness_Value;
   
 }
 
-su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config,
+su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config,
                                           vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
   unsigned long iVertex;
   su2double Area_Value = 0.0;
@@ -13818,14 +16068,45 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
   
 }
 
+su2double CPhysicalGeometry::Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config,
+                                          vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+  unsigned long iVertex;
+  su2double Length_Value = 0.0, Length_Value_ = 0.0;
+  su2double DeltaZ, DeltaX;
+
+  /*--- Not that in a symmetry plane configuration there is an extra edge that connects
+   the two extremes, and we really don't now the curve orientation. We will evaluate
+   both distance and picked the smallest one ---*/
+
+  Length_Value = 0.0;
+  for (iVertex = 0; iVertex < Xcoord_Airfoil.size()-2; iVertex++) {
+    DeltaX = Xcoord_Airfoil[iVertex+1] - Xcoord_Airfoil[iVertex];
+    DeltaZ = Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex];
+    Length_Value += sqrt(DeltaX*DeltaX + DeltaZ*DeltaZ);
+  }
+
+  Length_Value_ = 0.0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size()-1; iVertex++) {
+    DeltaX = Xcoord_Airfoil[iVertex+1] - Xcoord_Airfoil[iVertex];
+    DeltaZ = Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex];
+    Length_Value_ += sqrt(DeltaX*DeltaX + DeltaZ*DeltaZ);
+  }
+
+  Length_Value = min(Length_Value, Length_Value_);
+
+  return Length_Value;
+
+}
+
 void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord,
-                                     su2double &Wing_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                                     su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                      su2double &Wing_MaxDihedral) {
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, *Area, *MaxThickness, *ToC, *Chord, *Twist, *Curvature, *Dihedral, SemiSpan;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
@@ -13845,6 +16126,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   Area = new su2double [nPlane];
   MaxThickness = new su2double [nPlane];
   Chord = new su2double [nPlane];
+  LERadius = new su2double [nPlane];
   ToC = new su2double [nPlane];
   Twist = new su2double [nPlane];
   Curvature = new su2double [nPlane];
@@ -13866,16 +16148,29 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_Normal[iPlane] = new su2double[nDim];
   
-  MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
-  MinXCoord = -1E6; MaxXCoord = 1E6;
+  MinPlane = config->GetStations_Bounds(0); MaxPlane = config->GetStations_Bounds(1);
   dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-    Plane_Normal[iPlane][config->GetAxis_Stations()] = 1.0;
-    Plane_P0[iPlane][config->GetAxis_Stations()] = MinPlane + iPlane*dPlane;
+
+    if (config->GetGeo_Description() == FUSELAGE) {
+      Plane_Normal[iPlane][0] = 1.0;
+      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == WING) {
+      Plane_Normal[iPlane][1] = 1.0;
+      Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == TWOD_AIRFOIL) {
+      Plane_Normal[iPlane][2] = 1.0;
+      Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
+    }
+
   }
   
   /*--- Allocate some vectors for storing airfoil coordinates ---*/
@@ -13888,32 +16183,34 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   /*--- Create the section slices through the geometry ---*/
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           MinXCoord, MaxXCoord, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
-  }
 
-  /*--- Compute the area at each section ---*/
+   }
+
+  /*--- Compute airfoil characteristic only in the master node ---*/
   
   if (rank == MASTER_NODE) {
     
     /*--- Write an output file---*/
 
     if (config->GetOutput_FileFormat() == PARAVIEW) {
-      Wing_File.open("Wing_Distribution.csv", ios::out);
+      Wing_File.open("wing_distribution.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       else
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
     }
     else {
       Wing_File.open("wing_description.dat", ios::out);
       Wing_File << "TITLE = \"Wing description\"" << endl;
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       else
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       Wing_File << "ZONE T= \"Baseline wing\"" << endl;
     }
 
@@ -13923,29 +16220,33 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        LeadingEdge[iPlane][iDim] = 0.0;
+        LeadingEdge[iPlane][iDim]  = 0.0;
         TrailingEdge[iPlane][iDim] = 0.0;
       }
 
-      Area[iPlane] = 0.0;
-      MaxThickness[iPlane] = 0.0;
-      Chord[iPlane] = 0.0;
-      ToC[iPlane] = 0.0;
-      Twist[iPlane] = 0.0;
+      Area[iPlane]                = 0.0;
+      MaxThickness[iPlane]        = 0.0;
+      Chord[iPlane]               = 0.0;
+      LERadius[iPlane]            = 0.0;
+      ToC[iPlane]                 = 0.0;
+      Twist[iPlane]               = 0.0;
 
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
 
-        Compute_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Compute_Wing_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        MaxThickness[iPlane] = Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
-        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
         ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
 
-        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
       }
 
@@ -13955,10 +16256,10 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
-      Curvature[iPlane] = 0.0;
-      Dihedral[iPlane] = 0.0;
+      Curvature[iPlane]      = 0.0;
+      Dihedral[iPlane]       = 0.0;
 
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
 
         if ((iPlane == 0) || (iPlane == nPlane-1)) Curvature[iPlane] = 0.0;
         else Curvature[iPlane] = Compute_Curvature(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
@@ -13987,24 +16288,27 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Plot the geometrical quatities ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    	if (Xcoord_Airfoil[iPlane].size() != 0) {
+    	if (Xcoord_Airfoil[iPlane].size() > 1) {
     		if (config->GetOutput_FileFormat() == PARAVIEW) {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
-    			                                                                                                                                            <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
-    			                                                                                                                                                                                                                <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
-    			                                                                                                                                                                                                                                                                                                              <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+    			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
+    			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
+    			           <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+
+
+
     		}
     		else  {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
-    			                                                                                                                                        <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
-    			                                                                                                                                                                                                          <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
-    			                                                                                                                                                                                                                                                                                                     <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+    			           <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
+    			           <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
+    			           <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+
     		}
     	}
     }
 
     Wing_File.close();
-
 
     Section_File.open("wing_slices.dat", ios::out);
 
@@ -14017,7 +16321,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
         else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
       }
 
-      if (Xcoord_Airfoil[iPlane].size() !=0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
 
         Section_File << "ZONE T=\"<greek>h</greek> = " << Ycoord_Airfoil[iPlane][0]/SemiSpan << " \", I= " << Xcoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
 
@@ -14051,23 +16355,27 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     Wing_Volume = 0.0;
     for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
-      if (Xcoord_Airfoil[iPlane].size() != 0) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
         Wing_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
       }
-    }
-    if (Xcoord_Airfoil[nPlane-1].size() != 0) {
-      Wing_Volume /= (Ycoord_Airfoil[nPlane-1][0] - Ycoord_Airfoil[0][0]);
     }
 
     /*--- Evaluate Max and Min quantities ---*/
 
-    Wing_MinMaxThickness = 1E6; Wing_MaxChord = -1E6; Wing_MinToC = 1E6;
+    Wing_MaxMaxThickness = -1E6; Wing_MinMaxThickness = 1E6; Wing_MinChord = 1E6; Wing_MaxChord = -1E6;
+    Wing_MinLERadius = 1E6; Wing_MaxLERadius = -1E6; Wing_MinToC = 1E6; Wing_MaxToC = -1E6;
     Wing_MaxTwist = -1E6; Wing_MaxCurvature = -1E6; Wing_MaxDihedral = -1E6;
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      if (MaxThickness[iPlane] != 0.0) Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      Wing_MaxMaxThickness = max(Wing_MaxMaxThickness, MaxThickness[iPlane]);
+      if (Chord[iPlane] != 0.0) Wing_MinChord = min(Wing_MinChord, Chord[iPlane]);
       Wing_MaxChord = max(Wing_MaxChord, Chord[iPlane]);
-      Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      if (LERadius[iPlane] != 0.0) Wing_MinLERadius = min(Wing_MinLERadius, LERadius[iPlane]);
+      Wing_MaxLERadius = max(Wing_MaxLERadius, LERadius[iPlane]);
+      if (ToC[iPlane] != 0.0) Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      Wing_MaxToC = max(Wing_MaxToC, ToC[iPlane]);
+      Wing_ObjFun_MinToC = sqrt((Wing_MinToC - 0.07)*(Wing_MinToC - 0.07));
       Wing_MaxTwist = max(Wing_MaxTwist, fabs(Twist[iPlane]));
       Wing_MaxCurvature = max(Wing_MaxCurvature, Curvature[iPlane]);
       Wing_MaxDihedral = max(Wing_MaxDihedral, fabs(Dihedral[iPlane]));
@@ -14101,10 +16409,304 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   delete [] Area;
   delete [] MaxThickness;
   delete [] Chord;
+  delete [] LERadius;
   delete [] ToC;
   delete [] Twist;
   delete [] Curvature;
   delete [] Dihedral;
+
+}
+
+void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
+                                         su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+                                         su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+                                         su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+                                         su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+                                         su2double &Fuselage_MaxCurvature) {
+
+  unsigned short iPlane, iDim, nPlane = 0;
+  unsigned long iVertex;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *Length, *Width, *WaterLineWidth, *Height, *Curvature;
+  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  ofstream Fuselage_File, Section_File;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+
+  /*--- Make a large number of section cuts for approximating volume ---*/
+
+  nPlane = config->GetnWingStations();
+
+  /*--- Allocate memory for the section cutting ---*/
+
+  Area = new su2double [nPlane];
+  Length = new su2double [nPlane];
+  Width = new su2double [nPlane];
+  WaterLineWidth = new su2double [nPlane];
+  Height = new su2double [nPlane];
+  Curvature = new su2double [nPlane];
+
+  su2double **LeadingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    LeadingEdge[iPlane] = new su2double[nDim];
+
+  su2double **TrailingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    TrailingEdge[iPlane] = new su2double[nDim];
+
+  su2double **Plane_P0 = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_P0[iPlane] = new su2double[nDim];
+
+  su2double **Plane_Normal = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_Normal[iPlane] = new su2double[nDim];
+
+  MinPlane = config->GetStations_Bounds(0); MaxPlane = config->GetStations_Bounds(1);
+  dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+    Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
+    Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+
+    if (config->GetGeo_Description() == FUSELAGE) {
+      Plane_Normal[iPlane][0] = 1.0;
+      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == WING) {
+      Plane_Normal[iPlane][1] = 1.0;
+      Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
+    }
+
+    if (config->GetGeo_Description() == TWOD_AIRFOIL) {
+      Plane_Normal[iPlane][2] = 1.0;
+      Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
+    }
+
+  }
+
+  /*--- Allocate some vectors for storing airfoil coordinates ---*/
+
+  Xcoord_Airfoil   = new vector<su2double>[nPlane];
+  Ycoord_Airfoil   = new vector<su2double>[nPlane];
+  Zcoord_Airfoil   = new vector<su2double>[nPlane];
+  Variable_Airfoil = new vector<su2double>[nPlane];
+
+  /*--- Create the section slices through the geometry ---*/
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+    ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
+                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                           Variable_Airfoil[iPlane], original_surface, config);
+  }
+
+  /*--- Compute the area at each section ---*/
+
+  if (rank == MASTER_NODE) {
+
+    /*--- Write an output file---*/
+
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      Fuselage_File.open("fuselage_description.csv", ios::out);
+      if (config->GetSystemMeasurements() == US)
+        Fuselage_File << "\"x (in)\",\"Area (in^2)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
+      else
+        Fuselage_File << "\"x (m)\",\"Area (m^2)\",\"Length (m)\",\"Width (m)\",\"Waterline width (m)\",\"Height (m)\",\"Curvature (1/in)\",\"Generatrix Curve X (m)\",\"Generatrix Curve Y (m)\",\"Generatrix Curve Z (m)\",\"Axis Curve X (m)\",\"Axis Curve Y (m)\",\"Axis Curve Z (m)\"" << endl;
+    }
+    else {
+      Fuselage_File.open("fuselage_description.dat", ios::out);
+      Fuselage_File << "TITLE = \"Fuselage description\"" << endl;
+      if (config->GetSystemMeasurements() == US)
+        Fuselage_File << "VARIABLES = \"x (in)\",\"Area (in<sup>2</sup>)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
+      else
+        Fuselage_File << "VARIABLES = \"x (m)\",\"Area (m<sup>2</sup>)\",\"Length (m)\",\"Width (m)\",\"Waterline width (m)\",\"Height (m)\",\"Curvature (1/m)\",\"Generatrix Curve X (m)\",\"Generatrix Curve Y (m)\",\"Generatrix Curve Z (m)\",\"Axis Curve X (m)\",\"Axis Curve Y (m)\",\"Axis Curve Z (m)\"" << endl;
+      Fuselage_File << "ZONE T= \"Baseline fuselage\"" << endl;
+    }
+
+
+    /*--- Evaluate  geometrical quatities that do not require any kind of filter, local to each point ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LeadingEdge[iPlane][iDim]  = 0.0;
+        TrailingEdge[iPlane][iDim] = 0.0;
+      }
+
+      Area[iPlane]   = 0.0;
+      Length[iPlane]   = 0.0;
+      Width[iPlane]  = 0.0;
+      WaterLineWidth[iPlane]  = 0.0;
+      Height[iPlane] = 0.0;
+
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+        Compute_Fuselage_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Length[iPlane] = Compute_Length(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Width[iPlane] = Compute_Width(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        WaterLineWidth[iPlane] = Compute_WaterLineWidth(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        Height[iPlane] = Compute_Height(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+      }
+
+    }
+
+    /*--- Evaluate  geometrical quatities that have been computed using a filtered value (they depend on more than one point) ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      Curvature[iPlane] = 0.0;
+
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+        if ((iPlane == 0) || (iPlane == nPlane-1)) Curvature[iPlane] = 0.0;
+        else Curvature[iPlane] = Compute_Curvature(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
+                                                   LeadingEdge[iPlane], TrailingEdge[iPlane],
+                                                   LeadingEdge[iPlane+1], TrailingEdge[iPlane+1]);
+
+      }
+
+    }
+
+    /*--- Set the curvature and dihedral angles at the extremes ---*/
+
+    if (nPlane > 1) {
+      if ((Xcoord_Airfoil[0].size() != 0) && (Xcoord_Airfoil[1].size() != 0)) {
+        Curvature[0] = Curvature[1];
+      }
+      if ((Xcoord_Airfoil[nPlane-1].size() != 0) && (Xcoord_Airfoil[nPlane-2].size() != 0)) {
+        Curvature[nPlane-1] = Curvature[nPlane-2];
+      }
+    }
+
+    /*--- Plot the geometrical quatities ---*/
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    	if (Xcoord_Airfoil[iPlane].size() > 1) {
+    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
+    			           <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
+    			           <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    		}
+    		else  {
+    			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<" "<< Area[iPlane] <<" "<< Length[iPlane] <<" "<< Width[iPlane] <<" "<< WaterLineWidth[iPlane] <<" "<< Height[iPlane] <<" "<< Curvature[iPlane]
+    			           <<" "<< -LeadingEdge[iPlane][1] <<" "<< LeadingEdge[iPlane][0]  <<" "<< LeadingEdge[iPlane][2]
+    			           <<" "<< -TrailingEdge[iPlane][1] <<" "<< TrailingEdge[iPlane][0]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    		}
+    	}
+    }
+
+    Fuselage_File.close();
+
+    Section_File.open("fuselage_slices.dat", ios::out);
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+
+      if (iPlane == 0) {
+        Section_File << "TITLE = \"Aircraft Slices\"" << endl;
+        if (config->GetSystemMeasurements() == US)
+          Section_File << "VARIABLES = \"x (in)\", \"y (in)\", \"z (in)\"" << endl;
+        else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\"" << endl;
+      }
+
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+        Section_File << "ZONE T=\"X = " << -Ycoord_Airfoil[iPlane][0] << " \", I= " << Ycoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
+
+        for (iVertex = 0; iVertex < Xcoord_Airfoil[iPlane].size(); iVertex++) {
+
+          /*--- Write the file ---*/
+
+          Section_File  << -Ycoord_Airfoil[iPlane][iVertex] << " " << Xcoord_Airfoil[iPlane][iVertex] << " " << Zcoord_Airfoil[iPlane][iVertex] << endl;
+        }
+      }
+
+    }
+
+    Section_File.close();
+
+
+    /*--- Compute the fuselage volume using a composite Simpson's rule ---*/
+
+    Fuselage_Volume = 0.0;
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+      	Fuselage_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+      }
+    }
+
+    /*--- Compute the fuselage wetted area ---*/
+
+    Fuselage_WettedArea = 0.0;
+    if (Xcoord_Airfoil[0].size() > 1) Fuselage_WettedArea += (1.0/2.0)*dPlane*Length[0];
+    for (iPlane = 1; iPlane < nPlane-1; iPlane++) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+      	Fuselage_WettedArea += dPlane*Length[iPlane];
+      }
+    }
+    if (Xcoord_Airfoil[nPlane-1].size() > 1) Fuselage_WettedArea += (1.0/2.0)*dPlane*Length[nPlane-1];
+
+    /*--- Evaluate Max and Min quantities ---*/
+
+    Fuselage_MaxWidth = -1E6; Fuselage_MinWidth = 1E6;
+    Fuselage_MaxWaterLineWidth = -1E6; Fuselage_MinWaterLineWidth = 1E6;
+    Fuselage_MaxHeight = -1E6; Fuselage_MinHeight = 1E6;
+    Fuselage_MaxCurvature = -1E6;
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      if (Width[iPlane] != 0.0) Fuselage_MinWidth = min(Fuselage_MinWidth, Width[iPlane]);
+      Fuselage_MaxWidth = max(Fuselage_MaxWidth, Width[iPlane]);
+      if (WaterLineWidth[iPlane] != 0.0) Fuselage_MinWaterLineWidth = min(Fuselage_MinWaterLineWidth, WaterLineWidth[iPlane]);
+      Fuselage_MaxWaterLineWidth = max(Fuselage_MaxWaterLineWidth, WaterLineWidth[iPlane]);
+      if (Height[iPlane] != 0.0) Fuselage_MinHeight = min(Fuselage_MinHeight, Height[iPlane]);
+      Fuselage_MaxHeight = max(Fuselage_MaxHeight, Height[iPlane]);
+      Fuselage_MaxCurvature = max(Fuselage_MaxCurvature, Curvature[iPlane]);
+    }
+
+  }
+
+  /*--- Free memory for the section cuts ---*/
+
+  delete [] Xcoord_Airfoil;
+  delete [] Ycoord_Airfoil;
+  delete [] Zcoord_Airfoil;
+  delete [] Variable_Airfoil;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] LeadingEdge[iPlane];
+  delete [] LeadingEdge;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] TrailingEdge[iPlane];
+  delete [] TrailingEdge;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_P0[iPlane];
+  delete [] Plane_P0;
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_Normal[iPlane];
+  delete [] Plane_Normal;
+
+  delete [] Area;
+  delete [] Length;
+  delete [] Width;
+  delete [] WaterLineWidth;
+  delete [] Height;
+  delete [] Curvature;
 
 }
 
@@ -15382,7 +17984,7 @@ void CMultiGridGeometry::SetWallTemperature(CGeometry *geometry, unsigned short 
 
 }
 
-void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) {
+void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned long iPoint_Coarse;
   su2double *RotVel, Distance[3] = {0.0,0.0,0.0}, *Coord;
@@ -15429,7 +18031,30 @@ void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short v
   
 }
 
-void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
+void CMultiGridGeometry::SetShroudVelocity(CConfig *config) {
+
+  unsigned long iPoint, iVertex;
+  unsigned short iMarker, iMarkerShroud;
+  su2double RotVel[3];
+
+  RotVel[0] = 0.0;
+  RotVel[1] = 0.0;
+  RotVel[2] = 0.0;
+
+  /*--- Loop over all vertex in the shroud marker and set the rotational velocity to 0.0 ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for(iMarkerShroud=0; iMarkerShroud < config->GetnMarker_Shroud(); iMarkerShroud++){
+      if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
+        for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          node[iPoint]->SetGridVel(RotVel);
+        }
+      }
+    }
+  }
+}
+
+void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
   
   unsigned iDim;
   unsigned long iPoint_Coarse;
@@ -15437,9 +18062,9 @@ void CMultiGridGeometry::SetTranslationalVelocity(CConfig *config) {
   
   /*--- Get the translational velocity vector from config ---*/
   
-  xDot[0]   = config->GetTranslation_Rate_X(ZONE_0)/config->GetVelocity_Ref();
-  xDot[1]   = config->GetTranslation_Rate_Y(ZONE_0)/config->GetVelocity_Ref();
-  xDot[2]   = config->GetTranslation_Rate_Z(ZONE_0)/config->GetVelocity_Ref();
+  xDot[0]   = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
+  xDot[1]   = config->GetTranslation_Rate_Y(val_iZone)/config->GetVelocity_Ref();
+  xDot[2]   = config->GetTranslation_Rate_Z(val_iZone)/config->GetVelocity_Ref();
   
   /*--- Loop over all nodes and set the translational velocity ---*/
   

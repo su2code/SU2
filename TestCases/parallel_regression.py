@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-5.930145,-0.546310,0.300089,0.019393] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.767126,-0.377182,0.299930,0.019384] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -157,7 +157,7 @@ def main():
     poiseuille.test_vals = [-12.027716, -3.326792, -0.000000, 2.351005] #last 4 columns
     poiseuille.su2_exec  = "parallel_computation.py -f"
     poiseuille.timeout   = 1600
-    poiseuille.tol       = 0.00001
+    poiseuille.tol       = 0.001
     test_list.append(poiseuille)
 
     ##########################
@@ -283,6 +283,21 @@ def main():
     inc_euler_naca0012.tol       = 0.00001
     test_list.append(inc_euler_naca0012)
 
+    #############################
+    ### Incompressible N-S    ###
+    #############################
+
+    # Laminar cylinder
+    inc_lam_cylinder          = TestCase('inc_lam_cylinder')
+    inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
+    inc_lam_cylinder.test_iter = 10
+    inc_lam_cylinder.test_vals = [-3.583742, -2.838702, -0.003114, 17.162325] #last 4 columns
+    inc_lam_cylinder.su2_exec  = "parallel_computation.py -f"
+    inc_lam_cylinder.timeout   = 1600
+    inc_lam_cylinder.tol       = 0.00001
+    test_list.append(inc_lam_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -355,7 +370,7 @@ def main():
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixed_CL_naca0012.test_iter = 500
-    contadj_fixed_CL_naca0012.test_vals = [-2.921695, -8.474107, 0.250530, 0.000003] #last 4 columns
+    contadj_fixed_CL_naca0012.test_vals = [-2.093175,-6.967350,2.4987e-01,-1.9392e-05] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
@@ -555,7 +570,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-5.058481, 1.115321, -0.000009, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.059867, 1.114232, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "parallel_computation.py -f"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -566,11 +581,70 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-5.486409, 0.654417, -0.000037, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.487473, 0.653442, -0.000037, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "parallel_computation.py -f"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+    
+    ######################################
+    ### Turbomachinery                 ###
+    ######################################	
+
+    # Jones APU Turbocharger
+    Jones_tc           = TestCase('jones_turbocharger')
+    Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc.cfg_file  = "Jones.cfg"
+    Jones_tc.test_iter = 29
+    Jones_tc.test_vals = [-5.563796, -0.197664, 92.039250, 0.708515] #last 4 columns
+    Jones_tc.su2_exec  = "parallel_computation.py -f"
+    Jones_tc.timeout   = 1600
+    Jones_tc.tol       = 0.00001
+    test_list.append(Jones_tc)
+
+	# Jones APU Turbocharger restart
+    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
+    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_rst.test_iter = 30
+    Jones_tc_rst.test_vals = [-3.936718, -0.754654, 8.277812e+01, 2.715092e+00] #last 4 columns
+    Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
+    Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.tol       = 0.00001
+    test_list.append(Jones_tc_rst)
+
+    # 2D axial stage
+    axial_stage2D           = TestCase('axial_stage2D')
+    axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
+    axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
+    axial_stage2D.test_iter = 100
+    axial_stage2D.test_vals = [-1.534374, 6.555997, 7.559178e+01, 7.911872e-01] #last 4 columns
+    axial_stage2D.su2_exec  = "parallel_computation.py -f"
+    axial_stage2D.timeout   = 1600
+    axial_stage2D.tol       = 0.00001
+    test_list.append(axial_stage2D)
+    
+    # 2D transonic stator
+    transonic_stator           = TestCase('transonic_stator')
+    transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator.cfg_file  = "transonic_stator.cfg"
+    transonic_stator.test_iter = 100
+    transonic_stator.test_vals = [-0.053921, 4.588521, 8.511798e+00, 7.254821e-03] #last 4 columns
+    transonic_stator.su2_exec  = "parallel_computation.py -f"
+    transonic_stator.timeout   = 1600
+    transonic_stator.tol       = 0.00001
+    test_list.append(transonic_stator)
+    
+    # 2D transonic stator restart
+    transonic_stator_rst           = TestCase('transonic_stator_restart')
+    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_rst.test_iter = 300
+    transonic_stator_rst.test_vals = [-0.682536, 4.593684, 6.248191e+00, 3.774933e-03] #last 4 columns
+    transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
+    transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.tol       = 0.00001
+    test_list.append(transonic_stator_rst)
 
     ######################################
     ### Sliding Mesh                   ###
@@ -773,11 +847,11 @@ def main():
     naca0012_def            = TestCase('naca0012_def')
     naca0012_def.cfg_dir   = "deformation/naca0012"
     naca0012_def.cfg_file  = "def_NACA0012.cfg"
-    naca0012_def.test_iter = 250
-    naca0012_def.test_vals = [5.44754e-15] #residual
+    naca0012_def.test_iter = 10
+    naca0012_def.test_vals = [4.626580e-03] #residual
     naca0012_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     naca0012_def.timeout   = 1600
-    naca0012_def.tol       = 1e-15
+    naca0012_def.tol       = 1e-8
     
     pass_list.append(naca0012_def.run_def())
     test_list.append(naca0012_def)
@@ -786,11 +860,11 @@ def main():
     rae2822_def            = TestCase('rae2822_def')
     rae2822_def.cfg_dir   = "deformation/rae2822"
     rae2822_def.cfg_file  = "def_RAE2822.cfg"
-    rae2822_def.test_iter = 150
-    rae2822_def.test_vals = [1.47076e-15] #residual
+    rae2822_def.test_iter = 10
+    rae2822_def.test_vals = [5.389240e-08] #residual
     rae2822_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     rae2822_def.timeout   = 1600
-    rae2822_def.tol       = 1e-16
+    rae2822_def.tol       = 1e-13
     
     pass_list.append(rae2822_def.run_def())
     test_list.append(rae2822_def)
@@ -799,11 +873,11 @@ def main():
     naca4412_def            = TestCase('naca4412_def')
     naca4412_def.cfg_dir   = "deformation/naca4412"
     naca4412_def.cfg_file  = "def_NACA4412.cfg"
-    naca4412_def.test_iter = 300
-    naca4412_def.test_vals = [4.46129e-15] #residual
+    naca4412_def.test_iter = 10
+    naca4412_def.test_vals = [1.783060e-07] #residual
     naca4412_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     naca4412_def.timeout   = 1600
-    naca4412_def.tol       = 1e-15
+    naca4412_def.tol       = 1e-12
     
     pass_list.append(naca4412_def.run_def())
     test_list.append(naca4412_def)
@@ -812,11 +886,11 @@ def main():
     brick_tets_def            = TestCase('brick_tets_def')
     brick_tets_def.cfg_dir   = "deformation/brick_tets"
     brick_tets_def.cfg_file  = "def_brick_tets.cfg"
-    brick_tets_def.test_iter = 1000
-    brick_tets_def.test_vals = [9.35558e-16] #residual
+    brick_tets_def.test_iter = 10
+    brick_tets_def.test_vals = [9.584000e-04] #residual
     brick_tets_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_tets_def.timeout   = 1600
-    brick_tets_def.tol       = 1e-15
+    brick_tets_def.tol       = 1e-9
     
     pass_list.append(brick_tets_def.run_def())
     test_list.append(brick_tets_def)
@@ -825,11 +899,11 @@ def main():
     brick_hex_def           = TestCase('brick_hex_def')
     brick_hex_def.cfg_dir   = "deformation/brick_hex"
     brick_hex_def.cfg_file  = "def_brick_hex.cfg"
-    brick_hex_def.test_iter = 1000
-    brick_hex_def.test_vals = [1.46423e-15] #residual
+    brick_hex_def.test_iter = 10
+    brick_hex_def.test_vals = [2.024230e-04] #residual
     brick_hex_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_hex_def.timeout   = 1600
-    brick_hex_def.tol       = 1e-15
+    brick_hex_def.tol       = 1e-9
     
     pass_list.append(brick_hex_def.run_def())
     test_list.append(brick_hex_def)
@@ -838,11 +912,11 @@ def main():
     brick_pyra_def           = TestCase('brick_pyra_def')
     brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
     brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
-    brick_pyra_def.test_iter = 100
-    brick_pyra_def.test_vals = [5.97202e-15] #residual
+    brick_pyra_def.test_iter = 10
+    brick_pyra_def.test_vals = [1.976680e-03] #residual
     brick_pyra_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_pyra_def.timeout   = 1600
-    brick_pyra_def.tol       = 1e-15
+    brick_pyra_def.tol       = 1e-8
     
     pass_list.append(brick_pyra_def.run_def())
     test_list.append(brick_pyra_def)
@@ -851,11 +925,11 @@ def main():
     brick_prism_def           = TestCase('brick_prism_def')
     brick_prism_def.cfg_dir   = "deformation/brick_prism"
     brick_prism_def.cfg_file  = "def_brick_prism.cfg"
-    brick_prism_def.test_iter = 100
-    brick_prism_def.test_vals = [2.80867e-14] #residual
+    brick_prism_def.test_iter = 10
+    brick_prism_def.test_vals = [6.210870e-03] #residual
     brick_prism_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_prism_def.timeout   = 1600
-    brick_prism_def.tol       = 1e-15
+    brick_prism_def.tol       = 1e-8
     
     pass_list.append(brick_prism_def.run_def())
     test_list.append(brick_prism_def)
@@ -864,11 +938,11 @@ def main():
     brick_prism_rans_def           = TestCase('brick_prism_rans_def')
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
-    brick_prism_rans_def.test_iter = 50
-    brick_prism_rans_def.test_vals = [3.5265e-15] #residual
+    brick_prism_rans_def.test_iter = 10
+    brick_prism_rans_def.test_vals = [2.786240e-07] #residual
     brick_prism_rans_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
-    brick_prism_rans_def.tol       = 1e-15
+    brick_prism_rans_def.tol       = 1e-12
     
     pass_list.append(brick_prism_rans_def.run_def())
     test_list.append(brick_prism_rans_def)
@@ -877,11 +951,11 @@ def main():
     brick_hex_rans_def           = TestCase('brick_hex_rans_def')
     brick_hex_rans_def.cfg_dir   = "deformation/brick_hex_rans"
     brick_hex_rans_def.cfg_file  = "def_brick_hex_rans.cfg"
-    brick_hex_rans_def.test_iter = 600
-    brick_hex_rans_def.test_vals = [2.75292e-14] #residual
+    brick_hex_rans_def.test_iter = 10
+    brick_hex_rans_def.test_vals = [3.566260e-06] #residual
     brick_hex_rans_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_hex_rans_def.timeout   = 1600
-    brick_hex_rans_def.tol       = 1e-16
+    brick_hex_rans_def.tol       = 1e-11
     
     pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
@@ -890,11 +964,11 @@ def main():
     cylinder_ffd_def           = TestCase('cylinder_ffd_def')
     cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
     cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
-    cylinder_ffd_def.test_iter = 50
-    cylinder_ffd_def.test_vals = [2.31204e-10] #residual
+    cylinder_ffd_def.test_iter = 10
+    cylinder_ffd_def.test_vals = [9.062140e-04] #residual
     cylinder_ffd_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     cylinder_ffd_def.timeout   = 1600
-    cylinder_ffd_def.tol       = 1e-16
+    cylinder_ffd_def.tol       = 1e-9
 
     pass_list.append(cylinder_ffd_def.run_def())
     test_list.append(cylinder_ffd_def)
@@ -903,11 +977,11 @@ def main():
     sphere_ffd_def           = TestCase('sphere_ffd_def')
     sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def.cfg_file  = "def_spherical.cfg"
-    sphere_ffd_def.test_iter = 50
-    sphere_ffd_def.test_vals = [2.0062e-10] #residual
+    sphere_ffd_def.test_iter = 10
+    sphere_ffd_def.test_vals = [3.929760e-03] #residual
     sphere_ffd_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     sphere_ffd_def.timeout   = 1600
-    sphere_ffd_def.tol       = 1e-16
+    sphere_ffd_def.tol       = 1e-8
 
     pass_list.append(sphere_ffd_def.run_def())
     test_list.append(sphere_ffd_def)
@@ -916,11 +990,11 @@ def main():
     sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
     sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
-    sphere_ffd_def_bspline.test_iter = 50
-    sphere_ffd_def_bspline.test_vals = [1.20429e-10] #residual
+    sphere_ffd_def_bspline.test_iter = 10
+    sphere_ffd_def_bspline.test_vals = [2.232980e-03] #residual
     sphere_ffd_def_bspline.su2_exec  = "mpirun -n 2 SU2_DEF"
     sphere_ffd_def_bspline.timeout   = 1600
-    sphere_ffd_def_bspline.tol       = 1e-16
+    sphere_ffd_def_bspline.tol       = 1e-8
 
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)

@@ -85,9 +85,11 @@ inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
 
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
-inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) { }
+inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) { }
 
-inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
+inline void CGeometry::SetShroudVelocity(CConfig *config){ }
+
+inline void CGeometry::SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool print) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
@@ -159,7 +161,21 @@ inline void CGeometry::SetnElem(unsigned long val_nelem) { nElem = val_nelem; }
 
 inline void CGeometry::SetnDim(unsigned short val_nDim) { nDim = val_nDim; }
 
+inline su2double* CGeometry::GetSpanWiseValue(unsigned short val_marker) { return SpanWiseValue[val_marker-1]; }
+
 inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return nVertex[val_marker]; }
+
+inline unsigned short CGeometry::GetnSpanWiseSections(unsigned short marker_flag) { return nSpanWiseSections[marker_flag -1]; }
+
+inline unsigned long CGeometry::GetnVertexSpan(unsigned short val_marker, unsigned short val_span) { return nVertexSpan[val_marker][val_span]; }
+
+inline unsigned long CGeometry::GetnFreqSpan(unsigned short val_marker, unsigned short val_span) { return (nTotVertexSpan[val_marker][val_span]/2 -1); }
+
+inline unsigned long CGeometry::GetnVertexSpanMax(unsigned short marker_flag){return nVertexSpanMax[marker_flag];}
+
+inline unsigned long CGeometry::GetnFreqSpanMax(unsigned short marker_flag){return (nVertexSpanMax[marker_flag]/2 -1);}
+
+inline void CGeometry::SetnVertexSpanMax(unsigned short marker_flag, unsigned long nVertMax){nVertexSpanMax[marker_flag] = nVertMax;}
 
 inline unsigned long CGeometry::GetnEdge(void) { return nEdge; }
 
@@ -170,6 +186,60 @@ inline void CGeometry::SetBoundVolume(void) { }
 inline void CGeometry::SetVertex(void) { }
 
 inline void CGeometry::SetVertex(CConfig *config) { }
+
+inline void CGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
+
+inline void CGeometry::SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
+
+inline void CGeometry::UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag) { }
+
+inline void CGeometry::SetAvgTurboValue(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
+
+inline void CGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){ }
+
+inline su2double* CGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){ return NULL;}
+
+inline su2double* CGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){ return NULL;}
+
+inline su2double CGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double* CGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return NULL;}
+
+inline su2double CGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline void CGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return 0;}
+
+inline su2double CGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
@@ -201,20 +271,32 @@ inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string 
 
 inline void CGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
 
-inline void CGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
+inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
-
-inline su2double CGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+inline su2double CGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
   
-inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+inline su2double CGeometry::Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+inline su2double CGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
-inline void CGeometry::Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
-                                               unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+inline su2double CGeometry::Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline su2double CGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc) { return 0; }
+
+inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline su2double CGeometry::Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
+inline void CGeometry::Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+                                               vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                                               vector<su2double> &Zcoord_Airfoil) { }
+
+inline void CGeometry::Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal,
+                                               vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                                                vector<su2double> &Zcoord_Airfoil) { }
 
 inline su2double CGeometry::Compute_Dihedral(su2double *LeadingEdge_im1, su2double *TrailingEdge_im1,
@@ -225,8 +307,18 @@ inline su2double CGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2dou
                                               su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) { return 0; }
 
 inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral) { }
+                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                    su2double &Wing_MaxDihedral) { }
+
+
+inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
+  		                                su2double &Fuselage_Volume, su2double &Fuselage_WettedArea, 
+  		                                su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		                                su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		                                su2double &Fuselage_MaxCurvature) { }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
@@ -332,5 +424,49 @@ inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigne
 inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {}
 
 inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {Sensitivity[iPoint*nDim+iDim] = val;}
+
+inline su2double* CPhysicalGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){return AverageTurboNormal[val_marker][val_span];}
+
+inline su2double* CPhysicalGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){return AverageGridVel[val_marker][val_span]; }
+
+inline su2double CPhysicalGeometry::GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span){return AverageTangGridVel[val_marker][val_span]; }
+
+inline su2double* CPhysicalGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return AverageNormal[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return SpanArea[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return TurboRadius[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return TangGridVelIn[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return TangGridVelOut[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return SpanAreaIn[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span){return SpanAreaOut[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return TurboRadiusIn[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return TurboRadiusOut[val_marker][val_span];}
+
+inline void CPhysicalGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelIn[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelOut[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaIn[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaOut[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span){ TurboRadiusIn[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){TurboRadiusOut[val_marker][val_span] = value;}
+
+inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetMinAngularCoord(unsigned short val_marker, unsigned short val_span){return MinAngularCoord[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetMaxAngularCoord(unsigned short val_marker, unsigned short val_span){return MaxAngularCoord[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetMinRelAngularCoord(unsigned short val_marker, unsigned short val_span){return MinRelAngularCoord[val_marker][val_span];}
 
 inline void CGeometry::Check_Periodicity(CConfig* config) {}

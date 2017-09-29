@@ -411,3 +411,45 @@ inline void CVertex::SetVarRot(su2double* val) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     VarRot[iDim] = val[iDim];
 }
+
+inline void CTurboVertex::SetTurboNormal(su2double *val_normal ){
+	unsigned short iDim;
+	for(iDim= 0; iDim < nDim; iDim++)
+		TurboNormal[iDim] = val_normal[iDim];
+}
+
+inline void CTurboVertex::GetTurboNormal(su2double *val_normal) {
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		val_normal[iDim] = TurboNormal[iDim];
+}
+
+inline void CTurboVertex::SetGlobalVertexIndex(int globalindex){ GlobalIndex = globalindex;}
+
+inline int CTurboVertex::GetGlobalVertexIndex(void){return GlobalIndex;}
+
+inline su2double *CTurboVertex::GetTurboNormal(void) { return TurboNormal; }
+
+inline void CTurboVertex::SetArea(su2double val_area){Area = val_area;}
+
+inline su2double CTurboVertex::GetArea(void) { return Area; }
+
+inline void CTurboVertex::SetOldVertex(unsigned long val_vertex){OldVertex = val_vertex;}
+
+inline unsigned long CTurboVertex::GetOldVertex(void) { return OldVertex; }
+
+//inline void CTurboVertex::SetPitchCoord(su2double pitchCoord){PitchCoord = pitchCoord;}
+//
+//inline su2double CTurboVertex::GetPitchCoord(void) { return PitchCoord; }
+
+inline void CTurboVertex::SetAngularCoord(su2double angCoord){AngularCoord = angCoord;}
+
+inline su2double CTurboVertex::GetAngularCoord(void) { return AngularCoord; }
+
+inline void CTurboVertex::SetDeltaAngularCoord(su2double deltaAngCoord){DeltaAngularCoord = deltaAngCoord;}
+
+inline su2double CTurboVertex::GetDeltaAngularCoord(void) { return DeltaAngularCoord; }
+
+inline void CTurboVertex::SetRelAngularCoord(su2double minAngCoord) {RelAngularCoord = AngularCoord - minAngCoord;}
+
+inline su2double CTurboVertex::GetRelAngularCoord(void){return RelAngularCoord;}
+

@@ -96,10 +96,10 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
               
             # Aerodynamics
-            if func_output in su2io.optnames_aero:
+            if func_output in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
 
-            elif func_name[0] in su2io.optnames_aero:
+            elif func_name[0] in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
                 
             # Stability
@@ -235,12 +235,14 @@ def adjoint( func_name, config, state=None ):
 
     # files: direct solution
     name = files['DIRECT']
+    name = su2io.expand_zones(name,config)
     name = su2io.expand_time(name,config)
     link.extend(name)
 
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         name = files[ADJ_NAME]
+        name = su2io.expand_zones(name,config)
         name = su2io.expand_time(name,config)
         link.extend(name)       
     else:
@@ -280,6 +282,7 @@ def adjoint( func_name, config, state=None ):
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
+            name = su2io.expand_zones(name,config)
             name = su2io.expand_time(name,config)
             push.extend(name)
 
@@ -1002,7 +1005,10 @@ def directdiff( config, state=None ):
                     if key == 'VARIABLE':
                         grads[key].append(i_dv)
                     else:
-                        this_grad = func_step[su2io.grad_names_map[key]]
+                        if su2io.grad_names_map[key] in func_step:
+                          this_grad = func_step[su2io.grad_names_map[key]]
+                        else:
+                          this_grad = 0.0
                         grads[key].append(this_grad)
                 #: for each grad name
 

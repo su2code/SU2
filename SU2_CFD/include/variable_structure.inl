@@ -303,6 +303,10 @@ inline void CVariable::SetObjFuncSource(su2double *val_ObjFuncSource) { }
 
 inline void CVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) { }
 
+inline su2double CVariable::GetGammaBC(void) { return 0; }
+
+inline void CVariable::SetGammaBC(su2double val_gamma) { }
+
 inline void CVariable::SetEnthalpy(void) { }
 
 inline bool CVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) { return true; }
@@ -433,9 +437,9 @@ inline void CVariable::SetThermalConductivity(CConfig *config) { }
 
 inline void CVariable::SetSpecificHeatCp(su2double Cp) { }
 
-inline bool CVariable::SetVorticity(bool val_limiter) { return false; }
+inline bool CVariable::SetVorticity(void) { return false; }
 
-inline bool CVariable::SetStrainMag(bool val_limiter) { return false; }
+inline bool CVariable::SetStrainMag(void) { return false; }
 
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
@@ -1087,9 +1091,9 @@ inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, s
 
 inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
-inline void CTurbMLVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
+inline su2double CTurbSAVariable::GetGammaBC(void) { return gamma_BC; }
 
-inline su2double CTurbMLVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+inline void CTurbSAVariable::SetGammaBC(su2double val_gamma) { gamma_BC = val_gamma; }
 
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 

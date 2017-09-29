@@ -55,23 +55,6 @@
 
 using namespace std;
 
-/*! 
- * \brief Gets the number of zones in the mesh file.
- * \param[in] val_mesh_filename - Name of the file with the grid information.
- * \param[in] val_format - Format of the file with the grid information.
- * \param[in] config - Definition of the particular problem.
- * \return Total number of zones in the grid file.
- */
-unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
-
-/*! 
- * \brief Gets the number of dimensions in the mesh file
- * \param[in] val_mesh_filename - Name of the file with the grid information.
- * \param[in] val_format - Format of the file with the grid information.
- * \return Total number of domains in the grid file.
- */
-unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
-
 /*!
  * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
  * \param[in] geometry - Geometrical definition of the problem.

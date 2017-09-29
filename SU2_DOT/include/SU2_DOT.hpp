@@ -57,7 +57,7 @@ using namespace std;
  * \param[in] Gradient_file - Output file to store the gradient data.
  */
 
-void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file);
+void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Gradient);
 
 /*!
  * \brief Projection of the surface sensitivity using algorithmic differentiation (AD).
@@ -67,7 +67,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
  * \param[in] Gradient_file - Output file to store the gradient data.
  */
 
-void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file);
+void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Gradient);
 
 /*!
  * \brief Prints the gradient information to a file.
