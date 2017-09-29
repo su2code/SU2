@@ -485,22 +485,22 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     }
   }
 
-  for(iMarker = 0; iMarker < nMarker; iMarker++){
+/*  for(iMarker = 0; iMarker < nMarker; iMarker++){
     /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
-    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
+/*    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
-        if(geometry->node[iPoint]->GetDomain()){
+/*        if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           y = SU2_TYPE::GetValue(Coord[1]);
           if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
           /*--- Only look at points below aircraft ---*/
-          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
+/*          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
             r2 = y*y;
             if(nDim == 3) r2 += z*z;
             /*--- Limit search to points within strip ---*/
-            if(r2 > r02*sq2_2 && r2 < r02*sq2){
+/*            if(r2 > r02*sq2_2 && r2 < r02*sq2){
               x = SU2_TYPE::GetValue(Coord[0]);
 
               if(nDim == 2){
@@ -530,7 +530,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     startline[i] = true;
                     nNearest_loc[i]++;
                     /*--- Now sort min values based on r2 ---*/
-                    if(r2min[2*i+1] < r2min[2*i]){
+/*                    if(r2min[2*i+1] < r2min[2*i]){
                       itmp = iPointmin[2*i+1];
                       iPointmin[2*i+1] = iPointmin[2*i];
                       iPointmin[2*i] = itmp;
@@ -553,9 +553,59 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       }
     }
   }
+*/
+  /*--- Test search ---*/  
+  for(iMarker = 0; iMarker < nMarker; iMarker++){
+    /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
+    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
+      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        /*--- Make sure point is in domain ---*/
+        if(geometry->node[iPoint]->GetDomain()){
+          Coord = geometry->node[iPoint]->GetCoord();
+          y = SU2_TYPE::GetValue(Coord[1]);
+          if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
+          /*--- Only look at points below aircraft ---*/
+          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
+            r2 = y*y;
+            if(nDim == 3) r2 += z*z;
+            /*--- Limit search to points within strip ---*/
+            if(r2 > r02*sq2_2 && r2 < r02*sq2){
+              x = SU2_TYPE::GetValue(Coord[0]);
+              nElem = geometry->node[iPoint->GetnElem();
+              for(iElem = 0; iElem < nElem; iElem++){
+                jElem = geometry->node[iPoint]->GetElem(iElem);
+                inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
+                if(inside){
+                  if(nPanel[0] == 0){
+                    nPanel[0] = 1;
+                    pointID_original = new unsigned long*[1];
+                    pointID_original[0] = new unsigned long[nPanel[0]];
+                    Coord_original = new su2double**[1];
+                    Coord_original[0] = new su2double*[nPanel[0]];
+                    Coord_original[0][0] = new su2double[nDim];
 
+                    pointID_original[0][0] = jElem;
+                    Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
+                    Coord_original[0][0][1] = -r0;
+                  }
+                  else{
+                    if((p0[0]+p1[0])/2.0 < Coord_original[0][0][0]){
+                      pointID_original[0][0] = jElem;
+                      Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
+                    }
+                  }
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   /*--- Reorder iPointmin by x location ---*/
-  for(int i = 0; i < nPhi; i++){
+/*  for(int i = 0; i < nPhi; i++){
     MergeSort(xmin, iPointmin, i*nNearest, i*nNearest+nNearest-1);
   }
 
@@ -587,7 +637,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                 Coord_original[0][0][0] = mintmp;
               }
             }*/
-            break;
+/*            break;
           }
         }
         if(inside) break;
@@ -627,7 +677,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       }
     }
   }
- 
+*/ 
 
   delete [] iPointmin;
   delete [] Coord;
