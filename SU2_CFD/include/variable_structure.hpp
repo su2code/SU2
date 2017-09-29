@@ -272,6 +272,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void SetRoe_Dissipation(su2double val_dissipation);
+  
+  /*!
+   * \brief A virtual member.
+   */
   virtual void SetRoe_Dissipation_FD(su2double val_wall_dist);
   
   /*!
@@ -3634,6 +3639,12 @@ public:
  * \return Value of the Roe Dissipation.
  */
   su2double GetRoe_Dissipation(void);
+  
+  /*!
+ * \brief Set the Roe Dissipation Coefficient.
+ * \param[in] val_dissipation - Value of the Roe dissipation factor.
+ */
+  void SetRoe_Dissipation(su2double val_dissipation);
   
 };
 

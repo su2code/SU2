@@ -399,6 +399,10 @@ inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {
   Dissipation_j = diss_j;
 }
 
+inline su2double CNumerics::GetDissipation(){
+  return Dissipation_ij;
+}
+
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 
   F1_j = val_F1_j;
