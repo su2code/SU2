@@ -222,11 +222,20 @@ class Interface:
           MPIsize = 1
 	
 	# --- Identify the fluid and solid interfaces and store the number of nodes on both sides (and for each partition) ---
+        self.fluidInterfaceIdentifier = None
+        self.nLocalFluidInterfaceNodes = 0
         if FluidSolver != None:
 	    print('Fluid solver is initialized on process {}'.format(myid))
             self.haveFluidSolver = True
-	    self.fluidInterfaceIdentifier = FluidSolver.GetMovingMarker()
-	    self.nLocalFluidInterfaceNodes = FluidSolver.GetNumberVertices(self.fluidInterfaceIdentifier)
+            allMovingMarkersTags = FluidSolver.GetAllMovingMarkersTag()
+            allMarkersID = FluidSolver.GetAllBoundaryMarkers()
+            if not allMovingMarkersTags:
+                raise Exception('No interface for FSI was defined.')
+            else:
+                if allMovingMarkersTags[0] in allMarkersID.keys():
+                    self.fluidInterfaceIdentifier = allMarkersID[allMovingMarkersTags[0]]
+            if self.fluidInterfaceIdentifier != None:
+	        self.nLocalFluidInterfaceNodes = FluidSolver.GetNumberVertices(self.fluidInterfaceIdentifier)
 	    if self.nLocalFluidInterfaceNodes != 0:
               self.haveFluidInterface = True
 	      print('Number of interface fluid nodes (halo nodes included) on proccess {} : {}'.format(myid,self.nLocalFluidInterfaceNodes))
@@ -1544,26 +1553,26 @@ class Interface:
             if GlobalIndex in self.FluidHaloNodeList[myid].keys():
               posX0, posY0, posZ0 = self.haloNodesPositionsInit[GlobalIndex]
               DispX, DispY, DispZ = self.haloNodesDisplacements[GlobalIndex]
-              if posY0 == 0.0:
-                posX = posX0
-                posY = posY0
-                posZ = posZ0
-              else:
-                posX = posX0 + DispX
-                posY = posY0 + DispY
-                posZ = posZ0 + DispZ
+              #if posY0 == 0.0:
+              #  posX = posX0
+              #  posY = posY0
+              #  posZ = posZ0
+              #else:
+              posX = posX0 + DispX
+              posY = posY0 + DispY
+              posZ = posZ0 + DispZ
               FluidSolver.SetVertexCoordX(self.fluidInterfaceIdentifier, iVertex, posX)
               FluidSolver.SetVertexCoordY(self.fluidInterfaceIdentifier, iVertex, posY)
               FluidSolver.SetVertexCoordZ(self.fluidInterfaceIdentifier, iVertex, posZ)
             else:
-              if self.localFluidInterface_array_Y_init[localIndex] == 0.0:				# !!! This is temporary and case dependent, it should be removed ASAP !!!
-                posX = self.localFluidInterface_array_X_init[localIndex]
-                posY = self.localFluidInterface_array_Y_init[localIndex]
-                posZ = self.localFluidInterface_array_Z_init[localIndex]
-              else:
-                posX = self.localFluidInterface_array_DispX[localIndex] + self.localFluidInterface_array_X_init[localIndex]
-                posY = self.localFluidInterface_array_DispY[localIndex] + self.localFluidInterface_array_Y_init[localIndex]
-                posZ = self.localFluidInterface_array_DispZ[localIndex] + self.localFluidInterface_array_Z_init[localIndex]
+              #if self.localFluidInterface_array_Y_init[localIndex] == 0.0:				# !!! This is temporary and case dependent, it should be removed ASAP !!!
+                #posX = self.localFluidInterface_array_X_init[localIndex]
+                #posY = self.localFluidInterface_array_Y_init[localIndex]
+                #posZ = self.localFluidInterface_array_Z_init[localIndex]
+              #else:
+              posX = self.localFluidInterface_array_DispX[localIndex] + self.localFluidInterface_array_X_init[localIndex]
+              posY = self.localFluidInterface_array_DispY[localIndex] + self.localFluidInterface_array_Y_init[localIndex]
+              posZ = self.localFluidInterface_array_DispZ[localIndex] + self.localFluidInterface_array_Z_init[localIndex]
               FluidSolver.SetVertexCoordX(self.fluidInterfaceIdentifier, iVertex, posX)
               FluidSolver.SetVertexCoordY(self.fluidInterfaceIdentifier, iVertex, posY)
               FluidSolver.SetVertexCoordZ(self.fluidInterfaceIdentifier, iVertex, posZ)
@@ -1623,6 +1632,7 @@ class Interface:
 	      Fy = self.localSolidLoads_array_Y[localIndex]
 	      Fz = self.localSolidLoads_array_Z[localIndex]
               SolidSolver.applyload(iVertex, Fx, Fy, Fz, time)
+              #SolidSolver.applyload(GlobalIndex, Fx, Fy, Fz, time)
               localIndex += 1
           if FSI_config['CSD_SOLVER'] == 'NATIVE':  
             SolidSolver.setGeneralisedForce()
