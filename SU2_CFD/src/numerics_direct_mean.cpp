@@ -2794,6 +2794,12 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
+  if (roe_low_dissipation){
+    AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
+    AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
+    AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  }
+  
   /*--- Face area (norm or the normal vector) ---*/
 
   Area = 0.0;
