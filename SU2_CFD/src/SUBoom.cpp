@@ -563,7 +563,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
-        if(geometry->node[iPoint]->GetDomain()){
+        ////if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           y = SU2_TYPE::GetValue(Coord[1]);
           if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
@@ -577,33 +577,35 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               nElem = geometry->node[iPoint]->GetnElem();
               for(iElem = 0; iElem < nElem; iElem++){
                 jElem = geometry->node[iPoint]->GetElem(iElem);
-                inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
-                if(inside){
-                  if(nPanel[0] == 0){
-                    nPanel[0] = 1;
-                    pointID_original = new unsigned long*[1];
-                    pointID_original[0] = new unsigned long[nPanel[0]];
-                    Coord_original = new su2double**[1];
-                    Coord_original[0] = new su2double*[nPanel[0]];
-                    Coord_original[0][0] = new su2double[nDim];
+                if(jElem < geometry->GetnElem()){
+                  inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
+                  if(inside){
+                    if(nPanel[0] == 0){
+                      nPanel[0] = 1;
+                      pointID_original = new unsigned long*[1];
+                      pointID_original[0] = new unsigned long[nPanel[0]];
+                      Coord_original = new su2double**[1];
+                      Coord_original[0] = new su2double*[nPanel[0]];
+                      Coord_original[0][0] = new su2double[nDim];
 
-                    pointID_original[0][0] = jElem;
-                    Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
-                    Coord_original[0][0][1] = -r0;
-                  }
-                  else{
-                    if((p0[0]+p1[0])/2.0 < Coord_original[0][0][0]){
                       pointID_original[0][0] = jElem;
                       Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
+                      Coord_original[0][0][1] = -r0;
                     }
+                    else{
+                      if((p0[0]+p1[0])/2.0 < Coord_original[0][0][0]){
+                        pointID_original[0][0] = jElem;
+                        Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
+                      }
+                    }
+                    startline[0] = true;
+                    //break;
                   }
-                  startline[0] = true;
-                  //break;
                 }
               }
             }
           }
-        }
+        ////}
       }
     }
   }
