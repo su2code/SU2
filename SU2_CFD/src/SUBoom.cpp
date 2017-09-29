@@ -717,7 +717,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 }
 
 void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned short iPhi){
-  unsigned short iDim, iNode, nNode;
+  unsigned short iDim, iNode, iiNode, nNode;
   unsigned long jElem, jNode, *jNode_list;
   unsigned long pointCount = 0, jNodeCount;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
@@ -771,13 +771,13 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
           }
         }
         X_donor = new su2double[nDim*(nNode-1)];
-        for(jNode = 0; jNode < nNode-1; jNode++){
+        for(iiNode = 0; iiNode < nNode-1; iiNode++){
           for(iDim = 0; iDim < nDim; iDim++){
-            if(jNode < iNode){
-              X_donor[iDim*(nNode-1)+jNode] = X_donor_tmp[iDim*nNode+jNode];
+            if(iiNode < iNode){
+              X_donor[iDim*(nNode-1)+iiNode] = X_donor_tmp[iDim*nNode+iiNode];
             }
             else{
-              X_donor[iDim*(nNode-1)+jNode] = X_donor_tmp[iDim*nNode+jNode+1];
+              X_donor[iDim*(nNode-1)+iiNode] = X_donor_tmp[iDim*nNode+iiNode+1];
             }
           }
         }
@@ -959,8 +959,6 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     }
     delete [] Coord_face;
   }
-
-  
 
   return inside;
 }
