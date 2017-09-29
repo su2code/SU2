@@ -542,9 +542,8 @@ void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 }
 
 void CTransLMSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                 CConfig *config, unsigned short val_marker) {
+                                  CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
 //cout << "BC_Outlet reached -AA" << endl;
-// TODO: Fix iRKStep here
 // Why are we calling the wall BC anyway?
-BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker,0);
+BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker,iRKStep);
 }

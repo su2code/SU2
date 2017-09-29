@@ -591,14 +591,15 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-void CTurbSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
 
 }
 
 void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *numerics, CConfig *config,
+                                unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Convective fluxes across euler wall are equal to zero. ---*/
 

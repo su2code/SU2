@@ -4477,7 +4477,8 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                    CNumerics *numerics, CConfig *config,
+                                    unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
@@ -4949,11 +4950,10 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker) {
+                                   CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Call the Euler wall residual method. ---*/
-  
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker, iRKStep);
   
 }
 

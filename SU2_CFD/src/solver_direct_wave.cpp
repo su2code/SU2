@@ -370,7 +370,8 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
                                   CSolver **solver_container, 
                                   CNumerics *numerics, 
                                   CConfig   *config, 
-                                  unsigned short val_marker) {
+                                  unsigned short val_marker,
+                                unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex, total_index, iter;
   su2double deltaT, omega, time, ampl, *wave_sol;

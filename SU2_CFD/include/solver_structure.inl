@@ -677,7 +677,7 @@ inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP) { return 0;}
 inline su2double CSolver::GetPressureRatio(unsigned short inMarkerTP) { return 0;}
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-                   unsigned short val_marker) { }
+                   unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
                    unsigned short val_marker) { }
@@ -708,7 +708,7 @@ inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_containe
                   unsigned short val_marker) { }
 
 inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config) { }
+                                        CConfig *config, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                            CConfig *config, unsigned short val_marker) { }
@@ -729,7 +729,7 @@ inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
                                   CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
-                  CConfig *config, unsigned short val_marker) { }
+                  CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
                   
 inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
                      CConfig *config, unsigned short val_marker) { }

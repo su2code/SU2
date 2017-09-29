@@ -90,7 +90,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
-  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iRKStep);
 
   /*--- Weak boundary conditions ---*/
   
@@ -98,7 +98,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
       case EULER_WALL:
-        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker, iRKStep);
         break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -144,7 +144,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker, iRKStep);
         break;
       case SYMMETRY_PLANE:
-        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker, iRKStep);
         break;
       case ELECTRODE_BOUNDARY:
         solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);

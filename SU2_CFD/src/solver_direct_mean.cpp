@@ -10491,7 +10491,8 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
 }
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                 CNumerics *numerics, CConfig *config,
+                                 unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim, iVar, jVar, kVar, jDim;
   unsigned long iPoint, iVertex;
@@ -13535,16 +13536,15 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker) {
+                                CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Call the Euler residual ---*/
-  
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker, iRKStep);
   
 }
 
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config) {
+                                      CConfig *config, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iVar, iMarker;
