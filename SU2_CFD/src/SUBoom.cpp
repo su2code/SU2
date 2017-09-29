@@ -188,7 +188,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       MergeSort(signal.x[iPhi], signal.original_p[iPhi], 0, totSig-1);
 
       /*---Check for duplicate points---*/
-      /*for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
+      for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
         if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-8){
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
@@ -197,7 +197,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           iPanel--;
           nPanel[iPhi]--;
         }
-      }*/
+      }
 
       if(nPanel[iPhi] != totSig){
         cout << "Eliminating duplicate points." << endl;
@@ -711,9 +711,10 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
     nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
     ////inside = false;
     inside_iPanel = false;
-    addPanel = true;
+    //addPanel = true;
 
     for(iElem = 0; iElem < nElem; iElem++){
+      addPanel = true;
       inside = false;
       jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
       /*--- Don't extract boundary elements ---*/
@@ -726,6 +727,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
             for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
               if(jElem == pointID_original[iPhi][iPanel]){
                 addPanel = false;
+                break;
               }
             }
             if(addPanel){ // If no point allocated for this panel
@@ -769,7 +771,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
               }
 
               inside_iPanel = true;
-              break;
+              //break;
             }
 
             ////break;
