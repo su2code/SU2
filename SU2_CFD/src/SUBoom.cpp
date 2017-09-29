@@ -97,7 +97,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   if(rank == MASTER_NODE)
     cout << "Extract line." << endl;
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    if(startline[iPhi]){
+    if(nPanel[iPhi] > 0){
       ExtractLine(geometry, ray_r0, iPhi);
     }
     else{
@@ -122,7 +122,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   nPointID_loc = 0;
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     nPointID[iPhi] = 0;
-    if(nPanel[iPhi]){      
+    if(nPanel[iPhi] > 0){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
   }
