@@ -64,10 +64,10 @@ void CTemplateSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
                                      unsigned short val_marker, unsigned short iRKStep) { }
 
 void CTemplateSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
-                                 unsigned short val_marker) { }
+                               unsigned short val_marker, unsigned short iRKStep) { }
 
 void CTemplateSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
-                                  unsigned short val_marker) { }
+                                  unsigned short val_marker, unsigned short iRKStep) { }
 
 void CTemplateSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, 
                                      unsigned short val_marker, unsigned short iRKStep) { }

@@ -3353,7 +3353,7 @@ void CAdjIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
   delete [] Psi_domain; delete [] Psi_infty;
 }
 
-void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -3474,7 +3474,7 @@ void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
   
 }
 
-void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -4739,7 +4739,7 @@ void CAdjIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_con
 }
 
 
-void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar, jVar;

@@ -700,7 +700,7 @@ inline void CSolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_containe
 inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                    unsigned short val_marker) { }
                   
-inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
                   
@@ -717,13 +717,13 @@ inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver
                                            CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                      CConfig *config, unsigned short val_marker) { }
+                                      CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                       CConfig *config, unsigned short val_marker) { }
+                                       CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker, bool inlet_surface) { }
+                                CConfig *config, unsigned short val_marker, bool inlet_surface, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                   CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
@@ -735,22 +735,22 @@ inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, 
                      CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
-                     CConfig *config, unsigned short val_marker) { }
+                                CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+                                      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
-                     CConfig *config, unsigned short val_marker) { }
+                              CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
-                      CConfig *config, unsigned short val_marker) { }
+                               CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
                       
 inline void CSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                     CConfig *config, unsigned short val_marker) { }
+                                         CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                         CConfig *config, unsigned short val_marker) { }
+                                          CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 inline void CSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                       CConfig *config, unsigned short val_marker) { }

@@ -4677,7 +4677,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *Flow_Dir,  Vel_Mag, Area;
@@ -4814,7 +4814,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
-                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area, yCoordRef, yCoord;

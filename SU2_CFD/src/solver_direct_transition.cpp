@@ -528,17 +528,16 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                unsigned short val_marker) {
+                                unsigned short val_marker, unsigned short iRKStep) {
 //cout << "BC_Inlet reached -AA" << endl;
 // TODO: Use iRKStep here
   BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, 0);
 }
 
 void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                 CConfig *config, unsigned short val_marker) {
+                               CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
 //cout << "BC_Outlet reached -AA" << endl;
-// TODO: Use iRKStep here
-  BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, 0);
+  BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, iRKStep);
 }
 
 void CTransLMSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
