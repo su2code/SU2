@@ -526,6 +526,7 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
+  su2double Deform_Limit; /*!< Deform limit */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -3377,6 +3378,12 @@ public:
    */
   su2double GetDeform_Coeff(void);
 
+  /*!
+   * \brief Get limit for the volumetric deformation.
+   * \return Distance to the surface to be deformed.
+   */
+  su2double GetDeform_Limit(void);
+  
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
    */

@@ -881,6 +881,8 @@ inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor;
 
 inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
 
+inline su2double CConfig::GetDeform_Limit(void) { return Deform_Limit; }
+
 inline su2double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
 
 inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRatio; }
