@@ -731,8 +731,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  virtual void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -741,8 +742,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
   * \brief Impose the interface state across sliding meshes.
@@ -830,9 +832,10 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   virtual void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short val_marker);
+                            unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -943,9 +946,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   virtual void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short val_marker);
+                         CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -968,8 +972,9 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  virtual void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -979,8 +984,9 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -989,9 +995,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   virtual void BC_Dielec(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short val_marker);
+                         CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -1000,9 +1007,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                            CConfig *config, unsigned short val_marker);
+                            CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   /*!
    * \brief It performs the average value along a boundary.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4394,18 +4402,20 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+                             CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+                             CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
@@ -4413,9 +4423,10 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                    unsigned short val_marker);
+                    unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -4494,9 +4505,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                 CConfig *config, unsigned short val_marker);
+                 CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the outlet boundary condition.
@@ -4519,9 +4531,10 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+                        CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the ancelle exhaust boundary condition.
@@ -4531,9 +4544,10 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+                         CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief It avarage the fluxes value along a boundary.
@@ -6616,9 +6630,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                 CConfig *config, unsigned short val_marker);
+                 CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the outlet boundary condition.
@@ -8470,9 +8485,10 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+                        CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the engine exhaust boundary condition.
@@ -8482,9 +8498,10 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+                         CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the interface boundary condition using the residual.
@@ -8493,9 +8510,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+                             CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -8504,9 +8522,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+                             CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -9203,9 +9222,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+                             CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -9214,9 +9234,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
+                             CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose an actuator disk inlet boundary condition.
@@ -9342,9 +9363,10 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
+                        CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose the engine exhaust boundary condition.
@@ -9354,9 +9376,10 @@ public:
    * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
+                         CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Update the solution using a Runge-Kutta strategy.
@@ -9729,8 +9752,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iRKStep);
   using CSolver::BC_Interface_Boundary;
   
   /*!
@@ -9740,8 +9764,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iRKStep);
   using CSolver::BC_NearField_Boundary;
   
   /*!
@@ -10386,8 +10411,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker);
+  void BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Impose via the residual the Neumann boundary condition.
@@ -11428,9 +11454,10 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                 CConfig *config, unsigned short val_marker);
+                 CConfig *config, unsigned short val_marker, unsigned short iRKStep);
   
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.

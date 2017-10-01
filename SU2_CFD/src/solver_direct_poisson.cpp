@@ -441,7 +441,7 @@ void CPoissonSolver::AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long 
 }
 
 void CPoissonSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
-                                  CConfig *config, unsigned short val_marker) {
+                                  CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long Point, iVertex;
   
   /*--- Identify if a boundary is Dirichlet or Neumman ---*/

@@ -2755,7 +2755,7 @@ void CAdjIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config) {
+                                            CConfig *config, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, jPoint;
   unsigned short iDim, iVar, iMarker;
@@ -2953,7 +2953,7 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
 }
 
 void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config) {
+                                            CConfig *config, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, jPoint, Pin, Pout;
   unsigned short iDim, iVar, iMarker;
