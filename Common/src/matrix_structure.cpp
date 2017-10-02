@@ -72,15 +72,19 @@ CSysMatrix::CSysMatrix(void) {
 CSysMatrix::~CSysMatrix(void) {
   
   unsigned long iElem;
-  
+
   /*--- Memory deallocation ---*/
   
   if (matrix != NULL)             delete [] matrix;
   if (ILU_matrix != NULL)         delete [] ILU_matrix;
   if (row_ptr != NULL)            delete [] row_ptr;
   if (col_ind != NULL)            delete [] col_ind;
-//  if (row_ptr_ilu != NULL) delete [] row_ptr_ilu;
-//  if (col_ind_ilu != NULL) delete [] col_ind_ilu;
+
+  if (ilu_fill_in != 0) {
+    if (row_ptr_ilu != NULL) delete [] row_ptr_ilu;
+    if (col_ind_ilu != NULL) delete [] col_ind_ilu;
+  }
+  
   if (block != NULL)              delete [] block;
   if (block_weight != NULL)       delete [] block_weight;
   if (block_inverse != NULL)      delete [] block_inverse;
@@ -117,14 +121,18 @@ CSysMatrix::~CSysMatrix(void) {
 void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
                             unsigned short nVar, unsigned short nEqn,
                             bool EdgeConnect, CGeometry *geometry, CConfig *config) {
-  
-  unsigned long iPoint, jPoint, kPoint, *row_ptr, *col_ind, index, nnz, Elem, Elem_, iVar;
-  unsigned short iNeigh, iElem, jElem, iNode, jNode, *nNeigh, *nNeigh_ilu;
+
+  /*--- Don't delete *row_ptr, *col_ind because they are
+   asigned to the Jacobian structure. ---*/
+
+  unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem, iVar;
+  unsigned short iNeigh, iElem, iNode, *nNeigh, *nNeigh_ilu;
   vector<unsigned long>::iterator it;
   vector<unsigned long> vneighs, vneighs_ilu;
   
-  /*--- Don't delete *row_ptr, *col_ind because they are
-   asigned to the Jacobian structure. ---*/
+  /*--- Set the ILU fill in level --*/
+   
+  ilu_fill_in = config->GetLinear_Solver_ILU_n();
   
   /*--- Compute the number of neighbors ---*/
   
@@ -202,67 +210,78 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   
   delete [] nNeigh;
   
+  /*--- ILU(n) preconditioner with a specific sparse structure ---*/
   
-  
-  /*--- ILU(1) ---*/
-  
-  unsigned short ilu_fill_in = 1;
-  
-  nNeigh_ilu = new unsigned short [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  if (ilu_fill_in != 0) {
     
-    vneighs_ilu.clear();
-    SetNeighbours(geometry, iPoint, 0, ilu_fill_in, vneighs_ilu);
-    sort(vneighs_ilu.begin(), vneighs_ilu.end());
-    it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-    vneighs_ilu.resize(it - vneighs_ilu.begin());
-    nNeigh_ilu[iPoint] = vneighs_ilu.size();
-    
-  }
-  
-  row_ptr_ilu = new unsigned long [nPoint+1];
-  row_ptr_ilu[0] = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    row_ptr_ilu[iPoint+1] = row_ptr_ilu[iPoint] + nNeigh_ilu[iPoint];
-  nnz_ilu = row_ptr_ilu[nPoint];
-  
-  /*--- Create col_ind structure ---*/
-  
-  col_ind_ilu = new unsigned long [nnz_ilu];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    vneighs_ilu.clear();
-    SetNeighbours(geometry, iPoint, 0, ilu_fill_in, vneighs_ilu);
-    sort(vneighs_ilu.begin(), vneighs_ilu.end());
-    it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-    vneighs_ilu.resize( it - vneighs_ilu.begin() );
-    
-    index = row_ptr_ilu[iPoint];
-    for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
-      col_ind_ilu[index] = vneighs_ilu[iNeigh];
-      index++;
+    nNeigh_ilu = new unsigned short [nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      
+      vneighs_ilu.clear();
+      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
+      sort(vneighs_ilu.begin(), vneighs_ilu.end());
+      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
+      vneighs_ilu.resize(it - vneighs_ilu.begin());
+      nNeigh_ilu[iPoint] = vneighs_ilu.size();
+      
     }
     
+    row_ptr_ilu = new unsigned long [nPoint+1];
+    row_ptr_ilu[0] = 0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      row_ptr_ilu[iPoint+1] = row_ptr_ilu[iPoint] + nNeigh_ilu[iPoint];
+    nnz_ilu = row_ptr_ilu[nPoint];
+    
+    /*--- Create col_ind structure ---*/
+    
+    col_ind_ilu = new unsigned long [nnz_ilu];
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      
+      vneighs_ilu.clear();
+      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
+      sort(vneighs_ilu.begin(), vneighs_ilu.end());
+      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
+      vneighs_ilu.resize( it - vneighs_ilu.begin() );
+      
+      index = row_ptr_ilu[iPoint];
+      for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
+        col_ind_ilu[index] = vneighs_ilu[iNeigh];
+        index++;
+      }
+      
+    }
+    
+    ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
+    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+    
+    delete [] nNeigh_ilu;
+    
   }
-  
-  ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
-  for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-  
-  delete [] nNeigh_ilu;
-  
   
 }
 
-void CSysMatrix::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, vector<unsigned long> & vneighs) {
+void CSysMatrix::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
+                               bool EdgeConnect, vector<unsigned long> & vneighs) {
   unsigned long Point, iElem, Elem;
   unsigned short iNode;
 
-  for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-    Elem =  geometry->node[iPoint]->GetElem(iElem);
-    for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
-      Point = geometry->elem[Elem]->GetNode(iNode);
+
+  if (EdgeConnect) {
+    vneighs.push_back(iPoint);
+    for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+      Point = geometry->node[iPoint]->GetPoint(iNode);
       vneighs.push_back(Point);
-      if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, vneighs);
+      if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
+    }
+  }
+  else {
+    for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+      Elem =  geometry->node[iPoint]->GetElem(iElem);
+      for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
+        Point = geometry->elem[Elem]->GetNode(iNode);
+        vneighs.push_back(Point);
+        if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
+      }
     }
   }
   
@@ -281,9 +300,11 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   col_ind      = val_col_ind;       // Assign colums values in the spare system structure (Jacobian structure)
   nnz          = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (Jacobian structure)
   
-//  row_ptr_ilu  = val_row_ptr;       // Assign row values in the spare system structure (ILU structure)
-//  col_ind_ilu  = val_col_ind;       // Assign colums values in the spare system structure (ILU structure)
-//  nnz_ilu      = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (ILU structure)
+  if (ilu_fill_in == 0) {
+    row_ptr_ilu  = val_row_ptr;       // Assign row values in the spare system structure (ILU structure)
+    col_ind_ilu  = val_col_ind;       // Assign colums values in the spare system structure (ILU structure)
+    nnz_ilu      = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (ILU structure)
+  }
   
   matrix            = new su2double [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
   block             = new su2double [nVar*nEqn];
@@ -307,20 +328,24 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
   
-//  /*--- Set specific preconditioner matrices (ILU) ---*/
-//  
-//  if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-//  		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-//  		((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-//  		(config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
-//      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
-//    
-//    /*--- Reserve memory for the ILU matrix. ---*/
-//    
-//    ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
-//    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-//
-//  }
+  if (ilu_fill_in == 0) {
+
+    /*--- Set specific preconditioner matrices (ILU) ---*/
+    
+    if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
+        ((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+        ((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+        (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
+      
+      /*--- Reserve memory for the ILU matrix. ---*/
+      
+      ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
+      for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+      
+    }
+    
+  }
   
   /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
   
@@ -1541,7 +1566,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   }
   
   /*--- Forward solve the system using the lower matrix entries that
-   were computed and stored during the ILU0 preprocessing. Note
+   were computed and stored during the ILU preprocessing. Note
    that we are overwriting the residual vector as we go. ---*/
   
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
@@ -1588,7 +1613,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
 }
 
-unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long index;
   su2double *Block_ij, omega = 1.0;
@@ -1603,7 +1628,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::ILU0_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
+    if (rank == MASTER_NODE) cerr << "CSysMatrix::ILU_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1628,7 +1653,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   su2double norm_r = r.norm();
   su2double norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU0_Smoother(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1640,7 +1665,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   
   int i = 0;
   if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "ILU0 Smoother" << " residual history" << endl;
+    cout << "\n# " << "ILU Smoother" << " residual history" << endl;
     cout << "# Residual tolerance target = " << tol << endl;
     cout << "# Initial residual norm     = " << norm_r << endl;
     cout << "     " << i << "     " << norm_r/norm0 << endl;
@@ -1651,7 +1676,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   for (i = 0; i < (int)m; i++) {
     
     /*--- Forward solve the system using the lower matrix entries that
-     were computed and stored during the ILU0 preprocessing. Note
+     were computed and stored during the ILU preprocessing. Note
      that we are overwriting the residual vector as we go. ---*/
     
     for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
@@ -1708,7 +1733,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
     }
     
     /*--- Update solution (x^k+1 = x^k + w*M^-1*r^k) using the residual vector,
-     which holds the update after applying the ILU0 smoother, i.e., M^-1*r^k.
+     which holds the update after applying the ILU smoother, i.e., M^-1*r^k.
      Omega is a relaxation factor that we have currently set to 1.0. ---*/
     
     x.Plus_AX(omega, r);
@@ -1734,7 +1759,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
   }
   
   if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "# ILU0 smoother final (true) residual:" << endl;
+    cout << "# ILU smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
