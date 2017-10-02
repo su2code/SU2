@@ -4474,10 +4474,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   unsigned long ExtIter = config->GetExtIter();
   bool adjoint          = config->GetContinuous_Adjoint();
-  //bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
@@ -4618,11 +4618,13 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
-  
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+
+  // FIXME: shouldn't call this after first RK substep... don't want
+  // to be changing dt during a step.
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
 
   bool grid_movement = config->GetGrid_Movement();
     bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -4805,10 +4807,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   
   unsigned long iEdge, iPoint, jPoint;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
   bool second_order = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool grid_movement = config->GetGrid_Movement();
@@ -4875,11 +4877,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
   
-  
-  //bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && ((iMesh == MESH_0) || low_fidelity));
@@ -5125,10 +5126,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar;
   unsigned long iPoint;
-  //bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
@@ -10502,10 +10503,11 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
   su2double **Jacobian_b, **DubDu;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 ) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
 
   bool grid_movement = config->GetGrid_Movement();
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
@@ -10693,10 +10695,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   
   su2double Gas_Constant     = config->GetGas_ConstantND();
   
-  //bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous        = config->GetViscous();
@@ -10954,10 +10956,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   
-  //bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -11808,10 +11810,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   
-  //bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -12312,10 +12314,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   su2double *V_inlet, *V_domain;
   
-  //bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement        = config->GetGrid_Movement();
   su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
@@ -12621,10 +12623,10 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   Area, UnitNormal[3];
   su2double *V_outlet, *V_domain;
   
-  //bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
   bool grid_movement      = config->GetGrid_Movement();
@@ -12797,10 +12799,10 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   su2double Density, Pressure, Temperature, Energy, *Velocity, Velocity2;
   su2double Gas_Constant = config->GetGas_ConstantND();
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
@@ -12942,10 +12944,10 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
@@ -13068,10 +13070,11 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   su2double *V_inflow, *V_domain;
   
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   unsigned short Kind_Engine_Inflow = config->GetKind_Engine_Inflow();
   bool viscous              = config->GetViscous();
@@ -13289,10 +13292,11 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
   
   su2double Gas_Constant = config->GetGas_ConstantND();
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -13549,10 +13553,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, iPoint;
   unsigned short iDim, iVar, iMarker;
   
-  //bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement = config->GetGrid_Movement();
   
@@ -13631,10 +13635,10 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
   unsigned short iDim, iVar;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   
   su2double *Normal = new su2double[nDim];
@@ -13696,10 +13700,10 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
   unsigned short iDim, iVar;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   
   su2double *Normal = new su2double[nDim];
@@ -13786,10 +13790,10 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     su2double turb_ke, a2, phi;
     bool ReverseFlow;
 
-    //bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-    bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+    bool implicit =
+      ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+       (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+       (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
     su2double Gas_Constant  = config->GetGas_ConstantND();
     bool viscous            = config->GetViscous();
@@ -14221,8 +14225,9 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   su2double *U_time_nM1, *U_time_n, *U_time_nP1;
   su2double Volume_nM1, Volume_nP1, TimeStep;
   su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
-  
-  //bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  // FIXME: Should probably error if try to use dual time stepping
+  // with LIMEX... not set up to work together.
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -16118,10 +16123,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
   unsigned long ExtIter     = config->GetExtIter();
   bool adjoint              = config->GetContinuous_Adjoint();
-  //bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
@@ -16288,8 +16293,8 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   unsigned short iDim, iMarker;
   su2double ProjVel, ProjVel_i, ProjVel_j;
-  
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  // FIXME: Make sure we only call on first RK substep
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -16536,10 +16541,10 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, jPoint, iEdge;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -17023,10 +17028,10 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
-  //bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement  = config->GetGrid_Movement();
   
@@ -17268,10 +17273,10 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
 
   bool grid_movement  = config->GetGrid_Movement();
   
