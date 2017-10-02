@@ -4619,8 +4619,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
-  // FIXME: shouldn't call this after first RK substep... don't want
-  // to be changing dt during a step.
   bool implicit =
     ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
       (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
@@ -14235,9 +14233,13 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
 
   // FIXME: Should probably error if try to use dual time stepping
   // with LIMEX... not set up to work together.
-  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
-                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) );
+
+  if ((config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) ) {
+    cout << "ERROR: Dual time stepping should not be used with linearly implicit RK schemes." << endl;
+    exit(EXIT_FAILURE);
+  }
 
   bool grid_movement  = config->GetGrid_Movement();
   
@@ -16301,7 +16303,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   unsigned short iDim, iMarker;
   su2double ProjVel, ProjVel_i, ProjVel_j;
 
-  // FIXME: Make sure we only call on first RK substep
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -16334,8 +16335,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     /*--- Mean Values ---*/
     
     Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
-    //Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-    Mean_SoundSpeed = 0.0; // FIXME: Just for testing/informational purposes
+    Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
     
     /*--- Adjustment for grid movement ---*/
     
@@ -16387,8 +16387,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       /*--- Mean Values ---*/
       
       Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
-      //Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
-      Mean_SoundSpeed = 0.0; // FIXME: Just for testing/informational purposes
+      Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
       
       /*--- Adjustment for grid movement ---*/
       
