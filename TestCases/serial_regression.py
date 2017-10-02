@@ -829,7 +829,7 @@ def main():
     rae2822_def.cfg_dir   = "deformation/rae2822"
     rae2822_def.cfg_file  = "def_RAE2822.cfg"
     rae2822_def.test_iter = 10
-    rae2822_def.test_vals = [8.348610e-09] #residual
+    rae2822_def.test_vals = [6.018010e-09] #residual
     rae2822_def.su2_exec  = "SU2_DEF"
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
