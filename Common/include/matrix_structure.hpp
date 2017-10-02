@@ -70,6 +70,8 @@ private:
   unsigned long nnz_ilu;             /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
   unsigned long *row_ptr_ilu;        /*!< \brief Pointers to the first element in each row (ILU). */
   unsigned long *col_ind_ilu;        /*!< \brief Column index for each of the elements in val() (ILU). */
+  unsigned short ilu_fill_in;        /*!< \brief Fill in level for the ILU preconditioner. */
+  
   su2double *block;             /*!< \brief Internal array to store a subblock of the matrix. */
   su2double *block_inverse;             /*!< \brief Internal array to store a subblock of the matrix. */
   su2double *block_weight;             /*!< \brief Internal array to store a subblock of the matrix. */
@@ -127,8 +129,10 @@ public:
    * \param[in] iPoint - Base point to compute neighbours.
    * \param[in] deep_level - Deep level for the recursive algorithm.
    * \param[in] fill_level - ILU fill in level.
+   * \param[in] EdgeConnect - There is (or not) an edge structure).
+   * \param[in] vneighs - Storage the neighbours points to iPoint.
    */
-  void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, vector<unsigned long> & vneighs);
+  void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
   
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -454,7 +458,7 @@ public:
   unsigned long Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Build the ILU0 preconditioner.
+   * \brief Build the ILU preconditioner.
    * \param[in] transposed - Flag to use the transposed matrix to construct the preconditioner.
    */
   void BuildILUPreconditioner(bool transposed = false);
@@ -469,7 +473,7 @@ public:
   void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Apply ILU0 as a classical iterative smoother
+   * \brief Apply ILU as a classical iterative smoother
    * \param[in] b - CSysVector containing the residual (b)
    * \param[in] x - CSysVector containing the solution (x^k)
    * \param[in] mat_vec - object that defines matrix-vector product
@@ -481,7 +485,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[out] x - CSysVector containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
    */
-  unsigned long ILU0_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
+  unsigned long ILU_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Multiply CSysVector by the preconditioner
