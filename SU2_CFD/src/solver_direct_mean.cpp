@@ -6542,29 +6542,29 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   assert(config->GetUnsteady_Simulation() == TIME_STEPPING);
   dt = node[0]->GetDelta_Time();
 
-  // FIXME: Massive hackery here....  Don't yet have control over
-  // which substeps the Jacobian is evaluated on.  So, I copy the
-  // first substep Jacobian here for use throughout the rest of the RK
-  // steps.  This should be replaced by proper control on when the
-  // Jacobian is evaluated such that it isn't update after the first
-  // substep.
-  su2double* blkij = new su2double [nVar*nVar]; 
-  if (iRKStep==0) {
-    LinSysDeltaU.SetValZero();
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-        blkij = Jacobian.GetBlock(iPoint,jPoint);
-        Jacobian0.SetBlock(iPoint,jPoint, blkij);
-      }
-    }
-  } else {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-        blkij = Jacobian0.GetBlock(iPoint,jPoint);
-        Jacobian.SetBlock(iPoint,jPoint, blkij);
-      }
-    }
-  }
+  // // FIXME: Massive hackery here....  Don't yet have control over
+  // // which substeps the Jacobian is evaluated on.  So, I copy the
+  // // first substep Jacobian here for use throughout the rest of the RK
+  // // steps.  This should be replaced by proper control on when the
+  // // Jacobian is evaluated such that it isn't update after the first
+  // // substep.
+  // su2double* blkij = new su2double [nVar*nVar]; 
+  // if (iRKStep==0) {
+  //   LinSysDeltaU.SetValZero();
+  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //     for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
+  //       blkij = Jacobian.GetBlock(iPoint,jPoint);
+  //       Jacobian0.SetBlock(iPoint,jPoint, blkij);
+  //     }
+  //   }
+  // } else {
+  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //     for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
+  //       blkij = Jacobian0.GetBlock(iPoint,jPoint);
+  //       Jacobian.SetBlock(iPoint,jPoint, blkij);
+  //     }
+  //   }
+  // }
 
 
   // SMR91 coefficients are hardcoded for now
@@ -6659,6 +6659,13 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
       }
     }
   }
+
+  // Step 9: Undo Jacobian modification in prep for next substep
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Jacobian.AddVal2Diag(iPoint, -Vol/(beta[iRKStep]*dt));
+  }
+
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
