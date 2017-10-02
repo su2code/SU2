@@ -6474,7 +6474,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool RightSol = true;
   
@@ -6487,6 +6487,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+      
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+        DES_LengthScale = solver_container[TURB_SOL]->node[iPoint]->GetDES_LengthScale();
+      }
     }
     
     /*--- Initialize the non-physical points vector ---*/
@@ -6498,6 +6502,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     RightSol = node[iPoint]->SetPrimVar(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
     
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+    
+    /*--- Set the DES length scale ---*/
+    
+    node[iPoint]->SetDES_LengthScale(DES_LengthScale);    
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
