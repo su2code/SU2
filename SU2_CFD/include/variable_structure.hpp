@@ -3775,6 +3775,12 @@ public:
    * \brief Set the DES Length Scale.
    */
   void SetDES_LengthScale(su2double val_des_lengthscale);  
+    
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
   
 };
 

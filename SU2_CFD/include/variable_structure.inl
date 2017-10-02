@@ -615,6 +615,8 @@ inline void CNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES
 
 inline void CIncNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
 
+inline su2double CIncNSVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
+
 inline void CEulerVariable::SetSolution_New(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_New[iVar] = Solution[iVar];
