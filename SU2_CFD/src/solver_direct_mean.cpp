@@ -6540,31 +6540,6 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   assert(config->GetUnsteady_Simulation() == TIME_STEPPING);
   dt = node[0]->GetDelta_Time();
 
-  // // FIXME: Massive hackery here....  Don't yet have control over
-  // // which substeps the Jacobian is evaluated on.  So, I copy the
-  // // first substep Jacobian here for use throughout the rest of the RK
-  // // steps.  This should be replaced by proper control on when the
-  // // Jacobian is evaluated such that it isn't update after the first
-  // // substep.
-  // su2double* blkij = new su2double [nVar*nVar]; 
-  // if (iRKStep==0) {
-  //   LinSysDeltaU.SetValZero();
-  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //     for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-  //       blkij = Jacobian.GetBlock(iPoint,jPoint);
-  //       Jacobian0.SetBlock(iPoint,jPoint, blkij);
-  //     }
-  //   }
-  // } else {
-  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //     for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-  //       blkij = Jacobian0.GetBlock(iPoint,jPoint);
-  //       Jacobian.SetBlock(iPoint,jPoint, blkij);
-  //     }
-  //   }
-  // }
-
-
   // SMR91 coefficients are hardcoded for now
   // TODO: Let user set these through the input file
   su2double beta[3], alpha[3], gamma[3], zeta[2]; //, eta[4];
@@ -6696,33 +6671,6 @@ void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solve
   // just grab it off the first node.
   assert(config->GetUnsteady_Simulation() == TIME_STEPPING);
   dt = node[0]->GetDelta_Time();
-
-  // FIXME: Massive hackery here....  Don't yet have control over
-  // which substeps the Jacobian is evaluated on.  So, I copy the
-  // first substep Jacobian here for use throughout the rest of the RK
-  // steps.  This should be replaced by proper control on when the
-  // Jacobian is evaluated such that it isn't updated after the first
-  // substep.  Note that once this is done, we'll need to be careful
-  // b/c the Jacobian gets modified below.  These modifications will
-  // have to be undone after each step, which is currently unnecessary
-  // b/c of this hack.
-  // su2double* blkij = new su2double [nVar*nVar];
-  // if (iRKStep==0) {
-  //   LinSysDeltaU.SetValZero();
-  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //     for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-  //       blkij = Jacobian.GetBlock(iPoint,jPoint);
-  //       Jacobian0.SetBlock(iPoint,jPoint, blkij);
-  //     }
-  //   }
-  // } else {
-  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //     for (jPoint = 0; jPoint < nPointDomain; jPoint++) {
-  //       blkij = Jacobian0.GetBlock(iPoint,jPoint);
-  //       Jacobian.SetBlock(iPoint,jPoint, blkij);
-  //     }
-  //   }
-  // }
 
   // Step 0: Initialize full residual
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -14231,8 +14179,6 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   su2double Volume_nM1, Volume_nP1, TimeStep;
   su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
 
-  // FIXME: Should probably error if try to use dual time stepping
-  // with LIMEX... not set up to work together.
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) );
 
   if ((config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
