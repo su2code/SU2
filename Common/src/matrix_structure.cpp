@@ -41,6 +41,8 @@ CSysMatrix::CSysMatrix(void) {
   ILU_matrix        = NULL;
   row_ptr           = NULL;
   col_ind           = NULL;
+  row_ptr_ilu       = NULL;
+  col_ind_ilu       = NULL;
   block             = NULL;
   prod_block_vector = NULL;
   prod_row_vector   = NULL;
@@ -77,6 +79,8 @@ CSysMatrix::~CSysMatrix(void) {
   if (ILU_matrix != NULL)         delete [] ILU_matrix;
   if (row_ptr != NULL)            delete [] row_ptr;
   if (col_ind != NULL)            delete [] col_ind;
+//  if (row_ptr_ilu != NULL) delete [] row_ptr_ilu;
+//  if (col_ind_ilu != NULL) delete [] col_ind_ilu;
   if (block != NULL)              delete [] block;
   if (block_weight != NULL)       delete [] block_weight;
   if (block_inverse != NULL)      delete [] block_inverse;
@@ -114,10 +118,10 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
                             unsigned short nVar, unsigned short nEqn,
                             bool EdgeConnect, CGeometry *geometry, CConfig *config) {
   
-  unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem;
-  unsigned short iNeigh, iElem, iNode, *nNeigh;
+  unsigned long iPoint, jPoint, kPoint, *row_ptr, *col_ind, index, nnz, Elem, Elem_, iVar;
+  unsigned short iNeigh, iElem, jElem, iNode, jNode, *nNeigh, *nNeigh_ilu;
   vector<unsigned long>::iterator it;
-  vector<unsigned long> vneighs;
+  vector<unsigned long> vneighs, vneighs_ilu;
   
   /*--- Don't delete *row_ptr, *col_ind because they are
    asigned to the Jacobian structure. ---*/
@@ -198,6 +202,70 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   
   delete [] nNeigh;
   
+  
+  
+  /*--- ILU(1) ---*/
+  
+  unsigned short ilu_fill_in = 1;
+  
+  nNeigh_ilu = new unsigned short [nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    vneighs_ilu.clear();
+    SetNeighbours(geometry, iPoint, 0, ilu_fill_in, vneighs_ilu);
+    sort(vneighs_ilu.begin(), vneighs_ilu.end());
+    it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
+    vneighs_ilu.resize(it - vneighs_ilu.begin());
+    nNeigh_ilu[iPoint] = vneighs_ilu.size();
+    
+  }
+  
+  row_ptr_ilu = new unsigned long [nPoint+1];
+  row_ptr_ilu[0] = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    row_ptr_ilu[iPoint+1] = row_ptr_ilu[iPoint] + nNeigh_ilu[iPoint];
+  nnz_ilu = row_ptr_ilu[nPoint];
+  
+  /*--- Create col_ind structure ---*/
+  
+  col_ind_ilu = new unsigned long [nnz_ilu];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    vneighs_ilu.clear();
+    SetNeighbours(geometry, iPoint, 0, ilu_fill_in, vneighs_ilu);
+    sort(vneighs_ilu.begin(), vneighs_ilu.end());
+    it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
+    vneighs_ilu.resize( it - vneighs_ilu.begin() );
+    
+    index = row_ptr_ilu[iPoint];
+    for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
+      col_ind_ilu[index] = vneighs_ilu[iNeigh];
+      index++;
+    }
+    
+  }
+  
+  ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
+  for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+  
+  delete [] nNeigh_ilu;
+  
+  
+}
+
+void CSysMatrix::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, vector<unsigned long> & vneighs) {
+  unsigned long Point, iElem, Elem;
+  unsigned short iNode;
+
+  for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+    Elem =  geometry->node[iPoint]->GetElem(iElem);
+    for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
+      Point = geometry->elem[Elem]->GetNode(iNode);
+      vneighs.push_back(Point);
+      if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, vneighs);
+    }
+  }
+  
 }
 
 void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
@@ -208,9 +276,14 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
   nVar         = val_nVar;          // Assign number of vars in each block system
   nEqn         = val_nEq;           // Assign number of eqns in each block system
-  nnz          = val_nnz;           // Assign number of possible non zero blocks
-  row_ptr      = val_row_ptr;
-  col_ind      = val_col_ind;
+  
+  row_ptr      = val_row_ptr;       // Assign row values in the spare system structure (Jacobian structure)
+  col_ind      = val_col_ind;       // Assign colums values in the spare system structure (Jacobian structure)
+  nnz          = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (Jacobian structure)
+  
+//  row_ptr_ilu  = val_row_ptr;       // Assign row values in the spare system structure (ILU structure)
+//  col_ind_ilu  = val_col_ind;       // Assign colums values in the spare system structure (ILU structure)
+//  nnz_ilu      = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (ILU structure)
   
   matrix            = new su2double [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
   block             = new su2double [nVar*nEqn];
@@ -234,20 +307,20 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
   for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
   
-  /*--- Set specific preconditioner matrices (ILU) ---*/
-  
-  if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-  		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-  		((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-  		(config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
-      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
-    
-    /*--- Reserve memory for the ILU matrix. ---*/
-    
-    ILU_matrix = new su2double [nnz*nVar*nEqn];
-    for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-
-  }
+//  /*--- Set specific preconditioner matrices (ILU) ---*/
+//  
+//  if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
+//  		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+//  		((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+//  		(config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+//      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
+//    
+//    /*--- Reserve memory for the ILU matrix. ---*/
+//    
+//    ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
+//    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+//
+//  }
   
   /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
   
@@ -360,9 +433,9 @@ su2double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long b
   
   unsigned long step = 0, index;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     step++;
-    if (col_ind[index] == block_j) { return &(ILU_matrix[(row_ptr[block_i]+step-1)*nVar*nEqn]); }
+    if (col_ind_ilu[index] == block_j) { return &(ILU_matrix[(row_ptr_ilu[block_i]+step-1)*nVar*nEqn]); }
   }
   return NULL;
   
@@ -372,12 +445,12 @@ void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j
   
   unsigned long iVar, jVar, index, step = 0;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     step++;
-    if (col_ind[index] == block_j) {
+    if (col_ind_ilu[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
+          ILU_matrix[(row_ptr_ilu[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
       break;
     }
   }
@@ -388,12 +461,12 @@ void CSysMatrix::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned lo
 
   unsigned long iVar, jVar, index, step = 0;
 
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     step++;
-    if (col_ind[index] == block_j) {
+    if (col_ind_ilu[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[jVar*nVar+iVar];
+          ILU_matrix[(row_ptr_ilu[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[jVar*nVar+iVar];
       break;
     }
   }
@@ -404,12 +477,12 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
   
   unsigned long iVar, jVar, index, step = 0;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+  for (index = row_ptr_ilu[block_i]; index < row_ptr_ilu[block_i+1]; index++) {
     step++;
-    if (col_ind[index] == block_j) {
+    if (col_ind_ilu[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar*nVar+jVar];
+          ILU_matrix[(row_ptr_ilu[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar*nVar+jVar];
       break;
     }
   }
@@ -657,12 +730,14 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
       block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
   
   /*--- Gauss elimination ---*/
+
   if (nVar == 1) {
     rhs[0] /= block[0];
   }
   else {
     
     /*--- Transform system in Upper Matrix ---*/
+    
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
@@ -673,6 +748,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     }
     
     /*--- Backwards substitution ---*/
+    
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
       aux = 0.0;
@@ -1367,14 +1443,17 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
 
 void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   
-  unsigned long index, index_;
+  unsigned long index, index_, iVar;
   su2double *Block_ij, *Block_jk;
   long iPoint, jPoint, kPoint;
   
+
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm, so that we have the factorization stored
    in the ILUMatrix at the end of this preprocessing. ---*/
-  
+
+  for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+
   for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
@@ -1393,14 +1472,14 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     
     /*--- For each row (unknown), loop over all entries in A on this row
-     row_ptr[iPoint+1] will have the index for the first entry on the next
+     row_ptr_ilu[iPoint+1] will have the index for the first entry on the next
      row. ---*/
     
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
       
       /*--- jPoint here is the column for each entry on this row ---*/
       
-      jPoint = col_ind[index];
+      jPoint = col_ind_ilu[index];
       
       /*--- Check that this column is in the lower triangular portion ---*/
       
@@ -1415,11 +1494,11 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
         
         /*--- block_weight holds Aij*inv(Ajj). Jump to the row for jPoint ---*/
         
-        for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
+        for (index_ = row_ptr_ilu[jPoint]; index_ < row_ptr_ilu[jPoint+1]; index_++) {
           
           /*--- Get the column of the entry ---*/
           
-          kPoint = col_ind[index_];
+          kPoint = col_ind_ilu[index_];
           
           /*--- If the column is greater than or equal to jPoint, i.e., the
            upper triangular part, then multiply and modify the matrix.
@@ -1466,8 +1545,8 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
    that we are overwriting the residual vector as we go. ---*/
   
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      jPoint = col_ind[index];
+    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+      jPoint = col_ind_ilu[index];
       if ((jPoint < iPoint) && (jPoint < (long)nPointDomain)) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
@@ -1488,8 +1567,8 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
     for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
-    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      jPoint = col_ind[index];
+    for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+      jPoint = col_ind_ilu[index];
       if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
         MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
@@ -1578,14 +1657,14 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
     for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
       
       /*--- For each row (unknown), loop over all entries in A on this row
-       row_ptr[iPoint+1] will have the index for the first entry on the next
+       row_ptr_ilu[iPoint+1] will have the index for the first entry on the next
        row. ---*/
       
-      for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
         
         /*--- jPoint here is the column for each entry on this row ---*/
         
-        jPoint = col_ind[index];
+        jPoint = col_ind_ilu[index];
         
         /*--- Check that this column is in the lower triangular portion ---*/
         
@@ -1613,8 +1692,8 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
     
     for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
       for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
-      for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-        jPoint = col_ind[index];
+      for (index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint+1]; index++) {
+        jPoint = col_ind_ilu[index];
         if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
           Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
           MatrixVectorProduct(Block_ij, &r[jPoint*nVar], aux_vector);
