@@ -6579,6 +6579,8 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
   if (iRKStep > 0) {
     Jacobian.MatrixVectorProduct(LinSysDeltaU, LinSysAux, geometry, config);
     LinSysRes -= LinSysAux;
+  } else {
+    LinSysDeltaU.SetValZero();
   }
 
 
