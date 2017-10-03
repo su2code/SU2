@@ -154,16 +154,16 @@ def main():
     ######################################
     
     # test discrete_adjoint.py
-    discadj_euler_py = TestCase('discadj_euler_py')
-    discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
-    discadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
-    discadj_euler_py.test_iter = 10
-    discadj_euler_py.su2_exec  = "discrete_adjoint.py"
-    discadj_euler_py.timeout   = 1600
-    discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
-    discadj_euler_py.test_file = "of_grad_cd.dat"
-    pass_list.append(discadj_euler_py.run_filediff())
-    test_list.append(discadj_euler_py)
+#    discadj_euler_py = TestCase('discadj_euler_py')
+#    discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+#    discadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
+#    discadj_euler_py.test_iter = 10
+#    discadj_euler_py.su2_exec  = "discrete_adjoint.py"
+#    discadj_euler_py.timeout   = 1600
+#    discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
+#    discadj_euler_py.test_file = "of_grad_cd.dat"
+#    pass_list.append(discadj_euler_py.run_filediff())
+#    test_list.append(discadj_euler_py)
     
     # test direct_differentiation.py
     directdiff_euler_py = TestCase('directdiff_euler_py')
