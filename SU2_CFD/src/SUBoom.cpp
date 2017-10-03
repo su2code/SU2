@@ -563,7 +563,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
-        ////if(geometry->node[iPoint]->GetDomain()){
+        if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           y = SU2_TYPE::GetValue(Coord[1]);
           if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
@@ -577,7 +577,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               nElem = geometry->node[iPoint]->GetnElem();
               for(iElem = 0; iElem < nElem; iElem++){
                 jElem = geometry->node[iPoint]->GetElem(iElem);
-                if(jElem < geometry->GetnElem()){
+                ////if(jElem < geometry->GetnElem()){
                   inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
                   if(inside){
                     if(nPanel[0] == 0){
@@ -601,11 +601,11 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     startline[0] = true;
                     //break;
                   }
-                }
+                ////}
               }
             }
           }
-        ////}
+        }
       }
     }
   }
@@ -697,7 +697,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short iPhi){
   bool inside, inside_iPanel, addPanel, end = false;
   unsigned short iElem, nElem;
-  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
+  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElemDomain();
   su2double x_i, x_m1;
 
   unsigned long *pointID_tmp;
@@ -953,8 +953,8 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(iNode = 0; iNode < nNode; iNode++){
       inDomain[iNode] = true;
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      //if(!geometry->node[jNode]->GetDomain()){
-      if(jNode >= geometry->GetnPointDomain()){
+      if(!geometry->node[jNode]->GetDomain()){
+      //if(jNode >= geometry->GetnPointDomain()){
         inDomain[iNode] = false;
         //return false;
       }
