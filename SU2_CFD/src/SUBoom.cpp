@@ -184,7 +184,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       }
 
       /*---Sort signal in order of x-coordinate---*/
-      cout << "Sorting signal data. " << nPanel[iPhi] << " to sort." << endl;
+      cout << "Sorting signal data. " << nPanel[iPhi] << " points to sort." << endl;
       MergeSort(signal.x[iPhi], signal.original_p[iPhi], 0, totSig-1);
 
       /*---Check for duplicate points---*/
@@ -706,9 +706,9 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 
   
   while(!end){
-    for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+    for(unsigned long jPanel = 0; jPanel < nPanel[iPhi]; jPanel++){
       //////jElem_m1 = pointID_original[iPhi][nPanel[iPhi]-1];
-      jElem_m1 = pointID_original[iPhi][iPanel];
+      jElem_m1 = pointID_original[iPhi][jPanel];
       //x_m1 = geometry->elem[jElem_m1]->GetCG(0);
       nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
       ////inside = false;
