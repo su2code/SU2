@@ -706,7 +706,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 
   
   while(!end){
-    for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]-1; iPanel++){
+    for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
       //////jElem_m1 = pointID_original[iPhi][nPanel[iPhi]-1];
       jElem_m1 = pointID_original[iPhi][iPanel];
       //x_m1 = geometry->elem[jElem_m1]->GetCG(0);
