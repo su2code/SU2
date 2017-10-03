@@ -572,7 +572,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
             r2 = y*y;
             if(nDim == 3) r2 += z*z;
             /*--- Limit search to points within strip ---*/
-            if(r2 > r02*sq2_2 && r2 < r02*sq2){
+            //////if(r2 > r02*sq2_2 && r2 < r02*sq2){
               x = SU2_TYPE::GetValue(Coord[0]);
               nElem = geometry->node[iPoint]->GetnElem();
               for(iElem = 0; iElem < nElem; iElem++){
@@ -603,7 +603,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                   }
                 }
               }
-            }
+            //////}
           }
         }
       }
