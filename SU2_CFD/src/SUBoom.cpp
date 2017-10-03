@@ -731,7 +731,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
                   break;
                 }
               }
-              if(addPanel){ // If no point allocated for this panel
+              if(addPanel){ // If not a repeat panel
                 nPanel[iPhi]++;
 
                 pointID_tmp = new unsigned long[nPanel[iPhi]-1];
@@ -955,7 +955,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
-        inDomain[iNode] = false;
+        //inDomain[iNode] = false;
         //return false;
       }
 
