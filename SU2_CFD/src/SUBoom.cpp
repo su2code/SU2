@@ -559,7 +559,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
   /*--- Test search ---*/  
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
-    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE || config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
+    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){// || config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
@@ -577,7 +577,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               nElem = geometry->node[iPoint]->GetnElem();
               for(iElem = 0; iElem < nElem; iElem++){
                 jElem = geometry->node[iPoint]->GetElem(iElem);
-                ////if(jElem < geometry->GetnElem()){
+                if(jElem < geometry->GetnElem()){
                   inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
                   if(inside){
                     if(nPanel[0] == 0){
@@ -601,7 +601,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     startline[0] = true;
                     //break;
                   }
-                ////}
+                }
               }
             }
           }
@@ -697,7 +697,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short iPhi){
   bool inside, inside_iPanel, addPanel, end = false;
   unsigned short iElem, nElem;
-  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetGlobal_nElemDomain();
+  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
   su2double x_i, x_m1;
 
   unsigned long *pointID_tmp;
@@ -719,7 +719,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
         inside = false;
         jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
         /*--- Don't extract boundary elements ---*/
-        //////if(jElem < nElem_tot){
+        if(jElem < nElem_tot){
           ////x_i = geometry->elem[jElem]->GetCG(0);
 
           ////if(x_i > x_m1){
@@ -778,7 +778,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
               ////break;
             }
           ////}
-        //////}
+        }
       }
     }
     if(!inside_iPanel){
@@ -960,8 +960,10 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       }
 
       Coord_elem[iNode] = new su2double[nDim];
-      for(unsigned short iDim = 0; iDim < nDim; iDim++){
-        Coord_elem[iNode][iDim] = geometry->node[jNode]->GetCoord(iDim);
+      if(inDomain[iNode]){
+        for(unsigned short iDim = 0; iDim < nDim; iDim++){
+          Coord_elem[iNode][iDim] = geometry->node[jNode]->GetCoord(iDim);
+        }
       }
     }
 
