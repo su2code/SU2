@@ -719,7 +719,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
         inside = false;
         jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
         /*--- Don't extract boundary elements ---*/
-        if(jElem < nElem_tot){
+        //////if(jElem < nElem_tot){
           ////x_i = geometry->elem[jElem]->GetCG(0);
 
           ////if(x_i > x_m1){
@@ -778,7 +778,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
               ////break;
             }
           ////}
-        }
+        //////}
       }
     }
     if(!inside_iPanel){
