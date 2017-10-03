@@ -100,9 +100,9 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     if(nPanel[iPhi] > 0){
       ExtractLine(geometry, ray_r0, iPhi);
     }
-    else{
-      nPanel[iPhi] = 0;
-    }
+    ////else{
+    ////  nPanel[iPhi] = 0;
+    ////}
   }
 
   /*---Initialize some signal parameters---*/
@@ -955,8 +955,8 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
-        //inDomain[iNode] = false;
-        return false;
+        inDomain[iNode] = false;
+        //return false;
       }
 
       Coord_elem[iNode] = new su2double[nDim];
