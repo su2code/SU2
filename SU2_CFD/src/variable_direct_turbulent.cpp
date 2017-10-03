@@ -246,5 +246,7 @@ CTurbKEVariable::~CTurbKEVariable(void) {
 }
 
 su2double CTurbKEVariable::GetAnisoRatio(void) {
-  return TWO3*Solution[0]/Solution[2];
+  // XXX: This floor is arbitrary.
+  const su2double TKE_MIN = EPS;
+  return TWO3*Solution[0]/max(TKE_MIN, Solution[2]);
 }

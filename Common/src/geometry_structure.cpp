@@ -9637,7 +9637,8 @@ void CGeometry::SetResolutionTensor(void) {
       for (iDim = 0; iDim < nDim; iDim++) {
         for (jDim = 0; jDim < nDim; jDim++) {
           temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
-          node[iPoint]->AddResolutionTensor(iDim, jDim, temp_value);
+          if (temp_value > EPS)
+            node[iPoint]->AddResolutionTensor(iDim, jDim, temp_value);
         }
       }
     }

@@ -1279,8 +1279,10 @@ CHybridConvSolver::CHybridConvSolver(CGeometry *geometry, CConfig *config,
         nVarTotal += 1;
         break;
       case SST:
-      case KE:
         nVarTotal += 2;
+        break;
+      case KE:
+        nVarTotal += 4;
         break;
       default:
         if (rank == MASTER_NODE) {

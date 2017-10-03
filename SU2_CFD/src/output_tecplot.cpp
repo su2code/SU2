@@ -183,6 +183,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         for (iDim = 0; iDim < nDim; iDim++)
           for (jDim = 0; jDim < nDim; jDim++)
             Tecplot_File << ", \"a<sub>" << iDim << jDim << "</sub>\"";
+        for (iDim = 0; iDim < nDim; iDim++)
+          for (jDim = 0; jDim < nDim; jDim++)
+            Tecplot_File << ", \"M<sub>" << iDim << jDim << "</sub>\"";
         switch (config->GetKind_Hybrid_Blending()) {
           case RANS_ONLY:
             // No extra variables
@@ -190,6 +193,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           case CONVECTIVE:
             // Add resolution adequacy.
             Tecplot_File << ", \"r<sub>k</sub>\"";
+            Tecplot_File << ", \"w<sub>rans</sub>\"";
+            Tecplot_File << ", \"L<sub>m</sub>\"";
+            Tecplot_File << ", \"T<sub>m</sub>\"";
             break;
           default:
             cout << "WARNING: Could not find appropriate output for hybrid model." << endl;
@@ -513,7 +519,13 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
             for (jDim = 0; jDim < geometry->GetnDim(); jDim++)
               Tecplot_File << ", \"a<sub>" << iDim << jDim << "</sub>\"";
+            for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+              for (jDim = 0; jDim < geometry->GetnDim(); jDim++)
+                Tecplot_File << ", \"M<sub>" << iDim << jDim << "</sub>\"";
           Tecplot_File << ", \"r<sub>k</sub>\"";
+          Tecplot_File << ", \"w<sub>rans</sub>\"";
+          Tecplot_File << ", \"L<sub>m</sub>\"";
+          Tecplot_File << ", \"T<sub>m</sub>\"";
         }
         if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
       }
@@ -3145,6 +3157,10 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
         for (jDim = 0; jDim < nDim; jDim++)
           variables << "Eddy_Viscosity_Anisotropy_" << iDim << jDim << " ";
       *NVar += 9;
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          variables << "Resolution_Tensor_" << iDim << jDim << " ";
+      *NVar += 9;
       switch (config->GetKind_Hybrid_Blending()) {
         case RANS_ONLY:
           // No extra variables
@@ -3152,6 +3168,9 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
         case CONVECTIVE:
           // Add resolution adequacy.
           variables << "Resolution_Adequacy "; *NVar += 1;
+          variables << "RANS_Weight "; *NVar += 1;
+          variables << "Turb_Lengthscale "; *NVar += 1;
+          variables << "Turb_Timescale "; *NVar += 1;
           break;
       }
     }

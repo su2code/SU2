@@ -8679,6 +8679,12 @@ public:
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container,
                       CConfig *config, unsigned short iMesh);
+  /*!
+   * \brief Calculates and stores the large-eddy timescale and lengthscale
+   * \param[in] solver_container - Container vector with all the solutions
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CalculateTurbScales(CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Source term computation.

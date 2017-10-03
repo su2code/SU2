@@ -229,7 +229,8 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
                                               CSolver **solver_container,
                                               unsigned short iPoint) {
   unsigned short iDim, jDim, kDim, lDim;
-  const su2double TKE_MIN = 1e-16;
+  // XXX: This floor is arbitrary.
+  const su2double TKE_MIN = EPS;
 
 
   /*--- Find eigenvalues and eigenvecs for grid-based resolution tensor ---*/
@@ -305,7 +306,7 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
     }
 
     /*--- Calculate the resolution adequacy parameter ---*/
-    r_k = fmax(max_resolved, 0.0) / fmax(min_unresolved, TKE_MIN);
+    r_k = max(max_resolved / fmax(min_unresolved, TKE_MIN), EPS);
 
 
     /*--- Find the dissipation ratio ---*/
@@ -317,39 +318,6 @@ void CHybrid_Mediator::SetupHybridParamSolver(CGeometry* geometry,
 
     /*--- Calculate the RANS weight ---*/
     w_rans = tanh(0.5*pow(fmax(r_eps - 1, 0), 0.25));
-
-/*    ---- DEBUGGING ---
-    su2double* x = geometry->node[iPoint]->GetCoord();
-    if (x[0] > -0.4 && x[0] < -0.3  && x[2] > 0.05 && x[2] < 0.1) {
-      cout << "-------- Freestream solution ----------" << endl;
-      cout << "x: " << x[0] << "\ty: " << x[1] << "\tz: " << x[2] << endl;
-      cout << "PrimVar_Grad:" << endl;
-      cout << "  [[" << PrimVar_Grad[1][0] << ", " << PrimVar_Grad[1][1] << ", " << PrimVar_Grad[1][2] << "]" << endl;
-      cout << "   [" << PrimVar_Grad[2][0] << ", " << PrimVar_Grad[2][1] << ", " << PrimVar_Grad[2][2] << "]" << endl;
-      cout << "   [" << PrimVar_Grad[3][0] << ", " << PrimVar_Grad[3][1] << ", " << PrimVar_Grad[3][2] << "]]" << endl;
-      cout << "M:            " << endl;
-      cout << "  [[" << ResolutionTensor[0][0] << ", " << ResolutionTensor[0][1] << ", " << ResolutionTensor[0][2] << "]" << endl;
-      cout << "   [" << ResolutionTensor[1][0] << ", " << ResolutionTensor[1][1] << ", " << ResolutionTensor[1][2] << "]" << endl;
-      cout << "   [" << ResolutionTensor[2][0] << ", " << ResolutionTensor[2][1] << ", " << ResolutionTensor[2][2] << "]]" << endl;
-      cout << "M eigvals: " << "[" << ResolutionValues[0] << ", " << ResolutionValues[1] << ", " << ResolutionValues[2] << "]" << endl;
-      cout << "Qapprox:" << endl;
-      cout << "  [[" << Qapprox[0][0] << ", " << Qapprox[0][1] << ", " << Qapprox[0][2] << "]" << endl;
-      cout << "   [" << Qapprox[1][0] << ", " << Qapprox[1][1] << ", " << Qapprox[1][2] << "]" << endl;
-      cout << "   [" << Qapprox[2][0] << ", " << Qapprox[2][1] << ", " << Qapprox[2][2] << "]]" << endl;
-      cout << "Q:" << endl;
-      cout << "  [[" << Q[0][0] << ", " << Q[0][1] << ", " << Q[0][2] << "]" << endl;
-      cout << "   [" << Q[1][0] << ", " << Q[1][1] << ", " << Q[1][2] << "]" << endl;
-      cout << "   [" << Q[2][0] << ", " << Q[2][1] << ", " << Q[2][2] << "]]" << endl;
-      cout << "Eigvals of Q:   " << "[" << eigvalues_zQz[0] << ", " << eigvalues_zQz[1] << ", " << eigvalues_zQz[2] << "]" << endl;
-      cout << "Max eigval:     " << eigvalues_zQz[max_index] << endl;
-      cout << "Max resolved:   " << max_resolved << endl;
-      cout << "Min unresolved: " << min_unresolved << endl;
-      cout << "r_k:            " << r_k << endl;
-      cout << "Turb length:    " << TurbL << endl;
-      cout << "d_max:          " << d_max << endl;
-      cout << "r_eps:          " << r_eps << endl;
-      cout << "RANS Weight:    " << w_rans << endl;
-    }*/
   } else {
     r_k = 0.0;
     w_rans = 0.0;
@@ -550,6 +518,12 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Q(vector<su2double> eigvalues_M
     a = eigvalues_M[0]/dnorm;
     b = eigvalues_M[1]/dnorm;
   }
+#ifndef NDEBUG
+  if (a < 1 || b < 1) {
+    cout << "ERROR: Normalization in the zeta transformation failed!" << endl;
+    exit(EXIT_FAILURE);
+  }
+#endif
 
   /*--- Convert to cylindrical coordinates ---*/
   su2double r = sqrt(a*a + b*b);
@@ -580,8 +554,8 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Q(vector<su2double> eigvalues_M
 
   vector<su2double> eigvalues_Q(3);
   for (int iDim = 0; iDim < nDim; iDim++) {
-    eigvalues_Q[iDim] = g[0] + g[1]*log(eigvalues_M[iDim]/dnorm) +
-                        g[2]*pow(log(eigvalues_M[iDim]/dnorm),2);
+    su2double d_in = log(eigvalues_M[iDim]/dnorm);
+    eigvalues_Q[iDim] = g[0] + g[1]*d_in + g[2]*pow(d_in, 2);
     eigvalues_Q[iDim] = exp(eigvalues_Q[iDim]);
   }
 
@@ -647,6 +621,11 @@ vector<su2double> CHybrid_Mediator::GetEigValues_Zeta(vector<su2double> eigvalue
   for (int iDim = 0; iDim < nDim; iDim++) {
     eigvalues_zeta[iDim] = C_zeta*pow((eigvalues_M[iDim]/dnorm),1.0/3)*
                            pow(eigvalues_Q[iDim],-0.5);
+
+    // XXX: Numerical fit for anisotropic resolution doesn't include > 256
+    if (eigvalues_M[iDim]/dnorm > 256) {
+      eigvalues_zeta[iDim] = max(eigvalues_zeta[iDim], 0.90);
+    }
   }
 
   return eigvalues_zeta;
@@ -745,14 +724,15 @@ unsigned short iDim, jDim;
   /*--- Normalize the eigenvectors by the L2 norm of each vector ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      eigvectors[iDim][jDim] = mat[iDim*nDim+jDim];
+      eigvectors[iDim][jDim] = mat[jDim*nDim+iDim];
     }
   }
 
   for (iDim = 0; iDim < nDim; iDim++) {
     su2double norm = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++)
+    for (jDim = 0; jDim < nDim; jDim++) {
       norm += eigvectors[iDim][jDim]*eigvectors[iDim][jDim];
+    }
     norm = sqrt(norm);
     for (jDim = 0; jDim < nDim; jDim++) {
       eigvectors[iDim][jDim] /= norm;
