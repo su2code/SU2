@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -142,9 +142,14 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
       exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- Read all lines in the restart file ---*/

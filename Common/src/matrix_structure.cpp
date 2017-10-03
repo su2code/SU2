@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -1425,17 +1425,12 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
            upper triangular part, then multiply and modify the matrix.
            Here, Aik' = Aik - Aij*inv(Ajj)*Ajk. ---*/
           
-          if (kPoint < (long)nPointDomain) {
+          if ((kPoint >= jPoint) && (jPoint < (long)nPointDomain)) {
+            
             Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
-            if (kPoint >= jPoint) {
-              
-              // WARNING: here we have a left multiply by Block_jk, should it
-              // be a right multiply to give Aik' = Aik - Aij*inv(Ajj)*Ajk?
-              
-              MatrixMatrixProduct(Block_jk, block_weight, block);
-              SubtractBlock_ILUMatrix(iPoint, kPoint, block);
-              
-            }
+            MatrixMatrixProduct(block_weight, Block_jk, block);
+            SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+            
           }
         }
         
@@ -1466,7 +1461,9 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     }
   }
   
-  /*--- Transform system in Upper Matrix ---*/
+  /*--- Forward solve the system using the lower matrix entries that
+   were computed and stored during the ILU0 preprocessing. Note
+   that we are overwriting the residual vector as we go. ---*/
   
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
@@ -1481,7 +1478,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     }
   }
   
-  /*--- Backwards substitution ---*/
+  /*--- Backwards substitution (starts at the last row) ---*/
   
   InverseDiagonalBlock_ILUMatrix((nPointDomain-1), block_inverse);
   MatrixVectorProduct(block_inverse, &prod[(nPointDomain-1)*nVar], aux_vector);
@@ -1493,12 +1490,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
-      if (jPoint < (long)nPointDomain) {
+      if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-        if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
-          MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
-          for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
-        }
+        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
+        for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
       }
     }
     for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = (prod[iPoint*nVar+iVar]-sum_vector[iVar]);
@@ -1620,12 +1615,10 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
       for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
       for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
         jPoint = col_ind[index];
-        if (jPoint < (long)nPointDomain) {
+        if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
           Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-          if ((jPoint >= iPoint+1) && (jPoint < (long)nPointDomain)) {
-            MatrixVectorProduct(Block_ij, &r[jPoint*nVar], aux_vector);
-            for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
-          }
+          MatrixVectorProduct(Block_ij, &r[jPoint*nVar], aux_vector);
+          for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
         }
       }
       for (iVar = 0; iVar < nVar; iVar++) r[iPoint*nVar+iVar] = (r[iPoint*nVar+iVar]-sum_vector[iVar]);
