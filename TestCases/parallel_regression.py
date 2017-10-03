@@ -559,7 +559,19 @@ def main():
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.000001
     aeroelastic.unsteady  = True
-    test_list.append(aeroelastic) 
+    test_list.append(aeroelastic)
+
+    # Delayed Detached Eddy Simulation
+    ddes_flatplate        = TestCase('ddes_flatplate')
+    ddes_flatplate.cfg_dir   = "ddes/flatplate"
+    ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
+    ddes_flatplate.test_iter = 50
+    ddes_flatplate.test_vals = [-4.791475, -7.622242, -0.309146, 0.009150] #last 4 columns
+    ddes_flatplate.su2_exec  = "parallel_computation.py -f"
+    ddes_flatplate.timeout   = 1600
+    ddes_flatplate.tol       = 0.00001
+    ddes_flatplate.unsteady  = True
+    test_list.append(ddes_flatplate)    
 
     ######################################
     ### NICFD                          ###
