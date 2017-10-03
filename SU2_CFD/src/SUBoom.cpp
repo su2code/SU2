@@ -955,7 +955,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
         inDomain[iNode] = false;
-        //return false;
+        return false;
       }
 
       Coord_elem[iNode] = new su2double[nDim];
@@ -968,7 +968,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-      ////if(inDomain[iEdge] && inDomain[iEdge_p1]){
+      if(inDomain[iEdge] && inDomain[iEdge_p1]){
         intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
         if(intersect == 1){
           if(count == 0){
@@ -993,7 +993,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
           inside = true;
           break;
         }
-      ////}
+      }
     }
 
     if(count == 1){
