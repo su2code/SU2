@@ -997,11 +997,11 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       }
     }
 
-    if(count == 1){
-      p1[0] = p0[0];
-      p1[1] = p0[1];
-      inside = true;
-    }
+    //if(count == 1){
+    //  p1[0] = p0[0];
+    //  p1[1] = p0[1];
+    //  inside = true;
+    //}
 
     for(iNode = 0; iNode < nNode; iNode++){
       delete [] Coord_elem[iNode];
