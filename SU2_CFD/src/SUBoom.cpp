@@ -706,13 +706,13 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 
   
   while(!end){
+    inside_iPanel = false;
     for(unsigned long jPanel = 0; jPanel < nPanel[iPhi]; jPanel++){
       //////jElem_m1 = pointID_original[iPhi][nPanel[iPhi]-1];
       jElem_m1 = pointID_original[iPhi][jPanel];
       //x_m1 = geometry->elem[jElem_m1]->GetCG(0);
       nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
       ////inside = false;
-      inside_iPanel = false;
 
       for(iElem = 0; iElem < nElem; iElem++){
         addPanel = true;
