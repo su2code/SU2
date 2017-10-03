@@ -1025,9 +1025,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
   /*!\brief LINEAR_SOLVER_PREC
    *  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
-  addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
+  addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
+  addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -1051,7 +1051,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Linear solver for the turbulent adjoint systems */
   addEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
-  addEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, LU_SGS);
+  addEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
   addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
@@ -1564,8 +1564,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 1E-6);
   /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
   addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
-  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, DEF_WALL_DISTANCE, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, BOUNDARY_DISTANCE);
+  /* DESCRIPTION: Deform limit in m or inches */
+  addDoubleOption("DEFORM_LIMIT", Deform_Limit, 1E6);
+  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, SOLID_WALL_DISTANCE);
   /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
@@ -1573,7 +1575,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*  DESCRIPTION: Linealv for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER", Kind_Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
   /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
-  addEnumOption("DEFORM_LINEAR_SOLVER_PREC", Kind_Deform_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
+  addEnumOption("DEFORM_LINEAR_SOLVER_PREC", Kind_Deform_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
@@ -1681,7 +1683,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Linear solver for the structural side on FSI problems */
   addEnumOption("FSI_LINEAR_SOLVER_STRUC", Kind_Linear_Solver_FSI_Struc, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, LU_SGS);
+  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
@@ -4941,10 +4943,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
         break;
-      case DEF_WALL_DISTANCE:
-        cout << "Cell stiffness scaled by distance to nearest deforming surface." << endl;
-        break;
-      case BOUNDARY_DISTANCE:
+      case SOLID_WALL_DISTANCE:
         cout << "Cell stiffness scaled by distance to nearest solid surface." << endl;
         break;
       case CONSTANT_STIFFNESS:
