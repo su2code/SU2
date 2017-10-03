@@ -184,7 +184,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       }
 
       /*---Sort signal in order of x-coordinate---*/
-      cout << "Sorting signal data." << endl;
+      cout << "Sorting signal data. " << nPanel[iPhi] << " to sort." << endl;
       MergeSort(signal.x[iPhi], signal.original_p[iPhi], 0, totSig-1);
 
       /*---Check for duplicate points---*/
