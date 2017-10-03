@@ -780,9 +780,9 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
           ////}
         }
       }
-      if(!inside_iPanel){
-        end = true;
-      }
+    }
+    if(!inside_iPanel){
+      end = true;
     }
   }
 
