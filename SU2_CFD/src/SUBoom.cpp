@@ -563,7 +563,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
-        if(geometry->node[iPoint]->GetDomain()){
+        //////////if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           y = SU2_TYPE::GetValue(Coord[1]);
           if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
@@ -605,7 +605,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               }
             //////}
           }
-        }
+        //////////}
       }
     }
   }
@@ -870,14 +870,14 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
-        isoparams[iNode] = 0.0;
+        //////////isoparams[iNode] = 0.0;
       }
       else{
-        isoparams_sum += isoparams[iNode];
+        //////////isoparams_sum += isoparams[iNode];
       }
     }
     for(iNode = 0; iNode < nNode; iNode++){
-      isoparams[iNode] /= isoparams_sum;
+      //////////isoparams[iNode] /= isoparams_sum;
     }
 
     /*--- Now interpolate pressure ---*/
@@ -955,7 +955,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
-        inDomain[iNode] = false;
+        //////////inDomain[iNode] = false;
         //return false;
       }
 
