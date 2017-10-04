@@ -2024,7 +2024,7 @@ void SUBoom::CreateSignature(unsigned short iPhi){
         //ll[i] = tol_l;
         //mm[i] = (pp[1][i] - pp[0][i])/ll[i];
       }
-      //i -= 1;
+      i -= 1;
       M -= 1;
     }
     else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
