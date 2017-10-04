@@ -1340,7 +1340,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     //-- Bilinear coordinates, bounded by [-1,1] ---
     su2double xi, eta;
     xi = -isoparams[0]+isoparams[1]+isoparams[2]-isoparams[3];
-    eta = 2.0*(isoparams[2]-isoparams[0]) + xi;
+    eta = 2.0*(isoparams[2]-isoparams[0]) - xi;
     if (xi>1.0) xi=1.0;
     if (xi<-1.0) xi=-1.0;
     if (eta>1.0) eta=1.0;
