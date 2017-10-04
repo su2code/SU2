@@ -563,7 +563,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
-        ////////if(geometry->node[iPoint]->GetDomain()){
+        if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           y = SU2_TYPE::GetValue(Coord[1]);
           if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
@@ -605,7 +605,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
               }
             //////}
           }
-        ////////}
+        }
       }
     }
   }
