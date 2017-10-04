@@ -566,7 +566,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 50
-    ddes_flatplate.test_vals = [-4.791475, -7.622242, -0.309146, 0.009150] #last 4 columns
+    ddes_flatplate.test_vals = [-4.791476, -7.617711, -0.309146, 0.009150] #last 4 columns
     ddes_flatplate.su2_exec  = "parallel_computation.py -f"
     ddes_flatplate.timeout   = 1600
     ddes_flatplate.tol       = 0.00001

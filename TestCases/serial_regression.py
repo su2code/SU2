@@ -567,7 +567,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 50
-    ddes_flatplate.test_vals = [-4.791478, -7.622242, -0.309146, 0.009150] #last 4 columns
+    ddes_flatplate.test_vals = [-4.791479, -7.657901, -0.309146, 0.009150] #last 4 columns
     ddes_flatplate.su2_exec  = "SU2_CFD"
     ddes_flatplate.timeout   = 1600
     ddes_flatplate.tol       = 0.00001
