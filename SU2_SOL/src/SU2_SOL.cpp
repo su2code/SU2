@@ -206,6 +206,11 @@ geometry_container[ZONE_0]->SetControlVolume(config_container[iZone], ALLOCATE);
 ////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
 geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
+/*--- Identify closest normal neighbor ---*/
+
+if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
+geometry_container[ZONE_0]->FindNormal_Neighbor(config_container[iZone]);
+
 /*--- Store the global to local mapping after preprocessing. ---*/
 
 if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
