@@ -2933,43 +2933,43 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
 
 void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
   
-  unsigned short kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+  unsigned short kindHybridRANSLES = config->GetKind_HybridRANSLES();
   unsigned long iPoint, jPoint;
   unsigned short iDim, jDim, iNeigh, nNeigh;
   
-  su2double Const_DES = config->GetConst_DES();
+  su2double constDES = config->GetConst_DES();
   
-  su2double Density, LaminarViscosity, KinematicViscosity,
-      EddyViscosity, KinematicViscosity_Turb, Wall_Distance, DES_LengthScale;
+  su2double density, laminarViscosity, kinematicViscosity,
+      eddyViscosity, kinematicViscosityTurb, wallDistance, lengthScale;
   
-  su2double MaxDelta, Delta_Aux, distDES, uijuij, k2, r_d, f_d,
-      Delta_DDES, Delta_Aux_DDES, Omega, ln_max, ln[3] = {0.0, 0.0, 0.0},
-      aux_ln, f_kh, Delta_min, Delta_w, alpha2, f_b, f_d_tilde;
+  su2double maxDelta, deltaAux, distDES, uijuij, k2, r_d, f_d,
+      deltaDDES, deltaAuxDDES, omega, ln_max, ln[3] = {0.0, 0.0, 0.0},
+      aux_ln, f_kh, deltaMin, deltaw, alpha2, f_b, f_d_tilde;
   
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5, cw_iddes = 0.15;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1, Ji, Ji_2, Ji_3, fv1, fv2, ft2, psi_2;
-  su2double *Coord_i, *Coord_j, **PrimVar_Grad, *Vorticity, Delta[3] = {0.0,0.0,0.0},
-      ratio_Omega[3] = {0.0, 0.0, 0.0}, VortexTilting_Measure;
+  su2double *coord_i, *coord_j, **primVarGrad, *vorticity, delta[3] = {0.0,0.0,0.0},
+      ratioOmega[3] = {0.0, 0.0, 0.0}, vortexTiltingMeasure;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     
-    Coord_i                 = geometry->node[iPoint]->GetCoord();
+    coord_i                 = geometry->node[iPoint]->GetCoord();
     nNeigh                  = geometry->node[iPoint]->GetnPoint();
-    Wall_Distance           = geometry->node[iPoint]->GetWall_Distance();
-    PrimVar_Grad            = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-    Vorticity               = solver[FLOW_SOL]->node[iPoint]->GetVorticity();    
-    Density                 = solver[FLOW_SOL]->node[iPoint]->GetDensity();
-    LaminarViscosity        = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    EddyViscosity           = solver[TURB_SOL]->node[iPoint]->GetmuT();
-    KinematicViscosity      = LaminarViscosity/Density;
-    KinematicViscosity_Turb = EddyViscosity/Density;
+    wallDistance            = geometry->node[iPoint]->GetWall_Distance();
+    primVarGrad             = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+    vorticity               = solver[FLOW_SOL]->node[iPoint]->GetVorticity();    
+    density                 = solver[FLOW_SOL]->node[iPoint]->GetDensity();
+    laminarViscosity        = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+    eddyViscosity           = solver[TURB_SOL]->node[iPoint]->GetmuT();
+    kinematicViscosity      = laminarViscosity/density;
+    kinematicViscosityTurb  = eddyViscosity/density;
     
     uijuij = 0.0;
     for(iDim = 0; iDim < nDim; iDim++){
       for(jDim = 0; jDim < nDim; jDim++){
-        uijuij += PrimVar_Grad[1+iDim][jDim]*PrimVar_Grad[1+iDim][jDim];
+        uijuij += primVarGrad[1+iDim][jDim]*primVarGrad[1+iDim][jDim];
       }
     }
     uijuij = sqrt(fabs(uijuij));
@@ -2978,7 +2978,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     /*--- Low Reynolds number correction term ---*/
     
     nu_hat = node[iPoint]->GetSolution()[0];
-    Ji   = nu_hat/KinematicViscosity;
+    Ji   = nu_hat/kinematicViscosity;
     Ji_2 = Ji * Ji;
     Ji_3 = Ji*Ji*Ji;
     fv1  = Ji_3/(Ji_3+cv1_3);
@@ -2989,87 +2989,87 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
     psi_2 = min(100.0,psi_2);
     
-    switch(kind_hybridRANSLES){
+    switch(kindHybridRANSLES){
       case SA_DES:
         /*--- Marcello Righi's Delta max ---*/
         
-        MaxDelta=0.;      
+        maxDelta=0.;      
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          Coord_j = geometry->node[jPoint]->GetCoord();
+          coord_j = geometry->node[jPoint]->GetCoord();
           
-          Delta_Aux = 0.;
+          deltaAux = 0.;
           for (iDim = 0;iDim < nDim; iDim++){
-            Delta_Aux += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
           
-          MaxDelta = max(MaxDelta,sqrt(Delta_Aux));
+          maxDelta = max(maxDelta,sqrt(deltaAux));
         }
         
-        distDES         = Const_DES * MaxDelta;
-        DES_LengthScale = min(distDES,Wall_Distance);
+        distDES         = constDES * maxDelta;
+        lengthScale = min(distDES,wallDistance);
                 
         break;
         
       case SA_DDES:
         /*--- Marcello Righi's Delta max ---*/
         
-        MaxDelta = 0.0;      
+        maxDelta = 0.0;      
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          Coord_j = geometry->node[jPoint]->GetCoord();
+          coord_j = geometry->node[jPoint]->GetCoord();
         
-          Delta_Aux = 0.0;
+          deltaAux = 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
-            Delta_Aux += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
           
-          MaxDelta = max(MaxDelta,sqrt(Delta_Aux));
+          maxDelta = max(maxDelta,sqrt(deltaAux));
         }
         
-        r_d = (KinematicViscosity_Turb+KinematicViscosity)/(uijuij*k2*pow(Wall_Distance, 2.0));
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d = 1.0-tanh(pow(8.0*r_d,3.0));
         
-        distDES = Const_DES * MaxDelta;
-        DES_LengthScale = Wall_Distance-f_d*max(0.0,(Wall_Distance-distDES));
+        distDES = constDES * maxDelta;
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         
         break;
       case SA_ZDES:
         
-        Delta_DDES = 0.0;
+        deltaDDES = 0.0;
         for (iNeigh = 0; iNeigh < nNeigh; iNeigh++){
             jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            Coord_j = geometry->node[jPoint]->GetCoord();
-            Delta_Aux_DDES = 0.0;
+            coord_j = geometry->node[jPoint]->GetCoord();
+            deltaAuxDDES = 0.0;
             for ( iDim = 0; iDim < nDim; iDim++){
-              Delta_Aux       = abs(Coord_j[iDim] - Coord_i[iDim]);
-              Delta[iDim]     = max(Delta[iDim], Delta_Aux);
-              Delta_Aux_DDES += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+              deltaAux       = abs(coord_j[iDim] - coord_i[iDim]);
+              delta[iDim]     = max(delta[iDim], deltaAux);
+              deltaAuxDDES += pow((coord_j[iDim]-coord_i[iDim]),2.);
             }
-            Delta_DDES = max(Delta_DDES,sqrt(Delta_Aux_DDES));
+            deltaDDES = max(deltaDDES,sqrt(deltaAuxDDES));
         }
         
-        Omega = sqrt(Vorticity[0]*Vorticity[0] + 
-                     Vorticity[1]*Vorticity[1] +
-                     Vorticity[2]*Vorticity[2]);
+        omega = sqrt(vorticity[0]*vorticity[0] + 
+                     vorticity[1]*vorticity[1] +
+                     vorticity[2]*vorticity[2]);
         
         for (iDim = 0; iDim < 3; iDim++){
-          ratio_Omega[iDim] = Vorticity[iDim]/Omega;
+          ratioOmega[iDim] = vorticity[iDim]/omega;
         }
   
-        MaxDelta = sqrt(pow(ratio_Omega[0],2.0)*Delta[1]*Delta[2] +
-                        pow(ratio_Omega[1],2.0)*Delta[0]*Delta[2] +
-                        pow(ratio_Omega[2],2.0)*Delta[0]*Delta[1]);
+        maxDelta = sqrt(pow(ratioOmega[0],2.0)*delta[1]*delta[2] +
+                        pow(ratioOmega[1],2.0)*delta[0]*delta[2] +
+                        pow(ratioOmega[2],2.0)*delta[0]*delta[1]);
             
-        r_d = (KinematicViscosity_Turb+KinematicViscosity)/(uijuij*k2*pow(Wall_Distance, 2.0));
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d = 1.0-tanh(pow(8.0*r_d,3.0));
         
         if (f_d < 0.99){
-          MaxDelta = Delta_DDES;
+          maxDelta = deltaDDES;
         }
         
-        distDES = Const_DES * MaxDelta;
-        DES_LengthScale = Wall_Distance-f_d*max(0.0,(Wall_Distance-distDES));
+        distDES = constDES * maxDelta;
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         
         break;
         
@@ -3080,41 +3080,49 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Flow Turbulence Combust - 2015
          ---*/
         
-        VortexTilting_Measure = solver[FLOW_SOL]->node[iPoint]->GetVortex_Tilting();
+        vortexTiltingMeasure = solver[FLOW_SOL]->node[iPoint]->GetVortex_Tilting();
+        
+        omega = sqrt(vorticity[0]*vorticity[0] + 
+                     vorticity[1]*vorticity[1] +
+                     vorticity[2]*vorticity[2]);
+        
+        for (iDim = 0; iDim < 3; iDim++){
+          ratioOmega[iDim] = vorticity[iDim]/omega;
+        }
         
         ln_max = 0.0;
-        Delta_DDES = 0.0;
+        deltaDDES = 0.0;
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-          Coord_j = geometry->node[jPoint]->GetCoord();
-          Delta_Aux_DDES = 0.0;
+          coord_j = geometry->node[jPoint]->GetCoord();
+          deltaAuxDDES = 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
-            Delta[iDim] = fabs(Coord_j[iDim] - Coord_i[iDim]);            
-            Delta_Aux_DDES += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);            
+            deltaAuxDDES += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
-          Delta_DDES=max(Delta_DDES,sqrt(Delta_Aux_DDES));
-          ln[0] = Delta[1]*ratio_Omega[2] - Delta[2]*ratio_Omega[1];
-          ln[1] = Delta[2]*ratio_Omega[0] - Delta[0]*ratio_Omega[2];
-          ln[2] = Delta[0]*ratio_Omega[1] - Delta[1]*ratio_Omega[0];
+          deltaDDES=max(deltaDDES,sqrt(deltaAuxDDES));
+          ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
+          ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
+          ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
           aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
           ln_max = max(ln_max,aux_ln);
-          VortexTilting_Measure += solver[FLOW_SOL]->node[jPoint]->GetVortex_Tilting();
+          vortexTiltingMeasure += solver[FLOW_SOL]->node[jPoint]->GetVortex_Tilting();
         }
 
-        VortexTilting_Measure = (VortexTilting_Measure/fabs(nNeigh + 1.0));
+        vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
         
-        f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (VortexTilting_Measure - a1)));
+        f_kh = max(f_min, min(f_max, f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
         
-        r_d = (KinematicViscosity_Turb+KinematicViscosity)/(uijuij*k2*pow(Wall_Distance, 2.0));
+        r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d = 1.0-tanh(pow(8.0*r_d,3.0));
 
-        MaxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        maxDelta = (ln_max/sqrt(3.0)) * f_kh;
         if (f_d < 0.999){
-          MaxDelta = Delta_DDES;
+          maxDelta = deltaDDES;
         }
         
-        distDES = Const_DES * MaxDelta;
-        DES_LengthScale=Wall_Distance-f_d*max(0.0,(Wall_Distance-distDES));
+        distDES = constDES * maxDelta;
+        lengthScale=wallDistance-f_d*max(0.0,(wallDistance-distDES));
         
         break;
         
@@ -3123,89 +3131,89 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         /*--- Shur et al. A hybrid RANS-LES approach with delayed-DES and wall-modelled LES capabilities, 2008 ---*/
         /*--- IDDES without turbulent inflow content (fe = 0.0), omitted here for simplification ---*/
         
-        MaxDelta = 0.0;
-        Delta_min = 0.0;
+        maxDelta = 0.0;
+        deltaMin = 0.0;
         
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          Coord_j = geometry->node[jPoint]->GetCoord();
+          coord_j = geometry->node[jPoint]->GetCoord();
           
-          Delta_Aux = 0.0;
+          deltaAux = 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
-            Delta_Aux += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
           
-          MaxDelta = max(MaxDelta,sqrt(Delta_Aux));
-          Delta_min =  min(Delta_min,sqrt(Delta_Aux));
+          maxDelta = max(maxDelta,sqrt(deltaAux));
+          deltaMin =  min(deltaMin,sqrt(deltaAux));
         }
         
-        distDES = max(cw_iddes*Wall_Distance, cw_iddes*MaxDelta);
-        distDES = max(distDES, Delta_min);
-        distDES = min(distDES,MaxDelta) * Const_DES;
+        distDES = max(cw_iddes*wallDistance, cw_iddes*maxDelta);
+        distDES = max(distDES, deltaMin);
+        distDES = min(distDES,maxDelta) * constDES;
         
         /*--- The variables r_d and f_d are functions only of the eddy viscosity ---*/
         
-        r_d= (KinematicViscosity_Turb)/(uijuij*k2*pow(Wall_Distance, 2.0));
+        r_d= (kinematicViscosityTurb)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d= 1.0-tanh(pow(8.0*r_d,3.0));
         
-        alpha2 = pow(0.25 - (Wall_Distance/MaxDelta) , 2.0);
+        alpha2 = pow(0.25 - (wallDistance/maxDelta) , 2.0);
         f_b = min(2.0 * exp(-9.0 * alpha2), 1.0);
         f_d_tilde = max((1.0-f_d), f_b);
   
-        DES_LengthScale = f_d_tilde * Wall_Distance + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
+        lengthScale = f_d_tilde * wallDistance + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
         
         break;
         
       case SA_IZDES:
         
-        MaxDelta = 0.0;
-        Delta_min = 0.0;
+        maxDelta = 0.0;
+        deltaMin = 0.0;
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          Coord_j = geometry->node[jPoint]->GetCoord();
-          Delta_Aux=0.;
+          coord_j = geometry->node[jPoint]->GetCoord();
+          deltaAux=0.;
           for (iDim = 0; iDim < nDim; iDim++){
-            Delta[iDim] = max(Delta[iDim],abs(Coord_j[iDim] - Coord_i[iDim]));            
-            Delta_Aux  += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+            delta[iDim] = max(delta[iDim],abs(coord_j[iDim] - coord_i[iDim]));            
+            deltaAux  += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
-          MaxDelta = max(MaxDelta,sqrt(Delta_Aux));
-          Delta_min =  min(Delta_min,sqrt(Delta_Aux));
+          maxDelta = max(maxDelta,sqrt(deltaAux));
+          deltaMin =  min(deltaMin,sqrt(deltaAux));
         }
                   
-        Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+        omega = sqrt(vorticity[0]*vorticity[0]+ vorticity[1]*vorticity[1]+ vorticity[2]*vorticity[2]);
         for (iDim = 0; iDim < 3; iDim++){
-          ratio_Omega[iDim] = Vorticity[iDim]/Omega;
+          ratioOmega[iDim] = vorticity[iDim]/omega;
         }
         
-        MaxDelta = sqrt(pow(ratio_Omega[0],2.0)*Delta[1]*Delta[2] +
-                        pow(ratio_Omega[1],2.0)*Delta[0]*Delta[2] +
-                        pow(ratio_Omega[2],2.0)*Delta[0]*Delta[1]);
+        maxDelta = sqrt(pow(ratioOmega[0],2.0)*delta[1]*delta[2] +
+                        pow(ratioOmega[1],2.0)*delta[0]*delta[2] +
+                        pow(ratioOmega[2],2.0)*delta[0]*delta[1]);
         
-        Wall_Distance = geometry->node[iPoint]->GetWall_Distance();
+        wallDistance = geometry->node[iPoint]->GetWall_Distance();
         
-        distDES = max(cw_iddes*Wall_Distance, cw_iddes*MaxDelta);
-        distDES = max(distDES, Delta_min);
+        distDES = max(cw_iddes*wallDistance, cw_iddes*maxDelta);
+        distDES = max(distDES, deltaMin);
         
         /*--- Replacing only the outer part of the IDDES grid filter ---*/
-        distDES = min(distDES,Delta_w) * Const_DES;
+        distDES = min(distDES,deltaw) * constDES;
         
         /*--- The variables r_d and f_d are functions only of the eddy viscosity ---*/
         
-        r_d = (KinematicViscosity_Turb)/(uijuij*k2*pow(Wall_Distance, 2.0));
+        r_d = (kinematicViscosityTurb)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d = 1.0-tanh(pow(8.0*r_d,3.0));
         
-        alpha2 = pow(0.25 - (Wall_Distance/MaxDelta) , 2.0);
+        alpha2 = pow(0.25 - (wallDistance/maxDelta) , 2.0);
         f_b = min(2.0 * exp(-9.0 * alpha2), 1.0);
         f_d_tilde = max((1.0-f_d), f_b);
   
-        DES_LengthScale = f_d_tilde * Wall_Distance + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
+        lengthScale = f_d_tilde * wallDistance + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
         
         break;
         
         
     }
     
-    node[iPoint]->SetDES_LengthScale(DES_LengthScale);
+    node[iPoint]->SetDES_LengthScale(lengthScale);
   
   }
 }
