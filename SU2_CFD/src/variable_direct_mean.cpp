@@ -819,10 +819,9 @@ void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
 void CNSVariable::SetVortex_Tilting(){
   
-  su2double Strain[3][3], ratio_Omega[3], Omega, StrainDotVort[3], numVecVort[3];
+  su2double Strain[3][3], Omega, StrainDotVort[3], numVecVort[3];
   su2double numerator, trace0, trace1, denominator;
-  unsigned short iDim;
-  
+
   AD::StartPreacc();
   AD::SetPreaccIn(Gradient_Primitive, nVar, nDim);
   AD::SetPreaccIn(Vorticity, 3);
@@ -844,9 +843,6 @@ void CNSVariable::SetVortex_Tilting(){
   }
   
   Omega = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);  
-  for (iDim = 0; iDim < 3; iDim++){
-    ratio_Omega[iDim] = Vorticity[iDim]/Omega;
-  }
   
   StrainDotVort[0] = Strain[0][0]*Vorticity[0]+Strain[0][1]*Vorticity[1]+Strain[0][2]*Vorticity[2];
   StrainDotVort[1] = Strain[1][0]*Vorticity[0]+Strain[1][1]*Vorticity[1]+Strain[1][2]*Vorticity[2];
