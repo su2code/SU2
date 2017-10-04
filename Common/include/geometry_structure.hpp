@@ -2344,7 +2344,7 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void FindNormal_Neighbor(CConfig *config);
-
+  
 	/*!
 	 * \brief Indentify geometrical planes in the mesh
 	 */

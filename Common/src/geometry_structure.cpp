@@ -4566,7 +4566,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       nelem_edge_bound     = iBoundLineTotal;
       nelem_triangle_bound = iBoundTriangleTotal;
       nelem_quad_bound     = iBoundQuadrilateralTotal;
-      
+
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
         config->SetMarker_All_TagBound(iMarker, TagBound_Copy[iMarker]);
         config->SetMarker_All_SendRecv(iMarker, SendRecv_Copy[iMarker]);
@@ -4810,8 +4810,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   npoint_procs  = NULL;
   nPoint_Linear = NULL;
 
-  nPoint_Linear = NULL;
-
   /*--- Arrays for defining the tutbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
@@ -4988,6 +4986,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   LoadVolumeElements(config, geometry);
 
   LoadSurfaceElements(config, geometry);
+
+  // Need to print out all info for markers: nVert, elem types, counts, tags, etc
+  // Make it a separate routine so both old and new can write it and diff
+  // also write out mesh files to make sure that it can be vizualized
 
   /*--- Free memory associated with the redistribution of points and elems. ---*/
 
@@ -6535,8 +6537,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
 
   /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. Note that we add 1 here
-   to the connectivity for vizualization packages. First, allocate
+   structure before post-processing below. First, allocate
    appropriate amount of memory for this section. ---*/
 
   if (nElem_Recv[size] > 0)
@@ -6617,8 +6618,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
 void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
 
-  unsigned long iProcessor, NELEM;
   unsigned short NODES_PER_ELEMENT;
+
+  unsigned long iProcessor, NELEM;
   unsigned long nElem_Total = 0, Global_Index;
 
   unsigned long *Conn_Linear        = NULL;
@@ -6686,8 +6688,8 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   }
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
-  for (int ii = 0; ii < (int)NELEM; ii++ ) {
-      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+  for (int ii = 0; ii < (int)NELEM; ii++) {
+      for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
 
         /*--- Get the index of the current point. ---*/
 
@@ -6748,8 +6750,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   for (int ii = 0; ii < nElem_Send[size]; ii++) markerSend[ii] = 0;
 
   unsigned long *idSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    idSend[ii] = 0;
+  for (int ii = 0; ii < nElem_Send[size]; ii++) idSend[ii] = 0;
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
@@ -6763,8 +6764,8 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
 
-  for (int ii = 0; ii < (int)NELEM; ii++ ) {
-    for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+  for (int ii = 0; ii < (int)NELEM; ii++) {
+    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
 
       /*--- Get the index of the current point. ---*/
 
@@ -6827,8 +6828,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry
   for (int ii = 0; ii < nElem_Recv[size]; ii++) markerRecv[ii] = 0;
 
   unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    idRecv[ii] = 0;
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) idRecv[ii] = 0;
 
 #ifdef HAVE_MPI
   /*--- We need triple the number of messages to send the conn.,
@@ -7559,6 +7559,9 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
 void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry) {
 
+  unsigned short NODES_PER_ELEMENT;
+  unsigned short iNode, nMarker_Max = config->GetnMarker_Max();
+
   unsigned long iElem, iMarker, Global_Marker;
 
   unsigned long iElem_Line = 0;
@@ -7566,10 +7569,6 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   unsigned long iElem_Quad = 0;
 
   unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
-
-  unsigned short iNode, nMarker_Max = config->GetnMarker_Max();
-
-  unsigned short NODES_PER_ELEMENT;
 
   vector<vector<unsigned long> > Line_List;
   vector<vector<unsigned long> > BoundTria_List;
@@ -7667,9 +7666,6 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   Local_to_Global_Marker = new unsigned short[nMarker_Max];
   Tag_to_Marker          = new string[nMarker_Max];
   Marker_All_SendRecv    = new short[nMarker_Max];
-
-  //string *TagBound_Copy  = new string[nMarker_Max];
-  //short *SendRecv_Copy   = new short[nMarker_Max];
 
   /*--- Allocate space for the elements on each marker ---*/
 
@@ -7796,19 +7792,24 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     }
   }
 
-
   /*--- Set some auxiliary information on a per-marker basis. ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     Global_Marker = Marker_Local_to_Global[iMarker];
 
+    /*--- Now each domain has the right information ---*/
+
+    string Grid_Marker = config->GetMarker_All_TagBound(Marker_Local_to_Global[iMarker]);
+    short SendRecv     = config->GetMarker_All_SendRecv(Marker_Local_to_Global[iMarker]);
+
     Tag_to_Marker[iMarker] = Marker_Tags[Global_Marker];
 
-    config->SetMarker_All_TagBound(iMarker, Marker_Tags[Global_Marker]);
+    /*--- Set the marker tags correctly to match the values in config. ---*/
 
-    // don't have this info yet, but related to periodic.
-    config->SetMarker_All_SendRecv(iMarker, config->GetMarker_All_SendRecv(Global_Marker)); // SendRecv_Copy[iMarker]);
+    config->SetMarker_All_TagBound(iMarker, Grid_Marker);
+    config->SetMarker_All_SendRecv(iMarker, SendRecv);
+
   }
 
   /*--- Store total number of each boundary element type ---*/
@@ -7817,6 +7818,60 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   nelem_triangle_bound = iElem_Tria;
   nelem_quad_bound     = iElem_Quad;
 
+  /*--- initialize pointers for turbomachinery computations  ---*/
+  nSpanWiseSections       = new unsigned short[2];
+  SpanWiseValue           = new su2double*[2];
+  for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
+    nSpanWiseSections[iMarker]      = 0;
+    SpanWiseValue[iMarker]          = NULL;
+  }
+
+  nVertexSpan                       = new long* [nMarker];
+  nTotVertexSpan                    = new unsigned long* [nMarker];
+  turbovertex                       = new CTurboVertex***[nMarker];
+  AverageTurboNormal                = new su2double**[nMarker];
+  AverageNormal                     = new su2double**[nMarker];
+  AverageGridVel                    = new su2double**[nMarker];
+  AverageTangGridVel                = new su2double*[nMarker];
+  SpanArea                          = new su2double*[nMarker];
+  TurboRadius                       = new su2double*[nMarker];
+  MaxAngularCoord                   = new su2double*[nMarker];
+  MinAngularCoord                   = new su2double*[nMarker];
+  MinRelAngularCoord                = new su2double*[nMarker];
+
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++){
+    nVertexSpan[iMarker]            = NULL;
+    nTotVertexSpan[iMarker]         = NULL;
+    turbovertex[iMarker]            = NULL;
+    AverageTurboNormal[iMarker]     = NULL;
+    AverageNormal[iMarker]          = NULL;
+    AverageGridVel[iMarker]         = NULL;
+    AverageTangGridVel[iMarker]     = NULL;
+    SpanArea[iMarker]               = NULL;
+    TurboRadius[iMarker]            = NULL;
+    MaxAngularCoord[iMarker]        = NULL;
+    MinAngularCoord[iMarker]        = NULL;
+    MinRelAngularCoord[iMarker]     = NULL;
+  }
+
+  /*--- initialize pointers for turbomachinery performance computation  ---*/
+  nTurboPerf     = config->GetnMarker_TurboPerformance();
+  TangGridVelIn  = new su2double*[config->GetnMarker_TurboPerformance()];
+  SpanAreaIn     = new su2double*[config->GetnMarker_TurboPerformance()];
+  TurboRadiusIn  = new su2double*[config->GetnMarker_TurboPerformance()];
+  TangGridVelOut = new su2double*[config->GetnMarker_TurboPerformance()];
+  SpanAreaOut    = new su2double*[config->GetnMarker_TurboPerformance()];
+  TurboRadiusOut = new su2double*[config->GetnMarker_TurboPerformance()];
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
+    TangGridVelIn[iMarker]	= NULL;
+    SpanAreaIn[iMarker]			= NULL;
+    TurboRadiusIn[iMarker]  = NULL;
+    TangGridVelOut[iMarker] = NULL;
+    SpanAreaOut[iMarker]    = NULL;
+    TurboRadiusOut[iMarker] = NULL;
+  }
+  
 //  /*--- Add the new periodic markers to the domain ---*/
 //
 //  //      iTotalSendDomain_Periodic = 0;
