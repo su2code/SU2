@@ -254,6 +254,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
+  bool flow = config->GetHeat_Inc();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -287,17 +288,25 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   unsigned short skipVars = 0;
 
-  if (config->GetKind_Turb_Model() == SA || config->GetKind_Turb_Model() == SA_NEG) {
-    if (nDim == 2) skipVars += 6;
-    if (nDim == 3) skipVars += 8;
-  }
-  else if (config->GetKind_Turb_Model() == SST ) {
-    if (nDim == 2) skipVars += 7;
-    if (nDim == 3) skipVars += 9;
+  if (flow) {
+
+    if (config->GetKind_Turb_Model() == SA || config->GetKind_Turb_Model() == SA_NEG) {
+      if (nDim == 2) skipVars += 6;
+      if (nDim == 3) skipVars += 8;
+    }
+    else if (config->GetKind_Turb_Model() == SST ) {
+      if (nDim == 2) skipVars += 7;
+      if (nDim == 3) skipVars += 9;
+    }
+    else {
+      if (nDim == 2) skipVars += 5;
+      if (nDim == 3) skipVars += 7;
+    }
   }
   else {
-    if (nDim == 2) skipVars += 5;
-    if (nDim == 3) skipVars += 7;
+
+    if (nDim == 2) skipVars += 2;
+    if (nDim == 3) skipVars += 3;
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
