@@ -598,7 +598,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                         Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
                       }
                     }
-                    startline[0] = true;
+                    //startline[0] = true;
                     //break;
                   }
                 }
@@ -955,7 +955,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
-        inDomain[iNode] = false;
+        ////inDomain[iNode] = false;
         //return false;
       }
 
@@ -999,11 +999,11 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       }
     }
 
-    //if(count == 1){
-    //  p1[0] = p0[0];
-    //  p1[1] = p0[1];
-    //  inside = true;
-    //}
+    if(count == 1){
+      p1[0] = p0[0];
+      p1[1] = p0[1];
+      inside = true;
+    }
 
     for(iNode = 0; iNode < nNode; iNode++){
       delete [] Coord_elem[iNode];
