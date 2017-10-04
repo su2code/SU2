@@ -955,7 +955,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       jNode = geometry->elem[jElem]->GetNode(iNode);
       if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
-        ////inDomain[iNode] = false;
+        inDomain[iNode] = false;
         //return false;
       }
 
