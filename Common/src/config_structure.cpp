@@ -286,6 +286,21 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
   return (unsigned short) nDim;
 }
 
+bool CConfig::GetPeriodic(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+
+  bool isPeriodic = false;
+
+  /*--- For now, assume that if we have periodic BCs in the config, that
+   the user's intent is for there to be periodic BCs in the mesh too. ---*/
+
+  for (unsigned iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+      isPeriodic = true;
+  }
+  
+  return isPeriodic;
+}
+
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo;
+  bool fsi, turbo, periodic = false;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -70,10 +70,11 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
 
-  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  fsi   = config->GetFSI_Simulation();
-  turbo = config->GetBoolTurbomachinery();
+  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  fsi      = config->GetFSI_Simulation();
+  turbo    = config->GetBoolTurbomachinery();
+  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -91,19 +92,19 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
     
-    driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CGeneralDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
-    driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CHBDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
     /*--- FSI problem: instantiate the FSI driver class. ---*/
 
-    driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CFSIDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else {
 
@@ -114,23 +115,23 @@ int main(int argc, char *argv[]) {
 
       if (turbo) {
 
-        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
       } else {
 
-        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
         
       }
 
     } else if (turbo) {
 
-      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
     } else {
 
       /*--- Instantiate the class for external aerodynamics ---*/
 
-      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
       
     }
     
