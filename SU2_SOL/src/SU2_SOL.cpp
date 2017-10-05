@@ -206,6 +206,11 @@ geometry_container[ZONE_0]->SetControlVolume(config_container[iZone], ALLOCATE);
 ////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
 geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
+/*--- Store the global to local mapping after preprocessing. ---*/
+
+if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
+
 geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
 ////////      FWH_container = new FWHSolver* [nZone];
