@@ -583,9 +583,9 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     if(nPanel[0] == 0){
                       nPanel[0] = 1;
                       pointID_original = new unsigned long*[1];
-                      pointID_original[0] = new unsigned long[nPanel[0]];
+                      pointID_original[0] = new unsigned long[1];
                       Coord_original = new su2double**[1];
-                      Coord_original[0] = new su2double*[nPanel[0]];
+                      Coord_original[0] = new su2double*[1];
                       Coord_original[0][0] = new su2double[nDim];
 
                       pointID_original[0][0] = jElem;
@@ -593,10 +593,48 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                       Coord_original[0][0][1] = -r0;
                     }
                     else{
-                      if((p0[0]+p1[0])/2.0 < Coord_original[0][0][0]){
+                      nPanel[iPhi]++;
+
+                      pointID_tmp = new unsigned long[nPanel[iPhi]-1];
+                      Coord_tmp = new su2double*[nPanel[iPhi]-1];
+                      for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
+                        Coord_tmp[i] = new su2double[nDim];
+                        pointID_tmp[i] = pointID_original[iPhi][i];
+                        Coord_tmp[i][0] = Coord_original[iPhi][i][0];
+                        Coord_tmp[i][1] = Coord_original[iPhi][i][1];
+
+                        delete [] Coord_original[iPhi][i];
+                      }
+                      delete [] pointID_original[iPhi];
+                      delete [] Coord_original[iPhi];
+
+                      pointID_original[iPhi] = new unsigned long[nPanel[iPhi]];
+                      Coord_original[iPhi] = new su2double*[nPanel[iPhi]];
+                      for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
+                        Coord_original[iPhi][i] = new su2double[nDim];
+                        pointID_original[iPhi][i] = pointID_tmp[i];
+                        Coord_original[iPhi][i][0] = Coord_tmp[i][0];
+                        Coord_original[iPhi][i][1] = Coord_tmp[i][1];
+
+                        delete [] Coord_tmp[i];
+                      }
+                      delete [] pointID_tmp;
+                      delete [] Coord_tmp;
+
+                      Coord_original[iPhi][nPanel[iPhi]-1] = new su2double[nDim];
+                      pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
+                      Coord_original[iPhi][nPanel[iPhi]-1][0] = (p0[0] + p1[0])/2.0;
+                      if(nDim == 2){
+                        Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
+                      }
+                      else{
+                        Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0*sin(ray_phi[iPhi]);
+                        Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
+                      }
+                      /*if((p0[0]+p1[0])/2.0 < Coord_original[0][0][0]){
                         pointID_original[0][0] = jElem;
                         Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
-                      }
+                      }*/
                     }
                     //startline[0] = true;
                     //break;
