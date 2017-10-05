@@ -552,8 +552,8 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
               cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
             for (iZone = 0; iZone < nZone; iZone++){
-              Solver_Postprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone]);
-              delete solver_container[iZone];
+              //Solver_Postprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone]);
+              //delete solver_container[iZone];
             	
               if (geometry_container[iZone] != NULL) {
                 delete geometry_container[iZone];
@@ -653,8 +653,8 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
               cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
             for (iZone = 0; iZone < nZone; iZone++){
-              Solver_Postprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone]);
-              delete solver_container[iZone];
+              //Solver_Postprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone]);
+              //delete solver_container[iZone];
             	
               if (geometry_container[iZone] != NULL) {
                 delete geometry_container[iZone];
