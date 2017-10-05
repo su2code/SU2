@@ -546,15 +546,15 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
             AD::StartRecording();
 			SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-			
+
             if(rank == MASTER_NODE){
               cout << "SUBoom initialized." << endl;
               cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
             for (iZone = 0; iZone < nZone; iZone++){
-            	delete [] solver_container[iZone];
-            	delete [] config_container[iZone];
-            	delete [] geometry_container[iZone];
+            	delete solver_container[iZone];
+            	delete config_container[iZone];
+            	delete geometry_container[iZone];
             }
             delete solver_container[iZone];
             delete config_container[iZone];
@@ -646,9 +646,9 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
               cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
             for (iZone = 0; iZone < nZone; iZone++){
-            	delete [] solver_container[iZone];
-            	delete [] config_container[iZone];
-            	delete [] geometry_container[iZone];
+            	delete solver_container[iZone];
+            	delete config_container[iZone];
+            	delete geometry_container[iZone];
             }
             delete solver_container[iZone];
             delete config_container[iZone];
