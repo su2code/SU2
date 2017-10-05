@@ -189,7 +189,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
 
       /*---Check for duplicate points---*/
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
-        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-8){
+        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-7){
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
             signal.original_p[iPhi][jPanel-1] = signal.original_p[iPhi][jPanel];
@@ -1064,7 +1064,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
     return 1;
   }
   /*--- Colinear segments at r0 ---*/
-  else if(abs(Coord_i[1] + r0) < 1.0E-5 && abs(Coord_ip1[1] + r0) < 1.0E-5){
+  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8){
     p0[0] = Coord_i[0];
     p0[1] = -r0;
     p1[0] = Coord_ip1[0];
