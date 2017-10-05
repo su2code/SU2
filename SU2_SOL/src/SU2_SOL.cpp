@@ -563,7 +563,7 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
                 delete config_container[iZone];
               }
             }
-            delete solver_container[iZone];
+            //delete solver_container[iZone];
             delete config_container[iZone];
             delete geometry_container[iZone];
 
@@ -664,7 +664,7 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
                 delete config_container[iZone];
               }
             }
-            delete solver_container[iZone];
+            //delete solver_container[iZone];
             delete config_container[iZone];
             delete geometry_container[iZone];
 
