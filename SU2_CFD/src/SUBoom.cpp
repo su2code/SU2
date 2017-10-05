@@ -2205,7 +2205,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l || m[i] >= tol_m || m[i] <= -tol_m){
+    if(l[i] <= tol_l || m[i] >= tol_m){// || m[i] <= -tol_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
