@@ -1200,6 +1200,8 @@ inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_Ac
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
 
+inline unsigned short CConfig::GetnMarker_Periodic(void) { return nMarker_PerBound; }
+
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
