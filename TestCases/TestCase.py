@@ -5,8 +5,8 @@
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -52,6 +52,7 @@ class TestCase:
 
         # The test condition. These must be set after initialization
         self.test_iter = 1
+        self.ntest_vals = 4
         self.test_vals = []  
 
         # These can be optionally varied 
@@ -122,7 +123,7 @@ class TestCase:
                         iter_number = int(raw_data[0])
                         if self.unsteady:
                             iter_number = int(raw_data[1])
-                        data        = raw_data[len(raw_data)-4:]    # Take the last 4 columns for comparison
+                        data        = raw_data[len(raw_data)-self.ntest_vals:]    # Take the last n columns for comparison, the default is 4
                     except ValueError:
                         continue
                     except IndexError:
@@ -445,22 +446,19 @@ class TestCase:
                     break
                 else:   # Found the lines; parse the input
 
-                    if line.find('Max. thickness') > -1:
-                        raw_data = line.replace(",","").split()
-                        data.append(raw_data[2])
-                        found_thick = True
-
-                    elif line.find('Area') > -1:
+                    if line.find('Chord') > -1:
                         raw_data = line.replace(",","").split()
                         data.append(raw_data[1])
-                        found_area = True
-                        data.append(raw_data[4])
-                        found_twist = True
-                        data.append(raw_data[6])
                         found_chord = True
+                        data.append(raw_data[5])
+                        found_radius = True
+                        data.append(raw_data[8])
+                        found_toc = True
+                        data.append(raw_data[10])
+                        found_aoa = True
 
 
-            if found_thick and found_area and found_twist and found_chord:  # Found what we're checking for
+            if found_chord and found_radius and found_toc and found_aoa:  # Found what we're checking for
                 iter_missing = False
                 if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
                     print "Error in test_vals!"

@@ -56,3 +56,7 @@ bin/
 
 # ignore project settings from eclipse
 .project
+
+# ignore swap files
+*.swp
+

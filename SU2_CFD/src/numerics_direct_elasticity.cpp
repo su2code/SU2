@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -37,26 +37,26 @@
 CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
-	bool pseudo_static = config->GetPseudoStatic();
+  bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
+  bool pseudo_static = config->GetPseudoStatic();
 
-	unsigned short iVar;  // TODO: This needs to be changed; however, the config option is only limited to short...
+  unsigned short iVar;  // TODO: This needs to be changed; however, the config option is only limited to short...
 
   // Initialize values
   E = 0.0;  Nu = 0.0;     Rho_s = 0.0; Rho_s_DL = 0.0;
   Mu = 0.0; Lambda = 0.0; Kappa = 0.0;
 
-	/*--- Initialize vector structures for multiple material definition ---*/
+  /*--- Initialize vector structures for multiple material definition ---*/
   /*--- TODO: This needs to be changed, to adapt for cases in which the numbers in the config are not the same ---*/
-	E_i         = new su2double[config->GetnElasticityMod()];
-	for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
-	  E_i[iVar]        = config->GetElasticyMod(iVar);
+  E_i         = new su2double[config->GetnElasticityMod()];
+  for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
+    E_i[iVar]        = config->GetElasticyMod(iVar);
 
-	Nu_i        = new su2double[config->GetnPoissonRatio()];
+  Nu_i        = new su2double[config->GetnPoissonRatio()];
   for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
     Nu_i[iVar]        = config->GetPoissonRatio(iVar);
 
-	Rho_s_i     = new su2double[config->GetnMaterialDensity()];     // For inertial effects
+  Rho_s_i     = new su2double[config->GetnMaterialDensity()];     // For inertial effects
   Rho_s_DL_i  = new su2double[config->GetnMaterialDensity()];     // For dead loads
   for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++){
     Rho_s_DL_i[iVar]        = config->GetMaterialDensity(iVar);
@@ -64,14 +64,9 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
     else               Rho_s_i[iVar] = config->GetMaterialDensity(iVar);
   }
 
-//	Nu_i[0]       = config->GetPoissonRatio(0);
-//	Rho_s_i[0]    = config->GetMaterialDensity(0);       // For inertial effects
-//	Rho_s_DL_i[0] = config->GetMaterialDensity(0);    // For dead loads
+  if (pseudo_static) Rho_s_i[0] = 0.0;             // Pseudo-static: no inertial effects considered
 
-
-	if (pseudo_static) Rho_s_i[0] = 0.0;             // Pseudo-static: no inertial effects considered
-
-	// Initialization
+  // Initialization
   E   = E_i[0];
   Nu  = Nu_i[0];
   Rho_s = Rho_s_i[0];
@@ -81,51 +76,51 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
   Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
   Kappa  = Lambda + (2/3)*Mu;
 
-	// Auxiliary vector for body forces (dead load)
-	if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
+  // Auxiliary vector for body forces (dead load)
+  if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
 
-	plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
+  plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
 
-	KAux_ab = new su2double* [nDim];
-	for (iVar = 0; iVar < nDim; iVar++) {
-		KAux_ab[iVar] = new su2double[nDim];
-	}
+  KAux_ab = new su2double* [nDim];
+  for (iVar = 0; iVar < nDim; iVar++) {
+    KAux_ab[iVar] = new su2double[nDim];
+  }
 
 
-	if (nDim == 2) {
-		Ba_Mat = new su2double* [3];
-		Bb_Mat = new su2double* [3];
-		D_Mat  = new su2double* [3];
-		Ni_Vec  = new su2double [4];			/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		GradNi_Ref_Mat = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		GradNi_Curr_Mat = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
-		for (iVar = 0; iVar < 3; iVar++) {
-			Ba_Mat[iVar]  		= new su2double[nDim];
-			Bb_Mat[iVar]  		= new su2double[nDim];
-			D_Mat[iVar]	   	= new su2double[3];
-		}
-		for (iVar = 0; iVar < 4; iVar++) {
-			GradNi_Ref_Mat[iVar] 	= new su2double[nDim];
-			GradNi_Curr_Mat[iVar] 	= new su2double[nDim];
-		}
-	}
-	else if (nDim == 3) {
-		Ba_Mat = new su2double* [6];
-		Bb_Mat = new su2double* [6];
-		D_Mat  = new su2double* [6];
-		Ni_Vec  = new su2double [8];			/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		GradNi_Ref_Mat = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		GradNi_Curr_Mat = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
-		for (iVar = 0; iVar < 6; iVar++) {
-			Ba_Mat[iVar]  		= new su2double[nDim];
-			Bb_Mat[iVar]  		= new su2double[nDim];
-			D_Mat[iVar]      	= new su2double[6];
-		}
-		for (iVar = 0; iVar < 8; iVar++) {
-			GradNi_Ref_Mat[iVar] 	= new su2double[nDim];
-			GradNi_Curr_Mat[iVar] 	= new su2double[nDim];
-		}
-	}
+  if (nDim == 2) {
+    Ba_Mat = new su2double* [3];
+    Bb_Mat = new su2double* [3];
+    D_Mat  = new su2double* [3];
+    Ni_Vec  = new su2double [4];      /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+    GradNi_Ref_Mat = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+    GradNi_Curr_Mat = new su2double* [4];  /*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
+    for (iVar = 0; iVar < 3; iVar++) {
+      Ba_Mat[iVar]      = new su2double[nDim];
+      Bb_Mat[iVar]      = new su2double[nDim];
+      D_Mat[iVar]       = new su2double[3];
+    }
+    for (iVar = 0; iVar < 4; iVar++) {
+      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
+      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
+    }
+  }
+  else if (nDim == 3) {
+    Ba_Mat = new su2double* [6];
+    Bb_Mat = new su2double* [6];
+    D_Mat  = new su2double* [6];
+    Ni_Vec  = new su2double [8];      /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+    GradNi_Ref_Mat = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+    GradNi_Curr_Mat = new su2double* [8];  /*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
+    for (iVar = 0; iVar < 6; iVar++) {
+      Ba_Mat[iVar]      = new su2double[nDim];
+      Bb_Mat[iVar]      = new su2double[nDim];
+      D_Mat[iVar]        = new su2double[6];
+    }
+    for (iVar = 0; iVar < 8; iVar++) {
+      GradNi_Ref_Mat[iVar]   = new su2double[nDim];
+      GradNi_Curr_Mat[iVar]   = new su2double[nDim];
+    }
+  }
 
   DV_Val      = NULL;
   n_DV        = 0;
@@ -167,45 +162,45 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 
 CFEM_Elasticity::~CFEM_Elasticity(void) {
 
-	unsigned short iVar;
+  unsigned short iVar;
 
-	for (iVar = 0; iVar < nDim; iVar++) {
-		delete [] KAux_ab[iVar];
-	}
+  for (iVar = 0; iVar < nDim; iVar++) {
+    delete [] KAux_ab[iVar];
+  }
 
-	if (nDim == 2) {
-		for (iVar = 0; iVar < 3; iVar++) {
-			delete [] Ba_Mat[iVar];
-			delete [] Bb_Mat[iVar];
-			delete [] D_Mat[iVar];
-		}
-		for (iVar = 0; iVar < 4; iVar++) {
-			delete [] GradNi_Ref_Mat[iVar];
-			delete [] GradNi_Curr_Mat[iVar];
-		}
-	}
-	else if (nDim == 3) {
-		for (iVar = 0; iVar < 6; iVar++) {
-			delete [] Ba_Mat[iVar];
-			delete [] Bb_Mat[iVar];
-			delete [] D_Mat[iVar];
-		}
-		for (iVar = 0; iVar < 8; iVar++) {
-			delete [] GradNi_Ref_Mat[iVar];
-			delete [] GradNi_Curr_Mat[iVar];
-		}
-	}
+  if (nDim == 2) {
+    for (iVar = 0; iVar < 3; iVar++) {
+      delete [] Ba_Mat[iVar];
+      delete [] Bb_Mat[iVar];
+      delete [] D_Mat[iVar];
+    }
+    for (iVar = 0; iVar < 4; iVar++) {
+      delete [] GradNi_Ref_Mat[iVar];
+      delete [] GradNi_Curr_Mat[iVar];
+    }
+  }
+  else if (nDim == 3) {
+    for (iVar = 0; iVar < 6; iVar++) {
+      delete [] Ba_Mat[iVar];
+      delete [] Bb_Mat[iVar];
+      delete [] D_Mat[iVar];
+    }
+    for (iVar = 0; iVar < 8; iVar++) {
+      delete [] GradNi_Ref_Mat[iVar];
+      delete [] GradNi_Curr_Mat[iVar];
+    }
+  }
 
-	delete [] KAux_ab;
-	delete [] Ba_Mat;
-	delete [] Bb_Mat;
-	delete [] D_Mat;
-	delete [] GradNi_Ref_Mat;
-	delete [] GradNi_Curr_Mat;
+  delete [] KAux_ab;
+  delete [] Ba_Mat;
+  delete [] Bb_Mat;
+  delete [] D_Mat;
+  delete [] GradNi_Ref_Mat;
+  delete [] GradNi_Curr_Mat;
 
   if (DV_Val != NULL) delete[] DV_Val;
 
-	if (FAux_Dead_Load 		!= NULL) delete [] FAux_Dead_Load;
+  if (FAux_Dead_Load     != NULL) delete [] FAux_Dead_Load;
 
 }
 
@@ -215,48 +210,48 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
   SetElement_Properties(element, config);
   /*-----------------------------------------------------------*/
 
-	unsigned short iGauss, nGauss;
-	unsigned short iNode, jNode, nNode;
+  unsigned short iGauss, nGauss;
+  unsigned short iNode, jNode, nNode;
 
-	su2double Weight, Jac_X;
+  su2double Weight, Jac_X;
 
-	su2double val_Mab;
+  su2double val_Mab;
 
-	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
-	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian ---*/
+  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/
 
-	nNode = element->GetnNodes();
-	nGauss = element->GetnGaussPoints();
+  nNode = element->GetnNodes();
+  nGauss = element->GetnGaussPoints();
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++) {
+  for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-		Weight = element->GetWeight(iGauss);
-		Jac_X = element->GetJ_X(iGauss);			/*--- The mass matrix is computed in the reference configuration ---*/
+    Weight = element->GetWeight(iGauss);
+    Jac_X = element->GetJ_X(iGauss);      /*--- The mass matrix is computed in the reference configuration ---*/
 
-		/*--- Retrieve the values of the shape functions for each node ---*/
-		/*--- This avoids repeated operations ---*/
-		for (iNode = 0; iNode < nNode; iNode++) {
-			Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
-		}
+    /*--- Retrieve the values of the shape functions for each node ---*/
+    /*--- This avoids repeated operations ---*/
+    for (iNode = 0; iNode < nNode; iNode++) {
+      Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
+    }
 
-		for (iNode = 0; iNode < nNode; iNode++) {
+    for (iNode = 0; iNode < nNode; iNode++) {
 
-			/*--- Assumming symmetry ---*/
-			for (jNode = iNode; jNode < nNode; jNode++) {
+      /*--- Assumming symmetry ---*/
+      for (jNode = iNode; jNode < nNode; jNode++) {
 
-				val_Mab = Weight * Ni_Vec[iNode] * Ni_Vec[jNode] * Jac_X * Rho_s;
+        val_Mab = Weight * Ni_Vec[iNode] * Ni_Vec[jNode] * Jac_X * Rho_s;
 
-				element->Add_Mab(val_Mab,iNode, jNode);
-				/*--- Symmetric terms --*/
-				if (iNode != jNode) {
-					element->Add_Mab(val_Mab, jNode, iNode);
-				}
+        element->Add_Mab(val_Mab,iNode, jNode);
+        /*--- Symmetric terms --*/
+        if (iNode != jNode) {
+          element->Add_Mab(val_Mab, jNode, iNode);
+        }
 
-			}
+      }
 
-		}
+    }
 
-	}
+  }
 
 }
 
@@ -266,48 +261,48 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
   SetElement_Properties(element, config);
   /*-----------------------------------------------------------*/
 
-	unsigned short iGauss, nGauss;
-	unsigned short iNode, iDim, nNode;
+  unsigned short iGauss, nGauss;
+  unsigned short iNode, iDim, nNode;
 
-	su2double Weight, Jac_X;
+  su2double Weight, Jac_X;
 
-	/* -- Gravity directionality:
-	 * -- For 2D problems, we assume the direction for gravity is -y
-	 * -- For 3D problems, we assume the direction for gravity is -z
-	 */
-	su2double g_force[3] = {0.0,0.0,0.0};
+  /* -- Gravity directionality:
+   * -- For 2D problems, we assume the direction for gravity is -y
+   * -- For 3D problems, we assume the direction for gravity is -z
+   */
+  su2double g_force[3] = {0.0,0.0,0.0};
 
-	if (nDim == 2) g_force[1] = -1*STANDART_GRAVITY;
-	else if (nDim == 3) g_force[2] = -1*STANDART_GRAVITY;
+  if (nDim == 2) g_force[1] = -1*STANDART_GRAVITY;
+  else if (nDim == 3) g_force[2] = -1*STANDART_GRAVITY;
 
-	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
-	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian ---*/
+  element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
+  element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/
 
-	nNode = element->GetnNodes();
-	nGauss = element->GetnGaussPoints();
+  nNode = element->GetnNodes();
+  nGauss = element->GetnGaussPoints();
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++) {
+  for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-		Weight = element->GetWeight(iGauss);
-		Jac_X = element->GetJ_X(iGauss);			/*--- The dead load is computed in the reference configuration ---*/
+    Weight = element->GetWeight(iGauss);
+    Jac_X = element->GetJ_X(iGauss);      /*--- The dead load is computed in the reference configuration ---*/
 
-		/*--- Retrieve the values of the shape functions for each node ---*/
-		/*--- This avoids repeated operations ---*/
-		for (iNode = 0; iNode < nNode; iNode++) {
-			Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
-		}
+    /*--- Retrieve the values of the shape functions for each node ---*/
+    /*--- This avoids repeated operations ---*/
+    for (iNode = 0; iNode < nNode; iNode++) {
+      Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
+    }
 
-		for (iNode = 0; iNode < nNode; iNode++) {
+    for (iNode = 0; iNode < nNode; iNode++) {
 
-			for (iDim = 0; iDim < nDim; iDim++){
-				FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s_DL * g_force[iDim];
-			}
+      for (iDim = 0; iDim < nDim; iDim++) {
+        FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s_DL * g_force[iDim];
+      }
 
-			element->Add_FDL_a(FAux_Dead_Load,iNode);
+      element->Add_FDL_a(FAux_Dead_Load,iNode);
 
-		}
+    }
 
-	}
+  }
 
 }
 
