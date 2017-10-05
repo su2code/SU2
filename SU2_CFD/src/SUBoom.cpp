@@ -1064,7 +1064,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
     return 1;
   }
   /*--- Colinear segments at r0 ---*/
-  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8{
+  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8){
     p0[0] = Coord_i[0];
     p0[1] = -r0;
     p1[0] = Coord_ip1[0];
