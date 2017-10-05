@@ -866,19 +866,19 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     Isoparameters(nDim, nNode, X_donor, Coord, isoparams);
 
     /*--- Correct isoparameters by eliminating nodes not in domain ---*/
-    su2double isoparams_sum = 0.0;
-    for(iNode = 0; iNode < nNode; iNode++){
-      jNode = geometry->elem[jElem]->GetNode(iNode);
-      if(!geometry->node[jNode]->GetDomain()){
+    //////su2double isoparams_sum = 0.0;
+    //////for(iNode = 0; iNode < nNode; iNode++){
+      //////jNode = geometry->elem[jElem]->GetNode(iNode);
+      //////if(!geometry->node[jNode]->GetDomain()){
         //////////isoparams[iNode] = 0.0;
-      }
-      else{
+      //////}
+      //////else{
         //////////isoparams_sum += isoparams[iNode];
-      }
-    }
-    for(iNode = 0; iNode < nNode; iNode++){
+      //////}
+    //////}
+    //////for(iNode = 0; iNode < nNode; iNode++){
       //////////isoparams[iNode] /= isoparams_sum;
-    }
+    //////}
 
     /*--- Now interpolate pressure ---*/
     p = 0.0;
@@ -951,13 +951,13 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     su2double **Coord_elem = new su2double*[nNode];
     inDomain = new bool[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
-      inDomain[iNode] = true;
+      //////inDomain[iNode] = true;
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      if(!geometry->node[jNode]->GetDomain()){
+      //////if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
         //////////inDomain[iNode] = false;
         //return false;
-      }
+      //////}
 
       Coord_elem[iNode] = new su2double[nDim];
       if(inDomain[iNode]){
@@ -971,7 +971,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-      if(inDomain[iEdge] && inDomain[iEdge_p1]){
+      //////if(inDomain[iEdge] && inDomain[iEdge_p1]){
         intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
         if(intersect == 1){
           if(count == 0){
@@ -996,7 +996,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
           inside = true;
           break;
         }
-      }
+      //////}
     }
 
     //if(count == 1){
@@ -1064,7 +1064,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
     return 1;
   }
   /*--- Colinear segments at r0 ---*/
-  else if(abs(Coord_i[1] + r0) < 1.0E-5 && abs(Coord_ip1[1] + r0) < 1.0E-5){
+  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8{
     p0[0] = Coord_i[0];
     p0[1] = -r0;
     p1[0] = Coord_ip1[0];
