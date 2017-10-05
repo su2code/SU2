@@ -300,20 +300,28 @@ int rank = 0;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-//  /*--- Recalculate final residual (this should be optional) ---*/
-//  mat_vec(x, A_p);
-//  r = b;
-//  r -= A_p;
-//  su2double true_res = r.norm();
-//  
-//  if (fabs(true_res - norm_r) > tol*10.0) {
-//    if (rank == MASTER_NODE) {
-//      cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;
-//      cout << "# true residual norm and calculated residual norm do not agree." << endl;
-//      cout << "# true_res - calc_res = " << true_res - norm_r << endl;
-//    }
-//  }
-	
+
+  /*--- Recalculate final residual (this should be optional) ---*/
+  
+  if (monitoring) {
+    
+    mat_vec(x, A_p);
+    r = b;
+    r -= A_p;
+    su2double true_res = r.norm();
+    
+    if (fabs(true_res - norm_r) > tol*10.0) {
+      if (rank == MASTER_NODE) {
+        cout << "# WARNING in CSysSolve::CG_LinSolver(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
+        cout << "# true_res - calc_res = " << true_res - norm_r << endl;
+      }
+    }
+    
+  }
+
+  
   (*residual) = norm_r;
 	return (unsigned long) i;
   
@@ -457,21 +465,25 @@ int rank = 0;
     cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
   }
   
-//  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
-//  mat_vec(x, w[0]);
-//  w[0] -= b;
-//  su2double res = w[0].norm();
-//
-//  if (fabs(res - beta) > tol*10) {
-//    if (rank == MASTER_NODE) {
-//      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
-//      cout << "# true residual norm and calculated residual norm do not agree." << endl;
-//      cout << "# res - beta = " << res - beta << endl;
-//    }
-//  }
-	
+  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
+  
+  if (monitoring) {
+    mat_vec(x, w[0]);
+    w[0] -= b;
+    su2double res = w[0].norm();
+    
+    if (fabs(res - beta) > tol*10) {
+      if (rank == MASTER_NODE) {
+        cout << "# WARNING in CSysSolve::FGMRES_LinSolver(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# res = " << res <<", beta = " << beta <<", tol = " << tol*10 <<"."<< endl;
+        cout << "# res - beta = " << res - beta << endl << endl;
+      }
+    }
+  }
+  
   (*residual) = beta;
-	return (unsigned long) i;
+  return (unsigned long) i;
   
 }
 
@@ -596,17 +608,21 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-  //  /*--- Recalculate final residual (this should be optional) ---*/
-  //	mat_vec(x, A_x);
-  //  r = b; r -= A_x;
-  //  su2double true_res = r.norm();
-  //
-  //  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
-  //    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
-  //    cout << "# true residual norm and calculated residual norm do not agree." << endl;
-  //    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
-  //  }
-	
+  
+    /*--- Recalculate final residual (this should be optional) ---*/
+  if (monitoring) {
+    mat_vec(x, A_x);
+    r = b; r -= A_x;
+    su2double true_res = r.norm();
+    
+    if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
+      cout << "# WARNING in CSysSolve::BCGSTAB_LinSolver(): " << endl;
+      cout << "# true residual norm and calculated residual norm do not agree." << endl;
+      cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
+      cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
+    }
+  }
+  
   (*residual) = norm_r;
 	return (unsigned long) i;
 }
