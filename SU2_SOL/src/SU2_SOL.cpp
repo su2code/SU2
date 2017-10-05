@@ -549,9 +549,9 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
             if(rank == MASTER_NODE){
               cout << "SUBoom initialized." << endl;
-              cout << "Freeing up memory from config, solver, and geometry." << endl;
+              //cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
-            for (iZone = 0; iZone < nZone; iZone++){
+            /*for (iZone = 0; iZone < nZone; iZone++){
               ///if (solver_container[iZone] != NULL) {
               ///  delete [] solver_container[iZone];
               ///}
@@ -570,10 +570,9 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
             }
             ///delete [] solver_container;
             delete [] config_container;
-            delete [] geometry_container;
+            delete [] geometry_container;*/
 
             if (rank == MASTER_NODE){
-              cout << "SUBoom initialized." << endl;
               boom.ConditionAtmosphericData();
               cout << "Condition atmospheric data complete." << endl;
               boom.ScaleFactors();
@@ -655,9 +654,9 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
             if(rank == MASTER_NODE){
               cout << "SUBoom initialized." << endl;
-              cout << "Freeing up memory from config, solver, and geometry." << endl;
+              //cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
-            for (iZone = 0; iZone < nZone; iZone++){
+            /*for (iZone = 0; iZone < nZone; iZone++){
               ///if (solver_container[iZone] != NULL) {
               ///  delete [] solver_container[iZone];
               ///}
@@ -672,7 +671,7 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
             }
             ///delete [] solver_container;
             delete [] config_container;
-            delete [] geometry_container;
+            delete [] geometry_container;*/
 
             if (rank == MASTER_NODE){
               boom.ConditionAtmosphericData();
