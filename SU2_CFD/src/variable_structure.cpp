@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -50,8 +50,8 @@ CVariable::CVariable(void) {
   Undivided_Laplacian = NULL;
   Res_TruncError = NULL;
   Residual_Old = NULL;
-	Residual_Sum = NULL;
-	Solution_Adj_Old = NULL;
+  Residual_Sum = NULL;
+  Solution_Adj_Old = NULL;
   
 }
 
@@ -70,7 +70,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Undivided_Laplacian = NULL;
   Res_TruncError = NULL;
   Residual_Old = NULL;
-	Residual_Sum = NULL;
+  Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
 
   /*--- Initialize the number of solution variables. This version

@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -1221,7 +1221,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
   
 //  /*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
 //  
-//  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+//  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 //    
 //    /*--- Closure constants ---*/
 //    

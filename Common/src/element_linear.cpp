@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -650,50 +650,50 @@ CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
 	unsigned short iNode, iGauss, jNode;
-	unsigned short nDimSq;
+  unsigned short nDimSq;
 
-	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+  bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
 
-	nNodes = 4;
-	nGaussPoints = 1;
+  nNodes = 4;
+  nGaussPoints = 1;
 
-	nDimSq = nDim*nDim;
+  nDimSq = nDim*nDim;
 
-	GaussPoint = new CGaussVariable*[nGaussPoints];
-	for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
-		GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
-	}
+  GaussPoint = new CGaussVariable*[nGaussPoints];
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+    GaussPoint[iGauss] = new CGaussVariable(iGauss, nDim, nNodes);
+  }
 
-	NodalExtrap = new su2double*[nNodes];
-	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalExtrap[iNode] = new su2double[nGaussPoints];
-	}
+  NodalExtrap = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    NodalExtrap[iNode] = new su2double[nGaussPoints];
+  }
 
-	NodalStress = new su2double*[nNodes];
-	for (iNode = 0; iNode < nNodes; iNode++) {
-		NodalStress[iNode] = new su2double[3];
-	}
+  NodalStress = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++) {
+    NodalStress[iNode] = new su2double[3];
+  }
 
-	/*--- Initialize structure for current and reference configuration ---*/
+  /*--- Initialize structure for current and reference configuration ---*/
 
-	CurrentCoord = new su2double*[nNodes];
-	for (iNode = 0; iNode < nNodes; iNode++){
-		CurrentCoord [iNode] = new su2double[nDim];
-	}
+  CurrentCoord = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++){
+    CurrentCoord [iNode] = new su2double[nDim];
+  }
 
-	RefCoord = new su2double*[nNodes];
-	for (iNode = 0; iNode < nNodes; iNode++){
-		RefCoord [iNode] = new su2double[nDim];
-	}
+  RefCoord = new su2double*[nNodes];
+  for (iNode = 0; iNode < nNodes; iNode++){
+    RefCoord [iNode] = new su2double[nDim];
+  }
 
-	GaussWeight = new su2double [nGaussPoints];
+  GaussWeight = new su2double [nGaussPoints];
 
-	GaussCoord = new su2double*[nGaussPoints];
-	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-		GaussCoord [iGauss] = new su2double[nDim];
-	}
+  GaussCoord = new su2double*[nGaussPoints];
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+    GaussCoord [iGauss] = new su2double[nDim];
+  }
 
-	GaussCoord[0][0] = 0.0;  GaussCoord[0][1] = 0.0;  GaussWeight[0] = 4.0;
+  GaussCoord[0][0] = 0.0;  GaussCoord[0][1] = 0.0;  GaussWeight[0] = 4.0;
 
   Kk_ab = new su2double **[nNodes];
   for (iNode = 0; iNode < nNodes; iNode++) {
@@ -703,292 +703,292 @@ CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
     }
   }
 
-	/*--- Store the shape functions (they only need to be computed once) ---*/
-	su2double Xi, Eta, val_Ni;
-	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
+  /*--- Store the shape functions (they only need to be computed once) ---*/
+  su2double Xi, Eta, val_Ni;
+  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+      Xi = GaussCoord[iGauss][0];
+      Eta = GaussCoord[iGauss][1];
 
-		  val_Ni = 0.25*(1.0-Xi)*(1.0-Eta);		GaussPoint[iGauss]->SetNi(val_Ni,0);
-		  val_Ni = 0.25*(1.0+Xi)*(1.0-Eta);		GaussPoint[iGauss]->SetNi(val_Ni,1);
-		  val_Ni = 0.25*(1.0+Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,2);
-		  val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,3);
-	}
+      val_Ni = 0.25*(1.0-Xi)*(1.0-Eta);    GaussPoint[iGauss]->SetNi(val_Ni,0);
+      val_Ni = 0.25*(1.0+Xi)*(1.0-Eta);    GaussPoint[iGauss]->SetNi(val_Ni,1);
+      val_Ni = 0.25*(1.0+Xi)*(1.0+Eta);    GaussPoint[iGauss]->SetNi(val_Ni,2);
+      val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);    GaussPoint[iGauss]->SetNi(val_Ni,3);
+  }
 
-	/*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
-	/*--- The stress is constant at a QUAD1 element ---*/
-	NodalExtrap[0][0] = 1.0;
-	NodalExtrap[1][0] = 1.0;
-	NodalExtrap[2][0] = 1.0;
-	NodalExtrap[3][0] = 1.0;
+  /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+  /*--- The stress is constant at a QUAD1 element ---*/
+  NodalExtrap[0][0] = 1.0;
+  NodalExtrap[1][0] = 1.0;
+  NodalExtrap[2][0] = 1.0;
+  NodalExtrap[3][0] = 1.0;
 
 }
 
 CQUAD1::~CQUAD1(void) {
 
-	unsigned short iVar, jVar;
+  unsigned short iVar, jVar;
 
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoord[iVar];
-		delete [] GaussPoint[iVar];
-	}
+  for (iVar = 0; iVar < nGaussPoints; iVar++){
+    delete [] GaussCoord[iVar];
+    delete [] GaussPoint[iVar];
+  }
 
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kab[iVar][jVar];
-		}
-		delete [] CurrentCoord[iVar];
-		delete [] RefCoord[iVar];
-		delete [] Mab[iVar];
-		delete [] Kab[iVar];
-		delete [] Ks_ab[iVar];
-		delete [] Kt_a[iVar];
-		if (FDL_a != NULL) delete [] FDL_a[iVar];
-		delete [] NodalExtrap[iVar];
-	}
+  for (iVar = 0; iVar < nNodes; iVar++){
+    for (jVar = 0; jVar < nNodes; jVar++){
+      delete [] Kab[iVar][jVar];
+    }
+    delete [] CurrentCoord[iVar];
+    delete [] RefCoord[iVar];
+    delete [] Mab[iVar];
+    delete [] Kab[iVar];
+    delete [] Ks_ab[iVar];
+    delete [] Kt_a[iVar];
+    if (FDL_a != NULL) delete [] FDL_a[iVar];
+    delete [] NodalExtrap[iVar];
+  }
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
-	delete [] NodalExtrap;
+  delete [] GaussCoord;
+  delete [] GaussPoint;
+  delete [] CurrentCoord;
+  delete [] RefCoord;
+  delete [] Mab;
+  delete [] Kab;
+  delete [] Ks_ab;
+  delete [] Kt_a;
+  delete [] GaussWeight;
+  delete [] NodalExtrap;
 
-	if (FDL_a != NULL) delete [] FDL_a;
+  if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
 void CQUAD1::ComputeGrad_Linear(void){
 
-	  su2double Xi, Eta;
-	  su2double Jacobian[2][2], dNiXj[4][2];
-	  su2double detJac, GradNi_Xj;
-	  su2double ad[2][2];
-	  unsigned short iNode, iDim, jDim, iGauss;
+    su2double Xi, Eta;
+    su2double Jacobian[2][2], dNiXj[4][2];
+    su2double detJac, GradNi_Xj;
+    su2double ad[2][2];
+    unsigned short iNode, iDim, jDim, iGauss;
 
-	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+    for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
+      Xi = GaussCoord[iGauss][0];
+      Eta = GaussCoord[iGauss][1];
 
-		  /*--- dN/d xi, dN/d eta ---*/
+      /*--- dN/d xi, dN/d eta ---*/
 
-		  dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
-		  dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
-		  dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
-		  dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
+      dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
+      dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
+      dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
+      dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
 
-		  /*--- Jacobian transformation ---*/
-		  /*--- This does dX/dXi transpose ---*/
+      /*--- Jacobian transformation ---*/
+      /*--- This does dX/dXi transpose ---*/
 
-		  for (iDim = 0; iDim < nDim; iDim++) {
-			for (jDim = 0; jDim < nDim; jDim++) {
-			  Jacobian[iDim][jDim] = 0.0;
-			  for (iNode = 0; iNode < nNodes; iNode++) {
-				  Jacobian[iDim][jDim] = Jacobian[iDim][jDim]+RefCoord[iNode][jDim]*dNiXj[iNode][iDim];
-			  }
-			}
-		  }
+      for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        Jacobian[iDim][jDim] = 0.0;
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          Jacobian[iDim][jDim] = Jacobian[iDim][jDim]+RefCoord[iNode][jDim]*dNiXj[iNode][iDim];
+        }
+      }
+      }
 
-		  /*--- Adjoint to Jacobian ---*/
+      /*--- Adjoint to Jacobian ---*/
 
-		  ad[0][0] = Jacobian[1][1];
-		  ad[0][1] = -Jacobian[0][1];
-		  ad[1][0] = -Jacobian[1][0];
-		  ad[1][1] = Jacobian[0][0];
+      ad[0][0] = Jacobian[1][1];
+      ad[0][1] = -Jacobian[0][1];
+      ad[1][0] = -Jacobian[1][0];
+      ad[1][1] = Jacobian[0][0];
 
-		  /*--- Determinant of Jacobian ---*/
+      /*--- Determinant of Jacobian ---*/
 
-		  detJac = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
+      detJac = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
 
-		  GaussPoint[iGauss]->SetJ_X(detJac);
+      GaussPoint[iGauss]->SetJ_X(detJac);
 
-		  /*--- Jacobian inverse (it was already computed as transpose) ---*/
+      /*--- Jacobian inverse (it was already computed as transpose) ---*/
 
-		  for (iDim = 0; iDim < 2; iDim++) {
-			for (jDim = 0; jDim < 2; jDim++) {
-			  Jacobian[iDim][jDim] = ad[iDim][jDim]/detJac;
-			}
-		  }
+      for (iDim = 0; iDim < 2; iDim++) {
+      for (jDim = 0; jDim < 2; jDim++) {
+        Jacobian[iDim][jDim] = ad[iDim][jDim]/detJac;
+      }
+      }
 
-		  /*--- Derivatives with respect to global coordinates ---*/
+      /*--- Derivatives with respect to global coordinates ---*/
 
-		  for (iNode = 0; iNode < nNodes; iNode++) {
-			  for (iDim = 0; iDim < nDim; iDim++){
-				  GradNi_Xj = 0.0;
-				  for (jDim = 0; jDim < nDim; jDim++){
-					  GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
-				  }
-				  GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
-			  }
-		  }
-	  }
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          GradNi_Xj = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            GradNi_Xj += Jacobian[iDim][jDim]*dNiXj[iNode][jDim];
+          }
+          GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj, iDim, iNode);
+        }
+      }
+    }
 
 }
 
 void CQUAD1::ComputeGrad_NonLinear(void){
 
-	  su2double Xi, Eta;
-	  su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
-	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  su2double ad_Ref[2][2], ad_Curr[2][2];
-	  unsigned short iNode, iDim, jDim, iGauss;
+    su2double Xi, Eta;
+    su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
+    su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+    su2double ad_Ref[2][2], ad_Curr[2][2];
+    unsigned short iNode, iDim, jDim, iGauss;
 
-	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+    for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
+      Xi = GaussCoord[iGauss][0];
+      Eta = GaussCoord[iGauss][1];
 
-		  /*--- dN/d xi, dN/d eta ---*/
+      /*--- dN/d xi, dN/d eta ---*/
 
-		  dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
-		  dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
-		  dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
-		  dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
+      dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
+      dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
+      dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
+      dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
 
-		  /*--- Jacobian transformation ---*/
-		  /*--- This does dX/dXi transpose ---*/
+      /*--- Jacobian transformation ---*/
+      /*--- This does dX/dXi transpose ---*/
 
-		  for (iDim = 0; iDim < nDim; iDim++) {
-			for (jDim = 0; jDim < nDim; jDim++) {
-			  Jac_Ref[iDim][jDim] = 0.0;
-			  Jac_Curr[iDim][jDim] = 0.0;
-			  for (iNode = 0; iNode < nNodes; iNode++) {
-				  Jac_Ref[iDim][jDim] = Jac_Ref[iDim][jDim]+RefCoord[iNode][jDim]*dNiXj[iNode][iDim];
-				  Jac_Curr[iDim][jDim] = Jac_Curr[iDim][jDim]+CurrentCoord[iNode][jDim]*dNiXj[iNode][iDim];
-			  }
-			}
-		  }
+      for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        Jac_Ref[iDim][jDim] = 0.0;
+        Jac_Curr[iDim][jDim] = 0.0;
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          Jac_Ref[iDim][jDim] = Jac_Ref[iDim][jDim]+RefCoord[iNode][jDim]*dNiXj[iNode][iDim];
+          Jac_Curr[iDim][jDim] = Jac_Curr[iDim][jDim]+CurrentCoord[iNode][jDim]*dNiXj[iNode][iDim];
+        }
+      }
+      }
 
-		  /*--- Adjoint to Jacobian ---*/
+      /*--- Adjoint to Jacobian ---*/
 
-		  ad_Ref[0][0] = Jac_Ref[1][1];
-		  ad_Ref[0][1] = -Jac_Ref[0][1];
-		  ad_Ref[1][0] = -Jac_Ref[1][0];
-		  ad_Ref[1][1] = Jac_Ref[0][0];
+      ad_Ref[0][0] = Jac_Ref[1][1];
+      ad_Ref[0][1] = -Jac_Ref[0][1];
+      ad_Ref[1][0] = -Jac_Ref[1][0];
+      ad_Ref[1][1] = Jac_Ref[0][0];
 
-		  ad_Curr[0][0] = Jac_Curr[1][1];
-		  ad_Curr[0][1] = -Jac_Curr[0][1];
-		  ad_Curr[1][0] = -Jac_Curr[1][0];
-		  ad_Curr[1][1] = Jac_Curr[0][0];
+      ad_Curr[0][0] = Jac_Curr[1][1];
+      ad_Curr[0][1] = -Jac_Curr[0][1];
+      ad_Curr[1][0] = -Jac_Curr[1][0];
+      ad_Curr[1][1] = Jac_Curr[0][0];
 
-		  /*--- Determinant of Jacobian ---*/
+      /*--- Determinant of Jacobian ---*/
 
-		  detJac_Ref = ad_Ref[0][0]*ad_Ref[1][1]-ad_Ref[0][1]*ad_Ref[1][0];
-		  detJac_Curr = ad_Curr[0][0]*ad_Curr[1][1]-ad_Curr[0][1]*ad_Curr[1][0];
+      detJac_Ref = ad_Ref[0][0]*ad_Ref[1][1]-ad_Ref[0][1]*ad_Ref[1][0];
+      detJac_Curr = ad_Curr[0][0]*ad_Curr[1][1]-ad_Curr[0][1]*ad_Curr[1][0];
 
-		  GaussPoint[iGauss]->SetJ_X(detJac_Ref);
-		  GaussPoint[iGauss]->SetJ_x(detJac_Curr);
+      GaussPoint[iGauss]->SetJ_X(detJac_Ref);
+      GaussPoint[iGauss]->SetJ_x(detJac_Curr);
 
-		  /*--- Jacobian inverse (it was already computed as transpose) ---*/
+      /*--- Jacobian inverse (it was already computed as transpose) ---*/
 
-		  for (iDim = 0; iDim < 2; iDim++) {
-			for (jDim = 0; jDim < 2; jDim++) {
-				Jac_Ref[iDim][jDim] = ad_Ref[iDim][jDim]/detJac_Ref;
-				Jac_Curr[iDim][jDim] = ad_Curr[iDim][jDim]/detJac_Curr;
-			}
-		  }
+      for (iDim = 0; iDim < 2; iDim++) {
+      for (jDim = 0; jDim < 2; jDim++) {
+        Jac_Ref[iDim][jDim] = ad_Ref[iDim][jDim]/detJac_Ref;
+        Jac_Curr[iDim][jDim] = ad_Curr[iDim][jDim]/detJac_Curr;
+      }
+      }
 
-		  /*--- Derivatives with respect to global coordinates ---*/
+      /*--- Derivatives with respect to global coordinates ---*/
 
-		  for (iNode = 0; iNode < nNodes; iNode++) {
-			  for (iDim = 0; iDim < nDim; iDim++){
-				  GradNi_Xj_Ref = 0.0;
-				  GradNi_Xj_Curr = 0.0;
-				  for (jDim = 0; jDim < nDim; jDim++){
-					  GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
-					  GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
-				  }
-				  GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj_Ref, iDim, iNode);
-				  GaussPoint[iGauss]->SetGradNi_xj(GradNi_Xj_Curr, iDim, iNode);
-			  }
-		  }
-	  }
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          GradNi_Xj_Ref = 0.0;
+          GradNi_Xj_Curr = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
+            GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
+          }
+          GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj_Ref, iDim, iNode);
+          GaussPoint[iGauss]->SetGradNi_xj(GradNi_Xj_Curr, iDim, iNode);
+        }
+      }
+    }
 
 }
 
 void CQUAD1::ComputeGrad_Pressure(void){
 
-	  su2double Xi, Eta;
-	  su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
-	  su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
-	  su2double ad_Ref[2][2], ad_Curr[2][2];
-	  unsigned short iNode, iDim, jDim, iGauss;
+    su2double Xi, Eta;
+    su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
+    su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
+    su2double ad_Ref[2][2], ad_Curr[2][2];
+    unsigned short iNode, iDim, jDim, iGauss;
 
-	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+    for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 
-		  Xi = GaussCoord[iGauss][0];
-		  Eta = GaussCoord[iGauss][1];
+      Xi = GaussCoord[iGauss][0];
+      Eta = GaussCoord[iGauss][1];
 
-		  /*--- dN/d xi, dN/d eta ---*/
+      /*--- dN/d xi, dN/d eta ---*/
 
-		  dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
-		  dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
-		  dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
-		  dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
+      dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
+      dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
+      dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
+      dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
 
-		  /*--- Jacobian transformation ---*/
-		  /*--- This does dX/dXi transpose ---*/
+      /*--- Jacobian transformation ---*/
+      /*--- This does dX/dXi transpose ---*/
 
-		  for (iDim = 0; iDim < 2; iDim++) {
-			for (jDim = 0; jDim < 2; jDim++) {
-			  Jac_Ref[iDim][jDim] = 0.0;
-			  Jac_Curr[iDim][jDim] = 0.0;
-			  for (iNode = 0; iNode < 4; iNode++) {
-				  Jac_Ref[iDim][jDim] = Jac_Ref[iDim][jDim]+RefCoord[iNode][jDim]*dNiXj[iNode][iDim];
-				  Jac_Curr[iDim][jDim] = Jac_Curr[iDim][jDim]+CurrentCoord[iNode][jDim]*dNiXj[iNode][iDim];
-			  }
-			}
-		  }
+      for (iDim = 0; iDim < 2; iDim++) {
+      for (jDim = 0; jDim < 2; jDim++) {
+        Jac_Ref[iDim][jDim] = 0.0;
+        Jac_Curr[iDim][jDim] = 0.0;
+        for (iNode = 0; iNode < 4; iNode++) {
+          Jac_Ref[iDim][jDim] = Jac_Ref[iDim][jDim]+RefCoord[iNode][jDim]*dNiXj[iNode][iDim];
+          Jac_Curr[iDim][jDim] = Jac_Curr[iDim][jDim]+CurrentCoord[iNode][jDim]*dNiXj[iNode][iDim];
+        }
+      }
+      }
 
-		  /*--- Adjoint to Jacobian ---*/
+      /*--- Adjoint to Jacobian ---*/
 
-		  ad_Ref[0][0] = Jac_Ref[1][1];
-		  ad_Ref[0][1] = -Jac_Ref[0][1];
-		  ad_Ref[1][0] = -Jac_Ref[1][0];
-		  ad_Ref[1][1] = Jac_Ref[0][0];
+      ad_Ref[0][0] = Jac_Ref[1][1];
+      ad_Ref[0][1] = -Jac_Ref[0][1];
+      ad_Ref[1][0] = -Jac_Ref[1][0];
+      ad_Ref[1][1] = Jac_Ref[0][0];
 
-		  ad_Curr[0][0] = Jac_Curr[1][1];
-		  ad_Curr[0][1] = -Jac_Curr[0][1];
-		  ad_Curr[1][0] = -Jac_Curr[1][0];
-		  ad_Curr[1][1] = Jac_Curr[0][0];
+      ad_Curr[0][0] = Jac_Curr[1][1];
+      ad_Curr[0][1] = -Jac_Curr[0][1];
+      ad_Curr[1][0] = -Jac_Curr[1][0];
+      ad_Curr[1][1] = Jac_Curr[0][0];
 
-		  /*--- Determinant of Jacobian ---*/
+      /*--- Determinant of Jacobian ---*/
 
-		  detJac_Ref = ad_Ref[0][0]*ad_Ref[1][1]-ad_Ref[0][1]*ad_Ref[1][0];
-		  detJac_Curr = ad_Curr[0][0]*ad_Curr[1][1]-ad_Curr[0][1]*ad_Curr[1][0];
+      detJac_Ref = ad_Ref[0][0]*ad_Ref[1][1]-ad_Ref[0][1]*ad_Ref[1][0];
+      detJac_Curr = ad_Curr[0][0]*ad_Curr[1][1]-ad_Curr[0][1]*ad_Curr[1][0];
 
-		  GaussPoint[iGauss]->SetJ_X(detJac_Ref);
-		  GaussPoint[iGauss]->SetJ_x(detJac_Curr);
+      GaussPoint[iGauss]->SetJ_X(detJac_Ref);
+      GaussPoint[iGauss]->SetJ_x(detJac_Curr);
 
-		  /*--- Jacobian inverse (it was already computed as transpose) ---*/
+      /*--- Jacobian inverse (it was already computed as transpose) ---*/
 
-		  for (iDim = 0; iDim < 2; iDim++) {
-			for (jDim = 0; jDim < 2; jDim++) {
-				Jac_Ref[iDim][jDim] = ad_Ref[iDim][jDim]/detJac_Ref;
-				Jac_Curr[iDim][jDim] = ad_Curr[iDim][jDim]/detJac_Curr;
-			}
-		  }
+      for (iDim = 0; iDim < 2; iDim++) {
+      for (jDim = 0; jDim < 2; jDim++) {
+        Jac_Ref[iDim][jDim] = ad_Ref[iDim][jDim]/detJac_Ref;
+        Jac_Curr[iDim][jDim] = ad_Curr[iDim][jDim]/detJac_Curr;
+      }
+      }
 
-		  /*--- Derivatives with respect to global coordinates ---*/
+      /*--- Derivatives with respect to global coordinates ---*/
 
-		  for (iNode = 0; iNode < nNodes; iNode++) {
-			  for (iDim = 0; iDim < nDim; iDim++){
-				  GradNi_Xj_Ref = 0.0;
-				  GradNi_Xj_Curr = 0.0;
-				  for (jDim = 0; jDim < nDim; jDim++){
-					  GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
-					  GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
-				  }
-				  GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj_Ref, iDim, iNode);
-				  GaussPoint[iGauss]->SetGradNi_xj(GradNi_Xj_Curr, iDim, iNode);
-			  }
-		  }
-	  }
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        for (iDim = 0; iDim < nDim; iDim++){
+          GradNi_Xj_Ref = 0.0;
+          GradNi_Xj_Curr = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
+            GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
+          }
+          GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj_Ref, iDim, iNode);
+          GaussPoint[iGauss]->SetGradNi_xj(GradNi_Xj_Curr, iDim, iNode);
+        }
+      }
+    }
 
 }
 
@@ -2026,9 +2026,9 @@ void CHEXA1::ComputeGrad_NonLinear(void) {
     Zeta = GaussCoord[iGauss][2];
 
     /*--- dN/d xi, dN/d eta ---*/
-
+    
     /*--- dN/d xi ---*/
-
+    
     dNiXj[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
     dNiXj[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
     dNiXj[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);

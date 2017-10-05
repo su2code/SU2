@@ -4,8 +4,8 @@
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -44,22 +44,14 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver(
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   unsigned short iVar, iMarker, iDim;
-
-  bool restart = config->GetRestart();
-  bool fsi = config->GetFSI_Simulation();
-
   unsigned long iVertex, iPoint, index;
   string text_line, mesh_filename;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  bool restart = config->GetRestart();
+  bool fsi = config->GetFSI_Simulation();
+
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
@@ -154,127 +146,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       }
   }
 
+  /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-  if (!restart || (iMesh != MESH_0)) {
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
 
-    /*--- Restart the solution from zero ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
-
-  }
-  else {
-
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-
-    restart_file.open(filename.data(), ios::in);
-
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-    /*--- Skip coordinates ---*/
-    unsigned short skipVars = nDim;
-
-    /*--- Skip flow adjoint variables ---*/
-    if (Kind_Solver == RUNTIME_TURB_SYS) {
-      if (compressible) {
-        skipVars += nDim + 2;
-      }
-      if (incompressible) {
-        skipVars += nDim + 1;
-      }
-    }
-
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      
-      istringstream point_line(text_line);
-
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        point_line >> index;
-        for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
-        for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
-        node[iPoint_Local] = new CDiscAdjVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-      
-    }
-
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
-    }
-
-    /*--- Close the restart file ---*/
-    restart_file.close();
-
-  }
-
-  /*--- Store the direct solution ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->SetSolution_Direct(direct_solver->node[iPoint]->GetSolution());
-  }
 }
 
 CDiscAdjSolver::~CDiscAdjSolver(void) { 
@@ -648,7 +524,7 @@ void CDiscAdjSolver::Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *co
 
 }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording) {
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config) {
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -679,7 +555,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned
     }
   }
 
-  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
+  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
 
   direct_solver->Jacobian.SetValZero();
@@ -690,7 +566,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned
 
 }
 
-void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement *grid_movement, CConfig *config, unsigned short kind_recording) {
+void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement *grid_movement, CConfig *config) {
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -773,7 +649,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)) {
+  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -813,6 +689,20 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+
+    BPressure = config->GetPressureOut_BC();
+    Temperature = config->GetTotalTemperatureIn_BC();
+
+    if (!reset){
+      AD::RegisterInput(BPressure);
+      AD::RegisterInput(Temperature);
+    }
+
+    config->SetPressureOut_BC(BPressure);
+    config->SetTotalTemperatureIn_BC(Temperature);
+  }
+
 
     /*--- Here it is possible to register other variables as input that influence the flow solution
      * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
@@ -847,19 +737,10 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CD();
       if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCMy() * direct_solver->GetTotal_CMy();
       break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
-      break;
-    case AERO_DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
-      break;
-    case RADIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
-      break;
-    case CIRCUMFERENTIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
       break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
@@ -878,15 +759,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
-    case AVG_TOTAL_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_TotalPress();
-      break;
-    case AVG_OUTLET_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
-      break;
-    case MASS_FLOW_RATE:
-      ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
     }
 
@@ -956,7 +828,7 @@ void CDiscAdjSolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -987,7 +859,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     /*--- Store the adjoint solution ---*/
 
     node[iPoint]->SetSolution(Solution);
-
   }
 
   if (time_n_needed) {
@@ -1015,8 +886,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
   }
 
-//  Set_MPI_Solution(geometry, config);
-
   /*--- Set the residuals ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1029,15 +898,15 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   }
 
   SetResidual_RMS(geometry, config);
-
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)) {
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+    su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
     Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
     Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
@@ -1054,6 +923,23 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Total_Sens_Temp  = Local_Sens_Temp;
     Total_Sens_Press = Local_Sens_Press;
 #endif
+  }
+
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+    su2double Local_Sens_BPress, Local_Sens_Temperature;
+
+    Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
+    Local_Sens_Temperature = SU2_TYPE::GetDerivative(Temperature);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_BPress,   &Total_Sens_BPress,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Temperature,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#else
+    Total_Sens_BPress = Local_Sens_BPress;
+    Total_Sens_Temp = Local_Sens_Temperature;
+#endif
+
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
@@ -1290,11 +1176,11 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker,iDim;
+  unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-  su2double Total_Sens_Geo_local = 0.0;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
   Total_Sens_Geo = 0.0;
+  string Monitoring_Tag, Marker_Tag;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
@@ -1304,7 +1190,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 
+      Sens = 0.0;
+
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
@@ -1321,26 +1210,45 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
         Area = sqrt(Area);
 
-        /*--- projection of the gradient
-         *     calculated with AD onto the normal
-         *     vector of the surface ---*/
-        Sens = Prod/Area;
+        /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
+
+        Sens_Vertex = Prod/Area;
+        CSensitivity[iMarker][iVertex] = -Sens_Vertex;
+        Sens += Sens_Vertex*Sens_Vertex;
+      }
+
+      if (config->GetMarker_All_Monitoring(iMarker) == YES){
 
         /*--- Compute sensitivity for each surface point ---*/
-        CSensitivity[iMarker][iVertex] = -Sens;
-        if (geometry->node[iPoint]->GetDomain()) {
-          Sens_Geo[iMarker] += Sens*Sens;
+
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag) {
+            Sens_Geo[iMarker_Monitoring] = Sens;
+          }
         }
       }
-      Total_Sens_Geo_local += sqrt(Sens_Geo[iMarker]);
     }
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&Total_Sens_Geo_local,&Total_Sens_Geo,1,MPI_DOUBLE,MPI_SUM, MPI_COMM_WORLD);
-#else
-  Total_Sens_Geo = Total_Sens_Geo_local;
+  su2double *MySens_Geo;
+  MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    MySens_Geo[iMarker_Monitoring] = Sens_Geo[iMarker_Monitoring];
+    Sens_Geo[iMarker_Monitoring]   = 0.0;
+  }
+
+  SU2_MPI::Allreduce(MySens_Geo, Sens_Geo, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  delete [] MySens_Geo;
 #endif
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
+    Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
+  }
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1354,16 +1262,137 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
           solution_n = node[iPoint]->GetSolution_time_n();
           solution_n1 = node[iPoint]->GetSolution_time_n1();
-
           for (iVar=0; iVar < nVar; iVar++) {
               node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
               node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
-
             }
-
         }
-
     }
+}
+
+void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  unsigned short iVar, iMesh;
+  unsigned long iPoint, index, iChildren, Point_Fine, counter;
+  su2double Area_Children, Area_Parent, *Solution_Fine;
+  ifstream restart_file;
+  string restart_filename, filename, text_line;
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetSolution_AdjFileName();
+  restart_filename = config->GetObjFunc_Extension(filename);
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Read and store the restart metadata. ---*/
+
+  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Skip flow adjoint variables ---*/
+  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+    if (compressible) {
+      skipVars += nDim + 2;
+    }
+    if (incompressible) {
+      skipVars += nDim + 1;
+    }
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+  }
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
 
 }
 

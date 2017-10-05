@@ -5,8 +5,8 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -103,8 +103,8 @@ def direct ( config ):
     # postprocess for CFD cases
     if 'FEM_ELASTICITY' not in special_cases:
       # get history and objectives
-      history      = su2io.read_history( history_filename )
-      aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
+    history      = su2io.read_history( history_filename , config.NZONES)
+    aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
     
       # update super config
       config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
