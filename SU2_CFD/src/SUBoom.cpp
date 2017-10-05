@@ -2014,7 +2014,7 @@ void SUBoom::CreateSignature(unsigned short iPhi){
   int M = len-1;
   int i = 0;
   while(i <= M-1){
-    if(mm[i] > tol_m){// || mm[i] < -tol_m/scale_m){  // shock present
+    if(mm[i] > tol_m/scale_m){// || mm[i] < -tol_m/scale_m){  // shock present
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
@@ -2027,9 +2027,9 @@ void SUBoom::CreateSignature(unsigned short iPhi){
       i -= 1;
       M -= 1;
     }
-    else if(mm[i] < -tol_m){  // "expansion shock" present
+    else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
       /*---Remove segment i---*/
-      ll[i] = tol_l;
+      ll[i] = tol_l/scale_T;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
     }
     i += 1;
@@ -2205,12 +2205,12 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l || m[i] >= tol_m || m[i] <= -tol_m){
+    if(l[i] <= tol_l/scale_T || m[i] >= tol_m /scale_m|| m[i] <= -tol_m/scale_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
       /*---Add to next segment if needed---*/
-      if(dp_seg > tol_dp){
+      if(dp_seg > tol_dp/scale_dp){
           if(i < N-1){
               dp[i+1] = dp[i+1] + dp_seg;
           }
