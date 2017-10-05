@@ -2396,7 +2396,13 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Analyze(void);
-  
+
+  /*!
+   * \brief Get the total number of periodic markers.
+   * \return Total number of periodic markers.
+   */
+  unsigned short GetnMarker_Periodic(void);
+
   /*!
    * \brief Get the total number of objectives in kind_objective list
    * \return Total number of objectives in kind_objective list
