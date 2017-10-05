@@ -602,8 +602,8 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                       else{
                         nPanel[iPhi]++;
 
-                        pointID_tmp = new unsigned long[nPanel[iPhi]-1];
-                        Coord_tmp = new su2double*[nPanel[iPhi]-1];
+                        unsigned long *pointID_tmp = new unsigned long[nPanel[iPhi]-1];
+                        su2double **Coord_tmp = new su2double*[nPanel[iPhi]-1];
                         for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
                           Coord_tmp[i] = new su2double[nDim];
                           pointID_tmp[i] = pointID_original[iPhi][i];
