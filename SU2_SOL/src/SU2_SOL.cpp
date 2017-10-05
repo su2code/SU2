@@ -555,13 +555,17 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
               ///if (solver_container[iZone] != NULL) {
               ///  delete [] solver_container[iZone];
               ///}
-            	
-              if (geometry_container[iZone] != NULL) {
-                delete [] geometry_container[iZone];
+
+              if(geometry_container != NULL){
+                if (geometry_container[iZone] != NULL) {
+                  delete [] geometry_container[iZone];
+                }
               }
                 
-              if (config_container[iZone] != NULL) {
-                delete [] config_container[iZone];
+              if(config_container != NULL){
+                if (config_container[iZone] != NULL) {
+                  delete [] config_container[iZone];
+                }
               }
             }
             ///delete [] solver_container;
