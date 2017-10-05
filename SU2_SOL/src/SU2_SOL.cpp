@@ -552,20 +552,21 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
               cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
             for (iZone = 0; iZone < nZone; iZone++){
-              //Solver_Postprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone]);
-              //delete solver_container[iZone];
+              if (solver_container[iZone] != NULL) {
+                delete [] solver_container[iZone];
+              }
             	
               if (geometry_container[iZone] != NULL) {
-                delete geometry_container[iZone];
+                delete [] geometry_container[iZone];
               }
                 
               if (config_container[iZone] != NULL) {
-                delete config_container[iZone];
+                delete [] config_container[iZone];
               }
             }
-            //delete solver_container[iZone];
-            delete config_container[iZone];
-            delete geometry_container[iZone];
+            delete [] solver_container;
+            delete [] config_container;
+            delete [] geometry_container;
 
             if (rank == MASTER_NODE){
               cout << "SUBoom initialized." << endl;
@@ -653,20 +654,21 @@ geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
               cout << "Freeing up memory from config, solver, and geometry." << endl;
             }
             for (iZone = 0; iZone < nZone; iZone++){
-              //Solver_Postprocessing(solver_container[iZone], geometry_container[iZone], config_container[iZone]);
-              //delete solver_container[iZone];
+              if (solver_container[iZone] != NULL) {
+                delete [] solver_container[iZone];
+              }
             	
               if (geometry_container[iZone] != NULL) {
-                delete geometry_container[iZone];
+                delete [] geometry_container[iZone];
               }
                 
               if (config_container[iZone] != NULL) {
-                delete config_container[iZone];
+                delete [] config_container[iZone];
               }
             }
-            //delete solver_container[iZone];
-            delete config_container[iZone];
-            delete geometry_container[iZone];
+            delete [] solver_container;
+            delete [] config_container;
+            delete [] geometry_container;
 
             if (rank == MASTER_NODE){
               boom.ConditionAtmosphericData();
