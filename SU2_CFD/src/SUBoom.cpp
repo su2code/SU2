@@ -207,6 +207,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
         }
         signal.original_len[iPhi] = nPanel[iPhi];
         signal.x[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
         signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
         for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
           signal.x[iPhi][iPanel] = xtmp[iPanel];
@@ -216,6 +217,38 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
         delete [] ptmp;
         totSig = nPanel[iPhi];
       }
+
+      /*--- Clip leading and trailing segments ---*/
+      unsigned long jPanelLE = 0, jPanelTE = nPanel[iPhi]-1;
+      for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+        if(signal.original_p[iPhi][iPanel] > tol_dp){
+          jPanelLE = iPanel;
+          break;
+        }
+      }
+      for(iPanel = nPanel[iPhi]-1; iPanel > 0; iPanel--){
+        if(signal.original_p[iPhi][iPanel] > tol_dp){
+          jPanelTE = iPanel;
+          break;
+        }
+      }
+      if(jPanelLE != 0 || jPanelTE != nPanel[iPhi]-1){
+        su2double *xtmp = new su2double[nPanel[iPhi]], *ptmp = new su2double[nPanel[iPhi]];
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+          xtmp[iPanel] = signal.x[iPhi][iPanel];
+          ptmp[iPanel] = signal.original_p[iPhi][iPanel];
+        }
+        nPanel[iPhi] = jPanelTE-jPanelLE+1;
+        signal.original_len[iPhi] = nPanel[iPhi];
+        signal.x[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+          signal.x[iPhi][iPanel] = x_tmp[iPanel+jPanelLE];
+          signal.original_p[iPhi][iPanel] = p_tmp[iPanel+jPanelLE];
+        }
+      }
+      
     }
   }
 
