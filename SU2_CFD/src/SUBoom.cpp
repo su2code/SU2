@@ -2074,8 +2074,8 @@ void SUBoom::CreateSignature(unsigned short iPhi){
     }
     else if(mm[i] < -tol_m){  // "expansion shock" present
       /*---Remove segment i---*/
-      //ll[i] = tol_l;
-      //mm[i] = (pp[1][i] - pp[0][i])/ll[i];
+      ll[i] = tol_l;
+      mm[i] = (pp[1][i] - pp[0][i])/ll[i];
     }
     i += 1;
   }
@@ -2093,9 +2093,6 @@ void SUBoom::CreateSignature(unsigned short iPhi){
     signal.dp[i] = pp[0][i] - pp[1][i-1];
     signal.m[i] = mm[i];
     signal.l[i] = ll[i];
-    cout << scientific << signal.dp[i] << ", \t"; 
-    cout << scientific << ll[i] << ", \t";
-    cout << scientific << mm[i] << endl;
   }
 
 }
