@@ -11800,7 +11800,6 @@ public:
 
 };
 
-
 /*!
  * \class CTemplateSolver
  * \brief Main class for defining the template model solver.
@@ -12066,31 +12065,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CDiscAdjSolver(void);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void Set_MPI_Solution_Geometry(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

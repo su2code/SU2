@@ -331,21 +331,15 @@ inline su2double CConfig::GetElasticyMod(unsigned short id_val) { return Elastic
 
 inline bool CConfig::GetDE_Effects(void) { return DE_Effects; }
 
-inline bool CConfig::GetDE_Predicted(void) { return DE_Predicted; }
-
 inline unsigned short CConfig::GetnElectric_Constant(void) { return nElectric_Constant; }
 
 inline su2double CConfig::GetElectric_Constant(unsigned short iVar) { return Electric_Constant[iVar]; }
-
-inline su2double CConfig::GetDE_Rate(void) { return DE_Rate; }
 
 inline su2double CConfig::GetKnowles_B(void) { return Knowles_B; }
 
 inline su2double CConfig::GetKnowles_N(void) { return Knowles_N; }
 
 inline unsigned short CConfig::GetDV_FEA(void) { return Kind_DV_FEA; }
-
-inline bool CConfig::GetStructural_Adj(void) { return Structural_Adj; }
 
 inline unsigned long CConfig::GetRefNode_ID(void) { return refNodeID; }
 
@@ -1644,25 +1638,9 @@ inline unsigned short CConfig::GetnDim_Electric_Field(void) { return nDim_Electr
 
 inline su2double CConfig::Get_Electric_Field_Mod(unsigned short val_coeff) { return Electric_Field_Mod[val_coeff]; }
 
-inline su2double CConfig::Get_Electric_Field_Max(unsigned short val_coeff) { return Electric_Field_Max[val_coeff]; }
-
-inline su2double CConfig::Get_Electric_Field_Min(unsigned short val_coeff) { return Electric_Field_Min[val_coeff]; }
-
 inline void CConfig::Set_Electric_Field_Mod(unsigned short val_coeff, su2double val_el_field) { Electric_Field_Mod[val_coeff] = val_el_field; }
 
 inline su2double* CConfig::Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
-
-inline su2double CConfig::Get_DV_Del_X(unsigned short val_coeff) { return DV_Del_X[val_coeff]; }
-
-inline su2double CConfig::Get_DV_Del_Y(unsigned short val_coeff) { return DV_Del_Y[val_coeff]; }
-
-inline su2double CConfig::Get_DV_Del_Z(unsigned short val_coeff) { return DV_Del_Z[val_coeff]; }
-
-inline unsigned short CConfig::GetnDV_X(void) { return nDV_Del_X - 1; }
-
-inline unsigned short CConfig::GetnDV_Y(void) { return nDV_Del_Y - 1; }
-
-inline unsigned short CConfig::GetnDV_Z(void) { return nDV_Del_Z - 1; }
 
 inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
 

@@ -756,13 +756,10 @@ private:
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
   unsigned short nElectric_Constant; /*!< \brief Number of different electric constants. */
   su2double *Electric_Constant;   /*!< \brief Dielectric constant modulus. */
-  su2double DE_Rate;							/*!< \brief Dielectric elastomer maximum rate of change. */
   su2double Knowles_B,      /*!< \brief Knowles material model constant B. */
   Knowles_N;                /*!< \brief Knowles material model constant N. */
   bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
-  bool DE_Predicted;            /*!< Application of DE effects to FE analysis */
   bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
-  bool Structural_Adj; 						/*!< Decide whether a structural adjoint iteration needs to be run (temporary). */
   unsigned long refNodeID;     /*!< \brief Global ID for the reference node (optimization). */
   string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
   unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
@@ -867,20 +864,10 @@ private:
   *MaterialDensity;                 /*!< \brief Value of the Material densities. */
   unsigned short nElectric_Field,	/*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;				/*!< \brief Dimensionality of the problem. */
-  unsigned short nElectric_Field_Max, /*!< \brief Number of different values for the max electric field in the membrane. */
-  nElectric_Field_Min;                  /*!< \brief Number of different values for the min electric field in the membrane. */
   unsigned short nDim_RefNode;   /*!< \brief Dimensionality of the vector . */
   su2double *Electric_Field_Mod, 	/*!< \brief Values of the modulus of the electric field. */
   *Electric_Field_Dir;				/*!< \brief Direction of the electric field. */
-  su2double *Electric_Field_Max,  /*!< \brief Maximum value of the modulus of the electric field. */
-  *Electric_Field_Min;            /*!< \brief Minimum value of the modulus of the electric field. */
   su2double *RefNode_Displacement;  /*!< \brief Displacement of the reference node. */
-  su2double *DV_Del_X,        /*!< \brief Values of the delimiters of the Electric Field (along axis X). */
-  *DV_Del_Y,                  /*!< \brief Values of the delimiters of the Electric Field (along axis Y). */
-  *DV_Del_Z;                  /*!< \brief Values of the delimiters of the Electric Field (along axis Z). */
-  unsigned short nDV_Del_X,   /*!< \brief Number of delimiters for the electric field (along axis X). */
-  nDV_Del_Y,                    /*!< \brief Number of delimiters for the electric field (along axis Y). */
-  nDV_Del_Z;                    /*!< \brief Number of delimiters for the electric field (along axis Z). */
   bool Sigmoid_Load,		      /*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				          /*!< \brief Apply the load with linear increases. */
   unsigned short Dynamic_LoadTransfer;  /*!< \brief Method for dynamic load transferring. */
@@ -1827,12 +1814,6 @@ public:
   su2double GetElectric_Constant(unsigned short iVar);
 
   /*!
-   * \brief Get the value of the DE rate of change from one iter to the next.
-   * \return Value of the DE rate of change from one iter to the next.
-   */
-  su2double GetDE_Rate(void);
-
-  /*!
    * \brief Get the value of the B constant in the Knowles material model.
    * \return Value of the B constant in the Knowles material model.
    */
@@ -1849,13 +1830,6 @@ public:
    * \return Value of the DE voltage.
    */
   unsigned short GetDV_FEA(void);
-
-  /*!
-    * \brief Decide whether to run a structural adjoint solution.
-    * \return <code>TRUE</code> if it's necessary to run a structural adjoint solution, <code>FALSE</code> otherwise.
-    */
-
-  bool GetStructural_Adj(void);
 
   /*!
    * \brief Get the ID of the reference node.
@@ -7589,59 +7563,6 @@ public:
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
   su2double Get_Electric_Field_Mod(unsigned short val_coeff);
-  
-  /*!
-   * \brief Get the maximum value allowed for the electric field modulus.
-   * \param[in] val_coeff - Index of the coefficient.
-   * \return Alpha coefficient for the Runge-Kutta integration scheme.
-   */
-  su2double Get_Electric_Field_Max(unsigned short val_coeff);
-  
-  /*!
-   * \brief Get the minimum value allowed for the electric field modulus.
-   * \param[in] val_coeff - Index of the coefficient.
-   * \return Alpha coefficient for the Runge-Kutta integration scheme.
-   */
-  su2double Get_Electric_Field_Min(unsigned short val_coeff);
-  
-  /*!
-   * \brief Get the values that limit regions in the X axis.
-   * \param[in] val_coeff - Index of the coefficient.
-   * \return del_x - X coordinate.
-   */
-  su2double Get_DV_Del_X(unsigned short val_coeff);
-  
-  /*!
-   * \brief Get the values that limit regions in the Y axis.
-   * \param[in] val_coeff - Index of the coefficient.
-   * \return del_y - Y coordinate.
-   */
-  su2double Get_DV_Del_Y(unsigned short val_coeff);
-  
-  /*!
-   * \brief Get the values that limit regions in the Z axis.
-   * \param[in] val_coeff - Index of the coefficient.
-   * \return del_z - Z coordinate.
-   */
-  su2double Get_DV_Del_Z(unsigned short val_coeff);
-  
-  /*!
-   * \brief Get the number of regions that are delimited in the X axis.
-   * \return nDV_Del_X-1 - number of REGIONS in X direction (delimiters - 1)
-   */
-  unsigned short GetnDV_X(void);
-  
-  /*!
-   * \brief Get the number of regions that are delimited in the Y axis.
-   * \return nDV_Del_Y-1 - number of REGIONS in Y direction (delimiters - 1)
-   */
-  unsigned short GetnDV_Y(void);
-  
-  /*!
-   * \brief Get the number of regions that are delimited in the Z axis.
-   * \return nDV_Del_Z-1 - Number of REGIONS in Z direction (delimiters - 1)
-   */
-  unsigned short GetnDV_Z(void);
   
   /*!
    * \brief Set the values for the electric field modulus.

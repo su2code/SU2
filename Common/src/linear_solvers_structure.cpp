@@ -300,7 +300,6 @@ int rank = 0;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-
   /*--- Recalculate final residual (this should be optional) ---*/
   
   if (monitoring) {
@@ -488,11 +487,11 @@ int rank = 0;
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                 CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
-	
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
+  
   int rank = 0;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Check the subspace size ---*/
@@ -608,7 +607,6 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-  
     /*--- Recalculate final residual (this should be optional) ---*/
   if (monitoring) {
     mat_vec(x, A_x);
@@ -624,7 +622,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   }
   
   (*residual) = norm_r;
-	return (unsigned long) i;
+  return (unsigned long) i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {

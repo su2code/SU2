@@ -1931,39 +1931,6 @@ public:
    */
   virtual void SetSolution_time_n(su2double *val_solution_time_n);
   
-  /*!
-   * \brief Set the value of the adjoint solution (Structural Analysis).
-   * \param[in] val_solution_adj - Solution of the adjoint problem (Structural Analysis).
-   * \param[in] val_var - Coordinate.
-   */
-  virtual void SetSolution_Adj(unsigned short val_var, su2double val_solution_adj);
-  
-  
-  /*!
-   * \brief Get the solution of the adjoint problem (Structural Analysis).
-   * \return Adjoint solution for the coordinate val_var (Structural Analysis).
-   */
-  virtual su2double GetSolution_Adj(unsigned short val_var);
-  
-  /*!
-   * \brief Set the value of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_solution_adj - Solution of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_var - Coordinate.
-   */
-  virtual void SetGradient_Adj(unsigned short val_var, su2double val_gradient_adj);
-  
-  /*!
-   * \brief Set the value of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_solution_adj - Solution of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_var - Coordinate.
-   */
-  virtual void AddGradient_Adj(unsigned short val_var, su2double val_gradient_adj);
-  
-  /*!
-   * \brief Get the solution of the adjoint gradient dS/dv (Structural Analysis).
-   * \return Adjoint gradient dS/dv for the coordinate val_var (Structural Analysis).
-   */
-  virtual su2double GetGradient_Adj(unsigned short val_var);
   
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
@@ -2557,8 +2524,6 @@ protected:
   *Solution_Pred_Old;            /*!< \brief Predictor of the solution at time n for FSI purposes */
   
   su2double *Reference_Geometry;      /*!< \brief Reference solution for optimization problems */
-  su2double *Solution_Adj;        /*!< \brief Adjoint solution */
-  su2double *Gradient_Adj;        /*!< \brief Adjoint gradient dS/dv */
   
   su2double *Prestretch;        /*!< \brief Prestretch geometry */
   
@@ -2711,38 +2676,6 @@ public:
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
   void SetSolution_time_n(unsigned short val_var, su2double val_solution);
-  
-  /*!
-   * \brief Set the value of the adjoint solution (Structural Analysis).
-   * \param[in] val_solution - Solution of the adjoint problem (Structural Analysis).
-   */
-  void SetSolution_Adj(unsigned short val_var, su2double val_solution_adj);
-  
-  /*!
-   * \brief Get the solution of the adjoint problem (Structural Analysis).
-   * \return Pointer to the adjoint solution vector (Structural Analysis).
-   */
-  su2double GetSolution_Adj(unsigned short val_var);
-  
-  /*!
-   * \brief Get the solution of the adjoint gradient dS/dv (Structural Analysis).
-   * \return Adjoint gradient dS/dv for the coordinate val_var (Structural Analysis).
-   */
-  su2double GetGradient_Adj(unsigned short val_var);
-  
-  /*!
-   * \brief Set the value of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_solution_adj - Solution of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_var - Coordinate.
-   */
-  void SetGradient_Adj(unsigned short val_var, su2double val_gradient_adj);
-  
-  /*!
-   * \brief Set the value of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_solution_adj - Solution of the adjoint gradient dS/dv (Structural Analysis).
-   * \param[in] val_var - Coordinate.
-   */
-  void AddGradient_Adj(unsigned short val_var, su2double val_gradient_adj);
   
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
@@ -3060,79 +2993,6 @@ public:
    */
   void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
   
-};
-
-/*!
- * \class CFEM_ElasVariable_Adj
- * \brief Main class for defining the variables of the FEM Elastic adjoint structural problem.
- * \ingroup Structural Finite Element Analysis Variables
- * \author R. Sanchez.
- * \version 4.0.0 "Cardinal"
- */
-class CFEM_ElasVariable_Adj : public CVariable {
-protected:
-
-  su2double *Reference_Geometry;      /*!< \brief Reference solution for optimization problems */
-  su2double *Gradient_Adj;        /*!< \brief Adjoint gradient dS/dv */
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CFEM_ElasVariable_Adj(void);
-
-  /*!
-   * \overload
-   * \param[in] val_fea - Values of the fea solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEM_ElasVariable_Adj(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_ElasVariable_Adj(void);
-
-   /*!
-    * \brief Set the reference geometry.
-    * \return Pointer to the solution (at time n) vector.
-    */
-     void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
-
-   /*!
-    * \brief A virtual member.
-    */
-     su2double *GetReference_Geometry(void);
-
-    /*!
-     * \brief A virtual member.
-     */
-     su2double GetReference_Geometry(unsigned short iVar);
-
-   /*!
-    * \brief Get the solution of the adjoint gradient dS/dv (Structural Analysis).
-    * \return Adjoint gradient dS/dv for the coordinate val_var (Structural Analysis).
-    */
-   su2double GetGradient_Adj(unsigned short val_var);
-
-   /*!
-    * \brief Set the value of the adjoint gradient dS/dv (Structural Analysis).
-    * \param[in] val_solution_adj - Solution of the adjoint gradient dS/dv (Structural Analysis).
-    * \param[in] val_var - Coordinate.
-    */
-   void SetGradient_Adj(unsigned short val_var, su2double val_gradient_adj);
-
-   /*!
-    * \brief Set the value of the adjoint gradient dS/dv (Structural Analysis).
-    * \param[in] val_solution_adj - Solution of the adjoint gradient dS/dv (Structural Analysis).
-    * \param[in] val_var - Coordinate.
-    */
-   void AddGradient_Adj(unsigned short val_var, su2double val_gradient_adj);
-
-
 };
 
 /*!
