@@ -481,6 +481,7 @@ private:
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
@@ -3179,6 +3180,12 @@ public:
    */
   unsigned long GetLinear_Solver_Iter(void);
   
+  /*!
+   * \brief Get the ILU fill-in level for the linear solver.
+   * \return Fill in level of the ILU preconditioner for the linear solver.
+   */
+  unsigned short GetLinear_Solver_ILU_n(void);
+
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.
    * \return Restart frequency of the linear solver for the implicit formulation.
