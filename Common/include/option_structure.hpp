@@ -864,7 +864,7 @@ static const map<string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = CCr
 
 
 /*!
- * \brief Kinds of Design Variables for FEA problems (temporary)
+ * \brief Kinds of Design Variables for FEA problems 
  */
 enum ENUM_DVFEA {
   NODV_FEA = 0,         /*!< \brief No design variable for FEA problems. */

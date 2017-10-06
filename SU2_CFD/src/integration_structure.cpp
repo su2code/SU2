@@ -222,54 +222,35 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     /*--- Compute Mass Matrix ---*/
     /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
     /*--- problem is linear or nonlinear. This is done in the preprocessing step. ---*/
-    if (RunTime_EqSystem != RUNTIME_ADJFEA_SYS){
-      /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
-      /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-      if ((linear_analysis && initial_calc) ||
-        (linear_analysis && restart && initial_calc_restart)){
-        solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
-      }
-      else if (!linear_analysis){
-        /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
-        /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
-        /*--- They are calculated together to avoid looping twice over the elements ---*/
-        if (IterativeScheme == NEWTON_RAPHSON){
-          /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
-          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
-        }
 
-        /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
-        /*--- Nevertheless, the Nodal Stress Term has to be computed for each iteration ---*/
-        else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON){
-
-          if (first_iter){
-            solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
-          }
-
-          else{
-            solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
-          }
-
-        }
-
-      }
+    /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
+    /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
+    if ((linear_analysis && initial_calc) ||
+      (linear_analysis && restart && initial_calc_restart)) {
+      solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
     }
-    else {
-
-      bool predicted_de = config->GetDE_Predicted();
-
-      /*--- For linear problems, it is necessary to compute the stiffness matrix and multiply it by the solution. ---*/
-      /*--- This function is (so far) empty for nonlinear problems ---*/
-      if (linear_analysis)
-        solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
-
-      /*--- For non-linear problems, the residual arises from a non-linear stress term. ---*/
-      /*--- This function is (so far) empty for linear problems ---*/
-      else if (!linear_analysis && predicted_de){
-        /*--- Compute the predicted Jacobian ---*/
+    else if (!linear_analysis) {
+      /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
+      /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
+      /*--- They are calculated together to avoid looping twice over the elements ---*/
+      if (IterativeScheme == NEWTON_RAPHSON) {
+        /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
         solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
       }
 
+      /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
+      /*--- Nevertheless, the Nodal Stress Term has to be computed for each iteration ---*/
+      else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
+
+        if (first_iter) {
+          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+        }
+
+        else {
+          solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
+        }
+
+      }
 
     }
 
@@ -335,17 +316,6 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       }
       
     }
-  }
-
-  if ( ( (RunTime_EqSystem == RUNTIME_ADJFEA_SYS) && (Iteration == 0) ) ) {
-
-      switch (config[iZone]->GetKind_ObjFunc()) {
-        case REFERENCE_GEOMETRY:
-          solver_container[iZone][MESH_0][ADJFEA_SOL]->RefGeom_Sensitivity(geometry[iZone][MESH_0],
-                                          solver_container[iZone][MESH_0], config[iZone]);
-          break;
-      }
-
   }
   
 }

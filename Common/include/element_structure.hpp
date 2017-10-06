@@ -910,52 +910,5 @@ public:
 
 };
 
-/*!
- * \class CBOUND2D
- * \brief 2D line boundary element with 2 Gauss Points
- * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
- */
-
-class CBOUND2D : public CElement {
-
-protected:
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CBOUND2D(void);
-
-  /*!
-   * \overload
-   * \param[in] val_fea - Values of the fea solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CBOUND2D(unsigned short val_nDim, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CBOUND2D(void);
-
-  /*!
-   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
-   * \param[in] val_solution - Solution of the problem.
-   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-   */
-  void ComputeGrad_Linear(void);
-
-  /*!
-   * \brief Set the value of the gradient of the shape functions respect to the current configuration.
-   * \param[in] val_solution - Solution of the problem.
-   * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
-   */
-  void ComputeGrad_NonLinear(void);
-
-};
-
 
 #include "element_structure.inl"

@@ -254,7 +254,7 @@ void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned s
   
   unsigned short iDim, jDim;
   
-  /*--- TODO: Check this (there was a += instead of a =) ---*/
+  /*--- TODO: The incompressible implementation needs further work ---*/
 
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {

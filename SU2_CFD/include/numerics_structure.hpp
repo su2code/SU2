@@ -3834,34 +3834,6 @@ public:
 };
 
 /*!
- * \class CFEM_LinearElasticity_Adj
- * \brief Class for computing the stiffness matrix of a linear, elastic problem.
- * \ingroup FEM_Discr
- * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
- */
-class CFEM_LinearElasticity_Adj : public CFEM_LinearElasticity {
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEM_LinearElasticity_Adj(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_LinearElasticity_Adj(void);
-
-  void Compute_Constitutive_Matrix(void);
-
-};
-
-/*!
  * \class CFEM_LinearElasticity
  * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
  * \ingroup FEM_Discr
@@ -4131,91 +4103,6 @@ public:
   using CNumerics::Compute_Constitutive_Matrix;
 
   void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
-
-};
-
-/*!
- * \class CFEM_NeoHookean_Comp
- * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
- * \ingroup FEM_Discr
- * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
- */
-class CFEM_NeoHookean_Comp_Adj : public CFEM_NonlinearElasticity {
-
-  su2double Mu_E;			/*!< \brief Lame's coeficient, derived respect to E. */
-  su2double Lambda_E;		/*!< \brief Lame's coeficient, derived respect to E. */
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEM_NeoHookean_Comp_Adj(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_NeoHookean_Comp_Adj(void);
-
-  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
-
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
-
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
-
-  void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
-
-};
-
-
-/*!
- * \class CFEM_DielectricElastomer_Adj
- * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer - Adjoint.
- * \ingroup FEM_Discr
- * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
- */
-class CFEM_DielectricElastomer_Adj : public CFEM_NonlinearElasticity {
-
-  su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
-  *EField_Ref_Mod;					/*!< \brief Electric Field, modulus, in the reference configuration. */
-  su2double *EField_Curr_Unit;		/*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
-  unsigned short nElectric_Field,
-  nDim_Electric_Field;
-
-  su2double **FmT_Mat;	 			/*!< \brief Deformation gradient inverse and transpose. */
-
-  su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEM_DielectricElastomer_Adj(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_DielectricElastomer_Adj(void);
-
-  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
-
-  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
-  using CNumerics::Compute_Constitutive_Matrix;
-
-  void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
-
-  void Set_ElectricField(unsigned short i_DV, su2double val_EField);
-
-  void Compute_FmT_Mat(void);
 
 };
 

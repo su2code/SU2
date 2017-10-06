@@ -369,9 +369,8 @@ void CConfig::SetPointersNull(void) {
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Disp_Dir = NULL;            Disp_Dir_Value = NULL;          Disp_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
-  Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      Electric_Field_Max = NULL;
-  Electric_Field_Min = NULL;  RefNode_Displacement = NULL;
-  DV_Del_X = NULL;        DV_Del_Y = NULL;            DV_Del_Z = NULL;
+  Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      RefNode_Displacement = NULL;
+
   Electric_Constant = NULL;
 
   /*--- Actuator Disk Boundary Condition settings ---*/
@@ -1641,37 +1640,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Knowles N constant */
   addDoubleOption("KNOWLES_N", Knowles_N, 1.0);
 
-
   /*  DESCRIPTION: Include DE effects
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DE_EFFECTS", DE_Effects, false);
-  /*!\brief DE_MODULUS \n DESCRIPTION: Value of the Dielectric elastomer modulus */
+  /*!\brief ELECTRIC_FIELD_CONST \n DESCRIPTION: Value of the Dielectric Elastomer constant */
   addDoubleListOption("ELECTRIC_FIELD_CONST", nElectric_Constant, Electric_Constant);
-  /* DESCRIPTION: Modulus of the electric fields */
+  /* DESCRIPTION: Modulus of the Electric Fields */
   addDoubleListOption("ELECTRIC_FIELD_MOD", nElectric_Field, Electric_Field_Mod);
-  /* DESCRIPTION: Maximum value of the modulus of the electric field */
-  addDoubleListOption("ELECTRIC_FIELD_MAX", nElectric_Field_Max, Electric_Field_Max);
-  /* DESCRIPTION: Minimum value of the modulus of the electric field */
-  addDoubleListOption("ELECTRIC_FIELD_MIN", nElectric_Field_Min, Electric_Field_Min);
-  /* DESCRIPTION: Direction of the electic fields */
+  /* DESCRIPTION: Direction of the Electic Fields */
   addDoubleListOption("ELECTRIC_FIELD_DIR", nDim_Electric_Field, Electric_Field_Dir);
-  /* DESCRIPTION: Direction of the electic fields */
-  addDoubleOption("ELECTRIC_FIELD_CHANGE_RATE", DE_Rate, 1);
-
-  /*  DESCRIPTION: Include DE effects
-  *  Options: NO, YES \ingroup Config */
-  addBoolOption("DE_PREDICT_ADJOINT", DE_Predicted, false);
-
-  /* DESCRIPTION: Delimiters of the Design variable regions (this would be easier by element...)*/
-  addDoubleListOption("DV_DEL_X", nDV_Del_X, DV_Del_X);
-  addDoubleListOption("DV_DEL_Y", nDV_Del_Y, DV_Del_Y);
-  addDoubleListOption("DV_DEL_Z", nDV_Del_Z, DV_Del_Z);
 
   /* DESCRIPTION: Convergence criteria for FEM adjoint */
   addDoubleOption("CRITERIA_FEM_ADJ", Res_FEM_ADJ, -5.0);
 
   /*!\brief DESIGN_VARIABLE_FEA
-   *  \n DESCRIPTION: Design variable for FEA problems (Temp) \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
+   *  \n DESCRIPTION: Design variable for FEA problems \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, NODV_FEA);
 
   /*  DESCRIPTION: Consider a reference solution for the structure (optimization applications)
@@ -1693,10 +1676,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("REFERENCE_NODE_DISPLACEMENT", nDim_RefNode, RefNode_Displacement);
   /*!\brief REFERENCE_NODE_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
   addDoubleOption("REFERENCE_NODE_PENALTY", RefNode_Penalty, 1E3);
-
-  /*  DESCRIPTION: Run an adjoint solution of the structural problem (temporary - this will be modified later on)
-  *  Options: NO, YES \ingroup Config */
-  addBoolOption("STRUCTURAL_ADJ", Structural_Adj, false);
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
@@ -3283,35 +3262,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
   }
 
-  if (nElectric_Field_Max == 0) {
-  nElectric_Field_Max = 1;
-  Electric_Field_Max = new su2double[1]; Electric_Field_Max[0] = 1000.0;    // Default value
-  }
-
-  if (nElectric_Field_Min == 0) {
-  nElectric_Field_Min = 1;
-  Electric_Field_Min = new su2double[1]; Electric_Field_Min[0] = 0.0;
-  }
-
   if (nDim_RefNode == 0) {
   nDim_RefNode = 3;
   RefNode_Displacement = new su2double[3];
   RefNode_Displacement[0] = 0.0; RefNode_Displacement[1] = 0.0; RefNode_Displacement[2] = 0.0;
-  }
-
-  if ((nDV_Del_X == 0) || (nDV_Del_X == 1)) {
-  nDV_Del_X = 2;
-  DV_Del_X = new su2double[2]; DV_Del_X[0] = -1.0E15; DV_Del_X[1] = 1.0E15; // This ensures all the values are within the range
-  }
-
-  if ((nDV_Del_Y == 0) || (nDV_Del_Y == 1)) {
-  nDV_Del_Y = 2;
-  DV_Del_Y = new su2double[2]; DV_Del_Y[0] = -1.0E15; DV_Del_Y[1] = 1.0E15; // This ensures all the values are within the range
-  }
-
-  if ((nDV_Del_Z == 0) || (nDV_Del_Z == 1)) {
-  nDV_Del_Z = 2;
-  DV_Del_Z = new su2double[2]; DV_Del_Z[0] = -1.0E15; DV_Del_Z[1] = 1.0E15; // This ensures all the values are within the range
   }
 
   if (nDim_Electric_Field == 0) {

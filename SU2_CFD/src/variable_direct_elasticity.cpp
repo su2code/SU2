@@ -63,10 +63,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
   Prestretch              = NULL;   // Prestretch geometry
   
   Reference_Geometry    = NULL;   // Reference geometry for optimization purposes
-  Solution_Adj      = NULL;   // Adjoint solution for structural problems (temporary)
-  Gradient_Adj      = NULL;   // Adjoint gradient dS/dv for structural problems (temporary)
-
-
+  
 }
 
 CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -170,11 +167,9 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   Reference_Geometry = NULL;
   if (refgeom)  Reference_Geometry = new su2double [nVar];
   
-  Solution_Adj = NULL;
-  Gradient_Adj = NULL;
-
   Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
+  
   
 }
 
@@ -201,8 +196,6 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
   if (Solution_Pred_Old     != NULL) delete [] Solution_Pred_Old;
   
   if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
-  if (Solution_Adj      != NULL) delete [] Solution_Adj;
-  if (Gradient_Adj      != NULL) delete [] Gradient_Adj;
 
   if (Prestretch            != NULL) delete [] Prestretch;
   

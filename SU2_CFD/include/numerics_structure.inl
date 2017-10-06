@@ -108,9 +108,6 @@ inline void CFEM_Elasticity::Set_ElectricField(unsigned short i_DV, su2double va
 inline void CFEM_NonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
   EField_Ref_Mod[i_DV] = val_EField; }
 
-inline void CFEM_DielectricElastomer_Adj::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
-  EField_Ref_Mod[i_DV] = val_EField; }
-
 inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
 
 inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ }
@@ -122,10 +119,6 @@ inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val
 }
 
 inline void CFEM_NonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
-  E_i[0] = val_Young; 
-}
-
-inline void CFEM_NeoHookean_Comp_Adj::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
   E_i[0] = val_Young; 
 }
 

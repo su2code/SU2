@@ -89,9 +89,6 @@ libSU2Core_sources = \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_mean_inc.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
-  ../src/numerics_adjoint_elasticity_nonlinear.cpp \
-  ../src/numerics_adjoint_elasticity_linear.cpp \
-  ../src/numerics_adjoint_elasticity.cpp \
   ../src/numerics_direct_poisson.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
