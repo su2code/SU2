@@ -2093,9 +2093,6 @@ void SUBoom::CreateSignature(unsigned short iPhi){
     signal.dp[i] = pp[0][i] - pp[1][i-1];
     signal.m[i] = mm[i];
     signal.l[i] = ll[i];
-    cout << scientific << signal.dp[i] << ", \t"; 
-    cout << scientific << ll[i] << ", \t";
-    cout << scientific << mm[i] << endl;
   }
 
 }
