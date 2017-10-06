@@ -94,7 +94,7 @@ def gradient( func_name, method, config, state=None ):
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
-
+              
             # Aerodynamics
             if func_output in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
@@ -105,7 +105,7 @@ def gradient( func_name, method, config, state=None ):
             # Stability
             elif func_output in su2io.optnames_stab:
                 grads = stability( func_name, config, state )
-
+            
             # Multipoint
             elif func_output in su2io.optnames_multi:
               grads = multipoint( func_name, config, state )
@@ -113,10 +113,6 @@ def gradient( func_name, method, config, state=None ):
             # Geometry (actually a finite difference)
             elif func_output in su2io.optnames_geo:
                 grads = geometry( func_name, config, state )
-                
-            # Structural OF
-            elif func_name_string in su2io.optnames_fea:
-                grads = structural_adjoint( func_name, config, state )                
 
             else:
                 raise Exception, 'unknown function name: %s' % func_output
@@ -412,142 +408,6 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
     return grads_out
 
-# ----------------------------------------------------------------------
-#  Structural adjoint Gradients
-# ----------------------------------------------------------------------
-
-def structural_adjoint( func_name, config, state=None ):
-    """ vals = SU2.eval.adjoint(func_name,config,state=None)
-
-        Evaluates the structural gradients using the 
-        adjoint methodology with:
-            SU2.eval.func()
-            SU2.run.direct()
-            SU2.run.adjoint()
-
-        Assumptions:
-            Config is already setup for deformation.
-            Mesh may or may not be deformed.
-            Updates config and state by reference.
-            Adjoint Redundancy if state.GRADIENTS has key func_name.
-            Direct Redundancy if state.FUNCTIONS has key func_name.
-
-        Executes in:
-            ./ADJOINT_<func_name>
-
-        Inputs:
-            func_name - SU2 objective function name
-            config    - an SU2 config
-            state     - optional, an SU2 state
-
-        Outputs:
-            A Bunch() with keys of objective function names
-            and values of list of floats of gradient values
-    """
-
-    # ----------------------------------------------------
-    #  Initialize    
-    # ----------------------------------------------------
-
-    # initialize
-    state = su2io.State(state)
-    special_cases = su2io.get_specialCases(config)
-    
-    # check for multiple objectives
-    multi_objective = (type(func_name)==list)
-    func_name_string = func_name
-    if multi_objective:   func_name_string = 'COMBO'
-
-    ADJ_NAME = 'ADJOINT_'+func_name_string
-
-    # console output
-    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
-        log_adjoint = 'log_Adjoint.out'
-    else:
-        log_adjoint = None   
-
-    # ----------------------------------------------------
-    #  Redundancy Check
-    # ----------------------------------------------------    
-
-    # master redundancy check
-    if state['GRADIENTS'].has_key(func_name_string):
-        grads = state['GRADIENTS']
-        return copy.deepcopy(grads)
-
-    # ----------------------------------------------------
-    #  Direct Solution    
-    # ----------------------------------------------------        
-
-    # run (includes redundancy checks)
-    function( func_name, config, state )   
-
-    # ----------------------------------------------------    
-    #  Adjoint Solution
-    # ----------------------------------------------------        
-
-    # files to pull
-    files = state['FILES']
-    pull = []; link = []    
-
-    # files: mesh
-    name = files['MESH']
-    name = su2io.expand_part(name,config)
-    link.extend(name)
-
-    # files: direct solution
-    name = files['DIRECT']
-    name = su2io.expand_time(name,config)
-    link.extend(name)
-
-    # files: adjoint solution
-    if files.has_key( ADJ_NAME ):
-        name = files[ADJ_NAME]
-        name = su2io.expand_time(name,config)
-        link.extend(name)       
-    else:
-        config['RESTART_SOL'] = 'NO'
-        
-    # Reference geometry files
-    if config.REFERENCE_GEOMETRY == 'YES':
-        name = files['REFERENCE_GEOMETRY']
-        name = su2io.expand_part(name,config)
-        link.extend(name)
-
-    # Prestretch files
-    if config.PRESTRETCH == 'YES':
-        name = files['PRESTRETCH']
-        name = su2io.expand_part(name,config)
-        link.extend(name)
-
-    # output redirection
-    with redirect_folder( ADJ_NAME, pull, link ) as push:
-        with redirect_output(log_adjoint):        
-
-            # setup config
-            if multi_objective:
-                config['OBJECTIVE_FUNCTION'] = ", ".join(func_name)
-            else:
-                config['OBJECTIVE_FUNCTION'] = func_name
-
-            # # RUN ADJOINT SOLUTION # #
-            info = su2run.adjoint(config)
-            su2io.restart2solution(config,info)
-            state.update(info)
-
-            # solution files to push
-            name = state.FILES[ADJ_NAME]
-            name = su2io.expand_time(name,config)
-            push.extend(name)
-
-    #: with output redirection
-
-    # return output 
-    grads = su2util.ordered_bunch()
-    grads[func_name_string] = state['GRADIENTS'][func_name_string]
-    return grads
-
-#: def structural_adjoint()
 
 # ----------------------------------------------------------------------
 #  Multipoint Functions
@@ -842,7 +702,7 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-        
+       
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):
@@ -881,7 +741,7 @@ def findiff( config, state=None ):
                         this_grad = ( func_step[key] - func_base[key] ) / this_step
                         grads[key].append(this_grad)
                         
-                    
+                   
                 #: for each grad name
                     
                 su2util.write_plot(grad_filename,output_format,grads)
@@ -1146,7 +1006,7 @@ def directdiff( config, state=None ):
                         grads[key].append(i_dv)
                     else:
                         if su2io.grad_names_map[key] in func_step:
-                        this_grad = func_step[su2io.grad_names_map[key]]
+                          this_grad = func_step[su2io.grad_names_map[key]]
                         else:
                           this_grad = 0.0
                         grads[key].append(this_grad)

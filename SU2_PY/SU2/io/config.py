@@ -74,7 +74,6 @@ class Config(ordered_bunch):
             write()      - write to a config file (requires existing file)
             dump()       - dump a raw config file
             unpack_dvs() - unpack a design vector 
-            update_efield() - updates Electric Field variables
             diff()       - returns the difference from another config
             dist()       - computes the distance from another config
     """    
@@ -152,7 +151,7 @@ class Config(ordered_bunch):
                 dv_old - optional, list or array of old dv values, defaults to zeros
                          
         """
-
+        
         dv_new = copy.deepcopy(dv_new)
         dv_old = copy.deepcopy(dv_old)
         
@@ -187,29 +186,7 @@ class Config(ordered_bunch):
         self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
                       'DV_VALUE_OLD'     : dv_old              ,
                       'DV_VALUE_NEW'     : dv_new              })
-                      
-    def update_efield(self,dv_new,dv_old=None):
-        """ updates config with electric field variables
-            will scale according to each DEFINITION_DV scale parameter
-            
-            Modifies:
-                ELECTRIC_FIELD_MOD
-            
-            Inputs:
-                dv_new - list or array of new dv values
-                dv_old - optional, list or array of old dv values, defaults to zeros
-                         
-        """
-
-        dv_new = copy.deepcopy(dv_new)
-        dv_old = copy.deepcopy(dv_old)
         
-        ## Change the parameters of the design variables
-        self['ELECTRIC_FIELD_MOD'] = dv_new     
-        
-        ## handle param
-        efield_mod = self['ELECTRIC_FIELD_MOD']   
-                
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
     def __ne__(self,konfig):
@@ -360,7 +337,7 @@ def read_config(filename):
                 # split by comma
                 data_dict[this_param] = this_value.split(",")
                 break
-            
+
             # semicolon delimited lists of comma delimited lists of floats
             if case("DV_PARAM"):
                 # remove white space
@@ -592,45 +569,6 @@ def read_config(filename):
                 data_dict[this_param] = this_sort
                 break
             
-            if case('ELECTRIC_FIELD_MOD'):
-                # remove white space
-                this_value = ''.join(this_value.split())
-                # remove parens
-                this_value = this_value.strip('()') 
-                # split by commas
-                this_value = this_value.split(",")     
-                # initialize data dict for this parameter
-                data_dict[this_param] = []                          
-                for this_obj in this_value:       
-                    data_dict[this_param].append(float(this_obj))
-                break
-                
-            if case('ELECTRIC_FIELD_MIN'):
-                # remove white space
-                this_value = ''.join(this_value.split())
-                # remove parens
-                this_value = this_value.strip('()') 
-                # split by commas
-                this_value = this_value.split(",")     
-                # initialize data dict for this parameter
-                data_dict[this_param] = []                          
-                for this_obj in this_value:       
-                    data_dict[this_param].append(float(this_obj))
-                break
-                
-            if case('ELECTRIC_FIELD_MAX'):
-                # remove white space
-                this_value = ''.join(this_value.split())
-                # remove parens
-                this_value = this_value.strip('()') 
-                # split by commas
-                this_value = this_value.split(",")     
-                # initialize data dict for this parameter
-                data_dict[this_param] = []                          
-                for this_obj in this_value:       
-                    data_dict[this_param].append(float(this_obj))
-                break            
-                        
             # otherwise
             # string parameters
             if case():
@@ -665,9 +603,9 @@ def read_config(filename):
     if not data_dict.has_key('OPT_CONSTRAINT'):
         data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
-      data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
+        data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
-      data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+        data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
     if not data_dict.has_key('AOA'):
         data_dict['AOA'] = 0.0
     if not data_dict.has_key('SIDESLIP_ANGLE'):
@@ -773,7 +711,7 @@ def read_config(filename):
             'PARAM': [[0.0, 0.05]],
             'SCALE': [1.0],
             'SIZE': [1]}
- 
+
     return data_dict
     
 #: def read_config()
@@ -968,42 +906,6 @@ def write_config(filename,param_dict):
                 #: for each constraint type
                 if not i_con: output_file.write("NONE")
                 break
-            
-            if case("ELECTRIC_FIELD_MOD"):
-                if not isinstance(new_value,list):
-                    new_value = [ new_value ]                
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(str(new_value[i_value]))
-                    if i_value+1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )") 
-                break
-                
-            if case("ELECTRIC_FIELD_MIN"):
-                if not isinstance(new_value,list):
-                    new_value = [ new_value ]                
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(str(new_value[i_value]))
-                    if i_value+1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )") 
-                break   
-                
-            if case("ELECTRIC_FIELD_MAX"):
-                if not isinstance(new_value,list):
-                    new_value = [ new_value ]                
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(str(new_value[i_value]))
-                    if i_value+1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )") 
-                break                                      
             
             # default, assume string, integer or unformatted float 
             if case():

@@ -100,46 +100,23 @@ def direct ( config ):
     # averaging final iterations
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
 
-    # postprocess for CFD cases
-    if 'FEM_ELASTICITY' not in special_cases:
-      # get history and objectives
+    # get history and objectives
     history      = su2io.read_history( history_filename , config.NZONES)
     aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
     
-      # update super config
-      config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
+    # update super config
+    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
                     
-      # info out
-      info = su2io.State()
-      info.FUNCTIONS.update( aerodynamics )
-      info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
-      if 'EQUIV_AREA' in special_cases:
-          info.FILES.WEIGHT_NF = 'WeightNF.dat'
-      if 'INV_DESIGN_CP' in special_cases:
-          info.FILES.TARGET_CP = 'TargetCp.dat'
-      if 'INV_DESIGN_HEATFLUX' in special_cases:
-          info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
-      info.HISTORY.DIRECT = history
-      
-    else:
-       # update super config
-      config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
-      
-       # info out     
-      info = su2io.State()
-      info.FILES.DIRECT = konfig['RESTART_STRUCTURE_FILENAME']
-      
-      if config.OBJECTIVE_FUNCTION == 'REFERENCE_GEOMETRY':
-        history_filename = 'of_refgeom.dat'
-      elif config.OBJECTIVE_FUNCTION == 'REFERENCE_NODE':
-        history_filename = 'of_refnode.dat'
-      
-      plot_file = open(history_filename)
-      line = plot_file.readline()
-      
-      if config.OBJECTIVE_FUNCTION == 'REFERENCE_GEOMETRY':
-        info.FUNCTIONS.REFERENCE_GEOMETRY = float(line)
-      elif config.OBJECTIVE_FUNCTION == 'REFERENCE_NODE':
-        info.FUNCTIONS.REFERENCE_NODE = float(line)
+    # info out
+    info = su2io.State()
+    info.FUNCTIONS.update( aerodynamics )
+    info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
+    if 'EQUIV_AREA' in special_cases:
+        info.FILES.WEIGHT_NF = 'WeightNF.dat'
+    if 'INV_DESIGN_CP' in special_cases:
+        info.FILES.TARGET_CP = 'TargetCp.dat'
+    if 'INV_DESIGN_HEATFLUX' in special_cases:
+        info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
+    info.HISTORY.DIRECT = history
     
     return info
