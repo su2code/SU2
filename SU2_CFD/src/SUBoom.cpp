@@ -187,6 +187,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       MergeSort(signal.x[iPhi], signal.original_p[iPhi], 0, totSig-1);
 
       /*---Check for duplicate points---*/
+      signal.original_len[iPhi] = nPanel[iPhi];
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
         if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-7){
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
