@@ -244,11 +244,14 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
         signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
         signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
         for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-          signal.x[iPhi][iPanel] = x_tmp[iPanel+jPanelLE];
-          signal.original_p[iPhi][iPanel] = p_tmp[iPanel+jPanelLE];
+          signal.x[iPhi][iPanel] = xtmp[iPanel+jPanelLE];
+          signal.original_p[iPhi][iPanel] = ptmp[iPanel+jPanelLE];
         }
+        delete [] xtmp;
+        delete [] ptmp;
+        totSig = nPanel[iPhi];
       }
-      
+
     }
   }
 
