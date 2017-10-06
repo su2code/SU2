@@ -4505,8 +4505,8 @@ void CDiscAdjFluidDriver::Run() {
 void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   unsigned short iZone, iMesh;
   int rank = MASTER_NODE;
-  bool two_phase = ((config_container[ZONE_0]->GetKind_Solver() == TWO_PHASE_EULER) || (config_container[ZONE_0]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-                   (config_container[ZONE_0]->GetKind_Solver() == TWO_PHASE_RANS));
+  bool two_phase = ((config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+                   (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -4558,8 +4558,11 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Print residuals in the first iteration ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+//    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+      if (rank == MASTER_NODE) {
       cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+      if(two_phase)
+        cout << " Zone " << iZone << ": log10_two_phase[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][TWO_PHASE_SOL]->GetRes_RMS(0)) << endl;
       if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
         cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }

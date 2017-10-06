@@ -443,7 +443,7 @@ void CFluidIteration::Iterate(COutput *output,
     case EULER: case DISC_ADJ_EULER:
       config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
       
-    case TWO_PHASE_EULER:
+    case TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_EULER:
     	config_container[val_iZone]->SetGlobalParam(TWO_PHASE_EULER, RUNTIME_FLOW_SYS, ExtIter); break;
 
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
@@ -466,7 +466,7 @@ void CFluidIteration::Iterate(COutput *output,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
   
   
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) || (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)) {
 
     /*--- Solve the 2phase model ---*/
 
@@ -573,7 +573,8 @@ void CFluidIteration::Update(COutput *output,
     /*--- Update dual time solver for the 2-phase model ---*/
     if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
     	(config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-        (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS)) {
+        (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
+        (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)) {
       integration_container[val_iZone][TWO_PHASE_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TWO_PHASE_SOL], config_container[val_iZone], MESH_0);
       integration_container[val_iZone][TWO_PHASE_SOL]->SetConvergence(false);
     }
@@ -1642,8 +1643,8 @@ void CAdjFluidIteration::Postprocess(CConfig **config_container,
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   
   turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
-  two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-               (config->GetKind_Solver() == TWO_PHASE_RANS));
+  two_phase = ((config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+               (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   
 }
 
