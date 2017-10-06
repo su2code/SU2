@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - r.sanchez-fernandez14@imperial.ac.uk
   
 branches:
     only:
-        - develop
+        - feature_ADDA_FSI
 
 env:
     global:
