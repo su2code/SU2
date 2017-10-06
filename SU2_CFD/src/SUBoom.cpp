@@ -221,13 +221,13 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       /*--- Clip leading and trailing segments ---*/
       unsigned long jPanelLE = 0, jPanelTE = nPanel[iPhi]-1;
       for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-        if(signal.original_p[iPhi][iPanel] > tol_dp){
+        if(abs(signal.original_p[iPhi][iPanel]) > tol_dp){
           jPanelLE = iPanel;
           break;
         }
       }
       for(iPanel = nPanel[iPhi]-1; iPanel > 0; iPanel--){
-        if(signal.original_p[iPhi][iPanel] > tol_dp){
+        if(abs(signal.original_p[iPhi][iPanel]) > tol_dp){
           jPanelTE = iPanel;
           break;
         }
