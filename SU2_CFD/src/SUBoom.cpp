@@ -170,7 +170,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     if (rank == MASTER_NODE){
       panelCount = 0;
       nPanel[iPhi] = totSig;
-      signal.original_len[iPhi] = nPanel[iPhi];
       signal.x[iPhi] = new su2double[nPanel[iPhi]];
       signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
       signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
@@ -206,6 +205,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
           xtmp[iPanel] = signal.x[iPhi][iPanel];
           ptmp[iPanel] = signal.original_p[iPhi][iPanel];
         }
+        signal.original_len[iPhi] = nPanel[iPhi];
         signal.x[iPhi] = new su2double[nPanel[iPhi]];
         signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
         for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
@@ -858,7 +858,6 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
 
-  signal.original_len[iPhi] = nPanel[iPhi];
   signal.x[iPhi] = new su2double[nPanel[iPhi]];
   signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
