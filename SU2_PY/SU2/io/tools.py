@@ -65,32 +65,6 @@ def read_gradients( Grad_filename , scale = 1.0):
 
 #: def read_gradients()
 
-# -------------------------------------------------------------------
-#  Read SU2_CFD Gradient Values
-# -------------------------------------------------------------------
-
-def read_gradients_efield( Grad_filename , scale = 1.0):
-    """ reads the raw gradients from the gradient file
-        returns a list of floats
-    """
-    
-    grad_vals = []    
-    # open file and skip first line
-    with open(Grad_filename) as gradfile:
-        next(gradfile)
-        for line in gradfile:
-          row = line.strip().split(" ")
-          # read values
-          if len(row) == 0:
-              break
-          for i in range(3,len(row)):
-              grad_vals.append(float(row[i]) * scale)
-    #: for each line
-    
-    return grad_vals
-
-#: def read_gradients_efield()
-
 
 # -------------------------------------------------------------------
 #  Read All Data from a Plot File
@@ -279,7 +253,7 @@ def getTurboPerfIndex(nZones = 1):
   else: 
     index = 1
   return index
-    
+
 
 #: def get_headerMap()
 
@@ -367,18 +341,18 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  "FUSELAGE_MIN_HEIGHT"    ,
                  "FUSELAGE_MAX_HEIGHT"    ,
                  "FUSELAGE_MAX_CURVATURE" ,
-                 "WING_VOLUME"           ,
+                 "WING_VOLUME"            ,
                  "WING_MIN_THICKNESS" ,
                  "WING_MAX_THICKNESS" ,
                  "WING_MIN_CHORD"         ,
-                 "WING_MAX_CHORD"        ,
+                 "WING_MAX_CHORD"         ,
                  "WING_MIN_LE_RADIUS"     ,
                  "WING_MAX_LE_RADIUS"     ,
-                 "WING_MIN_TOC"          ,
+                 "WING_MIN_TOC"           ,
                  "WING_MAX_TOC"           ,
                  "WING_OBJFUN_MIN_TOC"    ,
-                 "WING_MAX_TWIST"        ,
-                 "WING_MAX_CURVATURE"    ,
+                 "WING_MAX_TWIST"         ,
+                 "WING_MAX_CURVATURE"     ,
                  "WING_MAX_DIHEDRAL"      ]
                  
 PerStation = []
@@ -397,11 +371,6 @@ for i in range(20):
 optnames_geo.extend(PerStation)
                  
 #: optnames_geo
-
-# Structural Optimizer Function Names
-optnames_fea = [ "REFERENCE_GEOMETRY",
-                 "REFERENCE_NODE"]
-#: optnames_fea
 
 grad_names_directdiff = ["D_LIFT"                  ,
                          "D_DRAG"                  ,
@@ -679,7 +648,7 @@ def get_dvMap():
     dv_map = { 1   : "HICKS_HENNE"           ,
                2   : "SURFACE_BUMP"          ,
                4   : "NACA_4DIGITS"          ,
-               5   : "TRANSLATION"          ,
+               5   : "TRANSLATION"           ,
                6   : "ROTATION"              ,
                7   : "FFD_CONTROL_POINT"     ,
                8   : "FFD_DIHEDRAL_ANGLE"    ,
@@ -757,7 +726,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif grad_type == 'FINITE_DIFFERENCE':
         header.append(r'"iVar","Grad_CL","Grad_CD","Grad_CSF","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_CL/CD","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
-        
+
         for key in special_cases: 
             if key == "ROTATING_FRAME" : 
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
@@ -977,10 +946,6 @@ def get_specialCases(config):
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
         
-    # Special case for dynamic structural analysis        
-    if config.get('DYNAMIC_ANALYSIS','NO') != 'NO':
-        special_cases.append('DYNAMIC_ANALYSIS')        
-        
     return special_cases
 
 #: def get_specialCases()
@@ -1052,19 +1017,19 @@ def expand_time(name,config):
     if 'UNSTEADY_SIMULATION' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
         if not isinstance(name, list):
-        name_pat = add_suffix(name,'%05d')
-        names = [name_pat%i for i in range(n_time)]
-    else:
+            name_pat = add_suffix(name,'%05d')
+            names = [name_pat%i for i in range(n_time)]
+        else:
             for n in range(len(name)):
                 name_pat = add_suffix(name[n], '%05d')
                 names    = [name_pat%i for i in range(n_time)]
     else:
         if not isinstance(name, list):
-        names = [name]
+            names = [name]
         else:
             names = name
     return names
-        
+
 def expand_zones(name, config):
     if int(config.NZONES) > 1:
         if not isinstance(name, list):
@@ -1130,12 +1095,8 @@ def restart2solution(config,state={}):
 
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
-        if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
-          restart  = config.RESTART_STRUCTURE_FILENAME
-          solution = config.SOLUTION_STRUCTURE_FILENAME
-        else:
-          restart  = config.RESTART_FLOW_FILENAME
-          solution = config.SOLUTION_FLOW_FILENAME        
+        restart  = config.RESTART_FLOW_FILENAME
+        solution = config.SOLUTION_FLOW_FILENAME
         
         # expand zones
         restarts  = expand_zones(restart,config)
@@ -1151,17 +1112,13 @@ def restart2solution(config,state={}):
         
     # adjoint solution
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
+        restart  = config.RESTART_ADJ_FILENAME
+        solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
-        if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
-          restart  = config.RESTART_ADJ_STRUCTURE_FILENAME
-          solution = config.SOLUTION_ADJ_STRUCTURE_FILENAME    
-        else:       
-          restart  = config.RESTART_ADJ_FILENAME
-          solution = config.SOLUTION_ADJ_FILENAME         
-          suffix    = get_adjointSuffix(func_name)
-          restart   = add_suffix(restart,suffix)
-          solution  = add_suffix(solution,suffix)
+        suffix    = get_adjointSuffix(func_name)
+        restart   = add_suffix(restart,suffix)
+        solution  = add_suffix(solution,suffix)
         # expand zones
         restarts  = expand_zones(restart,config)
         solutions = expand_zones(solution,config)

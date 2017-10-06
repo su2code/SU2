@@ -38,7 +38,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from .. import util as su2util
 from merge     import merge     as su2merge
 from interface import CFD       as SU2_CFD
 
@@ -115,32 +114,5 @@ def adjoint( config ):
     info = su2io.State()
     info.FILES[adj_title] = restart_name
     info.HISTORY[adj_title] = history
-    
-    if konfig['PHYSICAL_PROBLEM'] == 'FEM_ELASTICITY':
-      restart_name = konfig['RESTART_STRUCTURE_FILENAME']
-      restart_name = su2io.add_suffix(restart_name,suffix)
-      
-      grad_filename  = 'Results_Reverse_Adjoint.txt'
-      raw_gradients = su2io.read_gradients_efield(grad_filename)     
-      
-      # Write Gradients
-      output_format  = konfig['OUTPUT_FORMAT']
-      adj_suffix     = su2io.get_adjointSuffix(objective)
-      grad_plotname  = os.path.splitext(grad_filename)[0] + '_' + adj_suffix + plot_extension 
-      data_plot = su2util.ordered_bunch()
-      data_plot['VARIABLE']     = range(len(raw_gradients)) 
-      data_plot['GRADIENT']     = raw_gradients
-      su2util.write_plot(grad_plotname,output_format,data_plot)
-      
-      # gradient output dictionary
-      objective      = konfig['OBJECTIVE_FUNCTION']
-      objective = objective.split(',')
-      
-      gradients = { objective[0] : raw_gradients }
-      
-      # info out
-      info.GRADIENTS.update( gradients )
-      info.FILES[adj_title] = restart_name
-      info.HISTORY[adj_title] = history
     
     return info

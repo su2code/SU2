@@ -106,9 +106,6 @@ class Design(object):
         self.grads  = state.GRADIENTS
         self.folder = folder
         
-        if 'ELECTRIC_FIELD' in self.config.DV_KIND:
-          config.update_efield(config.DV_VALUE_NEW)
-        
         self.filename = 'design.pkl'
             
         # initialize folder with files
@@ -229,7 +226,7 @@ def obj_f(dvs,config,state=None):
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
-    
+
     # evaluate each objective
     vals_out = []
     func = 0.0
@@ -237,7 +234,7 @@ def obj_f(dvs,config,state=None):
         scale = def_objs[this_obj]['SCALE']
         global_factor = float(config['OPT_GRADIENT_FACTOR'])
         sign  = su2io.get_objectiveSign(this_obj)
-        
+
         # Evaluate Objective Function scaling and sign
         # If default evaluate as normal, 
         if def_objs[this_obj]['OBJTYPE']=='DEFAULT':
@@ -252,11 +249,11 @@ def obj_f(dvs,config,state=None):
     # This is only used when OPT_COMBINE_OBJECTIVE = YES
     if state.FUNCTIONS.has_key('COMBO'):
         state['FUNCTIONS']['COMBO'] = func
-    
+        
     return vals_out
 
 #: def obj_f()
-
+        
 def obj_p(config,state,this_obj,def_objs):
     # Penalty function: square of the difference between value and limit
     # This function is used when a constraint-type term is added to OPT_OBJECTIVE
@@ -317,11 +314,11 @@ def obj_df(dvs,config,state=None):
     state = su2io.State(state)
     grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
-    def_objs = config['OPT_OBJECTIVE']
-    objectives = def_objs.keys()
+    def_objs    = config['OPT_OBJECTIVE']
+    objectives  = def_objs.keys()
     
     # Number of objective functionals
-    n_obj = len( objectives )
+    n_obj       = len( objectives )     
     # Whether to calculate gradients one-by-one or all-at-once
     combine_obj = (config['OPT_COMBINE_OBJECTIVE']=="YES") 
      
@@ -338,7 +335,7 @@ def obj_df(dvs,config,state=None):
             scale[i_obj] = def_objs[this_obj]['SCALE']
             if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
                 # Standard case
-            sign = su2io.get_objectiveSign(this_obj)
+                sign = su2io.get_objectiveSign(this_obj)
                 global_factor = float(config['OPT_GRADIENT_FACTOR'])
                 scale[i_obj] *= sign * global_factor
             else:
@@ -357,18 +354,6 @@ def obj_df(dvs,config,state=None):
                 k = k + 1
 
         vals_out.append(grad)
-    elif (objectives[0] == 'REFERENCE_GEOMETRY' or objectives[0] == 'REFERENCE_NODE'):
-        grad_method = config.get('GRADIENT_METHOD','DISCRETE_ADJOINT')
-        config.GRADIENT_METHOD = 'DISCRETE_ADJOINT'
-        for i_obj,this_obj in enumerate(objectives):
-          grad = su2grad(this_obj,grad_method,config,state)
-          # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
-          k = 0                  
-          for i_dv,dv_scl in enumerate(dv_scales):
-              for i_grd in range(dv_size[i_dv]):
-                  grad[k] = grad[k] / dv_scl
-                  k = k + 1
-          vals_out.append(grad)
     else:
         # Evaluate objectives one-by-one
         marker_monitored = config['MARKER_MONITORING']
@@ -587,7 +572,6 @@ def con_dcieq(dvs,config,state=None):
     #: for each constraint
     
     return vals_out
-             
     
 #: def obj_dcieq()
 

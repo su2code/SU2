@@ -105,10 +105,6 @@ def function( func_name, config, state=None ):
         elif func_name in su2io.optnames_geo:
             geometry( func_name, config, state )
             
-        # Structural OF
-        elif func_name in su2io.optnames_fea:
-            structural( config, state )
-            
         else:
             raise Exception, 'unknown function name, %s' % func_name
         
@@ -122,7 +118,7 @@ def function( func_name, config, state=None ):
         func_out = state['FUNCTIONS']['COMBO']
     else:
         func_out = state['FUNCTIONS'][func_name]
-        
+
     if config['OPT_OBJECTIVE'].has_key(func_name_string):
         marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
         if su2io.per_surface_map.has_key(func_name_string):
@@ -408,8 +404,8 @@ def stability( config, state=None, step=1e-2 ):
             funcs[key] = state['FUNCTIONS'][key]    
     
     return funcs
-    
-    
+
+
 # ----------------------------------------------------------------------
 #  Multipoint Functions
 # ----------------------------------------------------------------------
@@ -566,8 +562,8 @@ def multipoint( config, state=None, step=1e-2 ):
         funcs[key] = state['FUNCTIONS'][key]
     
     return funcs
-    
-    
+
+
 # ----------------------------------------------------------------------
 #  Geometric Functions
 # ----------------------------------------------------------------------
@@ -670,121 +666,7 @@ def geometry( func_name, config, state=None ):
 
 #: def geometry()
 
-# ----------------------------------------------------------------------
-#  Structural Functions
-# ----------------------------------------------------------------------
 
-def structural( config, state=None ):
-    """ vals = SU2.eval.aerodynamics(config,state=None)
-    
-        Evaluates structural mechanics with the following:
-            SU2.run.direct()
-        
-        Assumptions:
-            Updates config and state by reference.
-            Redundancy if state.FUNCTIONS is not empty.
-            
-        Executes in:
-            ./DIRECT
-            
-        Inputs:
-            config    - an SU2 config
-            state     - optional, an SU2 state
-        
-        Outputs:
-            Bunch() of functions with keys of objective function names
-            and values of objective function floats.
-    """
-    
-    # ----------------------------------------------------
-    #  Initialize    
-    # ----------------------------------------------------
-    
-    # initialize
-    state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
-        state.FILES.MESH = config['MESH_FILENAME']
-    special_cases = su2io.get_specialCases(config)
-    
-    # console output
-    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
-        log_direct = 'log_Direct.out'
-    else:
-        log_direct = None
-    
-   
-    # ----------------------------------------------------    
-    #  Direct Solution
-    # ----------------------------------------------------    
-    
-    # redundancy check
-    direct_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_fea[:9] ] )
-    if direct_done:
-        # return structural function values
-        struc = su2util.ordered_bunch()
-        for key in su2io.optnames_fea:
-            if state.FUNCTIONS.has_key(key):
-                struc[key] = state.FUNCTIONS[key]
-        return copy.deepcopy(aero)    
-    #: if redundant
-    
-    # files to pull
-    files = state.FILES
-    pull = []; link = []
-    
-    # files: mesh
-    name = files['MESH']
-    name = su2io.expand_part(name,config)
-    link.extend(name)
-    
-    # files: direct solution
-    if files.has_key('DIRECT'):
-        name = files['DIRECT']
-        name = su2io.expand_time(name,config)
-        link.extend( name )
-        ##config['RESTART_SOL'] = 'YES' # don't override config file
-    else:
-        config['RESTART_SOL'] = 'NO'
-        
-    # Reference geometry files
-    if config.REFERENCE_GEOMETRY == 'YES':
-        name = files['REFERENCE_GEOMETRY']
-        name = su2io.expand_part(name,config)
-        link.extend(name)
-
-    # Prestretch files
-    if config.PRESTRETCH == 'YES':
-        name = files['PRESTRETCH']
-        name = su2io.expand_part(name,config)
-        link.extend(name)        
-
-    # output redirection
-    with redirect_folder( 'DIRECT', pull, link ) as push:
-        with redirect_output(log_direct):     
-            
-            # # RUN DIRECT SOLUTION # #
-            info = su2run.direct(config)
-            su2io.restart2solution(config,info)
-            state.update(info)
-            
-            # direct files to push
-            name = info.FILES['DIRECT']
-            name = su2io.expand_time(name,config)
-            push.extend(name)
-                
-    #: with output redirection
-    # return output 
-    funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
-        if state['FUNCTIONS'].has_key(key):
-            funcs[key] = state['FUNCTIONS'][key]
-            
-    # Update state to have variables
-    state.VARIABLES.DV_VALUE_NEW = config.DV_VALUE_NEW
-
-    return funcs
-
-#: def structural()
 
 def update_mesh(config,state=None):
     """ SU2.eval.update_mesh(config,state=None)

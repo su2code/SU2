@@ -415,8 +415,6 @@ class Project(object):
                 if n_dv != this_ndv:
                     warn('different dv vector length during compile_results()')
         #: for each design
-        
-
             
         # populate results
         for design in self.designs:
@@ -438,10 +436,6 @@ class Project(object):
                 for key in results.HISTORY[TYPE].keys():
                     if key in results.FUNCTIONS.keys():
                         new_func = results.FUNCTIONS[key][-1]
-                    elif 'REFERENCE_GEOMETRY' in results.FUNCTIONS.keys():
-                        new_func = []
-                    elif 'REFERENCE_NODE' in results.FUNCTIONS.keys():
-                        new_func = []                   
                     elif ( TYPE in design.state.HISTORY.keys() and
                             key in design.state.HISTORY[TYPE].keys() ):
                         new_func = design.state.HISTORY[TYPE][key][-1]
