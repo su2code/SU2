@@ -4654,8 +4654,6 @@ void CHBDriver::Update() {
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);
 
-    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
-
   }
 
 }
