@@ -1928,7 +1928,7 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
 
 su2double SUBoom::matchr(int j, su2double h_L, su2double r0){
   su2double f;
-  f = sqrt(pow(x_of_z[0][j],2) + pow(y_of_z[0][j],2) + pow(z[j]/scale_z-1.0,2))*h_L - r0;
+  f = sqrt(pow(x_of_z[0][j],2) + pow(y_of_z[0][j],2) + pow(z[j]/scale_z-1.0,2))*h_L - r0/scale_L;
   return f;
 }
 
