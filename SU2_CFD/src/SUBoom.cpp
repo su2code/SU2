@@ -2017,7 +2017,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
   ray_C1 = new su2double[n_prof];
   ray_C2 = new su2double[n_prof];
   for(unsigned int j = 0; j < n_prof; j++){
-    ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j] * flt_M*scale_z/scale_L; // TESTING SCALING
+    ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];// * flt_M*scale_z/scale_L; // TESTING SCALING
     //if(A[j] > 1E-16){
         ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j]);
     //}
