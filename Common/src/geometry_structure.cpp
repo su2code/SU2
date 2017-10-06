@@ -12125,7 +12125,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   }
   delete [] gridCoords;
   
-  delete [] nPoint_Linear;
   delete [] nElem_Linear;
   
   delete [] elemB;
