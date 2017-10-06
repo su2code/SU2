@@ -819,7 +819,7 @@ void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
 void CNSVariable::SetVortex_Tilting(){
   
-  su2double Strain[3][3], Omega, StrainDotVort[3], numVecVort[3];
+  su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
   su2double numerator, trace0, trace1, denominator;
 
   AD::StartPreacc();

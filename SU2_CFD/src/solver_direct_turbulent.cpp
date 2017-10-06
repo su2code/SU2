@@ -2934,26 +2934,26 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
 void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
   
   unsigned short kindHybridRANSLES = config->GetKind_HybridRANSLES();
-  unsigned long iPoint, jPoint;
-  unsigned short iDim, jDim, iNeigh, nNeigh;
+  unsigned long iPoint = 0, jPoint = 0;
+  unsigned short iDim = 0, jDim = 0, iNeigh = 0, nNeigh = 0;
   
   su2double constDES = config->GetConst_DES();
   
-  su2double density, laminarViscosity, kinematicViscosity,
-      eddyViscosity, kinematicViscosityTurb, wallDistance, lengthScale;
+  su2double density = 0.0, laminarViscosity = 0.0, kinematicViscosity = 0.0,
+      eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
   
-  su2double maxDelta, deltaAux, distDES, uijuij, k2, r_d, f_d,
-      deltaDDES, deltaAuxDDES, omega, ln_max, ln[3] = {0.0, 0.0, 0.0},
-      aux_ln, f_kh, deltaMin, deltaw, alpha2, f_b, f_d_tilde;
+  su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0,
+      deltaDDES = 0.0, deltaAuxDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
+      aux_ln = 0.0, f_kh = 0.0, deltaMin = 0.0, deltaw = 0.0, alpha2 = 0.0, f_b = 0.0, f_d_tilde = 0.0;
   
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5, cw_iddes = 0.15;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
-  su2double cw1, Ji, Ji_2, Ji_3, fv1, fv2, ft2, psi_2;
-  su2double *coord_i, *coord_j, **primVarGrad, *vorticity, delta[3] = {0.0,0.0,0.0},
-      ratioOmega[3] = {0.0, 0.0, 0.0}, vortexTiltingMeasure;
+  su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
+  su2double *coord_i = NULL, *coord_j = NULL, **primVarGrad = NULL, *vorticity = NULL, delta[3] = {0.0,0.0,0.0},
+      ratioOmega[3] = {0.0, 0.0, 0.0}, vortexTiltingMeasure = 0.0;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
     
     coord_i                 = geometry->node[iPoint]->GetCoord();
     nNeigh                  = geometry->node[iPoint]->GetnPoint();
