@@ -1030,7 +1030,7 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     /*--- Store node coordinates ---*/
     nNode = geometry->elem[jElem]->GetnNodes();
     su2double **Coord_elem = new su2double*[nNode];
-    inDomain = new bool[nNode];
+    //////inDomain = new bool[nNode];
     for(iNode = 0; iNode < nNode; iNode++){
       //////inDomain[iNode] = true;
       jNode = geometry->elem[jElem]->GetNode(iNode);
@@ -1041,11 +1041,11 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
       //////}
 
       Coord_elem[iNode] = new su2double[nDim];
-      if(inDomain[iNode]){
+      //////if(inDomain[iNode]){
         for(unsigned short iDim = 0; iDim < nDim; iDim++){
           Coord_elem[iNode][iDim] = geometry->node[jNode]->GetCoord(iDim);
         }
-      }
+      //////}
     }
 
     count = 0;
