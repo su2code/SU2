@@ -727,7 +727,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
       case SMOOTHER_ILU:
         mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
         Jacobian.BuildILUPreconditioner();
-        IterLinSol = Jacobian.ILU0_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        IterLinSol = Jacobian.ILU_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
         delete mat_vec;
         break;
       case SMOOTHER_LINELET:

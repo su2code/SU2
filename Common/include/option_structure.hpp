@@ -1430,7 +1430,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU0", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1488,7 +1488,7 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU0", ILU);
+("ILU", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries
