@@ -1959,6 +1959,7 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
     su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
     Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
     ray_A[j] = Ah*a_of_z[j]*tan(theta[0][j])/ray_c0[iPhi][0];
+    cout << "Area = " << ray_A[j] << endl;
   }
 
 }
