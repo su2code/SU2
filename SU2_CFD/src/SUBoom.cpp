@@ -2032,7 +2032,7 @@ void SUBoom::FindInitialRayTime(){
 void SUBoom::ODETerms(unsigned short iPhi){
 
   su2double *cn;
-  su2double *dadt, *drhodt, *dAdt;
+  su2double *dadt, *drhodt, *dpdt, *dAdt;
   su2double *dcndt;
   su2double g = atm_g;
 
@@ -2040,6 +2040,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
 
   dadt = new su2double[n_prof];
   drhodt = new su2double[n_prof];
+  dpdt = new su2double[n_prof];
   dAdt = new su2double[n_prof];
   dcndt = new su2double[n_prof];
 
@@ -2050,6 +2051,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
   /*--- Spline interpolation of a, rho, A---*/
   dadt = SplineGetDerivs(t_of_z[0], a_of_z, n_prof);
   drhodt = SplineGetDerivs(t_of_z[0], rho_of_z, n_prof);
+  dpdt = SplineGetDerivs(t_of_z[0], p_of_z, n_prof);
   dAdt = SplineGetDerivs(t_of_z[0], ray_A, n_prof);
   dcndt = SplineGetDerivs(t_of_z[0], cn, n_prof);
 
@@ -2061,7 +2063,8 @@ void SUBoom::ODETerms(unsigned short iPhi){
     ray_C1[j] = ((g+1.)/(2.*g))*scale_p/p_of_z[j]; // TESTING using ambient pressure in profile (See Thomas paper)
     //if(A[j] > 1E-16){
         //ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j]);
-    ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)
+    //ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)
+    ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + dpdt[j]/p_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)
     //}
     //else{
       //ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
@@ -2078,6 +2081,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
   delete [] cn;
   delete [] dadt;
   delete [] drhodt;
+  delete [] dpdt;
   delete [] dAdt;
   delete [] dcndt;
 }
