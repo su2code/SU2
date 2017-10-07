@@ -1521,10 +1521,11 @@ void SUBoom::ConditionAtmosphericData(){
   /*---Atmospheric conditions profile---*/
   z = new su2double[n_prof];
   a_of_z = new su2double[n_prof];
+  p_of_z = new su2double[n_prof];
   rho_of_z = new su2double[n_prof];
   for(unsigned int i = 0; i < n_prof; i++){
     z[i] = h0*su2double(i)/(su2double(n_prof)-1.);
-    AtmosISA(z[i], T, a_of_z[i], p, rho_of_z[i], g);
+    AtmosISA(z[i], T, a_of_z[i], p_of_z[i], rho_of_z[i], g);
   }
 }
 
@@ -2056,7 +2057,8 @@ void SUBoom::ODETerms(unsigned short iPhi){
   ray_C2 = new su2double[n_prof];
   for(unsigned int j = 0; j < n_prof; j++){
     //ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];// * flt_M*scale_z/scale_L; // TESTING SCALING
-    ray_C1[j] = ((g+1.)/(2.*g)); // TESTING constant C1
+    //ray_C1[j] = ((g+1.)/(2.*g)); // TESTING constant C1
+    ray_C1[j] = ((g+1.)/(2.*g))*scale_p/p_of_z[j]; // TESTING using ambient pressure in profile (See Thomas paper)
     //if(A[j] > 1E-16){
         //ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j]);
     ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)

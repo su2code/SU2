@@ -36,7 +36,7 @@ public:
   unsigned int atm_noise_flag;
 
   su2double T_inf, a_inf, p_inf, rho_inf;
-  su2double *z, *a_of_z, *rho_of_z;//, T_of_z[65001], rho_of_z[65001];
+  su2double *z, *a_of_z, *p_of_z, *rho_of_z;//, T_of_z[65001], rho_of_z[65001];
 
   /*---Scale factors---*/
   su2double scale_L, scale_T, scale_p, scale_m, scale_z;
