@@ -2278,7 +2278,9 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   for(int j = 0; j < 2; j++){current_signal[j] = new su2double[M];}
 
   /*---Decompose f vector---*/
+  fvec_new = new su2double[3*M];
   for(int j = 0; j < 3*M; j++){
+    fvec_new[j] = fvec[j];
     if(j < M){
 	    m[j] = fvec[j];
     }
@@ -2294,7 +2296,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   while(i <= N-1){
     if(l[i] <= tol_l || m[i] >= tol_m){// || m[i] <= -tol_m){
       /*---Record pressure gap---*/
-      current_signal = WaveformToPressureSignal(fvec, N, Msig);
+      current_signal = WaveformToPressureSignal(fvec_new, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
       /*---Add to next segment if needed---*/
       if(dp_seg > tol_dp){
@@ -2313,9 +2315,9 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
       i -= 1;
       fvec_new = new su2double[3*N];
       for(int j = 0; j < N; j++){
-          fvec[j] = m[j];
-          fvec[j+N] = dp[j];
-          fvec[j+2*N] = l[j];
+          fvec_new[j] = m[j];
+          fvec_new[j+N] = dp[j];
+          fvec_new[j+2*N] = l[j];
       }
 
     }
