@@ -51,25 +51,18 @@ def main():
   parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
   parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
                     metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
-  parser.add_option("--periodic", dest="periodic", default="False", help="Define whether the problem has periodic boundary conditions",
-                    metavar="PERIODIC")
+  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
+  parser.add_option("--periodic", dest="periodic", default="False", help="Define whether the problem has periodic boundary conditions", metavar="PERIODIC")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
-
   parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-
   parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-
   parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
                     help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-
   parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
                     help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
-
   parser.add_option("--wave_equation", dest="wave_equation", default="False",
                     help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
-
   parser.add_option("--heat_equation", dest="heat_equation", default="False",
                     help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
 
