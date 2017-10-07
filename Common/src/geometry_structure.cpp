@@ -5139,6 +5139,25 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    that will require them, which is due to the repeated points/elements
    that were needed to perform the coloring. ---*/
 
+  if ((size == SINGLE_NODE) && (LocalPoints.size() < geometry->GetnPoint())) {
+    if (rank == MASTER_NODE){
+      cout << endl << " !!! ERROR !!!" << endl;
+      cout << " Mimatch between NPOIN and number of points in mesh file." << endl;
+      cout << " Please check the mesh file for correctness." << endl << endl;
+      cout << " NPOIN = " << geometry->GetnPoint() << endl;
+      cout << " Number of points listed in mesh file: ";
+      cout <<  LocalPoints.size() << endl << endl;
+
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     for (iNeighbor = 0; iNeighbor < Neighbors[iPoint].size(); iNeighbor++) {
 
