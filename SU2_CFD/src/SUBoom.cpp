@@ -1959,7 +1959,6 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
     su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
     Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
     ray_A[j] = Ah*a_of_z[j]*tan(theta[0][j])/ray_c0[iPhi][0];
-    cout << "Area = " << ray_A[j] << endl;
   }
 
 }
@@ -2062,7 +2061,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
     //else{
       //ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
     //}
-    //cout << "A = " << A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[i][j] << endl;
+    cout << "A = " << A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[i][j] << endl;
   }
   ray_dC1 = SplineGetDerivs(t_of_z[0], ray_C1, n_prof);
   ray_dC2 = SplineGetDerivs(t_of_z[0], ray_C2, n_prof);
