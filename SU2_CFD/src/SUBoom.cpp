@@ -2061,7 +2061,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
     //else{
       //ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
     //}
-    cout << "A = " << A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[i][j] << endl;
+    cout << "A = " << ray_A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[j] << endl;
   }
   ray_dC1 = SplineGetDerivs(t_of_z[0], ray_C1, n_prof);
   ray_dC2 = SplineGetDerivs(t_of_z[0], ray_C2, n_prof);
