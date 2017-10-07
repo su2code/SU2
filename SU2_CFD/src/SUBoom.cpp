@@ -2250,8 +2250,7 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
       dydt[i] = C1*pow(y[i],2) + C2*y[i];
     }
     else if(i  < 2*M){
-      //dydt[i] = 0.5*C1*y[i]*diff_m[i-M] + C2*y[i];
-      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] - C2*y[i]; // TESTING sign change (see Colonno AIAA paper)
+      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] + C2*y[i];
     }
     else{
       dydt[i] = -0.5*C1*diff_dp[i-2*M] - C1*y[i-2*M]*y[i];
