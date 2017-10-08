@@ -2305,14 +2305,14 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
           }
       }
 
-      N -= 1;
+      N--;
       /*---Remove segment---*/
       for(int j = i; j < N; j++){
           m[j] = m[j+1];
           dp[j] = dp[j+1];
           l[j] = l[j+1];
       }
-      i -= 1;
+      //i--;
       //fvec_new = new su2double[3*N];
       for(int j = 0; j < N; j++){
           fvec[j] = m[j];
@@ -2321,7 +2321,9 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
       }
 
     }
-    i += 1;
+    else{
+      i++;
+    }
 
   }
 
