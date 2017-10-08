@@ -151,9 +151,9 @@ private:
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
-  su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
+  su2double Venkat_LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
-  su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  su2double Sharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
@@ -1864,7 +1864,7 @@ public:
    * \brief Get the value of limiter coefficient.
    * \return Value of the limiter coefficient.
    */
-  su2double GetLimiterCoeff(void);
+  su2double GetVenkat_LimiterCoeff(void);
   
   /*!
    * \brief Freeze the value of the limiter after a number of iterations.
@@ -1876,7 +1876,7 @@ public:
    * \brief Get the value of sharp edge limiter.
    * \return Value of the sharp edge limiter coefficient.
    */
-  su2double GetSharpEdgesCoeff(void);
+  su2double GetSharp_LimiterCoeff(void);
   
   /*!
    * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces

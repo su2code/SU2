@@ -1939,7 +1939,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
   
-  eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+  eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
   Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
   Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
   
@@ -1948,7 +1948,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps);
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharp_LimiterCoeff()*eps);
     
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
@@ -2273,8 +2273,8 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
@@ -4434,8 +4434,8 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           

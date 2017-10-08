@@ -972,7 +972,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
   
   dave = config->GetRefElemLength();
-  LimK = config->GetLimiterCoeff();
+  LimK = config->GetVenkat_LimiterCoeff();
   
   if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
     
@@ -1223,7 +1223,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     /*-- Get limiter parameters from the configuration file ---*/
     
     dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
+    LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
     
@@ -1251,7 +1251,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1273,7 +1273,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1295,7 +1295,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     /*-- Get limiter parameters from the configuration file ---*/
     
     dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
+    LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
     
@@ -1323,7 +1323,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1345,7 +1345,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));

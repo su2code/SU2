@@ -4035,7 +4035,7 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
   
   dave = config->GetRefElemLength();
-  LimK = config->GetLimiterCoeff();
+  LimK = config->GetVenkat_LimiterCoeff();
 
   if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
    
