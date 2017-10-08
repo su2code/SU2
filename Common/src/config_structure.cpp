@@ -742,8 +742,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
   /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH", RefLength, 1.0);
-  /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
-  addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
   addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
 	/*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
@@ -3161,6 +3159,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     LocationStations[iSections] += EPS;
   }
 
+  /*--- Length based parameter for slope limiters uses a default value of
+   0.1m ---*/
+  
+  RefElemLength = 0.1;
+  if (SystemMeasurements == US) RefElemLength /= 0.3048;
+
   /*--- Re-scale the length based parameters. The US system uses feet,
    but SU2 assumes that the grid is in inches ---*/
   
@@ -3183,7 +3187,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if ((val_nDim == 2) && (!Axisymmetric)) RefArea = RefArea/12.0;
     else RefArea = RefArea/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
-    RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
     SemiSpan = SemiSpan/12.0;
 
