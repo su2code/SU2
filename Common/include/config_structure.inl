@@ -492,11 +492,11 @@ inline void CConfig::SetRefOriginMoment_Z(unsigned short val_marker, su2double v
 
 inline su2double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
-inline su2double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
+inline su2double CConfig::GetVenkat_LimiterCoeff(void) { return Venkat_LimiterCoeff; }
 
 inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
 
-inline su2double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }
+inline su2double CConfig::GetSharp_LimiterCoeff(void) { return Sharp_LimiterCoeff; }
 
 inline su2double CConfig::GetReynolds(void) { return Reynolds; }
 

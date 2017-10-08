@@ -1121,15 +1121,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief NUM_METHOD_GRAD
    *  \n DESCRIPTION: Numerical method for spatial gradients \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: WEIGHTED_LEAST_SQUARES. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
-  /*!\brief LIMITER_COEFF
+  /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
-  addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
+  /*!\brief SHARP_LIMITER_COEFF
+   *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
+  addDoubleOption("SHARP_LIMITER_COEFF", Sharp_LimiterCoeff, 3.0);
   /*!\brief LIMITER_ITER
    *  \n DESCRIPTION: Freeze the value of the limiter after a number of iterations. DEFAULT value 999999. \ingroup Config*/
   addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);
-  /*!\brief SHARP_EDGES_COEFF
-   *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
-  addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
 
   /*!\brief CONV_NUM_METHOD_FLOW
    *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
@@ -4461,11 +4461,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4492,11 +4492,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4537,11 +4537,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4550,21 +4550,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
               case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference sharp edge distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference wall distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
             }
             break;
         }
       }
       
-      cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+      cout << "The reference sharp edge distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
 
     }
 
@@ -4580,7 +4580,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
@@ -4593,14 +4593,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
               case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference sharp edge distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference wall distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
             }
             break;
