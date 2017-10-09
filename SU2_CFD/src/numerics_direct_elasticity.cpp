@@ -338,11 +338,7 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
 
 void CFEM_Elasticity::ReadDV(CConfig *config) {
 
-  unsigned long iElem;
   unsigned long index;
-
-  unsigned short iVar;
-  unsigned short iZone = config->GetiZone();
 
   string filename;
   ifstream properties_file;
