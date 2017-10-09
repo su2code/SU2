@@ -2414,13 +2414,13 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     data.scale_C2 = scale_C2;
 
     fvec = signal.fvec;
-    for(unsigned int j = n_prof-1; j >= 0; j--){
+    for(unsigned int j = n_prof-2; j >= 0; j--){
         if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
             break;
         }
     }
-    for(unsigned int j = j0; j >= 0; j--){
+    for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
       int j0_dat;
       if(j >= n_prof-5) j0_dat = n_prof-5;
