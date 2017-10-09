@@ -1899,8 +1899,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Parameter to perturb eigenvalues */
   addDoubleOption("URLX", urlx, 0.01);
 
-  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
+  /* DESCRIPTION: Perturbing eigenvectors in UQ framework */
   addBoolOption("PERMUTE", permute, false);
+
+  /* DESCRIPTION: Using SST-V forumation of Menter's SST */
+  addBoolOption("USING_VORT", using_vort, false);
   
   /* END_CONFIG_OPTIONS */
 

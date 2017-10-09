@@ -993,6 +993,12 @@ public:
    * \return Value of the vorticity.
    */
   virtual su2double *GetVorticity(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the vorticity magnitude
+   */
+  virtual su2double GetVorticityMag(void);
   
   /*!
    * \brief A virtual member.
@@ -1519,7 +1525,7 @@ public:
    * \brief A virtual member.
    */
   virtual bool SetVorticity(bool val_limiter);
-  
+
   /*!
    * \brief A virtual member.
    */
@@ -3347,6 +3353,7 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double VorticityMag;    /*!< \brief Magnitude of vorticity */
 public:
   
   /*!
@@ -3446,6 +3453,12 @@ public:
    * \return Value of the vorticity.
    */
   su2double *GetVorticity(void);
+
+  /*!
+   * \brief Get the value of the vorticity magnitude.
+   * \return Value of the vorticity magnitude
+   */
+  su2double GetVorticityMag(void);
   
   /*!
    * \brief Get the value of the magnitude of rate of strain.
