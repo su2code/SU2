@@ -3162,7 +3162,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta, vortMag;
+  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
   su2double a1 = constants[7];
   unsigned long iPoint;
   
@@ -3196,7 +3196,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     dist = geometry->node[iPoint]->GetWall_Distance();
     
     strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
-    vortMag = solver_container[FLOW_SOL]->node[iPoint]->GetVorticityMag();
 
     node[iPoint]->SetBlendingFunc(mu, dist, rho);
     
@@ -3206,13 +3205,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     kine  = node[iPoint]->GetSolution(0);
     omega = node[iPoint]->GetSolution(1);
-    if (config->GetUsing_Vort()){
-        zeta = min(1.0/omega, a1/(vortMag*F2));
-    }
-    else{
-        zeta = min(1.0/omega, a1/(strMag*F2));
-    }
-
+    zeta = min(1.0/omega, a1/(strMag*F2));
     muT = min(max(rho*kine*zeta,0.0),1.0);
     node[iPoint]->SetmuT(muT);
     
@@ -3259,8 +3252,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
     
-    numerics->SetVorticityMag(solver_container[FLOW_SOL]->node[iPoint]->GetVorticityMag(), 0.0);
-
     numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(), 0.0);
     
     /*--- Cross diffusion ---*/

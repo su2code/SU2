@@ -201,8 +201,6 @@ public:
   su2double *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
   *WindGustDer_j;      /*!< \brief Wind gust derivatives at point j. */
   su2double *Vorticity_i, *Vorticity_j;  /*!< \brief Vorticity. */
-  su2double VorticityMag_i, VorticityMag_j;  /*!< \brief Vorticity. */
-
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
   
   su2double *l, *m;
@@ -279,13 +277,6 @@ public:
    */
   void SetVorticity(su2double *val_vorticity_i, su2double *val_vorticity_j);
   
-  /*!
-   * \brief Set the value of the rate of strain magnitude.
-   * \param[in] val_vortMag_i - Value of the magnitude of vorticity at point i.
-   * \param[in] val_vortmag_j - Value of the magnitude of vorticity at point j.
-   */
-  void SetVorticityMag(su2double val_vortmag_i, su2double val_vortmag_j);
-
   /*!
    * \brief Set the value of the rate of strain magnitude.
    * \param[in] val_StrainMag_i - Value of the magnitude of rate of strain at point i.
