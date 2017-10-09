@@ -2100,7 +2100,7 @@ void SUBoom::CreateSignature(unsigned short iPhi){
   int M = len-1;
   int i = 0;
   while(i <= M-1){
-    if(mm[i] > tol_m){// || mm[i] < -tol_m/scale_m){  // shock present
+    if(mm[i] > tol_m/scale_m){// || mm[i] < -tol_m/scale_m){  // shock present
       cout << "CreateSignature: Removing segment " << i << "." << endl;
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
@@ -2114,9 +2114,9 @@ void SUBoom::CreateSignature(unsigned short iPhi){
       i--;
       M--;
     }
-    else if(mm[i] < -tol_m){  // "expansion shock" present
+    else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
       /*---Remove segment i---*/
-      ll[i] = tol_l;
+      ll[i] = tol_l/scale_l;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
     }
     i++;
@@ -2295,7 +2295,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l || m[i] >= tol_m){// || m[i] <= -tol_m){
+    if(l[i] <= tol_l/scale_l || m[i] >= tol_m/scale_m){// || m[i] <= -tol_m){
       cout << "ClipLambdaZero: Removing segment " << i << ".";
       if(l[i] <= tol_l) cout << " l = " << l[i] << ".";
       if(m[i] >= tol_m) cout << " m = " << m[i] << ".";
@@ -2395,16 +2395,16 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
 
     t0 = ray_t0;
     /*---Assemble f vector and ray data for integration---*/
-    signal.fvec = new su2double[3*signal.M];
+    //signal.fvec = new su2double[3*signal.M];
     for(unsigned int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
-	      signal.fvec[j] = signal.m[j];
+	      fvec[j] = signal.m[j];
       }
       else if(j < 2*signal.M){
-	      signal.fvec[j] = signal.dp[j-signal.M];
+	      fvec[j] = signal.dp[j-signal.M];
       }
       else{
-	      signal.fvec[j] = signal.l[j-2*signal.M];
+	      fvec[j] = signal.l[j-2*signal.M];
       }
     }
     data.t = new su2double[9];
@@ -2417,7 +2417,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     data.scale_C1 = scale_C1;
     data.scale_C2 = scale_C2;
 
-    fvec = signal.fvec;
+    //fvec = signal.fvec;
     for(unsigned int j = n_prof-1; j >= 0; j--){
         if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
