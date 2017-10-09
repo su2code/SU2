@@ -1765,7 +1765,6 @@ void SUBoom::RayTracer(unsigned short iPhi){
   su2double T = scale_T;
   su2double a0, rho0, p0;
   su2double a, rho, p;
-  //  su2double theta[n_prof];
   su2double r0[3];
   su2double *f, *x, *y, *t;
   su2double *kx, *ky, *kz;
@@ -2494,7 +2493,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
   //delete [] dxdt;
   //delete [] dydt;
   //delete [] dzdt;
-  delete [] theta;
+  delete [] ray_theta;
   delete [] ray_A;
   delete [] ray_C1;
   delete [] ray_C2;
