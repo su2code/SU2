@@ -2056,9 +2056,9 @@ void SUBoom::ODETerms(unsigned short iPhi){
   ray_C1 = new su2double[n_prof];
   ray_C2 = new su2double[n_prof];
   for(unsigned int j = 0; j < n_prof; j++){
-    //ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];// * flt_M*scale_z/scale_L; // TESTING SCALING
+    ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
     //ray_C1[j] = ((g+1.)/(2.*g)); // TESTING constant C1
-    ray_C1[j] = ((g+1.)/(2.*g))*scale_p/p_of_z[j]; // TESTING using ambient pressure in profile (See Thomas paper)
+    //ray_C1[j] = ((g+1.)/(2.*g))*scale_p/p_of_z[j]; // TESTING using ambient pressure in profile (See Thomas paper)
     //if(A[j] > 1E-16){
     ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j]);
     //ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)
@@ -2111,15 +2111,15 @@ void SUBoom::CreateSignature(unsigned short iPhi){
         //ll[i] = tol_l;
         //mm[i] = (pp[1][i] - pp[0][i])/ll[i];
       }
-      i -= 1;
-      M -= 1;
+      i--;
+      M--;
     }
     else if(mm[i] < -tol_m){  // "expansion shock" present
       /*---Remove segment i---*/
       ll[i] = tol_l;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
     }
-    i += 1;
+    i++;
   }
 
   /*---Record signal---*/
@@ -2250,7 +2250,7 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
       dydt[i] = C1*pow(y[i],2) + C2*y[i];
     }
     else if(i  < 2*M){
-      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] - C2*y[i]; // TESTING sign change on C2
+      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] + C2*y[i]; // TESTING sign change on C2
     }
     else{
       dydt[i] = -0.5*C1*diff_dp[i-2*M] - C1*y[i-2*M]*y[i];
