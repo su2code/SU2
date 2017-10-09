@@ -50,7 +50,7 @@ public:
   su2double **ray_nu;
   su2double **ray_theta0;
   su2double **ray_c0;
-  su2double **theta;
+  su2double **ray_theta;
   su2double **x_of_z, **y_of_z, **t_of_z;
   su2double **dxdt, **dydt, **dzdt;
   su2double *ray_A;

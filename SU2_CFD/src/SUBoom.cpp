@@ -1796,7 +1796,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
   //dxdt = new su2double*[4];
   //dydt = new su2double*[4];
   //dzdt = new su2double*[4];
-  theta = new su2double*[4];
+  ray_theta = new su2double*[4];
   for(unsigned short j = 0; j < 4; j++){
     x_of_z[j] = new su2double[n_prof];
     y_of_z[j] = new su2double[n_prof];
@@ -1804,7 +1804,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
     //dxdt[j] = new su2double[n_prof];
     //dydt[j] = new su2double[n_prof];
     //dzdt[j] = new su2double[n_prof];
-    theta[j] = new su2double[n_prof];
+    ray_theta[j] = new su2double[n_prof];
   }
 
   /*---Primary ray---*/
@@ -1824,7 +1824,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
 
     /*---Derived data---*/
     GetAtmosphericData(a, rho, p, z[j]);
-    theta[0][j] = acos(a/data.c0);
+    ray_theta[0][j] = acos(a/data.c0);
   }
 
   //kx = SplineGetDerivs(t, x, n_prof);
@@ -1852,7 +1852,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
 
     /*---Derived data---*/
     GetAtmosphericData(a, rho, p, z[j]);
-    theta[1][j] = acos(a/data.c0);
+    ray_theta[1][j] = acos(a/data.c0);
   }
 
   /*kx = SplineGetDerivs(t, x, n_prof);
@@ -1879,7 +1879,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
 
     /*---Derived data---*/
     GetAtmosphericData(a, rho, p, z[j]);
-    theta[2][j] = acos(a/data.c0);
+    ray_theta[2][j] = acos(a/data.c0);
   }
 
   /*kx = SplineGetDerivs(t, x, n_prof);
@@ -1907,7 +1907,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
 
     /*---Derived data---*/
     GetAtmosphericData(a, rho, p, z[j]);
-    theta[3][j] = acos(a/data.c0);
+    ray_theta[3][j] = acos(a/data.c0);
   }
 
   /*kx = SplineGetDerivs(t, x, n_prof);
@@ -1959,8 +1959,8 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
     /*---Cross product---*/
     su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
     Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
-    ray_A[j] = Ah*a_of_z[j]*tan(theta[0][j])/ray_c0[iPhi][0];
-    //ray_A[j] = Ah*sin(theta[0][j]);  // TESTING a=cn (see Thomas paper)
+    ray_A[j] = Ah*a_of_z[j]*tan(ray_theta[0][j])/ray_c0[iPhi][0];
+    //ray_A[j] = Ah*sin(ray_theta[0][j]);  // TESTING a=cn (see Thomas paper)
   }
 
 }
@@ -2044,7 +2044,7 @@ void SUBoom::ODETerms(unsigned short iPhi){
   dcndt = new su2double[n_prof];
 
   for (unsigned int j = 0; j < n_prof; j++){
-    cn[j] = ray_c0[iPhi][0]*cos(theta[0][j]);
+    cn[j] = ray_c0[iPhi][0]*cos(ray_theta[0][j]);
   }
 
   /*--- Spline interpolation of a, rho, A---*/
@@ -2485,7 +2485,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
       //delete [] dxdt[j];
       //delete [] dydt[j];
       //delete [] dzdt[j];
-      delete [] theta[j];
+      delete [] ray_theta[j];
   }
 
   delete [] x_of_z;
