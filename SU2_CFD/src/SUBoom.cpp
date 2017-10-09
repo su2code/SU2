@@ -2320,9 +2320,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
       }
 
     }
-    else{
-      i++;
-    }
+    i++;
 
   }
 
