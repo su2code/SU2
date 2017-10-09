@@ -2420,12 +2420,14 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     data.scale_C2 = scale_C2;
 
     //fvec = signal.fvec;
+    cout << "PropagateSignal: t0 = " << t0 << "." << endl;
     for(unsigned int j = n_prof-1; j >= 0; j--){
         if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
             break;
         }
     }
+    cout << "PropagateSignal: j0 = " << j0 << "." << endl;
     for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
       if(j >= n_prof-5) j0_dat = n_prof-5;
