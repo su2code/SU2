@@ -1241,7 +1241,14 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
         pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
     }
     else {
-	pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+
+        if (config->GetUsing_Vort()){
+            zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
+            pw = VorticityMag_i*VorticityMag_i - 2.0/3.0*zeta*diverg;
+        }
+        else {
+            pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+        }
     }
     pw = max(pw,0.0);
     

@@ -526,7 +526,7 @@ bool CNSVariable::SetVorticity(bool val_limiter) {
     Vorticity[0] = Gradient_Primitive[3][1]-Gradient_Primitive[2][2];
     Vorticity[1] = -(Gradient_Primitive[3][0]-Gradient_Primitive[1][2]);
   }
-  
+  VorticityMag = sqrt(pow(Vorticity[0],2)+pow(Vorticity[1],2)+pow(Vorticity[2],2));
   return false;
   
 }
