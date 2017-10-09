@@ -1786,24 +1786,24 @@ void SUBoom::RayTracer(unsigned short iPhi){
   x = new su2double[n_prof];
   y = new su2double[n_prof];
   t = new su2double[n_prof];
-  kx = new su2double[n_prof];
-  ky = new su2double[n_prof];
-  kz = new su2double[n_prof];
+  //kx = new su2double[n_prof];
+  //ky = new su2double[n_prof];
+  //kz = new su2double[n_prof];
 
   x_of_z = new su2double*[4];
   y_of_z = new su2double*[4];
   t_of_z = new su2double*[4];
-  dxdt = new su2double*[4];
-  dydt = new su2double*[4];
-  dzdt = new su2double*[4];
+  //dxdt = new su2double*[4];
+  //dydt = new su2double*[4];
+  //dzdt = new su2double*[4];
   theta = new su2double*[4];
   for(unsigned short j = 0; j < 4; j++){
     x_of_z[j] = new su2double[n_prof];
     y_of_z[j] = new su2double[n_prof];
     t_of_z[j] = new su2double[n_prof];
-    dxdt[j] = new su2double[n_prof];
-    dydt[j] = new su2double[n_prof];
-    dzdt[j] = new su2double[n_prof];
+    //dxdt[j] = new su2double[n_prof];
+    //dydt[j] = new su2double[n_prof];
+    //dzdt[j] = new su2double[n_prof];
     theta[j] = new su2double[n_prof];
   }
 
@@ -1827,14 +1827,14 @@ void SUBoom::RayTracer(unsigned short iPhi){
     theta[0][j] = acos(a/data.c0);
   }
 
-  kx = SplineGetDerivs(t, x, n_prof);
-  ky = SplineGetDerivs(t, y, n_prof);
-  kz = SplineGetDerivs(t, z, n_prof);
-  for(unsigned int ik = 0; ik < n_prof; ik++){
-    dxdt[0][ik] = kx[ik];
-    dydt[0][ik] = ky[ik];
-    dzdt[0][ik] = kz[ik];
-  }
+  //kx = SplineGetDerivs(t, x, n_prof);
+  //ky = SplineGetDerivs(t, y, n_prof);
+  //kz = SplineGetDerivs(t, z, n_prof);
+  //for(unsigned int ik = 0; ik < n_prof; ik++){
+  //  dxdt[0][ik] = kx[ik];
+  //  dydt[0][ik] = ky[ik];
+  //  dzdt[0][ik] = kz[ik];
+  //}
 
   /*---Ray tube corners: {0, +dheading}---*/
   r0[0] = flt_heading[0]*tol_dr;
@@ -1855,12 +1855,12 @@ void SUBoom::RayTracer(unsigned short iPhi){
     theta[1][j] = acos(a/data.c0);
   }
 
-  kx = SplineGetDerivs(t, x, n_prof);
+  /*kx = SplineGetDerivs(t, x, n_prof);
   ky = SplineGetDerivs(t, y, n_prof);
   for(unsigned int ik = 0; ik < n_prof; ik++){
     dxdt[1][ik] = kx[ik];
     dydt[1][ik] = ky[ik];
-  }
+  }*/
 
   /*---Ray tube corners: {+dphi, 0}---*/
   data.c0 = ray_c0[iPhi][1];
@@ -1882,14 +1882,14 @@ void SUBoom::RayTracer(unsigned short iPhi){
     theta[2][j] = acos(a/data.c0);
   }
 
-  kx = SplineGetDerivs(t, x, n_prof);
+  /*kx = SplineGetDerivs(t, x, n_prof);
   ky = SplineGetDerivs(t, y, n_prof);
   kz = SplineGetDerivs(t, z, n_prof);
   for(unsigned int ik = 0; ik < n_prof; ik++){
     dxdt[2][ik] = kx[ik];
     dydt[2][ik] = ky[ik];
     dzdt[2][ik] = kz[ik];
-  }
+  }*/
 
   /*---Ray tube corners: {+dphi, +dheading}---*/
   r0[0] = flt_heading[0]*tol_dr;
@@ -1910,21 +1910,21 @@ void SUBoom::RayTracer(unsigned short iPhi){
     theta[3][j] = acos(a/data.c0);
   }
 
-  kx = SplineGetDerivs(t, x, n_prof);
+  /*kx = SplineGetDerivs(t, x, n_prof);
   ky = SplineGetDerivs(t, y, n_prof);
   for(unsigned int ik = 0; ik < n_prof; ik++){
     dxdt[3][ik] = kx[ik];
     dydt[3][ik] = ky[ik];
-  }
+  }*/
 
   /*---Clear up memory---*/
   delete [] f;
   delete [] x;
   delete [] y;
   delete [] t;
-  delete [] kx;
-  delete [] ky;
-  delete [] kz;
+  //delete [] kx;
+  //delete [] ky;
+  //delete [] kz;
 
 }
 
@@ -2476,18 +2476,18 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
       delete [] x_of_z[j];
       delete [] y_of_z[j];
       delete [] t_of_z[j];
-      delete [] dxdt[j];
-      delete [] dydt[j];
-      delete [] dzdt[j];
+      //delete [] dxdt[j];
+      //delete [] dydt[j];
+      //delete [] dzdt[j];
       delete [] theta[j];
   }
 
   delete [] x_of_z;
   delete [] y_of_z;
   delete [] t_of_z;
-  delete [] dxdt;
-  delete [] dydt;
-  delete [] dzdt;
+  //delete [] dxdt;
+  //delete [] dydt;
+  //delete [] dzdt;
   delete [] theta;
   delete [] ray_A;
   delete [] ray_C1;
