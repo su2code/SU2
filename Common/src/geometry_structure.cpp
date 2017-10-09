@@ -11059,7 +11059,11 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       mode_t nMode = 0733; // UNIX style permissions
       int nError = 0;
 #if defined(_WIN32)
+#ifdef __MINGW32__
+      nError = mkdir(sPath.c_str());  // MINGW on Windows
+#else
       nError = _mkdir(sPath.c_str()); // can be used on Windows
+#endif
 #else
       nError = mkdir(sPath.c_str(),nMode); // can be used on non-Windows
 #endif
