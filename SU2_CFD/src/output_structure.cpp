@@ -4545,6 +4545,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
     
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
+    bool cht = config[val_iZone]->GetCHT_Simulation();
 
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
 
@@ -5424,6 +5425,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             }
             }
+            else if (cht) cout << "   HFlux(Fluid)" << "   HFlux(Solid)" << endl;
             else if (heat) cout << "   HFlux(Total)" << endl;
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
 
@@ -5727,6 +5729,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   }
                 }
                 cout.unsetf(ios_base::floatfield);
+              }
+              else if (cht) {
+                cout.width(15); cout << std::scientific << Total_Heat;
+                cout.width(15); cout << std::scientific << solver_container[1][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();;
               }
               else if (heat) { cout.width(15); cout << std::scientific << Total_Heat; }
               else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }

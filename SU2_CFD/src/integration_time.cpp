@@ -827,6 +827,10 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
     case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
     case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); break;
   }
+
+  if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
+    solver_container[iZone][FinestMesh][HEAT_SOL]->Heat_Fluxes(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone]);
+  }
   
   /*--- Convergence strategy ---*/
   
