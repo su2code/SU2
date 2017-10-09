@@ -295,8 +295,6 @@ inline su2double CVariable::GetThermalConductivity_ve(void) { return 0; }
 
 inline su2double* CVariable::GetVorticity(void) { return 0; }
 
-inline su2double CVariable::GetVorticityMag(void) { return 0; }
-
 inline su2double CVariable::GetStrainMag(void) { return 0; }
 
 inline void CVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) { }
@@ -735,8 +733,6 @@ inline su2double CNSVariable::GetThermalConductivity(void) { return Primitive[nD
 inline su2double CNSVariable::GetSpecificHeatCp(void) { return Primitive[nDim+8]; }
 
 inline su2double* CNSVariable::GetVorticity(void) { return Vorticity; }
-
-inline su2double CNSVariable::GetVorticityMag(void) { return VorticityMag; }
 
 inline su2double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
