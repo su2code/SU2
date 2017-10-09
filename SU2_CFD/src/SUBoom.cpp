@@ -2101,6 +2101,7 @@ void SUBoom::CreateSignature(unsigned short iPhi){
   int i = 0;
   while(i <= M-1){
     if(mm[i] > tol_m){// || mm[i] < -tol_m/scale_m){  // shock present
+      cout << "CreateSignature: Removing segment " << i << "." << endl;
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
@@ -2294,6 +2295,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   int i = 0;
   while(i <= N-1){
     if(l[i] <= tol_l || m[i] >= tol_m){// || m[i] <= -tol_m){
+      cout << "ClipLambdaZero: Removing segment " << i << "." << endl;
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
