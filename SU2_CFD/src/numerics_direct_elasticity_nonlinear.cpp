@@ -78,29 +78,25 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
   F_Mat_Iso = NULL;
   b_Mat_Iso = NULL;
   cijkl     = NULL;
-//  if (incompressible || nearly_incompressible){
 
-    F_Mat_Iso = new su2double *[3];
-    b_Mat_Iso = new su2double *[3];
-    for (iVar = 0; iVar < 3; iVar++){
-      F_Mat_Iso[iVar] = new su2double [3];
-      b_Mat_Iso[iVar] = new su2double [3];
-    }
+  F_Mat_Iso = new su2double *[3];
+  b_Mat_Iso = new su2double *[3];
+  for (iVar = 0; iVar < 3; iVar++){
+    F_Mat_Iso[iVar] = new su2double [3];
+    b_Mat_Iso[iVar] = new su2double [3];
+  }
 
-    unsigned short jVar, kVar;
-    cijkl = new su2double ***[3];
-    for (iVar = 0; iVar < 3; iVar++){
-      cijkl[iVar] = new su2double **[3];
-      for (jVar = 0; jVar < 3; jVar++){
-        cijkl[iVar][jVar] = new su2double *[3];
-        for (kVar = 0; kVar < 3; kVar++){
-          cijkl[iVar][jVar][kVar] = new su2double [3];
-        }
+  unsigned short jVar, kVar;
+  cijkl = new su2double ***[3];
+  for (iVar = 0; iVar < 3; iVar++){
+    cijkl[iVar] = new su2double **[3];
+    for (jVar = 0; jVar < 3; jVar++){
+      cijkl[iVar][jVar] = new su2double *[3];
+      for (kVar = 0; kVar < 3; kVar++){
+        cijkl[iVar][jVar][kVar] = new su2double [3];
       }
     }
-
-
-//  }
+  }
 
   maxwell_stress = config->GetDE_Effects();
 
@@ -113,10 +109,8 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
   EField_Curr_Unit  = NULL;
   if (maxwell_stress == true){
 
-    su2double Electric_Field_Mod;
     su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
     unsigned short iVar, iDim;
-    unsigned short nDelimiters, nEField_Read;
     su2double ref_Efield_mod;
 
     // Initialize value of the electric field in the reference configuration
@@ -124,7 +118,6 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
     ke_DE = config->GetElectric_Constant(0);
 
-    nEField_Read = config->GetnElectric_Field();
     nDim_Electric_Field = config->GetnDim_Electric_Field();
 
     if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
@@ -720,36 +713,11 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
 }
 
-void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element, CConfig *config){
-
-  su2double l1, l2, J1, J2;
-  su2double v12_1, v12_2;
-  su2double v21_1, v21_2;
-
-  unsigned short iVar, jVar, kVar;
-  double C_Mat[3][3];
-
-  // Define 2 unit vectors E1 and E2 in the reference configuration (1,0) and (0,1)
-  // The vectors E1_def and E2_def are going to be the deformed of E1 and E2
-
-  su2double E1[2] = {1.0,0.0}, E2[2] = {0.0,1.0};
-  su2double E1_def[2] = {0.0,0.0}, E2_def[2] = {0.0,0.0};
-
-  E1_def[0] = F_Mat[0][0]*E1[0]+F_Mat[0][1]*E1[1];
-  E1_def[1] = F_Mat[1][0]*E1[0]+F_Mat[1][1]*E1[1];
-
-  E2_def[0] = F_Mat[0][0]*E2[0]+F_Mat[0][1]*E2[1];
-  E2_def[1] = F_Mat[1][0]*E2[0]+F_Mat[1][1]*E2[1];
-
-}
-
 void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
 
 //  Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
 
-  unsigned short iVar, iDim, jDim;
-
-  unsigned short iRegion;
+  unsigned short iDim, jDim;
 
   su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
   su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
@@ -763,8 +731,6 @@ void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *con
       EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
     }
   }
-
-  iRegion = element->Get_iDe();
 
   E0 = EFieldMod_Ref*EField_Curr_Unit[0];         E0_2 = pow(E0,2);
   E1 = EFieldMod_Ref*EField_Curr_Unit[1];         E1_2 = pow(E1,2);
@@ -1417,7 +1383,7 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
   /* -- Zhao, X. and Suo, Z. (2008) (full reference in class constructor). ---*/
 
-  unsigned short iVar, jVar, kVar;
+  unsigned short iVar, jVar;
   su2double dij;
 
   /*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
@@ -1481,7 +1447,7 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, CC
 
 void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
-  unsigned short iVar, iDim, jDim;
+  unsigned short iDim, jDim;
 
   su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
   su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;

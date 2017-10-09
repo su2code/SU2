@@ -1644,15 +1644,9 @@ inline void CConfig::Set_Electric_Field_Mod(unsigned short val_coeff, su2double 
 
 inline su2double* CConfig::Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
 
-inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
-
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
 
 inline su2double CConfig::GetRamp_Time(void) { return Ramp_Time; }
-
-inline su2double CConfig::GetSigmoid_Time(void) { return Sigmoid_Time; }
-
-inline su2double CConfig::GetSigmoid_K(void) { return Sigmoid_K; }
 
 inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
 
