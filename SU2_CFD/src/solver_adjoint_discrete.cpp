@@ -455,7 +455,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
       if (config->GetSens_Remove_Sharp()) {
         eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharp_LimiterCoeff()*eps )
+        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
           Sensitivity = 0.0;
       }
       if (!time_stepping) {

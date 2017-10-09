@@ -496,7 +496,7 @@ inline su2double CConfig::GetVenkat_LimiterCoeff(void) { return Venkat_LimiterCo
 
 inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
 
-inline su2double CConfig::GetSharp_LimiterCoeff(void) { return Sharp_LimiterCoeff; }
+inline su2double CConfig::GetAdjSharp_LimiterCoeff(void) { return AdjSharp_LimiterCoeff; }
 
 inline su2double CConfig::GetReynolds(void) { return Reynolds; }
 
