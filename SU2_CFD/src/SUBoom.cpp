@@ -2116,7 +2116,7 @@ void SUBoom::CreateSignature(unsigned short iPhi){
     }
     else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
       /*---Remove segment i---*/
-      ll[i] = tol_l/scale_l;
+      ll[i] = tol_l/scale_T;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
     }
     i++;
@@ -2295,7 +2295,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l/scale_l || m[i] >= tol_m/scale_m){// || m[i] <= -tol_m){
+    if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m){// || m[i] <= -tol_m){
       cout << "ClipLambdaZero: Removing segment " << i << ".";
       if(l[i] <= tol_l) cout << " l = " << l[i] << ".";
       if(m[i] >= tol_m) cout << " m = " << m[i] << ".";
