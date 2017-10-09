@@ -448,12 +448,12 @@ void CConfig::SetPointersNull(void) {
   default_eng_cyl            = NULL;
   default_eng_val            = NULL;
   default_cfl_adapt          = NULL;
-  default_ad_coeff_flow      = NULL;
+  default_jst_coeff          = NULL;
   default_mixedout_coeff     = NULL;
   default_extrarelfac        = NULL;
   default_rampRotFrame_coeff = NULL;
   default_rampOutPres_coeff  = NULL;
-  default_ad_coeff_adj       = NULL;
+  default_jst_adj_coeff      = NULL;
   default_obj_coeff          = NULL;
   default_geo_loc            = NULL;
   default_distortion         = NULL;
@@ -535,12 +535,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_cyl            = new su2double[7];
   default_eng_val            = new su2double[5];
   default_cfl_adapt          = new su2double[4];
-  default_ad_coeff_flow      = new su2double[3];
+  default_jst_coeff      = new su2double[3];
   default_mixedout_coeff     = new su2double[3];
   default_extrarelfac        = new su2double[2];
   default_rampRotFrame_coeff = new su2double[3];
   default_rampOutPres_coeff  = new su2double[3];
-  default_ad_coeff_adj       = new su2double[3];
+  default_jst_adj_coeff       = new su2double[3];
   default_obj_coeff          = new su2double[5];
   default_geo_loc            = new su2double[2];
   default_distortion         = new su2double[2];
@@ -1124,9 +1124,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
-  /*!\brief SHARP_LIMITER_COEFF
+  /*!\brief ADJ_SHARP_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
-  addDoubleOption("SHARP_LIMITER_COEFF", Sharp_LimiterCoeff, 3.0);
+  addDoubleOption("ADJ_SHARP_LIMITER_COEFF", AdjSharp_LimiterCoeff, 3.0);
   /*!\brief LIMITER_ITER
    *  \n DESCRIPTION: Freeze the value of the limiter after a number of iterations. DEFAULT value 999999. \ingroup Config*/
   addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);
@@ -1140,9 +1140,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_ad_coeff_flow[0] = 0.15; default_ad_coeff_flow[1] = 0.5; default_ad_coeff_flow[2] = 0.02;
-  /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_ad_coeff_flow);
+  default_jst_coeff[0] = 0.15; default_jst_coeff[1] = 0.5; default_jst_coeff[2] = 0.02;
+  /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF", 3, Kappa_Flow, default_jst_coeff);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1154,11 +1154,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_ad_coeff_adj[0] = 0.15; default_ad_coeff_adj[1] = 0.5; default_ad_coeff_adj[2] = 0.02;
-  /*!\brief AD_COEFF_ADJFLOW
+  default_jst_adj_coeff[0] = 0.15; default_jst_adj_coeff[1] = 0.5; default_jst_adj_coeff[2] = 0.02;
+  /*!\brief ADJ_JST_SENSOR_COEFF
    *  \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients for the adjoint solver.
-   *  \n FORMAT and default values: AD_COEFF_ADJFLOW = (0.15, 0.5, 0.02) \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_ad_coeff_adj);
+   *  \n FORMAT and default values: ADJ_JST_SENSOR_COEFF = (0.15, 0.5, 0.02) \ingroup Config*/
+  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 3, Kappa_AdjFlow, default_jst_adj_coeff);
 
   /*!\brief SPATIAL_ORDER_TURB
    *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
@@ -1786,8 +1786,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FFD_BLENDING", FFD_Blending, Blending_Map, BEZIER );
 
   /* DESCRIPTION: Order of the BSplines for BSpline Blending function */
-  default_ad_coeff_flow[0] = 2; default_ad_coeff_flow[1] = 2; default_ad_coeff_flow[2] = 2;
-  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order,default_ad_coeff_flow);
+  default_jst_coeff[0] = 2; default_jst_coeff[1] = 2; default_jst_coeff[2] = 2;
+  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order,default_jst_coeff);
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
@@ -4552,19 +4552,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               case SHARP_EDGES:
                 cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case WALL_DISTANCE:
                 cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
             }
             break;
         }
       }
       
-      cout << "The reference sharp edge distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+      cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
 
     }
 
@@ -4595,12 +4595,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               case SHARP_EDGES:
                 cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case WALL_DISTANCE:
                 cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << Sharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
+                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
             }
             break;
@@ -5900,12 +5900,12 @@ CConfig::~CConfig(void) {
   if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
   if (default_eng_val       != NULL) delete [] default_eng_val;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
-  if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_jst_coeff != NULL) delete [] default_jst_coeff;
   if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
   if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
   if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
   if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
-  if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
+  if (default_jst_adj_coeff  != NULL) delete [] default_jst_adj_coeff;
   if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
   if (default_geo_loc       != NULL) delete [] default_geo_loc;
   if (default_distortion    != NULL) delete [] default_distortion;

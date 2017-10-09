@@ -153,7 +153,7 @@ private:
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
   su2double Venkat_LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
-  su2double Sharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  su2double AdjSharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
@@ -848,11 +848,11 @@ private:
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_jst_coeff,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
   *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
   *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -1876,7 +1876,7 @@ public:
    * \brief Get the value of sharp edge limiter.
    * \return Value of the sharp edge limiter coefficient.
    */
-  su2double GetSharp_LimiterCoeff(void);
+  su2double GetAdjSharp_LimiterCoeff(void);
   
   /*!
    * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces

@@ -3108,7 +3108,7 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharp_LimiterCoeff()*eps);
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps);
     
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
@@ -3438,7 +3438,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           if (config->GetSens_Remove_Sharp()) {
             eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharp_LimiterCoeff()*eps )
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
@@ -6763,7 +6763,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           if (config->GetSens_Remove_Sharp()) {
             eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharp_LimiterCoeff()*eps )
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
