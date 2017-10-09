@@ -2101,7 +2101,6 @@ void SUBoom::CreateSignature(unsigned short iPhi){
   int i = 0;
   while(i <= M-1){
     if(mm[i] > tol_m/scale_m){// || mm[i] < -tol_m/scale_m){  // shock present
-      cout << "CreateSignature: Removing segment " << i << "." << endl;
       /*---Remove segment i---*/
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
@@ -2135,7 +2134,6 @@ void SUBoom::CreateSignature(unsigned short iPhi){
     signal.dp[i] = pp[0][i] - pp[1][i-1];
     signal.m[i] = mm[i];
     signal.l[i] = ll[i];
-    cout << "l = " << signal.l[i] << ", m = " << signal.m[i] << endl;
   }
 
 }
@@ -2279,7 +2277,6 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   for(int j = 0; j < 2; j++){current_signal[j] = new su2double[M];}
 
   /*---Decompose f vector---*/
-  cout << "ClipLambdaZero: Decompose f vector." << endl;
   //fvec_new = new su2double[3*M];
   for(int j = 0; j < 3*M; j++){
     //fvec_new[j] = fvec[j];
@@ -2296,11 +2293,6 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m){// || m[i] <= -tol_m){
-      cout << "ClipLambdaZero: Removing segment " << i << ".";
-      if(l[i] <= tol_l/scale_T) cout << " l = " << l[i] << ".";
-      if(m[i] >= tol_m/scale_m) cout << " m = " << m[i] << ".";
-      cout << endl;
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
@@ -2396,7 +2388,6 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
 
     t0 = ray_t0;
     /*---Assemble f vector and ray data for integration---*/
-    cout << "PropagateSignal: Assemble f vector." << endl;
     fvec = new su2double[3*signal.M];
     for(unsigned int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
@@ -2420,14 +2411,12 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     data.scale_C2 = scale_C2;
 
     //fvec = signal.fvec;
-    cout << "PropagateSignal: t0 = " << t0 << "." << endl;
     for(unsigned int j = n_prof-1; j >= 0; j--){
         if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
             break;
         }
     }
-    cout << "PropagateSignal: j0 = " << j0 << "." << endl;
     for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
       if(j >= n_prof-5) j0_dat = n_prof-5;
@@ -2442,7 +2431,6 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
       }
       tf = t_of_z[0][j-1];
       dt = (tf - t0);
-      cout << "PropagateSignal: Entering RK4." << endl;
       f = rk4(t0, 3*M, fvec, dt, data, derivsProp);
       fvec = ClipLambdaZeroSegment(f, M);
       data.M = M;
