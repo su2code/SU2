@@ -2056,10 +2056,10 @@ void SUBoom::ODETerms(unsigned short iPhi){
   ray_C2 = new su2double[n_prof];
   for(unsigned int j = 0; j < n_prof; j++){
     //ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
-    ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/(p_of_z[j]*cn[j])*scale_C1; // TESTING scaling by pressure (See Thomas paper)
+    ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/(p_of_z[j]*cn[j])*scale_p; // TESTING scaling by pressure (See Thomas paper)
     //ray_C1[j] = ((g+1.)/(2.*g)); // TESTING constant C1
     //if(A[j] > 1E-16){
-    ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j])*scale_C2;
+    ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j]);
     //ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)
     //}
     //else{
