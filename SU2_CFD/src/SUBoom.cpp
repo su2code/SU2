@@ -2279,6 +2279,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   for(int j = 0; j < 2; j++){current_signal[j] = new su2double[M];}
 
   /*---Decompose f vector---*/
+  cout << "ClipLambdaZero: Decompose f vector." << endl;
   //fvec_new = new su2double[3*M];
   for(int j = 0; j < 3*M; j++){
     //fvec_new[j] = fvec[j];
@@ -2395,6 +2396,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
 
     t0 = ray_t0;
     /*---Assemble f vector and ray data for integration---*/
+    cout << "PropagateSignal: Assemble f vector." << endl;
     //signal.fvec = new su2double[3*signal.M];
     for(unsigned int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
@@ -2438,6 +2440,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
       }
       tf = t_of_z[0][j-1];
       dt = (tf - t0);
+      cout << "PropagateSignal: Entering RK4." << endl;
       f = rk4(t0, 3*M, fvec, dt, data, derivsProp);
       fvec = ClipLambdaZeroSegment(f, M);
       data.M = M;
