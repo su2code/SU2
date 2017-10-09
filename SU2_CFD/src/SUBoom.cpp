@@ -2114,7 +2114,7 @@ void SUBoom::CreateSignature(unsigned short iPhi){
       i--;
       M--;
     }
-    else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
+    else if(mm[i] < -tol_m/scale_m && ll[i] < tol_l/scale_T{  // "expansion shock" present
       /*---Remove segment i---*/
       ll[i] = tol_l/scale_T;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
