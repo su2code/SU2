@@ -2397,7 +2397,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     t0 = ray_t0;
     /*---Assemble f vector and ray data for integration---*/
     cout << "PropagateSignal: Assemble f vector." << endl;
-    //signal.fvec = new su2double[3*signal.M];
+    fvec = new su2double[3*signal.M];
     for(unsigned int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
 	      fvec[j] = signal.m[j];
