@@ -77,10 +77,6 @@ inline su2double CFEM_NonlinearElasticity::deltaij(unsigned short iVar, unsigned
 	if (iVar == jVar) return 1.0; else return 0.0;
 }
 
-inline void CNumerics::Compute_Eigenproblem(CElement *element_container, CConfig *config){ }
-
-inline void CFEM_Elasticity::Compute_Eigenproblem(CElement *element_container, CConfig *config){ }
-
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
 
 inline void CNumerics::ReadDV(CConfig *config){ }
@@ -140,7 +136,7 @@ inline void CFEM_NonlinearElasticity::SetMaterial_Density(unsigned short iVal, s
   Rho_s_i[iVal] = val_Rho; 
   Rho_s_DL_i[iVal] = val_Rho_DL;}
 
-inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
+inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 

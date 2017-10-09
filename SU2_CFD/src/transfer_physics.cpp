@@ -86,9 +86,6 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
   bool Ramp_Load = struct_config->GetRamp_Load();
   su2double Ramp_Time = struct_config->GetRamp_Time();
 
-  bool Sigmoid_Load = struct_config->GetSigmoid_Load();
-  su2double Sigmoid_Time = struct_config->GetSigmoid_Time();
-  su2double Sigmoid_K = struct_config->GetSigmoid_K();
   su2double SigAux = 0.0;
 
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/

@@ -652,8 +652,6 @@ CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
   unsigned short nDimSq;
 
-  bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
-
   nNodes = 4;
   nGaussPoints = 1;
 
@@ -1824,9 +1822,6 @@ CHEXA1::CHEXA1(unsigned short val_nDim, CConfig *config)
 
   unsigned short iNode, iGauss, jNode;
   unsigned short nDimSq;
-
-  bool body_forces = config->GetDeadLoad(); // Body forces (dead loads).
-
   nNodes = 8;
   nGaussPoints = 1;
 
@@ -2334,8 +2329,6 @@ CPYRAM5::CPYRAM5(unsigned short val_nDim, CConfig *config)
   unsigned short iNode, iGauss, jNode;
   unsigned short nDimSq;
 
-  bool body_forces = config->GetDeadLoad(); // Body forces (dead loads).
-
   nNodes = 5;
   nGaussPoints = 5;
 
@@ -2544,8 +2537,6 @@ CPRISM6::CPRISM6(unsigned short val_nDim, CConfig *config)
 
   unsigned short iNode, iGauss, jNode;
   unsigned short nDimSq;
-
-  bool body_forces = config->GetDeadLoad(); // Body forces (dead loads).
 
   nNodes = 6;
   nGaussPoints = 6;

@@ -1715,18 +1715,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("NEWMARK_ALPHA", Newmark_alpha, 0.25);
   /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
   addDoubleOption("NEWMARK_DELTA", Newmark_delta, 0.5);
-  /* DESCRIPTION: Apply the load slowly or suddenly */
-  addBoolOption("SIGMOID_LOADING", Sigmoid_Load, false);
   /* DESCRIPTION: Apply the load as a ramp */
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
   /* DESCRIPTION: Transfer method used for multiphysics problems */
   addEnumOption("DYNAMIC_LOAD_TRANSFER", Dynamic_LoadTransfer, Dyn_Transfer_Method_Map, POL_ORDER_1);
-  /* DESCRIPTION: Time while the load is to be increased linearly */
-  addDoubleOption("SIGMOID_TIME", Sigmoid_Time, 1.0);
-  /* DESCRIPTION: Constant of steepness of the sigmoid */
-  addDoubleOption("SIGMOID_K", Sigmoid_K, 10.0);
 
   /* DESCRIPTION: Newmark - Generalized alpha - coefficients */
   addDoubleListOption("TIME_INT_STRUCT_COEFFS", nIntCoeffs, Int_Coeffs);

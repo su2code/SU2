@@ -3275,8 +3275,6 @@ public:
   virtual void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
-
-  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -3291,7 +3289,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual su2double Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
+  virtual void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -3492,8 +3490,6 @@ public:
   virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
   
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-  
-  virtual void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
   /*!
    * \brief A virtual member.
@@ -11713,7 +11709,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  su2double Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
+  void Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
 
   /*!
    * \brief Get the value of the FSI convergence.
@@ -12167,13 +12163,6 @@ public:
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
   /*!
-   * \brief Set the objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-  
-  /*!
    * \brief Provide the total shape sensitivity coefficient.
    * \return Value of the geometrical sensitivity coefficient
    *         (inviscid + viscous contribution).
@@ -12307,18 +12296,6 @@ private:
 
   su2double *SolRest;     /*!< \brief Auxiliary vector to restart the solution */
 
-//  su2double Total_Sens_E;       /*!< \brief Total Young modulus sensitivity coefficient for all the boundaries. */
-//  su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
-//  su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
-//  su2double Total_Sens_Rho_DL;  /*!< \brief Total density sensitivity coefficient for all the boundaries. */
-//  su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
-
-  /*!< \brief Global sensitivities. */
-//  su2double Global_Sens_E,
-//  Global_Sens_Nu,
-//  Global_Sens_Rho,
-//  Global_Sens_Rho_DL;
-
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
   su2double E, Nu, Rho, Rho_DL; /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
@@ -12381,25 +12358,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CDiscAdjFEASolver(void);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -12476,13 +12434,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-  
-  /*!
-   * \brief Set the objective function to 0 contribution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
   /*!
    * \brief Provide the total Young's modulus sensitivity

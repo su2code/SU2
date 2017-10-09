@@ -69,7 +69,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short val_ndim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi     = config->GetFSI_Simulation();
 
   Dynamic_Derivative          = NULL;
@@ -128,7 +127,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val_solution_accel, su2double* val_solution_vel, unsigned short val_ndim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fsi     = config->GetFSI_Simulation();
 
   Dynamic_Derivative          = new su2double[nVar];

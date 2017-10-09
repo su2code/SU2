@@ -1392,12 +1392,6 @@ public:
   virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
   /*!
-   * \brief A virtual member to compute the eigenvalues and eigenvectors of b
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
-
-  /*!
    * \brief A virtual member to compute the element-based Lame parameters and set the local properties
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -3788,8 +3782,6 @@ public:
   
   virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
-
 	virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
 
   virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
@@ -3905,8 +3897,6 @@ public:
   void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
   void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
-
-  void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
   void Add_MaxwellStress(CElement *element_container, CConfig *config);
 

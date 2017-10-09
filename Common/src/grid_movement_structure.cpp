@@ -9297,10 +9297,7 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
 
 CElasticityMovement::~CElasticityMovement(void) {
 
-  unsigned short iDim, iVar, nElemContainer;
-
-  if (nDim == 2) nElemContainer = 2;
-  else nElemContainer = 4;
+  unsigned short iDim, iVar;
 
   delete [] Residual;
   delete [] Solution;
@@ -9354,9 +9351,7 @@ CElasticityMovement::~CElasticityMovement(void) {
 
 void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
 
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Nonlinear_Iter = 0;
-  su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
-  bool Screen_Output;
+  unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
@@ -9368,9 +9363,6 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
   /*--- Retrieve number or internal iterations from config ---*/
 
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
-
-  /*--- Disable the screen output if we're running SU2_CFD ---*/
-  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
 
   /*--- Loop over the total number of grid deformation iterations. The surface
    deformation can be divided into increments to help with stability. ---*/
@@ -9478,9 +9470,7 @@ void CElasticityMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config){
 
-  unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
-  unsigned long iPoint, total_index, iVertex;
-  su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
+  unsigned short iMarker;
 
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
    deforming meshes (MARKER_FSI_INTERFACE). ---*/
@@ -9587,7 +9577,6 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
 
 void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
-  unsigned long iElem;
   unsigned short iDim, jDim;
 
   su2double *VarCoord;
@@ -9687,11 +9676,6 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 }
 
 void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
 
@@ -9825,7 +9809,7 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) {
 
   unsigned long iElem, ElemCounter = 0;
-  unsigned short iNode, iDim, jDim, nNodes = 0;
+  unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord;
   int EL_KIND = 0;
@@ -10168,7 +10152,7 @@ void CElasticityMovement::Compute_Constitutive_Matrix(void){
 
 void CElasticityMovement::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
   unsigned long iNode, iVertex;
 
   su2double *VarCoord;

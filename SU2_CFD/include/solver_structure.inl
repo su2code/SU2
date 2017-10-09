@@ -104,7 +104,7 @@ inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_con
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-inline su2double CSolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) { return 0.0; }
+inline void CSolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) { }
 
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
 
@@ -1993,8 +1993,6 @@ inline void CSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 inline void CSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config) {}
-
-inline void CSolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement, CConfig *config) {}
 

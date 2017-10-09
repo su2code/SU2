@@ -212,10 +212,8 @@ CDriver::CDriver(char* confFile,
         if (rank == MASTER_NODE) cout << "A Discrete-Adjoint driver for Fluid-Structure Interaction has been instantiated." << endl;
     }
     else{
-      if (stat_fsi)
-        if (rank == MASTER_NODE) cout << "A Static Fluid-Structure Interaction driver has been instantiated." << endl;
-      else
-        if (rank == MASTER_NODE) cout << "A Dynamic Fluid-Structure Interaction driver has been instantiated." << endl;
+      if (stat_fsi){if (rank == MASTER_NODE) cout << "A Static Fluid-Structure Interaction driver has been instantiated." << endl;}
+      else{if (rank == MASTER_NODE) cout << "A Dynamic Fluid-Structure Interaction driver has been instantiated." << endl;}
     }
 
   }
@@ -777,19 +775,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  /*--- Check for restarts and use the LoadRestart() routines. ---*/
-
-  bool restart      = config->GetRestart();
-  bool restart_flow = config->GetRestart_Flow();
-  bool no_restart   = false;
-
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC); // Dynamic simulation (FSI).
 
   if (dual_time) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
@@ -933,11 +924,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   }
   
 
-  /*---- Restart the solvers ---*/
-
-  /*--- Be careful with whether or not we load the coords and grid velocity
-   from the restart files... this needs to be standardized for the different
-   solvers, in particular with FSI. ---*/
+  /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
   bool update_geo = true;
   if (config->GetFSI_Simulation()) update_geo = false;
@@ -952,12 +939,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
-  unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat,
   fem,
-  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_fem;
   int val_iter = 0;
 
@@ -970,16 +955,11 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
 
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;
-  poisson          = false;  neg_spalart_allmaras = false;
+  poisson          = false;
   wave             = false;  disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
   heat             = false;
-  transition       = false;
   template_solver  = false;
-
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
@@ -1013,7 +993,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
     case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case RANS : ns = true; turbulent = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1026,17 +1006,6 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
-
-  /*--- Assign turbulence model booleans ---*/
-
-  if (turbulent)
-    switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;           break;
-
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
-    }
 
 
   /*--- Load restarts for any of the active solver containers. Note that
@@ -5899,7 +5868,7 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
 #endif
 
   unsigned short iVar;
-  unsigned short nVar_Flow, nVar_Struct;
+  unsigned short nVar_Flow = 0, nVar_Struct = 0;
   RecordingState = 0;
   CurrentRecording = 0;
 
@@ -6063,23 +6032,11 @@ void CDiscAdjFSIStatDriver::Run( ) {
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
 
-  int rank = MASTER_NODE;
-
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
   unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
   unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
-
-  /*--- For steady flow cases, the loop is in nExtIter - For static FSI nExtIter has to be 1, so we need to define an inner loop. ---*/
-  /*--- I will use GetUnst_nIntIter() temporarily, as an analogy with the dynamic solver ---*/
-  unsigned long nExtIter_FLOW = config_container[ZONE_FLOW]->GetUnst_nIntIter();
-  unsigned long iExtIter_FLOW = 0;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
@@ -6094,7 +6051,6 @@ void CDiscAdjFSIStatDriver::Run( ) {
 
   Postprocess(ZONE_FLOW, ZONE_STRUCT);
 
-
 }
 
 
@@ -6105,7 +6061,7 @@ void CDiscAdjFSIStatDriver::Preprocess(unsigned short ZONE_FLOW,
   unsigned long IntIter = 0, iPoint;
   config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[ZONE_FLOW]->GetExtIter();
-  bool unsteady = config_container[ZONE_FLOW]->GetUnsteady_Simulation() != NONE;
+
   bool dual_time_1st = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
@@ -6113,12 +6069,6 @@ void CDiscAdjFSIStatDriver::Preprocess(unsigned short ZONE_FLOW,
   unsigned short iMesh;
   int Direct_Iter_Flow;
   bool update_geo = false;
-
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*----------------------------------------------------------------------------*/
   /*------------------------------ FLOW SOLUTION -------------------------------*/
@@ -6278,7 +6228,7 @@ void CDiscAdjFSIStatDriver::Preprocess(unsigned short ZONE_FLOW,
   config_container[ZONE_STRUCT]->SetIntIter(IntIter);
   ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
   bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
-  bool nonlinear_analysis = (config_container[ZONE_STRUCT]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
+
   int Direct_Iter_FEA;
 
   /*--- For the dynamic adjoint, load direct solutions from restart files. ---*/
@@ -6480,8 +6430,6 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
 
 void CDiscAdjFSIStatDriver::Iterate_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording){
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
   if ((kind_recording == FLOW_CONS_VARS) ||
       (kind_recording == MESH_COORDS)) {
 
@@ -6510,13 +6458,6 @@ void CDiscAdjFSIStatDriver::Iterate_Direct(unsigned short ZONE_FLOW, unsigned sh
 
 void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
-  /*--- Set ExtIter to 0 ---*/
-
-  int val_DirectIter = 0;
-  unsigned long iPoint;
-  unsigned long IntIter = config_container[ZONE_FLOW]->GetIntIter();
-  unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
-
   /*-----------------------------------------------------------------*/
   /*------------------- Set Dependency on Geometry ------------------*/
   /*-----------------------------------------------------------------*/
@@ -6532,11 +6473,7 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, uns
   /*---- Sets all the cross dependencies for the flow variables -----*/
   /*-----------------------------------------------------------------*/
 
-//  config_container[ZONE_FLOW]->SetExtIter(0);
   config_container[ZONE_FLOW]->SetIntIter(0);
-
-//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_FLOW], solver_container[ZONE_FLOW],
-//                                                                     config_container[ZONE_FLOW], ExtIter);
 
   direct_iteration[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
@@ -6548,20 +6485,14 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, uns
 
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
 
-
 }
 
 void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
-  unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
-  unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
-  unsigned long iPoint;
 
   /*-----------------------------------------------------------------*/
   /*---------- Set Dependencies on Geometry and Flow ----------------*/
   /*-----------------------------------------------------------------*/
-
-//  grid_movement[ZONE_FLOW]->UpdateDualGrid(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
 
   solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
 
@@ -6598,8 +6529,6 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, un
 
   unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
   unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
-
-  unsigned long iPoint;
 
   /*-----------------------------------------------------------------*/
   /*--------------------- Set MPI Solution --------------------------*/
@@ -6639,12 +6568,8 @@ void CDiscAdjFSIStatDriver::SetRecording(unsigned short ZONE_FLOW,
                                               unsigned short ZONE_STRUCT,
                                               unsigned short kind_recording){
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
   unsigned long IntIter = config_container[ZONE_0]->GetIntIter();
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter(), DirectExtIter = 0;
   bool unsteady = (config_container[ZONE_FLOW]->GetUnsteady_Simulation() != NONE);
-  bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
   bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
 
   string kind_DirectIteration = " ";
@@ -6699,8 +6624,6 @@ void CDiscAdjFSIStatDriver::SetRecording(unsigned short ZONE_FLOW,
     }
   }
 
-
-  DirectExtIter = 0;
 
   AD::Reset();
 
@@ -6785,8 +6708,6 @@ void CDiscAdjFSIStatDriver::RegisterInput(unsigned short ZONE_FLOW,
                                                unsigned short ZONE_STRUCT,
                                                unsigned short kind_recording){
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
   /*--- Register flow variables ---*/
   if ((kind_recording == FLOW_CONS_VARS) ||
       (kind_recording == FLOW_CROSS_TERM)) {
@@ -6812,8 +6733,6 @@ void CDiscAdjFSIStatDriver::SetDependencies(unsigned short ZONE_FLOW,
                                                   unsigned short ZONE_STRUCT,
                                                   unsigned short kind_recording){
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
   /*--- Add dependencies for geometrical and turbulent variables ---*/
 
   iteration_container[ZONE_FLOW]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_FLOW, kind_recording);
@@ -6828,8 +6747,6 @@ void CDiscAdjFSIStatDriver::SetDependencies(unsigned short ZONE_FLOW,
 void CDiscAdjFSIStatDriver::RegisterOutput(unsigned short ZONE_FLOW,
                                                  unsigned short ZONE_STRUCT,
                                                  unsigned short kind_recording){
-
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
 
@@ -6888,15 +6805,6 @@ void CDiscAdjFSIStatDriver::Iterate_Block(unsigned short ZONE_FLOW,
                                                 unsigned short ZONE_STRUCT,
                                                 unsigned short kind_recording){
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned long IntIter=0, nIntIter = 1;
   bool dual_time_1st = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
@@ -6984,7 +6892,6 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(unsigned short ZONE_FLOW,
                                                      unsigned short ZONE_STRUCT,
                                                      unsigned short kind_recording){
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
 
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
@@ -7044,9 +6951,7 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(unsigned short ZONE_FLOW,
 void CDiscAdjFSIStatDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
                                                   unsigned short ZONE_STRUCT,
                                                   unsigned short kind_recording){
-
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
+													  
   /*--- Extract the adjoint of the fluid conservative variables ---*/
 
   if (kind_recording == FLOW_CONS_VARS) {
@@ -7142,7 +7047,6 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
 #endif
 
   bool flow_convergence    = false,
-        mesh_convergence    = false,
         struct_convergence  = false;
 
   bool adjoint_convergence = false;
@@ -7159,13 +7063,6 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
       flow_convergence = ((residual_1 < config_container[ZONE_FLOW]->GetMinLogResidual()) &&
                           (residual_2 < config_container[ZONE_FLOW]->GetMinLogResidual()));
 
-
-//
-//    integration_container[ZONE_FLOW][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW],
-//        IntIter,log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
-//
-//    flow_convergence = integration_container[ZONE_FLOW][ADJFLOW_SOL]->GetConvergence();
-
   }
 
   if (kind_recording == FEA_DISP_VARS) {
@@ -7178,13 +7075,6 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
     // Temporary, until function is added
     struct_convergence = ((residual_1 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()) &&
                           (residual_2 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()));
-
-    /*--- Set the convergence criteria (only residual possible) ---*/
-
-//    integration_container[ZONE_STRUCT][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT],
-//                                                                          IntIter,log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(0)), MESH_0);
-//
-//    struct_convergence = integration_container[ZONE_STRUCT][ADJFEA_SOL]->GetConvergence();
 
   }
 
@@ -7245,11 +7135,6 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(unsigned long IntIter,
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-  bool dual_time_1st = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
-  bool dual_time = (dual_time_1st || dual_time_2nd);
-  bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
 
   ofstream ConvHist_file;
   if (rank == MASTER_NODE)
@@ -7314,8 +7199,6 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
-
   bool BGS_Converged = false;
 
   unsigned short iZone;
@@ -7376,8 +7259,6 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-  bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
   bool BGS_Converged = false;
 

@@ -869,15 +869,12 @@ private:
   su2double *Electric_Field_Mod, 	/*!< \brief Values of the modulus of the electric field. */
   *Electric_Field_Dir;				/*!< \brief Direction of the electric field. */
   su2double *RefNode_Displacement;  /*!< \brief Displacement of the reference node. */
-  bool Sigmoid_Load,		      /*!< \brief Apply the load using a sigmoid. */
-  Ramp_Load;				          /*!< \brief Apply the load with linear increases. */
+  bool Ramp_Load;				          /*!< \brief Apply the load with linear increases. */
   unsigned short Dynamic_LoadTransfer;  /*!< \brief Method for dynamic load transferring. */
   bool IncrementalLoad;		    /*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
-  su2double Sigmoid_Time;			/*!< \brief Time until the maximum load is applied, using a sigmoid. */
-  su2double Sigmoid_K;			  /*!< \brief Sigmoid parameter determining its steepness. */
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
@@ -7585,11 +7582,6 @@ public:
    */
   su2double* Get_Electric_Field_Dir(void);
   
-  /*!
-   * \brief Check if the user wants to apply the load gradually.
-   * \return 	<code>TRUE</code> means that the load is to be applied gradually.
-   */
-  bool GetSigmoid_Load(void);
   
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
@@ -7610,18 +7602,6 @@ public:
     * \return Kind of transfer method for multiphysics problems
     */
    unsigned short GetDynamic_LoadTransfer(void);
-  
-  /*!
-   * \brief Get the maximum time of the sigmoid.
-   * \return 	Value of the max time while the load is increased using a sigmoid
-   */
-  su2double GetSigmoid_Time(void);
-  
-  /*!
-   * \brief Get the sigmoid parameter.
-   * \return 	Parameter of steepness of the sigmoid
-   */
-  su2double GetSigmoid_K(void);
   
    /*!
     * \brief Get the penalty weight value for the objective function.

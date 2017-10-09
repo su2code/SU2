@@ -2193,7 +2193,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
   bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
-  unsigned short iMesh;
+
   int Direct_Iter;
 
   int rank = MASTER_NODE;
@@ -2308,7 +2308,7 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ***geometry_container,
                                                CSolver ****solver_container,
                                                CConfig **config_container,
                                                unsigned short val_iZone, int val_DirectIter) {
-  unsigned short iMesh, iVar;
+  unsigned short iVar;
   unsigned long iPoint;
   bool update_geo = false;  //TODO: check
 
@@ -2353,7 +2353,6 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned long IntIter = 0, nIntIter = 1;
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
 
@@ -2527,7 +2526,6 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
   unsigned long IntIter = config_container[ZONE_0]->GetIntIter();
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter(), DirectExtIter;
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
-  unsigned short iMesh;
 
   DirectExtIter = 0;
   if (dynamic){
@@ -2685,7 +2683,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
 
       unsigned short nEField = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnEField();
 
-      for (unsigned short iEField; iEField < nEField; iEField++){
+      for (unsigned short iEField = 0; iEField < nEField; iEField++){
 
           numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_ElectricField(iEField,
                                                                                  solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
@@ -2709,7 +2707,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
 
       unsigned short nDV = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
 
-      for (unsigned short iDV; iDV < nDV; iDV++){
+      for (unsigned short iDV = 0; iDV < nDV; iDV++){
 
           numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
@@ -2723,7 +2721,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
 
       if (solver_container[iZone][MESH_0][FEA_SOL]->IsElementBased()){
 
-        for (unsigned short iDV; iDV < nDV; iDV++){
+        for (unsigned short iDV = 0; iDV < nDV; iDV++){
             numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
             numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->Set_DV_Val(iDV,
@@ -2737,26 +2735,6 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
     break;
 
   }
-
-
-//    /*--- Add dependencies for E and Nu ---*/
-//
-//    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
-//
-//    /*--- Add dependencies for Rho and Rho_DL ---*/
-//
-//    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
-//
-//    /*--- Add dependencies for the Electric Field ---*/
-//
-//    if (config_container[iZone]->GetDE_Effects()){
-//
-//      unsigned short n_EField = solver_container[iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
-//
-//      for (unsigned short iEField; iEField < n_EField; iEField++)
-//        numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField, solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
-//
-//    }
 
 }
 

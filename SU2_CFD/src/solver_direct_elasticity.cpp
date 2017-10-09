@@ -94,8 +94,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   unsigned long iPoint;
   unsigned short iVar, jVar, iDim, jDim;
   unsigned short iTerm, iKind;
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -113,8 +111,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  su2double E = config->GetElasticyMod(0);
   
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -953,7 +949,6 @@ void CFEM_ElasticitySolver::Set_ElementProperties(CGeometry *geometry, CConfig *
   unsigned long iElem;
   unsigned long index;
 
-  unsigned short iVar;
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
@@ -1421,7 +1416,6 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
   bool incremental_load = config->GetIncrementalLoad();               // If an incremental load is applied
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
-  bool de_effects = config->GetDE_Effects();
 
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -1641,7 +1635,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
   unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord, val_Sol, val_Ref = 0.0;
-  int EL_KIND = 0, iTerm;
+  int EL_KIND = 0;
   
   bool prestretch_fem = config->GetPrestretch();
   
@@ -1650,7 +1644,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
   su2double *Kk_ab = NULL;
   su2double *Ta = NULL;
   
-  su2double *Kab_DE = NULL, *Ta_DE = NULL;
+  su2double *Ta_DE = NULL;
   su2double Ks_ab_DE = 0.0;
   
   unsigned short NelNodes, jNode;
@@ -1760,12 +1754,8 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
           
           for (iVar = 0; iVar < nVar; iVar++){
             Jacobian_s_ij[iVar][iVar] = Ks_ab_DE;
-            //            for (jVar = 0; jVar < nVar; jVar++){
-            //              Jacobian_c_ij[iVar][jVar] = Kab_DE[iVar*nVar+jVar];
-            //            }
           }
           
-          //          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
           Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
         }
         
@@ -1847,8 +1837,6 @@ void CFEM_ElasticitySolver::Compute_MassRes(CGeometry *geometry, CSolver **solve
 
   su2double Mab;
   unsigned short NelNodes, jNode;
-
-  su2double val_iNode, val_jNode;
 
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -2490,7 +2478,6 @@ void CFEM_ElasticitySolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solve
 void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                             unsigned short val_marker) {
 
-  unsigned long iElem;
   unsigned short iDim, jDim;
 
   su2double DispDirVal = config->GetDisp_Dir_Value(config->GetMarker_All_TagBound(val_marker));
@@ -2510,7 +2497,7 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
   su2double TotalDisp;
 
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl, NonModAmpl;
+  su2double ModAmpl;
 
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
@@ -2822,13 +2809,9 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   
   su2double NormalLoad = config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
   su2double TotalLoad = 0.0;
-  bool Sigmoid_Load = config->GetSigmoid_Load();
-  su2double Sigmoid_Time = config->GetSigmoid_Time();
-  su2double Sigmoid_K = config->GetSigmoid_K();
-  su2double SigAux = 0.0;
   
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl, NonModAmpl;
+  su2double ModAmpl;
   
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
@@ -3167,13 +3150,8 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   
   su2double TotalLoad;
   
-  bool Sigmoid_Load = config->GetSigmoid_Load();
-  su2double Sigmoid_Time = config->GetSigmoid_Time();
-  su2double Sigmoid_K = config->GetSigmoid_K();
-  su2double SigAux = 0.0;
-  
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl, NonModAmpl;
+  su2double ModAmpl;
   
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
@@ -3339,7 +3317,7 @@ void CFEM_ElasticitySolver::BC_Damper(CGeometry *geometry, CSolver **solver_cont
   dampC = dampConstant / (nVertex + EPS);
 
   unsigned long Point_0, Point_1, Point_2, Point_3;
-  unsigned long iPoint, iElem;
+  unsigned long iElem;
 
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
@@ -4712,7 +4690,6 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double Static_Time=fea_config->GetStatic_Time();
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
-  su2double OutputVal;
   
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
   
@@ -5068,15 +5045,12 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
   unsigned short iVar;
   unsigned long iPoint;
-  unsigned long nTotalPoint = 1;
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
   unsigned long ExtIter = config->GetExtIter();
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
-  su2double accel_check = 0.0;
-  su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
 
   bool fsi = config->GetFSI_Simulation();
 
@@ -5167,7 +5141,6 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
     su2double local_forward_gradient = 0.0;
     su2double averaged_gradient = 0.0;
 
-    unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefNode);
 
     if (fsi) {
@@ -5228,28 +5201,20 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
 }
 
-su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
+void CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
 
-  unsigned long iElem, iVar, iPoint;
+  unsigned long iElem;
   unsigned short iNode, iDim, nNodes;
-  unsigned short i_DV;
+
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord, val_Sol;
-  int EL_KIND, DV_TERM;
+  int EL_KIND;
 
   su2double elementVolume, dvValue, ratio;
   su2double weightedValue = 0.0;
   su2double weightedValue_reduce = 0.0;
   su2double totalVolume = 0.0;
   su2double totalVolume_reduce = 0.0;
-
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  unsigned short NelNodes;
 
   /*--- Loops over the elements in the domain ---*/
 
@@ -5310,6 +5275,8 @@ su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver 
     ratio = 1.0 - weightedValue_reduce/totalVolume_reduce;
 
     PenaltyValue = config->GetTotalDV_Penalty() * ratio * ratio;
+
+
 
 }
 
