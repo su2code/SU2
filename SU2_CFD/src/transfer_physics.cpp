@@ -86,8 +86,6 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
   bool Ramp_Load = struct_config->GetRamp_Load();
   su2double Ramp_Time = struct_config->GetRamp_Time();
 
-  su2double SigAux = 0.0;
-
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
   if (CurrentTime < Static_Time){
     ModAmpl = 0.0;

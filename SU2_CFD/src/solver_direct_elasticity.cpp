@@ -4909,8 +4909,6 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   unsigned long ExtIter = config->GetExtIter();
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
-  su2double accel_check = 0.0;
-  su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
 
   bool fsi = config->GetFSI_Simulation();
 
@@ -4988,7 +4986,7 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
     su2double local_forward_gradient = 0.0;
     su2double averaged_gradient = 0.0;
-    unsigned long current_iter = 1;
+
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
 
     if (fsi) {

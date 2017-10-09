@@ -220,7 +220,7 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 //      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
 //  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
 
-  unsigned long ExtIter = config->GetExtIter();
+//  unsigned long ExtIter = config->GetExtIter();
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -580,7 +580,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
 //  bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
 
-  unsigned short iVar;
+//  unsigned short iVar;
   unsigned long iPoint;
 
   /*--- Set Residuals to zero ---*/

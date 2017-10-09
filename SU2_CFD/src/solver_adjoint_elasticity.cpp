@@ -1138,7 +1138,6 @@ void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_co
 
 void CDiscAdjFEASolver::ReadDV(CConfig *config) {
 
-  unsigned long iElem;
   unsigned long index;
 
   string filename;

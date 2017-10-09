@@ -753,12 +753,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   fem, disc_adj_fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
-  int val_iter = 0;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Initialize some useful booleans ---*/
   
@@ -782,17 +776,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
 
-  if (dual_time) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-  }
-
-  if (time_stepping) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-  }
 
   /*--- Assign booleans ---*/
   
@@ -6034,9 +6017,6 @@ void CDiscAdjFSIStatDriver::Run( ) {
 
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
   unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-
-  unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
@@ -7039,8 +7019,8 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
                                                    unsigned short ZONE_STRUCT,
                                                    unsigned short kind_recording){
 
-  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
   int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
