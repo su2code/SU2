@@ -40,43 +40,34 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Scale factors---*/
   scale_L = config->GetRefLengthMoment();
 
-  /*---Ray variables---*/
-  if(nDim == 2) ray_N_phi = 1;
-  else ray_N_phi = 1; // TODO: read in for 3D
-  ray_phi = new su2double[ray_N_phi];
-  for(unsigned int i = 0; i < ray_N_phi; i++){
-    //ray_phi[i] = phi[i];
-    ray_phi[i] = 0.0;
-  }
-
-  /*---Tolerance variables---*/
-//  char cstr [200];
-  string str;
-  ifstream tolfile;
-
-  tolfile.open("boom.in", ios::in);
-  if (tolfile.fail()) {
-    if(rank == MASTER_NODE)
-      cout << "There is no boom.in file. Using default tolerances for boom propagation. " << endl;
-    ray_r0 = 1.0;
-    n_prof = 100001;
-    tol_dphi = 1.0E-3;
-    tol_dr = 1.0E-3;
-    tol_m = 1.0E6;
-
-    tol_dp = 1.0E-6;
-    tol_l = 1.0E-4;
+  /*---Values from config file---*/
+  const su2double deg2rad = M_PI/180.;
+  n_prof = config->GetBoom_N_prof();
+  if(nDim == 2){
+    ray_N_phi = 1;
+    ray_phi = new su2double[1];
+    ray_phi[0] = 0.0;
   }
   else{
-    tolfile >> str >> ray_r0;
-    tolfile >> str >> n_prof;
-    tolfile >> str >> tol_dphi;
-    tolfile >> str >> tol_dr;
-    tolfile >> str >> tol_m;
-    tolfile >> str >> tol_dp;
-    tolfile >> str >> tol_l;
+    ray_N_phi = config->GetBoom_N_phi();
+    ray_phi = config->GetBoom_phi();
+    if(ray_phi == NULL){
+      ray_N_phi = 1;
+      ray_phi = new su2double[1];
+      ray_phi[0] = 0.0;
+    }
+    else{
+      for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        ray_phi[iPhi] *= deg2rad;
+      }
+    }
   }
-////  }
+  ray_r0 = config->GetBoom_r0();
+  tol_dphi = config->GetBoom_Tol_dphi();
+  tol_dr = config->GetBoom_Tol_dr();
+  tol_m = config->GetBoom_Tol_m();
+  tol_dp = config->GetBoom_Tol_dp();
+  tol_l = config->GetBoom_Tol_l();
 
   /*---Set reference pressure, make sure signal is dimensional---*/
   su2double Pressure_FreeStream=config->GetPressure_FreeStream();
@@ -105,145 +96,197 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   /*---Walk through neighbors to determine all points containing line---*/
   if(rank == MASTER_NODE)
     cout << "Extract line." << endl;
-  for(int i = 0; i < ray_N_phi; i++){
-    if(startline[i]){
-      ExtractLine(geometry, ray_r0, ray_phi, ray_N_phi);
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    if(nPanel[iPhi] > 0){
+      ExtractLine(geometry, ray_r0, iPhi);
     }
-    else{
-      nPanel = 0;
-    }
+    ////else{
+    ////  nPanel[iPhi] = 0;
+    ////}
   }
+
+  /*---Initialize some signal parameters---*/
+  nPointID = new unsigned long[ray_N_phi];
+  PointID = new unsigned long*[ray_N_phi];
+  signal.original_len = new unsigned long[ray_N_phi];
+  signal.final_len = new unsigned long[ray_N_phi];
+  signal.x = new su2double*[ray_N_phi];
+  signal.original_p = new su2double*[ray_N_phi];
+  signal.original_T = new su2double*[ray_N_phi];
+  signal.final_p = new su2double*[ray_N_phi];
+  signal.final_T = new su2double*[ray_N_phi];
 
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
     cout << "Extract pressure signature." << endl;
-  for(int i = 0; i < ray_N_phi; i++){
-    if(startline[i]){      ExtractPressure(solver, config, geometry);
+  nPointID_loc = 0;
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    nPointID[iPhi] = 0;
+    if(nPanel[iPhi] > 0){      
+      ExtractPressure(solver, config, geometry, iPhi);
     }
   }
 
-  unsigned long iPanel;
-  for(iPanel = 0; iPanel < nPanel; iPanel++){
-    signal.original_p[iPanel] = signal.original_p[iPanel]*Pressure_Ref - Pressure_FreeStream;
-  }
-
-  unsigned long totSig = 0;
-  unsigned long maxSig = 0;
+  nPointID_proc = new unsigned long[nProcessor];
+  unsigned long iPanel, panelCount, totSig, maxSig;
   unsigned long *nPanel_loc = new unsigned long[nProcessor];
+  nPointID_tot = 0;
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+      signal.original_p[iPhi][iPanel] = signal.original_p[iPhi][iPanel]*Pressure_Ref - Pressure_FreeStream;
+    }
+
+    totSig = 0;
+    maxSig = 0;
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPanel, &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nPanel, &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&nPanel, 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_UNSIGNED_LONG, nPointID_proc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-  su2double* Buffer_Recv_Press = NULL;
-  su2double* Buffer_Recv_x = NULL;
-  su2double* Buffer_Send_Press = new su2double[maxSig];
-  su2double* Buffer_Send_x = new su2double[maxSig];
+    su2double* Buffer_Recv_Press = NULL;
+    su2double* Buffer_Recv_x = NULL;
+    su2double* Buffer_Send_Press = new su2double[maxSig];
+    su2double* Buffer_Send_x = new su2double[maxSig];
+    if(rank == MASTER_NODE){
+      Buffer_Recv_Press = new su2double[nProcessor*maxSig];
+      Buffer_Recv_x = new su2double[nProcessor*maxSig];
+    }
+    
+    for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+      Buffer_Send_x[iPanel] = signal.x[iPhi][iPanel];
+      Buffer_Send_Press[iPanel] = signal.original_p[iPhi][iPanel];
+    }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Gather(Buffer_Send_Press, maxSig, MPI_DOUBLE, Buffer_Recv_Press,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_x, maxSig, MPI_DOUBLE, Buffer_Recv_x,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+    if (rank == MASTER_NODE)
+      cout << "Gathered signal data to MASTER_NODE." << endl;
+
+    if (rank == MASTER_NODE){
+      panelCount = 0;
+      nPanel[iPhi] = totSig;
+      signal.x[iPhi] = new su2double[nPanel[iPhi]];
+      signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
+      signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
+      for(unsigned int iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+        for(iPanel = 0; iPanel < nPanel_loc[iProcessor]; iPanel++){
+          signal.x[iPhi][panelCount] = Buffer_Recv_x[iProcessor*maxSig+iPanel];
+          signal.original_p[iPhi][panelCount] = Buffer_Recv_Press[iProcessor*maxSig+iPanel];
+          panelCount++;
+        }
+        nPointID_tot += nPointID_proc[iProcessor];
+      }
+
+      /*---Sort signal in order of x-coordinate---*/
+      cout << "Sorting signal data. " << nPanel[iPhi] << " points to sort." << endl;
+      MergeSort(signal.x[iPhi], signal.original_p[iPhi], 0, totSig-1);
+
+      /*---Check for duplicate points---*/
+      signal.original_len[iPhi] = nPanel[iPhi];
+      for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
+        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-7){
+          for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
+            signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
+            signal.original_p[iPhi][jPanel-1] = signal.original_p[iPhi][jPanel];
+          }
+          iPanel--;
+          nPanel[iPhi]--;
+        }
+      }
+
+      if(nPanel[iPhi] != totSig){
+        cout << "Eliminating duplicate points." << endl;
+        su2double *xtmp = new su2double[nPanel[iPhi]], *ptmp = new su2double[nPanel[iPhi]];
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+          xtmp[iPanel] = signal.x[iPhi][iPanel];
+          ptmp[iPanel] = signal.original_p[iPhi][iPanel];
+        }
+        signal.original_len[iPhi] = nPanel[iPhi];
+        signal.x[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+          signal.x[iPhi][iPanel] = xtmp[iPanel];
+          signal.original_p[iPhi][iPanel] = ptmp[iPanel];
+        }
+        delete [] xtmp;
+        delete [] ptmp;
+        totSig = nPanel[iPhi];
+      }
+
+      /*--- Clip leading and trailing segments ---*/
+      /*unsigned long jPanelLE = 0, jPanelTE = nPanel[iPhi]-1;
+      for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+        if(abs(signal.original_p[iPhi][iPanel]) > tol_dp){
+          jPanelLE = iPanel;
+          break;
+        }
+      }
+      for(iPanel = nPanel[iPhi]-1; iPanel > 0; iPanel--){
+        if(abs(signal.original_p[iPhi][iPanel]) > tol_dp){
+          jPanelTE = iPanel;
+          break;
+        }
+      }
+      if(jPanelLE != 0 || jPanelTE != nPanel[iPhi]-1){
+        su2double *xtmp = new su2double[nPanel[iPhi]], *ptmp = new su2double[nPanel[iPhi]];
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+          xtmp[iPanel] = signal.x[iPhi][iPanel];
+          ptmp[iPanel] = signal.original_p[iPhi][iPanel];
+        }
+        nPanel[iPhi] = jPanelTE-jPanelLE+1;
+        signal.original_len[iPhi] = nPanel[iPhi];
+        signal.x[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_T[iPhi] = new su2double[nPanel[iPhi]];
+        signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+          signal.x[iPhi][iPanel] = xtmp[iPanel+jPanelLE];
+          signal.original_p[iPhi][iPanel] = ptmp[iPanel+jPanelLE];
+        }
+        delete [] xtmp;
+        delete [] ptmp;
+        totSig = nPanel[iPhi];
+      }*/
+
+    }
+  }
+
+  /*---Now write to file---*/
   if(rank == MASTER_NODE){
-    Buffer_Recv_Press = new su2double[nProcessor*maxSig];
-    Buffer_Recv_x = new su2double[nProcessor*maxSig];
-  }
-  
-  for(iPanel = 0; iPanel < nPanel; iPanel++){
-    Buffer_Send_x[iPanel] = signal.x[iPanel];
-    Buffer_Send_Press[iPanel] = signal.original_p[iPanel];
-  }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Press, maxSig, MPI_DOUBLE, Buffer_Recv_Press,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_x, maxSig, MPI_DOUBLE, Buffer_Recv_x,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-
-  if (rank == MASTER_NODE)
-    cout << "Gathered signal data to MASTER_NODE." << endl;
-
-  if (rank == MASTER_NODE){
+    nPanel_tot = 0;
     ofstream sigFile;
     sigFile.precision(15);
     sigFile.open("signal_original.dat");
-    sigFile << "# x, p" << endl;
-
-  ////  unsigned long Total_Index;
-
-  ////  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-  ////    for (iPanel = 0; iPanel < Buffer_Recv_sigCount[iProcessor]; iPanel++) {
-  ////      /*--- Current index position and global index ---*/
-  ////      Total_Index  = iProcessor*totSig + iPanel;
-
-  ////      signal.x[panelCount] = Buffer_Recv_x[Total_Index];
-  ////      signal.original_p[panelCount] = Buffer_Recv_Press[Total_Index];
-
-  ////      panelCount++;
-  ////    }
-  ////  }
-
-    unsigned long panelCount = 0;
-    nPanel = totSig;
-    signal.original_len = nPanel;
-    signal.x = new su2double[nPanel];
-    signal.original_p = new su2double[nPanel];
-    signal.original_T = new su2double[nPanel];
-    for(unsigned int iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-      for(iPanel = 0; iPanel < nPanel_loc[iProcessor]; iPanel++){
-        signal.x[panelCount] = Buffer_Recv_x[iProcessor*maxSig+iPanel];
-        signal.original_p[panelCount] = Buffer_Recv_Press[iProcessor*maxSig+iPanel];
-        panelCount++;
+    sigFile << "# phi, x, p" << endl;
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+      for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+        sigFile << scientific << ray_phi[iPhi] << "\t";
+        sigFile << scientific << signal.x[iPhi][iPanel] << "\t";
+        sigFile << scientific << signal.original_p[iPhi][iPanel]   << "\t";
+        sigFile << endl;
       }
-    }
-
-    /*---Sort signal in order of x-coordinate---*/
-    cout << "Sorting signal data." << endl;
-    MergeSort(signal.x, signal.original_p, 0, totSig-1);
-
-    /*---Check for duplicate points---*/
-    for(iPanel = 1; iPanel < nPanel; iPanel++){
-      if(abs(signal.x[iPanel-1]-signal.x[iPanel]) < 1.0E-8){
-        for(unsigned long jPanel = iPanel; jPanel < nPanel; jPanel++){
-          signal.x[jPanel-1] = signal.x[jPanel];
-          signal.original_p[jPanel-1] = signal.original_p[jPanel];
-        }
-        iPanel--;
-        nPanel--;
-      }
-    }
-
-    if(nPanel != totSig){
-      cout << "Eliminating duplicate points." << endl;
-      su2double *xtmp = new su2double[nPanel], *ptmp = new su2double[nPanel];
-      for(iPanel = 0; iPanel < nPanel; iPanel++){
-        xtmp[iPanel] = signal.x[iPanel];
-        ptmp[iPanel] = signal.original_p[iPanel];
-      }
-      signal.x = new su2double[nPanel];
-      signal.original_p = new su2double[nPanel];
-      for(iPanel = 0; iPanel < nPanel; iPanel++){
-        signal.x[iPanel] = xtmp[iPanel];
-        signal.original_p[iPanel] = ptmp[iPanel];
-      }
-      delete [] xtmp;
-      delete [] ptmp;
-      totSig = nPanel;
-    }
-
-    /*---Now write to file---*/
-    for(iPanel = 0; iPanel < nPanel; iPanel++){
-      sigFile << scientific << signal.x[iPanel] << "\t";
-      sigFile << scientific << signal.original_p[iPanel]   << "\t";
-      sigFile << endl;
+      nPanel_tot += nPanel[iPhi];
     }
     sigFile.close();
-    cout << "Signal written. nPanel = " << nPanel << "." << endl;
+    cout << "Signal written. Total nPanel = " << nPanel_tot << "." << endl;
 
   }
 
   /*---Initialize sensitivities---*/
   if(config->GetAD_Mode()){
-    dJdU = new su2double* [nDim+3];
-    for(int iDim = 0; iDim < nDim+3 ; iDim++){
-      dJdU[iDim] = new su2double[nPointID];
-      for(iPanel = 0;  iPanel< nPointID; iPanel++){
-        dJdU[iDim][iPanel] = 0.0;
+    dJdU = new su2double**[ray_N_phi];
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+      dJdU[iPhi] = new su2double* [nDim+3];
+      for(int iDim = 0; iDim < nDim+3 ; iDim++){
+        dJdU[iPhi][iDim] = new su2double[nPointID[iPhi]];
+        for(iPanel = 0;  iPanel< nPointID[iPhi]; iPanel++){
+          dJdU[iPhi][iDim][iPanel] = 0.0;
+        }
       }
     }
 
@@ -409,7 +452,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
   unsigned long nMarker = config->GetnMarker_All();
   unsigned long iMarker, iVertex, iPoint, *iPointmin, itmp;
   unsigned long jElem;
-  unsigned short iElem, nElem, nNearest, *iPointmax, *ixmin;
+  unsigned short iElem, nElem, nNearest, *iPointmax, *nNearest_loc, *ixmin;
 
   bool inside=false;
 
@@ -425,13 +468,15 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 
 
   if(nDim == 2){
-    nNearest = 4;
+    nNearest = 16;
     y0 = new su2double[1];
     r2min = new su2double[nNearest];
     xmin = new su2double[nNearest];
     iPointmin = new unsigned long[nNearest];
     iPointmax = new unsigned short[1];
     ixmin = new unsigned short[1];
+    nPanel = new unsigned long[1];
+    nNearest_loc = new unsigned short[1];
     startline = new bool[1];
     endline = new bool[1];
     p0 = new su2double[2];
@@ -441,13 +486,15 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       r2min[j] = 1.0E6;
       xmin[j] = 1.0E6;
     }
+    nPanel[0] = 0;
     iPointmax[0] = 0;
     ixmin[0] = 0;
     startline[0] = false;
     endline[0] = false;
+    nNearest_loc[0] = 0;
   }
   else{
-    nNearest = 8;
+    nNearest = 32;
     y0 = new su2double[nPhi];
     z0 = new su2double[nPhi];
     r2min = new su2double[nNearest*nPhi];
@@ -455,6 +502,8 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     iPointmin = new unsigned long[nNearest*nPhi];
     iPointmax = new unsigned short[nPhi];
     ixmin = new unsigned short[nPhi];
+    nPanel = new unsigned long[nPhi];
+    nNearest_loc = new unsigned short[nPhi];
     startline = new bool[nPhi];
     endline = new bool[nPhi];
     p0 = new su2double[3];
@@ -466,29 +515,31 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
         r2min[nNearest*i+j] = 1.0E6;
         xmin[nNearest*i+j] = 1.0E6;
       }
+      nPanel[i] = 0;
       iPointmax[i] = 0;
       ixmin[i] = 0;
       startline[i] = false;
       endline[i] = false;
+      nNearest_loc[i] = 0;
     }
   }
 
-  for(iMarker = 0; iMarker < nMarker; iMarker++){
+/*  for(iMarker = 0; iMarker < nMarker; iMarker++){
     /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
-    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
+/*    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         /*--- Make sure point is in domain ---*/
-        if(geometry->node[iPoint]->GetDomain()){
+/*        if(geometry->node[iPoint]->GetDomain()){
           Coord = geometry->node[iPoint]->GetCoord();
           y = SU2_TYPE::GetValue(Coord[1]);
           if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
           /*--- Only look at points below aircraft ---*/
-          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
+/*          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
             r2 = y*y;
             if(nDim == 3) r2 += z*z;
             /*--- Limit search to points within strip ---*/
-            if(r2 > r02*sq2_2 && r2 < r02*sq2){
+/*            if(r2 > r02*sq2_2 && r2 < r02*sq2){
               x = SU2_TYPE::GetValue(Coord[0]);
 
               if(nDim == 2){
@@ -499,6 +550,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                   r2min[iPointmax[0]] = r2;
                   xmin[iPointmax[0]] = x;
                   startline[0] = true;
+                  if(nNearest_loc[0] < nNearest) nNearest_loc[0]++;
                 }
                 for(unsigned short j = 0; j < nNearest; j++){
                   if(r2min[j] > r2min[iPointmax[0]]) iPointmax[0] = j;
@@ -515,8 +567,9 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     r2min[2*i+1] = r2;
                     xmin[2*i+1] = x;
                     startline[i] = true;
+                    nNearest_loc[i]++;
                     /*--- Now sort min values based on r2 ---*/
-                    if(r2min[2*i+1] < r2min[2*i]){
+/*                    if(r2min[2*i+1] < r2min[2*i]){
                       itmp = iPointmin[2*i+1];
                       iPointmin[2*i+1] = iPointmin[2*i];
                       iPointmin[2*i] = itmp;
@@ -539,31 +592,140 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
       }
     }
   }
+*/
+  /*--- Test search ---*/  
+  for(iMarker = 0; iMarker < nMarker; iMarker++){
+    /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
+    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){// || config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY){
+      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        /*--- Make sure point is in domain ---*/
+        //////////if(geometry->node[iPoint]->GetDomain()){
+          Coord = geometry->node[iPoint]->GetCoord();
+          y = SU2_TYPE::GetValue(Coord[1]);
+          if(nDim == 3) z = SU2_TYPE::GetValue(Coord[2]);
+          /*--- Only look at points below aircraft ---*/
+          if((nDim == 2 && y < 0.0) || (nDim == 3 && z < 0.0)){
+            r2 = y*y;
+            if(nDim == 3) r2 += z*z;
+            /*--- Limit search to points within strip ---*/
+            //////if(r2 > r02*sq2_2 && r2 < r02*sq2){
+              x = SU2_TYPE::GetValue(Coord[0]);
+              nElem = geometry->node[iPoint]->GetnElem();
+              for(iElem = 0; iElem < nElem; iElem++){
+                jElem = geometry->node[iPoint]->GetElem(iElem);
+                if(jElem < geometry->GetnElem()){
+                  for(unsigned short iPhi = 0; iPhi < nPhi; iPhi++){
+                    inside = InsideElem(geometry, r0, phi[iPhi], jElem, p0, p1);
+                    if(inside){
+                      if(nPanel[iPhi] == 0){
+                        nPanel[iPhi] = 1;
+                        pointID_original = new unsigned long*[nPhi];
+                        pointID_original[iPhi] = new unsigned long[1];
+                        Coord_original = new su2double**[nPhi];
+                        Coord_original[iPhi] = new su2double*[1];
+                        Coord_original[iPhi][0] = new su2double[nDim];
 
+                        pointID_original[iPhi][0] = jElem;
+                        Coord_original[iPhi][0][0] = (p0[0] + p1[0])/2.0;
+                        if(nDim == 2){
+                          Coord_original[iPhi][0][1] = -r0;
+                        }
+                        else{
+                          Coord_original[iPhi][0][1] = -r0*sin(ray_phi[iPhi]);
+                          Coord_original[iPhi][0][2] = -r0*cos(ray_phi[iPhi]);
+                        }
+                      }
+                      else{
+                        nPanel[iPhi]++;
+
+                        unsigned long *pointID_tmp = new unsigned long[nPanel[iPhi]-1];
+                        su2double **Coord_tmp = new su2double*[nPanel[iPhi]-1];
+                        for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
+                          Coord_tmp[i] = new su2double[nDim];
+                          pointID_tmp[i] = pointID_original[iPhi][i];
+                          Coord_tmp[i][0] = Coord_original[iPhi][i][0];
+                          Coord_tmp[i][1] = Coord_original[iPhi][i][1];
+
+                          delete [] Coord_original[iPhi][i];
+                        }
+                        delete [] pointID_original[iPhi];
+                        delete [] Coord_original[iPhi];
+
+                        pointID_original[iPhi] = new unsigned long[nPanel[iPhi]];
+                        Coord_original[iPhi] = new su2double*[nPanel[iPhi]];
+                        for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
+                          Coord_original[iPhi][i] = new su2double[nDim];
+                          pointID_original[iPhi][i] = pointID_tmp[i];
+                          Coord_original[iPhi][i][0] = Coord_tmp[i][0];
+                          Coord_original[iPhi][i][1] = Coord_tmp[i][1];
+
+                          delete [] Coord_tmp[i];
+                        }
+                        delete [] pointID_tmp;
+                        delete [] Coord_tmp;
+
+                        Coord_original[iPhi][nPanel[iPhi]-1] = new su2double[nDim];
+                        pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
+                        Coord_original[iPhi][nPanel[iPhi]-1][0] = (p0[0] + p1[0])/2.0;
+                        if(nDim == 2){
+                          Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
+                        }
+                        else{
+                          Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0*sin(ray_phi[iPhi]);
+                          Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
+                        }
+                        /*if((p0[0]+p1[0])/2.0 < Coord_original[0][0][0]){
+                          pointID_original[0][0] = jElem;
+                          Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
+                        }*/
+                      }
+                      //startline[0] = true;
+                      break;
+                    }
+                  }
+                }
+              }
+            //////}
+          }
+        //////////}
+      }
+    }
+  }
   /*--- Reorder iPointmin by x location ---*/
-  for(int i = 0; i < nPhi; i++){
+/*  for(int i = 0; i < nPhi; i++){
     MergeSort(xmin, iPointmin, i*nNearest, i*nNearest+nNearest-1);
   }
 
   if(nDim == 2){
     if(startline[0]){
-      for(unsigned short iNearest = 0; iNearest < nNearest; iNearest++){
+      for(unsigned short iNearest = 0; iNearest < nNearest_loc[0]; iNearest++){
         Coord = geometry->node[iPointmin[iNearest]]->GetCoord();
         nElem = geometry->node[iPointmin[iNearest]]->GetnElem();
         for(iElem = 0; iElem < nElem; iElem++){
           jElem = geometry->node[iPointmin[iNearest]]->GetElem(iElem);
           inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
           if(inside){
-            nPanel = 1;
-            pointID_original = new unsigned long[nPanel];
-            Coord_original = new su2double*[nPanel];
-            Coord_original[0] = new su2double[nDim];
+            //if(nPanel[0] == 0){
+              nPanel[0] = 1;
+              pointID_original = new unsigned long*[1];
+              pointID_original[0] = new unsigned long[nPanel[0]];
+              Coord_original = new su2double**[1];
+              Coord_original[0] = new su2double*[nPanel[0]];
+              Coord_original[0][0] = new su2double[nDim];
 
-            pointID_original[0] = jElem;
-            Coord_original[0][0] = (p0[0] + p1[0])/2.0;
-            Coord_original[0][1] = -r0;
-
-            break;
+              pointID_original[0][0] = jElem;
+              Coord_original[0][0][0] = (p0[0] + p1[0])/2.0;
+              Coord_original[0][0][1] = -r0;
+            //}
+            /*else{
+              mintmp = (p0[0] + p1[0])/2.0;
+              if(mintmp < Coord_original[0][0][0]){
+                pointID_original[0][0] = jElem;
+                Coord_original[0][0][0] = mintmp;
+              }
+            }*/
+/*            break;
           }
         }
         if(inside) break;
@@ -573,9 +735,37 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
   }
 
   else if(nDim == 3){
+    pointID_original = new unsigned long*[nPhi];
+    Coord_original = new su2double**[nPhi];
+    for(int i = 0; i < nPhi; i++){
+      if(startline[i]){
+        for(unsigned short iNearest = 0; iNearest < nNearest_loc[i]; iNearest++){
+          Coord = geometry->node[iPointmin[i*nNearest+iNearest]]->GetCoord();
+          nElem = geometry->node[iPointmin[i*nNearest+iNearest]]->GetnElem();
+          for(iElem = 0; iElem < nElem; iElem++){
+            jElem = geometry->node[iPointmin[i*nNearest+iNearest]]->GetElem(iElem);
+            inside = InsideElem(geometry, r0, phi[i], jElem, p0, p1);
+            if(inside){
+              nPanel[i] = 1;
+              pointID_original[i] = new unsigned long[nPanel[i]];
+              Coord_original[i] = new su2double*[nPanel[i]];
+              Coord_original[i][0] = new su2double[nDim];
 
+              pointID_original[i][0] = jElem;
+              Coord_original[i][0][0] = (p0[0] + p1[0])/2.0;
+              Coord_original[i][0][1] = -r0*sin(phi[i]);
+              Coord_original[i][0][2] = -r0*cos(phi[i]);
+
+              break;
+            }
+          }
+          if(inside) break;
+        }
+        if(!inside) startline[i] = false;
+      }
+    }
   }
- 
+*/ 
 
   delete [] iPointmin;
   delete [] Coord;
@@ -587,123 +777,136 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
 
 }
 
-void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, const su2double *phi, unsigned short nPhi){
-  bool inside, boundary, end = false;
+void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short iPhi){
+  bool inside, inside_iPanel, addPanel, end = false;
   unsigned short iElem, nElem;
-  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem(), nPoint_tot = geometry->GetnPointDomain();
+  unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
   su2double x_i, x_m1;
 
   unsigned long *pointID_tmp;
   su2double **Coord_tmp;
   su2double *p0 = new su2double[nDim], *p1 = new su2double[nDim];
 
+  
   while(!end){
-    if(nDim == 2){
-
-      jElem_m1 = pointID_original[nPanel-1];
-      x_m1 = geometry->elem[jElem_m1]->GetCG(0);
+    inside_iPanel = false;
+    for(unsigned long jPanel = 0; jPanel < nPanel[iPhi]; jPanel++){
+      //////jElem_m1 = pointID_original[iPhi][nPanel[iPhi]-1];
+      jElem_m1 = pointID_original[iPhi][jPanel];
+      //x_m1 = geometry->elem[jElem_m1]->GetCG(0);
       nElem = geometry->elem[jElem_m1]->GetnNeighbor_Elements();
-      inside = false;
+      ////inside = false;
 
       for(iElem = 0; iElem < nElem; iElem++){
+        addPanel = true;
+        inside = false;
         jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
         /*--- Don't extract boundary elements ---*/
-        boundary = false;
-        /*for(unsigned short iPoint = 0; iPoint < geometry->elem[jElem]->GetnNodes(); iPoint++){
-          unsigned long jPoint = geometry->elem[jElem]->GetNode(iPoint);
-          //cout << "jPoint = " << jPoint << endl;//", nPoint_tot = " << nPoint_tot << endl;
-          //if(jPoint < nPoint_tot) boundary = true;
-          if(!geometry->node[jPoint]->GetDomain()){
-            boundary = true;
-            cout << "jPoint = " << jPoint << ", jElem = " << jElem << endl;
-          }
-        }*/
-        //if(!boundary){
-          if(jElem < nElem_tot){
-            x_i = geometry->elem[jElem]->GetCG(0);
+        if(jElem < nElem_tot){
+          ////x_i = geometry->elem[jElem]->GetCG(0);
 
-            if(x_i > x_m1){
-              inside = InsideElem(geometry, r0, 0.0, jElem, p0, p1);
-              if(inside){
-                nPanel++;
-
-                pointID_tmp = new unsigned long[nPanel-1];
-                Coord_tmp = new su2double*[nPanel-1];
-                for(unsigned long i = 0; i < nPanel-1; i++){
-                  Coord_tmp[i] = new su2double[nDim];
-                  pointID_tmp[i] = pointID_original[i];
-                  Coord_tmp[i][0] = Coord_original[i][0];
-                  Coord_tmp[i][1] = Coord_original[i][1];
-
-                  delete [] Coord_original[i];
+          ////if(x_i > x_m1){
+            inside = InsideElem(geometry, r0, ray_phi[iPhi], jElem, p0, p1);
+            if(inside){
+              for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+                if(jElem == pointID_original[iPhi][iPanel]){
+                  addPanel = false;
+                  break;
                 }
-                delete [] pointID_original;
-                delete [] Coord_original;
+              }
+              if(addPanel){ // If not a repeat panel
+                nPanel[iPhi]++;
 
-                pointID_original = new unsigned long[nPanel];
-                Coord_original = new su2double*[nPanel];
-                for(unsigned long i = 0; i < nPanel-1; i++){
-                  Coord_original[i] = new su2double[nDim];
-                  pointID_original[i] = pointID_tmp[i];
-                  Coord_original[i][0] = Coord_tmp[i][0];
-                  Coord_original[i][1] = Coord_tmp[i][1];
+                pointID_tmp = new unsigned long[nPanel[iPhi]-1];
+                Coord_tmp = new su2double*[nPanel[iPhi]-1];
+                for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
+                  Coord_tmp[i] = new su2double[nDim];
+                  pointID_tmp[i] = pointID_original[iPhi][i];
+                  Coord_tmp[i][0] = Coord_original[iPhi][i][0];
+                  Coord_tmp[i][1] = Coord_original[iPhi][i][1];
+
+                  delete [] Coord_original[iPhi][i];
+                }
+                delete [] pointID_original[iPhi];
+                delete [] Coord_original[iPhi];
+
+                pointID_original[iPhi] = new unsigned long[nPanel[iPhi]];
+                Coord_original[iPhi] = new su2double*[nPanel[iPhi]];
+                for(unsigned long i = 0; i < nPanel[iPhi]-1; i++){
+                  Coord_original[iPhi][i] = new su2double[nDim];
+                  pointID_original[iPhi][i] = pointID_tmp[i];
+                  Coord_original[iPhi][i][0] = Coord_tmp[i][0];
+                  Coord_original[iPhi][i][1] = Coord_tmp[i][1];
 
                   delete [] Coord_tmp[i];
                 }
                 delete [] pointID_tmp;
                 delete [] Coord_tmp;
 
-                Coord_original[nPanel-1] = new su2double[nDim];
-                pointID_original[nPanel-1] = jElem;
-                Coord_original[nPanel-1][0] = (p0[0] + p1[0])/2.0;
-                Coord_original[nPanel-1][1] = -r0;
+                Coord_original[iPhi][nPanel[iPhi]-1] = new su2double[nDim];
+                pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
+                Coord_original[iPhi][nPanel[iPhi]-1][0] = (p0[0] + p1[0])/2.0;
+                if(nDim == 2){
+                  Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
+                }
+                else{
+                  Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0*sin(ray_phi[iPhi]);
+                  Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
+                }
 
-                break;
+                inside_iPanel = true;
+                //break;
               }
+
+              ////break;
             }
-          }
-        //}
+          ////}
+        }
       }
-      if(!inside){
-        end = true;
-      }
+    }
+    if(!inside_iPanel){
+      end = true;
     }
   }
 
-  cout << "nPanel extracted = " << nPanel << endl;
-
 }
 
-void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry){
-  unsigned short iDim, iNode, nNode;
-  unsigned long jElem, jNode;
-  unsigned long pointCount = 0;
+void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned short iPhi){
+  unsigned short iDim, iNode, iiNode, nNode;
+  unsigned long jElem, jNode, *jNode_list;
+  unsigned long pointCount = 0, jNodeCount;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
   su2double rho_i, rho_ux_i, rho_uy_i, rho_uz_i, rho_E_i, TKE_i;
   su2double ux, uy, uz, StaticEnergy, p;
 
   su2double *isoparams;
-  su2double *X_donor;
+  su2double *X_donor, *X_donor_tmp;
   su2double *Coord = new su2double[nDim];
 
-  nPointID = 0;
-  for(unsigned long i = 0; i < nPanel; i++){
-    jElem = pointID_original[i];
-    nPointID += geometry->elem[jElem]->GetnNodes();
+  for(unsigned long i = 0; i < nPanel[iPhi]; i++){
+    jElem = pointID_original[iPhi][i];
+    nNode = geometry->elem[jElem]->GetnNodes();
+    for(iNode = 0; iNode < nNode; iNode++){
+      //jNode = geometry->elem[jElem]->GetNode(iNode);
+      //if(geometry->node[jNode]->GetDomain()){
+        nPointID[iPhi]++;
+      //}
+    }
   }
-  PointID = new unsigned long[nPointID];
+  PointID[iPhi] = new unsigned long[nPointID[iPhi]];
 
-  signal.original_len = nPanel;
-  signal.x = new su2double[nPanel];
-  signal.original_p = new su2double[nPanel];
-  for(unsigned long i = 0; i < nPanel; i++){
+  signal.x[iPhi] = new su2double[nPanel[iPhi]];
+  signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
+  for(unsigned long i = 0; i < nPanel[iPhi]; i++){
     /*--- Get info needed for isoparameter computation ---*/
-    jElem = pointID_original[i];
+    jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
     for(unsigned short j = 0; j < nDim; j++){
-      Coord[j] = Coord_original[i][j];
+      Coord[j] = Coord_original[iPhi][i][j];
     }
     X_donor = new su2double[nDim*nNode];
+    //jNode_list = new unsigned long[nNode];
+    //jNodeCount = 0;
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){  
@@ -711,9 +914,53 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
       }
     }
 
+    /*--- Check if all nodes in domain ---*/
+    /*for(iNode = 0; iNode < nNode; iNode++){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      if(!geometry->node[jNode]->GetDomain()){
+        X_donor_tmp = new su2double[nDim*nNode];
+        for(jNode = 0; jNode < nNode; jNode++){
+          for(iDim = 0; iDim < nDim; iDim++){
+            X_donor_tmp[iDim*nNode+iNode] = X_donor[iDim*nNode+iNode];
+          }
+        }
+        X_donor = new su2double[nDim*(nNode-1)];
+        for(iiNode = 0; iiNode < nNode-1; iiNode++){
+          for(iDim = 0; iDim < nDim; iDim++){
+            if(iiNode < iNode){
+              X_donor[iDim*(nNode-1)+iiNode] = X_donor_tmp[iDim*nNode+iiNode];
+            }
+            else{
+              X_donor[iDim*(nNode-1)+iiNode] = X_donor_tmp[iDim*nNode+iiNode+1];
+            }
+          }
+        }
+        nNode--;
+      }
+      else{
+        jNode_list[jNodeCount] = jNode;
+        jNodeCount++;
+      }
+    }*/
+
     /*--- Compute isoparameters ---*/
     isoparams = new su2double[nNode];
     Isoparameters(nDim, nNode, X_donor, Coord, isoparams);
+
+    /*--- Correct isoparameters by eliminating nodes not in domain ---*/
+    //////su2double isoparams_sum = 0.0;
+    //////for(iNode = 0; iNode < nNode; iNode++){
+      //////jNode = geometry->elem[jElem]->GetNode(iNode);
+      //////if(!geometry->node[jNode]->GetDomain()){
+        //////////isoparams[iNode] = 0.0;
+      //////}
+      //////else{
+        //////////isoparams_sum += isoparams[iNode];
+      //////}
+    //////}
+    //////for(iNode = 0; iNode < nNode; iNode++){
+      //////////isoparams[iNode] /= isoparams_sum;
+    //////}
 
     /*--- Now interpolate pressure ---*/
     p = 0.0;
@@ -721,45 +968,39 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     rho_ux_i = 0.0; rho_uy_i = 0.0; rho_uz_i = 0.0;
     rho_E_i = 0.0; TKE_i = 0.0;
     for(iNode = 0; iNode < nNode; iNode++){
-      if(isoparams[iNode]*isoparams[iNode] > 0.0){
+      //if(isoparams[iNode]*isoparams[iNode] > 0.0){
         jNode = geometry->elem[jElem]->GetNode(iNode);
+        //jNode = jNode_list[iNode];
 
-        /*---Extract conservative flow data---*/
-        rho = solver->node[jNode]->GetSolution(nDim);
-        rho_ux = solver->node[jNode]->GetSolution(nDim+1);
-        rho_uy = solver->node[jNode]->GetSolution(nDim+2);
-        if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
-        rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
-        TKE = 0.0;
+          /*---Extract conservative flow data---*/
+          rho = solver->node[jNode]->GetSolution(nDim);
+          rho_ux = solver->node[jNode]->GetSolution(nDim+1);
+          rho_uy = solver->node[jNode]->GetSolution(nDim+2);
+          if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
+          rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
+          TKE = 0.0;
 
-        //Register conservative variables as input for adjoint computation
-        if (config->GetAD_Mode()){
-          AD::RegisterInput(rho );
-          AD::RegisterInput(rho_ux );
-          AD::RegisterInput(rho_uy );
-          if (nDim==3) AD::RegisterInput(rho_uz );
-          AD::RegisterInput(rho_E );
-          AD::RegisterInput(TKE );
-        }
+          //Register conservative variables as input for adjoint computation
+          if (config->GetAD_Mode()){
+            AD::RegisterInput(rho );
+            AD::RegisterInput(rho_ux );
+            AD::RegisterInput(rho_uy );
+            if (nDim==3) AD::RegisterInput(rho_uz );
+            AD::RegisterInput(rho_E );
+            AD::RegisterInput(TKE );
+          }
 
-        /*---Compute pressure---*/
-        rho_i += rho*isoparams[iNode];
-        rho_ux_i += rho_ux*isoparams[iNode];
-        rho_uy_i += rho_uy*isoparams[iNode];
-        if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
-        rho_E_i += rho_E*isoparams[iNode];
-        TKE_i += TKE*isoparams[iNode];
+          /*---Compute pressure---*/
+          rho_i += rho*isoparams[iNode];
+          rho_ux_i += rho_ux*isoparams[iNode];
+          rho_uy_i += rho_uy*isoparams[iNode];
+          if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
+          rho_E_i += rho_E*isoparams[iNode];
+          TKE_i += TKE*isoparams[iNode];
 
-        /*ux = rho_ux/rho;
-        uy = rho_uy/rho;
-        uz = 0.0;
-        if(nDim == 3) uz= rho_uz/rho;
-        StaticEnergy =  rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-        p += (config->GetGamma()-1)*rho*StaticEnergy*isoparams[iNode];*/
-
-        PointID[pointCount] = geometry->node[jNode]->GetGlobalIndex();
-        pointCount++;
-      }
+          PointID[iPhi][pointCount] = geometry->node[jNode]->GetGlobalIndex();
+          pointCount++;
+      //}
     }
     
     ux = rho_ux_i/rho_i;
@@ -769,75 +1010,154 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     StaticEnergy =  rho_E_i/rho_i-0.5*(ux*ux+uy*uy+uz*uz)-TKE_i;
     p = (config->GetGamma()-1)*rho_i*StaticEnergy;
 
-    signal.x[i] = Coord[0];
-    signal.original_p[i] = p;
+    signal.x[iPhi][i] = Coord[0];
+    signal.original_p[iPhi][i] = p;
 
   }
   
 }
 
 bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
-  bool inside = false;
-  unsigned long iPoint;
+  bool inside = false, *inDomain;
+  unsigned long iPoint, jNode;
   unsigned short iNode, nNode, count, intersect;
 
-  nNode = geometry->elem[jElem]->GetnNodes();
-
-  su2double **Coord_elem = new su2double*[nNode];
   su2double *pp0 = new su2double[nDim];
   su2double *pp1 = new su2double[nDim];
 
-  /*--- Store node coordinates ---*/
-  for(iNode = 0; iNode < nNode; iNode++){
-    iPoint = geometry->elem[jElem]->GetNode(iNode);
-    Coord_elem[iNode] = new su2double[nDim];
-    for(unsigned short iDim = 0; iDim < nDim; iDim++){
-      Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-    }
-  }
-
   /*--- Now determine if line intersects element ---*/
-  if(nDim == 2){
+  if(nDim == 2){ // Check if line intersects any edge
+
+    /*--- Store node coordinates ---*/
+    nNode = geometry->elem[jElem]->GetnNodes();
+    su2double **Coord_elem = new su2double*[nNode];
+    //////inDomain = new bool[nNode];
+    for(iNode = 0; iNode < nNode; iNode++){
+      //////inDomain[iNode] = true;
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      //////if(!geometry->node[jNode]->GetDomain()){
+      //if(jNode >= geometry->GetnPointDomain()){
+        //////////inDomain[iNode] = false;
+        //return false;
+      //////}
+
+      Coord_elem[iNode] = new su2double[nDim];
+      //////if(inDomain[iNode]){
+        for(unsigned short iDim = 0; iDim < nDim; iDim++){
+          Coord_elem[iNode][iDim] = geometry->node[jNode]->GetCoord(iDim);
+        }
+      //////}
+    }
+
     count = 0;
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-      intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
+      //////if(inDomain[iEdge] && inDomain[iEdge_p1]){
+        intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
+        if(intersect == 1){
+          if(count == 0){
+            p0[0] = pp0[0];
+            p0[1] = pp0[1];
+          }
+          else{
+            p1[0] = pp0[0];
+            p1[1] = pp0[1];
+          }
+        }
+        else if(intersect == 2){
+          p0[0] = pp0[0];
+          p0[1] = pp0[1];
+          p1[0] = pp1[0];
+          p1[1] = pp1[1];
+          inside = true;
+          break;
+        }
+        count += intersect;
+        if(count > 1){
+          inside = true;
+          break;
+        }
+      //////}
+    }
+
+    //if(count == 1){
+    //  p1[0] = p0[0];
+    //  p1[1] = p0[1];
+    //  inside = true;
+    //}
+
+    for(iNode = 0; iNode < nNode; iNode++){
+      delete [] Coord_elem[iNode];
+    }
+    delete [] Coord_elem;
+  }
+
+  else{ // Check if line intersects face
+
+    su2double **Coord_face;
+    count = 0;
+    unsigned short nNodeFace = 0; 
+    for(unsigned short iFace = 0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++){
+      nNodeFace = geometry->elem[jElem]->GetnNodesFace(iFace);
+      Coord_face = new su2double*[nNodeFace];
+      for(iNode = 0; iNode < nNodeFace; iNode++){
+        Coord_face[iNode] = new su2double[3];
+        iPoint = geometry->elem[jElem]->GetNode(geometry->elem[jElem]->GetFaces(iFace, iNode));
+        for(unsigned short iDim = 0; iDim < 3; iDim++){
+          Coord_face[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        }
+      }
+      intersect = Intersect3D(r0, phi, nNodeFace, Coord_face, pp0);
       if(intersect == 1){
         if(count == 0){
           p0[0] = pp0[0];
           p0[1] = pp0[1];
+          p0[2] = pp0[2];
         }
         else{
           p1[0] = pp0[0];
           p1[1] = pp0[1];
+          p1[2] = pp0[2];
+        }
+        count++;
+        if(count > 1){
+          inside = true;
+          break;
         }
       }
-      else if(intersect == 2){
-        p0[0] = pp0[0];
-        p0[1] = pp0[1];
-        p1[0] = pp1[0];
-        p1[1] = pp1[1];
-      }
-      count += intersect;
-      if(count > 1){
-        inside = true;
-        break;
-      }
     }
-  }
 
-  for(iNode = 0; iNode < nNode; iNode++){
-    delete [] Coord_elem[iNode];
+    for(iNode = 0; iNode < nNodeFace; iNode++){
+      delete [] Coord_face[iNode];
+    }
+    delete [] Coord_face;
   }
-  delete [] Coord_elem;
 
   return inside;
 }
 
 int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1){
 
-  su2double line[2][2] = {{-1.0,-r0},{1.0E3,-r0}};
+  /*--- Interpolate if point between yi and yi+1 ---*/
+  if((Coord_i[1] > -r0 && Coord_ip1[1] < -r0) || (Coord_i[1] < -r0 && Coord_ip1[1] > -r0)){
+    su2double t = (-r0-Coord_i[1])/(Coord_ip1[1]-Coord_i[1]);
+    p0[0] = Coord_i[0] + t*(Coord_ip1[0]-Coord_i[0]);
+    return 1;
+  }
+  /*--- Colinear segments at r0 ---*/
+  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8){
+    p0[0] = Coord_i[0];
+    p0[1] = -r0;
+    p1[0] = Coord_ip1[0];
+    p1[1] = -r0;
+    return 2;
+  }
+  else{
+    return 0;
+  }
+
+  /*su2double line[2][2] = {{-1.0, -r0}, {1.0E3, -r0}};
   su2double u[2] = {line[1][0]-line[0][0], line[1][1]-line[0][1]};
   su2double v[2] = {Coord_ip1[0]-Coord_i[0], Coord_ip1[1]-Coord_i[1]};
   su2double w[2] = {line[0][0]-Coord_i[0], line[0][1]-Coord_i[1]};
@@ -845,12 +1165,12 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
             upw = u[0]*w[1] - u[1]*w[0], 
             vpw = v[0]*w[1] - v[1]*w[0]; // Perp dot product
 
-  if(abs(upv) < 1E-8){ // Segments are parallel
+  if(abs(upv) < 1.0E-8){ // Segments are parallel
     if(abs(upw) > 1.0E-8 || abs(vpw) > 1.0E-8){ // Not colinear
       return 0;
     }
     /*--- Get overlap of collinear segments ---*/
-    su2double t0, t1;
+    /*su2double t0, t1;
     su2double w2[2] = {line[1][0]-Coord_i[0], line[1][1]-Coord_i[1]};
     if(abs(v[0]) > 1.0E-8){
       t0 = w[0]/v[0];
@@ -878,7 +1198,7 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
   }
 
   /*--- Segments not parallel and may intersect at a point ---*/
-  su2double s = vpw/upv, t = upw/upv;
+  /*su2double s = vpw/upv, t = upw/upv;
   if(s < 0 || s > 1 || t < 0 || t > 1){
     return 0;
   }
@@ -886,12 +1206,74 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
   p0[0] = line[0][0] + s*u[0];
   p0[1] = line[0][1] + s*u[1];
 
-  return 1;
+  return 1;*/
 
 }
 
-int SUBoom::Intersect3D(){
+int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *p1){
   
+  /*--- t = -(P0.N + d)/(V.N) where P0 is origin of ray, N is plane normal, d is offset vector of plane, V is direction of ray ---*/
+  su2double normal[3] = {Coord_i[0][1]*Coord_i[1][2] - Coord_i[0][2]*Coord_i[1][1],
+                      Coord_i[0][2]*Coord_i[1][0] - Coord_i[0][0]*Coord_i[1][2],
+                      Coord_i[0][0]*Coord_i[1][1] - Coord_i[0][1]*Coord_i[1][0]};
+
+  /*--- We only care about rays in +x direction, so only use x components in denominator---*/
+  if(abs(normal[0]) < 1.0E-8){ // Ray and plane are parallel
+    return 0;
+  }
+  else{
+    unsigned short i0, i1, i2;
+    su2double p0[3] = {-1.0, -r0*sin(phi), -r0*cos(phi)};
+    su2double d = -Coord_i[0][0]*normal[0] - Coord_i[0][1]*normal[1] - Coord_i[0][2]*normal[2];
+    su2double t = -(p0[0]*normal[0] + p0[1]*normal[1] + p0[2]*normal[2] + d)/(normal[0]);
+
+    p1[0] = p0[0] + t;
+    p1[1] = p0[1];
+    p1[2] = p0[2];
+
+    /*--- Project onto yz plane ---*/
+    for(unsigned short i = 0; i < nCoord-2; i++){
+      if(nCoord == 3){
+        i0 = 0;
+        i1 = 1;
+        i2 = 2;
+      }
+      else{ // if 4 points, check if inside triangle 0-1-2 and 2-3-0
+        i0 = 2*i;
+        i1 = i0+1;
+        i2 = (i0+2)%nCoord;
+      }
+      su2double u0 = p1[1] - Coord_i[i0][1];
+      su2double v0 = p1[2] - Coord_i[i0][2];
+      su2double u1 = Coord_i[i1][1] - Coord_i[i0][1];
+      su2double u2 = Coord_i[i2][1] - Coord_i[i0][1];
+      su2double v1 = Coord_i[i1][2] - Coord_i[i0][2];
+      su2double v2 = Coord_i[i2][2] - Coord_i[i0][2];
+      su2double alpha = -1.0, beta;
+
+      if(u1 < 1.0E-8){
+        beta = u0 / u2;
+        if(0 <= beta && beta <= 1){
+          alpha = (v0 - beta*v2)/v1;
+        }
+      }
+      else{
+        beta = (v0*u1 - u0*v1)/(v2*u1 - u2*v1);
+        if(0 <= beta && beta <= 1){
+          alpha = (u0 - beta*u2)/u1;
+        }
+
+      }
+
+      if(alpha >= 0.0 && beta >= 0.0 && (alpha+beta) <= 1.0){
+        return 1;
+      }
+    }
+
+
+
+  }
+
 }
 
 void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams) {
@@ -1039,6 +1421,8 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   if (nDonor==4) {
     //-- Bilinear coordinates, bounded by [-1,1] ---
     su2double xi, eta;
+    xi = -isoparams[0]+isoparams[1]+isoparams[2]-isoparams[3];
+    eta = 2.0*(isoparams[2]-isoparams[0]) - xi;
     if (xi>1.0) xi=1.0;
     if (xi<-1.0) xi=-1.0;
     if (eta>1.0) eta=1.0;
@@ -1048,7 +1432,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     isoparams[2]=0.25*(1+xi)*(1+eta);
     isoparams[3]=0.25*(1-xi)*(1+eta);
   }
-/*  if (nDonor<4) {
+  if (nDonor<4) {
     tmp = 0.0; // value for normalization
     tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
     k=0; // index for maximum value
@@ -1068,7 +1452,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     else {
       isoparams[k] = 1.0;
     }
-  }*/
+  }
   
   if (A2 != NULL) delete [] A2;
 
@@ -1137,10 +1521,11 @@ void SUBoom::ConditionAtmosphericData(){
   /*---Atmospheric conditions profile---*/
   z = new su2double[n_prof];
   a_of_z = new su2double[n_prof];
+  p_of_z = new su2double[n_prof];
   rho_of_z = new su2double[n_prof];
   for(unsigned int i = 0; i < n_prof; i++){
     z[i] = h0*su2double(i)/(su2double(n_prof)-1.);
-    AtmosISA(z[i], T, a_of_z[i], p, rho_of_z[i], g);
+    AtmosISA(z[i], T, a_of_z[i], p_of_z[i], rho_of_z[i], g);
   }
 }
 
@@ -1154,6 +1539,16 @@ void SUBoom::ScaleFactors(){
   scale_C1 = scale_p;    // [Pa]
   scale_C2 = scale_T;    // [s]
 
+}
+
+void SUBoom::DistanceToTime(){
+  int len;
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    len = signal.original_len[iPhi];
+    for(int i = 0; i < len; i++){
+      signal.original_T[iPhi][i] = signal.x[iPhi][i]/(a_inf*flt_M);
+    }
+  }
 }
 
 void SUBoom::GetAtmosphericData(su2double& a, su2double& rho, su2double& p, su2double h){
@@ -1208,7 +1603,7 @@ void SUBoom::InitialWaveNormals(){
     ray_theta0[i][0] = ray_theta0[i][1] = 0.;
     ray_c0[i][0] = ray_c0[i][1] = 0.;
 
-    phi[i] = ray_phi[i]*deg2rad;
+    phi[i] = ray_phi[i];
     phi_tube[i] = phi[i] + tol_dphi*deg2rad;
   }
 
@@ -1363,14 +1758,13 @@ su2double *SUBoom::SplineGetDerivs(su2double x[], su2double y[], int N){
   return ks;
 }
 
-void SUBoom::RayTracer(){
+void SUBoom::RayTracer(unsigned short iPhi){
 
   /*---Scale factors---*/
   su2double L = flt_h;
   su2double T = scale_T;
   su2double a0, rho0, p0;
   su2double a, rho, p;
-  //  su2double theta[n_prof];
   su2double r0[3];
   su2double *f, *x, *y, *t;
   su2double *kx, *ky, *kz;
@@ -1391,207 +1785,188 @@ void SUBoom::RayTracer(){
   x = new su2double[n_prof];
   y = new su2double[n_prof];
   t = new su2double[n_prof];
-  kx = new su2double[n_prof];
-  ky = new su2double[n_prof];
-  kz = new su2double[n_prof];
+  //kx = new su2double[n_prof];
+  //ky = new su2double[n_prof];
+  //kz = new su2double[n_prof];
 
-  x_of_z = new su2double**[ray_N_phi];
-  y_of_z = new su2double**[ray_N_phi];
-  t_of_z = new su2double**[ray_N_phi];
-  dxdt = new su2double**[ray_N_phi];
-  dydt = new su2double**[ray_N_phi];
-  dzdt = new su2double**[ray_N_phi];
-  theta = new su2double**[ray_N_phi];
-  for(unsigned int i = 0; i < ray_N_phi; i++){
-    x_of_z[i] = new su2double*[4];
-    y_of_z[i] = new su2double*[4];
-    t_of_z[i] = new su2double*[4];
-    dxdt[i] = new su2double*[4];
-    dydt[i] = new su2double*[4];
-    dzdt[i] = new su2double*[4];
-    theta[i] = new su2double*[4];
-    for(unsigned short j = 0; j < 4; j++){
-      x_of_z[i][j] = new su2double[n_prof];
-      y_of_z[i][j] = new su2double[n_prof];
-      t_of_z[i][j] = new su2double[n_prof];
-      dxdt[i][j] = new su2double[n_prof];
-      dydt[i][j] = new su2double[n_prof];
-      dzdt[i][j] = new su2double[n_prof];
-      theta[i][j] = new su2double[n_prof];
-    }
+  x_of_z = new su2double*[4];
+  y_of_z = new su2double*[4];
+  t_of_z = new su2double*[4];
+  //dxdt = new su2double*[4];
+  //dydt = new su2double*[4];
+  //dzdt = new su2double*[4];
+  ray_theta = new su2double*[4];
+  for(unsigned short j = 0; j < 4; j++){
+    x_of_z[j] = new su2double[n_prof];
+    y_of_z[j] = new su2double[n_prof];
+    t_of_z[j] = new su2double[n_prof];
+    //dxdt[j] = new su2double[n_prof];
+    //dydt[j] = new su2double[n_prof];
+    //dzdt[j] = new su2double[n_prof];
+    ray_theta[j] = new su2double[n_prof];
   }
 
-   for(unsigned int i = 0; i < ray_N_phi; i++){
+  /*---Primary ray---*/
+  data.c0 = ray_c0[iPhi][0];
+  data.nu = ray_nu[iPhi][0];
+  r0[0] = r0[1] = r0[2] = 0.;
 
-    /*---Primary ray---*/
-    data.c0 = ray_c0[i][0];
-    data.nu = ray_nu[i][0];
-    r0[0] = r0[1] = r0[2] = 0.;
+  for(int j = n_prof-1; j > -1; j--){
+    f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
+    x[j] = x_of_z[0][j] = -f[0];
+    y[j] = y_of_z[0][j] = -f[1];
+    t[j] = t_of_z[0][j] = -f[2];
 
-    for(int j = n_prof-1; j > -1; j--){
-      f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-      x[j] = x_of_z[i][0][j] = -f[0];
-      y[j] = y_of_z[i][0][j] = -f[1];
-      t[j] = t_of_z[i][0][j] = -f[2];
+    r0[0] = -x[j];
+    r0[1] = -y[j];
+    r0[2] = -t[j];
 
-      r0[0] = -x[j];
-      r0[1] = -y[j];
-      r0[2] = -t[j];
-
-      /*---Derived data---*/
-      GetAtmosphericData(a, rho, p, z[j]);
-      theta[i][0][j] = acos(a/data.c0);
-    }
-
-    kx = SplineGetDerivs(t, x, n_prof);
-    ky = SplineGetDerivs(t, y, n_prof);
-    kz = SplineGetDerivs(t, z, n_prof);
-    for(unsigned int ik = 0; ik < n_prof; ik++){
-      dxdt[i][0][ik] = kx[ik];
-      dydt[i][0][ik] = ky[ik];
-      dzdt[i][0][ik] = kz[ik];
-    }
-
-    /*---Ray tube corners: {0, +dheading}---*/
-    r0[0] = flt_heading[0]*tol_dr;
-    r0[1] = flt_heading[1]*tol_dr;
-    r0[2] = flt_heading[2]*tol_dr;
-    for(int j = n_prof-1; j > -1; j--){
-      f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-      x[j] = x_of_z[i][1][j] = -f[0];
-      y[j] = y_of_z[i][1][j] = -f[1];
-      t[j] = -f[2];
-
-      r0[0] = -x[j];
-      r0[1] = -y[j];
-      r0[2] = -t[j];
-
-      /*---Derived data---*/
-      GetAtmosphericData(a, rho, p, z[j]);
-      theta[i][1][j] = acos(a/data.c0);
-    }
-
-    kx = SplineGetDerivs(t, x, n_prof);
-    ky = SplineGetDerivs(t, y, n_prof);
-    for(unsigned int ik = 0; ik < n_prof; ik++){
-      dxdt[i][1][ik] = kx[ik];
-      dydt[i][1][ik] = ky[ik];
-    }
-
-    /*---Ray tube corners: {+dphi, 0}---*/
-    data.c0 = ray_c0[i][1];
-    data.nu = ray_nu[i][1];
-    r0[0] = r0[1] = r0[2] = 0.;
-
-    for(int j = n_prof-1; j > -1; j--){
-      f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-      x[j] = x_of_z[i][2][j] = -f[0];
-      y[j] = y_of_z[i][2][j] = -f[1];
-      t[j] = t_of_z[i][2][j] = -f[2];
-
-      r0[0] = -x[j];
-      r0[1] = -y[j];
-      r0[2] = -t[j];
-
-      /*---Derived data---*/
-      GetAtmosphericData(a, rho, p, z[j]);
-      theta[i][2][j] = acos(a/data.c0);
-    }
-
-    kx = SplineGetDerivs(t, x, n_prof);
-    ky = SplineGetDerivs(t, y, n_prof);
-    kz = SplineGetDerivs(t, z, n_prof);
-    for(unsigned int ik = 0; ik < n_prof; ik++){
-      dxdt[i][2][ik] = kx[ik];
-      dydt[i][2][ik] = ky[ik];
-      dzdt[i][2][ik] = kz[ik];
-    }
-
-    /*---Ray tube corners: {+dphi, +dheading}---*/
-    r0[0] = flt_heading[0]*tol_dr;
-    r0[1] = flt_heading[1]*tol_dr;
-    r0[2] = flt_heading[2]*tol_dr;
-    for(int j = n_prof-1; j > -1; j--){
-      f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-      x[j] = x_of_z[i][3][j] = -f[0];
-      y[j] = y_of_z[i][3][j] = -f[1];
-      t[j] = -f[2];
-
-      r0[0] = -x[j];
-      r0[1] = -y[j];
-      r0[2] = -t[j];
-
-      /*---Derived data---*/
-      GetAtmosphericData(a, rho, p, z[j]);
-      theta[i][3][j] = acos(a/data.c0);
-    }
-
-    kx = SplineGetDerivs(t, x, n_prof);
-    ky = SplineGetDerivs(t, y, n_prof);
-    for(unsigned int ik = 0; ik < n_prof; ik++){
-      dxdt[i][3][ik] = kx[ik];
-      dydt[i][3][ik] = ky[ik];
-    }
-
+    /*---Derived data---*/
+    GetAtmosphericData(a, rho, p, z[j]);
+    ray_theta[0][j] = acos(a/data.c0);
   }
 
-  cout << "Clearing up ray tracer memory" << endl;
+  //kx = SplineGetDerivs(t, x, n_prof);
+  //ky = SplineGetDerivs(t, y, n_prof);
+  //kz = SplineGetDerivs(t, z, n_prof);
+  //for(unsigned int ik = 0; ik < n_prof; ik++){
+  //  dxdt[0][ik] = kx[ik];
+  //  dydt[0][ik] = ky[ik];
+  //  dzdt[0][ik] = kz[ik];
+  //}
+
+  /*---Ray tube corners: {0, +dheading}---*/
+  r0[0] = flt_heading[0]*tol_dr;
+  r0[1] = flt_heading[1]*tol_dr;
+  r0[2] = flt_heading[2]*tol_dr;
+  for(int j = n_prof-1; j > -1; j--){
+    f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
+    x[j] = x_of_z[1][j] = -f[0];
+    y[j] = y_of_z[1][j] = -f[1];
+    t[j] = -f[2];
+
+    r0[0] = -x[j];
+    r0[1] = -y[j];
+    r0[2] = -t[j];
+
+    /*---Derived data---*/
+    GetAtmosphericData(a, rho, p, z[j]);
+    ray_theta[1][j] = acos(a/data.c0);
+  }
+
+  /*kx = SplineGetDerivs(t, x, n_prof);
+  ky = SplineGetDerivs(t, y, n_prof);
+  for(unsigned int ik = 0; ik < n_prof; ik++){
+    dxdt[1][ik] = kx[ik];
+    dydt[1][ik] = ky[ik];
+  }*/
+
+  /*---Ray tube corners: {+dphi, 0}---*/
+  data.c0 = ray_c0[iPhi][1];
+  data.nu = ray_nu[iPhi][1];
+  r0[0] = r0[1] = r0[2] = 0.;
+
+  for(int j = n_prof-1; j > -1; j--){
+    f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
+    x[j] = x_of_z[2][j] = -f[0];
+    y[j] = y_of_z[2][j] = -f[1];
+    t[j] = t_of_z[2][j] = -f[2];
+
+    r0[0] = -x[j];
+    r0[1] = -y[j];
+    r0[2] = -t[j];
+
+    /*---Derived data---*/
+    GetAtmosphericData(a, rho, p, z[j]);
+    ray_theta[2][j] = acos(a/data.c0);
+  }
+
+  /*kx = SplineGetDerivs(t, x, n_prof);
+  ky = SplineGetDerivs(t, y, n_prof);
+  kz = SplineGetDerivs(t, z, n_prof);
+  for(unsigned int ik = 0; ik < n_prof; ik++){
+    dxdt[2][ik] = kx[ik];
+    dydt[2][ik] = ky[ik];
+    dzdt[2][ik] = kz[ik];
+  }*/
+
+  /*---Ray tube corners: {+dphi, +dheading}---*/
+  r0[0] = flt_heading[0]*tol_dr;
+  r0[1] = flt_heading[1]*tol_dr;
+  r0[2] = flt_heading[2]*tol_dr;
+  for(int j = n_prof-1; j > -1; j--){
+    f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
+    x[j] = x_of_z[3][j] = -f[0];
+    y[j] = y_of_z[3][j] = -f[1];
+    t[j] = -f[2];
+
+    r0[0] = -x[j];
+    r0[1] = -y[j];
+    r0[2] = -t[j];
+
+    /*---Derived data---*/
+    GetAtmosphericData(a, rho, p, z[j]);
+    ray_theta[3][j] = acos(a/data.c0);
+  }
+
+  /*kx = SplineGetDerivs(t, x, n_prof);
+  ky = SplineGetDerivs(t, y, n_prof);
+  for(unsigned int ik = 0; ik < n_prof; ik++){
+    dxdt[3][ik] = kx[ik];
+    dydt[3][ik] = ky[ik];
+  }*/
 
   /*---Clear up memory---*/
   delete [] f;
   delete [] x;
   delete [] y;
   delete [] t;
-  delete [] kx;
-  delete [] ky;
-  delete [] kz;
+  //delete [] kx;
+  //delete [] ky;
+  //delete [] kz;
 
 }
 
-void SUBoom::RayTubeArea(){
+void SUBoom::RayTubeArea(unsigned short iPhi){
 
   su2double Ah, x_int, y_int, z_int;
   su2double corners[4][3];
   int M;
 
-  ray_A = new su2double*[ray_N_phi];
-  for(int i = 0; i < ray_N_phi; i++){
-    ray_A[i] = new su2double[n_prof];
-  }
+  ray_A = new su2double[n_prof];
 
   /*---Loop over rays---*/
-  for(int i = 0; i < ray_N_phi; i++){
-    M = n_prof;
-    Ah = 0;
-    //ray_A[i][M-1] = 0.0;
-    for(int j = 0; j < M; j++){
-      for(int k = 0; k < 4; k++){
-	    for(int kk = 0; kk < 3; kk++){
-	    corners[k][kk] = 0.0;
-	    }
+  M = n_prof;
+  Ah = 0;
+  //ray_A[i][M-1] = 0.0;
+  for(int j = 0; j < M; j++){
+    for(int k = 0; k < 4; k++){
+      for(int kk = 0; kk < 3; kk++){
+        corners[k][kk] = 0.0;
       }
-      z_int = z[j]/scale_z;
-      for(int k = 0; k < 4; k++){
-    	  x_int = x_of_z[i][k][j];
-	      y_int = y_of_z[i][k][j];
-	      corners[k][0] = x_int;
-	      corners[k][1] = y_int;
-	      corners[k][2] = z_int;
-      }
-      su2double u[3] = {corners[3][0]-corners[0][0], corners[3][1]-corners[0][1], corners[3][2]-corners[0][2]};
-      su2double v[3] = {corners[2][0]-corners[1][0], corners[2][1]-corners[1][1], corners[2][2]-corners[1][2]};
-      /*---Cross product---*/
-      su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
-      Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
-      ray_A[i][j] = Ah*a_of_z[j]*tan(theta[i][0][j])/ray_c0[i][0];
     }
+    z_int = z[j]/scale_z;
+    for(int k = 0; k < 4; k++){
+  	  x_int = x_of_z[k][j];
+      y_int = y_of_z[k][j];
+      corners[k][0] = x_int;
+      corners[k][1] = y_int;
+      corners[k][2] = z_int;
+    }
+    su2double u[3] = {corners[3][0]-corners[0][0], corners[3][1]-corners[0][1], corners[3][2]-corners[0][2]};
+    su2double v[3] = {corners[2][0]-corners[1][0], corners[2][1]-corners[1][1], corners[2][2]-corners[1][2]};
+    /*---Cross product---*/
+    su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
+    Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
+    ray_A[j] = Ah*a_of_z[j]*tan(ray_theta[0][j])/ray_c0[iPhi][0];
+    //ray_A[j] = Ah*sin(ray_theta[0][j]);  // TESTING a=cn (see Thomas paper)
   }
 
 }
 
-su2double SUBoom::matchr(int i, int j, su2double h_L, su2double r0){
+su2double SUBoom::matchr(int j, su2double h_L, su2double r0){
   su2double f;
-  f = sqrt(pow(x_of_z[i][0][j],2) + pow(y_of_z[i][0][j],2) + pow(z[j]/scale_z-1.0,2))*h_L - r0;
+  f = sqrt(pow(x_of_z[0][j],2) + pow(y_of_z[0][j],2) + pow(z[j]/scale_z-1.0,2))*h_L - r0/scale_L;
   return f;
 }
 
@@ -1607,60 +1982,54 @@ void SUBoom::FindInitialRayTime(){
   su2double a, b;
   su2double *ks;
 
-  ray_t0 = new su2double[ray_N_phi];
-
   ks = new su2double[n_prof];
 
-  for(unsigned int i = 0; i < ray_N_phi; i++){
-    for(unsigned int j = 0; j < n_prof; j++){
-      t[j] = t_of_z[i][0][j];
-      f[j] = matchr(i, j, h_L, ray_r0);
-    }
-
-    /*---Get spline---*/
-    ks = SplineGetDerivs(t, f, n_prof);
-
-    /*---Secant method---*/
-    f0 = f[(n_prof-1)/3];
-    f1 = f[2*(n_prof-1)/3];
-    t0 = t[(n_prof-1)/3];
-    t1 = t[2*(n_prof-1)/3];
-    eps = 1.E6;
-    while(eps > 1.E-8){
-      tmp = t1 - f1*(t1-t0)/(f1-f0);
-      t0 = t1;
-      t1 = tmp;
-      f0 = f1;
-      // Find interval which contains t1
-      unsigned int j_sp = n_prof-1;
-      for(int j = n_prof-1; j > -1; j--){
-	    if(t1 < t[j]){
-	      j_sp = j+1;
-	      break;
-	    }
-      }
-      if(j_sp == 0){j_sp = 1;}
-
-      trat = (t1-t[j_sp-1])/(t[j_sp]-t[j_sp-1]);
-      a = ks[j_sp-1]*(t[j_sp]-t[j_sp-1]) - (f[j_sp]-f[j_sp-1]);
-      b = -ks[j_sp]*(t[j_sp]-t[j_sp-1]) + (f[j_sp]-f[j_sp-1]);
-
-      f1 = (1.0-trat)*f[j_sp-1] + trat*f[j_sp] + trat*(1-trat)*(a*(1-trat)+b*trat);
-      eps = abs(t1-t0);
-    }
-
-    ray_t0[i] = t1;
-
+  for(unsigned int j = 0; j < n_prof; j++){
+    t[j] = t_of_z[0][j];
+    f[j] = matchr(j, h_L, ray_r0);
   }
+
+  /*---Get spline---*/
+  ks = SplineGetDerivs(t, f, n_prof);
+
+  /*---Secant method---*/
+  f0 = f[(n_prof-1)/3];
+  f1 = f[2*(n_prof-1)/3];
+  t0 = t[(n_prof-1)/3];
+  t1 = t[2*(n_prof-1)/3];
+  eps = 1.E6;
+  while(eps > 1.E-8){
+    tmp = t1 - f1*(t1-t0)/(f1-f0);
+    t0 = t1;
+    t1 = tmp;
+    f0 = f1;
+    // Find interval which contains t1
+    unsigned int j_sp = n_prof-1;
+    for(int j = n_prof-1; j > -1; j--){
+    if(t1 < t[j]){
+      j_sp = j+1;
+      break;
+    }
+    }
+    if(j_sp == 0){j_sp = 1;}
+
+    trat = (t1-t[j_sp-1])/(t[j_sp]-t[j_sp-1]);
+    a = ks[j_sp-1]*(t[j_sp]-t[j_sp-1]) - (f[j_sp]-f[j_sp-1]);
+    b = -ks[j_sp]*(t[j_sp]-t[j_sp-1]) + (f[j_sp]-f[j_sp-1]);
+
+    f1 = (1.0-trat)*f[j_sp-1] + trat*f[j_sp] + trat*(1-trat)*(a*(1-trat)+b*trat);
+    eps = abs(t1-t0);
+  }
+
+  ray_t0 = t1;
 
   /*---Clear up memory---*/
   delete [] ks;
 
 }
 
-void SUBoom::ODETerms(){
+void SUBoom::ODETerms(unsigned short iPhi){
 
-  su2double t[n_prof], A[n_prof];
   su2double *cn;
   su2double *dadt, *drhodt, *dAdt;
   su2double *dcndt;
@@ -1673,65 +2042,47 @@ void SUBoom::ODETerms(){
   dAdt = new su2double[n_prof];
   dcndt = new su2double[n_prof];
 
-  ray_C1 = new su2double*[ray_N_phi];
-  ray_C2 = new su2double*[ray_N_phi];
-  ray_dC1 = new su2double*[ray_N_phi];
-  ray_dC2 = new su2double*[ray_N_phi];
-  for(unsigned int i = 0; i < ray_N_phi; i++){
-    for (unsigned int j = 0; j < n_prof; j++){
-      t[j] = t_of_z[i][0][j];
-      A[j] = ray_A[i][j];
-      cn[j] = ray_c0[i][0]*cos(theta[i][0][j]);
-    }
-
-    /*--- Spline interpolation of a, rho, A---*/
-    dadt = SplineGetDerivs(t, a_of_z, n_prof);
-    drhodt = SplineGetDerivs(t, rho_of_z, n_prof);
-    dAdt = SplineGetDerivs(t, A, n_prof);
-    dcndt = SplineGetDerivs(t, cn, n_prof);
-
-    ray_C1[i] = new su2double[n_prof];
-    ray_C2[i] = new su2double[n_prof];
-    for(unsigned int j = 0; j < n_prof; j++){
-      ray_C1[i][j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
-      //if(A[j] > 1E-16){
-          ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./A[j])*dAdt[j]);
-      //}
-      //else{
-        //ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
-      //}
-      //cout << "A = " << A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[i][j] << endl;
-    }
-    ray_dC1[i] = SplineGetDerivs(t, ray_C1[i], n_prof);
-    ray_dC2[i] = SplineGetDerivs(t, ray_C2[i], n_prof);
-
-    delete [] ray_c0[i];
-    delete [] ray_nu[i];
-    delete [] ray_theta0[i];
+  for (unsigned int j = 0; j < n_prof; j++){
+    cn[j] = ray_c0[iPhi][0]*cos(ray_theta[0][j]);
   }
 
+  /*--- Spline interpolation of a, rho, A---*/
+  dadt = SplineGetDerivs(t_of_z[0], a_of_z, n_prof);
+  drhodt = SplineGetDerivs(t_of_z[0], rho_of_z, n_prof);
+  dAdt = SplineGetDerivs(t_of_z[0], ray_A, n_prof);
+  dcndt = SplineGetDerivs(t_of_z[0], cn, n_prof);
+
+  ray_C1 = new su2double[n_prof];
+  ray_C2 = new su2double[n_prof];
+  for(unsigned int j = 0; j < n_prof; j++){
+    //ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/cn[j];
+    ray_C1[j] = ((g+1.)/(2.*g))*a_of_z[j]/(p_of_z[j]*cn[j])*scale_p; // TESTING scaling by pressure (See Thomas paper)
+    //ray_C1[j] = ((g+1.)/(2.*g)); // TESTING constant C1
+    //if(A[j] > 1E-16){
+    ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j] - (1./ray_A[j])*dAdt[j]);
+    //ray_C2[j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./a_of_z[j])*dadt[j] - (1./ray_A[j])*dAdt[j]); // TESTING a instead of cn (no wind)
+    //}
+    //else{
+      //ray_C2[i][j] = 0.5*((3./a_of_z[j])*dadt[j] + drhodt[j]/rho_of_z[j] - (2./cn[j])*dcndt[j]);
+    //}
+    //cout << "A = " << ray_A[j] << ", dAdt = " << dAdt[j] << ", C2 = " << ray_C2[j] << endl;
+  }
+  ray_dC1 = SplineGetDerivs(t_of_z[0], ray_C1, n_prof);
+  ray_dC2 = SplineGetDerivs(t_of_z[0], ray_C2, n_prof);
+
+  delete [] ray_c0[iPhi];
+  delete [] ray_nu[iPhi];
+  delete [] ray_theta0[iPhi];
+  
   delete [] cn;
   delete [] dadt;
   delete [] drhodt;
   delete [] dAdt;
   delete [] dcndt;
-  delete [] a_of_z;
-  delete [] rho_of_z;
-  delete [] ray_c0;
-  delete [] ray_nu;
-  delete [] ray_theta0;
-
 }
 
-void SUBoom::DistanceToTime(){
-  int len = signal.original_len;
-  for(int i = 0; i < len; i++){
-    signal.original_T[i] = signal.x[i]/(a_inf*flt_M);
-  }
-}
-
-void SUBoom::CreateSignature(){
-  int len = signal.original_len;
+void SUBoom::CreateSignature(unsigned short iPhi){
+  int len = signal.original_len[iPhi];
   su2double pp[2][len-1];
   su2double ll[len-1];
   su2double mm[len-1];
@@ -1739,9 +2090,9 @@ void SUBoom::CreateSignature(){
   /*---Pressure signal to waveform---*/
   /*---Collect data into segments---*/
   for(int i = 0; i < len-1; i++){
-    pp[0][i] = signal.original_p[i]/scale_p;  // [Pa] (relative)
-    pp[1][i] = signal.original_p[i+1]/scale_p;
-    ll[i] = (signal.original_T[i+1] - signal.original_T[i])/scale_T;  // [s]
+    pp[0][i] = signal.original_p[iPhi][i]/scale_p;  // [Pa] (relative)
+    pp[1][i] = signal.original_p[iPhi][i+1]/scale_p;
+    ll[i] = (signal.original_T[iPhi][i+1] - signal.original_T[iPhi][i])/scale_T;  // [s]
     mm[i] = (pp[1][i] - pp[0][i])/ll[i]; // [Pa/s]
   }
 
@@ -1754,20 +2105,20 @@ void SUBoom::CreateSignature(){
       for(int j = i; j < M; j++){
         pp[0][j] = pp[0][j+1];
         pp[1][j] = pp[1][j+1];
-	    ll[j] = ll[j+1];
-	    mm[j] = mm[j+1];
+	      ll[j] = ll[j+1];
+	      mm[j] = mm[j+1];
         //ll[i] = tol_l;
         //mm[i] = (pp[1][i] - pp[0][i])/ll[i];
       }
-      i -= 1;
-      M -= 1;
+      i--;
+      M--;
     }
-    else if(mm[i] < -tol_m/scale_m){  // "expansion shock" present
+    else if(mm[i] < -tol_m/scale_m && ll[i] < tol_l/scale_T){  // "expansion shock" present
       /*---Remove segment i---*/
       ll[i] = tol_l/scale_T;
       mm[i] = (pp[1][i] - pp[0][i])/ll[i];
     }
-    i += 1;
+    i++;
   }
 
   /*---Record signal---*/
@@ -1844,12 +2195,12 @@ su2double **WaveformToPressureSignal(su2double fvec[], unsigned int M, int &Msig
       if(pp[0][seg] != pp[1][seg-1]){  // pressure jump at this juncture
         sig[0][i] = TT[0][seg];
         sig[1][i] = pp[0][seg];
-        i = i+1;
+        i++;
       }
 
       sig[0][i] = TT[1][seg];
       sig[1][i] = pp[1][seg];
-      i = i+1;
+      i++;
       Msig = i;
     }
   }
@@ -1895,10 +2246,10 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
 
   for(int i = 0; i < 3*M; i++){
     if(i < M){
-      dydt[i] = C1*pow(y[i],2) + C2*y[i];
+      dydt[i] = C1*y[i]*y[i] + C2*y[i];
     }
     else if(i  < 2*M){
-      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] + C2*y[i];
+      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] + C2*y[i]; // TESTING sign change on C2
     }
     else{
       dydt[i] = -0.5*C1*diff_dp[i-2*M] - C1*y[i-2*M]*y[i];
@@ -1923,10 +2274,12 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
 
   /*---Get pressure values to get pressure gap---*/
   current_signal = new su2double*[2];
-  for(int i = 0; i < 2; i++){current_signal[i] = new su2double[M+1];}
+  for(int j = 0; j < 2; j++){current_signal[j] = new su2double[M];}
 
   /*---Decompose f vector---*/
+  //fvec_new = new su2double[3*M];
   for(int j = 0; j < 3*M; j++){
+    //fvec_new[j] = fvec[j];
     if(j < M){
 	    m[j] = fvec[j];
     }
@@ -1940,26 +2293,26 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   /*---Remove segments with l = 0---*/
   int i = 0;
   while(i <= N-1){
-    if(l[i] <= tol_l || m[i] >= tol_m || m[i] <= -tol_m){
+    if(l[i] <= tol_l/scale_T || m[i] >= tol_m/scale_m){// || m[i] <= -tol_m){
       /*---Record pressure gap---*/
       current_signal = WaveformToPressureSignal(fvec, N, Msig);
       dp_seg = dp[i] + (current_signal[1][i] - current_signal[0][i]);
       /*---Add to next segment if needed---*/
-      if(dp_seg > tol_dp){
+      if(dp_seg > tol_dp/scale_p){
           if(i < N-1){
               dp[i+1] = dp[i+1] + dp_seg;
           }
       }
 
-      N -= 1;
+      N--;
       /*---Remove segment---*/
       for(int j = i; j < N; j++){
           m[j] = m[j+1];
           dp[j] = dp[j+1];
           l[j] = l[j+1];
       }
-      //i -= 1;
-      fvec_new = new su2double[3*N];
+      i--;
+      //fvec_new = new su2double[3*N];
       for(int j = 0; j < N; j++){
           fvec[j] = m[j];
           fvec[j+N] = dp[j];
@@ -1967,7 +2320,7 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
       }
 
     }
-    i += 1;
+    i++;
 
   }
 
@@ -1981,8 +2334,8 @@ su2double *SUBoom::ClipLambdaZeroSegment(su2double fvec[], int &M){
   M = N;
 
   /*---Free memory---*/
-  for(int i = 0; i < 2; i++){
-    delete [] current_signal[i];
+  for(int j = 0; j < 2; j++){
+    delete [] current_signal[j];
   }
   delete [] current_signal;
 
@@ -2024,29 +2377,28 @@ su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2
 
 }
 
-void SUBoom::PropagateSignal(){
+void SUBoom::PropagateSignal(unsigned short iPhi){
   su2double t0, tf, dt;
-  unsigned int j0;
+  unsigned int j0, j0_dat;
   RayData data;
   su2double *fvec;
   su2double *f;
   su2double **ground_signal;
   int M = signal.M;
 
-  for(unsigned int i = 0; i < ray_N_phi; i++){
-    t0 = ray_t0[i];
 
+    t0 = ray_t0;
     /*---Assemble f vector and ray data for integration---*/
-    signal.fvec = new su2double[3*signal.M];
+    fvec = new su2double[3*signal.M];
     for(unsigned int j = 0; j < 3*signal.M; j++){
       if(j < signal.M){
-	      signal.fvec[j] = signal.m[j];
+	      fvec[j] = signal.m[j];
       }
       else if(j < 2*signal.M){
-	      signal.fvec[j] = signal.dp[j-signal.M];
+	      fvec[j] = signal.dp[j-signal.M];
       }
       else{
-	      signal.fvec[j] = signal.l[j-2*signal.M];
+	      fvec[j] = signal.l[j-2*signal.M];
       }
     }
     data.t = new su2double[9];
@@ -2059,27 +2411,26 @@ void SUBoom::PropagateSignal(){
     data.scale_C1 = scale_C1;
     data.scale_C2 = scale_C2;
 
-    fvec = signal.fvec;
-    for(int j = n_prof-1; j > -1; j--){
-        if(t_of_z[i][0][j] >= ray_t0[i]){
+    //fvec = signal.fvec;
+    for(unsigned int j = n_prof-1; j >= 0; j--){
+        if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
             break;
         }
     }
     for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
-      int j0_dat;
-      if(j >= n_prof-4) j0_dat = n_prof-4;
+      if(j >= n_prof-5) j0_dat = n_prof-5;
       else if(j < 4) j0_dat = 4;
       else j0_dat = j;
       for(unsigned short jj = 0; jj < 9; jj++){
-          data.t[jj] = t_of_z[i][0][j0_dat-4+jj];
-          data.C1[jj] = ray_C1[i][j0_dat-4+jj];
-          data.C2[jj] = ray_C2[i][j0_dat-4+jj];
-          data.dC1[jj] = ray_dC1[i][j0_dat-4+jj];
-          data.dC2[jj] = ray_dC2[i][j0_dat-4+jj];
+          data.t[jj] = t_of_z[0][j0_dat-4+jj];
+          data.C1[jj] = ray_C1[j0_dat-4+jj];
+          data.C2[jj] = ray_C2[j0_dat-4+jj];
+          data.dC1[jj] = ray_dC1[j0_dat-4+jj];
+          data.dC2[jj] = ray_dC2[j0_dat-4+jj];
       }
-      tf = t_of_z[i][0][j-1];
+      tf = t_of_z[0][j-1];
       dt = (tf - t0);
       f = rk4(t0, 3*M, fvec, dt, data, derivsProp);
       fvec = ClipLambdaZeroSegment(f, M);
@@ -2095,75 +2446,54 @@ void SUBoom::PropagateSignal(){
     int Msig = M;
     ground_signal = WaveformToPressureSignal(fvec, M, Msig);
 
-    signal.final_T = new su2double[Msig];
-    signal.final_p = new su2double[Msig];
-    signal.final_M = Msig;
+    signal.final_T[iPhi] = new su2double[Msig];
+    signal.final_p[iPhi] = new su2double[Msig];
+    signal.final_len[iPhi] = Msig;
 
     /*---Final signal and boom strength---*/
     ofstream sigFile;
     sigFile.precision(15);
     sigFile.open("signal_final.dat", ios::out);
-    sigFile << "# T, p" << endl;
-    p_max = -1E10;
-    p_int2 = 0;
+    if(iPhi == 0) sigFile << "# phi, T, p" << endl;
+    p_max[iPhi] = -1.0E10;
+    p_int2[iPhi] = 0.0;
     for(int j = 0; j < Msig; j++){
-      signal.final_T[j] = ground_signal[0][j]*scale_T;
-      signal.final_p[j] = ground_signal[1][j]*scale_p;
-      sigFile << signal.final_T[j] << "\t" << signal.final_p[j] << endl;
-      if(signal.final_p[j] > p_max) p_max = signal.final_p[j];
-      if(j > 0) p_int2 = p_int2 + 0.5*(signal.final_p[j]*signal.final_p[j]+signal.final_p[j-1]*signal.final_p[j-1])
-                        *(signal.final_T[j]-signal.final_T[j-1]);
+      signal.final_T[iPhi][j] = ground_signal[0][j]*scale_T;
+      signal.final_p[iPhi][j] = ground_signal[1][j]*scale_p;
+      sigFile << signal.final_T[iPhi][j] << "\t" << signal.final_p[iPhi][j] << endl;
+      if(signal.final_p[iPhi][j] > p_max[iPhi]) p_max[iPhi] = signal.final_p[iPhi][j];
+      if(j > 0) p_int2[iPhi] = p_int2[iPhi] + 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j]+signal.final_p[iPhi][j-1]*signal.final_p[iPhi][j-1])
+                        *(signal.final_T[iPhi][j]-signal.final_T[iPhi][j-1]);
     }
     sigFile.close();
-    p_rise = signal.final_p[0];
-    if(signal.final_p[0] > -signal.final_p[Msig-1]) p_rise2 = signal.final_p[0];
-    else p_rise2 = signal.final_p[Msig-1];
-    cout << "p_rise = " << p_rise << ", p_max = " << p_max << ", p_int2 = " << p_int2 << endl;
-
-    /*---Write boom strength metrics to file---*/
-    sigFile.open("pboomSU2", ios::out);
-    sigFile << p_max << "," << p_rise << "," << p_rise2 << "," << p_int2 << endl;
-    sigFile.close();
-  }
+    p_rise[iPhi] = signal.final_p[iPhi][0];
+    if(signal.final_p[iPhi][0] > -signal.final_p[iPhi][Msig-1]) p_rise2[iPhi] = signal.final_p[iPhi][0];
+    else p_rise2[iPhi] = signal.final_p[iPhi][Msig-1];
+    cout << "p_rise = " << p_rise[iPhi] << ", p_max = " << p_max[iPhi] << ", p_int2 = " << p_int2[iPhi] << "." << endl;
 
   /*---Clean up---*/
-  for(unsigned int i = 0; i < ray_N_phi; i++){
   for(unsigned short j = 0; j < 4; j++){
-      delete [] x_of_z[i][j];
-      delete [] y_of_z[i][j];
-      delete [] t_of_z[i][j];
-      delete [] dxdt[i][j];
-      delete [] dydt[i][j];
-      delete [] dzdt[i][j];
-      delete [] theta[i][j];
-  }
-  delete [] x_of_z[i];
-  delete [] y_of_z[i];
-  delete [] t_of_z[i];
-  delete [] dxdt[i];
-  delete [] dydt[i];
-  delete [] dzdt[i];
-  delete [] theta[i];
-  delete [] ray_A[i];
-  delete [] ray_C1[i];
-  delete [] ray_C2[i];
-  delete [] ray_dC1[i];
-  delete [] ray_dC2[i];
+      delete [] x_of_z[j];
+      delete [] y_of_z[j];
+      delete [] t_of_z[j];
+      //delete [] dxdt[j];
+      //delete [] dydt[j];
+      //delete [] dzdt[j];
+      delete [] ray_theta[j];
   }
 
   delete [] x_of_z;
   delete [] y_of_z;
   delete [] t_of_z;
-  delete [] dxdt;
-  delete [] dydt;
-  delete [] dzdt;
-  delete [] theta;
+  //delete [] dxdt;
+  //delete [] dydt;
+  //delete [] dzdt;
+  delete [] ray_theta;
   delete [] ray_A;
   delete [] ray_C1;
   delete [] ray_C2;
   delete [] ray_dC1;
   delete [] ray_dC2;
-  delete [] ray_t0;
 
   /*---Clear up memory from RayData class---*/
   delete [] data.t;
@@ -2185,84 +2515,102 @@ void SUBoom::WriteSensitivities(){
 
   if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];
 
-  Buffer_Send_nPointID[0]=nPointID; 
+    if(rank == MASTER_NODE){
+      Boom_AdjointFile.precision(15);
+      Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
+      Boom_AdjointFile << nPointID_tot << endl;
+    }
+
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+
+    Buffer_Send_nPointID[0]=nPointID[iPhi]; 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-  SU2_MPI::Allreduce(&nPointID,&Max_nPointID,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+    SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+    SU2_MPI::Allreduce(&nPointID[iPhi],&Max_nPointID,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
 #endif
 
-  nVar = nDim+3;
+    nVar = nDim+3;
 
-  /* pack sensitivity values in each processor and send to root */
-  su2double *Buffer_Send_dJdU = new su2double [Max_nPointID*nVar];
-  unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPointID];
-  /*---Zero send buffers---*/
-  for (unsigned int i=0; i <Max_nPointID*nVar; i++){
-    Buffer_Send_dJdU[i]=0.0;
-  }
-  for (unsigned int i=0; i <Max_nPointID; i++){
-    Buffer_Send_GlobalIndex[i]=0;
-  }
-  su2double *Buffer_Recv_dJdU = NULL;
-  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+    /* pack sensitivity values in each processor and send to root */
+    su2double *Buffer_Send_dJdU = new su2double [Max_nPointID*nVar];
+    unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPointID];
+    /*---Zero send buffers---*/
+    for (unsigned int i=0; i <Max_nPointID*nVar; i++){
+      Buffer_Send_dJdU[i]=0.0;
+    }
+    for (unsigned int i=0; i <Max_nPointID; i++){
+      Buffer_Send_GlobalIndex[i]=0;
+    }
+    su2double *Buffer_Recv_dJdU = NULL;
+    unsigned long *Buffer_Recv_GlobalIndex = NULL;
 
-  if (rank == MASTER_NODE) {
-    Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPointID*nVar];
-    Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPointID];
-  }
+    if (rank == MASTER_NODE) {
+      Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPointID*nVar];
+      Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPointID];
+    }
 
-  /*---Fill send buffers with dJ/dU---*/
-  for (iVar=0; iVar<nVar; iVar++){
-      for(iSig=0; iSig<nPointID; iSig++){
-          Buffer_Send_dJdU[iVar*nPointID+iSig] = dJdU[iVar][iSig];
+    /*---Fill send buffers with dJ/dU---*/
+    for (iVar=0; iVar<nVar; iVar++){
+        for(iSig=0; iSig<nPointID[iPhi]; iSig++){
+            Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdU[iPhi][iVar][iSig];
+          }
+      }
+
+    for (iSig=0; iSig<nPointID[iPhi]; iSig++){
+       Buffer_Send_GlobalIndex[iSig] = PointID[iPhi][iSig];
+    }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPointID*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPointID*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+    if (rank == MASTER_NODE){
+
+      /*--- Loop through all of the collected data and write each node's values ---*/
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
+            Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
+            Boom_AdjointFile  << scientific << Global_Index << "\t";
+
+           for (iVar = 0; iVar < nVar; iVar++){
+             /*--- Current index position and global index ---*/
+             Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
+
+             /*--- Write to file---*/
+             Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
+           }
+           Boom_AdjointFile  << endl;
+
         }
+      }
+
+      delete [] Buffer_Recv_dJdU;
+      delete [] Buffer_Recv_GlobalIndex;
     }
-
-  for (iSig=0; iSig<nPointID; iSig++){
-     Buffer_Send_GlobalIndex[iSig] = PointID[iSig];
-  }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPointID*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPointID*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-
-  if (rank == MASTER_NODE){
-  Boom_AdjointFile.precision(15);
-  Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
-
-  /*--- Loop through all of the collected data and write each node's values ---*/
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
-        Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
-        Boom_AdjointFile  << scientific << Global_Index << "\t";
-
-       for (iVar = 0; iVar < nVar; iVar++){
-         /*--- Current index position and global index ---*/
-         Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
-
-         /*--- Write to file---*/
-         Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
-       }
-       Boom_AdjointFile  << endl;
-
-    }
-  }
-
-  Boom_AdjointFile.close();
-  delete [] Buffer_Recv_dJdU;
-  delete [] Buffer_Recv_GlobalIndex;
-  }
 
   delete [] Buffer_Send_dJdU;
   delete [] Buffer_Send_GlobalIndex;
 
+  }
+
+  if(rank == MASTER_NODE)
+    Boom_AdjointFile.close();
+
   /*---Clear up  memory from dJdU---*/
-  for (unsigned short i=0; i<nDim+3; i++){
-    delete [] dJdU[i];
+  /*for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    for (unsigned short i=0; i<nDim+3; i++){
+      if(nPointID[iPhi] > 0){
+        delete [] dJdU[iPhi][i];
+      }
+    }
+    delete [] dJdU[iPhi];
+    delete [] PointID[iPhi];
+
   }
   delete [] dJdU;
   delete [] PointID;
+  delete [] nPointID;*/
 
   if (rank == MASTER_NODE)
     cout << "\nFinished writing boom adjoint file." << endl;

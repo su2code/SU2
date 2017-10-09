@@ -268,8 +268,8 @@ class State(ordered_bunch):
         if config['OBJECTIVE_FUNCTION']== "NOISE":
           register_file('NOISE', 'Observer_Locations.dat')
 
-        if config['OBJECTIVE_FUNCTION'] == "BOOM":
-          register_file('BOOM', 'boom.in')
+        if config['OBJECTIVE_FUNCTION']== "BOOM":
+            register_file('BOOM', 'DIRECT/boomSU2')
 
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:

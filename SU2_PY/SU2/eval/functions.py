@@ -236,9 +236,6 @@ def aerodynamics( config, state=None ):
     if config['OBJECTIVE_FUNCTION'] == 'NOISE':
         pull.append( 'Observer_Locations.dat')
 
-    if config['OBJECTIVE_FUNCTION'] == 'BOOM':
-        pull.append( 'boom.in')
-
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     

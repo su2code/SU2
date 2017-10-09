@@ -274,7 +274,6 @@ def adjoint( func_name, config, state=None ):
         pull.append("Observer_Locations.dat")
 
     if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("boom.in")
         pull.append("DIRECT/Adj_Boom.dat")
 
     # output redirection
@@ -556,9 +555,6 @@ def findiff( config, state=None ):
     # files: target heat flux distribution
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
-
-    if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("boom.in")
 
     # Use custom variable
     if ('CUSTOM' in konfig.DV_KIND and 'OUTFLOW_GENERALIZED' in grads.keys()):
@@ -843,8 +839,6 @@ def directdiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-    if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("boom.in")
 
     # output redirection
     with redirect_folder('DIRECTDIFF',pull,link) as push:

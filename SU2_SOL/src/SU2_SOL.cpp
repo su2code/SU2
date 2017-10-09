@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
 
     config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
-//    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
@@ -170,13 +170,13 @@ int main(int argc, char *argv[]) {
 if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
 geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-////////if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-////////geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-////////if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-////////geometry_container[ZONE_0]->SetPoint_Connectivity();
+if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
@@ -185,10 +185,10 @@ geometry_container[ZONE_0]->SetElement_Connectivity();
 
 /*--- Check the orientation before computing geometrical quantities ---*/
 
-////////if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-////////geometry_container[ZONE_0]->SetBoundVolume();
-////////geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
-////////geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+geometry_container[ZONE_0]->SetBoundVolume();
+geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
 /*--- Create the edge structure ---*/
 
 if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
@@ -201,10 +201,17 @@ geometry_container[ZONE_0]->SetCoord_CG();
 
 /*--- Create the dual control volume structures ---*/
 
-////////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-////////geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
+geometry_container[ZONE_0]->SetControlVolume(config_container[iZone], ALLOCATE);
+////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-////////geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
+/*--- Store the global to local mapping after preprocessing. ---*/
+
+if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
+
+geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
@@ -495,7 +502,9 @@ geometry_container[ZONE_0]->SetCoord_CG();
         if (rank == MASTER_NODE)
           cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
-         if (config_container[ZONE_0]->GetAD_Mode()){
+
+        if (config->GetBoom_flag() || config->GetKind_ObjFunc()==BOOM){
+          if (config_container[ZONE_0]->GetAD_Mode()){
 /*             if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
 
@@ -532,99 +541,177 @@ geometry_container[ZONE_0]->SetCoord_CG();
 
 */
 
-             if (rank == MASTER_NODE)
-               cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
+            if (rank == MASTER_NODE)
+               cout << endl <<"------------------------- Computing Sonic Boom (Primal+Adjoint) -----------------------" << endl;
 
-             AD::StartRecording();
-			 SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             if (rank == MASTER_NODE){
-               cout << "SUBoom initialized." << endl;
-             boom.ConditionAtmosphericData();
-               cout << "Condition atmospheric data complete." << endl;
-             boom.ScaleFactors();
-               cout << "Scale factors complete." << endl;
-             boom.InitialWaveNormals();
-               cout << "Initial wave normals complete." << endl;
-             boom.RayTracer();
-               cout << "Ray tracer complete." << endl;
-             boom.RayTubeArea();
-               cout << "Ray tube area complete." << endl;
-             boom.FindInitialRayTime();
-               cout << "Find initial ray time complete." << endl;
-             boom.ODETerms();
-               cout << "ODE terms complete." << endl;
-             boom.DistanceToTime();
-               cout << "Distance to time complete." << endl;
-             boom.CreateSignature();
-               cout << "Create signature complete." << endl;
-             boom.PropagateSignal();
-             }
-             su2double boom_obj[1];
-             if (rank == MASTER_NODE){
-//               boom_obj[0] = boom.p_int2;
-               Objective_Function = boom.p_int2;
-//               AD::RegisterOutput(boom.p_int2);
-             }
-//#ifdef HAVE_MPI
-//  SU2_MPI::Bcast(boom_obj, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-//#endif
+            AD::StartRecording();
+			SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
-//             Objective_Function = boom_obj[0];
-             if (rank==MASTER_NODE){
-             SU2_TYPE::SetDerivative(Objective_Function,1.0);
-               }else{
-                 SU2_TYPE::SetDerivative(Objective_Function,0.0);
-               }
-             AD::StopRecording();
-             AD::ComputeAdjoint();
+            if(rank == MASTER_NODE){
+              cout << "SUBoom initialized." << endl;
+              //cout << "Freeing up memory from config, solver, and geometry." << endl;
+            }
+            /*for (iZone = 0; iZone < nZone; iZone++){
+              ///if (solver_container[iZone] != NULL) {
+              ///  delete [] solver_container[iZone];
+              ///}
 
-             if (rank==MASTER_NODE)
-               cout<<"Finished computing boom adjoint."<<endl;
+              if(geometry_container != NULL){
+                if (geometry_container[iZone] != NULL) {
+                  delete [] geometry_container[iZone];
+                }
+              }
+                
+              if(config_container != NULL){
+                if (config_container[iZone] != NULL) {
+                  delete [] config_container[iZone];
+                }
+              }
+            }
+            ///delete [] solver_container;
+            delete [] config_container;
+            delete [] geometry_container;*/
+
+            if (rank == MASTER_NODE){
+              boom.ConditionAtmosphericData();
+              cout << "Condition atmospheric data complete." << endl;
+              boom.ScaleFactors();
+              cout << "Scale factors complete." << endl;
+              boom.DistanceToTime();
+              cout << "Distance to time complete." << endl;
+              boom.InitialWaveNormals();
+              cout << "Initial wave normals complete." << endl;
+
+              boom.p_rise = new su2double[boom.ray_N_phi];
+              boom.p_max = new su2double[boom.ray_N_phi];
+              boom.p_rise2 = new su2double[boom.ray_N_phi];
+              boom.p_int2 = new su2double[boom.ray_N_phi];
+
+              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+                boom.RayTracer(iPhi);
+                boom.RayTubeArea(iPhi);
+                boom.FindInitialRayTime();
+                boom.ODETerms(iPhi);
+                boom.CreateSignature(iPhi);
+                cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << "." << endl;
+                boom.PropagateSignal(iPhi);
+              }
+              cout << "Propagation complete." << endl;
+            }
+            
+            if (rank == MASTER_NODE){
+              Objective_Function = 0.0;
+              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+                Objective_Function += boom.p_int2[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+              }
+            }
+
+            /*---Write boom strength metrics to file---*/
+            if (rank == MASTER_NODE){
+              ofstream sigFile;
+	          sigFile.open("boomSU2", ios::out);
+	          sigFile << "Objective_Function= " << Objective_Function << endl;
+			  sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
+			  for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+			    sigFile << boom.ray_phi[iPhi] << ", " << boom.p_max[iPhi] << "," << boom.p_rise[iPhi] << "," << boom.p_rise2[iPhi] << "," << boom.p_int2[iPhi] << endl;
+			  }
+			  sigFile.close();
+			}
+
+            if (rank==MASTER_NODE){
+              SU2_TYPE::SetDerivative(Objective_Function,1.0);
+            }else{
+              SU2_TYPE::SetDerivative(Objective_Function,0.0);
+            }
+            AD::StopRecording();
+            AD::ComputeAdjoint();
+
+            if (rank==MASTER_NODE)
+              cout<<"Finished computing boom adjoint."<<endl;
 
             su2double extracted_derivative;
 
-             for (unsigned int iSig=0; iSig<boom.nPointID; iSig++){
-                for (unsigned short i =0; i< boom.nDim+3; i++){
-                    boom.dJdU[i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
-//                    cout << "dJdU = " << boom.dJdU[i][iSig] << endl;
+            for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+              for(unsigned int iSig=0; iSig<boom.nPointID[iPhi]; iSig++){
+                for(unsigned short i =0; i< boom.nDim+3; i++){
+                  boom.dJdU[iPhi][i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
                 }
-             }
+              }
+            }
 
-             if(rank==MASTER_NODE)
-               cout<<"Finished extracting."<<endl;
+            if(rank==MASTER_NODE)
+              cout<<"Finished extracting."<<endl;
 
-             boom.WriteSensitivities();
+            boom.WriteSensitivities();
 
-           }
-		   else{
-             if (rank == MASTER_NODE)
-               cout << endl <<"------------------------- Computing Far Field Noise (Primal Only) -----------------------" << endl;
+          }
+		  else{
+            if (rank == MASTER_NODE)
+              cout << endl <<"------------------------- Computing Sonic Boom (Primal Only) -----------------------" << endl;
 ////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
 
-             SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
-             if (rank == MASTER_NODE){
-               cout << "SUBoom initialized." << endl;
-             boom.ConditionAtmosphericData();
-               cout << "Condition atmospheric data complete." << endl;
-             boom.ScaleFactors();
-               cout << "Scale factors complete." << endl;
-             boom.InitialWaveNormals();
-               cout << "Initial wave normals complete." << endl;
-             boom.RayTracer();
-               cout << "Ray tracer complete." << endl;
-             boom.RayTubeArea();
-               cout << "Ray tube area complete." << endl;
-             boom.FindInitialRayTime();
-               cout << "Find initial ray time complete." << endl;
-             boom.ODETerms();
-               cout << "ODE terms complete." << endl;
-             boom.DistanceToTime();
-               cout << "Distance to time complete." << endl;
-             boom.CreateSignature();
-               cout << "Create signature complete." << endl;
-             boom.PropagateSignal();
-             }
-           }
+            SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
+
+            if(rank == MASTER_NODE){
+              cout << "SUBoom initialized." << endl;
+              //cout << "Freeing up memory from config, solver, and geometry." << endl;
+            }
+            /*for (iZone = 0; iZone < nZone; iZone++){
+              ///if (solver_container[iZone] != NULL) {
+              ///  delete [] solver_container[iZone];
+              ///}
+            	
+              if (geometry_container[iZone] != NULL) {
+                delete [] geometry_container[iZone];
+              }
+                
+              if (config_container[iZone] != NULL) {
+                delete [] config_container[iZone];
+              }
+            }
+            ///delete [] solver_container;
+            delete [] config_container;
+            delete [] geometry_container;*/
+
+            if (rank == MASTER_NODE){
+              boom.ConditionAtmosphericData();
+              cout << "Condition atmospheric data complete." << endl;
+              boom.ScaleFactors();
+              cout << "Scale factors complete." << endl;
+              boom.DistanceToTime();
+              cout << "Distance to time complete." << endl;
+              boom.InitialWaveNormals();
+              cout << "Initial wave normals complete." << endl;
+
+              boom.p_rise = new su2double[boom.ray_N_phi];
+              boom.p_max = new su2double[boom.ray_N_phi];
+              boom.p_rise2 = new su2double[boom.ray_N_phi];
+              boom.p_int2 = new su2double[boom.ray_N_phi];
+              
+              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+                boom.RayTracer(iPhi);
+                boom.RayTubeArea(iPhi);
+                boom.FindInitialRayTime();
+                boom.ODETerms(iPhi);
+                boom.CreateSignature(iPhi);
+                cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << "." << endl;
+                boom.PropagateSignal(iPhi);
+              }
+              cout << "Propagation complete." << endl;
+            }
+
+            /*---Write boom strength metrics to file---*/
+            if (rank == MASTER_NODE){
+              ofstream sigFile;
+	          sigFile.open("boomSU2", ios::out);
+			  sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
+			  for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+			    sigFile << boom.ray_phi[iPhi] << ", " << boom.p_max[iPhi] << "," << boom.p_rise[iPhi] << "," << boom.p_rise2[iPhi] << "," << boom.p_int2[iPhi] << endl;
+			  }
+			  sigFile.close();
+			}
+          }
+       }
 
 
   /*--- Synchronization point after a single solver iteration. Compute the

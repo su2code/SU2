@@ -1787,6 +1787,44 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
   addBoolOption("SA_QCR", QCR, false);
 
+  /*!\par CONFIG_CATEGORY: Boom propagation \ingroup Config*/
+  /*--- options related to the SUBoom propagation code ---*/
+  /*!\brief BOOM
+   *  \n DESCRIPTION: Evaluate sonic boom \ingroup Config*/
+  addBoolOption("BOOM", Boom_flag, false);
+
+  /*!\brief BOOM_N_PROF
+   *  \n DESCRIPTION: Number of points used in atmospheric profile for RK4 integration.  \ingroup Config*/
+  addUnsignedLongOption("BOOM_N_PROF", Boom_N_prof, 100001);
+
+  /*!\brief BOOM_PHI
+   *  \n DESCRIPTION: Azimuth angles to evaluate boom.  \ingroup Config*/
+  addDoubleListOption("BOOM_PHI", Boom_N_phi, Boom_phi);
+
+  /*!\brief BOOM_R0
+   *  \n DESCRIPTION: Radius from aircraft to begin boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_R0", Boom_r0, 1.0);
+
+  /*!\brief BOOM_TOL_DPHI
+   *  \n DESCRIPTION: Tolerance for azimuth angle in boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_TOL_DPHI", Boom_Tol_dphi, 1.0E-3);
+
+  /*!\brief BOOM_TOL_DR
+   *  \n DESCRIPTION: Tolerance for radius in boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_TOL_DR", Boom_Tol_dr, 1.0E-3);
+
+  /*!\brief BOOM_TOL_M
+   *  \n DESCRIPTION: Tolerance for signal slope in boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_TOL_M", Boom_Tol_m, 5.0E4);
+
+  /*!\brief BOOM_TOL_DP
+   *  \n DESCRIPTION: Tolerance for pressure jump in boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_TOL_DP", Boom_Tol_dp, 1.0E-6);
+
+  /*!\brief BOOM_TOL_L
+   *  \n DESCRIPTION: Tolerance for segment length in boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_TOL_L", Boom_Tol_l, 1.0E-4);
+
   /* END_CONFIG_OPTIONS */
 
 }
