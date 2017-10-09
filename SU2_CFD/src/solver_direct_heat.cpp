@@ -1501,12 +1501,16 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iDim;
-  su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, eddy_viscosity, thermal_conductivity;
+  su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
+      eddy_viscosity, thermal_conductivity, thermal_conductivityND;
   string Marker_Tag;
 
 #ifdef HAVE_MPI
   su2double MyAllBound_HeatFlux;
 #endif
+
+  cp_fluid = config->GetSpecificHeat_Fluid();
+  rho_cp_solid = config->GetSpecificHeat_Solid()*config->GetDensity_Solid();
 
   AllBound_HeatFlux = 0.0;
       
@@ -1539,13 +1543,20 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
         dist = sqrt(dist);
 
         dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
-        eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-        thermal_conductivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
-        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
 
+        if(flow) {
+          eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+          thermal_conductivityND = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
+          thermal_conductivity = thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid;
+        }
+        else {
+          thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
+        }
+
+        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
       }
     }
-    else if ( Boundary == CHT_WALL_INTERFACE && Monitoring == YES) {
+    else if ( (Boundary == CHT_WALL_INTERFACE || Boundary == HEAT_FLUX) && Monitoring == YES) {
 
       for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
 
@@ -1566,16 +1577,22 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
         dist = sqrt(dist);
 
         dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
-        eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-        thermal_conductivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
-        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
 
+        if(flow) {
+          eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+          thermal_conductivityND = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
+          thermal_conductivity = thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid;
+        }
+        else {
+          thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
+        }
+
+        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
       }
 
     }
     else { }
 
-    //cout << "Heat flux computation: " << Heat_Flux[iMarker] << endl;
     AllBound_HeatFlux += Heat_Flux[iMarker];
 
   }
@@ -1588,8 +1605,6 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 #endif
 
   Total_HeatFlux = AllBound_HeatFlux;
-
-
 }
 
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
