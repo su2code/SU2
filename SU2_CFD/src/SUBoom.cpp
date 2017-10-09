@@ -2379,7 +2379,7 @@ su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2
 
 void SUBoom::PropagateSignal(unsigned short iPhi){
   su2double t0, tf, dt;
-  unsigned int j0;
+  unsigned int j0, j0_dat;
   RayData data;
   su2double *fvec;
   su2double *f;
@@ -2420,7 +2420,6 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     }
     for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
-      int j0_dat;
       if(j >= n_prof-5) j0_dat = n_prof-5;
       else if(j < 4) j0_dat = 4;
       else j0_dat = j;
