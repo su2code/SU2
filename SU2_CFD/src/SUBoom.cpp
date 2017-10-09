@@ -1959,8 +1959,8 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
     /*---Cross product---*/
     su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
     Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
-    //ray_A[j] = Ah*a_of_z[j]*tan(theta[0][j])/ray_c0[iPhi][0];
-    ray_A[j] = Ah*sin(theta[0][j]);  // TESTING a=cn (see Thomas paper)
+    ray_A[j] = Ah*a_of_z[j]*tan(theta[0][j])/ray_c0[iPhi][0];
+    //ray_A[j] = Ah*sin(theta[0][j]);  // TESTING a=cn (see Thomas paper)
   }
 
 }
@@ -2250,7 +2250,7 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
       dydt[i] = C1*pow(y[i],2) + C2*y[i];
     }
     else if(i  < 2*M){
-      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] + C2*y[i];
+      dydt[i] = 0.5*C1*y[i]*diff_m[i-M] - C2*y[i]; // TESTING sign change on C2
     }
     else{
       dydt[i] = -0.5*C1*diff_dp[i-2*M] - C1*y[i-2*M]*y[i];
@@ -2415,7 +2415,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     data.scale_C2 = scale_C2;
 
     fvec = signal.fvec;
-    for(int j = n_prof-1; j > -1; j--){
+    for(unsigned int j = n_prof-1; j >= 0; j--){
         if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
             break;
