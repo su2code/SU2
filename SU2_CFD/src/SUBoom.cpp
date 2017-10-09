@@ -2421,10 +2421,10 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
             break;
         }
     }
-    for(unsigned int j = j0; j > 0; j--){
+    for(unsigned int j = j0; j >= 0; j--){
       /*---Integrate---*/
       int j0_dat;
-      if(j >= n_prof-4) j0_dat = n_prof-4;
+      if(j >= n_prof-5) j0_dat = n_prof-5;
       else if(j < 4) j0_dat = 4;
       else j0_dat = j;
       for(unsigned short jj = 0; jj < 9; jj++){
