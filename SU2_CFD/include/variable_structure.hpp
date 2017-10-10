@@ -2074,13 +2074,13 @@ public:
   /*!
    * \brief Virtual member. 
    */
-  virtual void SetVortex_Tilting();
-  
+  virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+ 
   /*!
    * \brief Virtual member. 
-   * \return Value of the vortex tilting.
    */
   virtual su2double GetVortex_Tilting();
+  
 };
 
 /*!
@@ -3573,17 +3573,6 @@ public:
  */
   void SetRoe_Dissipation(su2double val_dissipation);
   
-  /*!
-   * \brief Set the vortex tilting measure for computation of the DDES length scale
-   */
-  void SetVortex_Tilting();
-  
-  /*!
-   * \brief Get the value of the vortex tilting measure for DES length scale computation. 
-   * \return Value of the vortex tilting.
-   */
-  su2double GetVortex_Tilting();
-  
 };
 
 /*!
@@ -3757,6 +3746,7 @@ class CTurbSAVariable : public CTurbVariable {
 private:
   su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
   su2double DES_LengthScale;
+  su2double Vortex_Tilting;
   
 public:
   /*!
@@ -3815,6 +3805,17 @@ public:
    * \brief Set the DES Length Scale.
    */
   void SetDES_LengthScale(su2double val_des_lengthscale);  
+  
+  /*!
+   * \brief Set the vortex tilting measure for computation of the EDDES length scale
+   */
+  void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+  
+  /*!
+   * \brief Get the vortex tilting measure for computation of the EDDES length scale
+   * \return Value of the DES length Scale
+   */
+  su2double GetVortex_Tilting();
   
 };
 
