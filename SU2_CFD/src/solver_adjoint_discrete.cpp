@@ -4,8 +4,8 @@
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -278,7 +278,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)) {
+  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -316,6 +316,20 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
 
+  }
+
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+
+    BPressure = config->GetPressureOut_BC();
+    Temperature = config->GetTotalTemperatureIn_BC();
+
+    if (!reset){
+      AD::RegisterInput(BPressure);
+      AD::RegisterInput(Temperature);
+    }
+
+    config->SetPressureOut_BC(BPressure);
+    config->SetTotalTemperatureIn_BC(Temperature);
   }
 
 
@@ -412,11 +426,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
-  su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)) {
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+    su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
     Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
     Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
@@ -433,6 +448,23 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Total_Sens_Temp  = Local_Sens_Temp;
     Total_Sens_Press = Local_Sens_Press;
 #endif
+  }
+
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+    su2double Local_Sens_BPress, Local_Sens_Temperature;
+
+    Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
+    Local_Sens_Temperature = SU2_TYPE::GetDerivative(Temperature);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_BPress,   &Total_Sens_BPress,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Temperature,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#else
+    Total_Sens_BPress = Local_Sens_BPress;
+    Total_Sens_Temp = Local_Sens_Temperature;
+#endif
+
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
@@ -521,7 +553,6 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   unsigned long iVertex, iPoint;
   su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
   Total_Sens_Geo = 0.0;
-  su2double *MySens_Geo;
   string Monitoring_Tag, Marker_Tag;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -568,13 +599,14 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
             Sens_Geo[iMarker_Monitoring] = Sens;
+          }
         }
-      }
       }
     }
   }
 
 #ifdef HAVE_MPI
+  su2double *MySens_Geo;
   MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -603,15 +635,11 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
           solution_n = node[iPoint]->GetSolution_time_n();
           solution_n1 = node[iPoint]->GetSolution_time_n1();
-
           for (iVar=0; iVar < nVar; iVar++) {
               node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
               node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
-
             }
-
         }
-
     }
 }
 
@@ -635,6 +663,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Read and store the restart metadata. ---*/
+
+  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 

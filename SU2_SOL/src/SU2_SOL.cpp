@@ -223,7 +223,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
   
 	/*--- Definition of the output class (one for all the zones) ---*/
-	output = new COutput();
+	output = new COutput( config_container[ZONE_0]);
   
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/

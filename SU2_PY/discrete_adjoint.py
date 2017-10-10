@@ -5,8 +5,8 @@
 #  \author F. Palacios, T. Economon, T. Lukaczyk
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -54,17 +54,21 @@ def main():
                       help="DOT finite difference STEP", metavar="STEP")
     parser.add_option("-v", "--validate", dest="validate", default="False",
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                      help="Number of Zones", metavar="ZONES")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
+    options.nzones      = int( options.nzones )
     
     discrete_adjoint( options.filename    ,
-                        options.partitions  ,
-                        options.compute     ,
-                        options.step         )
+                      options.partitions  ,
+                      options.compute     ,
+                      options.step        ,
+                      options.nzones       )
         
 #: def main()
 
@@ -74,14 +78,16 @@ def main():
 # -------------------------------------------------------------------
 
 def discrete_adjoint( filename           ,
-                        partitions  = 0    , 
-                        compute     = True ,
-                        step        = 1e-4  ):
+                      partitions  = 0    , 
+                      compute     = True ,
+                      step        = 1e-4 ,
+                      nzones      = 1     ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    
+    config.NZONES      = int( nzones )
+
     # State
     state = SU2.io.State()
     

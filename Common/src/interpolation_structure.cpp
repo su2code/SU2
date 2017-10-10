@@ -4,8 +4,8 @@
  * \author H. Kline
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -2289,7 +2289,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     jPoint = ptr[jNode];
     for( kNode = 0; kNode < nOuterNodes; kNode++ ){
       if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-        OuterNodesNeighbour[ iNode ][count] = kNode;
+        OuterNodesNeighbour[iNode][count] = kNode;
         count++;
         break;
       }
@@ -2349,6 +2349,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
   delete [] OuterNodesNeighbour;
 
   return iElementNode;
+  
 }
 
 su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){

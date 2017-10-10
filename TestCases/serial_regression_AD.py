@@ -5,8 +5,8 @@
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -82,6 +82,51 @@ def main():
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
 
+    #######################################
+    ### Disc. adj. incompressible Euler ###
+    #######################################
+
+    # Adjoint Incompressible Inviscid NACA0012
+    discadj_incomp_NACA0012           = TestCase('discadj_incomp_NACA0012')
+    discadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
+    discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
+    discadj_incomp_NACA0012.test_iter = 20
+    discadj_incomp_NACA0012.test_vals = [-2.911277, -2.705448, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.su2_exec  = "SU2_CFD_AD"
+    discadj_incomp_NACA0012.timeout   = 1600
+    discadj_incomp_NACA0012.tol       = 0.00001
+    test_list.append(discadj_incomp_NACA0012)
+
+    #####################################
+    ### Disc. adj. incompressible N-S ###
+    #####################################
+
+    # Adjoint Incompressible Viscous Cylinder
+    discadj_incomp_cylinder           = TestCase('discadj_incomp_cylinder')
+    discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
+    discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
+    discadj_incomp_cylinder.test_iter = 20
+    discadj_incomp_cylinder.test_vals = [-2.713325, -1.751175, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.su2_exec  = "SU2_CFD_AD"
+    discadj_incomp_cylinder.timeout   = 1600
+    discadj_incomp_cylinder.tol       = 0.00001
+    test_list.append(discadj_incomp_cylinder)
+
+    ######################################
+    ### Disc. adj. incompressible RANS ###
+    ######################################
+
+    # Adjoint Incompressible Turbulent NACA 0012
+    discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
+    discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
+    discadj_incomp_turb_NACA0012.test_iter = 100
+    discadj_incomp_turb_NACA0012.test_vals = [-3.627758, -1.624321, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.su2_exec  = "SU2_CFD_AD"
+    discadj_incomp_turb_NACA0012.timeout   = 1600
+    discadj_incomp_turb_NACA0012.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012)
+
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
     #######################################################
@@ -90,8 +135,8 @@ def main():
     discadj_cylinder           = TestCase('unsteady_cylinder')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
-    discadj_cylinder.test_iter = 10
-    discadj_cylinder.test_vals = [3.522068, -1.787841, -0.012030, 0.000017] #last 4 columns
+    discadj_cylinder.test_iter = 9
+    discadj_cylinder.test_vals = [3.746900, -1.544893, -0.008345, 0.000014] #last 4 columns
     discadj_cylinder.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
