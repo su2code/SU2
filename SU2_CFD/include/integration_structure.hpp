@@ -230,9 +230,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] SolContainer_Position - Current position in the solver container.
    */
-  void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh, unsigned short SolContainer_Position);
+  void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
   
   /*! 
    * \brief Save the structural solution at different time steps.

@@ -1085,8 +1085,6 @@ inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
 
 inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
 
-inline bool CConfig::GetCalculate_Average(void) {	return Calculate_Average; }
-
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }

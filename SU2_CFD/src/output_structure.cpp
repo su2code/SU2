@@ -4366,11 +4366,9 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:     SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SA_E: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SA_COMP: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SA_E_COMP: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP: 
+      SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
+      break;
     case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
@@ -4613,11 +4611,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA:     nVar_Turb = 1; break;
-        case SA_NEG: nVar_Turb = 1; break;
-        case SA_E: nVar_Turb = 1; break;
-        case SA_E_COMP: nVar_Turb = 1; break;
-        case SA_COMP: nVar_Turb = 1; break;
+        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
       }
     }
@@ -4634,11 +4628,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA:     nVar_AdjTurb = 1; break;
-        case SA_NEG: nVar_AdjTurb = 1; break;
-        case SA_E: nVar_AdjTurb = 1; break;
-        case SA_COMP: nVar_AdjTurb = 1; break;
-        case SA_E_COMP: nVar_AdjTurb = 1; break;
+        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
@@ -5387,11 +5377,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA:        cout << "       Res[nu]"; break;
-              case SA_NEG:    cout << "       Res[nu]"; break;
-              case SA_E:      cout << "       Res[nu]"; break;
-              case SA_COMP:   cout << "       Res[nu]"; break;
-              case SA_E_COMP: cout << "       Res[nu]"; break;
+              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
               case SST:	      cout << "     Res[kine]" << "     Res[omega]"; break;
             }
 
@@ -11173,15 +11159,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
-  su2double Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter()) + 2;
-
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool transition     = (config->GetKind_Trans_Model() == BC);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
-  bool calculate_average = (config->GetCalculate_Average());
-
   int *Local_Halo = NULL;
   
   stringstream varname;
@@ -11421,61 +11403,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par +=1;
       Variable_Names.push_back("Roe_Dissipation");      
     }
-    
-    if (calculate_average) {
-      nVar_Par +=1;
-      Variable_Names.push_back("Mean_Density");
-      nVar_Par +=1;
-      Variable_Names.push_back("Mean_U");
-      nVar_Par +=1;
-      Variable_Names.push_back("Mean_V");
-      if (geometry->GetnDim()==3){
-        nVar_Par +=1;
-        Variable_Names.push_back("Mean_W");
-      }
-      nVar_Par +=1;
-      Variable_Names.push_back("Mean_E");
-      nVar_Par +=1;
-      Variable_Names.push_back("Mean_P");
-      
-      if (config->GetKind_Solver() == RANS){
-        nVar_Par +=1;
-        Variable_Names.push_back("Mean_Cfx");
-        nVar_Par +=1;
-        Variable_Names.push_back("Mean_Cfy");
-        if (geometry->GetnDim()==3){
-          nVar_Par +=1;
-          Variable_Names.push_back("Mean_Cfz");
-        }
-      }
-      
-      if (geometry->GetnDim()==2){
-        nVar_Par +=1;
-        Variable_Names.push_back("U<sup>p</sup>U<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("V<sup>p</sup>V<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("U<sup>p</sup>V<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("P<sup>p</sup>P<sup>p</sup>");
-      }
-      else{
-        nVar_Par +=1;
-        Variable_Names.push_back("U<sup>p</sup>U<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("V<sup>p</sup>V<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("W<sup>p</sup>W<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("U<sup>p</sup>V<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("U<sup>p</sup>W<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("V<sup>p</sup>W<sup>p</sup>");
-        nVar_Par +=1;
-        Variable_Names.push_back("P<sup>p</sup>P<sup>p</sup>");
-      }
-    }
 
     /*--- New variables get registered here before the end of the loop. ---*/
     
@@ -11709,40 +11636,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++; 
-        }
-
-        if (calculate_average){
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
-            iVar++;
-          }
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
-          iVar++;
-          
-          if (config->GetKind_Solver() == RANS){
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+1) / Avg_Iter;
-            iVar++;
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+2) / Avg_Iter;
-            iVar++;
-            if (geometry->GetnDim() == 3){
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+3) / Avg_Iter;
-              iVar++;
-            }
-          }
-          
-          
-          if (geometry->GetnDim() == 2){
-            for (jVar = 0; jVar < geometry->GetnDim()+2; jVar++) {
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
-              iVar++;
-            }
-          }
-          else{
-            for (jVar = 0; jVar < geometry->GetnDim()+4; jVar++) {
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
-              iVar++;
-            }
-          }
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
