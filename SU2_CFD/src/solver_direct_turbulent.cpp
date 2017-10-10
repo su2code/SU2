@@ -2991,8 +2991,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     
     switch(kindHybridRANSLES){
       case SA_DES:
-        /*--- Marcello Righi's Delta max ---*/
-        
+        /*--- Original Detached Eddy Simulation (DES97)
+        Spalart
+        1997
+        ---*/
         maxDelta=0.;      
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -3012,8 +3014,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         break;
         
       case SA_DDES:
-        /*--- Marcello Righi's Delta max ---*/
-        
+        /*--- A New Version of Detached-eddy Simulation, Resistant to Ambiguous Grid Densities.
+         Spalart et al.
+         Theoretical and Computational Fluid Dynamics - 2006
+         ---*/
+            
         maxDelta = 0.0;      
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -3035,6 +3040,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         
         break;
       case SA_ZDES:
+        /*--- Recent improvements in the Zonal Detached Eddy Simulation (ZDES) formulation.
+         Deck
+         Theoretical and Computational Fluid Dynamics - 2012
+         ---*/
         
         deltaDDES = 0.0;
         for (iNeigh = 0; iNeigh < nNeigh; iNeigh++){
