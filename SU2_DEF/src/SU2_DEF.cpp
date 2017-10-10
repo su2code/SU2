@@ -286,8 +286,9 @@ int main(int argc, char *argv[]) {
     /*--- Write the the free-form deformation boxes after deformation. ---*/
     
     if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
-    
-    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+
+       surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);    
+//     surface_movement[ZONE_0]->WriteFFDInfo(geometry_container, config_container);
     
   }
   

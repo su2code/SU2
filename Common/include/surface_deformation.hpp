@@ -1250,7 +1250,7 @@ public:
    * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
    * \param[in] iFFDBox - _____________________.
    */
-  void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef);
+  su2double SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef);
 
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -1427,8 +1427,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_mesh_filename - Name of the grid output file.
    */
-  void WriteFFDInfo(CGeometry *geometry, CConfig *config);
-
+//    void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+    void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config);
   /*!
    * \brief Get information about if there is a complete FFDBox definition, or it is necessary to
    *        compute the parametric coordinates.
