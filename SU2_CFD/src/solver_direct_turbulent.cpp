@@ -1417,6 +1417,9 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   bool disc_adjoint                 = config->GetDiscrete_Adjoint();
   bool limiter_flow                 = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   unsigned short kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+  su2double** PrimGrad_Flow = NULL;
+  su2double* Vorticity = NULL;
+  su2double Laminar_Viscosity = 0;
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -1445,7 +1448,10 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     
     if (kind_hybridRANSLES == SA_EDDES){
       for (iPoint = 0; iPoint < nPoint; iPoint++){
-        solver_container[FLOW_SOL]->node[iPoint]->SetVortex_Tilting();
+        PrimGrad_Flow      = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+        Vorticity          = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
+        Laminar_Viscosity  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+        node[iPoint]->SetVortex_Tilting(PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
     }
     
@@ -3080,7 +3086,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Flow Turbulence Combust - 2015
          ---*/
         
-        vortexTiltingMeasure = solver[FLOW_SOL]->node[iPoint]->GetVortex_Tilting();
+        vortexTiltingMeasure = node[iPoint]->GetVortex_Tilting();
         
         omega = sqrt(vorticity[0]*vorticity[0] + 
                      vorticity[1]*vorticity[1] +
@@ -3106,7 +3112,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
           aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
           ln_max = max(ln_max,aux_ln);
-          vortexTiltingMeasure += solver[FLOW_SOL]->node[jPoint]->GetVortex_Tilting();
+          vortexTiltingMeasure += node[jPoint]->GetVortex_Tilting();
         }
 
         vortexTiltingMeasure = (vortexTiltingMeasure/fabs(nNeigh + 1.0));
