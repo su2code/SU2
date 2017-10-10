@@ -569,9 +569,6 @@ inline su2double CVariable::GetPrestretch(unsigned short iVar) { return 0.0; }
 
 inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0; }
 
-inline su2double CVariable::GetSolution_Avg(unsigned short val_var) { return 0.0; }
-
-inline su2double CVariable::GetSolution_RMS(unsigned short val_var) { return 0.0; }
 
 inline su2double CVariable::GetRoe_Dissipation(void) { return 0.0; }
 
@@ -585,27 +582,15 @@ inline void CVariable::SetDES_LengthScale(su2double val_des_lengthscale) { }
 
 inline void CVariable::SetSolution_New(void) { }
 
-inline void CVariable::SetSolution_Avg(unsigned short val_var, su2double val_solution) { }
-
-inline void CVariable::SetSolution_RMS(unsigned short val_var, su2double val_solution) { }
-
 inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
-
-inline void CVariable::AddSolution_Avg(unsigned short val_var, su2double val_solution) { }
-
-inline void CVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) { }
 
 inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
 
-inline void CVariable::SetVortex_Tilting() { }
+inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) { }
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
 
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
-
-inline su2double CEulerVariable::GetSolution_Avg(unsigned short val_var) { return Solution_Avg[val_var]; }
-
-inline su2double CEulerVariable::GetSolution_RMS(unsigned short val_var) { return Solution_RMS[val_var]; }
 
 inline su2double CNSVariable::GetRoe_Dissipation(void) { return Roe_Dissipation; }
 
@@ -622,24 +607,8 @@ inline void CEulerVariable::SetSolution_New(void) {
     Solution_New[iVar] = Solution[iVar];
 }
 
-inline void CEulerVariable::SetSolution_Avg(unsigned short val_var, su2double val_solution) {
-  Solution_Avg[val_var] += val_solution;
-}
-
-inline void CEulerVariable::SetSolution_RMS(unsigned short val_var, su2double val_solution) {
-  Solution_RMS[val_var] += val_solution;
-}
-
 inline void CEulerVariable::AddSolution_New(unsigned short val_var, su2double val_solution) {
   Solution_New[val_var] += val_solution;
-}
-
-inline void CEulerVariable::AddSolution_Avg(unsigned short val_var, su2double val_solution) {
-    Solution_Avg[val_var] += val_solution;
-}
-
-inline void CEulerVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) {
-    Solution_RMS[val_var] += val_solution;
 }
 
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }

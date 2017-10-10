@@ -4052,8 +4052,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   unsigned long iPoint;
   unsigned short iMesh, iDim;
-  unsigned short iVar;
-    
   su2double X0[3] = {0.0,0.0,0.0}, X1[3] = {0.0,0.0,0.0}, X2[3] = {0.0,0.0,0.0},
   X1_X0[3] = {0.0,0.0,0.0}, X2_X0[3] = {0.0,0.0,0.0}, X2_X1[3] = {0.0,0.0,0.0},
   CP[3] = {0.0,0.0,0.0}, Distance, DotCheck, Radius;
@@ -4066,9 +4064,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
-  bool calculate_average = config->GetCalculate_Average();
-
-  su2double *Solution_Avg_Aux;
 
   /*--- Set subsonic initial condition for engine intakes ---*/
   
@@ -4237,87 +4232,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
   }
-
-  /*--- Update the values for Calculate Averages. ---*/
-
-  if (calculate_average && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))){
-    
-    su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL;
-    unsigned long iMarker, iVertex;
-    
-    if (config->GetKind_Solver() == RANS){
-      
-      /*--- Copy from COutput::LoadLocalData_Flow for computing mean skin friction values
-      * 
-      * Auxiliary vectors for variables defined on surfaces only. ---*/
-      
-      Aux_Frict_x = new su2double[geometry[MESH_0]->GetnPoint()];
-      Aux_Frict_y = new su2double[geometry[MESH_0]->GetnPoint()];
-      Aux_Frict_z = new su2double[geometry[MESH_0]->GetnPoint()];
-      
-      /*--- First, loop through the mesh in order to find and store the
-       value of the viscous coefficients at any surface nodes. They
-       will be placed in an auxiliary vector and then communicated like
-       all other volumetric variables. ---*/
-      
-      for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-        Aux_Frict_x[iPoint] = 0.0;
-        Aux_Frict_y[iPoint] = 0.0;
-        Aux_Frict_z[iPoint] = 0.0;
-      }
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_Plotting(iMarker) == YES) {
-          for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-            iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-            Aux_Frict_x[iPoint] = solver_container[MESH_0][FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0);
-            Aux_Frict_y[iPoint] = solver_container[MESH_0][FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
-            if (nDim == 3) Aux_Frict_z[iPoint] = solver_container[MESH_0][FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
-          }
-        }
-      }      
-    }
-    
-    for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-      
-      Solution_Avg_Aux = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(0, Solution_Avg_Aux[0]);
-      
-      for ( iDim = 0; iDim < nDim; iDim++)
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
-      
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar-1, Solution_Avg_Aux[nVar-1]/Solution_Avg_Aux[0]);
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
-      
-      if (config->GetKind_Solver() == RANS){
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar+1, Aux_Frict_x[iPoint]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar+2, Aux_Frict_y[iPoint]);
-        if (nDim == 3) solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar+3, Aux_Frict_z[iPoint]);
-      }
-        
-      if (nDim == 2){
-        for ( iDim = 0; iDim < nDim; iDim++)
-          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(2, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(3, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure() * solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
-      }
-      else{
-        for ( iDim = 0; iDim < nDim; iDim++)
-          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(3, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(4, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(5, Solution_Avg_Aux[2]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(6, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure() * solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
-      }
-    }
-    
-    if ( calculate_average && config->GetKind_Solver() == RANS) {
-      delete [] Aux_Frict_x;
-      delete [] Aux_Frict_y;
-      delete [] Aux_Frict_z;
-    }
-  
-  }
-
 
 }
 
