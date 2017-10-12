@@ -494,7 +494,7 @@ private:
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
@@ -848,7 +848,8 @@ private:
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_jst_coeff,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_jst_coeff,         /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_ffd_coeff,         /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
   *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
   *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */

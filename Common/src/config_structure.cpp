@@ -403,7 +403,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
-  Stations_Bounds    = NULL;
+  Stations_Bounds     = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -449,6 +449,7 @@ void CConfig::SetPointersNull(void) {
   default_eng_val            = NULL;
   default_cfl_adapt          = NULL;
   default_jst_coeff          = NULL;
+  default_ffd_coeff          = NULL;
   default_mixedout_coeff     = NULL;
   default_extrarelfac        = NULL;
   default_rampRotFrame_coeff = NULL;
@@ -535,12 +536,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_cyl            = new su2double[7];
   default_eng_val            = new su2double[5];
   default_cfl_adapt          = new su2double[4];
-  default_jst_coeff      = new su2double[3];
+  default_jst_coeff          = new su2double[2];
+  default_ffd_coeff          = new su2double[3];
   default_mixedout_coeff     = new su2double[3];
   default_extrarelfac        = new su2double[2];
   default_rampRotFrame_coeff = new su2double[3];
   default_rampOutPres_coeff  = new su2double[3];
-  default_jst_adj_coeff       = new su2double[3];
+  default_jst_adj_coeff      = new su2double[2];
   default_obj_coeff          = new su2double[5];
   default_geo_loc            = new su2double[2];
   default_distortion         = new su2double[2];
@@ -1140,9 +1142,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_jst_coeff[0] = 0.15; default_jst_coeff[1] = 0.5; default_jst_coeff[2] = 0.02;
-  /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF", 3, Kappa_Flow, default_jst_coeff);
+  default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
+  /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
+  /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax–Friedrichs method. \ingroup Config*/
+  addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1154,11 +1158,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_jst_adj_coeff[0] = 0.15; default_jst_adj_coeff[1] = 0.5; default_jst_adj_coeff[2] = 0.02;
-  /*!\brief ADJ_JST_SENSOR_COEFF
-   *  \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients for the adjoint solver.
-   *  \n FORMAT and default values: ADJ_JST_SENSOR_COEFF = (0.15, 0.5, 0.02) \ingroup Config*/
-  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 3, Kappa_AdjFlow, default_jst_adj_coeff);
+  default_jst_adj_coeff[0] = 0.5; default_jst_adj_coeff[1] = 0.02;
+  /*!\brief ADJ_JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the adjoint JST method. \ingroup Config*/
+  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, Kappa_AdjFlow, default_jst_adj_coeff);
+  /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the adjoint Lax–Friedrichs method. \ingroup Config*/
+  addDoubleOption("ADJ_LAX_SENSOR_COEFF", Kappa_1st_AdjFlow, 0.15);
 
   /*!\brief SPATIAL_ORDER_TURB
    *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
@@ -1786,8 +1790,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FFD_BLENDING", FFD_Blending, Blending_Map, BEZIER );
 
   /* DESCRIPTION: Order of the BSplines for BSpline Blending function */
-  default_jst_coeff[0] = 2; default_jst_coeff[1] = 2; default_jst_coeff[2] = 2;
-  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order,default_jst_coeff);
+  default_ffd_coeff[0] = 2; default_ffd_coeff[1] = 2; default_ffd_coeff[2] = 2;
+  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order, default_ffd_coeff);
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
@@ -2966,12 +2970,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
     
-  Kappa_1st_Flow = Kappa_Flow[0];
-  Kappa_2nd_Flow = Kappa_Flow[1];
-  Kappa_4th_Flow = Kappa_Flow[2];
-  Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
-  Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
-  Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
+  Kappa_2nd_Flow    = Kappa_Flow[0];
+  Kappa_4th_Flow    = Kappa_Flow[1];
+  Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
+  Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
   
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -4428,18 +4430,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
           cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (1st, 2nd & 4th): " << Kappa_1st_Flow
-          << ", " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"." << endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
         if (Kind_Centered_Flow == JST_KE) {
           cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (1st, 2nd): " << Kappa_1st_Flow
-          << ", " << Kappa_2nd_Flow << "."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
         if (Kind_Centered_Flow == LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
+          cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << "." << endl;
           cout << "First order integration." << endl;
         }
       }
@@ -5901,6 +5902,7 @@ CConfig::~CConfig(void) {
   if (default_eng_val       != NULL) delete [] default_eng_val;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_jst_coeff != NULL) delete [] default_jst_coeff;
+  if (default_ffd_coeff != NULL) delete [] default_ffd_coeff;
   if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
   if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
   if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
