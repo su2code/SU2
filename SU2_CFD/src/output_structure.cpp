@@ -4207,11 +4207,11 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
     }
     else {
       if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-      if (Conn_Quad != NULL) delete [] Conn_Quad;
-      if (Conn_Tetr != NULL) delete [] Conn_Tetr;
-      if (Conn_Hexa != NULL) delete [] Conn_Hexa;
-      if (Conn_Pris != NULL) delete [] Conn_Pris;
-      if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+      if (nGlobal_Quad > 0 && Conn_Quad != NULL) delete [] Conn_Quad;
+      if (nGlobal_Tetr > 0 && Conn_Tetr != NULL) delete [] Conn_Tetr;
+      if (nGlobal_Hexa > 0 && Conn_Hexa != NULL) delete [] Conn_Hexa;
+      if (nGlobal_Pris > 0 && Conn_Pris != NULL) delete [] Conn_Pris;
+      if (nGlobal_Pyra > 0 && Conn_Pyra != NULL) delete [] Conn_Pyra;
       
     }
     
@@ -4409,9 +4409,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_surface) ConvHist_file[0] << surface_outputs;
       if (direct_diff != NO_DERIVATIVE) {
-      if (!turbo) ConvHist_file[0] << d_flow_coeff;
-      else
-        ConvHist_file[0] << d_turbo_coeff;
+        if (!turbo) ConvHist_file[0] << d_flow_coeff;
+        else        ConvHist_file[0] << d_turbo_coeff;
         if (engine || actuator_disk) ConvHist_file[0] << d_engine;
       }
       if (output_comboObj) ConvHist_file[0] << combo_obj;
@@ -4499,10 +4498,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
     
-    char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
+    char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000],
-    heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
+    fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
     fem_resid[1000], end[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
@@ -4973,35 +4972,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
-            if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
-                  Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
-            if (equiv_area)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_CEquivArea, Total_CNearFieldOF);
-            if (rotating_frame)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
-                       Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_CMerit, Total_CT, Total_CQ);
+            if (thermal) SPRINTF (heat_coeff, ", %14.8e, %14.8e",  Total_Heat, Total_MaxHeat);
+            if (equiv_area) SPRINTF (equivalent_area_coeff, ", %14.8e, %14.8e", Total_CEquivArea, Total_CNearFieldOF);
+            if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e", Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
+            if (rotating_frame) SPRINTF (rotating_frame_coeff, ", %14.8e, %14.8e, %14.8e", Total_CMerit, Total_CT, Total_CQ);
             if (inv_design) {
-              Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_CpDiff);
-            }
-
-
-            if (thermal) {
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat);
-              if (engine || actuator_disk)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
-              if (equiv_area)
-                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_CEquivArea, Total_CNearFieldOF);
-              if (rotating_frame)
-                 SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
-                          Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_CMerit, Total_CT, Total_CQ);
-              if (inv_design) {
-                Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
-                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
-              }
+              SPRINTF (Cp_inverse_design, ", %14.8e", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff());
+              if (thermal && !turbo) SPRINTF (Heat_inverse_design, ", %14.8e", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff());
             }
             
             if (direct_diff != NO_DERIVATIVE) {
@@ -5540,6 +5517,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       /*--- Write the solution on the screen and history file ---*/
+      
       if (val_iZone == 0){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
@@ -5569,10 +5547,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case EULER : case NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;            
-//            if (fluid_structure) ConvHist_file[0] << fea_resid;
+            if (!turbo) {
+              ConvHist_file[0] << begin << direct_coeff;
+              if (thermal) ConvHist_file[0] << heat_coeff;
+              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
+              if (inv_design) {
+                ConvHist_file[0] << Cp_inverse_design;
+                if (thermal) ConvHist_file[0] << Heat_inverse_design;
+              }
+              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
+              ConvHist_file[0] << flow_resid;
+            }
+            else {
+              ConvHist_file[0] << begin << turbo_coeff << flow_resid;
+            }
+            
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_surface) ConvHist_file[0] << surface_outputs;
@@ -5587,7 +5577,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
               cout.width(13); cout << log10(residual_flow[0]);
-              //          if (!fluid_structure && !equiv_area) {
               if (!equiv_area) {
                 if (compressible) {
                   if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
@@ -5595,7 +5584,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
                 if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
               }
-              //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
 
               if (rotating_frame && nDim == 3 && !turbo ) {
                 cout.setf(ios::scientific, ios::floatfield);
@@ -5637,11 +5625,26 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case RANS :
           
           if (!DualTime_Iteration) {
-            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
-            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+            
+            if (!turbo) {
+              ConvHist_file[0] << begin << direct_coeff;
+              if (thermal) ConvHist_file[0] << heat_coeff;
+              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
+              if (inv_design) {
+                ConvHist_file[0] << Cp_inverse_design;
+                if (thermal) ConvHist_file[0] << Heat_inverse_design;
+              }
+              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
+              ConvHist_file[0] << flow_resid << turb_resid;
+            }
+            else {
+              ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+            }
+            
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_surface) ConvHist_file[0] << output_surface;
+            if (output_surface) ConvHist_file[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
             if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
@@ -5655,12 +5658,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) cout.width(13);
               else  cout.width(14);
               cout << log10(residual_flow[0]);
-              //          else  cout.width(14),
-              //                 cout << log10(residual_flow[0]),
-              //                 cout.width(14);
-              //          if ( nDim==2 ) cout << log10(residual_flow[3]);
-              //          if ( nDim==3 ) cout << log10(residual_flow[4]);
-
               switch(nVar_Turb) {
               case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
               case 2: cout.width(14); cout << log10(residual_turbulent[0]);
@@ -5988,7 +5985,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   
   if ((rank == MASTER_NODE) && (flow)) {
     
-    cout << "Writing the forces breakdown file." << endl;
+    cout << endl << "Writing the forces breakdown file." << endl;
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
@@ -7605,9 +7602,9 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -16042,11 +16039,11 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   }
   else {
     if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
