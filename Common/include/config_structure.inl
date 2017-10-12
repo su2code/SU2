@@ -825,6 +825,8 @@ inline su2double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Er
 
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
+inline unsigned short CConfig::GetLinear_Solver_ILU_n(void) { return Linear_Solver_ILU_n; }
+
 inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return Linear_Solver_Restart_Frequency; }
 
 inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
@@ -866,6 +868,8 @@ inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
 
 inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
+
+inline su2double CConfig::GetDeform_Limit(void) { return Deform_Limit; }
 
 inline su2double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
 
@@ -1381,10 +1385,6 @@ inline bool CConfig::GetFrozen_Visc_Disc(void) { return Frozen_Visc_Disc; }
 inline bool CConfig::GetFrozen_Limiter_Disc(void){ return Frozen_Limiter_Disc; }
 
 inline bool CConfig::GetSens_Remove_Sharp(void) { return Sens_Remove_Sharp; }
-
-inline bool CConfig::GetViscous_Limiter_Flow(void) { return Viscous_Limiter_Flow; }
-
-inline bool CConfig::GetViscous_Limiter_Turb(void) { return Viscous_Limiter_Turb; }
 
 inline bool CConfig::GetWrite_Conv_FSI(void) { return Write_Conv_FSI; }
 
