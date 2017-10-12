@@ -6558,9 +6558,9 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Viscous contribution ---*/
 
-      Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosity() + node[jPoint]->GetLaminarViscosity());
-      Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
-      Mean_Density     = 0.5*(node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
+      Mean_LaminarVisc = node[iPoint]->GetLaminarViscosity();
+      Mean_EddyVisc    = node[iPoint]->GetEddyViscosity();
+      Mean_Density     = node[iPoint]->GetDensity();
       
       Lambda = (Mean_LaminarVisc + Mean_EddyVisc)*Area*Area/Mean_Density;
       
