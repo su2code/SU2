@@ -496,6 +496,17 @@ def main():
     harmonic_balance.tol       = 0.00001
     test_list.append(harmonic_balance)
 
+    # Turbulent pitching NACA 64a010 airfoil
+    harmonic_balance           = TestCase('turbulent_hb')
+    harmonic_balance.cfg_dir   = "harmonic_balance/turbulent_hb"
+    harmonic_balance.cfg_file  = "davis.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.784954,-5.471762, 0.007973, 0.077757] #last 4 columns
+    harmonic_balance.su2_exec  = "parallel_computation.py -f"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(turbulent_hb)
+
     ######################################
     ### Moving Wall                    ###
     ######################################
