@@ -138,7 +138,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
     Limiter_Secondary[iVar] = 0.0;
 
-
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
