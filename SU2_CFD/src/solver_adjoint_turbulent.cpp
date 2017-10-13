@@ -602,10 +602,10 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 //  su2double *Limiter_i = NULL, *Limiter_j = NULL, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
 //  unsigned short iDim, iVar;
   
-  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
-  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+  bool muscl   = config->GetMUSCL_AdjTurb();
+  bool limiter = (config->GetKind_SlopeLimit_AdjTurb() != NO_LIMITER);
   
-  if (second_order) {
+  if (muscl) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     if (limiter) SetSolution_Limiter(geometry, config);

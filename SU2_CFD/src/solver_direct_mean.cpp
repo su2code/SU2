@@ -4247,8 +4247,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
@@ -4289,7 +4289,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
  
   /*--- Upwind second order reconstruction ---*/
   
-  if ((second_order && !center) && (iMesh == MESH_0) && !Output) {
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
     
     /*--- Gradient computation ---*/
     
@@ -4320,7 +4320,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
   
@@ -4621,8 +4621,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
-  bool limiter          = (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER);
+  bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
@@ -4659,7 +4659,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- High order reconstruction using MUSCL strategy ---*/
     
-    if (second_order) {
+    if (muscl) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -15672,9 +15672,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_adjflow      = (cont_adjoint && (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));

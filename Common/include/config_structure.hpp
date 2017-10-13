@@ -462,12 +462,12 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
-  SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
+  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  bool MUSCL,		/*!< \brief MUSCL scheme .*/
+  MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
+  MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
+  MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
+  MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
@@ -1857,9 +1857,10 @@ public:
    * \param[in] val_kind_centered - If centered scheme, kind of centered scheme (JST, etc.).
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
+   * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
+                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, bool val_muscl);
   
   /*!
    * \brief Get the value of limiter coefficient.
@@ -3419,41 +3420,50 @@ public:
   unsigned short GetKind_Upwind(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder(void);
+  bool GetMUSCL(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_Flow(void);
+  bool GetMUSCL_Flow(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_Turb(void);
+  bool GetMUSCL_Turb(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_AdjFlow(void);
+  bool GetMUSCL_AdjFlow(void);
   
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  bool GetMUSCL_AdjTurb(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
