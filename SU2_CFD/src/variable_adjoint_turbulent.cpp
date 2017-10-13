@@ -62,7 +62,7 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   
   Residual_Old = new su2double [nVar];
   
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
+  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) Limiter = new su2double [nVar];
   
 }
 
