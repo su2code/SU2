@@ -1114,7 +1114,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     /*--- Compute the max value and min value of the solution ---*/
     
     Solution = node[iPoint]->GetSolution();
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       LocalMinSolution[iVar] = Solution[iVar];
       LocalMaxSolution[iVar] = Solution[iVar];
     }
