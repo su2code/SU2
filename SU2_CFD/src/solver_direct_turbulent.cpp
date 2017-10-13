@@ -41,8 +41,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   upperlimit    = NULL;
   nVertex       = NULL;
   nMarker       = 0;
-  /*--- Initialize the Primitive Variables (two by default for turbulent)---*/
-  nPrimVar = 2;
+  
 }
 
 CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
@@ -436,7 +435,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   
-  bool second_order  = config->GetMUSCL_Turb();
+  bool muscl         = config->GetMUSCL_Turb();
   bool limiter       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
   
@@ -465,7 +464,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     if (grid_movement)
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     
-    if (second_order) {
+    if (muscl) {
 
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -1205,6 +1204,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
   
   nVar = 1;
+  nPrimVar = 1;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
@@ -2931,6 +2931,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
   
   nVar = 2;
+  nPrimVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   

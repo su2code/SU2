@@ -635,7 +635,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     TurbVar_Grad_j = solver_container[TURB_SOL]->node[jPoint]->GetGradient();
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
     
-//    if (second_order) {
+//    if (muscl) {
 //      
 //      /*--- Conservative solution using gradient reconstruction ---*/
 //      for (iDim = 0; iDim < nDim; iDim++) {
