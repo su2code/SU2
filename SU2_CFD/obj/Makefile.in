@@ -161,6 +161,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/postprocessing_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
@@ -193,8 +194,8 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
 	../src/output_physics.cpp ../src/output_tecplot.cpp \
 	../src/output_fieldview.cpp ../src/output_su2.cpp \
-	../src/postprocessing_structure.cpp \
-	../src/output_paraview.cpp ../src/solver_adjoint_mean.cpp \
+	../src/output_paraview.cpp ../src/postprocessing_structure.cpp \
+	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
 	../src/solver_adjoint_discrete.cpp \
@@ -314,6 +315,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/postprocessing_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
@@ -345,8 +347,8 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
 	../src/output_physics.cpp ../src/output_tecplot.cpp \
 	../src/output_fieldview.cpp ../src/output_su2.cpp \
-	../src/postprocessing_structure.cpp \
-	../src/output_paraview.cpp ../src/solver_adjoint_mean.cpp \
+	../src/output_paraview.cpp ../src/postprocessing_structure.cpp \
+	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
 	../src/solver_adjoint_discrete.cpp \
@@ -457,6 +459,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/postprocessing_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
@@ -488,8 +491,8 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
 	../src/output_physics.cpp ../src/output_tecplot.cpp \
 	../src/output_fieldview.cpp ../src/output_su2.cpp \
-	../src/postprocessing_structure.cpp \
-	../src/output_paraview.cpp ../src/solver_adjoint_mean.cpp \
+	../src/output_paraview.cpp ../src/postprocessing_structure.cpp \
+	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
 	../src/solver_adjoint_discrete.cpp \
@@ -816,6 +819,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/postprocessing_structure.hpp \
   ../include/postprocessing_structure.inl \
   ../include/solver_structure.hpp \

@@ -3430,21 +3430,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_All = nMarker_Max;
 
   /*--- Allocate the memory (markers in each domain) ---*/
-
-  Marker_All_TagBound       = new string[nMarker_All];			    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv       = new short[nMarker_All];						// +#domain (send), -#domain (receive).
-  Marker_All_KindBC         = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
-  Marker_All_Monitoring     = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
-  Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_FSIinterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
-=======
   
   Marker_All_TagBound             = new string[nMarker_All];			// Store the tag that correspond with each marker.
   Marker_All_SendRecv             = new short[nMarker_All];				// +#domain (send), -#domain (receive).
@@ -3462,7 +3447,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
   
->>>>>>> develop
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
