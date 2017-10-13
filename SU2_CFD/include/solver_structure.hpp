@@ -7,8 +7,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -437,14 +437,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief Compute the pressure laplacian using in a incompressible solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -622,8 +615,8 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_ComboObj(CConfig *config);
-
+  virtual void Evaluate_ObjFunc(CConfig *config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -745,10 +738,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -879,9 +873,30 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  virtual void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
+	                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
+  /*!
+   * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  virtual void PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Giles(CGeometry *geometry, CSolver **solver_container,
+                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -893,6 +908,29 @@ public:
    */
   virtual void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                          CConfig *config, unsigned short val_marker);
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                          CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief A virtual member.
@@ -962,11 +1000,11 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+    
+	/*!
+	 * \brief Impose the symmetry boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
@@ -984,308 +1022,46 @@ public:
    */
   virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                             CConfig *config, unsigned short val_marker);
-  /*!
-   * \brief It performs the average value along a boundary.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the average is evaluated.
-   */
-  virtual void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
-
-  /*!
-   * \brief it performs a mixed out average of the nodes of a boundary.
-   * \param[in] val_init_pressure -  initial pressure value
-   * \param[in] val_Averaged_Flux - flux averaged values.
-   * \param[in] val_normal - normal vector.
-   * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
-   * \param[in] density_miz - value of the mixed-out avaraged density.
-   */
-  virtual void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
-
-  /*!
-   * \brief it finds the root of an implicit equation that relates pressure and density.
-   * \param[in] pressure - pressure value
-   * \param[in] val_Averaged_Flux - flux averaged values.
-   * \param[in] val_normal - normal vector.
-   * \param[in] valfunc - Description of the numerical method.
-   * \param[in] density - value of the mixed-out avaraged density.
-   */
-  virtual void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in]  c4k - Fourier transformation coefficients.
-   * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-   */
-  virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in]  c2k - Fourier transformation coefficients.
-   * \param[in]  c3k - Fourier transformation coefficients.
-   * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-   */
-  virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] intMarker - internal marker.
-   * \param[in] extMarker - external marker.
-   */
-  virtual void SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedDensity(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedPressure(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedEnthalpy(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Velocity on the surface <i>val_marker</i>.
-   */
-  virtual su2double* GetAveragedVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Grid Velocity on the surface <i>val_marker</i>.
-   */
-  virtual su2double* GetAveragedGridVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Entropy on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedEntropy(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Total Temperature on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedTotTemperature(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedTotPressure(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the flow angle on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetFlowAngle(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Mach Number on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedMach(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Normal Mach Number on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedNormalMach(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Mass flow on the surface <i>val_marker</i>..
-   */
-  virtual su2double GetMassFlow(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of Total Pressure Loss for turbomachinery performance.
-   */
-  virtual su2double GetTotalPressureLoss(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Kinetic energy loss for turbomachinery performance.
-   */
-  virtual su2double GetKineticEnergyLoss(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Total-total efficiency for turbomachinery performance.
-   */
-  virtual su2double GetTotalTotalEfficiency(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Total-static efficiency for turbomachinery performance.
-   */
-  virtual su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Eulerian Work for turbomachinery performance.
-   */
-  virtual su2double GetEulerianWork(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Inlet Total Enthalpy for turbomachinery performance.
-   */
-  virtual su2double GetTotalEnthalpyIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Inlet Flow Angle for turbomachinery performance.
-   */
-  virtual su2double GetFlowAngleIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Outlet Flow Angle for turbomachinery performance.
-   */
-  virtual su2double GetFlowAngleOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Inlet Mass Flow for turbomachinery performance.
-   */
-  virtual su2double GetMassFlowIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Outlet Mass FlowS for turbomachinery performance.
-   */
-  virtual su2double GetMassFlowOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Inlet Mach for turbomachinery performance.
-   */
-  virtual su2double GetMachIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Outlet Mach for turbomachinery performance.
-   */
-  virtual su2double GetMachOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the normal component of the Inlet Mach for turbomachinery performance.
-   */
-  virtual su2double GetNormalMachIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the normal component of the Outlet Mach for turbomachinery performance.
-   */
-  virtual su2double GetNormalMachOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Outlet Static Enthalpy for turbomachinery performance.
-   */
-  virtual su2double GetEnthalpyOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Outlet Isentropic Velocity for turbomachinery performance.
-   */
-  virtual su2double GetVelocityOutIs(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Outlet Pressure for turbomachinery performance.
-   */
-  virtual su2double GetPressureOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Pressure ratio for turbomachinery performance.
-   */
-  virtual su2double GetPressureRatio(unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedNormalVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetAveragedTangVelocity(unsigned short valMarker);
-
-   /*!
-  * \brief Get the outer state for fluid interface nodes.
-  * \param[in] val_marker - marker index
-  * \param[in] val_vertex - vertex index
-  * \param[in] val_state  - requested state component
-  */
-  virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
-
+   
  /*!
-  * \brief Set the outer state for fluid interface nodes.
-  * \param[in] val_marker - marker index
-  * \param[in] val_vertex - vertex index
-  * \param[in] val_state  - requested state component
-  * \param[in] component  - set value
-  */
-  virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+   * \brief Get the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   */
+  virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  virtual void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
 
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   * \param[in] component  - set value
+   */
+  virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Get the number of outer states for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  virtual int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the number of outer states for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value      - number of outer states
+   */
+  virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+    
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1313,7 +1089,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1321,7 +1097,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1329,7 +1105,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1345,7 +1121,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1353,7 +1129,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1361,7 +1137,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1369,7 +1145,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1377,7 +1153,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1387,37 +1163,21 @@ public:
    */
   virtual void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Pressure_Forces(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver - solver containing the outlet information.
-   * \param[in] inMarker - marker related to the inlet.
-   * \param[in] outMarker - marker related to the outlet.
-   */
-  virtual void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver - solver containing the outlet information.
-   * \param[in] inMarker - marker related to the inlet.
-   * \param[in] outMarker - marker related to the outlet.
-   */
-  virtual void StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Momentum_Forces(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1425,91 +1185,63 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Viscous_DeltaForces(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Wave_Strength(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Index of the grid point.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPreconditioner(CConfig *config, unsigned long iPoint);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1521,13 +1253,13 @@ public:
    */
   virtual void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] StiffMatrix_Elem - Stiffness matrix of an element
    */
   virtual void AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3 );
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1539,7 +1271,7 @@ public:
    */
   virtual void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                CConfig *config, unsigned short iMesh);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1550,7 +1282,7 @@ public:
    */
   virtual void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config, unsigned short iMesh);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1558,7 +1290,7 @@ public:
    * \param[in] val_sensitivity - Value of the sensitivity coefficient.
    */
   virtual void SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1566,7 +1298,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1580,31 +1312,31 @@ public:
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   virtual void SetTotal_CD(su2double val_Total_CD);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CL - Value of the total lift coefficient.
    */
   virtual void SetTotal_CL(su2double val_Total_CL);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   virtual void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   virtual void SetTotal_Power(su2double val_Total_Power);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  virtual void SetTotal_CD_SolidSurf(su2double val_Total_CD_SolidSurf);
-
+  virtual void SetTotal_SolidCD(su2double val_Total_SolidCD);
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
@@ -1667,16 +1399,18 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  virtual void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
-
+  virtual void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
+  
   /*!
    * \brief A virtual member.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  virtual void AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
-
+  virtual void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_Total_CT - Value of the total thrust coefficient.
@@ -1748,20 +1482,6 @@ public:
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   virtual su2double GetCL_Visc(unsigned short val_marker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetCMz_Inv(unsigned short val_marker);
-
-  /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  virtual su2double GetCMz_Visc(unsigned short val_marker);
 
   /*!
    * \brief A virtual member.
@@ -2068,24 +1788,15 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  virtual void GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
-                                           CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
    */
   virtual void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  virtual void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -2247,18 +1958,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the fan face distortion.
-   */
-  virtual su2double GetTotal_RadialDistortion(void);
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the fan face distortion.
-   */
-  virtual su2double GetTotal_CircumferentialDistortion(void);
-
-  /*!
-   * \brief A virtual member.
    * \return Value of the difference of the presure and the target pressure.
    */
   virtual su2double GetTotal_CpDiff(void);
@@ -2299,18 +1998,6 @@ public:
    * \param[in] val_aerocd - Value of the aero drag.
    */
   virtual void SetTotal_AeroCD(su2double val_aerocd);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_distortion - Value of the fan face distortion.
-   */
-  virtual void SetTotal_RadialDistortion(su2double val_distortion);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_distortion - Value of the fan face distortion.
-   */
-  virtual void SetTotal_CircumferentialDistortion(su2double val_distortion);
 
   /*!
    * \brief A virtual member.
@@ -2364,8 +2051,8 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  virtual su2double GetTotal_CD_SolidSurf(void);
-
+  virtual su2double GetTotal_SolidCD(void);
+  
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -2428,9 +2115,9 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   * \return Value of the custom objective function.
    */
-  virtual su2double GetTotal_Custom(void);
+  virtual su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief A virtual member.
@@ -2449,6 +2136,24 @@ public:
    * \return Value of the moment y coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_CMz(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the moment x coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_CoPx(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the moment y coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_CoPy(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the moment y coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_CoPz(void);
 
   /*!
    * \brief A virtual member.
@@ -2509,6 +2214,7 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CMx_Inv(void);
+  
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
@@ -2520,6 +2226,24 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CMz_Inv(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPx_Inv(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPy_Inv(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPz_Inv(void);
 
   /*!
    * \brief A virtual member.
@@ -2585,6 +2309,24 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
+  virtual su2double GetAllBound_CoPx_Visc(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPy_Visc(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPz_Visc(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
   virtual su2double GetAllBound_CFx_Visc(void);
 
   /*!
@@ -2639,6 +2381,24 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CMz_Mnt(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPx_Mnt(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPy_Mnt(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid contribution).
+   */
+  virtual su2double GetAllBound_CoPz_Mnt(void);
 
   /*!
    * \brief A virtual member.
@@ -3003,20 +2763,20 @@ public:
    * \return Value of the density x energy at the infinity.
    */
   virtual su2double GetDensity_Energy_Inf(void);
-
+  
   /*!
    * \brief A virtual member.
    * \return Value of the pressure at the infinity.
    */
   virtual su2double GetPressure_Inf(void);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_dim - Index of the adjoint velocity vector.
    * \return Value of the density x velocity at the infinity.
    */
   virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
@@ -3024,32 +2784,32 @@ public:
    * \return Value of the density multiply by the velocity at the infinity.
    */
   virtual su2double GetDensity_Velocity_Inf(unsigned short val_dim, unsigned short val_var);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_dim - Index of the velocity vector.
    * \return Value of the velocity at the infinity.
    */
   virtual su2double GetVelocity_Inf(unsigned short val_dim);
-
+  
   /*!
    * \brief A virtual member.
    * \return Value of the velocity at the infinity.
    */
   virtual su2double *GetVelocity_Inf(void);
-
+  
   /*!
    * \brief A virtual member.
    * \return Value of the viscosity at the infinity.
    */
   virtual su2double GetViscosity_Inf(void);
-
+  
   /*!
    * \brief A virtual member.
    * \return Value of the turbulent kinetic energy.
    */
   virtual su2double GetTke_Inf(void);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -3057,107 +2817,13 @@ public:
    * \return Value of the sensitivity coefficient.
    */
   virtual su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
-
+ 
   /*!
    * \brief A virtual member.
    * \return A pointer to an array containing a set of constants
    */
   virtual su2double* GetConstants();
-
-  /*!
-   * \brief A virtual member.
-   * \return average total pressure evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_TotalPress(void);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_exit_pt: value of the total average pressure at the exit.
-   */
-  virtual void SetOneD_TotalPress(su2double AveragePressure);
-
-  /*!
-   * \brief A virtual member.
-   *\return average Mach number evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_Mach(void);
-
-  /*!
-   * \brief A virtual member.
-   * set average Mach number evaluated at an exit boundary marker
-   */
-  virtual void SetOneD_Mach(su2double AverageMach);
-
-  /*!
-   * \brief A virtual member.
-   *\return average temperature evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_Temp(void);
-
-  /*!
-   * \brief A virtual member.
-   * set average temperature evaluated at an exit boundary marker
-   */
-  virtual void SetOneD_Temp(su2double AverageTemperature);
-
-  /*!
-   * \brief A virtual member.
-   * \return average mass flow rate evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_MassFlowRate(void);
-
-  /*!
-   * \brief A virtual member.
-   * set average mass flow rate evaluated at an exit boundary marker
-   */
-  virtual void SetOneD_MassFlowRate(su2double MassFlowRate);
-
-  /*!
-   * \brief A virtual member.
-   * \ Get the flux averaged pressure at a marker.(same as area averaged pressure)
-   */
-  virtual su2double GetOneD_FluxAvgPress(void);
-
-  /*!
-   * \brief A virtual member.
-   * \ Set the flux averaged pressure at a marker. (same as area averaged pressure)
-   */
-  virtual void SetOneD_FluxAvgPress(su2double PressureRef);
-  /*!
-   * \brief A virtual member.
-   * \ Get the flux averaged density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
-   */
-  virtual su2double GetOneD_FluxAvgDensity(void);
-
-  /*!
-   * \brief A virtual member.
-   * \ Set the flux averaged density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
-   */
-  virtual void SetOneD_FluxAvgDensity(su2double DensityRef);
-
-  /*!
-   * \brief A virtual member.
-   * \ Get the flux averaged velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
-   */
-  virtual su2double GetOneD_FluxAvgVelocity(void);
-
-  /*!
-   * \brief A virtual member.
-   * \ Set the flux averaged velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
-   */
-  virtual void SetOneD_FluxAvgVelocity(su2double VelocityRef);
-
-  /*!
-   * \brief A virtual member.
-   * \ Get the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
-   */
-  virtual su2double GetOneD_FluxAvgEntalpy(void);
-  /*!
-   * \brief A virtual member.
-   * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
-   */
-  virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] fea_geometry - Geometrical definition of the problem.
@@ -3315,9 +2981,10 @@ public:
    * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] adjoint - Boolean to identify the restart file of an adjoint run.
    * \param[in] val_filename - String name of the restart file.
    */
-  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename);
+  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename);
 
   /*!
    * \brief A virtual member.
@@ -3396,12 +3063,6 @@ public:
   virtual void ExtractAdjoint_Solution(CGeometry *geometry,  CConfig *config);
 
   /*!
-   * \brief A virtual member
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  virtual void RegisterObj_Func(CConfig *config);
-
-  /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -3414,9 +3075,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
-
-  virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
@@ -3572,8 +3231,8 @@ public:
    * \brief A virtual member.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  virtual void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
-
+  virtual void SetRecording(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3587,12 +3246,327 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void InitTurboContainers(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the average is evaluated.
+   */
+  virtual void PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+
+  /*!
+   * \brief virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the average is evaluated.
+   */
+  virtual void TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+  /*!
+   * \brief virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+   virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageDensity(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAveragePressure(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  virtual su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Nu on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageNu(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Kine on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageKine(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Omega on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageOmega(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Nu on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetExtAverageNu(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Kine on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetExtAverageKine(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Omega on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short iSpan);
+
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Nu on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Kine on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Omega on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of inlet pressure.
+   */
+  virtual su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet normal velocity.
+   */
+  virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet density.
+   */
+  virtual su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet pressure.
+   */
+  virtual su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet normal velocity.
+   */
+  virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetNuIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetKineOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetFreeStream_TurboSolution(CConfig *config);
+
+
 };
 
 /*!
@@ -3608,7 +3582,7 @@ public:
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-
+  
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3689,6 +3663,9 @@ protected:
   *CMx_Inv,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
   *CMy_Inv,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
   *CMz_Inv,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPx_Inv,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPy_Inv,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPz_Inv,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
   *CFx_Inv,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
   *CFy_Inv,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
   *CFz_Inv,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
@@ -3714,6 +3691,9 @@ protected:
   *CMx_Mnt,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
   *CMy_Mnt,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
   *CMz_Mnt,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPx_Mnt,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPy_Mnt,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CoPz_Mnt,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
   *CFx_Mnt,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
   *CFy_Mnt,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
   *CFz_Mnt,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
@@ -3770,6 +3750,9 @@ protected:
   AllBound_CMx_Inv,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMy_Inv,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMz_Inv,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPx_Inv,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPy_Inv,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPz_Inv,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFx_Inv,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFy_Inv,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFz_Inv,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
@@ -3787,6 +3770,9 @@ protected:
    AllBound_CMx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CMy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CMz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CoPx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CoPy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CoPz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CFx_Mnt,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CFy_Mnt,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CFz_Mnt,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
@@ -3796,20 +3782,12 @@ protected:
    AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
 
   su2double
-  OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
-  OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
-  OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
-  OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
-  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
-  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
-  Total_CD_SolidSurf, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_SolidCD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_NetCThrust, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_Power, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -3825,11 +3803,17 @@ protected:
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_Custom,        /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMx_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMy_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CMz_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
+  Total_CoPx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CoPy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CoPz,      /*!< \brief Total z moment coefficient for all the boundaries. */
   Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
   Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
   Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */
@@ -3840,8 +3824,6 @@ protected:
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
   Total_AeroCD,      /*!< \brief Total aero drag coefficient for all the boundaries. */
-  Total_RadialDistortion,      /*!< \brief Total fan face radial distortion for all the boundaries. */
-  Total_CircumferentialDistortion,      /*!< \brief Total fan face circumferential distortion for all the boundaries. */
   Total_CEquivArea,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_CNearFieldOF,      /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
@@ -3859,6 +3841,7 @@ protected:
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
+  
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -3891,59 +3874,55 @@ protected:
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
   unsigned long BCThrust_Counter;
+  unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
+  unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
-  su2double **AveragedVelocity,
-            **AveragedNormal,
-            **AveragedGridVel,
-            **AveragedFlux,
-            **TotalFlux,
-            *TotalArea,
-            *AveragedNormalVelocity,
-            *ExtAveragedNormalVelocity,
-            *AveragedTangVelocity,
-            *ExtAveragedTangVelocity,
-            *AveragedTangGridVelocity,
-            *AveragedMach,
-            *AveragedNormalMach,
-            *AveragedTangMach,
-            *AveragedEnthalpy,
-            *AveragedPressure,
-            *AveragedTotTemperature,
-            *AveragedTotPressure,
-            *ExtAveragedPressure,
-            *ExtAveragedTotTemperature,
-            *ExtAveragedTotPressure,
-            *AveragedDensity,
-            *ExtAveragedDensity,
-            *AveragedSoundSpeed,
-            *AveragedEntropy,
-            *MassFlow,
-            *FlowAngle;
+  /*--- Turbomachinery Solver Variables ---*/
+  su2double *** AverageFlux,
+            ***SpanTotalFlux,
+            ***AverageVelocity,
+            ***AverageTurboVelocity,
+            ***OldAverageTurboVelocity,
+            ***ExtAverageTurboVelocity,
+             **AveragePressure,
+             **OldAveragePressure,
+             **RadialEquilibriumPressure,
+             **ExtAveragePressure,
+             **AverageDensity,
+             **OldAverageDensity,
+             **ExtAverageDensity,
+             **AverageNu,
+             **AverageKine,
+             **AverageOmega,
+             **ExtAverageNu,
+             **ExtAverageKine,
+             **ExtAverageOmega;
 
-  su2double *TotalStaticEfficiency,
-            *TotalTotalEfficiency,
-            *KineticEnergyLoss,
-            *TotalPressureLoss,
-            *MassFlowIn,
-            *MassFlowOut,
-            *FlowAngleIn,
-            *FlowAngleOut,
-            *EulerianWork,
-            *TotalEnthalpyIn,
-            *PressureRatio,
-            *PressureOut,
-            *EnthalpyOut,
-            *MachIn,
-            *MachOut,
-            *NormalMachIn,
-            *NormalMachOut,
-            *VelocityOutIs;
+  su2double  **DensityIn,
+             **PressureIn,
+             ***TurboVelocityIn,
+             **DensityOut,
+             **PressureOut,
+             ***TurboVelocityOut,
+             **KineIn,
+             **OmegaIn,
+             **NuIn,
+             **KineOut,
+             **OmegaOut,
+             **NuOut;
+  
+  complex<su2double> ***CkInflow,
+                     ***CkOutflow1,
+                     ***CkOutflow2;
+
+ /*--- End of Turbomachinery Solver Variables ---*/
 
   /* Sliding meshes variables */
 
-  su2double ***SlidingState;
+  su2double ****SlidingState;
+  int **SlidingStateNodes;
 
 public:
 
@@ -4188,23 +4167,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -4219,22 +4182,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the limiter of the primitive variables.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
    * \param[in] iPoint - Index of the grid point
@@ -4296,8 +4244,8 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_ComboObj(CConfig *config);
-
+  void Evaluate_ObjFunc(CConfig *config);
+  
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
    *
@@ -4338,11 +4286,12 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+    
   /*!
    * \brief Impose the engine inflow boundary condition.
     * \param[in] geometry - Geometrical definition of the problem.
@@ -4421,6 +4370,28 @@ public:
    */
   void BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                   CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+
+  /*!
+   * \brief Impose the boundary condition using characteristic recostruction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container,
+      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -4433,10 +4404,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
+  void BC_Giles(CGeometry *geometry, CSolver **solver_container,
                         CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-
-
+  
+  
   /*!
    * \brief Impose a subsonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4448,7 +4419,7 @@ public:
    */
   void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                 CConfig *config, unsigned short val_marker);
-
+  
   /*!
    * \brief Impose a supersonic inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4460,7 +4431,7 @@ public:
    */
   void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-
+  
   /*!
    * \brief Impose a supersonic outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4472,7 +4443,7 @@ public:
    */
   void BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-
+  
   /*!
    * \brief Impose the dirichlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4483,7 +4454,7 @@ public:
    */
   void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                  CConfig *config, unsigned short val_marker);
-
+  
   /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4495,7 +4466,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
-
+  
   /*!
    * \brief Impose the nacelle inflow boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4507,7 +4478,7 @@ public:
    */
   void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
-
+  
   /*!
    * \brief Impose the ancelle exhaust boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4519,298 +4490,7 @@ public:
    */
   void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                          CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief It avarage the fluxes value along a boundary.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
-
-  /*!
-   * \brief it performs a mixed out average of the nodes of a boundary.
-   * \param[in] val_init_pressure -  initial pressure value
-   * \param[in] val_Averaged_Flux - flux averaged values.
-   * \param[in] val_normal - normal vector.
-   * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
-   * \param[in] density_miz - value of the mixed-out avaraged density.
-   */
-  void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
-
-  /*!
-   * \brief it finds the root of an implicit equation that relates pressure and density.
-   * \param[in] pressure - pressure value
-   * \param[in] val_Averaged_Flux - flux averaged values.
-   * \param[in] val_normal - normal vector.
-   * \param[in] valfunc - Description of the numerical method.
-   * \param[in] density - value of the mixed-out avaraged density.
-   */
-  void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
-
-  /*!
-   * \brief it performs a fourier transformation of a characteristic value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in]  c4k - Fourier transformation coefficients.
-   * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-   */
-  void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
-
-  /*!
-   * \brief it performs a fourier transformation of a characteristic value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in]  c2k - Fourier transformation coefficients.
-   * \param[in]  c3k - Fourier transformation coefficients.
-   * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-   */
-  void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] intMarker - internal marker.
-   * \param[in] extMarker - external marker.
-   */
-  void SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker);
-
-  /*!
-   * \brief Provide the average density at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedDensity(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the average pressure at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedTotPressure(unsigned short valMarker);
-
-  /*!
-   * \brief Provide Total Pressure Losses (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of Total Pressure Losses.
-   */
-  su2double GetTotalPressureLoss(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide Kinetic Energy Losses (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Kinetic Energy Losses.
-   */
-  su2double GetKineticEnergyLoss(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide Total-Total Efficiency (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Total-Total Efficiency.
-   */
-  su2double GetTotalTotalEfficiency(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide Total-Static Efficiency (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Total-Static Efficiency.
-   */
-  su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Eulerian Work (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Eulerian Work.
-   */
-  su2double GetEulerianWork(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Inlet Total Enthalpy (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Inlet Total Enthalpy.
-   */
-  su2double GetTotalEnthalpyIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Inlet Flow Angle (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Inlet Flow Angle.
-   */
-  su2double GetFlowAngleIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Outlet Flow Angle (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Outlet FLow Angle.
-   */
-  su2double GetFlowAngleOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Inlet Mass Flow (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Inlet Mass Flow.
-   */
-  su2double GetMassFlowIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Outlet Mass Flow (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Outlet Mass Flow.
-   */
-  su2double GetMassFlowOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Inlet Mach number (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Inlet Mach number.
-   */
-  su2double GetMachIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Outlet Mach number (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Outlet Mach number.
-   */
-  su2double GetMachOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the normal component of the Inlet Mach number (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the normal component of the Inlet Mach number.
-   */
-  su2double GetNormalMachIn(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the normal component of the Outlet Mach number (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the normal component of the Outlet Mach number.
-   */
-  su2double GetNormalMachOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Outlet Enthalpy (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Outlet Enthalpy.
-   */
-  su2double GetEnthalpyOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Isentropic Outlet Velocity (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Isentropic Outlet Velocity.
-   */
-  su2double GetVelocityOutIs(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide the Outlet Pressure (turbomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Outlet Pressure.
-   */
-  su2double GetPressureOut(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide Pressure Ratio (tubomachinery performance).
-   * \param[in] inMarkerTP - turboperformance marker.
-   * \return Value of the Pressure Ratio.
-   */
-  su2double GetPressureRatio(unsigned short inMarkerTP);
-
-  /*!
-   * \brief Provide Averaged Total Temperature at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedTotTemperature(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the Average pressure at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedPressure(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the MassFlow at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the MassFLow on the surface <i>val_marker</i>.
-   */
-  su2double GetMassFlow(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the Flow Angle at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Flow Angle on the surface <i>val_marker</i>.
-   */
-  su2double GetFlowAngle(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the Mach number at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Mach number on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedMach(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the Normal Mach number at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Normal Mach number on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedNormalMach(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the average enthalpy at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedEnthalpy(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the average pressure at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Entropy on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedEntropy(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the average pressure at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Components of the Average Velocity on the surface <i>val_marker</i>.
-   */
-  su2double* GetAveragedVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the average grid velocity at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Grid Velocity on the surface <i>val_marker</i>.
-   */
-  su2double* GetAveragedGridVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the Average Normal Velocity at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Normal Velocity on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedNormalVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief Provide the Tangent Velocity at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
-   */
-  su2double GetAveragedTangVelocity(unsigned short valMarker);
-
-  /*!
-   * \brief compare to values.
-   * \param[in] a - value 1.
-   * \param[in] b - value 2.
-   */
-  static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
-
+  
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4841,24 +4521,8 @@ public:
    * \brief Compute the Fan face Mach number.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
-                                   CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
    */
   void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   */
-  void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -4934,7 +4598,7 @@ public:
   * \param[in] val_vertex - vertex index
   * \param[in] val_state  - requested state component
   */
-  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
@@ -4942,13 +4606,6 @@ public:
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCL_Inv(unsigned short val_marker);
-
-  /*!
-   * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
-   * \param val_marker Surface where the coefficient is going to be computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Inv(unsigned short val_marker);
 
   /*!
    * \brief Provide the non dimensional lift coefficient.
@@ -5234,18 +4891,6 @@ public:
   su2double GetTotal_AeroCD(void);
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
-   * \return Value of the fan face distortion (inviscid + viscous contribution).
-   */
-  su2double GetTotal_RadialDistortion(void);
-
-  /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
-   * \return Value of the fan face distortion (inviscid + viscous contribution).
-   */
-  su2double GetTotal_CircumferentialDistortion(void);
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
@@ -5281,18 +4926,6 @@ public:
    * \param[in] val_cequivarea - Value of the aero drag.
    */
   void SetTotal_AeroCD(su2double val_aerocd);
-
-  /*!
-   * \brief Set the value of the fan face distortion.
-   * \param[in] val_cequivarea - Value of the fan face distortion.
-   */
-  void SetTotal_RadialDistortion(su2double val_distortion);
-
-  /*!
-   * \brief Set the value of the fan face distortion.
-   * \param[in] val_cequivarea - Value of the fan face distortion.
-   */
-  void SetTotal_CircumferentialDistortion(su2double val_distortion);
 
   /*!
    * \brief Set the value of the Equivalent Area coefficient.
@@ -5354,8 +4987,8 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_CD_SolidSurf(void);
-
+  su2double GetTotal_SolidCD(void);
+  
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -5409,7 +5042,7 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_IDR(void);
-
+ 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -5417,10 +5050,10 @@ public:
   su2double GetTotal_DC60(void);
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
-   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   * \brief Provide the total custom objective function.
+   * \return Value of the custom objective function.
    */
-  su2double GetTotal_Custom(void);
+  su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
@@ -5439,6 +5072,24 @@ public:
    * \return Value of the moment z coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_CMz(void);
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
+   * \return Value of the moment x coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CoPx(void);
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional y moment coefficient.
+   * \return Value of the moment y coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CoPy(void);
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional z moment coefficient.
+   * \return Value of the moment z coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CoPz(void);
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional x force coefficient.
@@ -5540,8 +5191,8 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  void SetTotal_CD_SolidSurf(su2double val_Total_CD_SolidSurf);
-
+  void SetTotal_SolidCD(su2double val_Total_SolidCD);
+  
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
@@ -5603,16 +5254,18 @@ public:
   void SetTotal_DC60(su2double val_Total_DC60);
 
   /*!
-   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \brief Set the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
-
+  void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
+  
   /*!
-   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
-   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   * \brief Add the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
    */
-  void AddTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
+  void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -5656,6 +5309,24 @@ public:
    */
   su2double GetAllBound_CMz_Inv(void);
 
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPx_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPy_Inv(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPz_Inv(void);
+  
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
@@ -5715,6 +5386,24 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CMz_Mnt(void);
+
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPx_Mnt(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPy_Mnt(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPz_Mnt(void);
 
   /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
@@ -5861,7 +5550,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
-
+  
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5869,7 +5558,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
-
+  
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5877,7 +5566,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal);
-
+  
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5885,7 +5574,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal);
-
+  
   /*!
    * \brief Value of the characteristic global index at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5893,87 +5582,6 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
-
-  /*!
-   * \brief Provide the averaged total pressure at a marker.
-   */
-  su2double GetOneD_TotalPress(void);
-
-  /*!
-   * \brief Set the value of averaged total pressure
-   * \param[in] val_exit_pt - value of the averaged pressure
-   */
-  void SetOneD_TotalPress(su2double AveragePressure);
-
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_Mach(void);
-
-  /*!
-   * \brief Set the averaged Mach number at a marker.
-   */
-  void SetOneD_Mach(su2double AverageMach);
-
-  /*!
-   * \brief Provide the averaged Temperature number at a marker.
-   */
-  su2double GetOneD_Temp(void);
-
-  /*!
-   * \brief Set the averaged Temperature at a marker.
-   */
-  void SetOneD_Temp(su2double AverageTemperature);
-
-  /*!
-   * \brief Provide the averaged mass flow rate at a marker.
-   */
-  su2double GetOneD_MassFlowRate(void);
-
-  /*!
-   * \brief Set the averaged mass flow rate at a marker.
-   */
-  void SetOneD_MassFlowRate(su2double MassFlowRate);
-
-  /*!
-   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
-   */
-  su2double GetOneD_FluxAvgPress(void);
-
-  /*!
-   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
-   */
-  void SetOneD_FluxAvgPress(su2double PressureRef);
-
-  /*!
-   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  su2double GetOneD_FluxAvgDensity(void);
-
-  /*!
-   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  void SetOneD_FluxAvgDensity(su2double DensityRef);
-
-  /*!
-   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
-   */
-  su2double GetOneD_FluxAvgVelocity(void);
-
-  /*!
-   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
-   */
-  void SetOneD_FluxAvgVelocity(su2double VelocityRef);
-
-  /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  su2double GetOneD_FluxAvgEntalpy(void);
-
-  /*!
-   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -6017,15 +5625,38 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
- /*!
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+      
+  /*!
    * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
-   * \param[in] val_state  - requested state component
-   * \param[in] component  - set value
+   * \param[in] value - number of outer states
    */
-  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
 
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+    
   /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6052,6 +5683,346 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief Initilize turbo containers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitTurboContainers(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_TurboSolution(CConfig *config);
+
+  /*!
+   * \brief It computes average quantities along the span for turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+  /*!
+   * \brief It computes average quantities along the span for turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+  /*!
+   * \brief it performs a mixed out average of the nodes of a boundary.
+   * \param[in] val_init_pressure -  initial pressure value
+   * \param[in] val_Averaged_Flux - flux averaged values.
+   * \param[in] val_normal - normal vector.
+   * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
+   * \param[in] density_miz - value of the mixed-out avaraged density.
+   */
+  void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+
+  /*!
+   * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+   * \param[in] cartesianVelocity - cartesian components of velocity vector.
+   * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+   * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+   */
+  void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+
+  /*!
+   * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+   * \param[in] cartesianVelocity - cartesian components of velocity vector.
+   * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+   * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+   */
+  void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average pressure at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  su2double GetAveragePressure(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average turbo velocity average at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Nu on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageNu(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageKine(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageOmega(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Nu on the surface <i>val_marker</i>.
+   */
+  su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
+   */
+  su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
+   */
+  su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Set the external average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valDensity - value to set.
+   */
+  void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
+
+  /*!
+   * \brief Set the external average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valPressure - value to set.
+   */
+  void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
+
+  /*!
+   * \brief Set the external the average turbo velocity average at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
+
+  /*!
+   * \brief Set the external average turbulent Nu at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valNu - value to set.
+   */
+  void SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu);
+
+  /*!
+   * \brief Set the external average turbulent Kine at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valKine - value to set.
+   */
+  void SetExtAverageKine(unsigned short valMarker, unsigned short valSpan, su2double valKine);
+
+  /*!
+   * \brief Set the external average turbulent Omega at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valOmega - value to set.
+   */
+  void SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega);
+
+  /*!
+   * \brief Provide the inlet density to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet pressure to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of inlet pressure.
+   */
+  su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet normal velocity to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet normal velocity.
+   */
+  su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet density to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet density.
+   */
+  su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet pressure to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet pressure.
+   */
+  su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet normal velocity to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet normal velocity.
+   */
+  su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet turbulent kei to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetKineIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet turbulent omega to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetOmegaIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet turbulent nu to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetNuIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet turbulent kei to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetKineOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet turbulent omega to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetOmegaOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet turbulent nu to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetNuOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet density.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet pressure.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet normal velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet density.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet pressure.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet normal velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet turbulent kei.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetKineIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set inlet turbulent omega.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetOmegaIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set inlet turbulent Nu.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetNuIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet turbulent kei.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetKineOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set Outlet turbulent omega.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetOmegaOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+  /*!
+   * \brief Set outlet turbulent Nu.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+
 };
 
 
@@ -6163,24 +6134,19 @@ protected:
   AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
 
   su2double
-  OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
-  OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
-  OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
-  OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
-  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
-  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
-  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
-  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMx_Prev,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMy_Prev,      /*!< \brief Total y moment coefficient for all the boundaries. */
   Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CMz_Prev,      /*!< \brief Total z moment coefficient for all the boundaries. */
   Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
   Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
   Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */
@@ -6192,6 +6158,7 @@ protected:
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
   Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_HeatFluxDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double *Surface_CL,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CD,          /*!< \brief Drag coefficient for each monitoring surface. */
@@ -6462,23 +6429,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -6493,22 +6444,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-
-  //  /*!
-  //   * \brief Compute the limiter of the primitive variables.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-
+  
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6538,8 +6474,14 @@ public:
   void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(CConfig *config);
+
+  /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
-   *
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -6672,13 +6614,6 @@ public:
    * \return Value of the lift coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCLift_Inv(unsigned short val_marker);
-
-  /*!
-   * \brief Provide the non dimensional z moment coefficient (inviscid contribution).
-   * \param val_marker Surface where the coefficient is going to be computed.
-   * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Inv(unsigned short val_marker);
 
   /*!
    * \brief Provide the non dimensional lift coefficient.
@@ -6889,6 +6824,7 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CMz_Mnt(unsigned short val_marker);
+
   /*!
    * \brief Provide the non dimensional drag coefficient (inviscid contribution).
    * \param val_marker Surface where the coeficient is going to be computed.
@@ -6951,6 +6887,20 @@ public:
    * \param[in] val_Total_CLift - Value of the total lift coefficient.
    */
   void SetTotal_CLift(su2double val_Total_CLift);
+
+  /*!
+   * \brief Set the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
+   */
+  void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
+
+  /*!
+   * \brief Add the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
+   */
+  void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
@@ -7067,6 +7017,12 @@ public:
    * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_CMerit(void);
+
+  /*!
+   * \brief Provide the total custom objective function.
+   * \return Value of the custom objective function.
+   */
+  su2double GetTotal_Custom_ObjFunc(void);
 
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -7227,87 +7183,6 @@ public:
   su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
 
   /*!
-   * \brief Provide the averaged total pressure at a marker.
-   */
-  su2double GetOneD_TotalPress(void);
-
-  /*!
-   * \brief Set the value of averaged total pressure
-   * \param[in] val_exit_pt - value of the averaged pressure
-   */
-  void SetOneD_TotalPress(su2double AveragePressure);
-
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_Mach(void);
-
-  /*!
-   * \brief Set the averaged Mach number at a marker.
-   */
-  void SetOneD_Mach(su2double AverageMach);
-
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_Temp(void);
-
-  /*!
-   * \brief Set the averaged Temperature at a marker.
-   */
-  void SetOneD_Temp(su2double AverageTemperature);
-
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_MassFlowRate(void);
-
-  /*!
-   * \brief Set the averaged Temperature at a marker.
-   */
-  void SetOneD_MassFlowRate(su2double MassFlowRate);
-
-  /*!
-   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
-   */
-  su2double GetOneD_FluxAvgPress(void);
-
-  /*!
-   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
-   */
-  void SetOneD_FluxAvgPress(su2double PressureRef);
-
-  /*!
-   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  su2double GetOneD_FluxAvgDensity(void);
-
-  /*!
-   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  void SetOneD_FluxAvgDensity(su2double DensityRef);
-
-  /*!
-   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
-   */
-  su2double GetOneD_FluxAvgVelocity(void);
-
-  /*!
-   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
-   */
-  void SetOneD_FluxAvgVelocity(su2double VelocityRef);
-
-  /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  su2double GetOneD_FluxAvgEntalpy(void);
-
-  /*!
-   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-
-  /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -7396,6 +7271,9 @@ private:
   *CMx_Visc,      /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
   *CMy_Visc,      /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
   *CMz_Visc,      /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
+  *CoPx_Visc,      /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
+  *CoPy_Visc,      /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
+  *CoPz_Visc,      /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
   *CFx_Visc,      /*!< \brief Force x coefficient (viscous contribution) for each boundary. */
   *CFy_Visc,      /*!< \brief Force y coefficient (viscous contribution) for each boundary. */
   *CFz_Visc,      /*!< \brief Force z coefficient (viscous contribution) for each boundary. */
@@ -7424,6 +7302,9 @@ private:
   AllBound_CMx_Visc,      /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMy_Visc,      /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMz_Visc,      /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPx_Visc,      /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPy_Visc,      /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CoPz_Visc,      /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CEff_Visc,      /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
   AllBound_CFx_Visc,      /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CFy_Visc,      /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
@@ -7570,6 +7451,24 @@ public:
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
+  su2double GetAllBound_CoPx_Visc(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPy_Visc(void);
+  
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
+  su2double GetAllBound_CoPz_Visc(void);
+
+  /*!
+   * \brief Get the inviscid contribution to the efficiency coefficient.
+   * \return Value of the efficiency coefficient (inviscid contribution).
+   */
   su2double GetAllBound_CFx_Visc(void);
 
   /*!
@@ -7677,13 +7576,6 @@ public:
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCL_Visc(unsigned short val_marker);
-
-  /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Visc(unsigned short val_marker);
 
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
@@ -7960,10 +7852,10 @@ public:
    */
   su2double GetAllBound_CMy_Visc(void);
 
-/*!
+  /*!
    * \brief Get the inviscid contribution to the efficiency coefficient.
    * \return Value of the efficiency coefficient (inviscid contribution).
- */
+   */
   su2double GetAllBound_CMz_Visc(void);
 
   /*!
@@ -8051,13 +7943,6 @@ public:
    * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCL_Visc(unsigned short val_marker);
-
-  /*!
-   * \brief Get the non dimensional z moment coefficient (viscous contribution).
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-   */
-  su2double GetCMz_Visc(unsigned short val_marker);
 
   /*!
    * \brief Get the non dimensional sideforce coefficient (viscous contribution).
@@ -8166,6 +8051,13 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
+  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
+  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
+  
+  /* Sliding meshes variables */
+
+  su2double ****SlidingState;
+  int **SlidingStateNodes;
 
 public:
 
@@ -8181,6 +8073,7 @@ public:
 
   /*!
    * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CConfig *config);
 
@@ -8257,7 +8150,40 @@ public:
    */
   void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                      unsigned short val_marker);
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                     unsigned short val_marker);
 
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                     unsigned short val_marker);
+
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                     unsigned short val_marker);
+
+  
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8287,7 +8213,46 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+      
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value - number of outer states
+   */
+  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
 };
 
 /*!
@@ -8416,6 +8381,30 @@ public:
                 unsigned short val_marker);
 
   /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+  unsigned short val_marker);
+
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+  		unsigned short val_marker);
+
+  /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -8461,6 +8450,16 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -8644,6 +8643,30 @@ public:
                 unsigned short val_marker);
 
   /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+  unsigned short val_marker);
+
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+  		unsigned short val_marker);
+
+  /*!
    * \brief Impose the outlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -8654,6 +8677,16 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
+  
+ /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief Get the constants for the SST model.
@@ -9476,6 +9509,8 @@ protected:
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
   *FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
+
+  unsigned long **DonorGlobalIndex;     /*!< \brief Value of the donor global index. */
 
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
@@ -11406,8 +11441,7 @@ private:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
-  su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
-  su2double Mach, Alpha, Beta, Pressure, Temperature;
+  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   su2double **dJdU_CAA;
   unsigned long nPanel;
@@ -11476,12 +11510,6 @@ public:
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Register the objective function as output.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void RegisterObj_Func(CConfig *config);
-
-  /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -11494,14 +11522,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set the objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
-
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
@@ -11558,8 +11578,8 @@ public:
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
-
+  void SetRecording(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
