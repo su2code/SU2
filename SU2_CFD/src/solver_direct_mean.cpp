@@ -4300,7 +4300,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       SetPrimitive_Gradient_LS(geometry, config);
     }
     
-    
     /*--- Limiter computation ---*/
     
     if (limiter && (iMesh == MESH_0)
@@ -4554,7 +4553,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -4575,7 +4574,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Set undivided laplacian an pressure based sensor ---*/
     
-    if (second_order) {
+    if (jst_scheme) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }

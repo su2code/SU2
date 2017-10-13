@@ -2729,7 +2729,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
   bool grid_movement  = config->GetGrid_Movement();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2759,7 +2759,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetLambda(solver_container[FLOW_SOL]->node[iPoint]->GetLambda(),
                         solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
     
-    if (second_order) {
+    if (jst_scheme) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }

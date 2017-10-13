@@ -2398,7 +2398,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2419,7 +2419,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     
     /*--- Set undivided laplacian and pressure-based sensor ---*/
     
-    if (second_order) {
+    if (jst_scheme) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -2461,7 +2461,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim, iVar;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order  = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  bool muscl         = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool limiter       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
@@ -2486,7 +2486,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- High order reconstruction using MUSCL strategy ---*/
     
-    if (second_order) {
+    if (muscl) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
