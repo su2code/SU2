@@ -974,10 +974,10 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   dave = config->GetRefElemLength();
   LimK = config->GetVenkat_LimiterCoeff();
   
-  if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
+  if (config->GetKind_SlopeLimit() == NO_LIMITER) {
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
         node[iPoint]->SetLimiter(iVar, 1.0);
       }
     }

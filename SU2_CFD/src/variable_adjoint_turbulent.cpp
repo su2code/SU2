@@ -45,7 +45,9 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
 }
 
 CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-  
+
+  unsigned short iVar;
+
   /*--- Array initialization ---*/
   
   dmuT_dUTvar = NULL;
@@ -62,8 +64,12 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   
   Residual_Old = new su2double [nVar];
   
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) Limiter = new su2double [nVar];
+  /*--- Allocate space for the limiter ---*/
   
+  Limiter = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+
 }
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {

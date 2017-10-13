@@ -73,8 +73,10 @@ CAdjIncEulerVariable::CAdjIncEulerVariable(su2double val_psirho, su2double *val_
   }
   
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
     Undivided_Laplacian = new su2double [nVar];
+  
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
     Limiter = new su2double [nVar];
     Solution_Max = new su2double [nVar];
