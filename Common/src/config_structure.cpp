@@ -2113,6 +2113,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Kind_SU2 = val_software;
 
+  /*--- Set limiter for no MUSCL reconstructions ---*/
+  
+  if (!MUSCL_Flow) Kind_SlopeLimit_Flow = NO_LIMITER;
+  if (!MUSCL_Turb) Kind_SlopeLimit_Turb = NO_LIMITER;
+  if (!MUSCL_AdjFlow) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
+  if (!MUSCL_AdjTurb) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
+
   /*--- Set the default for thrust in ActDisk ---*/
   
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
@@ -2130,6 +2137,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObj=1;
     nObjW=1;
   }
+  
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
   if (nObjW<nObj) {
