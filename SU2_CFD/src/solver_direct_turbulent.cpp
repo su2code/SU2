@@ -436,7 +436,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim, iVar;
   
   bool muscl         = config->GetMUSCL_Turb();
-  bool limiter       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  bool limiter       = ((config->GetKind_ConvNumScheme_Turb() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_Turb() != NO_LIMITER));
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1415,7 +1415,8 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   unsigned long iPoint;
   unsigned long ExtIter      = config->GetExtIter();
   bool disc_adjoint         = config->GetDiscrete_Adjoint();
-  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_flow         = ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb         = ((config->GetKind_ConvNumScheme_Turb() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_Turb() != NO_LIMITER));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -1434,7 +1435,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Upwind second order reconstruction ---*/
 
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) SetSolution_Limiter(geometry, config);
+  if (limiter_turb) SetSolution_Limiter(geometry, config);
 
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
@@ -3137,7 +3138,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   unsigned long ExtIter = config->GetExtIter();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool limiter_flow     = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_flow     = ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb     = ((config->GetKind_ConvNumScheme_Turb() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_Turb() != NO_LIMITER));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -3156,7 +3158,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) SetSolution_Limiter(geometry, config);
+  if (limiter_turb) SetSolution_Limiter(geometry, config);
   
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 

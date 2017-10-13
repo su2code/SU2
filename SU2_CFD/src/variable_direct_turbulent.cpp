@@ -57,8 +57,9 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
       HB_Source[iVar] = 0.0;
   }
   
-  /*--- Allocate space for the limiter ---*/
-  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
