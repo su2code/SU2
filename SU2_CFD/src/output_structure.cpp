@@ -5183,7 +5183,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
           case HEAT_EQUATION:
             
-            SPRINTF (direct_coeff, ", %12.10f", Total_CHeat);
+            SPRINTF (direct_coeff, ", %12.10f", Total_Heat);
             SPRINTF (heat_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_heat[0]), dummy, dummy, dummy, dummy );
             
             break;
@@ -5409,7 +5409,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
             }
             
-            if (heat) { cout <<  "     Res[Heat]"; }
+            if (cht) {
+              cout <<  "     Res[Heat]";
+              cout <<  "     Res[Heat]";
+            }
+            else if (heat) { cout <<  "     Res[Heat]"; }
+
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
@@ -5442,7 +5447,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
               else cout << endl << " IntIter" << "  ExtIter";
 
-              cout << "      Res[Heat]" << "   CHeat(Total)"<<  endl;
+              cout << "     Res[Heat]" << "   HFlux(Total)"<<  endl;
               break;
 
             case FEM_ELASTICITY :
@@ -5697,7 +5702,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(15); cout << log10(residual_turbulent[1]); break;
               }
 
-              if (heat){
+              if (cht) {
+                cout.width(14); cout << log10(residual_heat[0]);
+                cout.width(14); cout << log10(solver_container[ZONE_1][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
+              }
+              else if (heat){
                 cout.width(14); cout << log10(residual_heat[0]);
               }
 
@@ -5773,7 +5782,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_heat[0]);
-            cout.width(14); cout << Total_CHeat;
+            cout.width(15); cout << std::scientific << solver_container[ZONE_0][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
             cout << endl;
           }
           break;
