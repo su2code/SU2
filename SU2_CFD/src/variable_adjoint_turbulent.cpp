@@ -64,8 +64,9 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   
   Residual_Old = new su2double [nVar];
   
-  /*--- Allocate space for the limiter ---*/
-  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;

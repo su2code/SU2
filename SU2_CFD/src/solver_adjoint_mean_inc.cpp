@@ -1503,7 +1503,7 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool muscl          = config->GetMUSCL_AdjFlow();
-  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
+  bool limiter        = ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER));
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
 
@@ -1651,7 +1651,7 @@ void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
   
   bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool muscl            = (config->GetMUSCL_AdjFlow() && (iMesh == MESH_0));
-  bool limiter          = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
+  bool limiter          = ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER));
   bool grid_movement    = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3924,7 +3924,7 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
    adjoint equations (note that the flow problem may use different methods). ---*/
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
+  bool limiter        = ((config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER));
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
 
   /*--- Residual initialization ---*/
