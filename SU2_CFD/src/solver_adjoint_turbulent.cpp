@@ -603,7 +603,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 //  unsigned short iDim, iVar;
   
   bool muscl   = config->GetMUSCL_AdjTurb();
-  bool limiter = ((config->GetKind_ConvNumScheme_AdjTurb() == SPACE_UPWIND) && (config->GetKind_SlopeLimit_AdjTurb() != NO_LIMITER));
+  bool limiter = (config->GetKind_SlopeLimit_AdjTurb() != NO_LIMITER);
   
   if (muscl) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);

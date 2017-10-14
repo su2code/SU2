@@ -2115,10 +2115,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Set limiter for no MUSCL reconstructions ---*/
   
-  if (!MUSCL_Flow) Kind_SlopeLimit_Flow = NO_LIMITER;
-  if (!MUSCL_Turb) Kind_SlopeLimit_Turb = NO_LIMITER;
-  if (!MUSCL_AdjFlow) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
-  if (!MUSCL_AdjTurb) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
+  if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
+  if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
+  if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
+  if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
 
   /*--- Set the default for thrust in ActDisk ---*/
   
@@ -4581,7 +4581,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: 0.03."<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
