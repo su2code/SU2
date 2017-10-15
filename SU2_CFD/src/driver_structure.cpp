@@ -165,8 +165,6 @@ CDriver::CDriver(char* confFile,
 
   Geometrical_Preprocessing();
 
-  //geometry_container[ZONE_0][MESH_0]->TestGeometry();
-
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Computation of wall distances for turbulence modeling ---*/

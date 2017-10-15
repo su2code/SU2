@@ -4799,11 +4799,20 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag) {
 
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Initialize several class data members for later. ---*/
 
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
+
+  /*--- Arrays for defining the linear partitioning. ---*/
 
   starting_node = NULL;
   ending_node   = NULL;
@@ -4834,29 +4843,33 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   SpanAreaOut             = NULL;
   TurboRadiusOut          = NULL;
 
-  nLocal_Point = 0;
-  nLocal_PointDomain = 0;
-  nLocal_PointGhost = 0;
+  /*--- Initialize counters for the points/elements local to a rank. ---*/
+
+  nLocal_Point         = 0;
+  nLocal_PointDomain   = 0;
+  nLocal_PointGhost    = 0;
   nLocal_PointPeriodic = 0;
-  nLocal_Line = 0;
-  nLocal_BoundTria = 0;
-  nLocal_BoundQuad = 0;
-  nLocal_Tria = 0;
-  nLocal_Quad = 0;
-  nLocal_Tetr = 0;
-  nLocal_Hexa = 0;
-  nLocal_Pris = 0;
-  nLocal_Pyra = 0;
+  nLocal_Line          = 0;
+  nLocal_BoundTria     = 0;
+  nLocal_BoundQuad     = 0;
+  nLocal_Tria          = 0;
+  nLocal_Quad          = 0;
+  nLocal_Tetr          = 0;
+  nLocal_Hexa          = 0;
+  nLocal_Pris          = 0;
+  nLocal_Pyra          = 0;
 
   Local_Coords = NULL;
   Local_Points = NULL;
   Local_Colors = NULL;
 
-  Conn_Line = NULL;
+  /*--- Arrays for holding the element connectivity. ---*/
+
+  Conn_Line      = NULL;
   Conn_BoundTria = NULL;
   Conn_BoundQuad = NULL;
 
-  Conn_Line_Linear = NULL;
+  Conn_Line_Linear      = NULL;
   Conn_BoundTria_Linear = NULL;
   Conn_BoundQuad_Linear = NULL;
 
@@ -4867,10 +4880,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   Conn_Pris = NULL;
   Conn_Pyra = NULL;
 
-  ID_Line = NULL;
-  ID_BoundTria = NULL;
-  ID_BoundQuad = NULL;
-  ID_Line_Linear = NULL;
+  /*--- Arrays for holding the element IDs. ---*/
+
+  ID_Line             = NULL;
+  ID_BoundTria        = NULL;
+  ID_BoundQuad        = NULL;
+  ID_Line_Linear      = NULL;
   ID_BoundTria_Linear = NULL;
   ID_BoundQuad_Linear = NULL;
 
@@ -4881,24 +4896,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   ID_Pris = NULL;
   ID_Pyra = NULL;
 
-  Elem_ID_Line = NULL;
-  Elem_ID_BoundTria = NULL;
-  Elem_ID_BoundQuad = NULL;
-  Elem_ID_Line_Linear = NULL;
+  Elem_ID_Line             = NULL;
+  Elem_ID_BoundTria        = NULL;
+  Elem_ID_BoundQuad        = NULL;
+  Elem_ID_Line_Linear      = NULL;
   Elem_ID_BoundTria_Linear = NULL;
   Elem_ID_BoundQuad_Linear = NULL;
 
-  nDim = geometry->GetnDim();
+  /*--- The new geometry class has the same problem dimension/zone. ---*/
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if (rank == MASTER_NODE && size > SINGLE_NODE)
-    cout << "Communicating partition data and creating halo layers." << endl;
+  nDim  = geometry->GetnDim();
+  nZone = geometry->GetnZone();
 
   /*--- Communicate the coloring data so that each rank has a complete set
    of colors for all points that reside on it, including repeats. ---*/
@@ -4911,14 +4919,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   /*--- Distribute the points to all ranks based on the coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Distributing grid points." << endl;
+    cout <<"Rebalancing vertices." << endl;
 
   DistributePoints(config, geometry);
 
   /*--- Distribute the element information to all ranks based on coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Distributing volume element connectivity." << endl;
+    cout <<"Rebalancing volume element connectivity." << endl;
 
   DistributeVolumeConnectivity(config, geometry, TRIANGLE     );
   DistributeVolumeConnectivity(config, geometry, QUADRILATERAL);
@@ -4930,31 +4938,25 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   /*--- Distribute the marker information to all ranks based on coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-    cout <<"Distributing markers and surface elements." << endl;
+    cout <<"Rebalancing markers and surface elements." << endl;
 
   /*--- First, perform a linear partitioning of the marker information, as
    the grid readers currently store all boundary information on the master
    rank. In the future, this process can be moved directly into the grid
    reader to avoid reading the markers to the master rank alone at first. ---*/
 
-  //PartitionSurfacePoints(config, geometry);
   DistributeMarkerTags(config, geometry);
   PartitionSurfaceConnectivity(config, geometry, LINE          );
   PartitionSurfaceConnectivity(config, geometry, TRIANGLE      );
   PartitionSurfaceConnectivity(config, geometry, QUADRILATERAL );
 
-  //cout << " Surface elems for rank " << rank << ": " << nLinear_Line << ", " << nLinear_BoundTria << ", " << nLinear_BoundQuad << endl;
-  //PartitionPeriodicPoints(config, geometry);
-
   /*--- Once the markers are distributed according to the linear partitioning
    of the grid points, we can use similar techniques as above for distributing
    the surface element connectivity. ---*/
 
-  //DistributeSurfacePoints(config, geometry);
   DistributeSurfaceConnectivity(config, geometry, LINE          );
   DistributeSurfaceConnectivity(config, geometry, TRIANGLE      );
   DistributeSurfaceConnectivity(config, geometry, QUADRILATERAL );
-  //DistributePeriodicPoints(config, geometry);
 
   /*--- Reduce the total number of elements that we have on each rank. ---*/
 
@@ -4975,23 +4977,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  //cout << " Dist. surface elems for rank " << rank << ": " << nLocal_Line << ", " << nLocal_BoundTria << ", " << nLocal_BoundQuad << endl;
-
   /*--- With the distribution of all points, elements, and markers based
-   on the ParMETIS coloring complete, begin loading this data into our
-   geometry class objects. ---*/
+   on the ParMETIS coloring complete, as a final step, load this data into 
+   our geometry class data structures. ---*/
 
   LoadPoints(config, geometry);
-
   LoadVolumeElements(config, geometry);
-
   LoadSurfaceElements(config, geometry);
 
-  // Need to print out all info for markers: nVert, elem types, counts, tags, etc
-  // Make it a separate routine so both old and new can write it and diff
-  // also write out mesh files to make sure that it can be vizualized
-
-  /*--- Free memory associated with the redistribution of points and elems. ---*/
+  /*--- Free memory associated with the partitioning of points and elems. ---*/
 
   LocalPoints.clear();
   Neighbors.clear();
@@ -5001,25 +4995,27 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (Local_Colors != NULL) delete [] Local_Colors;
   if (Local_Coords != NULL) delete [] Local_Coords;
 
-
-  if (nLinear_Line > 0      && Conn_Line_Linear      != NULL) delete [] Conn_Line_Linear;
-  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != NULL) delete [] Conn_BoundTria_Linear;
-  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != NULL) delete [] Conn_BoundQuad_Linear;
+  if (nLinear_Line > 0      && Conn_Line_Linear      != NULL)
+    delete [] Conn_Line_Linear;
+  if (nLinear_BoundTria > 0 && Conn_BoundTria_Linear != NULL)
+    delete [] Conn_BoundTria_Linear;
+  if (nLinear_BoundQuad > 0 && Conn_BoundQuad_Linear != NULL)
+    delete [] Conn_BoundQuad_Linear;
 
   if (nLocal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
   if (nLocal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
   if (nLocal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
-  if (nLocal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
-  if (Conn_Quad != NULL) delete [] Conn_Quad;
-  if (Conn_Tetr != NULL) delete [] Conn_Tetr;
-  if (Conn_Hexa != NULL) delete [] Conn_Hexa;
-  if (Conn_Pris != NULL) delete [] Conn_Pris;
-  if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+  if (nLocal_Tria > 0      && Conn_Tria      != NULL) delete [] Conn_Tria;
+  if (nLocal_Quad > 0      && Conn_Quad      != NULL) delete [] Conn_Quad;
+  if (nLocal_Tetr > 0      && Conn_Tetr      != NULL) delete [] Conn_Tetr;
+  if (nLocal_Hexa > 0      && Conn_Hexa      != NULL) delete [] Conn_Hexa;
+  if (nLocal_Pris > 0      && Conn_Pris      != NULL) delete [] Conn_Pris;
+  if (nLocal_Pyra > 0      && Conn_Pyra      != NULL) delete [] Conn_Pyra;
 
-  if (ID_Line != NULL) delete [] ID_Line;
-  if (ID_BoundTria != NULL) delete [] ID_BoundTria;
-  if (ID_BoundQuad != NULL) delete [] ID_BoundQuad;
-  if (ID_Line_Linear != NULL) delete [] ID_Line_Linear;
+  if (ID_Line             != NULL) delete [] ID_Line;
+  if (ID_BoundTria        != NULL) delete [] ID_BoundTria;
+  if (ID_BoundQuad        != NULL) delete [] ID_BoundQuad;
+  if (ID_Line_Linear      != NULL) delete [] ID_Line_Linear;
   if (ID_BoundTria_Linear != NULL) delete [] ID_BoundTria_Linear;
   if (ID_BoundQuad_Linear != NULL) delete [] ID_BoundQuad_Linear;
 
@@ -5030,10 +5026,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   if (ID_Pris != NULL) delete [] ID_Pris;
   if (ID_Pyra != NULL) delete [] ID_Pyra;
 
-  if (Elem_ID_Line != NULL) delete [] Elem_ID_Line;
-  if (Elem_ID_BoundTria != NULL) delete [] Elem_ID_BoundTria;
-  if (Elem_ID_BoundQuad != NULL) delete [] Elem_ID_BoundQuad;
-  if (Elem_ID_Line_Linear != NULL) delete [] Elem_ID_Line_Linear;
+  if (Elem_ID_Line             != NULL) delete [] Elem_ID_Line;
+  if (Elem_ID_BoundTria        != NULL) delete [] Elem_ID_BoundTria;
+  if (Elem_ID_BoundQuad        != NULL) delete [] Elem_ID_BoundQuad;
+  if (Elem_ID_Line_Linear      != NULL) delete [] Elem_ID_Line_Linear;
   if (Elem_ID_BoundTria_Linear != NULL) delete [] Elem_ID_BoundTria_Linear;
   if (Elem_ID_BoundQuad_Linear != NULL) delete [] Elem_ID_BoundQuad_Linear;
 
@@ -6161,11 +6157,10 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
    truly be linearly partitioned upon reading the mesh, which we will
    change soon. ---*/
 
-  unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT;
-  unsigned long nElem_Total = 0, Global_Index, Global_Elem_Index;
 
-  unsigned long iMarker;
+  unsigned long iMarker, iProcessor;
+  unsigned long nElem_Total = 0, Global_Index, Global_Elem_Index;
 
   unsigned long *Conn_Elem      = NULL;
   unsigned long *Linear_Markers = NULL;
@@ -6224,37 +6219,34 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
       for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+      for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 
-        for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
+        if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
 
-          if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
+          for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
 
-            for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+            /*--- Get the index of the current point (stored as global). ---*/
 
-              /*--- Get the index of the current point (stored as global). ---*/
+            Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
 
-              Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
+            /*--- Search for the processor that owns this point ---*/
 
-              /*--- Search for the processor that owns this point ---*/
+            iProcessor = Global_Index/geometry->npoint_procs[0];
+            if (iProcessor >= (unsigned long)size)
+              iProcessor = (unsigned long)size-1;
+            if (Global_Index >= geometry->nPoint_Linear[iProcessor])
+              while(Global_Index >= geometry->nPoint_Linear[iProcessor+1])
+                iProcessor++;
+            else
+              while(Global_Index <  geometry->nPoint_Linear[iProcessor])
+                iProcessor--;
 
-              iProcessor = Global_Index/geometry->npoint_procs[0];
-              if (iProcessor >= (unsigned long)size)
-                iProcessor = (unsigned long)size-1;
-              if (Global_Index >= geometry->nPoint_Linear[iProcessor])
-                while(Global_Index >= geometry->nPoint_Linear[iProcessor+1])
-                  iProcessor++;
-              else
-                while(Global_Index <  geometry->nPoint_Linear[iProcessor])
-                  iProcessor--;
+            /*--- If we have not visited this element yet, increment our
+             number of elements that must be sent to a particular proc. ---*/
 
-              /*--- If we have not visited this element yet, increment our
-               number of elements that must be sent to a particular proc. ---*/
-
-              if ((nElem_Flag[iProcessor] != ii)) {
-                nElem_Flag[iProcessor] = ii;
-                nElem_Send[iProcessor+1]++;
-              }
+            if ((nElem_Flag[iProcessor] != ii)) {
+              nElem_Flag[iProcessor] = ii;
+              nElem_Send[iProcessor+1]++;
             }
           }
         }
@@ -6314,10 +6306,12 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
      position as we load up the send buffer. ---*/
 
     unsigned long *index = new unsigned long[size];
-    for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+    for (int ii=0; ii < size; ii++)
+      index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
 
     unsigned long *markerIndex = new unsigned long[size];
-    for (int ii=0; ii < size; ii++) markerIndex[ii] = nElem_Send[ii];
+    for (int ii=0; ii < size; ii++)
+      markerIndex[ii] = nElem_Send[ii];
 
     /*--- Loop through our elements and load the elems and their
      additional data that we will send to the other procs. ---*/
@@ -6331,58 +6325,58 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
 
       for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
 
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+      for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
 
-        for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
+        if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
+          for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
 
-          if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
-            for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+            /*--- Get the index of the current point. ---*/
 
-              /*--- Get the index of the current point. ---*/
+            Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
 
-              Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
+            /*--- Search for the processor that owns this point ---*/
 
-              /*--- Search for the processor that owns this point ---*/
+            iProcessor = Global_Index/geometry->npoint_procs[0];
+            if (iProcessor >= (unsigned long)size)
+              iProcessor = (unsigned long)size-1;
+            if (Global_Index >= geometry->nPoint_Linear[iProcessor])
+              while(Global_Index >= geometry->nPoint_Linear[iProcessor+1])
+                iProcessor++;
+            else
+              while(Global_Index <  geometry->nPoint_Linear[iProcessor])
+                iProcessor--;
 
-              iProcessor = Global_Index/geometry->npoint_procs[0];
-              if (iProcessor >= (unsigned long)size)
-                iProcessor = (unsigned long)size-1;
-              if (Global_Index >= geometry->nPoint_Linear[iProcessor])
-                while(Global_Index >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
-              else
-                while(Global_Index <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+            /*--- Load connectivity into the buffer for sending ---*/
 
-              /*--- Load connectivity into the buffer for sending ---*/
+            if ((nElem_Flag[iProcessor] != ii)) {
 
-              if ((nElem_Flag[iProcessor] != ii)) {
+              nElem_Flag[iProcessor] = ii;
+              unsigned long nn = index[iProcessor];
+              unsigned long mm = markerIndex[iProcessor];
 
-                nElem_Flag[iProcessor] = ii;
-                unsigned long nn = index[iProcessor];
-                unsigned long mm = markerIndex[iProcessor];
+              /*--- Load the connectivity values. ---*/
 
-                /*--- Load the connectivity values. ---*/
-
-                for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-                  connSend[nn] = geometry->bound[iMarker][ii]->GetNode(kk); nn++;
-                }
-
-                /*--- Store the marker index and surface elem global ID ---*/
-
-                markerSend[mm] = iMarker;
-                idSend[mm]     = Global_Elem_Index;
-
-                /*--- Increment the index by the message length ---*/
-
-                index[iProcessor] += NODES_PER_ELEMENT;
-                markerIndex[iProcessor]++;
+              for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+                connSend[nn] = geometry->bound[iMarker][ii]->GetNode(kk);
+                nn++;
               }
 
+              /*--- Store the marker index and surface elem global ID ---*/
+
+              markerSend[mm] = iMarker;
+              idSend[mm]     = Global_Elem_Index;
+
+              /*--- Increment the index by the message length ---*/
+
+              index[iProcessor] += NODES_PER_ELEMENT;
+              markerIndex[iProcessor]++;
             }
+            
           }
-
-          Global_Elem_Index++;
-
         }
+        
+        Global_Elem_Index++;
+        
       }
     }
 
@@ -7078,11 +7072,10 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
   /*--- The master node will communicate the entire list of marker tags
    (in global ordering) so that it will be simple for each rank to grab
-   the string name for each marker. This could become a bottleneck if
-   a mesh has a massive number of markers, but it is very unlikely. ---*/
+   the string name for each marker. ---*/
 
   nMarker_Global = 0;
-  if (rank == MASTER_NODE) nMarker_Global = geometry->GetnMarker();
+  if (rank == MASTER_NODE) nMarker_Global = config->GetnMarker_All();
 
   /*--- Broadcast the global number of markers in the mesh. ---*/
 
@@ -7093,9 +7086,9 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
   char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE];
   if (rank == MASTER_NODE) {
-    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iMarker = 0; iMarker < nMarker_Global; iMarker++) {
       SPRINTF(&mpi_str_buf[iMarker*MAX_STRING_SIZE], "%s",
-              geometry->GetMarker_Tag(iMarker).c_str());
+              config->GetMarker_All_TagBound(iMarker).c_str());
     }
   }
 
@@ -7106,7 +7099,8 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
                  MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-  /*--- Now parse the string names and load into our marker tag vector. ---*/
+  /*--- Now parse the string names and load into our marker tag vector.
+   We also need to set the values of all markers into the config. ---*/
 
   for (iMarker = 0; iMarker < nMarker_Global; iMarker++) {
     index = iMarker*MAX_STRING_SIZE;
@@ -7114,6 +7108,8 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
       str_buf[iChar] = mpi_str_buf[index + iChar];
     }
     Marker_Tags.push_back(str_buf);
+    config->SetMarker_All_TagBound(iMarker,str_buf);
+    config->SetMarker_All_SendRecv(iMarker,NO);
   }
 
   /*--- Free string buffer memory. ---*/
@@ -7678,11 +7674,11 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   }
 
   /*--- Create the domain structures for the boundaries. Initially, stick
-   with nMarkerMax here, but come back and compute size we need.---*/
+   with nMarkerMax here, but come back and compute size we need. Same for
+   OVERHEAD - this can precomputed. ---*/
 
   nMarker                = Marker_Local.size();
   nElem_Bound            = new unsigned long[nMarker_Max];
-  Local_to_Global_Marker = new unsigned short[nMarker_Max];
   Tag_to_Marker          = new string[nMarker_Max];
   Marker_All_SendRecv    = new short[nMarker_Max];
 
@@ -7811,6 +7807,12 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     }
   }
 
+  /*--- Store total number of each boundary element type ---*/
+
+  nelem_edge_bound     = iElem_Line;
+  nelem_triangle_bound = iElem_Tria;
+  nelem_quad_bound     = iElem_Quad;
+
   /*--- Set some auxiliary information on a per-marker basis. ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -7823,19 +7825,30 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     short SendRecv     = config->GetMarker_All_SendRecv(Marker_Local_to_Global[iMarker]);
 
     Tag_to_Marker[iMarker] = Marker_Tags[Global_Marker];
+    Marker_All_SendRecv[iMarker] = SendRecv;
 
     /*--- Set the marker tags correctly to match the values in config. ---*/
 
-    config->SetMarker_All_TagBound(iMarker, Grid_Marker);
-    config->SetMarker_All_SendRecv(iMarker, SendRecv);
+    config->SetMarker_All_TagBound(iMarker, Tag_to_Marker[iMarker]);
+    config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
 
   }
 
-  /*--- Store total number of each boundary element type ---*/
-
-  nelem_edge_bound     = iElem_Line;
-  nelem_triangle_bound = iElem_Tria;
-  nelem_quad_bound     = iElem_Quad;
+  /*--- Periodic transormations is not implemented yet. Store default 
+   zeros to avoid issues. We will rewrite the periodic BCs from scratch. ---*/
+  
+  unsigned short nPeriodic = 1, iPeriodic = 0;
+  config->SetnPeriodicIndex(nPeriodic);
+  su2double* center    = new su2double[3];
+  su2double* rotation  = new su2double[3];
+  su2double* translate = new su2double[3];
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+  }
+  config->SetPeriodicCenter(iPeriodic, center);
+  config->SetPeriodicRotation(iPeriodic, rotation);
+  config->SetPeriodicTranslate(iPeriodic, translate);
+  delete [] center; delete [] rotation; delete [] translate;
 
   /*--- initialize pointers for turbomachinery computations  ---*/
   nSpanWiseSections       = new unsigned short[2];
@@ -7890,58 +7903,6 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     SpanAreaOut[iMarker]    = NULL;
     TurboRadiusOut[iMarker] = NULL;
   }
-  
-//  /*--- Add the new periodic markers to the domain ---*/
-//
-//  //      iTotalSendDomain_Periodic = 0;
-//  //      iTotalReceivedDomain_Periodic = 0;
-//
-//  for (jDomain = 0; jDomain < nDomain; jDomain++) {
-//
-//    if (nSendDomain_Periodic[jDomain] != 0) {
-//      nVertexDomain[nMarker] = 0;
-//      bound[nMarker] = new CPrimalGrid* [nSendDomain_Periodic[jDomain]];
-//
-//      iVertex = 0;
-//      for (iTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic < nTotalSendDomain_Periodic; iTotalSendDomain_Periodic++) {
-//        if (Buffer_Receive_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] == jDomain) {
-//          bound[nMarker][iVertex] = new CVertexMPI(Global_to_local_Point_recv[Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic]], nDim);
-//          bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
-//          nVertexDomain[nMarker]++; iVertex++;
-//        }
-//      }
-//
-//      Marker_All_SendRecv[nMarker] = jDomain+1;
-//      nElem_Bound[nMarker] = nVertexDomain[nMarker];
-//      nMarker++;
-//    }
-//
-//    if (nReceivedDomain_Periodic[jDomain] != 0) {
-//      nVertexDomain[nMarker] = 0;
-//      bound[nMarker] = new CPrimalGrid* [nReceivedDomain_Periodic[jDomain]];
-//
-//      iVertex = 0;
-//      for (iTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic < nTotalReceivedDomain_Periodic; iTotalReceivedDomain_Periodic++) {
-//        if (Buffer_Receive_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] == jDomain) {
-//          bound[nMarker][iVertex] = new CVertexMPI(Global_to_local_Point_recv[Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic]], nDim);
-//          bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
-//          nVertexDomain[nMarker]++; iVertex++;
-//        }
-//      }
-//
-//      Marker_All_SendRecv[nMarker] = -(jDomain+1);
-//      nElem_Bound[nMarker] = nVertexDomain[nMarker];
-//      nMarker++;
-//    }
-//
-//  }
-//
-//
-//  /*--- Set the value of Marker_All_SendRecv and Marker_All_TagBound in the config structure ---*/
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
-//  }
 
 }
 
@@ -8375,7 +8336,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-	  config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+	    config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
     }
@@ -9752,7 +9713,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_PARMETIS
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Calling the partitioning functions." << endl;
+    cout << "Executing the partitioning functions." << endl;
   
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
@@ -16746,12 +16707,12 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     }
     
     /*--- Calling ParMETIS ---*/
-    if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
+    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
     ParMETIS_V3_PartKway(vtxdist,xadj, adjacency, NULL, NULL, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
-      cout << "Finished partitioning using ParMETIS (";
+      cout << " coloring complete (";
       cout << edgecut << " edge cuts)." << endl;
     }
     
