@@ -170,13 +170,13 @@ int main(int argc, char *argv[]) {
 if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
 geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-//if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-//geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-//if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-//geometry_container[ZONE_0]->SetPoint_Connectivity();
+if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
@@ -203,7 +203,7 @@ geometry_container[ZONE_0]->SetCoord_CG();
 
 if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
 geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);
-////if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
 geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
 /*--- Store the global to local mapping after preprocessing. ---*/
