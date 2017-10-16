@@ -603,19 +603,6 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
 
 /*!
- * \brief Spatial numerical order integration
- */
-enum ENUM_SPATIAL_ORDER {
-  FIRST_ORDER = 0,        /*!< \brief First order */
-  SECOND_ORDER = 1,        /*!< \brief Second order. */
-  SECOND_ORDER_LIMITER = 2 /*!< \brief Second order with limiter. */
-};
-static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<string, ENUM_SPATIAL_ORDER>
-("1ST_ORDER", FIRST_ORDER)
-("2ND_ORDER", SECOND_ORDER)
-("2ND_ORDER_LIMITER", SECOND_ORDER_LIMITER);
-
-/*!
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
@@ -1334,7 +1321,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU0", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1392,7 +1379,7 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU0", ILU);
+("ILU", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries
@@ -1461,14 +1448,12 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  DEF_WALL_DISTANCE = 2,			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
-  BOUNDARY_DISTANCE = 3			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
-("DEF_WALL_DISTANCE", DEF_WALL_DISTANCE)
-("WALL_DISTANCE", BOUNDARY_DISTANCE);
+("WALL_DISTANCE", SOLID_WALL_DISTANCE);
 
 /*!
  * \brief The direct differentation variables.

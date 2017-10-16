@@ -246,7 +246,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.380312, -8.129519, 0.000043, 0.056159] #last 4 columns
+    propeller.test_vals = [-3.378804, -8.130405, 0.000051, 0.055764] #last 4 columns
     propeller.su2_exec  = "SU2_CFD"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
@@ -741,7 +741,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [-2.324765, 0.916963, 0.001254, 0.093163] #last 4 columns
+    bars_SST_2D.test_vals = [-2.138976, 1.639495, -0.000831, 0.117497] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -778,7 +778,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI_2D.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [2.000000, 0.500000, -7.777916, -1.139835] #last 4 columns
+    fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.tol       = 0.00001
@@ -829,7 +829,7 @@ def main():
     rae2822_def.cfg_dir   = "deformation/rae2822"
     rae2822_def.cfg_file  = "def_RAE2822.cfg"
     rae2822_def.test_iter = 10
-    rae2822_def.test_vals = [4.890290e-08] #residual
+    rae2822_def.test_vals = [8.348610e-09] #residual
     rae2822_def.su2_exec  = "SU2_DEF"
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
@@ -842,7 +842,7 @@ def main():
     naca4412_def.cfg_dir   = "deformation/naca4412"
     naca4412_def.cfg_file  = "def_NACA4412.cfg"
     naca4412_def.test_iter = 10
-    naca4412_def.test_vals = [1.783060e-07] #residual
+    naca4412_def.test_vals = [8.855370e-13] #residual
     naca4412_def.su2_exec  = "SU2_DEF"
     naca4412_def.timeout   = 1600
     naca4412_def.tol       = 1e-12
@@ -907,7 +907,7 @@ def main():
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
     brick_prism_rans_def.test_iter = 10
-    brick_prism_rans_def.test_vals = [2.760440e-07] #residual
+    brick_prism_rans_def.test_vals = [2.762780e-07] #residual
     brick_prism_rans_def.su2_exec  = "SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
@@ -933,7 +933,7 @@ def main():
     cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
     cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
     cylinder_ffd_def.test_iter = 10
-    cylinder_ffd_def.test_vals = [8.541420e-04] #residual
+    cylinder_ffd_def.test_vals = [4.030020e-04] #residual
     cylinder_ffd_def.su2_exec  = "SU2_DEF"
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-09
@@ -1079,7 +1079,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.777916, -1.139835] #last 4 columns
+    pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
