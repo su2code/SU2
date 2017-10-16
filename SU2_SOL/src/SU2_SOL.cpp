@@ -200,8 +200,8 @@ geometry_container[ZONE_0]->SetCoord_CG();
 
 /*--- Create the dual control volume structures ---*/
 
-if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
-geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);
+//if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
+//geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);
 if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
 geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
