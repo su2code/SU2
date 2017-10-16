@@ -384,6 +384,7 @@ private:
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
+  CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -490,8 +491,10 @@ private:
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Linear_Solver_Error_Solid;        /*!< \brief Min error of the linear solver for the implicit formulation in the structural side for CHT problems . */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Linear_Solver_Iter_Solid;       /*!< \brief Max iterations of the linear solver for CHT applications and heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
@@ -2277,6 +2280,13 @@ public:
    * \return CFL number for each grid.
    */
   su2double GetCFL(unsigned short val_mesh);
+
+  /*!
+   * \brief Get the Courant Friedrich Levi number for solid solvers.
+   * \param[in] val_mesh - Index of the mesh were the CFL is applied.
+   * \return CFL number for each grid.
+   */
+  su2double GetCFL_Solid(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for each grid.
@@ -3243,6 +3253,12 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Iter(void);
+
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation in solid solvers.
+   * \return Max number of iterations of the linear solver for the implicit formulation in solid solvers.
+   */
+  unsigned long GetLinear_Solver_Iter_Solid(void);
   
   /*!
    * \brief Get the ILU fill-in level for the linear solver.

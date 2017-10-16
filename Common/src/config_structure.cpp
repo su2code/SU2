@@ -974,6 +974,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
+  /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid in (heat) solid solvers */
+  addDoubleOption("CFL_NUMBER_SOLID", CFLSolid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   /* DESCRIPTION: Activate The adaptive CFL number. */
@@ -1050,9 +1052,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
+  addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation for (heat) solid solvers */
+  addDoubleOption("LINEAR_SOLVER_ERROR_SOLID", Linear_Solver_Error_Solid, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /* DESCRIPTION: Max iterations of the linear solver for CHT applications and heat solver. */
+  addUnsignedLongOption("LINEAR_SOLVER_ITER_SOLID", Linear_Solver_Iter_Solid, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -2265,6 +2271,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   else { CHT_Problem = false; }
+
+  if(Kind_Solver == HEAT_EQUATION) {
+    Linear_Solver_Iter = Linear_Solver_Iter_Solid;
+    Linear_Solver_Error = Linear_Solver_Error_Solid;
+  }
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
