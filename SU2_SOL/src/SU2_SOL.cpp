@@ -477,7 +477,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
       for (iZone = 0; iZone < nZone; iZone++) {
         /*--- Definition of the solution class ---*/
         solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-        solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+        //solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
       }
 
       output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
