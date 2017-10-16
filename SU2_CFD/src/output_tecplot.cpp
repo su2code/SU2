@@ -142,16 +142,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
     }
-
-    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == DISC_ADJ_RANS               )) {
-      Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-      if (geometry->GetnDim() == 3) {
-        Tecplot_File << ",\"Sensitivity_z\"";
-      }
-    }
-
+    
     if (!config->GetLow_MemoryOutput()) {
       
       if (config->GetWrt_Limiters()) {
@@ -203,6 +194,15 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == ADJ_RANS               )   ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+      }
+
+      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == DISC_ADJ_RANS               )) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
+        if (geometry->GetnDim() == 3) {
+          Tecplot_File << ",\"Sensitivity_z\"";
+        }
       }
       
       if (Kind_Solver == FEM_ELASTICITY) {
@@ -459,16 +459,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       Tecplot_File << ",\"Conservative_" << iVar+1 << "\"";
     }
-
-    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == DISC_ADJ_RANS               )) {
-      Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-      if (geometry->GetnDim() == 3) {
-        Tecplot_File << ",\"Sensitivity_z\"";
-      }
-    }
-
+    
     if (!config->GetLow_MemoryOutput()) {
       
       if (config->GetWrt_Limiters()) {
@@ -504,6 +495,15 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       
       if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
+      }
+
+      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+          ( Kind_Solver == DISC_ADJ_RANS               )) {
+        Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
+        if (geometry->GetnDim() == 3) {
+          Tecplot_File << ",\"Sensitivity_z\"";
+        }
       }
       
     }
