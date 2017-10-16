@@ -1658,6 +1658,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- Viscous contribution ---*/
 
+    thermal_diffusivity = config->GetThermalDiffusivity_Solid();
     if(flow) {
       eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
       thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
@@ -1681,18 +1682,18 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       /*--- Inviscid contribution ---*/
 
       if (flow) {
-        Mean_ProjVel = 0.5 * (solver_container[FLOW_SOL]->node[iPoint]->GetProjVel(Normal) + solver_container[FLOW_SOL]->node[jPoint]->GetProjVel(Normal));
-        Mean_BetaInc2 = 0.5 * (solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2() + solver_container[FLOW_SOL]->node[jPoint]->GetBetaInc2());
-        Mean_DensityInc = 0.5 * (solver_container[FLOW_SOL]->node[iPoint]->GetDensity() + solver_container[FLOW_SOL]->node[jPoint]->GetDensity());
+        Mean_ProjVel = solver_container[FLOW_SOL]->node[iPoint]->GetProjVel(Normal);
+        Mean_BetaInc2 = solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2();
+        Mean_DensityInc = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
         Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
 
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
         if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Inv(Lambda);
-        if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
       }
 
       /*--- Viscous contribution ---*/
 
+      thermal_diffusivity = config->GetThermalDiffusivity_Solid();
       if(flow) {
         eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
         thermal_diffusivity = laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb;
@@ -1712,12 +1713,14 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
     if (Vol != 0.0) {
 
-      if(flow)
+      if(flow) {
         Local_Delta_Time_Inv = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
-      else
-        Local_Delta_Time_Inv = Min_Delta_Time;
-
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+        Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      }
+      else {
+        Local_Delta_Time_Inv = config->GetMax_DeltaTime();
+        Local_Delta_Time_Visc = config->GetCFL_Solid()*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      }
 
       /*--- Time step setting method ---*/
 
@@ -1737,6 +1740,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
+
       node[iPoint]->SetDelta_Time(CFL_Reduction*Local_Delta_Time);
     }
     else {
