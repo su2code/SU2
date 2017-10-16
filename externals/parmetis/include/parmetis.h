@@ -18,7 +18,9 @@
 #include <metis.h>
 
 #ifndef _MSC_VER
+#ifndef __MINGW32__
 #define __cdecl
+#endif
 #endif
 
 #if IDXTYPEWIDTH == 32
