@@ -140,8 +140,8 @@ int main(int argc, char *argv[]) {
 
     /*--- Store the global to local mapping after preprocessing. ---*/
 
-    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-    geometry_container[iZone]->SetGlobal_to_Local_Point();
+    //if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+    //geometry_container[iZone]->SetGlobal_to_Local_Point();
 
   }
 
