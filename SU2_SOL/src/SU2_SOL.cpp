@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  int nProcessor = 0;
   su2double Objective_Function;
 
 //  ofstream CFD_pressure_file ;
@@ -57,7 +56,6 @@ int main(int argc, char *argv[]) {
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
   MPI_Comm_rank(MPICommunicator,&rank);
   MPI_Comm_size(MPICommunicator,&size);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
@@ -170,13 +168,13 @@ int main(int argc, char *argv[]) {
 if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
 geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+///if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+///geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-geometry_container[ZONE_0]->SetPoint_Connectivity();
+///if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+///geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
@@ -196,20 +194,20 @@ geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(co
 
 /*--- Compute center of gravity ---*/
 
-if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-geometry_container[ZONE_0]->SetCoord_CG();
+///if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+///geometry_container[ZONE_0]->SetCoord_CG();
 
 /*--- Create the dual control volume structures ---*/
 
-if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
-geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);
-if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+///if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
+///geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);
+///if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+///geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
 /*--- Store the global to local mapping after preprocessing. ---*/
 
-if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
+///if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+///geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
