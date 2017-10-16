@@ -403,7 +403,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
-  Stations_Bounds    = NULL;
+  Stations_Bounds     = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -448,12 +448,13 @@ void CConfig::SetPointersNull(void) {
   default_eng_cyl            = NULL;
   default_eng_val            = NULL;
   default_cfl_adapt          = NULL;
-  default_ad_coeff_flow      = NULL;
+  default_jst_coeff          = NULL;
+  default_ffd_coeff          = NULL;
   default_mixedout_coeff     = NULL;
   default_extrarelfac        = NULL;
   default_rampRotFrame_coeff = NULL;
   default_rampOutPres_coeff  = NULL;
-  default_ad_coeff_adj       = NULL;
+  default_jst_adj_coeff      = NULL;
   default_obj_coeff          = NULL;
   default_geo_loc            = NULL;
   default_distortion         = NULL;
@@ -535,12 +536,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_cyl            = new su2double[7];
   default_eng_val            = new su2double[5];
   default_cfl_adapt          = new su2double[4];
-  default_ad_coeff_flow      = new su2double[3];
+  default_jst_coeff          = new su2double[2];
+  default_ffd_coeff          = new su2double[3];
   default_mixedout_coeff     = new su2double[3];
   default_extrarelfac        = new su2double[2];
   default_rampRotFrame_coeff = new su2double[3];
   default_rampOutPres_coeff  = new su2double[3];
-  default_ad_coeff_adj       = new su2double[3];
+  default_jst_adj_coeff      = new su2double[2];
   default_obj_coeff          = new su2double[5];
   default_geo_loc            = new su2double[2];
   default_distortion         = new su2double[2];
@@ -742,8 +744,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
   /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH", RefLength, 1.0);
-  /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
-  addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
   addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
 	/*!\brief REF_VELOCITY\n DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
@@ -1041,7 +1041,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Roe coefficient */
   addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
-  addBoolOption("LOW_MACH_PREC", Low_Mach_Precon, false);
+  addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Post-reconstruction correction for low Mach number flows */
   addBoolOption("LOW_MACH_CORR", Low_Mach_Corr, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -1123,58 +1123,56 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief NUM_METHOD_GRAD
    *  \n DESCRIPTION: Numerical method for spatial gradients \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: WEIGHTED_LEAST_SQUARES. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
-  /*!\brief LIMITER_COEFF
+  /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
-  addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
+  /*!\brief ADJ_SHARP_LIMITER_COEFF
+   *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
+  addDoubleOption("ADJ_SHARP_LIMITER_COEFF", AdjSharp_LimiterCoeff, 3.0);
   /*!\brief LIMITER_ITER
    *  \n DESCRIPTION: Freeze the value of the limiter after a number of iterations. DEFAULT value 999999. \ingroup Config*/
   addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);
-  /*!\brief SHARP_EDGES_COEFF
-   *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
-  addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
 
   /*!\brief CONV_NUM_METHOD_FLOW
    *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
-  /*!\brief SPATIAL_ORDER_FLOW
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: SECOND_ORDER \ingroup Config*/
-  addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_ad_coeff_flow[0] = 0.15; default_ad_coeff_flow[1] = 0.5; default_ad_coeff_flow[2] = 0.02;
-  /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_ad_coeff_flow);
+  default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
+  /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
+  /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax–Friedrichs method. \ingroup Config*/
+  addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
-  /*!\brief SPATIAL_ORDER_ADJFLOW
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: SECOND_ORDER \ingroup Config*/
-  addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_ad_coeff_adj[0] = 0.15; default_ad_coeff_adj[1] = 0.5; default_ad_coeff_adj[2] = 0.02;
-  /*!\brief AD_COEFF_ADJFLOW
-   *  \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients for the adjoint solver.
-   *  \n FORMAT and default values: AD_COEFF_ADJFLOW = (0.15, 0.5, 0.02) \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_ad_coeff_adj);
+  default_jst_adj_coeff[0] = 0.5; default_jst_adj_coeff[1] = 0.02;
+  /*!\brief ADJ_JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the adjoint JST method. \ingroup Config*/
+  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, Kappa_AdjFlow, default_jst_adj_coeff);
+  /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the adjoint Lax–Friedrichs method. \ingroup Config*/
+  addDoubleOption("ADJ_LAX_SENSOR_COEFF", Kappa_1st_AdjFlow, 0.15);
 
-  /*!\brief SPATIAL_ORDER_TURB
-   *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
-  addEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, FIRST_ORDER);
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_TURB", MUSCL_Turb, false);
   /*!\brief SLOPE_LIMITER_TURB
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_TURB
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
-
-  /*!\brief SPATIAL_ORDER_ADJTURB
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
-  addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
+  
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
   /*!\brief SLOPE_LIMITER_ADJTURB
    *  \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
@@ -1788,8 +1786,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FFD_BLENDING", FFD_Blending, Blending_Map, BEZIER );
 
   /* DESCRIPTION: Order of the BSplines for BSpline Blending function */
-  default_ad_coeff_flow[0] = 2; default_ad_coeff_flow[1] = 2; default_ad_coeff_flow[2] = 2;
-  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order,default_ad_coeff_flow);
+  default_ffd_coeff[0] = 2; default_ffd_coeff[1] = 2; default_ffd_coeff[2] = 2;
+  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order, default_ffd_coeff);
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
@@ -1974,6 +1972,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append(": invalid option name");
           newString.append(". Check current SU2 options in config_template.cfg.");
           newString.append("\n");
+          if (!option_name.compare("AD_COEFF_FLOW")) newString.append("AD_COEFF_FLOW= (1st, 2nd, 4th) is now JST_SENSOR_COEFF= (2nd, 4th).\n");
+          if (!option_name.compare("AD_COEFF_ADJFLOW")) newString.append("AD_COEFF_ADJFLOW= (1st, 2nd, 4th) is now ADJ_JST_SENSOR_COEFF= (2nd, 4th).\n");
+          if (!option_name.compare("SPATIAL_ORDER_FLOW")) newString.append("SPATIAL_ORDER_FLOW is now the boolean MUSCL_FLOW and the appropriate SLOPE_LIMITER_FLOW.\n");
+          if (!option_name.compare("SPATIAL_ORDER_ADJFLOW")) newString.append("SPATIAL_ORDER_ADJFLOW is now the boolean MUSCL_ADJFLOW and the appropriate SLOPE_LIMITER_ADJFLOW.\n");
+          if (!option_name.compare("SPATIAL_ORDER_TURB")) newString.append("SPATIAL_ORDER_TURB is now the boolean MUSCL_TURB and the appropriate SLOPE_LIMITER_TURB.\n");
+          if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
+          if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
+          if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
           errorString.append(newString);
           err_count++;
         continue;
@@ -2153,6 +2159,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   Kind_SU2 = val_software;
 
+  /*--- Set limiter for no MUSCL reconstructions ---*/
+  
+  if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
+  if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
+  if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
+  if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
+
   /*--- Set the default for thrust in ActDisk ---*/
 
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
@@ -2170,6 +2183,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObj=1;
     nObjW=1;
   }
+  
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
 
   if (nObjW<nObj) {
@@ -3005,14 +3019,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Solver == NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
-
-  Kappa_1st_Flow = Kappa_Flow[0];
-  Kappa_2nd_Flow = Kappa_Flow[1];
-  Kappa_4th_Flow = Kappa_Flow[2];
-  Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
-  Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
-  Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
-
+    
+  Kappa_2nd_Flow    = Kappa_Flow[0];
+  Kappa_4th_Flow    = Kappa_Flow[1];
+  Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
+  Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
+  
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
 
@@ -3199,6 +3211,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     LocationStations[iSections] += EPS;
   }
 
+  /*--- Length based parameter for slope limiters uses a default value of
+   0.1m ---*/
+  
+  RefElemLength = 1.0;
+  if (SystemMeasurements == US) RefElemLength /= 0.3048;
+
   /*--- Re-scale the length based parameters. The US system uses feet,
    but SU2 assumes that the grid is in inches ---*/
 
@@ -3221,7 +3239,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if ((val_nDim == 2) && (!Axisymmetric)) RefArea = RefArea/12.0;
     else RefArea = RefArea/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
-    RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
     SemiSpan = SemiSpan/12.0;
 
@@ -3358,14 +3375,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RampRotatingFrame = false;
   }
 
-  /*--- Check for 2nd order w/ limiting for JST and correct ---*/
-
-  if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
-    SpatialOrder_Flow = SECOND_ORDER;
-
-  if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
-    SpatialOrder_AdjFlow = SECOND_ORDER;
-
   delete [] tmp_smooth;
   
   /*--- If it is a fixed mode problem, then we will add 100 iterations to
@@ -3422,6 +3431,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
+  
   /*--- Add the possible send/receive domains ---*/
 
   nMarker_Max = nMarker_CfgFile + OVERHEAD*size;
@@ -4026,9 +4036,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
-          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
-          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
@@ -4466,18 +4473,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {
           cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (1st, 2nd & 4th): " << Kappa_1st_Flow
-          << ", " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"." << endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
         if (Kind_Centered_Flow == JST_KE) {
           cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (1st, 2nd): " << Kappa_1st_Flow
-          << ", " << Kappa_2nd_Flow << "."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
         if (Kind_Centered_Flow == LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
+          cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << "." << endl;
           cout << "First order integration." << endl;
         }
       }
@@ -4485,27 +4491,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
 				if (Kind_Upwind_Flow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == AUSM)	cout << "AUSM solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == HLLC)	cout << "HLLC solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == SW)	cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == MSW)	cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-              if (Kind_Upwind_Flow == CUSP)	cout << "CUSP solver for the flow inviscid terms."<< endl;
-              if (Kind_Upwind_Flow == L2ROE) cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
-              if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
-        switch (SpatialOrder_Flow) {
-          case FIRST_ORDER: cout << "First order integration in space." << endl; break;
-          case SECOND_ORDER: cout << "Second order integration in space, without slope limiter." << endl; break;
-          case SECOND_ORDER_LIMITER: cout << "Second order integration in space, with slope limiter." << endl;
+        if (Kind_Upwind_Flow == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == HLLC)  cout << "HLLC solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == SW)  cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
+        
+        if (MUSCL_Flow) {
+          cout << "Second order integration in space, with slope limiter." << endl;
             switch (Kind_SlopeLimit_Flow) {
               case NO_LIMITER:
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4514,29 +4517,30 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
             }
-            break;
         }
-			}
+        else {
+          cout << "First order integration in space." << endl;
+        }
+        
+      }
 
-		}
+    }
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
-        switch (SpatialOrder_Turb) {
-          case FIRST_ORDER: cout << "First order integration in space." << endl; break;
-          case SECOND_ORDER: cout << "Second order integration in space without slope limiter." << endl; break;
-          case SECOND_ORDER_LIMITER: cout << "Second order integration in space with slope limiter." << endl;
+        if (MUSCL_Turb) {
+          cout << "Second order integration in space with slope limiter." << endl;
             switch (Kind_SlopeLimit_Turb) {
               case NO_LIMITER:
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4545,7 +4549,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
             }
-            break;
+        }
+        else {
+          cout << "First order integration in space." << endl;
         }
       }
     }
@@ -4568,20 +4574,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
         if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
-        switch (SpatialOrder_AdjFlow) {
-          case FIRST_ORDER: cout << "First order integration." << endl; break;
-          case SECOND_ORDER: cout << "Second order integration." << endl; break;
-          case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
+        if (MUSCL_AdjFlow) {
+          cout << "Second order integration with slope limiter." << endl;
             switch (Kind_SlopeLimit_AdjFlow) {
               case NO_LIMITER:
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4590,41 +4594,41 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
               case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
             }
-            break;
+        }
+        else {
+          cout << "First order integration." << endl;
         }
       }
-
-      cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+      
+      cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
 
     }
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the adjoint turbulence model."<< endl;
-        switch (SpatialOrder_AdjTurb) {
-          case FIRST_ORDER: cout << "First order integration." << endl; break;
-          case SECOND_ORDER: cout << "Second order integration." << endl; break;
-          case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
+        if (MUSCL_AdjTurb) {
+          cout << "Second order integration with slope limiter." << endl;
             switch (Kind_SlopeLimit_AdjTurb) {
               case NO_LIMITER:
                 cout << "No slope-limiting method. "<< endl;
                 break;
               case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
               case VENKATAKRISHNAN_WANG:
-                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: 0.03."<< endl;
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
@@ -4633,17 +4637,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
               case SHARP_EDGES:
-                cout << "Sharp edges slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Sharp edges slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
               case WALL_DISTANCE:
-                cout << "Wall distance slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "Wall distance slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                cout << "The reference wall distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
+                cout << "The reference wall distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
                 break;
             }
-            break;
+        }
+        else {
+          cout << "First order integration." << endl;
         }
       }
     }
@@ -5940,12 +5946,13 @@ CConfig::~CConfig(void) {
   if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
   if (default_eng_val       != NULL) delete [] default_eng_val;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
-  if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_jst_coeff != NULL) delete [] default_jst_coeff;
+  if (default_ffd_coeff != NULL) delete [] default_ffd_coeff;
   if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
   if (default_extrarelfac!= NULL) delete [] default_extrarelfac;
   if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
   if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
-  if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
+  if (default_jst_adj_coeff  != NULL) delete [] default_jst_adj_coeff;
   if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
   if (default_geo_loc       != NULL) delete [] default_geo_loc;
   if (default_distortion    != NULL) delete [] default_distortion;
@@ -6122,13 +6129,13 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
                                     unsigned short val_kind_centered, unsigned short val_kind_upwind,
-                                    unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int) {
+                                    unsigned short val_kind_slopelimit, bool val_muscl) {
 
   Kind_ConvNumScheme = val_kind_convnumscheme;
   Kind_Centered = val_kind_centered;
   Kind_Upwind = val_kind_upwind;
   Kind_SlopeLimit = val_kind_slopelimit;
-  SpatialOrder = val_order_spatial_int;
+  MUSCL = val_muscl;
 
 }
 
@@ -6137,16 +6144,18 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                              unsigned long val_extiter) {
 
   /*--- Set the simulation global time ---*/
+  
   Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
   Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
 
   /*--- Set the solver methods ---*/
+  
   switch (val_solver) {
     case EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
+                              MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
@@ -6154,7 +6163,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
+                              MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
@@ -6162,19 +6171,19 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
+                              MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              SpatialOrder_Turb);
+                              MUSCL_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              SpatialOrder_Turb);
+                              MUSCL_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       break;
@@ -6182,13 +6191,13 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
+                              MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                              SpatialOrder_AdjFlow);
+                              MUSCL_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
@@ -6196,13 +6205,13 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
+                              MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                              SpatialOrder_AdjFlow);
+                              MUSCL_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
@@ -6210,25 +6219,25 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
+                              MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                              SpatialOrder_AdjFlow);
+                              MUSCL_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              SpatialOrder_Turb);
+                              MUSCL_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
-                              SpatialOrder_AdjTurb);
+                              MUSCL_AdjTurb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
