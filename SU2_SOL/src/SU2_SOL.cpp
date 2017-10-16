@@ -140,8 +140,8 @@ int main(int argc, char *argv[]) {
 
     /*--- Store the global to local mapping after preprocessing. ---*/
 
-    ///if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-    ///geometry_container[iZone]->SetGlobal_to_Local_Point();
+    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+    geometry_container[iZone]->SetGlobal_to_Local_Point();
 
   }
 
@@ -168,13 +168,13 @@ int main(int argc, char *argv[]) {
 if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
 geometry_container[ZONE_0]->SetPoint_Connectivity();
 
-if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+///if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+///geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
 /*--- recompute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-geometry_container[ZONE_0]->SetPoint_Connectivity();
+///if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+///geometry_container[ZONE_0]->SetPoint_Connectivity();
 
 /*--- Compute elements surrounding elements ---*/
 
@@ -206,8 +206,8 @@ geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLO
 
 /*--- Store the global to local mapping after preprocessing. ---*/
 
-if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
+///if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+///geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 
 ////////      FWH_container = new FWHSolver* [nZone];
 ////////for (iZone = 0; iZone < nZone; iZone++) {
