@@ -133,15 +133,17 @@ int main(int argc, char *argv[]) {
 
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
 
-    /*--- Create the vertex structure (required for MPI) ---*/
+    if(iZone > 0 || (!config_container[ZONE_0]->GetBoom_flag() && !config_container[ZONE_0]->GetKind_ObjFunc()==BOOM)){
+      /*--- Create the vertex structure (required for MPI) ---*/
 
-    if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
-    geometry_container[iZone]->SetVertex(config_container[iZone]);
+      if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
+      geometry_container[iZone]->SetVertex(config_container[iZone]);
 
-    /*--- Store the global to local mapping after preprocessing. ---*/
+      /*--- Store the global to local mapping after preprocessing. ---*/
 
-    ///if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-    ///geometry_container[iZone]->SetGlobal_to_Local_Point();
+      if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+      geometry_container[iZone]->SetGlobal_to_Local_Point();
+    }
 
   }
 
@@ -159,7 +161,7 @@ int main(int argc, char *argv[]) {
 
 
 
-
+if(config_container[ZONE_0]->GetBoom_flag() || config_container[ZONE_0]->GetKind_ObjFunc()==BOOM){
   if (rank == MASTER_NODE)
           cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
@@ -216,6 +218,8 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 ////////   FWH_container[iZone]  = new FWHSolver(config_container[iZone],geometry_container[iZone]);
 
 ////////}
+
+  }
 
 
 
