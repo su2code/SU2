@@ -492,11 +492,11 @@ inline void CConfig::SetRefOriginMoment_Z(unsigned short val_marker, su2double v
 
 inline su2double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
-inline su2double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
+inline su2double CConfig::GetVenkat_LimiterCoeff(void) { return Venkat_LimiterCoeff; }
 
 inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
 
-inline su2double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }
+inline su2double CConfig::GetAdjSharp_LimiterCoeff(void) { return AdjSharp_LimiterCoeff; }
 
 inline su2double CConfig::GetReynolds(void) { return Reynolds; }
 
@@ -907,13 +907,15 @@ inline unsigned short CConfig::GetKind_Centered(void) { return Kind_Centered; }
 
 inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
 
-inline unsigned short CConfig::GetSpatialOrder(void) { return SpatialOrder; }
+inline bool CConfig::GetMUSCL(void) { return MUSCL; }
 
-inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_Flow; }
+inline bool CConfig::GetMUSCL_Flow(void) { return MUSCL_Flow; }
 
-inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
+inline bool CConfig::GetMUSCL_Turb(void) { return MUSCL_Turb; }
 
-inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
+inline bool CConfig::GetMUSCL_AdjFlow(void) { return MUSCL_AdjFlow; }
+
+inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
