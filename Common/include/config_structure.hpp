@@ -156,9 +156,9 @@ private:
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
-  su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
+  su2double Venkat_LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
-  su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  su2double AdjSharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
@@ -477,12 +477,12 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
-  SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
+  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  bool MUSCL,		/*!< \brief MUSCL scheme .*/
+  MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
+  MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
+  MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
+  MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
@@ -513,7 +513,7 @@ private:
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
@@ -894,11 +894,12 @@ private:
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_jst_coeff,         /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_ffd_coeff,         /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
   *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
   *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -1996,15 +1997,16 @@ public:
    * \param[in] val_kind_centered - If centered scheme, kind of centered scheme (JST, etc.).
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
+   * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
+                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, bool val_muscl);
   
   /*!
    * \brief Get the value of limiter coefficient.
    * \return Value of the limiter coefficient.
    */
-  su2double GetLimiterCoeff(void);
+  su2double GetVenkat_LimiterCoeff(void);
   
   /*!
    * \brief Freeze the value of the limiter after a number of iterations.
@@ -2016,7 +2018,7 @@ public:
    * \brief Get the value of sharp edge limiter.
    * \return Value of the sharp edge limiter coefficient.
    */
-  su2double GetSharpEdgesCoeff(void);
+  su2double GetAdjSharp_LimiterCoeff(void);
   
   /*!
    * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces
@@ -3571,41 +3573,50 @@ public:
   unsigned short GetKind_Upwind(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder(void);
+  bool GetMUSCL(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_Flow(void);
+  bool GetMUSCL_Flow(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_Turb(void);
+  bool GetMUSCL_Turb(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_AdjFlow(void);
+  bool GetMUSCL_AdjFlow(void);
   
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  bool GetMUSCL_AdjTurb(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
