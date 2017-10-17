@@ -126,10 +126,6 @@ class COutput {
   unsigned short wrote_base_file;
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
-  su2double Ave_Total_IDR, Ave_Total_IDC; // Average distortion values
-  unsigned short iCounter, iCounter_Total_IDR, iCounter_Total_IDC; // Index used in the local serie counter.
-  unsigned short nCounter_Total_IDR, nCounter_Total_IDC; // Total number of elements in the serie.
-  su2double Serie_Total_IDR[100], Serie_Total_IDC[100]; // Serie that stores the elements.
   
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
@@ -234,13 +230,11 @@ public:
 
   /*!
    * \brief Writes equivalent area.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
    */
-  void SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, 
-      unsigned long iExtIter);
+  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Writes inverse design.
@@ -259,7 +253,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iExtIter - Current external (time) iteration.
    */
-  void SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
+  void SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                         unsigned long iExtIter);
   
   /*!
@@ -267,10 +261,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
    */
-  void SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                         unsigned long iExtIter);
+  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Writes one dimensional output.
@@ -280,7 +272,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iExtIter - Current external (time) iteration.
    */
-  void OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -290,16 +282,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver);
-
-  /*!
-   * \brief Writes mass flow rate output at monitored marker.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   */
-  void SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config);
 
   /*! 
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -639,17 +622,11 @@ public:
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
    */
-  void SetForces_Breakdown(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                           CIntegration ***integration, unsigned short val_iZone);
+  void SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -695,7 +672,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - iZone index.
    */
-  void WriteSpanWiseValuesFiles(CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
+  void SpecialOutput_Turbo(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
@@ -725,7 +702,7 @@ public:
    * \param[in] val_nZone - Number of Zones.
    * \param[in] val_iZone - Zone index.
    */
-  void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
+  void SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.

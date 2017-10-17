@@ -257,11 +257,6 @@ inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2d
   PsiVar_Grad_j = val_psivar_grad_j;
 }
 
-inline void CNumerics::SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j) {
-  PsiVar_Lim_i = val_psivar_lim_i;
-  PsiVar_Lim_j = val_psivar_lim_j;
-}
-
 inline void CNumerics::SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
   TurbVar_i = val_turbvar_i;
   TurbVar_j = val_turbvar_j;
@@ -287,10 +282,6 @@ inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2dou
   PrimVar_Grad_j = val_primvar_grad_j;
 }
 
-inline void CNumerics::SetPrimVarLimiter(su2double *val_primvar_lim_i, su2double *val_primvar_lim_j) {
-  PrimVar_Lim_i = val_primvar_lim_i;
-  PrimVar_Lim_j = val_primvar_lim_j;
-}
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_i, su2double **val_consvar_grad_j) {
   ConsVar_Grad_i = val_consvar_grad_i;

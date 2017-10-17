@@ -437,9 +437,9 @@ inline void CVariable::SetThermalConductivity(CConfig *config) { }
 
 inline void CVariable::SetSpecificHeatCp(su2double Cp) { }
 
-inline bool CVariable::SetVorticity(bool val_limiter) { return false; }
+inline bool CVariable::SetVorticity(void) { return false; }
 
-inline bool CVariable::SetStrainMag(bool val_limiter) { return false; }
+inline bool CVariable::SetStrainMag(void) { return false; }
 
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
@@ -1094,10 +1094,6 @@ inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_v
 inline su2double CTurbSAVariable::GetGammaBC(void) { return gamma_BC; }
 
 inline void CTurbSAVariable::SetGammaBC(su2double val_gamma) { gamma_BC = val_gamma; }
-
-inline void CTurbMLVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
-
-inline su2double CTurbMLVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 

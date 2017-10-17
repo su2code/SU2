@@ -12,11 +12,12 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - ole.burghardt@scicomp.uni-kl.de
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - feature_incompressible  
 
 env:
     global:
