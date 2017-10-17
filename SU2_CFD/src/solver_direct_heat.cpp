@@ -1530,31 +1530,37 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
       for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Coord = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+        if(geometry->node[iPoint]->GetDomain()) {
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        dist = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
-        dist = sqrt(dist);
+          Coord = geometry->node[iPoint]->GetCoord();
+          Coord_Normal = geometry->node[iPointNormal]->GetCoord();
 
-        dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-        if(flow) {
-          eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-          thermal_conductivityND = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
-          thermal_conductivity = thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid;
+          dist = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
+          dist = sqrt(dist);
+
+          dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
+
+          if(flow) {
+            eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+            thermal_conductivityND = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
+            thermal_conductivity = thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid;
+          }
+          else {
+            thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
+          }
+
+          Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
+
         }
-        else {
-          thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
-        }
 
-        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
       }
     }
     else if ( (Boundary == CHT_WALL_INTERFACE || Boundary == HEAT_FLUX) && Monitoring == YES) {
@@ -1562,33 +1568,39 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
       for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Twall = node[iPoint]->GetSolution(0);
+        if(geometry->node[iPoint]->GetDomain()) {
 
-        Coord = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+          iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          Twall = node[iPoint]->GetSolution(0);
 
-        dist = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
-        dist = sqrt(dist);
+          Coord = geometry->node[iPoint]->GetCoord();
+          Coord_Normal = geometry->node[iPointNormal]->GetCoord();
 
-        dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-        if(flow) {
-          eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-          thermal_conductivityND = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
-          thermal_conductivity = thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid;
+          dist = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
+          dist = sqrt(dist);
+
+          dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
+
+          if(flow) {
+            eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+            thermal_conductivityND = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() + eddy_viscosity/config->GetPrandtl_Turb();
+            thermal_conductivity = thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid;
+          }
+          else {
+            thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
+          }
+
+          Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
+
         }
-        else {
-          thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
-        }
 
-        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
       }
 
     }
