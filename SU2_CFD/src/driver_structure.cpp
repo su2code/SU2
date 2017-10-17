@@ -5465,34 +5465,26 @@ void CCHTDriver::Run() {
 
     for (IntIter = 0; IntIter < nIntIter; IntIter++){
 
-      if( ExtIter == NextTransferIteration ) {
-
-        // Aus Solver müssen Heat Flux und Temperatur gelesen werden,
-        // danach Kommunikation mit Target Solver
-        for (iZone = 0; iZone < nZone; iZone++)
-          for (jZone = 0; jZone < nZone; jZone++)
-            if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
-              Transfer_Data(iZone, jZone);
-
-        //cout << "     ---> Transferred temperature and heat flux data between fluid and solid zone successfully <---" << endl;
-        NextTransferIteration+=1;
-
-      }
-
-      iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
-                                              solver_container, numerics_container, config_container,
-                                              surface_movement, grid_movement, FFDBox, ZONE_FLOW);
-
-      //if (integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence() == 1) break;
-
-      //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container,
-      //                            integration_container, true, 0.0, ZONE_FLOW);
-
-      //integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
+      /*--- Transfer temperature and heat flux data from the fluid zone to the target (heat) solvers. ---*/
+      iZone = 0;
+      for (jZone = 0; jZone < nZone; jZone++)
+        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+          Transfer_Data(iZone, jZone);
 
       iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
+      /*--- Transfer temperature and heat flux data from the solids zones to the taget (temperature) solver. ---*/
+      /*--- This should be done first since temperature can be used initially. ---*/
+      jZone = 0;
+      for (iZone = 0; iZone < nZone; iZone++)
+        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+          Transfer_Data(iZone, jZone);
+
+      iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+                                              solver_container, numerics_container, config_container,
+                                              surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
     }
 
