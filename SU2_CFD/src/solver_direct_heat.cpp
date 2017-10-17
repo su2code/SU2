@@ -1504,6 +1504,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
       eddy_viscosity, thermal_conductivity, thermal_conductivityND;
   string Marker_Tag;
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
 #ifdef HAVE_MPI
   su2double MyAllBound_HeatFlux;
