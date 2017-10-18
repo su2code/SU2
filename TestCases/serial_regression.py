@@ -497,15 +497,15 @@ def main():
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
-    harmonic_balance           = TestCase('turbulent_hb')
-    harmonic_balance.cfg_dir   = "harmonic_balance/turbulent_hb"
-    harmonic_balance.cfg_file  = "davis.cfg"
-    harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.784954,-5.471762, 0.007973, 0.077757] #last 4 columns
-    harmonic_balance.su2_exec  = "SU2_CFD"
-    harmonic_balance.timeout   = 1600
-    harmonic_balance.tol       = 0.00001
-    test_list.append(turbulent_hb)
+    hb_rans_preconditioning           = TestCase('hb_rans_preconditioning')
+    hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
+    hb_rans_preconditioning.cfg_file  = "davis.cfg"
+    hb_rans_preconditioning.test_iter = 25
+    hb_rans_preconditioning.test_vals = [-1.784954,-5.471762, 0.007973, 0.077757] #last 4 columns
+    hb_rans_preconditioning.su2_exec  = "SU2_CFD"
+    hb_rans_preconditioning.timeout   = 1600
+    hb_rans_preconditioning.tol       = 0.00001
+    test_list.append(hb_rans_preconditioning)
 
     ######################################
     ### Moving Wall                    ###
