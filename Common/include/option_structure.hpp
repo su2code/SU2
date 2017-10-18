@@ -8,8 +8,8 @@
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -177,6 +177,17 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 ("HIGH", VERB_HIGH);
 
 /*!
+ * \brief Average method for marker analyze
+ */
+enum AVERAGE_TYPE {
+  AVERAGE_AREA = 1, /*!< \brief Area-weighted average. */
+  AVERAGE_MASSFLUX = 2 /*!< \brief Mass-flux weighted average. */
+};
+static const map<string, AVERAGE_TYPE> Average_Map = CCreateMap<string, AVERAGE_TYPE>
+("AREA", AVERAGE_AREA)
+("MASSFLUX", AVERAGE_MASSFLUX);
+
+/*!
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {
@@ -284,16 +295,17 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  * \brief types of interpolators
  */
 enum ENUM_INTERPOLATOR {
-  NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
-  CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  NEAREST_NEIGHBOR 	= 0,   	/*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  WEIGHTED_AVERAGE  = 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
-("ISOPARAMETRIC", ISOPARAMETRIC)
-("CONSISTCONSERVE", CONSISTCONSERVE);
-
+("ISOPARAMETRIC",    ISOPARAMETRIC)
+("CONSISTCONSERVE",  CONSISTCONSERVE)
+("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE);
 
 /*!
  * \brief different regime modes
@@ -597,34 +609,25 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 
 
 /*!
- * \brief Spatial numerical order integration
- */
-enum ENUM_SPATIAL_ORDER {
-  FIRST_ORDER = 0,        /*!< \brief First order */
-  SECOND_ORDER = 1,        /*!< \brief Second order. */
-  SECOND_ORDER_LIMITER = 2 /*!< \brief Second order with limiter. */
-};
-static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<string, ENUM_SPATIAL_ORDER>
-("1ST_ORDER", FIRST_ORDER)
-("2ND_ORDER", SECOND_ORDER)
-("2ND_ORDER_LIMITER", SECOND_ORDER_LIMITER);
-
-/*!
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
-  VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
-  BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
-  SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
-  SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
-  VENKATAKRISHNAN_MOD = 4	/*!< \brief Slope limiter using Venkatakrisnan Modified method. */
+  NO_LIMITER           = 0, /*!< \brief No limiter. */
+  VENKATAKRISHNAN      = 1,	/*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  VENKATAKRISHNAN_WANG = 2,	/*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
+  BARTH_JESPERSEN      = 3, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
+  VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
+  SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
+  WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
+("NONE", NO_LIMITER)
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
+("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
+("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE)
-("VENKATAKRISHNAN_MOD", VENKATAKRISHNAN_MOD);
+("WALL_DISTANCE", WALL_DISTANCE);
 
 /*!
  * \brief types of turbulent models
@@ -815,7 +818,7 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  GILES_BOUNDARY= 37,   /*!< \brief Giles Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
@@ -860,7 +863,13 @@ enum RIEMANN_TYPE {
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
+  SUPERSONIC_OUTFLOW = 9,
+  RADIAL_EQUILIBRIUM = 10,
+  TOTAL_CONDITIONS_PT_1D = 11,
+  STATIC_PRESSURE_1D = 12,
+  MIXING_IN_1D = 13,
+  MIXING_OUT_1D =14
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -871,10 +880,16 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
 ("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT);
+("MIXING_OUT", MIXING_OUT)
+("MIXING_IN_1D", MIXING_IN_1D)
+("MIXING_OUT_1D", MIXING_OUT_1D)
+("SUPERSONIC_OUTFLOW", SUPERSONIC_OUTFLOW)
+("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
+("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
+("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D);
 
 
-static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
+static const map<string, RIEMANN_TYPE> Giles_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
@@ -882,36 +897,96 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
 ("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT);
-
+("MIXING_OUT", MIXING_OUT)
+("MIXING_IN_1D", MIXING_IN_1D)
+("MIXING_OUT_1D", MIXING_OUT_1D)
+("SUPERSONIC_OUTFLOW", SUPERSONIC_OUTFLOW)
+("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
+("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
+("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D);
 
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
  */
-enum MIXINGPROCESS_TYPE {
-  ALGEBRAIC_AVERAGE = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
-  AREA_AVERAGE = 2,           /*!< \brief an area average is computed at the boundary of interest. */
-  MIXEDOUT_AVERAGE = 3		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+enum AVERAGEPROCESS_TYPE {
+  ALGEBRAIC = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  AREA = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  MIXEDOUT = 3,		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+  MASSFLUX = 4           /*!< \brief a mass flow average is computed at the boundary of interest. */
+
 };
 
-static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<string, MIXINGPROCESS_TYPE>
-("ALGEBRAIC_AVERAGE", ALGEBRAIC_AVERAGE)
-("AREA_AVERAGE", AREA_AVERAGE)
-("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE);
+static const map<string, AVERAGEPROCESS_TYPE> AverageProcess_Map = CCreateMap<string, AVERAGEPROCESS_TYPE>
+("ALGEBRAIC", ALGEBRAIC)
+("AREA", AREA)
+("MIXEDOUT",  MIXEDOUT)
+("MASSFLUX", MASSFLUX);
 
 /*!
- * \brief types of Turbomachinery performance indicators.
+ * \brief types of mixing process for averaging quantities at the boundaries.
  */
-enum TURBO_PERFORMANCE_TYPE {
-  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
-  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
-  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
+enum MIXINGPLANE_INTERFACE_TYPE {
+  MATCHING = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  NEAREST_SPAN = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  LINEAR_INTERPOLATION = 3		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
 };
 
-static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
-("BLADE", BLADE)
-("STAGE", STAGE)
-("TURBINE", TURBINE);
+static const map<string, MIXINGPLANE_INTERFACE_TYPE> MixingPlaneInterface_Map = CCreateMap<string, MIXINGPLANE_INTERFACE_TYPE>
+("MATCHING", MATCHING)
+("NEAREST_SPAN",  NEAREST_SPAN)
+("LINEAR_INTERPOLATION", LINEAR_INTERPOLATION);
+
+/*!
+ * \brief this option allow to compute the span-wise section in different ways.
+ */
+enum SPANWISE_TYPE {
+  AUTOMATIC = 1,		/*!< \brief number of span-wise section are computed automatically */
+  EQUISPACED = 2           /*!< \brief number of span-wise section are specified from the user */
+};
+
+static const map<string, SPANWISE_TYPE> SpanWise_Map = CCreateMap<string, SPANWISE_TYPE>
+("AUTOMATIC", AUTOMATIC)
+("EQUISPACED", EQUISPACED);
+
+/*!
+ * \brief types of mixing process for averaging quantities at the boundaries.
+ */
+enum TURBOMACHINERY_TYPE {
+  AXIAL       = 1,		/*!< \brief axial turbomachinery. */
+  CENTRIFUGAL = 2,    /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL = 3,		 /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL_AXIAL = 4,		 /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL = 5		 /*!< \brief mixed flow turbine. */
+};
+
+static const map<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = CCreateMap<string, TURBOMACHINERY_TYPE>
+("AXIAL", AXIAL)
+("CENTRIFUGAL", CENTRIFUGAL)
+("CENTRIPETAL",  CENTRIPETAL)
+("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL)
+("AXIAL_CENTRIFUGAL",  AXIAL_CENTRIFUGAL);
+
+///*!
+// * \brief types of Turbomachinery performance indicators.
+// */
+//enum TURBO_PERFORMANCE_TYPE {
+//  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
+//  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
+//  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
+//};
+//
+//static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
+//("BLADE", BLADE)
+//("STAGE", STAGE)
+//("TURBINE", TURBINE);
+
+/*!
+ * \brief types of Turbomachinery performance flag.
+ */
+enum TURBO_MARKER_TYPE{
+  INFLOW   = 1,		/*!< \brief flag for inflow marker for compute turboperformance. */
+  OUTFLOW = 2     /*!< \brief flag for outflow marker for compute turboperformance. */
+};
 
 /*!
  * \brief types inlet boundary treatments
@@ -946,9 +1021,9 @@ enum ACTDISK_TYPE {
   VARIABLES_JUMP = 1,		/*!< \brief User specifies the variables jump. */
   BC_THRUST = 2,     /*!< \brief User specifies the BC thrust. */
   NET_THRUST = 3,     /*!< \brief User specifies the Net thrust. */
-  DRAG_MINUS_THRUST = 4,     /*!< \brief ACDC computes the right thrust. */
-  MASSFLOW = 5,     /*!< \brief ACDC computes the right thrust. */
-  POWER = 6     /*!< \brief User specifies the Net thrust. */
+  DRAG_MINUS_THRUST = 4,     /*!< \brief User specifies the D-T. */
+  MASSFLOW = 5,     /*!< \brief User specifies the massflow. */
+  POWER = 6     /*!< \brief User specifies the power. */
 };
 static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_TYPE>
 ("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -995,22 +1070,25 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
-  MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
-  MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
-  MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
-  MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
-  MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
-  MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
-  MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
-  AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
-  AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
-  MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED = 31,       /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
-  AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
-  RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
-  CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
-  NOISE = 38,
-  BOOM = 39
+  SURFACE_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
+  SURFACE_STATIC_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
+  SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
+  SURFACE_MACH = 51,           /*!< \brief Mach number objective function definition. */
+  CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
+  TOTAL_PRESSURE_LOSS = 39,
+  KINETIC_ENERGY_LOSS = 40,
+  TOTAL_EFFICIENCY = 41,
+  TOTAL_STATIC_EFFICIENCY = 42,
+  EULERIAN_WORK = 43,
+  TOTAL_ENTHALPY_IN = 44,
+  FLOW_ANGLE_IN = 45,
+  FLOW_ANGLE_OUT = 46,
+  MASS_FLOW_IN = 47,
+  MASS_FLOW_OUT = 48,
+  PRESSURE_RATIO = 49,
+  ENTROPY_GENERATION = 50,
+  NOISE = 58,
+  BOOM = 59
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1033,20 +1111,23 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("MAX_THICKNESS", MAX_THICKNESS)
-("MIN_THICKNESS", MIN_THICKNESS)
-("MAX_THICK_SEC1", MAX_THICK_SEC1)
-("MAX_THICK_SEC2", MAX_THICK_SEC2)
-("MAX_THICK_SEC3", MAX_THICK_SEC3)
-("MAX_THICK_SEC4", MAX_THICK_SEC4)
-("MAX_THICK_SEC5", MAX_THICK_SEC5)
-("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
-("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
-("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
-("AERO_DRAG", AERO_DRAG_COEFFICIENT)
-("RADIAL_DISTORTION", RADIAL_DISTORTION)
-("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
+("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
+("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
+("SURFACE_MACH", SURFACE_MACH)
+("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
+("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
+("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
+("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+("EULERIAN_WORK", EULERIAN_WORK)
+("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
+("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
+("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
+("MASS_FLOW_IN", MASS_FLOW_IN)
+("MASS_FLOW_OUT", MASS_FLOW_OUT)
+("PRESSURE_RATIO",  PRESSURE_RATIO)
+("ENTROPY_GENERATION",  ENTROPY_GENERATION)
+("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("NOISE", NOISE)
 ("BOOM", BOOM);
 
@@ -1222,8 +1303,7 @@ enum ENUM_PARAM {
   CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
-  NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
+  NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1253,7 +1333,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
-("CUSTOM", CUSTOM)
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST);
 
@@ -1296,7 +1375,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU0", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1319,12 +1398,14 @@ static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string
 enum ENUM_FFD_COORD_SYSTEM {
   CARTESIAN = 0,
   CYLINDRICAL = 1,
-  SPHERICAL = 2
+  SPHERICAL = 2,
+  POLAR = 3
 };
 static const map<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = CCreateMap<string, ENUM_FFD_COORD_SYSTEM>
 ("CARTESIAN", CARTESIAN)
 ("CYLINDRICAL", CYLINDRICAL)
-("SPHERICAL", SPHERICAL);
+("SPHERICAL", SPHERICAL)
+("POLAR", POLAR);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1352,7 +1433,7 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU0", ILU);
+("ILU", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries
@@ -1374,15 +1455,15 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
 /*!
  * \brief types of axis orientation
  */
-enum ENUM_AXIS_ORIENTATION {
-  X_AXIS = 0,   /*!< \brief X axis orientation. */
-  Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
-  Z_AXIS = 2    /*!< \brief Z axis orientation. */
+enum ENUM_GEO_DESCRIPTION {
+	TWOD_AIRFOIL = 0,   /*!< \brief Airfoil analysis. */
+  WING = 1, 	/*!< \brief Wing analysis. */
+  FUSELAGE = 2    /*!< \brief Fuselage analysis. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
-("X_AXIS", X_AXIS)
-("Y_AXIS", Y_AXIS)
-("Z_AXIS", Z_AXIS);
+static const map<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = CCreateMap<string, ENUM_GEO_DESCRIPTION>
+("AIRFOIL", TWOD_AIRFOIL)
+("WING", WING)
+("FUSELAGE", FUSELAGE);
 
 /*!
  * \brief types of schemes for unsteady computations
@@ -1421,12 +1502,12 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
-("WALL_DISTANCE", WALL_DISTANCE);
+("WALL_DISTANCE", SOLID_WALL_DISTANCE);
 
 /*!
  * \brief The direct differentation variables.
@@ -1456,6 +1537,13 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 ("VISCOSITY", D_VISCOSITY)
 ("REYNOLDS", D_REYNOLDS)
 ("DESIGN_VARIABLES", D_DESIGN);
+
+
+enum ENUM_RECORDING {
+  CONS_VARS   = 1,
+  MESH_COORDS = 2,
+  COMBINED    = 3
+};
 
 /*!
  * \brief types of schemes for dynamic structural computations
@@ -2217,7 +2305,6 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-        case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2802,120 +2889,128 @@ public:
 };
 
 template <class Tenum>
-class COptionNRBC : public COptionRiemann<Tenum> {
+class COptionGiles : public COptionBase{
+
+  map<string, Tenum> m;
+  unsigned short & size;
+  string * & marker;
+  unsigned short* & field; // Reference to the fieldname
+  string name; // identifier for the option
+  su2double * & var1;
+  su2double * & var2;
+  su2double ** & flowdir;
+  su2double * & relfac1;
+  su2double * & relfac2;
 
 public:
-	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
-			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
-			  	   m, var1, var2,FlowDir) {}
-	  ~COptionNRBC() {};
+  COptionGiles(string option_field_name, unsigned short & nMarker_Giles, string* & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relfac1, su2double* & relfac2) : size(nMarker_Giles),
+  	  	  	  	  marker(Marker_Giles), field(option_field), var1(var1), var2(var2), flowdir(FlowDir), relfac1(relfac1), relfac2(relfac2) {
+    this->name = option_field_name;
+    this->m = m;
+  }
+  ~COptionGiles() {};
 
+  string SetValue(vector<string> option_value) {
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = NULL;
+      this->field = 0;
+      this->var1 = NULL;
+      this->var2 = NULL;
+      this->flowdir = NULL;
+      this->relfac1 = NULL;
+      this->relfac2 = NULL;
+      return "";
+    }
+
+    if (totalVals % 9 != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 9");
+      this->size = 0;
+      this->marker = NULL;
+      this->var1 = NULL;
+      this->var2 = NULL;
+      this->flowdir = NULL;
+      this->field = NULL;
+      this->relfac1 = NULL;
+      this->relfac2 = NULL;
+      return newstring;
+    }
+
+    unsigned long nVals = totalVals / 9;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->var1 = new su2double[nVals];
+    this->var2 = new su2double[nVals];
+    this->flowdir = new su2double*[nVals];
+    this->field = new unsigned short[nVals];
+    this->relfac1 = new su2double[nVals];
+    this->relfac2 = new su2double[nVals];
+
+    for (unsigned int i = 0; i < nVals; i++) {
+      this->flowdir[i] = new su2double[3];
+    }
+
+    for (unsigned int i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[9*i]);
+        // Check to see if the enum value is in the map
+    if (this->m.find(option_value[9*i + 1]) == m.end()) {
+      string str;
+      str.append(this->name);
+      str.append(": invalid option value ");
+      str.append(option_value[0]);
+      str.append(". Check current SU2 options in config_template.cfg.");
+      return str;
+    }
+      Tenum val = this->m[option_value[9*i + 1]];
+      this->field[i] = val;
+
+      istringstream ss_1st(option_value[9*i + 2]);
+      if (!(ss_1st >> this->var1[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_2nd(option_value[9*i + 3]);
+      if (!(ss_2nd >> this->var2[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_3rd(option_value[9*i + 4]);
+      if (!(ss_3rd >> this->flowdir[i][0])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_4th(option_value[9*i + 5]);
+      if (!(ss_4th >> this->flowdir[i][1])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_5th(option_value[9*i + 6]);
+      if (!(ss_5th >> this->flowdir[i][2])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_6th(option_value[9*i + 7]);
+      if (!(ss_6th >> this->relfac1[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+      istringstream ss_7th(option_value[9*i + 8]);
+      if (!(ss_7th >> this->relfac2[i])) {
+        return badValue(option_value, "Giles BC", this->name);
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->marker = NULL;
+    this->var1 = NULL;
+    this->var2 = NULL;
+    this->relfac1 = NULL;
+    this->relfac2 = NULL;
+    this->flowdir = NULL;
+    this->size = 0; // There is no default value for list
+  }
 };
-//template <class Tenum>
-//class COptionNRBC : public COptionBase {
-//
-//  map<string, Tenum> m;
-//  unsigned short* & field; // Reference to the fieldname
-//  string name; // identifier for the option
-//  unsigned short & size;
-//  string * & marker;
-//  su2double * & var1;
-//  su2double * & var2;
-//  su2double ** & flowdir;
-//
-//public:
-//  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_NRBC),
-//  	  	  	  	  marker(Marker_NRBC), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
-//    this->name = option_field_name;
-//    this->m = m;
-//  }
-//  ~COptionNRBC() {};
-//
-//  string SetValue(vector<string> option_value) {
-//
-//    unsigned long totalVals = option_value.size();
-//    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-//      this->size = 0;
-//      this->marker = NULL;
-//      this->field = 0;
-//      this->var1 = NULL;
-//      this->var2 = NULL;
-//      this->flowdir = NULL;
-//      return "";
-//    }
-//
-//    if (totalVals % 7 != 0) {
-//      string newstring;
-//      newstring.append(this->name);
-//      newstring.append(": must have a number of entries divisible by 7");
-//      this->size = 0;
-//      this->marker = NULL;
-//      this->var1 = NULL;
-//      this->var2 = NULL;
-//      this->flowdir = NULL;
-//      this->field = NULL;
-//      return newstring;
-//    }
-//
-//    unsigned long nVals = totalVals / 7;
-//    this->size = nVals;
-//    this->marker = new string[nVals];
-//    this->var1 = new su2double[nVals];
-//    this->var2 = new su2double[nVals];
-//    this->flowdir = new su2double*[nVals];
-//    this->field = new unsigned short[nVals];
-//
-//    for (int i = 0; i < nVals; i++) {
-//      this->flowdir[i] = new su2double[3];
-//    }
-//
-//    for (int i = 0; i < nVals; i++) {
-//      this->marker[i].assign(option_value[7*i]);
-//        // Check to see if the enum value is in the map
-//    if (this->m.find(option_value[7*i + 1]) == m.end()) {
-//      string str;
-//      str.append(this->name);
-//      str.append(": invalid option value ");
-//      str.append(option_value[0]);
-//      str.append(". Check current SU2 options in config_template.cfg.");
-//      return str;
-//    }
-//      Tenum val = this->m[option_value[7*i + 1]];
-//      this->field[i] = val;
-//
-//      istringstream ss_1st(option_value[7*i + 2]);
-//      if (!(ss_1st >> this->var1[i])) {
-//        return badValue(option_value, "NRBC", this->name);
-//      }
-//      istringstream ss_2nd(option_value[7*i + 3]);
-//      if (!(ss_2nd >> this->var2[i])) {
-//        return badValue(option_value, "NRBC", this->name);
-//      }
-//      istringstream ss_3rd(option_value[7*i + 4]);
-//      if (!(ss_3rd >> this->flowdir[i][0])) {
-//        return badValue(option_value, "NRBC", this->name);
-//      }
-//      istringstream ss_4th(option_value[7*i + 5]);
-//      if (!(ss_4th >> this->flowdir[i][1])) {
-//        return badValue(option_value, "NRBC", this->name);
-//      }
-//      istringstream ss_5th(option_value[7*i + 6]);
-//      if (!(ss_5th >> this->flowdir[i][2])) {
-//        return badValue(option_value, "NRBC", this->name);
-//      }
-//    }
-//
-//    return "";
-//  }
-//
-//  void SetDefault() {
-//    this->marker = NULL;
-//    this->var1 = NULL;
-//    this->var2 = NULL;
-//    this->flowdir = NULL;
-//    this->size = 0; // There is no default value for list
-//  }
-//};
 
 
 
@@ -3156,20 +3251,19 @@ public:
   }
 };
 
-
-class COptionMixingPlane : public COptionBase {
+class COptionTurboPerformance : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
-  string * & marker_bound;
-  string * & marker_donor;
+  string * & marker_turboIn;
+  string * & marker_turboOut;
 
 public:
-  COptionMixingPlane(const string option_field_name, unsigned short & nMarker_MixBound,
-                  string* & Marker_MixBound, string* & Marker_MixDonor) : size(nMarker_MixBound), marker_bound(Marker_MixBound), marker_donor(Marker_MixDonor) {
+  COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
+                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut){
     this->name = option_field_name;
   }
 
-  ~COptionMixingPlane() {};
+  ~COptionTurboPerformance() {};
   string SetValue(vector<string> option_value) {
 
     const int mod_num = 2;
@@ -3177,87 +3271,18 @@ public:
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
-      this->marker_bound = NULL;
-      this->marker_donor = NULL;
-      return "";
-    }
-
-    if (totalVals % mod_num != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 11");
-      this->size = 0;
-      this->marker_bound = NULL;
-      this->marker_donor = NULL;
-      return newstring;
-    }
-
-    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
-    this->size = nVals;
-    this->marker_bound = new string[nVals];
-    this->marker_donor = new string[nVals];
-
-
-    for (unsigned short i = 0; i < (nVals/2); i++) {
-      this->marker_bound[i].assign(option_value[mod_num*i]);
-      this->marker_donor[i].assign(option_value[mod_num*i+1]);
-     }
-
-    for (unsigned long i = (nVals/2); i < nVals; i++) {
-      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
-      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
-      }
-
-
-
-    return "";
-  }
-
-  void SetDefault() {
-    this->size = 0;
-    this->marker_bound = NULL;
-    this->marker_donor = NULL;
-  }
-};
-
-template <class Tenum>
-class COptionTurboPerformance : public COptionBase {
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker_turboIn;
-  string * & marker_turboOut;
-  map<string, Tenum> m;
-  unsigned short* & field; // Reference to the fieldname
-
-public:
-  COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
-                  string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, unsigned short* & option_field, const map<string, Tenum> m) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), field(option_field) {
-    this->name = option_field_name;
-    this->m = m;
-  }
-
-  ~COptionTurboPerformance() {};
-  string SetValue(vector<string> option_value) {
-
-    const int mod_num = 3;
-
-    unsigned long totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
       this->marker_turboIn= NULL;
       this->marker_turboOut = NULL;
-      this->field = NULL;
       return "";
     }
 
     if (totalVals % mod_num != 0) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 11");
+      newstring.append(": must have a number of entries divisible by 2");
       this->size = 0;
       this->marker_turboIn= NULL;
       this->marker_turboOut = NULL;;
-      this->field = NULL;
       return newstring;
     }
 
@@ -3265,21 +3290,9 @@ public:
     this->size = nVals;
     this->marker_turboIn = new string[nVals];
     this->marker_turboOut = new string[nVals];
-    this->field = new unsigned short[nVals];
-    for (unsigned long i = 0; i < nVals; i++)
-    	if (this->m.find(option_value[mod_num*i + 2]) == m.end()) {
-    		string str;
-    		str.append(this->name);
-    		str.append(": invalid option value ");
-    		str.append(option_value[0]);
-    		str.append(". Check current SU2 options in config_template.cfg.");
-    		return str;
-    	}
     for (unsigned long i = 0; i < nVals; i++) {
       this->marker_turboIn[i].assign(option_value[mod_num*i]);
       this->marker_turboOut[i].assign(option_value[mod_num*i+1]);
-      Tenum val = this->m[option_value[mod_num*i + 2]];
-      this->field[i] = val;
      }
 
 
@@ -3290,7 +3303,6 @@ public:
     this->size = 0;
     this->marker_turboIn= NULL;
     this->marker_turboOut = NULL;
-    this->field = NULL;
   }
 };
 

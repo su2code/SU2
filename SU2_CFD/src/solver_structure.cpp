@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -618,13 +618,20 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-    
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(Solution_i, nVar);
+    AD::SetPreaccIn(Coord_i, nDim);
+
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       Solution_j = node[jPoint]->GetSolution();
-      
+
+      AD::SetPreaccIn(Coord_j, nDim);
+      AD::SetPreaccIn(Solution_j, nVar);
+
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -712,7 +719,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetGradient(iVar, iDim, product);
       }
     }
-    
+
+    AD::SetPreaccOut(node[iPoint]->GetGradient(), nVar, nDim);
+    AD::EndPreacc();
   }
   
   /*--- Deallocate memory ---*/
@@ -957,62 +966,67 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
-  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Solution_i, *Solution_j,
-  dave, LimK, eps1, eps2, dm, dp, du, ds, limiter, SharpEdge_Distance;
+  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
+  *Solution, *Solution_i, *Solution_j, *LocalMinSolution, *LocalMaxSolution,
+  *GlobalMinSolution, *GlobalMaxSolution,
+  dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
   
-  /*--- Initialize solution max and solution min in the entire domain --*/
+  dave = config->GetRefElemLength();
+  LimK = config->GetVenkat_LimiterCoeff();
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->SetSolution_Max(iVar, -EPS);
-      node[iPoint]->SetSolution_Min(iVar, EPS);
-    }
-  }
-  
-  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  if (config->GetKind_SlopeLimit() == NO_LIMITER) {
     
-    /*--- Point identification, Normal vector and area ---*/
-    
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    /*--- Get the conserved variables ---*/
-    
-    Solution_i = node[iPoint]->GetSolution();
-    Solution_j = node[jPoint]->GetSolution();
-    
-    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      du = (Solution_j[iVar] - Solution_i[iVar]);
-      node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
-      node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
-      node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
-      node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->SetLimiter(iVar, 1.0);
+      }
     }
     
   }
   
-  /*--- Initialize the limiter --*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->SetLimiter(iVar, 2.0);
+  else {
+    
+    /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->SetSolution_Max(iVar, -EPS);
+        node[iPoint]->SetSolution_Min(iVar, EPS);
+        node[iPoint]->SetLimiter(iVar, 2.0);
+      }
     }
+    
+    /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      /*--- Point identification, Normal vector and area ---*/
+      
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      
+      /*--- Get the conserved variables ---*/
+      
+      Solution_i = node[iPoint]->GetSolution();
+      Solution_j = node[jPoint]->GetSolution();
+      
+      /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        du = (Solution_j[iVar] - Solution_i[iVar]);
+        node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+        node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+        node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+        node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+      }
+      
+    }
+    
   }
   
-  /*--- Venkatakrishnan limiter ---*/
+  /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
   
-  if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
-    
-    /*-- Get limiter parameters from the configuration file ---*/
-    
-    dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
+  if (config->GetKind_SlopeLimit_Flow() == BARTH_JESPERSEN) {
     
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
@@ -1023,8 +1037,141 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nVar, nDim);
+      AD::SetPreaccIn(Gradient_j, nVar, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
       for (iVar = 0; iVar < nVar; iVar++) {
         
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
+        /*--- Calculate the interface left gradient, delta- (dm) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+        
+        if (dm == 0.0) { limiter = 2.0; }
+        else {
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          limiter = dp/dm;
+        }
+        
+        if (limiter < node[iPoint]->GetLimiter(iVar)) {
+          node[iPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
+        }
+        
+        /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+        
+        if (dm == 0.0) { limiter = 2.0; }
+        else {
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          limiter = dp/dm;
+        }
+        
+        if (limiter < node[jPoint]->GetLimiter(iVar)) {
+          node[jPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
+        }
+
+      }
+      
+      AD::EndPreacc();
+      
+    }
+
+
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        y =  node[iPoint]->GetLimiter(iVar);
+        limiter = (y*y + 2.0*y) / (y*y + y + 2.0);
+        node[iPoint]->SetLimiter(iVar, limiter);
+      }
+    }
+    
+  }
+
+  /*--- Venkatakrishnan limiter ---*/
+  
+  if ((config->GetKind_SlopeLimit() == VENKATAKRISHNAN) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
+    
+    /*--- Allocate memory for the max and min solution value --*/
+    
+    LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
+    LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
+    
+    /*--- Compute the max value and min value of the solution ---*/
+    
+    Solution = node[iPoint]->GetSolution();
+    for (iVar = 0; iVar < nVar; iVar++) {
+      LocalMinSolution[iVar] = Solution[iVar];
+      LocalMaxSolution[iVar] = Solution[iVar];
+    }
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Get the solution variables ---*/
+      
+      Solution = node[iPoint]->GetSolution();
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
+        LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+      }
+      
+    }
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    for (iVar = 0; iVar < nVar; iVar++) {
+      GlobalMinSolution[iVar] = LocalMinSolution[iVar];
+      GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
+    }
+#endif
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      iPoint     = geometry->edge[iEdge]->GetNode(0);
+      jPoint     = geometry->edge[iEdge]->GetNode(1);
+      Gradient_i = node[iPoint]->GetGradient();
+      Gradient_j = node[jPoint]->GetGradient();
+      Coord_i    = geometry->node[iPoint]->GetCoord();
+      Coord_j    = geometry->node[jPoint]->GetCoord();
+      
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nVar, nDim);
+      AD::SetPreaccIn(Gradient_j, nVar, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          eps1 = LimK * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
+          eps2 = eps1*eps1;
+        }
+        else {
+          eps1 = LimK*dave;
+          eps2 = eps1*eps1*eps1;
+        }
+        
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
         dm = 0.0;
@@ -1038,8 +1185,10 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[iPoint]->GetLimiter(iVar))
+        if (limiter < node[iPoint]->GetLimiter(iVar)) {
           node[iPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
+        }
         
         /*-- Repeat for point j on the edge ---*/
         
@@ -1052,10 +1201,19 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[jPoint]->GetLimiter(iVar))
+        if (limiter < node[jPoint]->GetLimiter(iVar)) {
           node[jPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
+        }
       }
+      
+      AD::EndPreacc();
+
     }
+    
+    delete [] LocalMinSolution; delete [] GlobalMinSolution;
+    delete [] LocalMaxSolution; delete [] GlobalMaxSolution;
+
   }
   
   /*--- Sharp edges limiter ---*/
@@ -1065,7 +1223,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     /*-- Get limiter parameters from the configuration file ---*/
     
     dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
+    LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
     
@@ -1093,7 +1251,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1115,7 +1273,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1132,12 +1290,12 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Sharp edges limiter ---*/
   
-  if (config->GetKind_SlopeLimit() == SOLID_WALL_DISTANCE) {
+  if (config->GetKind_SlopeLimit() == WALL_DISTANCE) {
     
     /*-- Get limiter parameters from the configuration file ---*/
     
     dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
+    LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
     
@@ -1165,7 +1323,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1187,7 +1345,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1822,7 +1980,94 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  Restart_Vars = new int[4];
+  Restart_Vars = new int[5];
+
+  /*--- First, check that this is not a binary restart file. ---*/
+
+  char fname[100];
+  strcpy(fname, val_filename.c_str());
+  int magic_number;
+
+#ifndef HAVE_MPI
+
+  /*--- Serial binary input. ---*/
+
+  FILE *fhw;
+  fhw = fopen(fname,"rb");
+
+  /*--- Error check for opening the file. ---*/
+
+  if (!fhw) {
+    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Attempt to read the first int, which should be our magic number. ---*/
+
+  fread(&magic_number, sizeof(int), 1, fhw);
+
+  /*--- Check that this is an SU2 binary file. SU2 binary files
+   have the hex representation of "SU2" as the first int in the file. ---*/
+
+  if (magic_number == 535532) {
+    cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+    cout << " SU2 reads/writes binary restart files by default." << endl;
+    cout << " Note that backward compatibility for ASCII restart files is" << endl;
+    cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  fclose(fhw);
+
+#else
+
+  /*--- Parallel binary input using MPI I/O. ---*/
+
+  MPI_File fhw;
+  int ierr;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /*--- All ranks open the file using MPI. ---*/
+
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+  /*--- Error check opening the file. ---*/
+
+  if (ierr) {
+    if (rank == MASTER_NODE)
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
+
+  /*--- Have the master attempt to read the magic number. ---*/
+
+  if (rank == MASTER_NODE)
+    MPI_File_read(fhw, &magic_number, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+  /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- Check that this is an SU2 binary file. SU2 binary files
+   have the hex representation of "SU2" as the first int in the file. ---*/
+
+  if (magic_number == 535532) {
+    if (rank == MASTER_NODE) {
+      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
+
+  MPI_File_close(&fhw);
+
+#endif
 
   /*--- Open the restart file ---*/
 
@@ -1833,7 +2078,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "SU2 ASCII solution file " << val_filename << " not found." << endl;
-
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1841,13 +2085,11 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
-
   }
 
   /*--- Identify the number of fields (and names) in the restart file ---*/
 
   getline (restart_file, text_line);
-
   stringstream ss(text_line);
   while (ss >> Tag) {
     config->fields.push_back(Tag);
@@ -1857,11 +2099,11 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
 
-  Restart_Vars[0] = (int)config->fields.size() - 1;
+  Restart_Vars[1] = (int)config->fields.size() - 1;
 
   /*--- Allocate memory for the restart data. ---*/
 
-  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[Restart_Vars[1]*geometry->GetnPointDomain()];
 
   /*--- Read all lines in the restart file and extract data. ---*/
 
@@ -1884,8 +2126,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
       /*--- Store the solution (starting with node coordinates) --*/
 
-      for (iVar = 0; iVar < Restart_Vars[0]; iVar++)
-        point_line >> Restart_Data[counter*Restart_Vars[0] + iVar];
+      for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
+        point_line >> Restart_Data[counter*Restart_Vars[1] + iVar];
 
       /*--- Increment our local point counter. ---*/
 
@@ -1896,14 +2138,13 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
 }
 
-
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   unsigned short iVar;
   strcpy(fname, val_filename.c_str());
-  int nRestart_Vars = 4;
-  Restart_Vars = new int[4];
+  int nRestart_Vars = 5, nFields;
+  Restart_Vars = new int[5];
   config->fields.clear();
 
 #ifndef HAVE_MPI
@@ -1924,24 +2165,39 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
 
+  /*--- Check that this is an SU2 binary file. SU2 binary files
+   have the hex representation of "SU2" as the first int in the file. ---*/
+
+  if (Restart_Vars[0] != 535532) {
+    cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+    cout << " SU2 reads/writes binary restart files by default." << endl;
+    cout << " Note that backward compatibility for ASCII restart files is" << endl;
+    cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Store the number of fields to be read for clarity. ---*/
+
+  nFields = Restart_Vars[1];
+
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
    needed for when we read the strings later. We pad the beginning of the
    variable string vector with the Point_ID tag that wasn't written. ---*/
 
   config->fields.push_back("Point_ID");
-  for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+  for (iVar = 0; iVar < nFields; iVar++) {
     fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
     config->fields.push_back(str_buf);
   }
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*geometry->GetnPointDomain(), fhw);
+  fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
 
   /*--- Close the file. ---*/
 
@@ -1986,27 +2242,46 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
+  /*--- Check that this is an SU2 binary file. SU2 binary files
+   have the hex representation of "SU2" as the first int in the file. ---*/
+
+  if (Restart_Vars[0] != 535532) {
+    if (rank == MASTER_NODE) {
+      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
+
+  /*--- Store the number of fields to be read for clarity. ---*/
+
+  nFields = Restart_Vars[1];
+
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
    needed for when we read the strings later. ---*/
 
-  char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+  char *mpi_str_buf = new char[nFields*CGNS_STRING_SIZE];
   if (rank == MASTER_NODE) {
     disp = nRestart_Vars*sizeof(int);
-    MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+    MPI_File_read_at(fhw, disp, mpi_str_buf, nFields*CGNS_STRING_SIZE,
                      MPI_CHAR, MPI_STATUS_IGNORE);
   }
 
   /*--- Broadcast the string names of the variables. ---*/
 
-  SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+  SU2_MPI::Bcast(mpi_str_buf, nFields*CGNS_STRING_SIZE, MPI_CHAR,
                  MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
 
   config->fields.push_back("Point_ID");
-  for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+  for (iVar = 0; iVar < nFields; iVar++) {
     index = iVar*CGNS_STRING_SIZE;
     field_buf.append("\"");
     for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
@@ -2029,7 +2304,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
    along with the string names of the variables. ---*/
 
-  disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+  disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*nFields*sizeof(char);
 
   /*--- Define a derived datatype for this rank's set of non-contiguous data
    that will be placed in the restart. Here, we are collecting each one of the
@@ -2040,8 +2315,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   int counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
-      blocklen[counter] = Restart_Vars[0];
-      displace[counter] = iPoint_Global*Restart_Vars[0];
+      blocklen[counter] = nFields;
+      displace[counter] = iPoint_Global*nFields;
       counter++;
     }
   }
@@ -2055,11 +2330,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*geometry->GetnPointDomain(), MPI_DOUBLE, &status);
+  MPI_File_read_all(fhw, Restart_Data, nFields*geometry->GetnPointDomain(), MPI_DOUBLE, &status);
 
   /*--- All ranks close the file after writing. ---*/
 
@@ -2076,31 +2351,184 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   
 }
 
-void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename) {
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename) {
 
-  su2double AoA_ = config->GetAoA();
-  su2double AoS_ = config->GetAoS();
-  su2double BCThrust_ = config->GetInitial_BCThrust();
-  su2double dCD_dCL_ = config->GetdCD_dCL();
-  su2double dCD_dCM_ = config->GetdCD_dCM();
-  string::size_type position;
-  unsigned long ExtIter_ = 0;
-  ifstream restart_file;
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+	su2double AoA_ = config->GetAoA();
+	su2double AoS_ = config->GetAoS();
+	su2double BCThrust_ = config->GetInitial_BCThrust();
+	su2double dCD_dCL_ = config->GetdCD_dCL();
+ su2double dCMx_dCL_ = config->GetdCMx_dCL();
+ su2double dCMy_dCL_ = config->GetdCMy_dCL();
+ su2double dCMz_dCL_ = config->GetdCMz_dCL();
+	su2double dCD_dCMy_ = config->GetdCD_dCMy();
+	string::size_type position;
+	unsigned long ExtIter_ = 0;
+	ifstream restart_file;
+	bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
 
-  int rank = MASTER_NODE;
+	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (config->GetRead_Binary_Restart()) {
+	if (config->GetRead_Binary_Restart()) {
+
+		char fname[100];
+		strcpy(fname, val_filename.c_str());
+		int nVar_Buf = 5;
+		int var_buf[5];
+		int Restart_Iter = 0;
+		passivedouble Restart_Meta_Passive[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+		su2double Restart_Meta[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+
+#ifndef HAVE_MPI
+
+		/*--- Serial binary input. ---*/
+
+		FILE *fhw;
+		fhw = fopen(fname,"rb");
+
+		/*--- Error check for opening the file. ---*/
+
+		if (!fhw) {
+			cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- First, read the number of variables and points. ---*/
+
+		fread(var_buf, sizeof(int), nVar_Buf, fhw);
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (var_buf[0] != 535532) {
+      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- Compute (negative) displacements and grab the metadata. ---*/
+
+		fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
+
+		/*--- Read the external iteration. ---*/
+
+		fread(&Restart_Iter, 1, sizeof(int), fhw);
+
+		/*--- Read the metadata. ---*/
+
+		fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
+
+		/*--- Close the file. ---*/
+
+		fclose(fhw);
+
+#else
+
+		/*--- Parallel binary input using MPI I/O. ---*/
+
+		MPI_File fhw;
+		MPI_Offset disp;
+		int rank = MASTER_NODE, ierr;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+		/*--- All ranks open the file using MPI. ---*/
+
+		ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+		/*--- Error check opening the file. ---*/
+
+		if (ierr) {
+			if (rank == MASTER_NODE)
+				cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+			MPI_Barrier(MPI_COMM_WORLD);
+			MPI_Abort(MPI_COMM_WORLD,1);
+			MPI_Finalize();
+		}
+
+		/*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+
+		if (rank == MASTER_NODE)
+			MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
+
+		/*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+		SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (var_buf[0] != 535532) {
+      if (rank == MASTER_NODE) {
+        cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+        cout << " SU2 reads/writes binary restart files by default." << endl;
+        cout << " Note that backward compatibility for ASCII restart files is" << endl;
+        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- Access the metadata. ---*/
+
+		if (rank == MASTER_NODE) {
+
+      /*--- External iteration. ---*/
+
+      disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
+              var_buf[1]*var_buf[2]*sizeof(passivedouble));
+      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+			/*--- Additional doubles for AoA, AoS, etc. ---*/
+
+      disp = (nVar_Buf*sizeof(int) + var_buf[1]*CGNS_STRING_SIZE*sizeof(char) +
+              var_buf[1]*var_buf[2]*sizeof(passivedouble) + 1*sizeof(int));
+      MPI_File_read_at(fhw, disp, Restart_Meta_Passive, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+		}
+
+		/*--- Communicate metadata. ---*/
+
+		SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+		/*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
+              doesn't work with passive data)---*/
+
+		for (unsigned short iVar = 0; iVar < 8; iVar++)
+			Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
+
+		SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+		/*--- All ranks close the file after writing. ---*/
+
+		MPI_File_close(&fhw);
+
+#endif
+
+		/*--- Store intermediate vals from file I/O in correct variables. ---*/
+
+		ExtIter_  = Restart_Iter;
+		AoA_      = Restart_Meta[0];
+		AoS_      = Restart_Meta[1];
+		BCThrust_ = Restart_Meta[2];
+		dCD_dCL_  = Restart_Meta[3];
+  dCMx_dCL_  = Restart_Meta[4];
+  dCMy_dCL_  = Restart_Meta[5];
+  dCMz_dCL_  = Restart_Meta[6];
+
+	} else {
+
+    /*--- First, check that this is not a binary restart file. ---*/
 
     char fname[100];
     strcpy(fname, val_filename.c_str());
-    int nVar_Buf = 4;
-    int var_buf[4];
-    int Restart_Iter = 0;
-    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+    int magic_number;
 
 #ifndef HAVE_MPI
 
@@ -2116,23 +2544,20 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
       exit(EXIT_FAILURE);
     }
 
-    /*--- First, read the number of variables and points. ---*/
+    /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    fread(&magic_number, sizeof(int), 1, fhw);
 
-    /*--- Compute (negative) displacements and grab the metadata. ---*/
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
 
-    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
-
-    /*--- Read the external iteration. ---*/
-
-    fread(&Restart_Iter, 1, sizeof(int), fhw);
-
-    /*--- Read the metadata. ---*/
-
-    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
-
-    /*--- Close the file. ---*/
+    if (magic_number == 535532) {
+      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      exit(EXIT_FAILURE);
+    }
 
     fclose(fhw);
 
@@ -2141,8 +2566,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    MPI_Offset disp;
-    int rank = MASTER_NODE, ierr;
+    int ierr;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
@@ -2159,209 +2583,288 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
       MPI_Finalize();
     }
 
-    /*--- First, read the number of variables and points (i.e., cols and rows),
-     which we will need in order to read the file later. Also, read the
-     variable string names here. Only the master rank reads the header. ---*/
+    /*--- Have the master attempt to read the magic number. ---*/
 
     if (rank == MASTER_NODE)
-      MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
+      MPI_File_read(fhw, &magic_number, 1, MPI_INT, MPI_STATUS_IGNORE);
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    /*--- Access the metadata. ---*/
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
 
-    if (rank == MASTER_NODE) {
-
-      /*--- External iteration. ---*/
-      disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[0]*var_buf[1]*sizeof(passivedouble));
-      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
-
-      /*--- Additional doubles for AoA, AoS, etc. ---*/
-
-      disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[0]*var_buf[1]*sizeof(passivedouble) + 1*sizeof(int));
-      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
-
+    if (magic_number == 535532) {
+      if (rank == MASTER_NODE) {
+        cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+        cout << " SU2 reads/writes binary restart files by default." << endl;
+        cout << " Note that backward compatibility for ASCII restart files is" << endl;
+        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
     }
-
-    /*--- Communicate metadata. ---*/
-
-    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- All ranks close the file after writing. ---*/
-
+    
     MPI_File_close(&fhw);
-
+    
 #endif
 
-    /*--- Store intermediate vals from file I/O in correct variables. ---*/
+    /*--- Carry on with ASCII metadata reading. ---*/
 
-    ExtIter_  = Restart_Iter;
-    AoA_      = Restart_Meta[0];
-    AoS_      = Restart_Meta[1];
-    BCThrust_ = Restart_Meta[2];
-    dCD_dCL_  = Restart_Meta[3];
+		restart_file.open(val_filename.data(), ios::in);
+		if (restart_file.fail()) {
+			if (rank == MASTER_NODE) {
+				cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
+				cout << " Computation will continue without updating metadata parameters." << endl;
+			}
+		} else {
 
-  } else {
+			unsigned long iPoint_Global = 0;
+			string text_line;
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+			/*--- The first line is the header (General description) ---*/
 
-    restart_file.open(val_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+			getline (restart_file, text_line);
 
-      unsigned long iPoint_Global = 0;
-      string text_line;
+			/*--- Space for the solution ---*/
 
-      /*--- The first line is the header (General description) ---*/
+			for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
-      getline (restart_file, text_line);
+				getline (restart_file, text_line);
 
-      /*--- Space for the solution ---*/
+			}
 
-      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+			/*--- Space for extra info (if any) ---*/
 
-        getline (restart_file, text_line);
+			while (getline (restart_file, text_line)) {
 
-      }
+				/*--- External iteration ---*/
 
-      /*--- Space for extra info (if any) ---*/
+				position = text_line.find ("EXT_ITER=",0);
+				if (position != string::npos) {
+					text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+				}
 
-      while (getline (restart_file, text_line)) {
+				/*--- Angle of attack ---*/
 
-        /*--- External iteration ---*/
+				position = text_line.find ("AOA=",0);
+				if (position != string::npos) {
+					text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+				}
 
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-        }
+				/*--- Sideslip angle ---*/
 
-        /*--- Angle of attack ---*/
+				position = text_line.find ("SIDESLIP_ANGLE=",0);
+				if (position != string::npos) {
+					text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+				}
 
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-        }
+				/*--- BCThrust angle ---*/
 
-        /*--- Sideslip angle ---*/
+				position = text_line.find ("INITIAL_BCTHRUST=",0);
+				if (position != string::npos) {
+					text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+				}
 
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-        }
+				if (adjoint_run) {
 
-        /*--- BCThrust angle ---*/
+					if (config->GetEval_dOF_dCX() == true) {
 
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-        }
+						/*--- dCD_dCL coefficient ---*/
 
-        if (adjoint && config->GetRestart()) {
+       position = text_line.find ("DCD_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMx_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMX_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMy_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMY_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+       }
+       
+       /*--- dCMz_dCL coefficient ---*/
+       
+       position = text_line.find ("DCMZ_DCL_VALUE=",0);
+       if (position != string::npos) {
+         text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+       }
+       /*--- dCD_dCMy coefficient ---*/
+       
+       position = text_line.find ("DCD_DCMY_VALUE=",0);
+       if (position != string::npos) {
+							text_line.erase (0,15); dCD_dCMy_ = atof(text_line.c_str());
+						}
+       
+					}
 
-          if (config->GetEval_dCD_dCX() == true) {
+				}
 
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-          }
-          }
-
-        }
-        
-      }
+			}
 
 
-      /*--- Close the restart meta file. ---*/
+			/*--- Close the restart meta file. ---*/
 
-      restart_file.close();
+			restart_file.close();
 
-    }
-  }
+		}
+	}
 
-  /*--- Load the metadata. ---*/
+	/*--- Load the metadata. ---*/
 
-  /*--- Angle of attack ---*/
+	/*--- Only from the direct problem ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-      cout.precision(6);
-      cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-      cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-    }
-    config->SetAoA(AoA_ + config->GetAoA_Offset());
-  }
-  else {
-    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-  }
+	if (!adjoint_run) {
 
-  /*--- Sideslip angle ---*/
+		/*--- Angle of attack ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-      cout.precision(6);
-      cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-      cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-    }
-    config->SetAoS(AoS_ + config->GetAoS_Offset());
-  }
-  else {
-    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-  }
+		if (config->GetDiscard_InFiles() == false) {
+			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+				cout.precision(6);
+				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+			}
+			config->SetAoA(AoA_ + config->GetAoA_Offset());
+		}
+		else {
+			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+		}
 
-  /*--- BCThrust angle ---*/
+		/*--- Sideslip angle ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
-    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-    config->SetInitial_BCThrust(BCThrust_);
-  }
-  else {
-    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-      cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-  }
+		if (config->GetDiscard_InFiles() == false) {
+			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+				cout.precision(6);
+				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+			}
+			config->SetAoS(AoS_ + config->GetAoS_Offset());
+		}
+		else {
+			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+		}
 
-  if (adjoint && config->GetRestart()) {
-    if (config->GetEval_dCD_dCX() == true) {
+		/*--- BCThrust angle ---*/
 
-      /*--- dCD_dCL coefficient ---*/
+		if (config->GetDiscard_InFiles() == false) {
+			if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+			config->SetInitial_BCThrust(BCThrust_);
+		}
+		else {
+			if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+				cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+		}
+
+
+		/*--- The adjoint problem needs this information from the direct solution ---*/
+
+		if (adjoint) {
+
+			if (config->GetEval_dOF_dCX() == false) {
+
+				if (config->GetDiscard_InFiles() == false) {
 
       if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+        cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
       config->SetdCD_dCL(dCD_dCL_);
+      
+      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
+      config->SetdCMx_dCL(dCMx_dCL_);
+      
+      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
+      config->SetdCMy_dCL(dCMy_dCL_);
+      
+      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
+      config->SetdCMz_dCL(dCMz_dCL_);
 
-      /*--- dCD_dCM coefficient ---*/
-
-      if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: SU2 will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
-      config->SetdCD_dCM(dCD_dCM_);
+				}
+				else {
+      
+      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
+      
+      if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
+      
     }
-  }
 
-  /*--- External iteration ---*/
+			}
 
-  if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
-      (adjoint && config->GetRestart()))
-    config->SetExtIter_OffSet(ExtIter_);
+		}
+
+	}
+
+	/*--- Only from the adjoint restart file ---*/
+
+	else {
+
+		/*--- The adjoint problem needs this information from the adjoint solution file ---*/
+
+		if (config->GetEval_dOF_dCX() == true) {
+
+			/*--- If it is a restart it will use the value that was stored in the adjoint solution file  ---*/
+
+			if (config->GetRestart()) {
+
+     /*--- dCD_dCL coefficient ---*/
+     
+     if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+     config->SetdCD_dCL(dCD_dCL_);
+     
+     /*--- dCMx_dCL coefficient ---*/
+     
+     if ((config->GetdCMx_dCL() != dCMx_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMx/dCL provided in\nthe adjoint solution file: " << dCMx_dCL_ << " ." << endl;
+     config->SetdCMx_dCL(dCMx_dCL_);
+     
+     /*--- dCMy_dCL coefficient ---*/
+     
+     if ((config->GetdCMy_dCL() != dCMy_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMy/dCL provided in\nthe adjoint solution file: " << dCMy_dCL_ << " ." << endl;
+     config->SetdCMy_dCL(dCMy_dCL_);
+     
+     /*--- dCMz_dCL coefficient ---*/
+     
+     if ((config->GetdCMz_dCL() != dCMz_dCL_) &&  (rank == MASTER_NODE))
+       cout <<"WARNING: SU2 will use the dCMz/dCL provided in\nthe adjoint solution file: " << dCMz_dCL_ << " ." << endl;
+     config->SetdCMz_dCL(dCMz_dCL_);
+     
+			}
+
+
+		}
+
+	}
+
+
+	/*--- External iteration ---*/
+
+	if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
+			(adjoint && config->GetRestart()))
+		config->SetExtIter_OffSet(ExtIter_);
 
 }
 
@@ -2471,8 +2974,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    int nVar_Buf = 4;
-    int var_buf[4];
+    int nVar_Buf = 5;
+    int var_buf[5];
 
 #ifndef HAVE_MPI
 
@@ -2492,6 +2995,17 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     fread(var_buf, sizeof(int), nVar_Buf, fhw);
 
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (var_buf[0] != 535532) {
+      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      exit(EXIT_FAILURE);
+    }
+    
     /*--- Close the file. ---*/
 
     fclose(fhw);
@@ -2529,7 +3043,22 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
     SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (var_buf[0] != 535532) {
+      if (rank == MASTER_NODE) {
+        cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
+        cout << " SU2 reads/writes binary restart files by default." << endl;
+        cout << " Note that backward compatibility for ASCII restart files is" << endl;
+        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
     /*--- All ranks close the file after writing. ---*/
     
     MPI_File_close(&fhw);
@@ -2539,9 +3068,96 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Set the number of variables, one per field in the
      restart file (without including the PointID) ---*/
 
-    nVar = var_buf[0];
+    nVar = var_buf[1];
 
   } else {
+
+    /*--- First, check that this is not a binary restart file. ---*/
+
+    char fname[100];
+    strcpy(fname, filename.c_str());
+    int magic_number;
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- Attempt to read the first int, which should be our magic number. ---*/
+
+    fread(&magic_number, sizeof(int), 1, fhw);
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (magic_number == 535532) {
+      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+      cout << " SU2 reads/writes binary restart files by default." << endl;
+      cout << " Note that backward compatibility for ASCII restart files is" << endl;
+      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    int ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- Have the master attempt to read the magic number. ---*/
+
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, &magic_number, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Check that this is an SU2 binary file. SU2 binary files
+     have the hex representation of "SU2" as the first int in the file. ---*/
+
+    if (magic_number == 535532) {
+      if (rank == MASTER_NODE) {
+        cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
+        cout << " SU2 reads/writes binary restart files by default." << endl;
+        cout << " Note that backward compatibility for ASCII restart files is" << endl;
+        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+    
+    MPI_File_close(&fhw);
+    
+#endif
 
     /*--- Open the restart file ---*/
 
@@ -2561,7 +3177,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       MPI_Finalize();
 #endif
     }
-
+    
     /*--- Identify the number of fields (and names) in the restart file ---*/
 
     getline (restart_file, text_line);
@@ -2792,7 +3408,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[iZone]->GetnZone();
+  unsigned short nZone = config->GetnZone();
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
@@ -2803,7 +3419,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Skip coordinates ---*/
 
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  unsigned short skipVars = geometry[iZone]->GetnDim();
 
   /*--- Retrieve filename from config ---*/
 
@@ -2838,9 +3454,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+    Read_SU2_Restart_Binary(geometry[iZone], config, filename);
   } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+    Read_SU2_Restart_ASCII(geometry[iZone], config, filename);
   }
 
   int counter = 0;
@@ -2860,7 +3476,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0];
+      index = counter*Restart_Vars[1];
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
      
@@ -2886,11 +3502,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         if (!steady_restart) {
 
           /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[0];
+          index = counter*Restart_Vars[1];
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[0] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -2986,7 +3602,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     Read_SU2_Restart_ASCII(geometry, config, filename);
   }
 
-  unsigned short nVar_Local = Restart_Vars[0];
+  unsigned short nVar_Local = Restart_Vars[1];
   su2double *Solution_Local = new su2double[nVar_Local];
 
   int counter = 0;
@@ -3006,7 +3622,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[0];
+      index = counter*Restart_Vars[1];
       for (iVar = 0; iVar < nVar_Local; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
 

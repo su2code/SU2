@@ -38,7 +38,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   atm_noise_flag = 0;
 
   /*---Scale factors---*/
-  scale_L = config->GetRefLengthMoment();
+  scale_L = config->GetRefLength();
 
   /*---Values from config file---*/
   const su2double deg2rad = M_PI/180.;
@@ -872,15 +872,15 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 }
 
 void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned short iPhi){
-  unsigned short iDim, iNode, iiNode, nNode;
-  unsigned long jElem, jNode, *jNode_list;
-  unsigned long pointCount = 0, jNodeCount;
+  unsigned short iDim, iNode, nNode;
+  unsigned long jElem, jNode;
+  unsigned long pointCount = 0;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
   su2double rho_i, rho_ux_i, rho_uy_i, rho_uz_i, rho_E_i, TKE_i;
   su2double ux, uy, uz, StaticEnergy, p;
 
   su2double *isoparams;
-  su2double *X_donor, *X_donor_tmp;
+  su2double *X_donor;
   su2double *Coord = new su2double[nDim];
 
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
@@ -1018,7 +1018,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 }
 
 bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
-  bool inside = false, *inDomain;
+  bool inside = false;//, *inDomain;
   unsigned long iPoint, jNode;
   unsigned short iNode, nNode, count, intersect;
 
@@ -1554,7 +1554,7 @@ void SUBoom::DistanceToTime(){
 void SUBoom::GetAtmosphericData(su2double& a, su2double& rho, su2double& p, su2double h){
   /*---Get speed of sound, density, and pressure at an altitude---*/
   int i_h = -1;
-  for(int i = 0; i < n_prof; i++){
+  for(unsigned int i = 0; i < n_prof; i++){
     if(h == z[i]){
       i_h = i;
       break;
@@ -1767,7 +1767,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
   su2double a, rho, p;
   su2double r0[3];
   su2double *f, *x, *y, *t;
-  su2double *kx, *ky, *kz;
+  //su2double *kx, *ky, *kz;
   su2double dz = (z[0] - z[1]);
 
   //GetAtmosphericData(a0, rho0, p0, L);

@@ -21,8 +21,8 @@
 # \author M. Colonno, T. Economon, F. Palacios
 # \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -161,6 +161,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/postprocessing_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
@@ -191,9 +192,9 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/numerics_direct_elasticity.cpp \
 	../src/numerics_structure.cpp ../src/numerics_template.cpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
-	../src/output_tecplot.cpp ../src/output_fieldview.cpp \
-	../src/output_su2.cpp ../src/output_paraview.cpp \
-	../src/postprocessing_structure.cpp \
+	../src/output_physics.cpp ../src/output_tecplot.cpp \
+	../src/output_fieldview.cpp ../src/output_su2.cpp \
+	../src/output_paraview.cpp ../src/postprocessing_structure.cpp \
 	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
@@ -248,6 +249,7 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_template.$(OBJEXT) \
 	../src/libSU2Core_a-output_cgns.$(OBJEXT) \
 	../src/libSU2Core_a-output_structure.$(OBJEXT) \
+	../src/libSU2Core_a-output_physics.$(OBJEXT) \
 	../src/libSU2Core_a-output_tecplot.$(OBJEXT) \
 	../src/libSU2Core_a-output_fieldview.$(OBJEXT) \
 	../src/libSU2Core_a-output_su2.$(OBJEXT) \
@@ -313,6 +315,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/postprocessing_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
@@ -342,9 +345,9 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/numerics_direct_elasticity.cpp \
 	../src/numerics_structure.cpp ../src/numerics_template.cpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
-	../src/output_tecplot.cpp ../src/output_fieldview.cpp \
-	../src/output_su2.cpp ../src/output_paraview.cpp \
-	../src/postprocessing_structure.cpp \
+	../src/output_physics.cpp ../src/output_tecplot.cpp \
+	../src/output_fieldview.cpp ../src/output_su2.cpp \
+	../src/output_paraview.cpp ../src/postprocessing_structure.cpp \
 	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
@@ -400,6 +403,7 @@ am__objects_4 =  \
 	../src/___bin_SU2_CFD_AD-numerics_template.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-output_physics.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
@@ -455,6 +459,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/postprocessing_structure.hpp \
 	../include/postprocessing_structure.inl \
 	../include/solver_structure.hpp \
@@ -484,9 +489,9 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/numerics_direct_elasticity.cpp \
 	../src/numerics_structure.cpp ../src/numerics_template.cpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
-	../src/output_tecplot.cpp ../src/output_fieldview.cpp \
-	../src/output_su2.cpp ../src/output_paraview.cpp \
-	../src/postprocessing_structure.cpp \
+	../src/output_physics.cpp ../src/output_tecplot.cpp \
+	../src/output_fieldview.cpp ../src/output_su2.cpp \
+	../src/output_paraview.cpp ../src/postprocessing_structure.cpp \
 	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
@@ -541,6 +546,7 @@ am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-definition_structure.$(OBJEXT) 
 	../src/___bin_SU2_CFD_DIRECTDIFF-numerics_template.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_cgns.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_structure.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_fieldview.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_su2.$(OBJEXT) \
@@ -813,6 +819,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/postprocessing_structure.hpp \
   ../include/postprocessing_structure.inl \
   ../include/solver_structure.hpp \
@@ -851,6 +858,7 @@ libSU2Core_sources = \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
   ../src/output_structure.cpp \
+  ../src/output_physics.cpp \
   ../src/output_tecplot.cpp \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
@@ -1022,6 +1030,8 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-output_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-output_physics.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-output_tecplot.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-output_fieldview.$(OBJEXT):  \
@@ -1206,6 +1216,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-output_physics.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT):  \
@@ -1338,6 +1350,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-output_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-output_fieldview.$(OBJEXT):  \
@@ -1454,6 +1468,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_cgns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_fieldview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_paraview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_tecplot.Po@am__quote@
@@ -1518,6 +1533,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_cgns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_fieldview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_paraview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.Po@am__quote@
@@ -1581,6 +1597,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_cgns.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_fieldview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_paraview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_physics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_tecplot.Po@am__quote@
@@ -1996,6 +2013,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_structure.cpp' object='../src/libSU2Core_a-output_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-output_structure.obj `if test -f '../src/output_structure.cpp'; then $(CYGPATH_W) '../src/output_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_structure.cpp'; fi`
+
+../src/libSU2Core_a-output_physics.o: ../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-output_physics.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-output_physics.Tpo -c -o ../src/libSU2Core_a-output_physics.o `test -f '../src/output_physics.cpp' || echo '$(srcdir)/'`../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-output_physics.Tpo ../src/$(DEPDIR)/libSU2Core_a-output_physics.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_physics.cpp' object='../src/libSU2Core_a-output_physics.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-output_physics.o `test -f '../src/output_physics.cpp' || echo '$(srcdir)/'`../src/output_physics.cpp
+
+../src/libSU2Core_a-output_physics.obj: ../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-output_physics.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-output_physics.Tpo -c -o ../src/libSU2Core_a-output_physics.obj `if test -f '../src/output_physics.cpp'; then $(CYGPATH_W) '../src/output_physics.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_physics.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-output_physics.Tpo ../src/$(DEPDIR)/libSU2Core_a-output_physics.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_physics.cpp' object='../src/libSU2Core_a-output_physics.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-output_physics.obj `if test -f '../src/output_physics.cpp'; then $(CYGPATH_W) '../src/output_physics.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_physics.cpp'; fi`
 
 ../src/libSU2Core_a-output_tecplot.o: ../src/output_tecplot.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-output_tecplot.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-output_tecplot.Tpo -c -o ../src/libSU2Core_a-output_tecplot.o `test -f '../src/output_tecplot.cpp' || echo '$(srcdir)/'`../src/output_tecplot.cpp
@@ -2907,6 +2938,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-output_structure.obj `if test -f '../src/output_structure.cpp'; then $(CYGPATH_W) '../src/output_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_structure.cpp'; fi`
 
+../src/___bin_SU2_CFD_AD-output_physics.o: ../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-output_physics.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Tpo -c -o ../src/___bin_SU2_CFD_AD-output_physics.o `test -f '../src/output_physics.cpp' || echo '$(srcdir)/'`../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_physics.cpp' object='../src/___bin_SU2_CFD_AD-output_physics.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-output_physics.o `test -f '../src/output_physics.cpp' || echo '$(srcdir)/'`../src/output_physics.cpp
+
+../src/___bin_SU2_CFD_AD-output_physics.obj: ../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-output_physics.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Tpo -c -o ../src/___bin_SU2_CFD_AD-output_physics.obj `if test -f '../src/output_physics.cpp'; then $(CYGPATH_W) '../src/output_physics.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_physics.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_physics.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_physics.cpp' object='../src/___bin_SU2_CFD_AD-output_physics.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-output_physics.obj `if test -f '../src/output_physics.cpp'; then $(CYGPATH_W) '../src/output_physics.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_physics.cpp'; fi`
+
 ../src/___bin_SU2_CFD_AD-output_tecplot.o: ../src/output_tecplot.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-output_tecplot.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_tecplot.Tpo -c -o ../src/___bin_SU2_CFD_AD-output_tecplot.o `test -f '../src/output_tecplot.cpp' || echo '$(srcdir)/'`../src/output_tecplot.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_tecplot.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_tecplot.Po
@@ -3802,6 +3847,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_structure.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-output_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_structure.obj `if test -f '../src/output_structure.cpp'; then $(CYGPATH_W) '../src/output_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_structure.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.o: ../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.o `test -f '../src/output_physics.cpp' || echo '$(srcdir)/'`../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_physics.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.o `test -f '../src/output_physics.cpp' || echo '$(srcdir)/'`../src/output_physics.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.obj: ../src/output_physics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.obj `if test -f '../src/output_physics.cpp'; then $(CYGPATH_W) '../src/output_physics.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_physics.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_physics.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/output_physics.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_physics.obj `if test -f '../src/output_physics.cpp'; then $(CYGPATH_W) '../src/output_physics.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_physics.cpp'; fi`
 
 ../src/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.o: ../src/output_tecplot.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.o `test -f '../src/output_tecplot.cpp' || echo '$(srcdir)/'`../src/output_tecplot.cpp
