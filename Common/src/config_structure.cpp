@@ -300,8 +300,12 @@ void CConfig::SetPointersNull(void) {
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
-  Marker_Analyze              = NULL;
+  Marker_Analyze              = NULL;   Marker_WallFunctions     = NULL;
   Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
+
+  Kind_WallFunctions       = NULL;
+  IntInfo_WallFunctions    = NULL;
+  DoubleInfo_WallFunctions = NULL;
   
   /*--- Marker Pointers ---*/
 
@@ -805,6 +809,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+
+  /*!\brief MARKER_WALL_FUNCTIONS\n DESCRIPTION: Viscous wall markers for which wall functions must be applied.
+   Format: (Wall function marker, wall function type, ...) \ingroup Config*/
+  addWallFunctionOption("MARKER_WALL_FUNCTIONS", nMarker_WallFunctions, Marker_WallFunctions,
+                        Kind_WallFunctions, IntInfo_WallFunctions, DoubleInfo_WallFunctions);
 
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
@@ -5891,8 +5900,27 @@ CConfig::~CConfig(void) {
   if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_Analyze != NULL)        delete[] Marker_Analyze;
+  if (Marker_WallFunctions != NULL)  delete[] Marker_WallFunctions;
   if (Marker_ZoneInterface != NULL)        delete[] Marker_ZoneInterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
+
+  if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
+
+  if (IntInfo_WallFunctions != NULL) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
+      if (IntInfo_WallFunctions[iMarker] != NULL)
+        delete[] IntInfo_WallFunctions[iMarker];
+    }
+    delete[] IntInfo_WallFunctions;
+  }
+
+  if (DoubleInfo_WallFunctions != NULL) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
+      if (DoubleInfo_WallFunctions[iMarker] != NULL) 
+        delete[] DoubleInfo_WallFunctions[iMarker];
+    }
+    delete[] DoubleInfo_WallFunctions;
+  }
 
   if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
   if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
@@ -6945,6 +6973,45 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   }
 
   return Heat_Flux[iMarker_HeatFlux];
+}
+
+unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {
+  unsigned short WallFunction = NO_WALL_FUNCTION;
+
+  for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
+    if(Marker_WallFunctions[iMarker] == val_marker) {
+      WallFunction = Kind_WallFunctions[iMarker];
+      break;
+    }
+  }
+
+  return WallFunction;
+}
+
+unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
+  unsigned short *intInfo = NULL;
+
+  for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
+    if(Marker_WallFunctions[iMarker] == val_marker) {
+      intInfo = IntInfo_WallFunctions[iMarker];
+      break;
+    }
+  }
+
+  return intInfo;
+}
+
+su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
+  su2double *doubleInfo = NULL;
+
+  for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
+    if(Marker_WallFunctions[iMarker] == val_marker) {
+      doubleInfo = DoubleInfo_WallFunctions[iMarker];
+      break;
+    } 
+  } 
+
+  return doubleInfo;
 }
 
 su2double CConfig::GetEngineInflow_Target(string val_marker) {
