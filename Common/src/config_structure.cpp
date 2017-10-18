@@ -4234,7 +4234,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
-	if (val_software == SU2_DOT) {
+	if (val_software == SU2_DOT || val_software == SU2_ERR) {
     if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
     }else {
@@ -4266,11 +4266,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
-  if (val_software == SU2_DOT) {
+  if (val_software == SU2_DOT || val_software == SU2_ERR) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT) || (val_software == SU2_ERR)) && (Design_Variable[0] != NONE)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -4412,7 +4412,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT) || (val_software == SU2_ERR)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
@@ -5019,7 +5019,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
   }
 
-  if (val_software == SU2_DOT) {
+  if (val_software == SU2_DOT || val_software == SU2_ERR) {
     if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
