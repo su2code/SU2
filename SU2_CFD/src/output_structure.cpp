@@ -4726,13 +4726,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_IDC     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDC();
         }
         
-    /*  if (inv_design) {
-          Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
-          if (thermal) {
-            Total_HeatFluxDiff = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff();
-          }
-        } */
-        
         if (rotating_frame) {
           Total_CT      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CT();
           Total_CQ      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CQ();
@@ -8038,12 +8031,10 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         if (iSection == 0) {
           Dihedral_Leading = atan((Zcoord_LeadingEdge_ - Zcoord_LeadingEdge) / (Ycoord_LeadingEdge_ - Ycoord_LeadingEdge))*180/PI_NUMBER;
           Dihedral_Trailing = atan((Zcoord_TrailingEdge_ - Zcoord_TrailingEdge) / (Ycoord_TrailingEdge_ - Ycoord_TrailingEdge))*180/PI_NUMBER;
-     //   Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
         }
         else {
           Dihedral_Leading = atan((Zcoord_LeadingEdge - Zcoord_LeadingEdge_) / (Ycoord_LeadingEdge - Ycoord_LeadingEdge_))*180/PI_NUMBER;
           Dihedral_Trailing = atan((Zcoord_TrailingEdge - Zcoord_TrailingEdge_) / (Ycoord_TrailingEdge - Ycoord_TrailingEdge_))*180/PI_NUMBER;
-     //   Dihedral = 0.5*(Dihedral_Leading + Dihedral_Trailing);
         }
         
         /*--- Write Cp at each section (tecplot format) ---*/
