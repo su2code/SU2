@@ -9153,7 +9153,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 #endif
 
 
-  if (rank == MASTER_NODE) cout << endl << "Writing Surface Analysis file.";
+  if (rank == MASTER_NODE && !config->GetDiscrete_Adjoint()) cout << endl << "Writing Surface Analysis file.";
 
   /*--- Open and rrite file name with extension if unsteady ---*/
 
@@ -16084,7 +16084,10 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short nDim         = geometry->GetnDim();
   unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
-  
+
+  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
   
@@ -16139,22 +16142,31 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->node[iPoint]->GetSolution(iDim+1) / Density;
+            Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim];
-            MassFlow += Vector[iDim] * AxiFactor * solver->node[iPoint]->GetSolution(iDim+1);
+            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
           }
           
           Area              = sqrt (Area);
           Vn                = Vn / Area;
-          Energy            = solver->node[iPoint]->GetSolution(nVar-1)/Density;
-          Pressure          = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-          SoundSpeed        = sqrt(Gamma*Pressure/Density);
-          Mach              = sqrt(Velocity2)/SoundSpeed;
-          Temperature       = Pressure / (Gas_Constant * Density);
-          TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-          TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-          
+          Energy            = solver->node[iPoint]->GetEnergy();
+          Pressure          = solver->node[iPoint]->GetPressure();
+          SoundSpeed        = solver->node[iPoint]->GetSoundSpeed();
+
+          if (compressible){
+            Mach              = sqrt(Velocity2)/SoundSpeed;
+            TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
+            Temperature       = Pressure / (Gas_Constant * Density);
+            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+          }
+          if (incompressible){
+            Mach              = 0.0;
+            TotalPressure     = Pressure + 0.5 * Density * Velocity2;
+            Temperature       = 0.0;
+            TotalTemperature  = 0.0;
+          }
+
           /*--- Compute the mass Surface_MassFlow ---*/
 
           Surface_Area[iMarker]             += Area;
@@ -16242,9 +16254,9 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Surface_MassFlow_Local[iMarker_Analyze]         += Surface_MassFlow[iMarker];
           Surface_Mach_Local[iMarker_Analyze]             += Surface_Mach[iMarker];
           Surface_Temperature_Local[iMarker_Analyze]      += Surface_Temperature[iMarker];
-          Surface_Density_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_Temperature[iMarker];
+          Surface_Density_Local[iMarker_Analyze]          += Surface_Density[iMarker];
+          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Enthalpy[iMarker];
+          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_NormalVelocity[iMarker];
           Surface_Pressure_Local[iMarker_Analyze]         += Surface_Pressure[iMarker];
           Surface_TotalTemperature_Local[iMarker_Analyze] += Surface_TotalTemperature[iMarker];
           Surface_TotalPressure_Local[iMarker_Analyze]    += Surface_TotalPressure[iMarker];
@@ -16358,46 +16370,52 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     cout.precision(4);
     cout.setf(ios::fixed, ios::floatfield);
     
-    cout << endl << "--------------------------- Surface Analysis -------------------------" << endl;
+    cout << endl << "--------------------------- Surface Analysis ----------------------------" << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-      cout << "Surface ("<< config->GetMarker_Analyze_TagBound(iMarker_Analyze);
+      cout << "Surface "<< config->GetMarker_Analyze_TagBound(iMarker_Analyze) << ":" << endl;
       
       su2double MassFlow = config->GetSurface_MassFlow(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): " << MassFlow;
-      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
-      
-      su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
-      cout << ", Mach: " << Mach;
-      
-      su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature;
-      else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature;
-      
-      su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", P (Pa): " << Pressure;
-      else if (config->GetSystemMeasurements() == US) cout << ", P (psf): " << Pressure;
-      
-      
-      su2double Density = config->GetSurface_Density(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Rho (kg/m^3): " << Density;
-      else if (config->GetSystemMeasurements() == US) cout << ", Rho (lb/ft^3): " << Density;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << " Mf (kg/s):  " << setw(8) << MassFlow;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << " Mf (lbs/s): " << setw(8) << MassFlow;
       
       su2double NormalVelocity = config->GetSurface_NormalVelocity(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity;
-      else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity;
-      
-      
-      su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", TT (K): " << TotalTemperature;
-      else if (config->GetSystemMeasurements() == US) cout << ", TT (R): " << TotalTemperature;
-      
-      
+      if (config->GetSystemMeasurements() == SI)      cout << setw(16) << " Vn (m/s): " << setw(8) << NormalVelocity;
+      else if (config->GetSystemMeasurements() == US) cout << setw(16) <<" Vn (ft/s): " << setw(8) << NormalVelocity;
+
+      cout << endl;
+
+      su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << " P (Pa):  " << setw(8) << Pressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << " P (psf): " << setw(8) << Pressure;
+
       su2double TotalPressure = config->GetSurface_TotalPressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", PT (Pa): " << TotalPressure << "." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", PT (psf): " << TotalPressure << "." << endl;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(16) << " PT (Pa): " << setw(8) <<TotalPressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(16) << " PT (psf): " << setw(8) <<TotalPressure;
+
+      if (compressible){
+        cout << endl;
+
+        su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
+        cout << setw(20) << " Mach: " << setw(8) << Mach;
+
+        su2double Density = config->GetSurface_Density(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(16) << " Rho (kg/m^3):  " << setw(8) << Density;
+        else if (config->GetSystemMeasurements() == US) cout << setw(16) << " Rho (lb/ft^3): " << setw(8) << Density;
+
+        su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(16) << " T (K): " << setw(8) << Temperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(16) << " T (R): " << setw(8) << Temperature;
+
+        su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(16) << " TT (K): " << setw(8) << TotalTemperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(16) << " TT (R): " << setw(8) << TotalTemperature;
+      }
       
+      cout << endl;
     }
+
+    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     
   }
   
