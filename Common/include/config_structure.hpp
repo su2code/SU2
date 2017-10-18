@@ -585,7 +585,8 @@ private:
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
@@ -593,7 +594,11 @@ private:
   *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  *Marker_DV;            /*!< \brief Markers affected by the design variables. */
+  *Marker_DV,            /*!< \brief Markers affected by the design variables. */
+  *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
+  unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
+  su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
@@ -1182,6 +1187,16 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
+  void addWallFunctionOption(const string &name,               unsigned short &list_size,
+                             string* &string_field,            unsigned short* &val_Kind_WF,
+                             unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionWallFunction(name, list_size, string_field, val_Kind_WF,
+                                               val_IntInfo_WF, val_DoubleInfo_WF);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   void addPythonOption(const string name) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -5831,6 +5846,29 @@ public:
    */
   su2double GetWall_HeatFlux(string val_index);
 
+  /*!
+   * \brief Get the wall function treatment for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return The type of wall function treatment.
+   */
+  unsigned short GetWallFunction_Treatment(string val_marker);
+
+  /*!
+   * \brief Get the additional integer info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the integer info for the given marker.
+   */
+  unsigned short* GetWallFunction_IntInfo(string val_marker);
+
+  /*!
+   * \brief Get the additional double info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the double info for the given marker.
+   */
+  su2double* GetWallFunction_DoubleInfo(string val_marker);
+  
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
