@@ -7196,7 +7196,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, Wall_Function;
   unsigned long iVertex, iPoint, total_index;
   
   su2double *GridVel, *Normal, Area;
@@ -7207,7 +7207,21 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   /*--- Identify the boundary by string name ---*/
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
+
+  /*--- Get wall function treatment from config. ---*/
+
+  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if(Wall_Function != NO_WALL_FUNCTION) {
+
+    cout << endl << "Wall function treament not implemented yet" << endl << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
