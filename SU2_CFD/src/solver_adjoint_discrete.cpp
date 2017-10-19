@@ -912,7 +912,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
    if (Boom_AdjointFile.fail()) {
 //     if (rank == MASTER_NODE)
 //       cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
-       cout << "There is no flow restart file!! " <<  filename  << "."<< endl;
+       cout << "There is no boom adjoint restart file " <<  filename  << "!!"<< endl;
      exit(EXIT_FAILURE);
    }
 
