@@ -521,7 +521,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     else if(config->GetKind_ObjFunc()==BOOM){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
-            Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
+            Solution[iVar] = dJdU_CAA[LocalPointIndex[iPoint]][iVar];
          }
     }
     }
