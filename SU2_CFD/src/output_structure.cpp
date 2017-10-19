@@ -10348,6 +10348,317 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   
 }
 
+void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container,
+                                CConfig **config, CIntegration ***integration, unsigned long iExtIter,
+                                unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Output only using the Master Node ---*/
+
+  if ((rank == MASTER_NODE) && (header)){
+
+    char cstr[200], buffer[50], turb_resid[1000];
+    unsigned short iMarker_Monitoring;
+    string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
+
+    bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
+                       (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
+    bool disc_adj = config[ZONE_FLOW]->GetDiscrete_Adjoint();
+
+    unsigned short direct_diff = config[ZONE_FLOW]->GetDirectDiff();
+
+    /*--- Write file name with extension ---*/
+    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
+    strcpy (cstr, filename.data());
+
+    if (config[ZONE_FLOW]->GetWrt_Unsteady() && config[ZONE_FLOW]->GetRestart()) {
+      long iExtIter = config[ZONE_FLOW]->GetUnst_RestartIter();
+      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+      strcat(cstr, buffer);
+    }
+
+    if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+    else if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+             (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+    else if (config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".vtk");
+    strcat(cstr, buffer);
+
+    FSIHist_file->open(cstr, ios::out);
+    FSIHist_file->precision(15);
+
+    /*--- Begin of the header ---*/
+
+    char begin[]= "\"ExtIter\",\"BGSIter\"";
+
+    /*--- Header for the coefficients ---*/
+
+    char flow_coeff[]= ",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CL/CD\"";
+    char fem_coeff[]= ",\"VM_Stress\"";
+    char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
+    bool struct_of=false;
+    char of_1[] = ",\"TgtGeom\"";
+    char of_2[] = ",\"TgtNode\"";
+
+    char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
+
+     /*--- Header for the residuals ---*/
+
+    char fsi_resid[]= ",\"Res_FSI\",\"RelaxCoeff\",\"ForceCoeff\"";
+
+    char flow_resid[]= ",\"Res_BGS[F0]\",\"Res_BGS[F1]\",\"Res_BGS[F2]\",\"Res_BGS[F3]\",\"Res_BGS[F4]\"";
+    char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
+    char fem_resid[]= ",\"Res_BGS[S0]\",\"Res_BGS[S1]\",\"Res_BGS[S2]\"";
+
+    /*--- End of the header ---*/
+
+    char end[]= ",\"Time(min)\"\n";
+
+    if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
+        FSIHist_file[0] << "TITLE = \"SU2 FSI Simulation\"" << endl;
+        FSIHist_file[0] << "VARIABLES = ";
+    }
+
+    /*--- Write the header, case depending ---*/
+
+    FSIHist_file[0] << begin;
+
+    FSIHist_file[0] << fsi_resid;
+
+    switch (config[ZONE_FLOW]->GetKind_Solver()) {
+
+      /*--- Flow residual output ---*/
+
+      case EULER : case NAVIER_STOKES: case RANS :
+        FSIHist_file[0] << flow_resid;
+        if (turbulent) FSIHist_file[0] << turb_resid;
+      break;
+
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        FSIHist_file[0] << adj_flow_resid;
+        break;
+
+     }
+
+    /*--- FEA residual output ---*/
+
+     switch (config[ZONE_STRUCT]->GetKind_Solver()) {
+
+       case FEM_ELASTICITY:
+         FSIHist_file[0] << fem_resid;
+         break;
+
+       case DISC_ADJ_FEM:
+         FSIHist_file[0] << fem_resid ;
+         break;
+
+     }
+
+     /*--- Flow coefficients output ---*/
+     switch (config[ZONE_FLOW]->GetKind_Solver()) {
+
+     case EULER : case NAVIER_STOKES: case RANS :
+       FSIHist_file[0] << flow_coeff;
+       if (turbulent) FSIHist_file[0] << turb_resid;
+       if (direct_diff != NO_DERIVATIVE) {
+         FSIHist_file[0] << d_flow_coeff;
+       }
+       break;
+
+       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+         FSIHist_file[0] << adj_flow_resid;
+         break;
+
+      }
+
+      switch (config[ZONE_STRUCT]->GetKind_Solver()) {
+
+        case FEM_ELASTICITY:
+          FSIHist_file[0] << fem_coeff;
+          break;
+
+        case DISC_ADJ_FEM:
+          FSIHist_file[0] << fem_coeff;
+          break;
+
+      }
+
+      switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
+        case REFERENCE_GEOMETRY:
+          FSIHist_file[0] << of_1;
+          break;
+        case REFERENCE_NODE:
+          FSIHist_file[0] << of_2;
+          break;
+        default:
+          break;
+      }
+
+     FSIHist_file[0] << end;
+
+
+  }
+
+  if ((rank == MASTER_NODE) && (!header)){
+
+      unsigned short nDim = geometry[ZONE_STRUCT][MESH_0]->GetnDim();
+
+      unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
+      unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
+      unsigned long iFSIIter = config[ZONE_STRUCT]->GetFSIIter();
+      su2double dummy = 0.0;
+
+      bool first_iter = ((iExtIter==0) && (iFSIIter == 0));
+
+      bool flow = (config[ZONE_FLOW]->GetKind_Solver() == EULER) || (config[ZONE_FLOW]->GetKind_Solver() == NAVIER_STOKES) ||
+      (config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_EULER) ||
+      (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+      bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
+      bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
+      bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
+                        (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
+
+      bool fem = ((config[ZONE_STRUCT]->GetKind_Solver() == FEM_ELASTICITY) ||
+              (config[ZONE_STRUCT]->GetKind_Solver() == DISC_ADJ_FEM));
+      bool linear_analysis = (config[ZONE_STRUCT]->GetGeometricConditions() == SMALL_DEFORMATIONS);
+      bool nonlinear_analysis = (config[ZONE_STRUCT]->GetGeometricConditions() == LARGE_DEFORMATIONS);
+
+      bool disc_adj_flow = config[ZONE_FLOW]->GetDiscrete_Adjoint();
+      bool disc_adj_fem = config[ZONE_STRUCT]->GetDiscrete_Adjoint();
+
+
+      /*--- WARNING: These buffers have hard-coded lengths. Note that you
+       may have to adjust them to be larger if adding more entries. ---*/
+
+      char begin[1000], direct_coeff[1000],
+      fsi_resid[1000], fsi_coeffs[1000],
+      flow_resid[1000], adj_flow_resid[1000],
+      adj_fem_resid[1000], fem_resid[1000],
+      objective_function[1000], end[1000];
+
+      su2double *residual_flow         = NULL;
+      su2double *residual_fem          = NULL;
+      su2double *residual_fsi          = NULL;
+      su2double *coeffs_fsi            = NULL;
+
+      /*--- Initialize number of variables ---*/
+      unsigned short nVar_FSI = 1, nCoeff_FSI = 2, nVar_Flow = 0, nVar_FEM = 0;
+
+      unsigned short iVar;
+
+      /*--- Direct problem variables ---*/
+      if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
+
+      if (fem) {
+        if (linear_analysis) nVar_FEM = nDim;
+        if (nonlinear_analysis) nVar_FEM = 3;
+        if (disc_adj_fem) nVar_FEM = nDim;
+      }
+
+      residual_flow       = new su2double[nVar_Flow];
+      residual_fem        = new su2double[nVar_FEM];
+      residual_fsi        = new su2double[nVar_FSI];
+      coeffs_fsi          = new su2double[nCoeff_FSI];
+
+      /*--- Initialize variables to store information from all domains (direct solution) ---*/
+
+      su2double Total_CL = 0.0, Total_CD = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
+                Total_CFEM = 0.0, Total_OF = 0.0;
+
+      Total_CL       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL();
+      Total_CD       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD();
+      Total_CEff     = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CEff();
+      Total_CMx      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMx();
+      Total_CMy      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMy();
+      Total_CMz      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMz();
+
+      bool print_of = false;
+
+      switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
+        case REFERENCE_GEOMETRY:
+          Total_OF = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
+          print_of = true;
+          break;
+        case REFERENCE_NODE:
+          Total_OF = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
+          print_of = true;
+          break;
+        default:
+          break;
+      }
+
+      if ((!disc_adj_flow) && (!disc_adj_fem)){
+        /*--- Flow Residuals ---*/
+        for (iVar = 0; iVar < nVar_Flow; iVar++)
+          residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_BGS(iVar);
+
+        /*--- FEA Residuals ---*/
+        for (iVar = 0; iVar < nVar_Flow; iVar++)
+          residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_BGS(iVar);
+
+        residual_fsi[0] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetFSI_Residual();
+        coeffs_fsi[0]  = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRelaxCoeff();
+        coeffs_fsi[1]  = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetForceCoeff();
+
+      }
+      else{
+          /*--- Flow Residuals ---*/
+          for (iVar = 0; iVar < nVar_Flow; iVar++)
+            residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iVar);
+          /*--- FEA Residuals ---*/
+          for (iVar = 0; iVar < nVar_Flow; iVar++)
+            residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_BGS(iVar);
+      }
+
+      /*--- Write the begining of the history file ---*/
+      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iFSIIter));
+      /*--- Write the end of the history file ---*/
+      SPRINTF (end, "\n");
+
+      SPRINTF (fsi_resid, ", %14.8e", log10 (residual_fsi[0]));
+      SPRINTF (fsi_coeffs, ", %14.8e,  %14.8e", coeffs_fsi[0], coeffs_fsi[1]);
+
+      /*--- Flow residual ---*/
+      if (nDim == 2) {
+        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
+      }
+      else {
+        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
+        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+      }
+
+      /*--- FEM residual ---*/
+      if (nDim == 2) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
+      else SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[1]));
+
+      /*--- Direct coefficients ---*/
+      SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",Total_CL, Total_CD, Total_CMx, Total_CMy, Total_CMz, Total_CEff);
+
+      if (print_of) SPRINTF (objective_function, ", %14.8e", Total_OF);
+
+      if (!first_iter){
+          if (!print_of) FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << end;
+          else FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << objective_function << end;
+          FSIHist_file[0].flush();
+      }
+
+
+  }
+
+}
+
 void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone) {
 
   unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;

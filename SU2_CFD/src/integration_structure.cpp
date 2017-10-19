@@ -896,15 +896,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   
   deltaURes = 0.0;
   
-  ofstream historyFile_FSI;
-  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-  if (writeHistFSI && (rank == MASTER_NODE)) {
-    char cstrFSI[200];
-    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
-    strcpy (cstrFSI, filenameHistFSI.data());
-    historyFile_FSI.open (cstrFSI, std::ios_base::app);
-  }
-  
   /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
   /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
   
@@ -912,10 +903,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     /*--- Set the convergence values to 0.0 --*/
     fea_solver->SetFSI_ConvValue(0,0.0);
     fea_solver->SetFSI_ConvValue(1,0.0);
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) {
-      historyFile_FSI << endl;
-    }
     
   }
   else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
@@ -953,17 +940,16 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 #else
     deltaURes_recv         = deltaURes;
 #endif
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
-    
+
+    /*--- Store the FSI residual ---*/
+    fea_solver->SetFSI_Residual(deltaURes_recv);
+
     if (iFSIIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
       logResidualFSI_initial = log10(deltaURes_recv);
       
       if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
-      
-      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
-      
+
     }
     else {
       fea_solver->SetFSI_ConvValue(1,deltaURes_recv);
@@ -973,20 +959,11 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       magResidualFSI=logResidualFSI-logResidualFSI_initial;
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
-      }
-      
       if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
     }
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl;}
-    
+
   }
-  
-  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close();}
-  
+    
   /*--- Apply the same convergence criteria to all the processors ---*/
   
 #ifdef HAVE_MPI
@@ -1037,6 +1014,9 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       cout << "No relaxation parameter used. " << endl;
     }
     
+    /*--- Store the Relaxation coefficient residual ---*/
+    fea_solver->SetRelaxCoeff(WAitken);
+
     cout << endl;
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";

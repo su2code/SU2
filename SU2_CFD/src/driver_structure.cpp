@@ -412,6 +412,16 @@ CDriver::CDriver(char* confFile,
       && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
+  /*--- Open the FSI convergence history file ---*/
+
+  if (fsi){
+      if (rank == MASTER_NODE) cout << endl <<"Opening FSI history file." << endl;
+      unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+      output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+                                config_container, integration_container, 0,
+                                ZONE_FLOW, ZONE_STRUCT, true);
+  }
+
   /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
   APIVarCoord[0] = 0.0;
   APIVarCoord[1] = 0.0;
@@ -5178,9 +5188,60 @@ CFSIDriver::CFSIDriver(char* confFile,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
                                                           val_nDim,
-                                                          MPICommunicator) { }
+                                                          MPICommunicator) {
+  unsigned short iVar;
+  unsigned short nVar_Flow = 0, nVar_Struct = 0;
 
-CFSIDriver::~CFSIDriver(void) { }
+  unsigned short iZone;
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_Solver()) {
+       case RANS: case EULER: case NAVIER_STOKES:
+         nVar_Flow = solver_container[iZone][MESH_0][FLOW_SOL]->GetnVar();
+         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
+         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
+         break;
+       case FEM_ELASTICITY:
+         nVar_Struct = solver_container[iZone][MESH_0][FEA_SOL]->GetnVar();
+         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
+         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
+         break;
+    }
+  }
+
+
+
+  init_res_flow   = new su2double[nVar_Flow];
+  init_res_struct = new su2double[nVar_Struct];
+
+  residual_flow   = new su2double[nVar_Flow];
+  residual_struct = new su2double[nVar_Struct];
+
+  residual_flow_rel   = new su2double[nVar_Flow];
+  residual_struct_rel = new su2double[nVar_Struct];
+
+  for (iVar = 0; iVar < nVar_Flow; iVar++){
+    init_res_flow[iVar] = 0.0;
+    residual_flow[iVar] = 0.0;
+    residual_flow_rel[iVar] = 0.0;
+  }
+  for (iVar = 0; iVar < nVar_Struct; iVar++){
+    init_res_struct[iVar] = 0.0;
+    residual_struct[iVar] = 0.0;
+    residual_struct_rel[iVar] = 0.0;
+  }
+
+}
+
+CFSIDriver::~CFSIDriver(void) {
+
+  delete [] init_res_flow;
+  delete [] init_res_struct;
+  delete [] residual_flow;
+  delete [] residual_struct;
+  delete [] residual_flow_rel;
+  delete [] residual_struct_rel;
+
+}
 
 void CFSIDriver::Run() {
 
@@ -5198,6 +5259,8 @@ void CFSIDriver::Run() {
   unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
   unsigned long nIntIter;
+
+  bool Convergence = false;
 
   bool StopCalc_Flow = false;
 
@@ -5345,9 +5408,17 @@ void CFSIDriver::Run() {
     /*-------------------- Check convergence --------------------------*/
     /*-----------------------------------------------------------------*/
 
-    integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][MESH_0][FEA_SOL], FSIIter);
+    Convergence = BGSConvergence(FSIIter, ZONE_FLOW, ZONE_STRUCT);
 
-    if (integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI()) break;
+    /*-----------------------------------------------------------------*/
+    /*-------------------- Output FSI history -------------------------*/
+    /*-----------------------------------------------------------------*/
+
+    output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+                              config_container, integration_container, 0,
+                              ZONE_FLOW, ZONE_STRUCT, false);
+
+    if (Convergence) break;
 
     /*-----------------------------------------------------------------*/
     /*--------------------- Update FSIIter ---------------------------*/
@@ -5573,6 +5644,142 @@ void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned sho
 }
 
 void CFSIDriver::Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter) {
+
+}
+
+bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  unsigned short iMarker;
+  unsigned short nVar_Flow = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetnVar(),
+                 nVar_Struct = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetnVar();
+  unsigned short iRes;
+
+  bool flow_converged_absolute = false,
+        flow_converged_relative = false,
+        struct_converged_absolute = false,
+        struct_converged_relative = false;
+
+  bool Convergence = false;
+
+  /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
+  for (iMarker = 0; iMarker < config_container[ZONE_STRUCT]->GetnMarker_All(); iMarker++){
+  switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
+    case CLAMPED_BOUNDARY:
+    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][MESH_0],
+        solver_container[ZONE_STRUCT][MESH_0], numerics_container[ZONE_STRUCT][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[ZONE_STRUCT], iMarker);
+    break;
+  }
+  }
+
+  /*--- Compute the residual for the flow and structural zones ---*/
+
+  /*--- Flow ---*/
+
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->ComputeResidual_BGS(geometry_container[ZONE_FLOW][MESH_0],
+                                                                        config_container[ZONE_FLOW]);
+
+  /*--- Structure ---*/
+
+  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->ComputeResidual_BGS(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                         config_container[ZONE_STRUCT]);
+
+
+  /*--- Retrieve residuals ---*/
+
+  /*--- Flow residuals ---*/
+
+  for (iRes = 0; iRes < nVar_Flow; iRes++){
+    residual_flow[iRes] = log10(solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_BGS(iRes));
+    if (IntIter == 0) init_res_flow[iRes] = residual_flow[iRes];
+    residual_flow_rel[iRes] = fabs(residual_flow[iRes] - init_res_flow[iRes]);
+  }
+
+  /*--- Structure residuals ---*/
+
+  for (iRes = 0; iRes < nVar_Struct; iRes++){
+    residual_struct[iRes] = log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_BGS(iRes));
+    if (IntIter == 0) init_res_struct[iRes] = residual_struct[iRes];
+    residual_struct_rel[iRes] = fabs(residual_struct[iRes] - init_res_struct[iRes]);
+  }
+
+  /*--- Check convergence ---*/
+  flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
+  flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
+
+  struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
+  struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
+
+//  Convergence = ((flow_converged_absolute && struct_converged_absolute) ||
+//                 (flow_converged_absolute && struct_converged_relative) ||
+//                 (flow_converged_relative && struct_converged_relative) ||
+//                 (flow_converged_relative && struct_converged_absolute));
+
+  if (rank == MASTER_NODE){
+
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << "Convergence summary for BGS subiteration ";
+    cout << IntIter << endl;
+    cout << endl;
+    cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+    cout << "                      "; cout << "   Absolute" << "     Criteria" << "     Relative" << "     Criteria" << endl;
+    cout << "Flow       [Psi_Rho]: ";
+    cout.width(11); cout << residual_flow[0];
+    cout.width(13); cout << flow_criteria;
+    cout.width(13); cout << residual_flow_rel[0];
+    cout.width(13); cout << flow_criteria_rel << endl;
+    cout << "             [Psi_E]: ";
+    cout.width(11); cout << residual_flow[nVar_Flow-1];
+    cout.width(13); cout << flow_criteria;
+    cout.width(13); cout << residual_flow_rel[nVar_Flow-1];
+    cout.width(13); cout << flow_criteria_rel << endl;
+    cout << "Structure   [Psi_Ux]: ";
+    cout.width(11); cout << residual_struct[0];
+    cout.width(13); cout << structure_criteria;
+    cout.width(13); cout << residual_struct_rel[0];
+    cout.width(13); cout << structure_criteria_rel << endl;
+    cout << "            [Psi_Uy]: ";
+    cout.width(11); cout << residual_struct[1];
+    cout.width(13); cout << structure_criteria;
+    cout.width(13); cout << residual_struct_rel[1];
+    cout.width(13); cout << structure_criteria_rel << endl;
+    if (geometry_container[ZONE_FLOW][MESH_0]->GetnDim() == 3 ){
+      cout << "            [Psi_Uz]: ";
+      cout.width(11); cout << residual_struct[2];
+      cout.width(13); cout << structure_criteria;
+      cout.width(13); cout << residual_struct_rel[2];
+      cout.width(13); cout << structure_criteria_rel << endl;        }
+    cout << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
+
+  }
+
+  integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][MESH_0][FEA_SOL], IntIter);
+
+  Convergence = integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI();
+
+
+  /*--- Flow ---*/
+
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->UpdateSolution_BGS(geometry_container[ZONE_FLOW][MESH_0],
+                                                                       config_container[ZONE_FLOW]);
+
+  /*--- Structure ---*/
+
+  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->UpdateSolution_BGS(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                       config_container[ZONE_STRUCT]);
+
+  return Convergence;
+
 
 }
 

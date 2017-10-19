@@ -59,6 +59,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   Undivided_Laplacian = NULL;
 
   Solution_New = NULL;
+
+  Solution_BGS_k = NULL;
  
 }
 
@@ -71,6 +73,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  bool fsi = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
@@ -225,6 +228,16 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
 
+  Solution_BGS_k = NULL;
+  if (fsi){
+      Solution_BGS_k  = new su2double [nVar];
+      Solution[0] = val_density;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Solution_BGS_k[iDim+1] = val_density*val_velocity[iDim];
+      }
+      Solution_BGS_k[nVar-1] = val_density*val_energy;
+  }
+
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -235,6 +248,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  bool fsi = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
@@ -370,8 +384,15 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
-
   
+  Solution_BGS_k = NULL;
+  if (fsi){
+      Solution_BGS_k  = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution_BGS_k[iVar] = val_solution[iVar];
+      }
+  }
+
 }
 
 CEulerVariable::~CEulerVariable(void) {
@@ -400,6 +421,8 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Solution_New != NULL) delete [] Solution_New;
   
+  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
+
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
