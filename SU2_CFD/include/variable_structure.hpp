@@ -2040,6 +2040,8 @@ public:
 
   virtual su2double GetRadius() ;
 
+  virtual su2double GetEntropy_Loss() ;
+
   virtual su2double GetMassSource() ;
 
   virtual su2double GetLiquidEnthalpy( )         ;
@@ -2053,6 +2055,8 @@ public:
   virtual void      SetLiqEnthalpy(su2double h);
 
   virtual void      SetRadius(su2double R);
+
+  virtual void      SetEntropy_Loss(su2double Loss_Coeff);
 
   virtual void      SetLiquidFrac(su2double Y);
 
@@ -3691,7 +3695,7 @@ public:
 class C2phaseVariable : public CVariable {
 protected:
 
-	su2double Source, Enthalpy_Liquid, Radius, Liquid_Fraction;
+	su2double Source, Enthalpy_Liquid, Radius, Liquid_Fraction, Entropy_Loss_Coeff;
 	su2double *Primitive_Liquid;
 
 
@@ -3717,9 +3721,9 @@ public:
 
   virtual su2double* SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config);
 
-  su2double  GetRadius() ;
+  su2double GetRadius() ;
 
-//  su2double* GetLiquidPrim() ;
+  su2double GetEntropy_Loss() ;
 
   su2double GetMassSource( )             ;
 
@@ -3742,6 +3746,8 @@ public:
   su2double  GetLiquidPrim(unsigned short iVar);
 
   void      SetLiquidPrim(su2double *Liquid_vec) ;
+
+  void      SetEntropy_Loss(su2double Loss_Coeff) ;
 
   void       SetLiquidPrimZero() ;
 

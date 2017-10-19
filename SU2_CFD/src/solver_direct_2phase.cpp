@@ -1476,7 +1476,6 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
     }
 
     /*--- Add and subtract residual if in the metastable region---*/
-
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
     LinSysRes.AddBlock(iPoint, Residual);
@@ -1496,14 +1495,21 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   unsigned long iPoint, iNode;
-  su2double r, s, y, *Liquid_vec, rho_v, rho_m, mom0, mom1, mom3;
+  su2double r, s, y, *Liquid_vec, rho_v, rho_m, mom0, mom1, mom3, Loss_Coeff;
   
+  su2double h_v, T_v;
+
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
+  Loss_Coeff = 0;
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
      rho_v   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+     T_v     = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(0);
+     h_v     = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim + 3);
+
      mom0    = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
      mom1    = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(1);
      mom3    = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
@@ -1528,9 +1534,14 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
     	 r = 0; y = 0; rho_m = rho_v; s = 0;
      }
 
+     Loss_Coeff = y * (h_v - Liquid_vec[2]) * (-1.0/Liquid_vec[4] + 1.0/T_v);
+
 	 node[iPoint]->SetSource(s);
 	 node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
 	 node[iPoint]->SetRadius(r);
+
+	 node[iPoint]->SetEntropy_Loss(Loss_Coeff);
+
      node[iPoint]->SetLiquidFrac(y);
     
   }
@@ -1556,7 +1567,8 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 	Two_phase_sol = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution();
 
 	Liquid_vec = node[iPoint]->GetLiquidPrim();
-	Liquid_vec = node[iPoint]->SetLiquidPrim(Prim_vec, Two_phase_sol, Liquid_vec[6], solver_container[FLOW_SOL]->GetFluidModel(), config);
+	Liquid_vec = node[iPoint]->SetLiquidPrim(Prim_vec, Solution_i, Liquid_vec[6], solver_container[FLOW_SOL]->GetFluidModel(), config);
+    node[iPoint]->SetLiquidPrim(Liquid_vec);
 
 	numerics->Set2phaseVar(Two_phase_sol, NULL);
 
@@ -1565,7 +1577,6 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 	numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
     numerics->ComputeResidual(Residual, Jacobian_i, Liquid_vec, NULL, config);
-    node[iPoint]->SetLiquidPrim(Liquid_vec);
 
     /*--- Subtract residual and the Jacobian ---*/
     

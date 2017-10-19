@@ -908,6 +908,7 @@ protected:
     int ErrorLevel;       /*!< \brief Error level diagnostics flag. */
 
     su2double Gamma;             /*!< \brief Heat Capacity Ratio. */
+    su2double Gas_Constant;
 private:
     
     bool LuTSwitchedOn;   /*!< \brief LuT indicator. */

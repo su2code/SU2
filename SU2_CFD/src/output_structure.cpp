@@ -11406,8 +11406,12 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   // add rho_liquid and nucleation rate for 2-phase simulations
 
   if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
-  	nVar_Par += 1;
-  	Variable_Names.push_back("J (1/kg/s)");
+  	nVar_Par += 5;
+  	Variable_Names.push_back("J");
+  	Variable_Names.push_back("Liq_frac");
+  	Variable_Names.push_back("Entropy_loss");
+  	Variable_Names.push_back("dEnthalpy");
+  	Variable_Names.push_back("1oTl-1oTv");
 
   	if (liquid_props == true) {
   		nVar_Par += 8;
@@ -11617,6 +11621,12 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
         if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
           Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(10)); iVar++;
+          Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction()); iVar++;
+          Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetEntropy_Loss()); iVar++;
+          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim+3) -
+        		                      solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(2)); iVar++;
+          Local_Data[jPoint][iVar] = (1/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4) -
+        		                      1/solver[FLOW_SOL]->node[iPoint]->GetPrimitive(0)); iVar++;
 
         	if (liquid_props == true) {
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;

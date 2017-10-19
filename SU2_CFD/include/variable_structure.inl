@@ -1129,6 +1129,10 @@ inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fractio
 
 inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; }
 
+inline su2double  C2phaseVariable::GetEntropy_Loss()      { return Entropy_Loss_Coeff;}
+
+inline  void      C2phaseVariable::SetEntropy_Loss(su2double Loss_Coeff)  {Entropy_Loss_Coeff = Loss_Coeff; } 
+
 inline su2double*  C2phaseVariable::GetLiquidPrim() {return Primitive_Liquid;}
 
 inline su2double  C2phaseVariable::GetLiquidPrim(unsigned short iVar) { return Primitive_Liquid[iVar];}
@@ -1165,6 +1169,7 @@ inline su2double  CVariable::GetLiquidFraction() { }
 
 inline su2double  CVariable::GetLiquidEnthalpy() { }   
 
+inline su2double  CVariable::GetEntropy_Loss() {}
 
 inline su2double* CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, su2double Rcritical, CFluidModel *FluidModel, CConfig *config) {}
 
@@ -1175,6 +1180,8 @@ inline  void      CVariable::SetLiqEnthalpy(su2double h) {}
 inline  void      CVariable::SetRadius(su2double R)   {}   
 
 inline  void      CVariable::SetLiquidFrac(su2double Y) {}
+
+inline  void      CVariable::SetEntropy_Loss(su2double Loss_Coeff)  {}  
 
 inline su2double*  CVariable::GetLiquidPrim() { return 0;}
 

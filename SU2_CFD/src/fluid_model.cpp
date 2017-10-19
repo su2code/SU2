@@ -71,6 +71,23 @@ void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
   case SUTHERLAND:
     LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
     break;
+  case FLUIDPROP_VISCOSITY:
+    LaminarViscosity = new CFluidPropViscosity();
+    break;
+  case SAMPLE_FLUID_VISCOSITY:
+	  if (config->GetKind_Liquid_Model() == CO2 )
+		  LaminarViscosity = new CCO2_Viscosity(config->GetViscosity_Ref(), config->GetTemperature_Ref(), config->GetTemperature_Critical());
+	  else if (config->GetKind_Liquid_Model() == R22 )
+		  LaminarViscosity = new CR22_Viscosity(config->GetViscosity_Ref(), config->GetTemperature_Ref());
+	  else if (config->GetKind_Liquid_Model() == R12 )
+	      LaminarViscosity = new CR12_Viscosity(config->GetViscosity_Ref(), config->GetTemperature_Ref());
+	  else {
+		  cout << "Fluid not implemented, switched to constant viscosity" << endl;
+	      getchar();
+	      LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
+	  }
+    break;
+
   }
   
 }
@@ -84,6 +101,24 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
   case CONSTANT_PRANDTL:
     ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
     break;
+  case FLUIDPROP_CONDUCTIVITY:
+	  ThermalConductivity = new CFluidPropConductivity();
+    break;
+  case SAMPLE_FLUID_CONDUCTIVITY:
+	  if (config->GetKind_Liquid_Model() == CO2 ) {
+		  ThermalConductivity = new CCO2_Conductivity(config->GetConductivity_Ref(), config->GetTemperature_Ref(), config->GetTemperature_Critical());
+	  }
+	  else if (config->GetKind_Liquid_Model() == R22 )
+		  ThermalConductivity = new CR22_Conductivity(config->GetConductivity_Ref(), config->GetTemperature_Ref());
+	  else if (config->GetKind_Liquid_Model() == R12 )
+		  ThermalConductivity = new CR12_Conductivity(config->GetConductivity_Ref(), config->GetTemperature_Ref());
+	  else {
+		  cout << "Fluid not implemented, switched to constant conductivity" << endl;
+	      getchar();
+	      ThermalConductivity = new CConstantConductivity(config->GetMu_ConstantND());
+	  }
+    break;
+
   }
   
 }
@@ -92,10 +127,12 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
 
 	switch (config->GetKind_Liquid_Model() ) {
-		case WATER:    Liquid_Prop = new CWater(config); break;
-		case CO2:      Liquid_Prop = new CCO2  (config); break;
-		case R12:      Liquid_Prop = new CR12  (config); break;
-		case R22:      Liquid_Prop = new CR22  (config); break;
+		case WATER:        Liquid_Prop = new CWater(config); break;
+		case CO2:          Liquid_Prop = new CCO2  (config); break;
+		case R12:          Liquid_Prop = new CR12  (config); break;
+		case R22:          Liquid_Prop = new CR22  (config); break;
+		case TOLUENE:      Liquid_Prop = new CToluene  (config); break;
+		case NH3:          Liquid_Prop = new CAmmonia  (config); break;
 		default: cout << "No liquid model selected, stop" << endl; exit(EXIT_FAILURE); break;
 	}
 

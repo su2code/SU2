@@ -65,6 +65,7 @@ protected:
 	su2double Tstar, Gas_Constant, Pstar, Fluid;
 
 	su2double Pref, Tref, Href, Dref;
+	su2double Model;
 
 	su2double Ptriple, Ttriple;
 
@@ -196,6 +197,8 @@ public:
 
   void SetRCritical (su2double P, su2double T);
 
+  void SetRCritical (su2double P, su2double T, su2double T_l);
+
   void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
 
   void SetLiquidEnthalpy(su2double h_v);
@@ -320,6 +323,81 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CR12(void);
+
+  /*!
+   * \brief return liquid density value.
+   */
+
+  void SetTsat(su2double P);
+
+  void SetPsat (su2double T);
+
+  void SetLiquidDensity();
+
+  void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
+
+  void SetLiquidEnthalpy(su2double h_v);
+
+  void SetSurfaceTension(su2double T, su2double Rdroplet);
+
+  void SetRCritical (su2double P, su2double T, su2double Tl);
+};
+
+class CToluene : public CLiquidModel {
+protected:
+
+	  unsigned short i;
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CToluene(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CToluene(void);
+
+  /*!
+   * \brief return liquid density value.
+   */
+
+  void SetTsat(su2double P);
+
+  void SetPsat (su2double T);
+
+  void SetLiquidDensity();
+
+  void SetTLiquid( su2double T, su2double Rcritical, su2double Rdroplet);
+
+  void SetLiquidEnthalpy(su2double h_v);
+
+  void SetSurfaceTension(su2double T, su2double Rdroplet);
+
+  void SetRCritical (su2double P, su2double T, su2double Tl);
+};
+
+
+class CAmmonia : public CLiquidModel {
+protected:
+
+	  unsigned short i;
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CAmmonia(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CAmmonia(void);
 
   /*!
    * \brief return liquid density value.

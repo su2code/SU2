@@ -372,4 +372,202 @@ public:
 };
 
 
+class CCO2_Viscosity : public CViscosityModel {
+protected:
+  su2double      Mu_ref,    /*!< \brief Internal Energy. */
+  T_ref, T_crit,    /*!< \brief DpDd_e. */
+  S;       /*!< \brief DpDe_d. */
+  su2double *visc_coeff;
+
+public:
+
+  /*!
+   * \bief Constructor of the class.
+   */
+  CCO2_Viscosity(void);
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CCO2_Viscosity(su2double mu_ref, su2double t_ref, su2double t_crit);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CCO2_Viscosity(void);
+
+  /*!
+   * \brief Set Viscosity.
+   */
+  void SetViscosity(su2double T, su2double rho);
+
+  /*!
+   * \brief Set Viscosity Derivatives.
+   */
+  void SetDerViscosity(su2double T, su2double rho);
+
+};
+
+class CR22_Viscosity : public CViscosityModel {
+protected:
+  su2double      Mu_ref,    /*!< \brief Internal Energy. */
+  T_ref,     /*!< \brief DpDd_e. */
+  S;       /*!< \brief DpDe_d. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CR22_Viscosity(void);
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CR22_Viscosity(su2double mu_ref, su2double t_ref);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CR22_Viscosity(void);
+
+  /*!
+   * \brief Set Viscosity.
+   */
+  void SetViscosity(su2double T, su2double rho);
+
+  /*!
+   * \brief Set Viscosity Derivatives.
+   */
+  void SetDerViscosity(su2double T, su2double rho);
+
+};
+
+class CR12_Viscosity : public CViscosityModel {
+protected:
+  su2double      Mu_ref,    /*!< \brief Internal Energy. */
+  T_ref,     /*!< \brief DpDd_e. */
+  S;       /*!< \brief DpDe_d. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CR12_Viscosity(void);
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CR12_Viscosity(su2double mu_ref, su2double t_ref);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CR12_Viscosity(void);
+
+  /*!
+   * \brief Set Viscosity.
+   */
+  void SetViscosity(su2double T, su2double rho);
+
+  /*!
+   * \brief Set Viscosity Derivatives.
+   */
+  void SetDerViscosity(su2double T, su2double rho);
+
+};
+
+class CCO2_Conductivity: public CConductivityModel {
+protected:
+
+su2double K_ref, T_ref, T_crit;
+su2double *cond_coeff;
+public:
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CCO2_Conductivity(void);
+
+    CCO2_Conductivity(su2double k_ref, su2double t_ref, su2double t_crit);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    virtual ~CCO2_Conductivity(void);
+
+    /*!
+     * \brief Set Thermal conductivity.
+     */
+    void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+
+    /*!
+     * \brief Set Thermal conductivity derivatives.
+     */
+    void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+
+};
+
+class CR22_Conductivity: public CConductivityModel {
+protected:
+
+su2double K_ref, T_ref;
+public:
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CR22_Conductivity(void);
+
+    CR22_Conductivity(su2double k_ref, su2double t_ref);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    virtual ~CR22_Conductivity(void);
+
+    /*!
+     * \brief Set Thermal conductivity.
+     */
+    void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+
+    /*!
+     * \brief Set Thermal conductivity derivatives.
+     */
+    void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+
+};
+
+class CR12_Conductivity: public CConductivityModel {
+protected:
+
+su2double K_ref, T_ref;
+public:
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CR12_Conductivity(void);
+
+    CR12_Conductivity(su2double k_ref, su2double t_ref);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    virtual ~CR12_Conductivity(void);
+
+    /*!
+     * \brief Set Thermal conductivity.
+     */
+    void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+
+    /*!
+     * \brief Set Thermal conductivity derivatives.
+     */
+    void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+
+};
+
+
 #include "transport_model.inl"

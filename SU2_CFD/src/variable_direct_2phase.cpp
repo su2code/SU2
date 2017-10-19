@@ -39,6 +39,7 @@ C2phaseVariable::C2phaseVariable(void) : CVariable() {
 
 	Source = 0; Enthalpy_Liquid = 0;
 	Radius = 0; Liquid_Fraction = 0;
+	Entropy_Loss_Coeff = 0;
 
 	Primitive_Liquid = NULL;
 

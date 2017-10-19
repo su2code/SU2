@@ -477,13 +477,15 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
 	SUTHERLAND = 1,
-	FLUIDPROP_VISCOSITY = 2
+	FLUIDPROP_VISCOSITY = 2,
+	SAMPLE_FLUID_VISCOSITY = 3
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
 ("SUTHERLAND", SUTHERLAND)
-("FLUIDPROP_VISCOSITY", FLUIDPROP_VISCOSITY);
+("FLUIDPROP_VISCOSITY", FLUIDPROP_VISCOSITY)
+("SAMPLE_FLUID_VISCOSITY", SAMPLE_FLUID_VISCOSITY);
 
 /*!
  * \brief types of thermal conductivity model
@@ -491,13 +493,15 @@ static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<st
 enum ENUM_CONDUCTIVITYMODEL {
 	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
 	CONSTANT_PRANDTL = 1,
-	FLUIDPROP_CONDUCTIVITY = 2
+	FLUIDPROP_CONDUCTIVITY = 2,
+	SAMPLE_FLUID_CONDUCTIVITY = 3
 };
 
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
 ("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
-("FLUIDPROP_CONDUCTIVITY", FLUIDPROP_CONDUCTIVITY);
+("FLUIDPROP_CONDUCTIVITY", FLUIDPROP_CONDUCTIVITY)
+("SAMPLE_FLUID_CONDUCTIVITY", SAMPLE_FLUID_CONDUCTIVITY);
 
 
 /*!
@@ -714,17 +718,21 @@ static const map<string, ENUM_NUCLEATION_MODEL> Nucleation_Model_Map = CCreateMa
 
 
 enum ENUM_LIQUID_MODEL {
-  WATER = 0, /*!< \brief No 2phase model. */
-  CO2   = 1,
-  R12   = 2,
-  R22   = 3,
+  WATER     = 0, /*!< \brief No 2phase model. */
+  CO2       = 1,
+  R12       = 2,
+  R22       = 3,
+  TOLUENE   = 4,
+  NH3       = 5,
 };
 
 static const map<string, ENUM_LIQUID_MODEL> Liquid_Model_Map = CCreateMap<string, ENUM_LIQUID_MODEL>
-("WATER", WATER)
-("CO2"  , CO2  )
-("R12"  , R12  )
-("R22"  , R22  );
+("WATER"   , WATER  )
+("CO2"     , CO2    )
+("R12"     , R12    )
+("R22"     , R22    )
+("TOLUENE" , TOLUENE)
+("NH3"     , NH3    );
 
 /*!
  * \brief types of transition models

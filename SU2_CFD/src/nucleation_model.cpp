@@ -72,11 +72,17 @@ su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2doub
 
 	Theta = Theta * 2 * (Gam - 1)/(Gam + 1);
 
+	if (Theta < 0 ) {
+		cout << "WARNING: Non-isothermal correction < 0, isothermal J model imposed" << endl;
+		Theta = 0.0;
+	}
+
 	if (Fluid == WATER) {
 
 			J  = exp(-4.0*3.1415*V_l[5]*V_l[6]*V_l[6] / 3 / T / Boltzmann);
 			J = J * rho/V_l[1]*sqrt(2*V_l[5] / 3.1415 / pow(MolMass,3) );
 			J = J / (1+Theta);
+
 
 	} else {
 
@@ -96,10 +102,10 @@ su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2doub
 
 	if (J < 0 || J != J) {
 
-		cout << "Error in Nucleation rate evaluation!" << endl;
+		cout << "Error in Nucleation rate evaluation! J = " << J << " " << J0 << " " << J1 << " " << J2 << " " << J3 << endl;
 		cout << "Last values in function: "<< endl;
-		cout << "Density(liquid) " << " " << V_l[1] << endl;
-		cout << "Enthalpy(liquid) " << " " << V_l[2] << endl;
+		cout << "Theta " << " " << Theta << endl;
+		cout << "delta Enthalpy " << " " << h - V_l[2] << endl;
 		cout << "Surface tension"  << " " << V_l[5] << endl;
 
 		cout << h << " "<<  V_l[2] << " " << T <<" "<<  V_l[4] << " " << V_l[0]<<" "<< V_l[1] <<" "<< rho << " " << V_l[7] <<" "<< V_l[6] <<endl;
@@ -152,6 +158,7 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 				cout << "Radius(vapor) "  << " " << V_l[7] << endl;
 				cout << "Critical Radius(vapor) "  << " " << V_l[6] << endl;
 				cout << "Enthalpy(liquid) " << " " << V_l[2] << endl;
+
 				exit(EXIT_FAILURE);
 			}
 
@@ -164,8 +171,14 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 
 			G = Alpha * fabs(V_l[0] - T)/ V_l[1];
 
+			//if (h - V_l[2] > 0)
 			G = G /(h - V_l[2]);
 
+/*			else {
+				cout << "Warning: fluidprop error on liquid enthalpy" << endl;
+				cout << "Evaluation will continue anyway" << endl;
+			}
+*/
 			if (G < 0 || G != G) {
 
 				cout << "Error in Growth rate evaluation!" << endl;

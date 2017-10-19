@@ -41,6 +41,8 @@ CLiquidModel::CLiquidModel(CConfig *config) {
 
   /*--- Attributes initialization ---*/
 
+  Model = config->GetKind_FluidModel();
+
   rho_l  = 0.0;
   h_l    = 0.0;
   dGibbs = 0.0;
@@ -83,9 +85,12 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 		SetTLiquid(T, Rcritical, Rdroplet);
 		SetLiquidDensity();
 
+		if (Fluid == R22)
+		SetLiquidEnthalpy(h_v);
+		else
 		SetLiquidEnthalpy(h_v);
 
-		if (Fluid == WATER)
+		if (Fluid == WATER && Model != FLUIDPROP)
 			SetRCritical(P, T);
 		else
 //			SetRCritical(P, T);
@@ -176,6 +181,8 @@ CWater::~CWater(void) {
 
 void CWater::SetTsat(su2double P) {
 
+	if (Model != FLUIDPROP) {
+
     Hsat = pow((P/1E6),0.25);
     Esat =  Hsat*Hsat + coeff_saturation[2] * Hsat + coeff_saturation[5];
     Fsat =  coeff_saturation[0]*Hsat*Hsat + coeff_saturation[3]*Hsat + coeff_saturation[6];
@@ -187,6 +194,11 @@ void CWater::SetTsat(su2double P) {
 
     Tsat =  Tsat * 0.5;
 
+	} else {
+		double  P_limited = P;
+		const char* pair = "Pq";
+		Tsat = fluidprop_temperature(pair, P_limited, 0);
+	}
 /*	if (P < Ptriple) {
 		cout << "Warning: Pressure lower than triple point" << endl;
 		cout << "Saturation conditions are not reliable" << endl;
@@ -198,7 +210,7 @@ void CWater::SetTsat(su2double P) {
 
 void CWater::SetPsat(su2double T) {
 
-
+    if (Model != FLUIDPROP) {
 	su2double  T_limited = min(T, Tstar);
 
 	Hsat = T_limited + coeff_saturation[8] / (T_limited - coeff_saturation[9] ) ;
@@ -210,6 +222,12 @@ void CWater::SetPsat(su2double T) {
 	Psat    = pow((2.0*Csat/Psat), 4);
 
 	Psat    = Psat *1E6;
+
+    } else {
+    	double  T_limited = T;
+    	const char* pair = "Tq";
+    	Psat = fluidprop_pressure(pair, T_limited, 0);
+    }
 
 }
 
@@ -231,6 +249,28 @@ void CWater::SetRCritical(su2double P, su2double T) {
 
 }
 
+void CWater::SetRCritical(su2double P, su2double T, su2double T_l) {
+
+    string ErrorMsg;
+	su2double dGv, dGl;
+	double Temp = T;
+	double Press = P;
+	double Press_sat = Psat;
+
+
+	const char* pair = "PT_1ph";
+
+
+	if (Psat < P) {
+		dGv = fluidprop_enthalpy(pair, Press, Temp) - Temp * fluidprop_entropy(pair, Press, Temp);
+		dGv = dGv - fluidprop_enthalpy(pair, Press_sat, Temp) + Temp * fluidprop_entropy(pair, Press_sat, Temp);
+		dGv = dGv - 1.0/rho_l * (P - Psat);
+		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+
+	} else 	Rc = 0.0;
+
+}
+
 void CWater::SetSurfaceTension(su2double T, su2double Rdroplet) {
 
     su2double  T_limited = min(T, Tstar);
@@ -240,13 +280,16 @@ void CWater::SetSurfaceTension(su2double T, su2double Rdroplet) {
 
 
 
+
 }
 
 void CWater::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
-		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		//if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		if (Rdroplet != 0) T_l   = Tsat  - (Tsat - T)*Rcritical/Rdroplet;
 		else      T_l = T;
 
+		if (T_l < T) T_l = T;
 }
 
 void CWater::SetLiquidDensity() {
@@ -255,16 +298,30 @@ void CWater::SetLiquidDensity() {
 
 		rho_l = 928.08 + 464.63*T_limited/Tstar - 568.46*(T_limited/Tstar)*(T_limited/Tstar)
 				- 255.17*(T_limited/Tstar)*(T_limited/Tstar)*(T_limited/Tstar);
-
 }
 
 void CWater::SetLiquidEnthalpy(su2double h_v) {
 
+	if (Model != FLUIDPROP) {
 	    //enthalpy
 		h_l = coeff_latent_heat[0] + coeff_latent_heat[1]*(T_l/Tstar)  ;
 		h_l = h_l + coeff_latent_heat[2]*pow((T_l/Tstar), 2) +
 					coeff_latent_heat[3]*pow((T_l/Tstar), 3);
 		h_l = h_v - h_l;
+
+	}  else {
+		double T_limited = T_l/Tref;
+
+		double P_limited, hl_sat, hv_sat;
+		const char* pair = "Tq";
+
+
+		hl_sat = fluidprop_enthalpy(pair, T_limited, 0);
+	    hv_sat   = fluidprop_enthalpy(pair, T_limited, 1);
+
+	    h_l = h_v - (hv_sat - hl_sat)*Href;
+	}
+
 
 }
 
@@ -427,14 +484,6 @@ void CCO2::SetRCritical(su2double P, su2double T, su2double T_l) {
 
 	const char* pair = "PT_1ph";
 
-/*
-	    if (Tsat > T) {
-			dGibbs = (P) * (Tsat - T) / Tsat;
-			Rc = 2*sigma / (rho_l * dGibbs) ;//* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
-	   } else
-		    Rc = 0;
-*/
-
 
 	if (Psat < P) {
 		dGv = fluidprop_enthalpy(pair, Press, Temp) - Temp * fluidprop_entropy(pair, Press, Temp);
@@ -595,28 +644,6 @@ CR22::CR22(CConfig *config) : CLiquidModel(config) {
     Gas_Constant = config->GetGas_Constant();
     Tstar = config->GetTemperature_Critical();
 
-
-
-/*	// Copy fluid data to CFluidProp object
-	ThermoLib = config->GetFluidSubLib();
-	nComp = config->GetnComp();
-	Comp= config->GetCompNames();
-	Conc = config->GetMoleFracs();
-
-	// Prepare composition array's for fluidprop_setfluid
-	char LocalComp[20][LEN_COMPONENTS];
-	double LocalConc[20];
-	for( int i = 0; i < nComp; i++) {
-		strcpy( LocalComp[i], Comp[i].c_str());
-		LocalConc[i] = Conc[i];
-	}
-
-	// Intialize FluidProp (it opens the libraries)
-	if (!fluidprop_isinit()) init_fluidprop();
-
-	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
-	fluidprop_setunits( "SI", " ", " ", " ");
-*/
 }
 
 
@@ -675,7 +702,6 @@ void CR22::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
 		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
 		else      T_l = T;
-
 }
 
 void CR22::SetLiquidDensity() {
@@ -704,11 +730,25 @@ void CR22::SetLiquidEnthalpy(su2double h_v) {
     h_l = h_v - (hv_sat - hl_sat)*Href;
 
 
+    if (h_l == h_v) {
+    cout << h_v << " " << hv_sat << " " << hl_sat << " " << Href << " " << T_limited << " " << T_l << endl;
+    getchar();
+    }
+
+
+/*	double T_limited = T_l/Tref;
+
+	double P_limited = h_v;
+	const char* pair = "Pq";
+
+
+	h_l = fluidprop_enthalpy(pair, P_limited, 0);
+
 //	h_l = -2E-10 * pow(T_limited, 6) + 4E-07 * pow(T_limited, 5) - 0.0003 * pow(T_limited, 4)
 //	      + 0.1101 * pow(T_limited, 3) - 23.296 *pow(T_limited, 2) + 2614.9 * T_limited - 121670;
 //
 //   h_l = h_l * 1e3 + 194147.1632;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
-
+*/
 
 }
 
@@ -800,18 +840,17 @@ void CR12::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
 		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
 		else      T_l = T;
-
 }
 
 void CR12::SetLiquidDensity() {
 
-	    su2double  T_limited = T_l;
+    su2double  T_limited = T_l;
 
-        rho_l = 0.0;
+    rho_l = 0.0;
 
-        for ( i=0; i< 8; i++) {
-             rho_l += 1000.0 * Ei[i] * pow(T_limited-273.15,i);
-        }
+    for ( i=0; i< 8; i++) {
+         rho_l += 1000.0 * Ei[i] * pow(T_limited-273.15,i);
+    }
 
 }
 
@@ -837,24 +876,260 @@ void CR12::SetLiquidEnthalpy(su2double h_v) {
 
 }
 
-void CR12::SetRCritical(su2double P, su2double T, su2double T_l) {
+void CR12::SetRCritical(su2double P, su2double T, su2double h) {
 
     string ErrorMsg;
 	su2double dGv, dGl;
-	double Temp = T;
+	double Temp = T, dGv1, dGv2, dGv3, dGv4;
+	double ent  = h;
 	double Press = P;
 	double Press_sat = Psat;
 
 
 	const char* pair = "PT_1ph";
 
+	dGv1 = fluidprop_enthalpy(pair, Press, Temp);
+	dGv2 = fluidprop_entropy(pair, Press, Temp);
+	dGv3 = fluidprop_enthalpy(pair, Press_sat, Temp);
+	dGv4 = fluidprop_entropy(pair, Press_sat, Temp);
+
 	if (Psat < P) {
-		dGv = fluidprop_enthalpy(pair, Press, Temp) - Temp * fluidprop_entropy(pair, Press, Temp);
-		dGv = dGv - fluidprop_enthalpy(pair, Press_sat, Temp) + Temp * fluidprop_entropy(pair, Press_sat, Temp);
+		dGv = dGv1 - Temp * dGv2;
+		dGv = dGv - dGv3 + Temp * dGv4;
 		dGv = dGv - 1.0/rho_l * (P - Psat);
 		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
 
 	} else 	Rc = 0.0;
 
 }
+
+
+
+CToluene:: CToluene(CConfig *config) : CLiquidModel(config) {
+
+    Gas_Constant = config->GetGas_Constant();
+    Tstar = config->GetTemperature_Critical();
+
+}
+
+
+
+CToluene::~CToluene(void) {
+
+}
+
+
+void CToluene::SetTsat(su2double P) {
+
+
+	double P_limited;
+	const char* pair = "Pq";
+
+	P_limited = P;
+
+	Tsat = fluidprop_temperature(pair, P_limited, 0);
+
+}
+
+void CToluene::SetPsat(su2double T) {
+
+	double  T_limited = T;
+
+	const char* pair = "Tq";
+
+	Psat = fluidprop_pressure(pair, T_limited, 0);
+
+}
+
+void CToluene::SetSurfaceTension(su2double T, su2double Rdroplet) {
+
+
+    su2double  T_limited = min(T, Tstar);
+
+    sigma = 30.11 + (T - 277.85)*(-0.114776);
+    sigma = sigma * 1e-3;
+
+}
+
+void CToluene::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
+
+		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		else      T_l = T;
+
+}
+
+void CToluene::SetLiquidDensity() {
+
+
+	double  T_limited = T_l;
+
+	const char* pair = "Tq";
+
+	rho_l = fluidprop_density(pair, T_limited, 0);
+
+}
+
+void CToluene::SetLiquidEnthalpy(su2double h_v) {
+
+	double T_limited = T_l;
+
+	double P_limited, h;
+	const char* pair = "Tq";
+
+
+	h_l = fluidprop_enthalpy(pair, T_limited, 0);
+    h   = fluidprop_enthalpy(pair, T_limited, 1);
+
+    h_l = h_v - (h-h_l);
+
+
+//	h_l = -1E-06 * pow(T_limited, 4) + 0.0009 * pow(T_limited, 3) - 0.3005 * pow(T_limited, 2)
+//	+ 47.331 * T_limited - 2947.7;
+
+//    h_l = h_l * 1e3 + 151401.6891;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+
+}
+
+void CToluene::SetRCritical(su2double P, su2double T, su2double h) {
+
+    string ErrorMsg;
+	su2double dGv, dGl;
+	double Temp = T, dGv1, dGv2, dGv3, dGv4;
+	double ent  = h;
+	double Press = P;
+	double Press_sat = Psat;
+
+
+	const char* pair = "PT_1ph";
+
+	dGv1 = fluidprop_enthalpy(pair, Press, Temp);
+	dGv2 = fluidprop_entropy(pair, Press, Temp);
+	dGv3 = fluidprop_enthalpy(pair, Press_sat, Temp);
+	dGv4 = fluidprop_entropy(pair, Press_sat, Temp);
+
+	if (Psat < P) {
+		dGv = dGv1 - Temp * dGv2;
+		dGv = dGv - dGv3 + Temp * dGv4;
+		dGv = dGv - 1.0/rho_l * (P - Psat);
+		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+
+	} else 	Rc = 0.0;
+
+}
+
+
+CAmmonia:: CAmmonia(CConfig *config) : CLiquidModel(config) {
+
+    Gas_Constant = config->GetGas_Constant();
+    Tstar = config->GetTemperature_Critical();
+
+}
+
+
+
+CAmmonia::~CAmmonia(void) {
+
+}
+
+
+void CAmmonia::SetTsat(su2double P) {
+
+
+	double P_limited;
+	const char* pair = "Pq";
+
+	P_limited = P;
+
+	Tsat = fluidprop_temperature(pair, P_limited, 0);
+
+}
+
+void CAmmonia::SetPsat(su2double T) {
+
+	double  T_limited = T;
+
+	const char* pair = "Tq";
+
+	Psat = fluidprop_pressure(pair, T_limited, 0);
+
+}
+
+void CAmmonia::SetSurfaceTension(su2double T, su2double Rdroplet) {
+
+
+    su2double  T_limited = min(T, Tstar);
+
+    sigma = 30.11 + (T - 277.85)*(-0.114776);
+    sigma = sigma * 1e-3;
+
+}
+
+void CAmmonia::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
+
+		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		else      T_l = T;
+
+}
+
+void CAmmonia::SetLiquidDensity() {
+
+
+	double  T_limited = T_l;
+
+	const char* pair = "Tq";
+
+	rho_l = fluidprop_density(pair, T_limited, 0);
+
+}
+
+void CAmmonia::SetLiquidEnthalpy(su2double h_v) {
+
+	double T_limited = T_l;
+
+	double P_limited, h;
+	const char* pair = "Tq";
+
+
+	h_l = fluidprop_enthalpy(pair, T_limited, 0);
+    h   = fluidprop_enthalpy(pair, T_limited, 1);
+
+    h_l = h_v - (h-h_l);
+
+
+//	h_l = -1E-06 * pow(T_limited, 4) + 0.0009 * pow(T_limited, 3) - 0.3005 * pow(T_limited, 2)
+//	+ 47.331 * T_limited - 2947.7;
+
+//    h_l = h_l * 1e3 + 151401.6891;   // H ref evaluate at 1bar , 300 K  from Fluidprop, stanmix
+
+
+}
+
+void CAmmonia::SetRCritical(su2double P, su2double T, su2double h) {
+
+    string ErrorMsg;
+	su2double dGv, dGl;
+	double Temp = T, dGv1, dGv2, dGv3, dGv4;
+	double ent  = h;
+	double Press = P;
+	double Press_sat = Psat;
+
+
+	const char* pair = "PT_1ph";
+
+	dGv1 = fluidprop_enthalpy(pair, Press, Temp);
+	dGv2 = fluidprop_entropy(pair, Press, Temp);
+	dGv3 = fluidprop_enthalpy(pair, Press_sat, Temp);
+	dGv4 = fluidprop_entropy(pair, Press_sat, Temp);
+
+	if (Psat < P) {
+		dGv = dGv1 - Temp * dGv2;
+		dGv = dGv - dGv3 + Temp * dGv4;
+		dGv = dGv - 1.0/rho_l * (P - Psat);
+		Rc = 2.0*sigma / (rho_l * dGv);//* 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;
+
+	} else 	Rc = 0.0;
+
+}
+
 
