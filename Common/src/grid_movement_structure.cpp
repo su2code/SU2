@@ -10202,26 +10202,7 @@ void CElasticityMovement::Boundary_Dependencies(CGeometry **geometry, CConfig *c
     }
   }
 
-//  /*--- Initialize vector and sparse matrix ---*/
-//  LinSysSol.SetValZero();
-//  LinSysRes.SetValZero();
-//  StiffMatrix.SetValZero();
-//
-//  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-//  SetBoundaryDisplacements(geometry[MESH_0], config);
-//
-//  /*--- Update the grid coordinates and cell volumes using the solution
-//   of the linear system (usol contains the x, y, z displacements). ---*/
-//  UpdateGridCoord(geometry[MESH_0], config);
-
   UpdateDualGrid(geometry[MESH_0], config);
-
-  /*--- Update Dual Grid and Multigrid to recompute normals ---*/
-//  UpdateDualGrid(geometry[MESH_0], config);
-//  UpdateMultiGrid(geometry, config);
-//  geometry[MESH_0]->SetCoord_CG();
-//  geometry[MESH_0]->SetControlVolume(config, UPDATE);
-//  geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
 
 }
 
