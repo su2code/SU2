@@ -176,8 +176,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       cout << "There is no flow restart file!! " <<  filename  << "."<< endl;
       exit(EXIT_FAILURE);
     }
-    nPanel = 0;
-    Boom_AdjointFile >> nPanel;
+    getline(Boom_AdjointFile, text_line);
+    istringstream point_line(text_line);
+    point_line >> nPanel;
     Boom_AdjointFile.close();
 
   }
@@ -948,7 +949,9 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
 //  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
 
   /*--- The first line is nPanel ---*/
-  Boom_AdjointFile >> nPanel;
+  getline(Boom_AdjointFile, text_line);
+  istringstream point_line(text_line);
+  point_line >> nPanel;
 
   while (getline (Boom_AdjointFile, text_line)) {
     istringstream point_line(text_line);
