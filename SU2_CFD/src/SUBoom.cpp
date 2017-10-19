@@ -190,6 +190,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       signal.original_len[iPhi] = nPanel[iPhi];
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
         if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-7){
+          signal.original_p[iPhi][iPanel-1] = (signal.original_p[iPhi][iPanel-1]+signal.original_p[iPhi][iPanel])/2.0; // TESTING
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
             signal.original_p[iPhi][jPanel-1] = signal.original_p[iPhi][jPanel];
@@ -2401,18 +2402,18 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
 	      fvec[j] = signal.l[j-2*signal.M];
       }
     }
-    data.t = new su2double[9];
-    data.C1 = new su2double[9];
-    data.C2 = new su2double[9];
-    data.dC1 = new su2double[9];
-    data.dC2 = new su2double[9];
+    data.t = new su2double[5];
+    data.C1 = new su2double[5];
+    data.C2 = new su2double[5];
+    data.dC1 = new su2double[5];
+    data.dC2 = new su2double[5];
 
     data.M = signal.M;
     data.scale_C1 = scale_C1;
     data.scale_C2 = scale_C2;
 
     //fvec = signal.fvec;
-    for(unsigned int j = n_prof-1; j >= 0; j--){
+    for(unsigned int j = n_prof-2; j >= 0; j--){
         if(t_of_z[0][j] >= ray_t0){
             j0 = j+1;
             break;
@@ -2420,15 +2421,15 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     }
     for(unsigned int j = j0; j > 0; j--){
       /*---Integrate---*/
-      if(j >= n_prof-5) j0_dat = n_prof-5;
-      else if(j < 4) j0_dat = 4;
+      if(j >= n_prof-3) j0_dat = n_prof-3;
+      else if(j < 2) j0_dat = 2;
       else j0_dat = j;
-      for(unsigned short jj = 0; jj < 9; jj++){
-          data.t[jj] = t_of_z[0][j0_dat-4+jj];
-          data.C1[jj] = ray_C1[j0_dat-4+jj];
-          data.C2[jj] = ray_C2[j0_dat-4+jj];
-          data.dC1[jj] = ray_dC1[j0_dat-4+jj];
-          data.dC2[jj] = ray_dC2[j0_dat-4+jj];
+      for(unsigned short jj = 0; jj < 5; jj++){
+          data.t[jj] = t_of_z[0][j0_dat-2+jj];
+          data.C1[jj] = ray_C1[j0_dat-2+jj];
+          data.C2[jj] = ray_C2[j0_dat-2+jj];
+          data.dC1[jj] = ray_dC1[j0_dat-2+jj];
+          data.dC2[jj] = ray_dC2[j0_dat-2+jj];
       }
       tf = t_of_z[0][j-1];
       dt = (tf - t0);
