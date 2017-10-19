@@ -433,8 +433,10 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       for (iVar = 0; iVar < nVar; iVar++) {
           residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
 
-          AddRes_RMS(iVar,residual*residual);
-          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+          if(config->GetKind_ObjFunc()!=BOOM || LocalPointIndex[iPoint] < 0){ // Don't include source term in RMS/Max res
+            AddRes_RMS(iVar,residual*residual);
+            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+          }
       }
   }
 
