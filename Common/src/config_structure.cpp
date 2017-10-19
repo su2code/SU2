@@ -6139,6 +6139,14 @@ CConfig::~CConfig(void) {
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
   
+  if (ElasticityMod        != NULL) delete [] ElasticityMod;
+  if (PoissonRatio         != NULL) delete [] PoissonRatio;
+  if (MaterialDensity      != NULL) delete [] MaterialDensity;
+  if (Electric_Constant    != NULL) delete [] Electric_Constant;
+  if (Electric_Field_Mod   != NULL) delete [] Electric_Field_Mod;
+  if (RefNode_Displacement != NULL) delete [] RefNode_Displacement;
+  if (Electric_Field_Dir   != NULL) delete [] Electric_Field_Dir;
+
   /*--- Delete some arrays needed just for initializing options. ---*/
   
   if (default_vel_inf       != NULL) delete [] default_vel_inf;
