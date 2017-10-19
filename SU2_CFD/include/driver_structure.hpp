@@ -63,6 +63,7 @@ protected:
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
   ofstream *ConvHist_file;                       /*!< \brief Convergence history file.*/
+  ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */
@@ -835,6 +836,19 @@ public:
  * \version 5.0.0 "Raven"
  */
 class CFSIDriver : public CDriver {
+
+  su2double *init_res_flow,     /*!< \brief Stores the initial residual for the flow. */
+            *init_res_struct,   /*!< \brief Stores the initial residual for the structure. */
+            *residual_flow,     /*!< \brief Stores the current residual for the flow. */
+            *residual_struct,   /*!< \brief Stores the current residual for the structure. */
+            *residual_flow_rel,
+            *residual_struct_rel;
+
+  su2double flow_criteria,
+            flow_criteria_rel,
+            structure_criteria,
+            structure_criteria_rel;
+
 public:
 
   /*!
@@ -901,6 +915,14 @@ public:
    * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
    */
   void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+
+  /*!
+   * \brief Check the convergence of BGS subiteration process
+   * \param[in] ZONE_FLOW - zone of the fluid solver.
+   * \param[in] ZONE_STRUCT - zone of the structural solver.
+   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
+   */
+  bool BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
 
   /*!
    * \brief Enforce the coupling condition at the end of the time step

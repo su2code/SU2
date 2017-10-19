@@ -155,6 +155,9 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
     }
   }
 
+  /*--- Store the force coefficient ---*/
+  struct_solution->SetForceCoeff(Physical_Constants[1]);
+
 }
 
 void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,

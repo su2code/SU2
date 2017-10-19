@@ -104,6 +104,18 @@ inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_con
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::SetForceCoeff(su2double val_forcecoeff_history) { }
+
+inline void CSolver::SetFSI_Residual(su2double val_FSI_residual) { }
+
+inline void CSolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { }
+
+inline su2double CSolver::GetRelaxCoeff(void) { return 0.0; }
+
+inline su2double CSolver::GetForceCoeff(void) { return 0.0; }
+
+inline su2double CSolver::GetFSI_Residual(void) { return 0.0; }
+
 inline void CSolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) { }
 
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
@@ -1979,6 +1991,18 @@ inline su2double CFEM_ElasticitySolver::GetTotal_OFRefGeom(void){ return Total_O
 inline su2double CFEM_ElasticitySolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
 
 inline bool CFEM_ElasticitySolver::IsElementBased(void){ return element_based; }
+
+inline void CFEM_ElasticitySolver::SetForceCoeff(su2double val_forcecoeff_history) { ForceCoeff = val_forcecoeff_history; }
+
+inline void CFEM_ElasticitySolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { RelaxCoeff = val_relaxecoeff_history; }
+
+inline void CFEM_ElasticitySolver::SetFSI_Residual(su2double val_FSI_residual) { FSI_Residual = val_FSI_residual; }
+
+inline su2double CFEM_ElasticitySolver::GetForceCoeff(void) { return ForceCoeff; }
+
+inline su2double CFEM_ElasticitySolver::GetRelaxCoeff(void) { return RelaxCoeff; }
+
+inline su2double CFEM_ElasticitySolver::GetFSI_Residual(void) { return FSI_Residual; }
 
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 

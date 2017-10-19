@@ -814,6 +814,13 @@ inline void CEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
 
 inline su2double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
+inline su2double CEulerVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
+
+inline void CEulerVariable::Set_BGSSolution_k(void) { 
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_BGS_k[iVar] = Solution[iVar];
+}
+
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 
 inline su2double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5]; }
@@ -961,6 +968,14 @@ inline void CIncEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
     WindGustDer[iDim] = val_WindGustDer[iDim];}
 
 inline su2double* CIncEulerVariable::GetWindGustDer() { return WindGustDer;}
+
+inline su2double CIncEulerVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
+
+inline void CIncEulerVariable::Set_BGSSolution_k(void) { 
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_BGS_k[iVar] = Solution[iVar];
+}
+
 
 inline su2double CIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+4]; }
 
@@ -1194,6 +1209,13 @@ inline void CFEM_ElasVariable::RegisterSolution_Accel(bool input) {
 inline void CFEM_ElasVariable::RegisterSolution_Accel_time_n() {
 	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
 	    AD::RegisterInput(Solution_Accel_time_n[iVar]);
+}
+
+inline su2double CFEM_ElasVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
+
+inline void CFEM_ElasVariable::Set_BGSSolution_k(void) { 
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_BGS_k[iVar] = Solution[iVar];
 }
 
 inline void CFEM_ElasVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch) { Prestretch[iVar] = val_prestretch;}

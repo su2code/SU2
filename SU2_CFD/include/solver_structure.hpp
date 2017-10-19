@@ -3106,6 +3106,44 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_forcecoeff_history - Value of the force coefficient.
+   */
+  virtual void SetForceCoeff(su2double val_forcecoeff_history);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_relaxcoeff_history - Value of the force coefficient.
+   */
+  virtual void SetRelaxCoeff(su2double val_relaxcoeff_history);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_FSI_residual - Value of the residual.
+   */
+  virtual void SetFSI_Residual(su2double val_FSI_residual);
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_forcecoeff_history - Value of the force coefficient.
+   */
+  virtual su2double GetForceCoeff();
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_relaxcoeff_history - Value of the relax coefficient.
+   */
+  virtual su2double GetRelaxCoeff();
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_FSI_residual - Value of the residual.
+   */
+  virtual su2double GetFSI_Residual();
+
+  /*!
+   * \brief A virtual member.
    * \param[in] fea_geometry - Geometrical definition of the problem.
    * \param[in] flow_solution - Container vector with all the solutions.
    * \param[in] fea_config - Definition of the particular problem.
@@ -6061,6 +6099,18 @@ public:
                                 CGeometry **fea_geometry, CSolver ***fea_solution);
   
   /*!
+   * \brief Set the value of the max residual and RMS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -7659,6 +7709,18 @@ public:
   void SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                                 CGeometry **fea_geometry, CSolver ***fea_solution);
   
+  /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11203,6 +11265,10 @@ private:
 
   su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
   
+  su2double ForceCoeff;             /*!< \brief Load transfer coefficient . */
+  su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
+  su2double FSI_Residual;           /*!< \brief FSI residual. */
+
 public:
   
   CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
@@ -11629,6 +11695,45 @@ public:
   void SetTotal_OFRefNode(su2double val_ofrefnode);
 
   /*!
+   * \brief Set the value of the force coefficient history for the history file.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_forcecoeff_history - Value of the force coefficient.
+   */
+  void SetForceCoeff(su2double val_forcecoeff_history);
+
+  /*!
+   * \brief Set the value of the FSI residual for the history file.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_FSI_residual - Value of the residual.
+   */
+  void SetFSI_Residual(su2double val_FSI_residual);
+
+  /*!
+   * \brief Set the value of the FSI residual for the history file.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_FSI_residual - Value of the residual.
+   */
+  void SetRelaxCoeff(su2double val_relaxcoeff_history);
+
+  /*!
+   * \brief Get the value of the force coefficient history for the history file.
+   * \param[out] val_forcecoeff_history - Value of the force coefficient.
+   */
+  su2double GetForceCoeff(void);
+
+  /*!
+   * \brief Get the value of the relaxation coefficient history for the history file.
+   * \param[out] val_relaxcoeff_history - Value of the relaxation coefficient.
+   */
+  su2double GetRelaxCoeff(void);
+
+  /*!
+   * \brief Get the value of the FSI residual for the history file.
+   * \param[out] val_FSI_residual - Value of the residual.
+   */
+  su2double GetFSI_Residual(void);
+
+  /*!
    * \brief Set the the tractions in the in the FEA solver (matching mesh).
    * \param[in] fea_geometry - Geometrical definition of the problem.
    * \param[in] flow_solution - Container vector with all the solutions.
@@ -11777,6 +11882,18 @@ public:
    */
   su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
   
+  /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
