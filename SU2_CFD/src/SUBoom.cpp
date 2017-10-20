@@ -190,7 +190,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       signal.original_len[iPhi] = nPanel[iPhi];
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
         if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-7){
-          signal.original_p[iPhi][iPanel-1] = (signal.original_p[iPhi][iPanel-1]+signal.original_p[iPhi][iPanel])/2.0; // TESTING
+          signal.original_p[iPhi][iPanel] = (signal.original_p[iPhi][iPanel-1]+signal.original_p[iPhi][iPanel])/2.0; // TESTING
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
             signal.original_p[iPhi][jPanel-1] = signal.original_p[iPhi][jPanel];
