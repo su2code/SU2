@@ -52,8 +52,12 @@ class TestCase:
         # Indicate if the test is unsteady
         self.unsteady = False
 
+        # Indicate if the test is a polar run
+        self.polar = False
+
         # The test condition. These must be set after initialization
         self.test_iter = 1
+        self.ntest_vals = 4
         self.test_vals = []  
 
         # These can be optionally varied 
@@ -79,7 +83,14 @@ class TestCase:
 
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
-        command = "%s %s > %s 2>&1" % (self.su2_exec, self.cfg_file, logfilename)
+
+        # Check for polar calls
+        if self.polar:
+             command = "%s > %s" % (self.su2_exec, logfilename)
+        else:
+            command = "%s %s > %s 2>&1" % (self.su2_exec, 
+                                           self.cfg_file, 
+                                           logfilename)
 
         # Run SU2
         workdir = os.getcwd()
