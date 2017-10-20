@@ -26,7 +26,7 @@
     https://pypi.python.org/pypi/bunch
 """
 
-from ..util.ordered_dict import OrderedDict
+from .ordered_dict import OrderedDict
 
 ## Compatability Issues...
 #try:
