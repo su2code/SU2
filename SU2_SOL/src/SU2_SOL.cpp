@@ -594,6 +594,10 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               }
             }
 
+#ifdef HAVE_MPI
+            SU2_MPI::Bcast(&Objective_Function, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
             /*---Write boom strength metrics to file---*/
             if (rank == MASTER_NODE){
               ofstream sigFile;
