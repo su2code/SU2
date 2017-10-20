@@ -176,9 +176,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       cout << "There is no flow restart file!! " <<  filename  << "."<< endl;
       exit(EXIT_FAILURE);
     }
-    getline(Boom_AdjointFile, text_line);
-    istringstream point_line(text_line);
-    point_line >> nPanel;
+    nPanel = 0;
+    while (getline (Boom_AdjointFile, text_line)){
+      nPanel++;
+    }
     Boom_AdjointFile.close();
 
   }
@@ -906,13 +907,8 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
    char filename [64];
 
    SPRINTF (filename, "Adj_Boom.dat");
-//   cout<<"Accessing Boom Adjoint file: "<< filename << endl;
-//   string filename = strcat (cstr);
-//   Boom_AdjointFile.open(filename.data() , ios::in);
    Boom_AdjointFile.open(filename , ios::in);
    if (Boom_AdjointFile.fail()) {
-//     if (rank == MASTER_NODE)
-//       cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
        cout << "There is no boom adjoint restart file " <<  filename  << "!!"<< endl;
      exit(EXIT_FAILURE);
    }
@@ -946,12 +942,11 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-//  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
 
   /*--- The first line is nPanel ---*/
-  getline(Boom_AdjointFile, text_line);
-  istringstream point_line(text_line);
-  point_line >> nPanel;
+  //getline(Boom_AdjointFile, text_line);
+  //istringstream point_line(text_line);
+  //point_line >> nPanel;
 
   while (getline (Boom_AdjointFile, text_line)) {
     istringstream point_line(text_line);
@@ -982,9 +977,6 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
 
 
   }
-
-
-//  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
 
   /*--- Close the restart file ---*/
 

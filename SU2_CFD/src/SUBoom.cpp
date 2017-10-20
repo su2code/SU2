@@ -2467,7 +2467,7 @@ void SUBoom::WriteSensitivities(){
     if(rank == MASTER_NODE){
       Boom_AdjointFile.precision(15);
       Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
-      Boom_AdjointFile << nPointID_tot << endl;
+      //Boom_AdjointFile << nPointID_tot << endl;
     }
 
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
@@ -2520,16 +2520,20 @@ void SUBoom::WriteSensitivities(){
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
             Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
-            Boom_AdjointFile  << scientific << Global_Index << "\t";
+            /*--- Check dJdU[][iVar==0] and only write if greater than some tolerance ---*/
+            Total_Index = iProcessor*Max_nPointID*nVar + iSig;
+            if(abs(Buffer_Recv_dJdU[Total_Index]) > 1.0E-14){
+              Boom_AdjointFile  << scientific << Global_Index << "\t";
 
-           for (iVar = 0; iVar < nVar; iVar++){
-             /*--- Current index position and global index ---*/
-             Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
+              for (iVar = 0; iVar < nVar; iVar++){
+                /*--- Current index position and global index ---*/
+                Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
 
-             /*--- Write to file---*/
-             Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
-           }
-           Boom_AdjointFile  << endl;
+                /*--- Write to file---*/
+                Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
+              }
+              Boom_AdjointFile  << endl;
+            }
 
         }
       }
