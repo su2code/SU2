@@ -918,15 +918,15 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
    Global2Local index transformation first. ---*/
 
   long *Global2Local = NULL;
-  Global2Local = new long[geometry->GetGlobal_nPoint()];
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
   /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPoint(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
     Global2Local[iPoint] = -1;
   }
 
   /*--- Now fill array with the transform values only for local points ---*/
 
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
 
