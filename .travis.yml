@@ -12,7 +12,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - economon@stanford.edu
+            - thomas.economon@gmail.com
   
 branches:
     only:
