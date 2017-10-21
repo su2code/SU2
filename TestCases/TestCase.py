@@ -431,9 +431,9 @@ class TestCase:
             start_solver = False
             for line in output:
                 if not start_solver: # Don't bother parsing anything before SU2_GEO starts
-                    if line.find('Section 1') > -1:
+                    if line.find('Station 1') > -1:
                         start_solver=True
-                elif line.find('Section 2') > -1: # jump out of loop if we hit the next section
+                elif line.find('Station 2') > -1: # jump out of loop if we hit the next station
                     break
                 else:   # Found the lines; parse the input
 
