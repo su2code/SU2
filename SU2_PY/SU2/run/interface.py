@@ -283,7 +283,7 @@ def run_command( Command ):
                              stdout=sys.stdout      , 
                              stderr=subprocess.PIPE  )
     return_code = proc.wait()
-    message = proc.stderr.read()
+    message = proc.stderr.read().decode()
     
     if return_code < 0:
         message = "SU2 process was terminated by signal '%s'\n%s" % (-return_code,message)
