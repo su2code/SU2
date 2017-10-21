@@ -2190,8 +2190,8 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data){
   }
 
   /*---Get coefficients for derivatives---*/
-  C1 = EvaluateSpline(t,9,data.t,data.C1,data.dC1);
-  C2 = EvaluateSpline(t,9,data.t,data.C2,data.dC2);
+  C1 = EvaluateSpline(t,5,data.t,data.C1,data.dC1);
+  C2 = EvaluateSpline(t,5,data.t,data.C2,data.dC2);
 
   for(int i = 0; i < 3*M; i++){
     if(i < M){
