@@ -235,11 +235,14 @@ class TestCase:
             # Compare files
             fromfile = self.reference_file
             tofile = self.test_file 
-
-            fromdate = time.ctime(os.stat(fromfile).st_mtime)
-            todate = time.ctime(os.stat(tofile).st_mtime)
-            fromlines = open(fromfile, 'U').readlines()
-            tolines = open(tofile, 'U').readlines()
+            try:
+                fromdate = time.ctime(os.stat(fromfile).st_mtime)
+                todate = time.ctime(os.stat(tofile).st_mtime)
+                fromlines = open(fromfile, 'U').readlines()
+                tolines = open(tofile, 'U').readlines()
+            except FileNotFoundError as e:
+                c = os.listdir(os.dirname(os.path.abspath(tofile)))
+                raise FileNotFoundError(str(e) + "\nContents: {}".format(c))
 
             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
