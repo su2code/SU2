@@ -4431,9 +4431,6 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case SURFACE_MASSFLOW:
         Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
         break;
-      case SURFACE_MACH:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-        break;
       case CUSTOM_OBJFUNC:
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
         break;
