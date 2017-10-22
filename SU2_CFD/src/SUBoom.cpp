@@ -1826,7 +1826,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
     y_of_z[2][j-1] = -f[1];
     t_of_z[2][j-1] = -f[2];
 
-    r0[0] = -x_of_z[2]j-1];
+    r0[0] = -x_of_z[2][j-1];
     r0[1] = -y_of_z[2][j-1];
     r0[2] = -t_of_z[2][j-1];
 
