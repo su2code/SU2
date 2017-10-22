@@ -4247,8 +4247,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
@@ -4289,7 +4289,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
  
   /*--- Upwind second order reconstruction ---*/
   
-  if ((second_order && !center) && (iMesh == MESH_0) && !Output) {
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
     
     /*--- Gradient computation ---*/
     
@@ -4299,7 +4299,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
       SetPrimitive_Gradient_LS(geometry, config);
     }
-    
     
     /*--- Limiter computation ---*/
     
@@ -4320,7 +4319,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
   
@@ -4554,7 +4553,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -4575,7 +4574,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Set undivided laplacian an pressure based sensor ---*/
     
-    if (second_order) {
+    if (jst_scheme) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -4619,10 +4618,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
   
-  
+  unsigned long ExtIter = config->GetExtIter();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
-  bool limiter          = (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER);
+  bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  bool disc_adjoint     = config->GetDiscrete_Adjoint();
+  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
@@ -4659,7 +4659,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- High order reconstruction using MUSCL strategy ---*/
     
-    if (second_order) {
+    if (muscl) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -6512,7 +6512,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
   
   dave = config->GetRefElemLength();
-  LimK = config->GetLimiterCoeff();
+  LimK = config->GetVenkat_LimiterCoeff();
 
   if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
     
@@ -15672,9 +15672,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_adjflow      = (cont_adjoint && (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
@@ -16528,7 +16528,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iDim, jDim, iVar, jVar;
+  unsigned short iDim, jDim, iVar, jVar, Wall_Function;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
   
   su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
@@ -16546,9 +16546,21 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-  /*--- Get the specified wall heat flux from config ---*/
+  /*--- Get the specified wall heat flux from config as well as the
+        wall function treatment.---*/
   
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if(Wall_Function != NO_WALL_FUNCTION) {
+
+    cout << endl << "Wall function treament not implemented yet" << endl << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
@@ -16764,7 +16776,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iVar, jVar, iDim, jDim;
+  unsigned short iVar, jVar, iDim, jDim, Wall_Function;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
   
   su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
@@ -16787,9 +16799,21 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-  /*--- Retrieve the specified wall temperature ---*/
+  /*--- Retrieve the specified wall temperature from config
+        as well as the wall function treatment.---*/
   
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if(Wall_Function != NO_WALL_FUNCTION) {
+
+    cout << endl << "Wall function treament not implemented yet" << endl << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
   
   /*--- Loop over boundary points ---*/
   
