@@ -984,11 +984,11 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(iNode = 0; iNode < nNode; iNode++){
       //////inDomain[iNode] = true;
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      //////if(!geometry->node[jNode]->GetDomain()){
+      if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
         //////////inDomain[iNode] = false;
-        //return false;
-      //////}
+        return false;
+      }
 
       Coord_elem[iNode] = new su2double[nDim];
       //////if(inDomain[iNode]){
