@@ -190,7 +190,6 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       signal.original_len[iPhi] = nPanel[iPhi];
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
         if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-7){
-          signal.original_p[iPhi][iPanel] = (signal.original_p[iPhi][iPanel-1]+signal.original_p[iPhi][iPanel])/2.0; // TESTING
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
             signal.original_p[iPhi][jPanel-1] = signal.original_p[iPhi][jPanel];
@@ -984,11 +983,11 @@ bool SUBoom::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsign
     for(iNode = 0; iNode < nNode; iNode++){
       //////inDomain[iNode] = true;
       jNode = geometry->elem[jElem]->GetNode(iNode);
-      if(!geometry->node[jNode]->GetDomain()){
+      //////if(!geometry->node[jNode]->GetDomain()){
       //if(jNode >= geometry->GetnPointDomain()){
         //////////inDomain[iNode] = false;
-        return false;
-      }
+        //return false;
+      //////}
 
       Coord_elem[iNode] = new su2double[nDim];
       //////if(inDomain[iNode]){
