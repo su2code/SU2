@@ -1758,20 +1758,22 @@ void SUBoom::RayTracer(unsigned short iPhi){
   data.c0 = ray_c0[iPhi][0];
   data.nu = ray_nu[iPhi][0];
   r0[0] = r0[1] = r0[2] = 0.;
-
-  for(int j = n_prof-1; j > -1; j--){
+  x_of_z[0][nprof-1] = r0[0];
+  y_of_z[0][nprof-1] = r0[1];
+  t_of_z[0][nprof-1] = r0[2];
+  ray_theta[0][nprof-1] = acos(a_of_z[nprof-1]/data.c0);
+  for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j] = x_of_z[0][j] = -f[0];
-    y[j] = y_of_z[0][j] = -f[1];
-    t[j] = t_of_z[0][j] = -f[2];
+    x[j-1] = x_of_z[0][j-1] = -f[0];
+    y[j-1] = y_of_z[0][j-1] = -f[1];
+    t[j-1] = t_of_z[0][j-1] = -f[2];
 
-    r0[0] = -x[j];
-    r0[1] = -y[j];
-    r0[2] = -t[j];
+    r0[0] = -x[j-1];
+    r0[1] = -y[j-1];
+    r0[2] = -t[j-1];
 
     /*---Derived data---*/
-    //GetAtmosphericData(a, rho, p, z[j]);
-    ray_theta[0][j] = acos(a_of_z[j]/data.c0);
+    ray_theta[0][j-1] = acos(a_of_z[j-1]/data.c0);
   }
 
   //kx = SplineGetDerivs(t, x, n_prof);
@@ -1787,19 +1789,21 @@ void SUBoom::RayTracer(unsigned short iPhi){
   r0[0] = flt_heading[0]*tol_dr;
   r0[1] = flt_heading[1]*tol_dr;
   r0[2] = flt_heading[2]*tol_dr;
-  for(int j = n_prof-1; j > -1; j--){
+  x_of_z[1][nprof-1] = r0[0];
+  y_of_z[1][nprof-1] = r0[1];
+  ray_theta[1][nprof-1] = acos(a_of_z[nprof-1]/data.c0);
+  for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j] = x_of_z[1][j] = -f[0];
-    y[j] = y_of_z[1][j] = -f[1];
-    t[j] = -f[2];
+    x[j-1] = x_of_z[1][j-1] = -f[0];
+    y[j-1] = y_of_z[1][j-1] = -f[1];
+    t[j-1] = -f[2];
 
-    r0[0] = -x[j];
-    r0[1] = -y[j];
-    r0[2] = -t[j];
+    r0[0] = -x[j-1];
+    r0[1] = -y[j-1];
+    r0[2] = -t[j-1];
 
     /*---Derived data---*/
-    //GetAtmosphericData(a, rho, p, z[j]);
-    ray_theta[1][j] = acos(a_of_z[j]/data.c0);
+    ray_theta[1][j-1] = acos(a_of_z[j-1]/data.c0);
   }
 
   /*kx = SplineGetDerivs(t, x, n_prof);
@@ -1813,20 +1817,22 @@ void SUBoom::RayTracer(unsigned short iPhi){
   data.c0 = ray_c0[iPhi][1];
   data.nu = ray_nu[iPhi][1];
   r0[0] = r0[1] = r0[2] = 0.;
-
-  for(int j = n_prof-1; j > -1; j--){
+  x_of_z[2][nprof-1] = r0[0];
+  y_of_z[2][nprof-1] = r0[1];
+  t_of_z[2][nprof-1] = r0[2];
+  ray_theta[2][nprof-1] = acos(a_of_z[nprof-1]/data.c0);
+  for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j] = x_of_z[2][j] = -f[0];
-    y[j] = y_of_z[2][j] = -f[1];
-    t[j] = t_of_z[2][j] = -f[2];
+    x[j-1] = x_of_z[2][j-1] = -f[0];
+    y[j-1] = y_of_z[2][j-1] = -f[1];
+    t[j-1] = t_of_z[2][j-1] = -f[2];
 
-    r0[0] = -x[j];
-    r0[1] = -y[j];
-    r0[2] = -t[j];
+    r0[0] = -x[j-1];
+    r0[1] = -y[j-1];
+    r0[2] = -t[j-1];
 
     /*---Derived data---*/
-    //GetAtmosphericData(a, rho, p, z[j]);
-    ray_theta[2][j] = acos(a_of_z[j]/data.c0);
+    ray_theta[2][j-1] = acos(a_of_z[j-1]/data.c0);
   }
 
   /*kx = SplineGetDerivs(t, x, n_prof);
@@ -1842,19 +1848,21 @@ void SUBoom::RayTracer(unsigned short iPhi){
   r0[0] = flt_heading[0]*tol_dr;
   r0[1] = flt_heading[1]*tol_dr;
   r0[2] = flt_heading[2]*tol_dr;
-  for(int j = n_prof-1; j > -1; j--){
+  x_of_z[3][nprof-1] = r0[0];
+  y_of_z[3][nprof-1] = r0[1];
+  ray_theta[3][nprof-1] = acos(a_of_z[nprof-1]/data.c0);
+  for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j] = x_of_z[3][j] = -f[0];
-    y[j] = y_of_z[3][j] = -f[1];
-    t[j] = -f[2];
+    x[j-1] = x_of_z[3][j-1] = -f[0];
+    y[j-1] = y_of_z[3][j-1] = -f[1];
+    t[j-1] = -f[2];
 
-    r0[0] = -x[j];
-    r0[1] = -y[j];
-    r0[2] = -t[j];
+    r0[0] = -x[j-1];
+    r0[1] = -y[j-1];
+    r0[2] = -t[j-1];
 
     /*---Derived data---*/
-    //GetAtmosphericData(a, rho, p, z[j]);
-    ray_theta[3][j] = acos(a_of_z[j]/data.c0);
+    ray_theta[3][j-1] = acos(a_of_z[j-1]/data.c0);
   }
 
   /*kx = SplineGetDerivs(t, x, n_prof);
