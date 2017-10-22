@@ -1813,8 +1813,8 @@ void SUBoom::RayTracer(unsigned short iPhi){
   /*---Ray tube corners: {+dphi, 0}---*/
   data.c0 = ray_c0[iPhi][1];
   data.nu = ray_nu[iPhi][1];
-  r0[0] = cos(tol_dphi)*tol_dr;
-  r0[1] = sin(tol_dphi)*tol_dr;
+  r0[0] = 0.;
+  r0[1] = tol_dphi*tol_dr;
   r0[2] = 0.;
   x_of_z[2][n_prof-1] = r0[0];
   y_of_z[2][n_prof-1] = r0[1];
@@ -1844,8 +1844,8 @@ void SUBoom::RayTracer(unsigned short iPhi){
   }*/
 
   /*---Ray tube corners: {+dphi, +dheading}---*/
-  r0[0] = flt_heading[0]*tol_dr + cos(tol_dphi)*tol_dr;
-  r0[1] = flt_heading[1]*tol_dr + sin(tol_dphi)*tol_dr;
+  r0[0] = flt_heading[0]*tol_dr;
+  r0[1] = flt_heading[1]*tol_dr + tol_dphi*tol_dr;
   r0[2] = flt_heading[2]*tol_dr;
   x_of_z[3][n_prof-1] = r0[0];
   y_of_z[3][n_prof-1] = r0[1];
