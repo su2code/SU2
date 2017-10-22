@@ -1730,9 +1730,6 @@ void SUBoom::RayTracer(unsigned short iPhi){
 
   /*---Create arrays---*/
   f = new su2double[3];
-  x = new su2double[n_prof];
-  y = new su2double[n_prof];
-  t = new su2double[n_prof];
   //kx = new su2double[n_prof];
   //ky = new su2double[n_prof];
   //kz = new su2double[n_prof];
@@ -1764,13 +1761,13 @@ void SUBoom::RayTracer(unsigned short iPhi){
   ray_theta[0][n_prof-1] = acos(a_of_z[n_prof-1]/data.c0);
   for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j-1] = x_of_z[0][j-1] = -f[0];
-    y[j-1] = y_of_z[0][j-1] = -f[1];
-    t[j-1] = t_of_z[0][j-1] = -f[2];
+    x_of_z[0][j-1] = -f[0];
+    y_of_z[0][j-1] = -f[1];
+    t_of_z[0][j-1] = -f[2];
 
-    r0[0] = -x[j-1];
-    r0[1] = -y[j-1];
-    r0[2] = -t[j-1];
+    r0[0] = -x_of_z[0][j-1];
+    r0[1] = -y_of_z[0][j-1];
+    r0[2] = -t_of_z[0][j-1];
 
     /*---Derived data---*/
     ray_theta[0][j-1] = acos(a_of_z[j-1]/data.c0);
@@ -1794,13 +1791,13 @@ void SUBoom::RayTracer(unsigned short iPhi){
   ray_theta[1][n_prof-1] = acos(a_of_z[n_prof-1]/data.c0);
   for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j-1] = x_of_z[1][j-1] = -f[0];
-    y[j-1] = y_of_z[1][j-1] = -f[1];
-    t[j-1] = -f[2];
+    x_of_z[1][j-1] = -f[0];
+    y_of_z[1][j-1] = -f[1];
+    t_of_z[1][j-1] = -f[2];
 
-    r0[0] = -x[j-1];
-    r0[1] = -y[j-1];
-    r0[2] = -t[j-1];
+    r0[0] = -x_of_z[1][j-1];
+    r0[1] = -y_of_z[1][j-1];
+    r0[2] = -t_of_z[1][j-1];
 
     /*---Derived data---*/
     ray_theta[1][j-1] = acos(a_of_z[j-1]/data.c0);
@@ -1816,20 +1813,22 @@ void SUBoom::RayTracer(unsigned short iPhi){
   /*---Ray tube corners: {+dphi, 0}---*/
   data.c0 = ray_c0[iPhi][1];
   data.nu = ray_nu[iPhi][1];
-  r0[0] = r0[1] = r0[2] = 0.;
+  r0[0] = cos(tol_dphi)*tol_dr;
+  r0[1] = sin(tol_dphi)*tol_dr;
+  r0[2] = 0.;
   x_of_z[2][n_prof-1] = r0[0];
   y_of_z[2][n_prof-1] = r0[1];
   t_of_z[2][n_prof-1] = r0[2];
   ray_theta[2][n_prof-1] = acos(a_of_z[n_prof-1]/data.c0);
   for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j-1] = x_of_z[2][j-1] = -f[0];
-    y[j-1] = y_of_z[2][j-1] = -f[1];
-    t[j-1] = t_of_z[2][j-1] = -f[2];
+    x_of_z[2][j-1] = -f[0];
+    y_of_z[2][j-1] = -f[1];
+    t_of_z[2][j-1] = -f[2];
 
-    r0[0] = -x[j-1];
-    r0[1] = -y[j-1];
-    r0[2] = -t[j-1];
+    r0[0] = -x_of_z[2]j-1];
+    r0[1] = -y_of_z[2][j-1];
+    r0[2] = -t_of_z[2][j-1];
 
     /*---Derived data---*/
     ray_theta[2][j-1] = acos(a_of_z[j-1]/data.c0);
@@ -1845,21 +1844,21 @@ void SUBoom::RayTracer(unsigned short iPhi){
   }*/
 
   /*---Ray tube corners: {+dphi, +dheading}---*/
-  r0[0] = flt_heading[0]*tol_dr;
-  r0[1] = flt_heading[1]*tol_dr;
+  r0[0] = flt_heading[0]*tol_dr + cos(tol_dphi)*tol_dr;;
+  r0[1] = flt_heading[1]*tol_dr + sin(tol_dphi)*tol_dr;;
   r0[2] = flt_heading[2]*tol_dr;
   x_of_z[3][n_prof-1] = r0[0];
   y_of_z[3][n_prof-1] = r0[1];
   ray_theta[3][n_prof-1] = acos(a_of_z[n_prof-1]/data.c0);
   for(int j = n_prof-1; j > 0; j--){
     f = rk4(z[j]/data.L, 3, r0, dz/data.L, data, derivs);
-    x[j-1] = x_of_z[3][j-1] = -f[0];
-    y[j-1] = y_of_z[3][j-1] = -f[1];
-    t[j-1] = -f[2];
+    x_of_z[3][j-1] = -f[0];
+    y_of_z[3][j-1] = -f[1];
+    t_of_z[3][j-1] = -f[2];
 
-    r0[0] = -x[j-1];
-    r0[1] = -y[j-1];
-    r0[2] = -t[j-1];
+    r0[0] = -x_of_z[3][j-1];
+    r0[1] = -y_of_z[3][j-1];
+    r0[2] = -t_of_z[3][j-1];
 
     /*---Derived data---*/
     ray_theta[3][j-1] = acos(a_of_z[j-1]/data.c0);
