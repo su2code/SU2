@@ -125,6 +125,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     if(nPanel[iPhi] > 0){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
+    else{
+      PointID[iPhi] = new unsigned long[1];
+      PointID[iPhi][0] = -1;
+    }
   }
 
   nPointID_proc = new unsigned long[nProcessor];
@@ -2563,7 +2567,7 @@ void SUBoom::WriteSensitivities(){
     Boom_AdjointFile.close();
 
   /*---Clear up  memory from dJdU---*/
-  /*for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     for (unsigned short i=0; i<nDim+3; i++){
       //if(nPointID[iPhi] > 0){
         delete [] dJdU[iPhi][i];
@@ -2575,7 +2579,7 @@ void SUBoom::WriteSensitivities(){
   }
   delete [] dJdU;
   delete [] PointID;
-  delete [] nPointID;*/
+  delete [] nPointID;
 
   if (rank == MASTER_NODE)
     cout << "\nFinished writing boom adjoint file." << endl;
