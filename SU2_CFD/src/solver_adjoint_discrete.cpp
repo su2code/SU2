@@ -933,6 +933,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
   long iPoint_Local = 0;
   unsigned long iPoint_Global = 0;
   iPanel=0;
+  unsigned short *dJdU_count = new unsigned short[nPanel];
 
 
   int rank ;
@@ -956,6 +957,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
         for (iVar=0; iVar<nDim+3; iVar++){
             point_line >> dJdU_CAA[iPanel][iVar];
           }
+        dJdU_count[iPanel] = 1;
         iPanel++;
       }
       else{
@@ -964,10 +966,18 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
           point_line >> dJdU_tmp;
           dJdU_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
         }
+        dJdU_count[LocalPointIndex[iPointLocal]]++;
       }
     }
 
 
+  }
+
+  /*--- Average dJdU (scale by number of points) ---*/
+  for(unsigned long i = 0; i < iPanel; i++){
+    for(iVar = 0; iVar < nDim+3; iVar++){
+      dJdU_CAA[i][iVar] /= dJdU_count[i];
+    }
   }
 
   /*--- Close the restart file ---*/
