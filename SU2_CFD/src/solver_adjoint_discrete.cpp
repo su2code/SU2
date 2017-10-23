@@ -192,7 +192,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
          dJdU_CAA[iPanel][iVar]= 0.0;
        }
  }
- LocalPointIndex = new long[nPoint];
+ LocalPointIndex = new int[nPoint];
 
  for(int iPoint = 0;  iPoint< nPoint; iPoint++)
  {
