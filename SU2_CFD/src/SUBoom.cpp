@@ -1716,7 +1716,7 @@ void SUBoom::RayTracer(unsigned short iPhi){
   su2double a0, rho0, p0;
   su2double a, rho, p;
   su2double r0[3];
-  su2double *f, *x, *y, *t;
+  su2double *f;//, *x, *y, *t;
   //su2double *kx, *ky, *kz;
   su2double dz = (z[0] - z[1]);
 
@@ -1875,9 +1875,9 @@ void SUBoom::RayTracer(unsigned short iPhi){
 
   /*---Clear up memory---*/
   delete [] f;
-  delete [] x;
-  delete [] y;
-  delete [] t;
+  //delete [] x;
+  //delete [] y;
+  //delete [] t;
   //delete [] kx;
   //delete [] ky;
   //delete [] kz;
