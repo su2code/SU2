@@ -289,6 +289,10 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
             dJdU[iPhi][iDim][iPanel] = 0.0;
           }
         }
+        else{
+          dJdU[iPhi][iDim] = new su2double[1];
+          dJdU[iPhi][iDim][0] = 0.0;
+        }
       }
     }
 
@@ -2561,9 +2565,9 @@ void SUBoom::WriteSensitivities(){
   /*---Clear up  memory from dJdU---*/
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     for (unsigned short i=0; i<nDim+3; i++){
-      if(nPointID[iPhi] > 0){
+      //if(nPointID[iPhi] > 0){
         delete [] dJdU[iPhi][i];
-      }
+      //}
     }
     delete [] dJdU[iPhi];
     delete [] PointID[iPhi];
