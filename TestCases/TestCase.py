@@ -241,7 +241,7 @@ class TestCase:
                 fromlines = open(fromfile, 'U').readlines()
                 tolines = open(tofile, 'U').readlines()
             except FileNotFoundError as e:
-                c = os.listdir(os.dirname(os.path.abspath(tofile)))
+                c = os.listdir(os.path.dirname(os.path.abspath(tofile)))
                 raise FileNotFoundError(str(e) + "\nContents: {}".format(c))
 
             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
