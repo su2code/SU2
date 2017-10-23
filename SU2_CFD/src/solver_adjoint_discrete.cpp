@@ -966,7 +966,7 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
           point_line >> dJdU_tmp;
           dJdU_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
         }
-        dJdU_count[LocalPointIndex[iPointLocal]]++;
+        dJdU_count[LocalPointIndex[iPoint_Local]]++;
       }
     }
 
