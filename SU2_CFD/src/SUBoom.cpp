@@ -283,9 +283,11 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
     for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
       dJdU[iPhi] = new su2double* [nDim+3];
       for(int iDim = 0; iDim < nDim+3 ; iDim++){
-        dJdU[iPhi][iDim] = new su2double[nPointID[iPhi]];
-        for(iPanel = 0;  iPanel< nPointID[iPhi]; iPanel++){
-          dJdU[iPhi][iDim][iPanel] = 0.0;
+        if(nPointID[iPhi] > 0){
+          dJdU[iPhi][iDim] = new su2double[nPointID[iPhi]];
+          for(iPanel = 0;  iPanel< nPointID[iPhi]; iPanel++){
+            dJdU[iPhi][iDim][iPanel] = 0.0;
+          }
         }
       }
     }
@@ -2557,7 +2559,7 @@ void SUBoom::WriteSensitivities(){
     Boom_AdjointFile.close();
 
   /*---Clear up  memory from dJdU---*/
-  /*for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     for (unsigned short i=0; i<nDim+3; i++){
       if(nPointID[iPhi] > 0){
         delete [] dJdU[iPhi][i];
@@ -2569,7 +2571,7 @@ void SUBoom::WriteSensitivities(){
   }
   delete [] dJdU;
   delete [] PointID;
-  delete [] nPointID;*/
+  delete [] nPointID;
 
   if (rank == MASTER_NODE)
     cout << "\nFinished writing boom adjoint file." << endl;
