@@ -245,28 +245,22 @@ def load_pickle(file_name):
     pkl_file.close()
     return data_dict
 
-#: def load_pickle()
-
-
 
 # -------------------------------------------------------------------
 #  Save Pickle
 # -------------------------------------------------------------------
 
-def save_pickle(file_name,data_dict):
-    """ save_pickle(file_name,data_dict)
+def save_pickle(file_name, data_dict):
+    """ save_pickle(file_name, data_dict)
         saves a core data dictionary
         first pickle entry is a list of all following data names
     """
-    pkl_file = open(file_name,'wb')
-    names = data_dict.keys()
-    pickle.dump(names,pkl_file)
+    pkl_file = open(file_name, 'wb')
+    names = list(data_dict.keys())
+    pickle.dump(names, pkl_file)
     for key in names:
-        pickle.dump(data_dict[key],pkl_file)
+        pickle.dump(data_dict[key], pkl_file)
     pkl_file.close()
-
-#: def save_pickle()
-
 
 
 # -------------------------------------------------------------------
