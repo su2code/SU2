@@ -437,28 +437,18 @@ class TestCase:
                     break
                 else:   # Found the lines; parse the input
 
-                    if line.find('Maximum thickness') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
-                        found_thick = True
-
-                    elif line.find('Area') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
-                        found_area = True
-
-                    elif line.find('Twist angle') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
-                        found_twist = True
-
-                    elif line.find('Chord') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
+                    if line.find('Chord') > -1:
+                        raw_data = line.replace(",", "").split()
+                        data.append(raw_data[1])
                         found_chord = True
+                        data.append(raw_data[5])
+                        found_radius = True
+                        data.append(raw_data[8])
+                        found_toc = True
+                        data.append(raw_data[10])
+                        found_aoa = True
 
-
-            if found_thick and found_area and found_twist and found_chord:  # Found what we're checking for
+            if found_chord and found_radius and found_toc and found_aoa:  # Found what we're checking for
                 iter_missing = False
                 if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
                     print("Error in test_vals!")
