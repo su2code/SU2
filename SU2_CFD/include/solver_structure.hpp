@@ -11445,7 +11445,7 @@ private:
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   su2double **dJdU_CAA;
   unsigned long nPanel;
-  short *LocalPointIndex;
+  long *LocalPointIndex;
 
 public:
 
