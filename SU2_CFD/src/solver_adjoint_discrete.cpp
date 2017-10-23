@@ -940,12 +940,6 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-
-  /*--- The first line is nPanel ---*/
-  //getline(Boom_AdjointFile, text_line);
-  //istringstream point_line(text_line);
-  //point_line >> nPanel;
-
   while (getline (Boom_AdjointFile, text_line)) {
     istringstream point_line(text_line);
      point_line >> iPoint_Global ;

@@ -592,6 +592,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
                 Objective_Function += boom.p_int2[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
               }
+              Objective_Function *= boom.scale_T/(boom.scale_p*boom.scale_p);
             }
 
 #ifdef HAVE_MPI
