@@ -849,7 +849,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   unsigned long nNode_list, *jNode_list;
   unsigned long pointCount = 0;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
-  su2double *rho_i, *rho_ux_i, *rho_uy_i, *rho_uz_i, *rho_E_i, *TKE_i;
+  su2double *rho_i, *rho_ux_i, *rho_uy_i, *rho_uz_i, *rho_E_i, *TKE_i, *p_i;
   su2double ux, uy, uz, StaticEnergy, p;
   bool addNode;
 
@@ -921,6 +921,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     if (nDim == 3) rho_uz_i[i] = 0.0;
     rho_E_i[i] = 0.0;
     TKE_i[i] = 0.0;
+    p_i[i] = 0.0;
   }
 
     /*--- Now interpolate pressure ---*/
@@ -954,12 +955,19 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         jjNode = geometry->elem[jElem]->GetNode(iNode);
         /*--- If node surrounds element, add contribution of conservative variables ---*/
         if(jNode == jjNode){
-          rho_i[iElem] += rho*isoparams[iElem][iNode];
-          rho_ux_i[iElem] += rho_ux*isoparams[iElem][iNode];
-          rho_uy_i[iElem] += rho_uy*isoparams[iElem][iNode];
-          if (nDim == 3) rho_uz_i[iElem] += rho_uz*isoparams[iElem][iNode];
-          rho_E_i[iElem] += rho_E*isoparams[iElem][iNode];
-          TKE_i[iElem] += TKE*isoparams[iElem][iNode];
+          //rho_i[iElem] += rho*isoparams[iElem][iNode];
+          //rho_ux_i[iElem] += rho_ux*isoparams[iElem][iNode];
+          //rho_uy_i[iElem] += rho_uy*isoparams[iElem][iNode];
+          //if (nDim == 3) rho_uz_i[iElem] += rho_uz*isoparams[iElem][iNode];
+          //rho_E_i[iElem] += rho_E*isoparams[iElem][iNode];
+          //TKE_i[iElem] += TKE*isoparams[iElem][iNode];
+          // TESTING interpolate p instead of conservatiive variables
+          ux = rho_ux/rho;
+          uy = rho_uy/rho;
+          uz = 0.0;
+          if (nDim == 3) uz = rho_uz/rho;
+          StaticEnergy = rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
+          p_i[iElem] += (config-GetGamma()-1)*rho*StaticEnergy*isoparams[iElem][iNode];
         }
       }
     }
@@ -967,15 +975,16 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 
   /*--- Now compute pressure ---*/
   for(iElem = 0; iElem < nPanel[iPhi]; iElem++){
-    ux = rho_ux_i[iElem]/rho_i[iElem];
-    uy = rho_uy_i[iElem]/rho_i[iElem];
-    uz = 0.0;
-    if(nDim == 3) uz = rho_uz_i[iElem]/rho_i[iElem];
-    StaticEnergy =  rho_E_i[iElem]/rho_i[iElem]-0.5*(ux*ux+uy*uy+uz*uz)-TKE_i[iElem];
-    p = (config->GetGamma()-1)*rho_i[iElem]*StaticEnergy;
+    //ux = rho_ux_i[iElem]/rho_i[iElem];
+    //uy = rho_uy_i[iElem]/rho_i[iElem];
+    //uz = 0.0;
+    //if(nDim == 3) uz = rho_uz_i[iElem]/rho_i[iElem];
+    //StaticEnergy =  rho_E_i[iElem]/rho_i[iElem]-0.5*(ux*ux+uy*uy+uz*uz)-TKE_i[iElem];
+    //p = (config->GetGamma()-1)*rho_i[iElem]*StaticEnergy;
 
     signal.x[iPhi][iElem] = Coord_original[iPhi][iElem][0];
-    signal.original_p[iPhi][iElem] = p;
+    //signal.original_p[iPhi][iElem] = p;
+    signal.original_p[iPhi][iElem] = p_i[iElem];
   }
   nPointID[iPhi] = nNode_list;
 
