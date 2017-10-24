@@ -864,6 +864,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   if (nDim == 3) rho_uz_i = new su2double[nPanel[iPhi]];
   rho_E_i = new su2double[nPanel[iPhi]];
   TKE_i = new su2double[nPanel[iPhi]];
+  p_i = new su2double[nPanel[iPhi]];
 
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
     jElem = pointID_original[iPhi][i];
