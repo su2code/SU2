@@ -968,7 +968,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
           uz = 0.0;
           if (nDim == 3) uz = rho_uz/rho;
           StaticEnergy = rho_E/rho-0.5*(ux*ux+uy*uy+uz*uz)-TKE;
-          p_i[iElem] += (config-GetGamma()-1)*rho*StaticEnergy*isoparams[iElem][iNode];
+          p_i[iElem] += (config->GetGamma()-1)*rho*StaticEnergy*isoparams[iElem][iNode];
         }
       }
     }
