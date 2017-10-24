@@ -190,7 +190,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
       /*---Check for duplicate points---*/
       signal.original_len[iPhi] = nPanel[iPhi];
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
-        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-8){
+        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-12){
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
             signal.original_p[iPhi][jPanel-1] = signal.original_p[iPhi][jPanel];
