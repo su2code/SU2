@@ -1758,9 +1758,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   if (config_container[val_iZone]->GetExtIter()<config_container[val_iZone]->GetIter_Avg_Objective() && config_container[val_iZone]->GetKind_ObjFunc()==NOISE){
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]-> ExtractCAA_Sensitivity(geometry_container[val_iZone][MESH_0], config_container[val_iZone], Direct_Iter);
   }
-  if(config_container[val_iZone]->GetKind_ObjFunc()==BOOM){
-    solver_container[val_iZone][MESH_0][ADJFLOW_SOL]-> ExtractBoomSensitivity(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
-  }
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
   if (turbulent && !config_container[val_iZone]->GetFrozen_Visc_Disc()){
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);

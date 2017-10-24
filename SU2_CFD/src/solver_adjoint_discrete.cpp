@@ -199,6 +199,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     LocalPointIndex[iPoint] = -1;
  }
 
+ /*--- Now that dJ/dU is allocated, extract sensitivities ---*/
+ if(config->GetKind_ObjFunc()==BOOM){
+   ExtractBoomSensitivity(geometry, config);
+ }
+
   }
 
 
