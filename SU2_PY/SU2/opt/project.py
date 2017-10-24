@@ -405,7 +405,7 @@ class Project(object):
             for key in design.state.GRADIENTS.keys():
                 results.GRADIENTS[key] = []
             for TYPE in design.state.HISTORY.keys():
-                if not results.HISTORY.has_key(TYPE):
+                if not TYPE in results.HISTORY:
                     results.HISTORY[TYPE] = su2util.ordered_bunch()
                 for key in design.state.HISTORY[TYPE].keys():
                     results.HISTORY[TYPE][key] = []
@@ -424,13 +424,13 @@ class Project(object):
             this_designvector = design.state.design_vector()
             results.VARIABLES.append( this_designvector )
             for key in results.FUNCTIONS.keys():
-                if design.state.FUNCTIONS.has_key(key):
+                if key in design.state.FUNCTIONS:
                     new_func = design.state.FUNCTIONS[key]
                 else:
                     new_func = default
                 results.FUNCTIONS[key].append(new_func)
             for key in results.GRADIENTS.keys():
-                if design.state.GRADIENTS.has_key(key):
+                if key in design.state.GRADIENTS:
                     new_grad = design.state.GRADIENTS[key]
                 else:
                     new_grad = [default] * len( this_designvector )
