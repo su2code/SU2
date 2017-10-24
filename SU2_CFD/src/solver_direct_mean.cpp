@@ -6488,7 +6488,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Solve or smooth the linear system ---*/
   
 
-  std::cout << "LinSysRes.norm() = " << LinSysRes.norm() << std::endl;
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
@@ -6501,8 +6500,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        //node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
-        node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
       }
     }
   }
@@ -16380,13 +16378,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
       Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
 
-      // if (Local_Delta_Time_Visc < Local_Delta_Time) {
-      //   std::cout << "Hola: Viscous restriction is active!" << std::endl;
-      // }
-
-      //Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
-      Local_Delta_Time = Local_Delta_Time;
-      //Local_Delta_Time = Local_Delta_Time_Visc;
+      Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);

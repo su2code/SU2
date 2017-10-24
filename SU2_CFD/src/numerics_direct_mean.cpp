@@ -2847,7 +2847,6 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   }
   else {
 
-    std::cout << "Here I am..." << std::endl;
     /*--- Compute inverse P ---*/
 
     GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeChi , &RoeKappa, UnitNormal);
@@ -2875,9 +2874,9 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
-        //val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-        //val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-        //val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+        val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
       }
     }
 
