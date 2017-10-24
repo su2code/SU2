@@ -2594,9 +2594,9 @@ void SUBoom::WriteSensitivities(){
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
             Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
-            /////*--- Check dJdU[][iVar==0] and only write if greater than some tolerance ---*/
-            ////Total_Index = iProcessor*Max_nPointID*nVar + iSig;
-            ////if(abs(Buffer_Recv_dJdU[Total_Index]) > 1.0E-12){
+            /*--- Check dJdU[][iVar==0] and only write if greater than some tolerance ---*/
+            Total_Index = iProcessor*Max_nPointID*nVar + iSig;
+            if(abs(Buffer_Recv_dJdU[Total_Index]) > 1.0E-14){
               Boom_AdjointFile  << scientific << Global_Index << "\t";
 
               for (iVar = 0; iVar < nVar; iVar++){
@@ -2607,7 +2607,7 @@ void SUBoom::WriteSensitivities(){
                 Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
               }
               Boom_AdjointFile  << endl;
-            ////}
+            }
 
         }
       }
