@@ -201,7 +201,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
  /*--- Now that dJ/dU is allocated, extract sensitivities ---*/
  if(config->GetKind_ObjFunc()==BOOM){
-   ExtractBoomSensitivity(geometry, config);
+   this->ExtractBoomSensitivity(geometry, config);
  }
 
   }
