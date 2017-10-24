@@ -845,15 +845,25 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
 
 void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned short iPhi){
   unsigned short iDim, iNode, nNode;
-  unsigned long jElem, jNode;
+  unsigned long iElem, jElem, jNode, jjNode, iPoint;
+  unsigned long nNode_list, *jNode_list;
   unsigned long pointCount = 0;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
-  su2double rho_i, rho_ux_i, rho_uy_i, rho_uz_i, rho_E_i, TKE_i;
+  su2double *rho_i, *rho_ux_i, *rho_uy_i, *rho_uz_i, *rho_E_i, *TKE_i;
   su2double ux, uy, uz, StaticEnergy, p;
+  bool addNode;
 
-  su2double *isoparams;
+  su2double **isoparams;
   su2double *X_donor;
   su2double *Coord = new su2double[nDim];
+
+  isoparams = new su2double*[nPanel[iPhi]];
+  rho_i = new su2double[nPanel[iPhi]];
+  rho_ux_i = new su2double[nPanel[iPhi]];
+  rho_uy_i = new su2double[nPanel[iPhi]];
+  if (nDim == 3) rho_uz_i = new su2double[nPanel[iPhi]];
+  rho_E_i = new su2double[nPanel[iPhi]];
+  TKE_i = new su2double[nPanel[iPhi]];
 
   for(unsigned long i = 0; i < nPanel[iPhi]; i++){
     jElem = pointID_original[iPhi][i];
@@ -861,6 +871,8 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     nPointID[iPhi] += nNode;
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
+  jNode_list = new unsigned long[nPointID[iPhi]];
+  nNode_list = 0;
 
   signal.x[iPhi] = new su2double[nPanel[iPhi]];
   signal.original_p[iPhi] = new su2double[nPanel[iPhi]];
@@ -877,13 +889,97 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
       for(iDim = 0; iDim < nDim; iDim++){  
         X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord(iDim);
       }
+
+      /*--- Compile list of all nodes ---*/
+      if(nNode_list == 0){
+        jNode_list[nNode_list] = jNode;
+        nNode_list++;
+      }
+      else{
+        addNode = true;
+        for(unsigned long ii = 0; ii < nNode_list; ii++){
+          if(jNode == jNode_list[ii]){
+            addNode = false;
+            break;
+          }
+        }
+        if(addNode){
+          jNode_list[nNode_list] = jNode;
+          nNode_list++;
+        }
+      }
     }
 
     /*--- Compute isoparameters ---*/
-    isoparams = new su2double[nNode];
-    Isoparameters(nDim, nNode, X_donor, Coord, isoparams);
+    isoparams[i] = new su2double[nNode];
+    Isoparameters(nDim, nNode, X_donor, Coord, isoparams[i]);
+
+    /*--- Initialize interpolated values ---*/
+    rho_i[i] = 0.0;
+    rho_ux_i[i] = 0.0;
+    rho_uy_i[i] = 0.0;
+    if (nDim == 3) rho_uz_i[i] = 0.0;
+    rho_E_i[i] = 0.0;
+    TKE_i[i] = 0.0;
+  }
 
     /*--- Now interpolate pressure ---*/
+  for(iPoint = 0; iPoint < nNode_list; iPoint++){
+    jNode = jNode_list[iPoint];
+    PointID[iPhi][iPoint] = geometry->node[jNode]->GetGlobalIndex();
+
+    /*---Extract conservative flow data---*/
+    rho = solver->node[jNode]->GetSolution(nDim);
+    rho_ux = solver->node[jNode]->GetSolution(nDim+1);
+    rho_uy = solver->node[jNode]->GetSolution(nDim+2);
+    if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
+    rho_E = solver->node[jNode]->GetSolution(2*nDim+1);
+    TKE = 0.0;
+
+    //Register conservative variables as input for adjoint computation
+    if (config->GetAD_Mode()){
+      AD::RegisterInput(rho );
+      AD::RegisterInput(rho_ux );
+      AD::RegisterInput(rho_uy );
+      if (nDim==3) AD::RegisterInput(rho_uz );
+      AD::RegisterInput(rho_E );
+      AD::RegisterInput(TKE );
+    }
+
+    /*--- Check if node is part of any elements ---*/
+    for(iElem = 0; iElem < nPanel[iPhi]; iElem++){
+      jElem = pointID_original[iPhi][iElem];
+      nNode = geometry->elem[jElem]->GetnNodes();
+      for(iNode = 0; iNode < nNode; iNode++){
+        jjNode = geometry->elem[jElem]->GetNode(iNode);
+        /*--- If node surrounds element, add contribution of conservative variables ---*/
+        if(jNode == jjNode){
+          rho_i[iElem] += rho*isoparams[iElem][iNode];
+          rho_ux_i[iElem] += rho_ux*isoparams[iElem][iNode];
+          rho_uy_i[iElem] += rho_uy*isoparams[iElem][iNode];
+          if (nDim == 3) rho_uz_i[iElem] += rho_uz*isoparams[iElem][iNode];
+          rho_E_i[iElem] += rho_E*isoparams[iElem][iNode];
+          TKE_i[iElem] += TKE*isoparams[iElem][iNode];
+        }
+      }
+    }
+  }
+
+  /*--- Now compute pressure ---*/
+  for(iElem = 0; iElem < nPanel[iPhi]; iElem++){
+    ux = rho_ux_i[iElem]/rho_i[iElem];
+    uy = rho_uy_i[iElem]/rho_i[iElem];
+    uz = 0.0;
+    if(nDim == 3) uz = rho_uz_i[iElem]/rho_i[iElem];
+    StaticEnergy =  rho_E_i[iElem]/rho_i[iElem]-0.5*(ux*ux+uy*uy+uz*uz)-TKE_i[iElem];
+    p = (config->GetGamma()-1)*rho_i[iElem]*StaticEnergy;
+
+    signal.x[iPhi][iElem] = Coord_original[iPhi][iElem][0];
+    signal.original_p[iPhi][iElem] = p;
+  }
+  nPointID[iPhi] = nNode_list;
+
+  /*
     p = 0.0;
     rho_i = 0.0;
     rho_ux_i = 0.0; rho_uy_i = 0.0; rho_uz_i = 0.0;
@@ -893,7 +989,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         jNode = geometry->elem[jElem]->GetNode(iNode);
 
           /*---Extract conservative flow data---*/
-          rho = solver->node[jNode]->GetSolution(nDim);
+  /*        rho = solver->node[jNode]->GetSolution(nDim);
           rho_ux = solver->node[jNode]->GetSolution(nDim+1);
           rho_uy = solver->node[jNode]->GetSolution(nDim+2);
           if(nDim == 3) rho_uz = solver->node[jNode]->GetSolution(nDim+3);
@@ -911,7 +1007,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
           }
 
           /*---Compute pressure---*/
-          rho_i += rho*isoparams[iNode];
+  /*        rho_i += rho*isoparams[iNode];
           rho_ux_i += rho_ux*isoparams[iNode];
           rho_uy_i += rho_uy*isoparams[iNode];
           if(nDim == 3) rho_uz_i += rho_uz*isoparams[iNode];
@@ -920,9 +1016,6 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 
           PointID[iPhi][pointCount] = geometry->node[jNode]->GetGlobalIndex();
           pointCount++;
-      }
-      else{
-        nPointID[iPhi]--;
       }
     }
     
@@ -936,7 +1029,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     signal.x[iPhi][i] = Coord[0];
     signal.original_p[iPhi][i] = p;
 
-  }
+  }*/
   
 }
 
