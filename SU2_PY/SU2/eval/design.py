@@ -245,7 +245,7 @@ def obj_f(dvs,config,state=None):
     #: for each objective
     # If evaluating the combined function is desired, update it here.
     # This is only used when OPT_COMBINE_OBJECTIVE = YES
-    if state.FUNCTIONS.has_key('COMBO'):
+    if 'COMBO' in state.FUNCTIONS:
         state['FUNCTIONS']['COMBO'] = func
         
     return vals_out
