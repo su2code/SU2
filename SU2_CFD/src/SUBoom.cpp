@@ -908,7 +908,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     Isoparameters(nDim, nNode, X_donor, Coord, isoparams[i]);
 
     /*--- x-locations of nearfield signal ---*/
-    signal.x[iPhi][iElem] = Coord_original[iPhi][iElem][0];
+    signal.x[iPhi][i] = Coord_original[iPhi][i][0];
   }
 
     /*--- Now interpolate pressure ---*/
