@@ -979,6 +979,18 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
   }
   nPointID[iPhi] = nNode_list;
 
+  /*--- Clean up interpolation variables ---*/
+  for(iElem = 0; iElem < nPanel[iPhi]; iElem++){
+    delete [] isoparams[iElem];
+  }
+  delete [] isoparams;
+  delete [] rho_i;
+  delete [] rho_ux_i;
+  delete [] rho_uy_i;
+  if (nDim == 3) delete [] rho_uz_i;
+  delete [] rho_E_i;
+  delete [] TKE_i;
+
   /*
     p = 0.0;
     rho_i = 0.0;
