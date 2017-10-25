@@ -50,7 +50,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 100
-    channel.test_vals = [-3.071007, 2.301191, 0.008562, 0.028922] #last 4 columns
+    channel.test_vals = [-3.077573, 2.288646, 0.008701, 0.029075] #last 4 columns
     channel.su2_exec  = "parallel_computation.py -f"
     channel.timeout   = 1600
     channel.tol       = 0.00001
