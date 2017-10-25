@@ -2622,6 +2622,12 @@ public:
   unsigned long GetWrt_Con_Freq(void);
 
   /*!
+   * \brief Set the frequency for writing the convergence file.
+   * \return It writes the convergence file with this frequency.
+   */
+  void SetWrt_Con_Freq(unsigned long val_freq);
+
+  /*!
    * \brief Get the frequency for writing the convergence file in Dual Time.
    * \return It writes the convergence file with this frequency.
    */

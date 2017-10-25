@@ -491,7 +491,7 @@ void CFluidIteration::Iterate(COutput *output,
   }
   
   
-  /*--- Write the convergence history (only screen output) ---*/
+  /*--- Write the convergence history ---*/
 
   if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
     
@@ -919,7 +919,9 @@ void CFEMFluidIteration::Output()      { }
 void CFEMFluidIteration::Postprocess() { }
 
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
+
 CWaveIteration::~CWaveIteration(void) { }
+
 void CWaveIteration::Preprocess(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
@@ -930,6 +932,7 @@ void CWaveIteration::Preprocess(COutput *output,
                                 CVolumetricMovement **grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone) { }
+
 void CWaveIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -945,16 +948,19 @@ void CWaveIteration::Iterate(COutput *output,
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Set the value of the internal iteration ---*/
+  
   IntIter = ExtIter;
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
   
   /*--- Wave equations ---*/
+  
   config_container[val_iZone]->SetGlobalParam(WAVE_EQUATION, RUNTIME_WAVE_SYS, ExtIter);
   integration_container[val_iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_WAVE_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
+  
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
@@ -969,6 +975,7 @@ void CWaveIteration::Iterate(COutput *output,
   }
   
 }
+
 void CWaveIteration::Update(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
@@ -1000,7 +1007,9 @@ void CWaveIteration::Update(COutput *output,
 }
 
 void CWaveIteration::Monitor()     { }
+
 void CWaveIteration::Output()      { }
+
 void CWaveIteration::Postprocess(CConfig **config_container,
                                  CGeometry ***geometry_container,
                                  CSolver ****solver_container,
@@ -1008,7 +1017,9 @@ void CWaveIteration::Postprocess(CConfig **config_container,
 
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
+
 CHeatIteration::~CHeatIteration(void) { }
+
 void CHeatIteration::Preprocess(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
@@ -1019,6 +1030,7 @@ void CHeatIteration::Preprocess(COutput *output,
                                 CVolumetricMovement **grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone) { }
+
 void CHeatIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -1034,16 +1046,19 @@ void CHeatIteration::Iterate(COutput *output,
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Set the value of the internal iteration ---*/
+  
   IntIter = ExtIter;
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
   
   /*--- Heat equation ---*/
+  
   config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
   integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
+  
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
