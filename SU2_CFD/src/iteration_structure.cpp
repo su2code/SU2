@@ -1705,6 +1705,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
               solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
               solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
             }
+            if (two_phase) {
+              solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
+              solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n1();
+            }
           }
         }
       }
@@ -1721,6 +1725,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
             if (turbulent) {
               solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+            }
+            if (two_phase) {
+              solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
             }
           }
         }
@@ -1747,6 +1754,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
            if (turbulent){
              solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_OldSolution();
            }
+           if (two_phase){
+             solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_OldSolution();
+           }
         }
       }
 
@@ -1758,6 +1768,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           if (turbulent) {
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->SetSolution(solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n());
           }
+          if (two_phase) {
+            solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->SetSolution(solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->GetSolution_time_n());
+          }
         }
       }
       if (dual_time_1st){
@@ -1767,6 +1780,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_time_n1());
             if (turbulent) {
               solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n1());
+            }
+            if (two_phase) {
+              solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->GetSolution_time_n1());
             }
           }
         }
@@ -1779,6 +1795,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             if (turbulent) {
               solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->GetSolution_time_n1());
             }
+            if (two_phase) {
+              solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n(solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->GetSolution_time_n1());
+            }
           }
         }
         /*--- Set Solution at timestep n-2 to the previously loaded solution ---*/
@@ -1787,6 +1806,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1(solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSolution_Old());
             if (turbulent) {
               solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1(solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->GetSolution_Old());
+            }
+            if (two_phase) {
+              solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n1(solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->node[iPoint]->GetSolution_Old());
             }
           }
         }
@@ -1846,6 +1868,9 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_contain
     if (turbulent) {
       solver_container[val_iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, false);
     }
+    if (two_phase) {
+      solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, false);
+    }
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
@@ -1856,6 +1881,10 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_contain
       if (turbulent) {
         solver_container[val_iZone][iMesh][TURB_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
         solver_container[val_iZone][iMesh][TURB_SOL]->Postprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh);
+      }
+      if (two_phase) {
+        solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
+        solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->Postprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh);
       }
     }
   }

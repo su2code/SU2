@@ -5083,7 +5083,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
     /*--- Update residual value ---*/
-    
+
     LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
@@ -5173,8 +5173,15 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   su2double S, h, R, Y;
 
+/*
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	cout << scientific << setprecision(15) << LinSysRes[iPoint*nVar] << " " << LinSysRes[iPoint*nVar+3] << endl;
+  }
+getchar();
+*/
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
 
   if (body_force) {
 
@@ -5345,6 +5352,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Compute the 2-phase source residual ---*/
       numerics->ComputeResidual_HeatMassTransfer(S, h, Y, Residual, Jacobian_i);
+
+//      cout << Residual[0] << " " << Residual[1] << " " << Residual[2] << " " << Residual[3] <<endl;
 
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
@@ -6431,10 +6440,14 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
+//        cout << Res << " " ;
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
+//      cout << endl;
     }
+//    getchar();
     
+
   }
   
   /*--- MPI solution ---*/
@@ -10300,6 +10313,8 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       
       /*--- Add value to the residual ---*/
       
+
+
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Form Jacobians for implicit computations ---*/
@@ -10975,6 +10990,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Residual[iVar] -= projVelocity *(u_b[iVar]);
       }
       
+
+
       if (implicit) {
         
         Jacobian_b = new su2double*[nVar];
@@ -11046,7 +11063,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         delete [] Jacobian_b;
         delete [] DubDu;
       }
-      
+
       /*--- Update residual value ---*/
       LinSysRes.AddBlock(iPoint, Residual);
       

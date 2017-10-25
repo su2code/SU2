@@ -4404,7 +4404,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
+         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
         if (Kind_Centered_Flow == JST) {

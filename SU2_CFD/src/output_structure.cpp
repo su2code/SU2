@@ -2394,7 +2394,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Cont()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL; ThirdIndex = NONE; break;
     case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Disc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+    case DISC_ADJ_TWO_PHASE_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL; if (config->GetFrozen_Visc_Disc()) ThirdIndex = NONE; else ThirdIndex = ADJTURB_SOL; break;
     default: SecondIndex = NONE; ThirdIndex = NONE; break;
   }
   
@@ -2489,7 +2491,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     if ((Kind_Solver == DISC_ADJ_EULER)         ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
+        (Kind_Solver == DISC_ADJ_RANS)          ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
       iVar_Sens    = nVar_Total; nVar_Total += 1;
       iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
@@ -2582,7 +2587,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       (Kind_Solver == ADJ_RANS)  ||
       (Kind_Solver == DISC_ADJ_EULER) ||
       (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == DISC_ADJ_RANS)) {
+      (Kind_Solver == DISC_ADJ_RANS)   ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER) ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
     Aux_Sens = new su2double[geometry->GetnPoint()];
   }
   
@@ -3256,12 +3264,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
     /*--- Communicate the surface sensitivity ---*/
     
-    if ((Kind_Solver == ADJ_EULER)         ||
-        (Kind_Solver == ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == ADJ_RANS)          ||
-        (Kind_Solver == DISC_ADJ_EULER)    ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
+    if ((Kind_Solver == ADJ_EULER)                        ||
+        (Kind_Solver == ADJ_NAVIER_STOKES)                ||
+        (Kind_Solver == ADJ_RANS)                         ||
+        (Kind_Solver == DISC_ADJ_EULER)                   ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
+        (Kind_Solver == DISC_ADJ_RANS)                    ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
       
       /*--- First, loop through the mesh in order to find and store the
        value of the surface sensitivity at any surface nodes. They
@@ -3337,9 +3348,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-    if ((Kind_Solver == DISC_ADJ_EULER)    ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
+    if ((Kind_Solver == DISC_ADJ_EULER)                   ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
+        (Kind_Solver == DISC_ADJ_RANS)                    ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		(Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
       /*--- Loop over this partition to collect the current variable ---*/
       
       jPoint = 0;
@@ -3775,12 +3789,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     delete[] Aux_Frict_x; delete[] Aux_Frict_y; delete[] Aux_Frict_z;
     delete [] Aux_Heat; delete [] Aux_yPlus;
   }
-  if (( Kind_Solver == ADJ_EULER              ) ||
-      ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-      ( Kind_Solver == ADJ_RANS               ) ||
-      ( Kind_Solver == DISC_ADJ_EULER         ) ||
-      ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
-      ( Kind_Solver == DISC_ADJ_RANS          )) {
+  if (( Kind_Solver == ADJ_EULER              )          ||
+      ( Kind_Solver == ADJ_NAVIER_STOKES      )          ||
+      ( Kind_Solver == ADJ_RANS               )          ||
+      ( Kind_Solver == DISC_ADJ_EULER         )          ||
+      ( Kind_Solver == DISC_ADJ_NAVIER_STOKES )          ||
+      ( Kind_Solver == DISC_ADJ_RANS          )          ||
+	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
     delete [] Aux_Sens;
   }
   
@@ -4148,9 +4165,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
         (Kind_Solver == ADJ_RANS               )   ) {
       restart_file << "\t\"Surface_Sensitivity\"\t\"Solution_Sensor\"";
     }
-    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == DISC_ADJ_RANS               )) {
+    if (( Kind_Solver == DISC_ADJ_EULER              )     ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      )     ||
+        ( Kind_Solver == DISC_ADJ_RANS               )     ||
+		( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+		( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
       restart_file << "\t\"Surface_Sensitivity\"\t\"Sensitivity_x\"\t\"Sensitivity_y\"";
       if (geometry->GetnDim() == 3) {
         restart_file << "\t\"Sensitivity_z\"";
@@ -12103,9 +12123,12 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   /*--- For the discrete adjoint, we have the full field of sensitivity
    in each coordinate direction. ---*/
 
-  if ((Kind_Solver == DISC_ADJ_EULER)         ||
-      (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == DISC_ADJ_RANS)) {
+  if (( Kind_Solver == DISC_ADJ_EULER)                   ||
+      ( Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
+      ( Kind_Solver == DISC_ADJ_RANS)                    ||
+	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
     nVar_Par += nDim;
     Variable_Names.push_back("Sensitivity_x");
     Variable_Names.push_back("Sensitivity_y");
@@ -12592,7 +12615,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   
   unsigned long iVar, jVar;
   unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE, iMarker, iVertex;
-  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Third = 0, nVar_Consv_Par = 0;
   
   su2double *Aux_Sens = NULL;
   su2double *Grid_Vel = NULL;
@@ -12616,12 +12639,15 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTURB_SOL;  break;
     case DISC_ADJ_TWO_PHASE_EULER: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL;  break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL;  break;
-    case DISC_ADJ_TWO_PHASE_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTURB_SOL; ThirdIndex = ADJTWO_PHASE_SOL;  break;
+    case DISC_ADJ_TWO_PHASE_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL; ThirdIndex = ADJTURB_SOL;  break;
   }
   
+  /* NOTE: when existent, ADJTWO_PHASE_SOL is always index 2, ADJTURB_SOL always follows ADJTWO_PHASE_SOL */
+
   nVar_First = solver[FirstIndex]->GetnVar();
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  nVar_Consv_Par = nVar_First + nVar_Second;
+  if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second + nVar_Third;
   
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
@@ -12640,6 +12666,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   if (geometry->GetnDim() == 3) {
     nVar_Par += 1; Variable_Names.push_back("z");
   }
+
   
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
@@ -12665,14 +12692,50 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     Variable_Names.push_back("Adjoint_Energy");
   }
   if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
-      Variable_Names.push_back("Adjoint_TKE");
-      Variable_Names.push_back("Adjoint_Omega");
-    } else {
-      /*--- S-A variants ---*/
-      Variable_Names.push_back("Adjoint_Nu_Tilde");
+	if (SecondIndex == ADJTURB_SOL)  {
+		if (config->GetKind_Turb_Model() == SST) {
+		  Variable_Names.push_back("Adjoint_TKE");
+		  Variable_Names.push_back("Adjoint_Omega");
+		} else {
+		  /*--- S-A variants ---*/
+		  Variable_Names.push_back("Adjoint_Nu_Tilde");
+		}
+	} else if (SecondIndex == ADJTWO_PHASE_SOL) {
+		  Variable_Names.push_back("Adjoint_rhoM0");
+		  Variable_Names.push_back("Adjoint_rhoM1");
+		  Variable_Names.push_back("Adjoint_rhoM2");
+		  Variable_Names.push_back("Adjoint_rhoM3");
+	}
+  }
+
+  if (ThirdIndex != NONE) {
+		if (config->GetKind_Turb_Model() == SST) {
+		  Variable_Names.push_back("Adjoint_TKE");
+		  Variable_Names.push_back("Adjoint_Omega");
+		} else {
+		  /*--- S-A variants ---*/
+		  Variable_Names.push_back("Adjoint_Nu_Tilde");
+		}
+  }
+
+
+/*  if ((Kind_Solver == DISC_ADJ_EULER)                   ||
+      (Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
+      (Kind_Solver == DISC_ADJ_RANS)                    ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
+
+	  Variable_Names.push_back("Sensit.0");
+	  Variable_Names.push_back("Sensit.1");
+	  nVar_Par += 2;
+      if (geometry->GetnDim()== 3) {
+        Variable_Names.push_back("Sensit.2");
+        nVar_par +=1;
     }
   }
+  */
+
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -12697,6 +12760,22 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         Variable_Names.push_back("Limiter_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
+    	  if (SecondIndex == ADJTURB_SOL) {
+		     if (config->GetKind_Turb_Model() == SST) {
+		           Variable_Names.push_back("Limiter_Adjoint_TKE");
+		           Variable_Names.push_back("Limiter_Adjoint_Omega");
+		     } else {
+		           /*--- S-A variants ---*/
+		           Variable_Names.push_back("Limiter_Adjoint_Nu_Tilde");
+		     }
+    	  } else if (SecondIndex == ADJTWO_PHASE_SOL) {
+    		 Variable_Names.push_back("Limiter_Adjoint_rhoM0");
+    		 Variable_Names.push_back("Limiter_Adjoint_rhoM1");
+    		 Variable_Names.push_back("Limiter_Adjoint_rhoM2");
+    		 Variable_Names.push_back("Limiter_Adjoint_rhoM3");
+    	  }
+      }
+      if (ThirdIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Limiter_Adjoint_TKE");
           Variable_Names.push_back("Limiter_Adjoint_Omega");
@@ -12725,6 +12804,24 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         Variable_Names.push_back("Residual_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
+    	  if (SecondIndex == ADJTURB_SOL) {
+              if (config->GetKind_Turb_Model() == SST) {
+                   Variable_Names.push_back("Residual_Adjoint_TKE");
+                   Variable_Names.push_back("Residual_Adjoint_Omega");
+              } else {
+                   /*--- S-A variants ---*/
+                   Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
+              }
+    	  } else if (SecondIndex == ADJTWO_PHASE_SOL) {
+              Variable_Names.push_back("Residual_Adjoint_rhoM0");
+              Variable_Names.push_back("Residual_Adjoint_rhoM1");
+              Variable_Names.push_back("Residual_Adjoint_rhoM2");
+              Variable_Names.push_back("Residual_Adjoint_rhoM3");
+          }
+      }
+
+
+      if (ThirdIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Residual_Adjoint_TKE");
           Variable_Names.push_back("Residual_Adjoint_Omega");
@@ -12733,6 +12830,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
           Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
         }
       }
+
     }
     
     /*--- Add the grid velocity. ---*/
@@ -12864,8 +12962,8 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       }
       
       
-      /*--- If this is Adj. RANS, i.e., the second solver container is not empty,
-       then load data for the conservative turbulence variables and the
+      /*--- If the second/third solver container are not empty,
+       * load data for the conservative turbulence variables and 2phase, plus the
        limiters / residuals (if requested). ----*/
       
       if (SecondIndex != NONE) {
@@ -12875,11 +12973,25 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         }
       }
 
+      if (ThirdIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Third; jVar++) {
+          Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
+          iVar++;
+        }
+      }
+
       /*--- Load data for the discrete sensitivities. ---*/
 
-      if ((Kind_Solver == DISC_ADJ_EULER)         ||
-          (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == DISC_ADJ_RANS)) {
+
+      /* the values you are storing here do not have a name, check it       */
+
+      if ((Kind_Solver == DISC_ADJ_EULER)                   ||
+          (Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
+          (Kind_Solver == DISC_ADJ_RANS)                    ||
+		  (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
+		  (Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
+
         Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0); iVar++;
         Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1); iVar++;
         if (geometry->GetnDim()== 3) {
@@ -12887,14 +12999,82 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
           iVar++;
         }
       }
-      
+
+
+
       if (!config->GetLow_MemoryOutput()) {
+
+                if (config->GetWrt_Limiters()) {
+                  for (jVar = 0; jVar < nVar_First; jVar++) {
+                    Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
+                    iVar++;
+                  }
+                  for (jVar = 0; jVar < nVar_Second; jVar++) {
+                    Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter(jVar);
+                    iVar++;
+                  }
+                  for (jVar = 0; jVar < nVar_Third; jVar++) {
+                    Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLimiter(jVar);
+                    iVar++;
+                  }
+
+                }
+                if (config->GetWrt_Residuals()) {
+                  for (jVar = 0; jVar < nVar_First; jVar++) {
+                    if (!config->GetDiscrete_Adjoint()) {
+                      Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+                    } else {
+                      Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar) -
+                      solver[FirstIndex]->node[iPoint]->GetSolution_Old(jVar);
+                    }
+                    iVar++;
+                  }
+
+                    for (jVar = 0; jVar < nVar_Second; jVar++) {
+                      if (!config->GetDiscrete_Adjoint()) {
+                        Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+                      } else {
+                        Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar) -
+                                                   solver[SecondIndex]->node[iPoint]->GetSolution_Old(jVar);
+                      }
+                      iVar++;
+                    }
+
+
+                    for (jVar = 0; jVar < nVar_Third; jVar++) {
+                      if (!config->GetDiscrete_Adjoint()) {
+                        Local_Data[jPoint][iVar] = solver[ThirdIndex]->LinSysRes.GetBlock(iPoint, jVar);
+                      } else {
+                        Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar) -
+                                                   solver[ThirdIndex]->node[iPoint]->GetSolution_Old(jVar);
+                      }
+                      iVar++;
+                    }
+
+                }
+
+
+              /*--- Load buffers with the three grid velocity components. ---*/
+
+              if (grid_movement) {
+                Grid_Vel = geometry->node[iPoint]->GetGridVel();
+                Local_Data[jPoint][iVar] = Grid_Vel[0]; iVar++;
+                Local_Data[jPoint][iVar] = Grid_Vel[1]; iVar++;
+                if (geometry->GetnDim() == 3) {
+                  Local_Data[jPoint][iVar] = Grid_Vel[2];
+                  iVar++;
+                }
+              }
+
+
+/*      if (!config->GetLow_MemoryOutput()) {
 
           if (config->GetWrt_Limiters()) {
             for (jVar = 0; jVar < nVar_First; jVar++) {
               Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
               iVar++;
             }
+
           }
           if (config->GetWrt_Residuals()) {
             for (jVar = 0; jVar < nVar_First; jVar++) {
@@ -12928,7 +13108,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
             }
           }
         
-        /*--- Load buffers with the three grid velocity components. ---*/
+        //--- Load buffers with the three grid velocity components. ---//
         
         if (grid_movement) {
           Grid_Vel = geometry->node[iPoint]->GetGridVel();
@@ -12939,7 +13119,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
             iVar++;
           }
         }
-        
+       */
         /*--- Load data for the surface sensitivity. ---*/
         
         Local_Data[iPoint][iVar] = Aux_Sens[iPoint]; iVar++;

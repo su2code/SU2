@@ -318,8 +318,25 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       }
       
     }
-  }
-  
+  } /* else if ( ( (RunTime_EqSystem == RUNTIME_ADJTWO_PHASE_SYS) && (Iteration == 0) ) ) {
+	    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
+
+	      //--- Set the time step in all the MG levels ---//
+
+	      solver_container[iZone][iMGLevel][TWO_PHASE_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
+
+	      //--- Restrict solution and gradients to the coarse levels ---//
+
+	      if (iMGLevel != config[iZone]->GetnMGLevels()) {
+	        SetRestricted_Solution(RUNTIME_2PHASE_SYS, solver_container[iZone][iMGLevel][TWO_PHASE_SOL], solver_container[iZone][iMGLevel+1][TWO_PHASE_SOL],
+	                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+	        SetRestricted_Gradient(RUNTIME_2PHASE_SYS, solver_container[iZone][iMGLevel][TWO_PHASE_SOL], solver_container[iZone][iMGLevel+1][TWO_PHASE_SOL],
+	                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+	      }
+
+	    }
+	  }
+  */
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

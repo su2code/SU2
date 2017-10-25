@@ -238,9 +238,12 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
       FieldView_File << "Surface_Sensitivity\nSolution_Sensor" << endl;
     }
 
-    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == DISC_ADJ_RANS               ) ) {
+    if (( Kind_Solver == DISC_ADJ_EULER                        ) ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES                ) ||
+        ( Kind_Solver == DISC_ADJ_RANS                         ) ||
+		( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER              ) ||
+		( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES      ) ||
+		( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS               ) ) {
       if (nDim == 2) FieldView_File << "Surface_Sensitivity\nSensitivity_x\nSensitivity_y" << endl;
       else FieldView_File << "Surface_Sensitivity\nSensitivity_x\nSensitivity_y\nSensitivity_z" << endl;
     }

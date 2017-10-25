@@ -142,7 +142,7 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
   unsigned short iVar, jVar;
 
   su2double Density_mixture, Critical_radius, Nucleation_rate, Growth_rate;
-  su2double P, T, rho, h, k, mu, CpoCv;
+  su2double P, T, rho, h, k, mu, CpoCv, y;
 
   // compute the source terms for the moments equations
   Critical_radius = val_liquid_i[6];
@@ -175,18 +175,19 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
     val_Residual[2] = Density_mixture * Nucleation_rate*pow(Critical_radius,2) + 2.0*Growth_rate*Two_phaseVar_i[1];
     val_Residual[3] = Density_mixture * Nucleation_rate*pow(Critical_radius,3) + 3.0*Growth_rate*Two_phaseVar_i[2];
 
+    y = (1/Density_mixture - 1/rho)/(1/val_liquid_i[1] - 1/rho);
+
     for (iVar=0; iVar<nVar; iVar++) {
       val_Residual[iVar] = val_Residual[iVar]* Volume ;
     }
-//    cout << val_liquid_i[4] - T << " " << val_Residual[0] << " " << Density_mixture << " " << Nucleation_rate << endl;
-//    cout << val_liquid_i[4] - T << " " << Two_phaseVar_i[0] << " " << Two_phaseVar_i[1] << " " << Two_phaseVar_i[2] << endl;
-//    getchar();
+
   } 	else 	{
 
     for (iVar=0; iVar<nVar; iVar++) {
       val_Residual[iVar] = 0.0;
     }
     val_liquid_i[9] = 0.0;
+    val_liquid_i[10] = 0.0;
   }
 
   if (implicit) {

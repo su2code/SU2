@@ -52,15 +52,18 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   const bool startup_multigrid = ((config[iZone]->GetRestart_Flow())     &&
                                   (RunTime_EqSystem == RUNTIME_FLOW_SYS) &&
                                   (Iteration == 0));
-  const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
-                       (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
-                       (config[iZone]->GetKind_Solver() == RANS)                          ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
-                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS)                 ||
-                       (config[iZone]->GetKind_Solver() == TWO_PHASE_EULER)               ||
-                       (config[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)       ||
-                       (config[iZone]->GetKind_Solver() == TWO_PHASE_RANS));
+  const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                            ||
+                       (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                    ||
+                       (config[iZone]->GetKind_Solver() == RANS)                             ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                   ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)           ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS)                    ||
+                       (config[iZone]->GetKind_Solver() == TWO_PHASE_EULER)                  ||
+                       (config[iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)          ||
+                       (config[iZone]->GetKind_Solver() == TWO_PHASE_RANS)                   ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)         ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+                       (config[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
   
@@ -770,12 +773,36 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       break;
 
     case RUNTIME_2PHASE_SYS:
+//        if (config->GetConvCriteria() == RESIDUAL) {
+            if (solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0) != 0)
+          	  (*monitor) = log10(solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0));
+            else
+          	  (*monitor) = -32;
+            break;
+/*        } else {
+        	cout << "Warning: convergence criteria can be only RESIDUAL for two phase flow solver" << endl;
+        	cout << "Modify config file options"
+        	exit ()
+        }
+        */
 
-          if (solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0) != 0)
-        	  (*monitor) = log10(solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0));
-          else
-        	  (*monitor) = -32;
 
+
+    case RUNTIME_ADJTWO_PHASE_SYS:
+//        if (config->GetConvCriteria() == RESIDUAL) {
+        if (config->GetConvCriteria() == RESIDUAL) {
+            if (solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0) != 0)
+          	  (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
+            else
+          	  (*monitor) = -32;
+
+        }
+/*        } else {
+			cout << "Warning: convergence criteria can be only RESIDUAL for two phase flow solver" << endl;
+			cout << "Modify config file options"
+			exit ()
+		}
+		*/
     break;
   }
   

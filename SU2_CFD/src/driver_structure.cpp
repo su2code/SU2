@@ -4634,6 +4634,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
       switch (config_container[iZone]->GetKind_Solver()) {
         case EULER:                   case NAVIER_STOKES:                   case RANS:
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+        case DISC_ADJ_TWO_PHASE_EULER:case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:case DISC_ADJ_TWO_PHASE_RANS:
           output->OneDimensionalOutput(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
           break;
       }
@@ -4642,6 +4643,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
       switch (config_container[iZone]->GetKind_Solver()) {
         case EULER:                   case NAVIER_STOKES:                   case RANS:
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+        case DISC_ADJ_TWO_PHASE_EULER:case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:case DISC_ADJ_TWO_PHASE_RANS:
           output->SetMassFlowRate(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
           break;
       }

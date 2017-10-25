@@ -96,7 +96,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
 		Kind_Solver == TWO_PHASE_EULER || Kind_Solver == TWO_PHASE_NAVIER_STOKES || Kind_Solver == TWO_PHASE_RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
-       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
+	   Kind_Solver == DISC_ADJ_TWO_PHASE_EULER || Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES ||
+	   Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) &&
       (val_nZone > 1) ) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
@@ -205,9 +207,12 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
 
-      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-          ( Kind_Solver == DISC_ADJ_RANS               )) {
+      if (( Kind_Solver == DISC_ADJ_EULER                        ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES                ) ||
+          ( Kind_Solver == DISC_ADJ_RANS                         ) ||
+		  ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER              ) ||
+		  ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES      ) ||
+		  ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
         if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
@@ -510,9 +515,12 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
 
-      if (( Kind_Solver == DISC_ADJ_EULER              ) ||
-          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
-          ( Kind_Solver == DISC_ADJ_RANS               )) {
+      if (( Kind_Solver == DISC_ADJ_EULER                   ) ||
+          ( Kind_Solver == DISC_ADJ_NAVIER_STOKES           ) ||
+          ( Kind_Solver == DISC_ADJ_RANS                    ) ||
+		  ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER         ) ||
+		  ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES ) ||
+		  ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS          ))   {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
         if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
@@ -1021,7 +1029,9 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
 	   Kind_Solver == TWO_PHASE_EULER || Kind_Solver == TWO_PHASE_NAVIER_STOKES || Kind_Solver == TWO_PHASE_RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
-       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
+	   Kind_Solver == DISC_ADJ_TWO_PHASE_EULER || Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES ||
+	   Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) &&
       (val_nZone > 1) ) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);

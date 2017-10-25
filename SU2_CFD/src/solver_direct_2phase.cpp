@@ -1526,9 +1526,9 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
        r = 0; y = 0; rho_m = rho_v; s = 0;
      }
 
-	     node[iPoint]->SetSource(s);
-	     node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
-	     node[iPoint]->SetRadius(r);
+     node[iPoint]->SetSource(s);
+     node[iPoint]->SetLiqEnthalpy(Liquid_vec[2]);
+     node[iPoint]->SetRadius(r);
      node[iPoint]->SetLiquidFrac(y);
      node[iPoint]->SetMixtureDensity(rho_m);
     
@@ -1564,11 +1564,13 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 	numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
     numerics->ComputeResidual(Residual, Jacobian_i, Liquid_vec, NULL, config);
+
     node[iPoint]->SetLiquidPrim(Liquid_vec);
 
     /*--- Subtract residual and the Jacobian ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
+
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
   }
@@ -1780,6 +1782,7 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
 
     }
   }
+
 
   /*--- Free locally allocated memory ---*/
   delete[] Normal;

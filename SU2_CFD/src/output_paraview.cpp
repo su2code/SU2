@@ -698,12 +698,15 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if (( Kind_Solver == ADJ_EULER         ) ||
-        ( Kind_Solver == ADJ_NAVIER_STOKES ) ||
-        ( Kind_Solver == ADJ_RANS          ) ||
-        ( Kind_Solver == DISC_ADJ_EULER         ) ||
-        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
-        ( Kind_Solver == DISC_ADJ_RANS          ) ) {
+    if (( Kind_Solver == ADJ_EULER                ) ||
+        ( Kind_Solver == ADJ_NAVIER_STOKES        ) ||
+        ( Kind_Solver == ADJ_RANS                 ) ||
+        ( Kind_Solver == DISC_ADJ_EULER           ) ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES   ) ||
+        ( Kind_Solver == DISC_ADJ_RANS            ) ||
+        ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER ) ||
+        ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES ) ||
+        ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS          ) ) {
       
       Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
@@ -724,7 +727,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     }
     if  (( Kind_Solver == DISC_ADJ_EULER        ) ||
         ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
-        ( Kind_Solver == DISC_ADJ_RANS          ) ) {
+        ( Kind_Solver == DISC_ADJ_RANS          ) ||
+        ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER ) ||
+        ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES ) ||
+        ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS          )) {
 
       Paraview_File << "\nSCALARS Sensitivity_x float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
