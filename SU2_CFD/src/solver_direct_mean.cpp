@@ -546,9 +546,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
-  std::cout << "Initializing vectors..." << std::endl;
-  std::cout << "nPoint = " << nPoint << std::endl;
-  std::cout << "nVar = " << nVar << std::endl;
+
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -568,7 +566,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Jacobians and vector structures for implicit computations ---*/
   
-  //if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
   if (implicit) {
     
     Jacobian_i = new su2double* [nVar];
@@ -16410,20 +16407,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   }
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-//   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
-// #ifdef HAVE_MPI
-//     su2double rbuf_time, sbuf_time;
-//     sbuf_time = Global_Delta_Time;
-//     SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-//     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-//     Global_Delta_Time = rbuf_time;
-// #endif
-//     for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-//       node[iPoint]->SetDelta_Time(Global_Delta_Time);
-//   }
-
-
-
   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
     int rank = MASTER_NODE;
 #ifdef HAVE_MPI
