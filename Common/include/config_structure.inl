@@ -357,6 +357,8 @@ inline su2double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
 inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 
+inline void CConfig::SetSemiSpan(su2double val_semispan) { SemiSpan = val_semispan; }
+
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
 
 inline void CConfig::SetnExtIter(unsigned long val_niter) { nExtIter = val_niter; }
