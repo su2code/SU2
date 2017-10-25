@@ -50,7 +50,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 100
-    channel.test_vals = [-3.110240, 2.263506, 0.008686, 0.029098] #last 4 columns
+    channel.test_vals = [-3.115282, 2.251988, 0.008816, 0.029207] #last 4 columns
     channel.su2_exec  = "SU2_CFD"
     channel.timeout   = 1600
     channel.tol       = 0.00001
