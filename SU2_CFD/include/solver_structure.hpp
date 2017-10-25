@@ -128,7 +128,6 @@ public:
   CSysVector LinSysDeltaU;  /*!< \brief vector to store solution update for IMEX. */
 
   CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysMatrix Jacobian0; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
   CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
