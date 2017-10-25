@@ -8284,7 +8284,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   
   su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Old_AoA,
   dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
-  
+  unsigned long Wrt_Con_Freq;
   unsigned short iDim;
   
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
@@ -8416,7 +8416,8 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     AoA_old = config->GetAoA();
 
     if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
-      config->SetWrt_Con_Freq(int(su2double(config->GetIter_dCL_dAlpha())/10.0));
+      Wrt_Con_Freq = SU2_TYPE::Int(su2double(config->GetIter_dCL_dAlpha())/10.0);
+      config->SetWrt_Con_Freq(Wrt_Con_Freq);
       Total_CD_Prev = Total_CD;
       Total_CL_Prev = Total_CL;
       Total_CMx_Prev = Total_CMx;
