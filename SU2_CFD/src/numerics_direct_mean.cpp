@@ -4050,7 +4050,6 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   unsigned short iDim, iVar, jVar;
   su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
   
-  //bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -4118,7 +4117,6 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim;
   
-  //bool implicit       = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -4240,7 +4238,6 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
   /*--- For now the source term Jacobian is just set to zero ---*/
   
   unsigned short iVar, jVar;
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
