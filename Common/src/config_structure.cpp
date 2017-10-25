@@ -72,19 +72,15 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
   /*--- Initialize pointers to Null---*/
-  cout << "SetPointersNull" << endl;
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  cout << "SetConfig_Options" << endl;
   SetConfig_Options(0, 1);
 
   /*--- Parsing the config file  ---*/
-  cout << "SetConfig_Parsing" << endl;
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
-  cout << "SetPostprocessing" << endl;
   SetPostprocessing(val_software, 0, 1);
 
 }
