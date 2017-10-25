@@ -36,7 +36,6 @@
 
 CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -232,7 +231,6 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -429,7 +427,6 @@ CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -600,7 +597,6 @@ void CCentLax_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -793,7 +789,6 @@ void CUpwCUSP_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -966,7 +961,6 @@ void CUpwAUSM_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -1480,7 +1474,6 @@ if (sM > 0.0) {
 
 CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -2363,7 +2356,6 @@ void UgpWithCvCompFlow::calcJacobianA(su2double (*A)[5], const su2double *vel, s
 
 CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -2607,7 +2599,6 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
 
 CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -2944,7 +2935,6 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   /*--- Set booleans from CConfig settings ---*/
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -3160,7 +3150,6 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
 
 CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -3392,7 +3381,6 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
 
 CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -3493,7 +3481,6 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -3605,7 +3592,6 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
 
 CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
@@ -3874,7 +3860,6 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 
 CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  //implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
                (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
