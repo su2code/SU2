@@ -237,11 +237,16 @@ class TestCase:
             tofile = self.test_file 
             try:
                 fromdate = time.ctime(os.stat(fromfile).st_mtime)
-                todate = time.ctime(os.stat(tofile).st_mtime)
                 fromlines = open(fromfile, 'U').readlines()
+            except FileNotFoundError:
+                print("Cannot find reference file for diffing:", fromfile)
+                print("Current working directory contents:")
+                print(os.listdir("."))
+            try: 
+                todate = time.ctime(os.stat(tofile).st_mtime)
                 tolines = open(tofile, 'U').readlines()
-            except FileNotFoundError as e:
-                print("Cannot find file for diffing:", fromfile)
+            except FileNotFoundError:
+                print("Cannot find test output file for diffing:", tofile)
                 print("Current working directory contents:")
                 print(os.listdir("."))
 
