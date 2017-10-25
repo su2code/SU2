@@ -16431,9 +16431,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
             if (config->GetCFL(iMesh) == 0.0) {
                 node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
             } else {
-                if ( rank==MASTER_NODE ) {
-                  //std::cout << "dt = " << Global_Delta_Time << std::endl;
-                }
                 node[iPoint]->SetDelta_Time(Global_Delta_Time);
             }
         }
