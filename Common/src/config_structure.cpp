@@ -2461,7 +2461,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
 
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_ERR) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
@@ -2469,7 +2469,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
 
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_ERR) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
@@ -3975,7 +3975,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
-    case SU2_ERR: cout << "|   |___/\\___//___|   Suite (Error Estimation Code)                     |" << endl; break;
   }
 
   cout << "|                                                                       |" << endl;
@@ -4234,7 +4233,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
-	if (val_software == SU2_DOT || val_software == SU2_ERR) {
+	if (val_software == SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
     }else {
@@ -4266,11 +4265,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
-  if (val_software == SU2_DOT || val_software == SU2_ERR) {
+  if (val_software == SU2_DOT) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if (((val_software == SU2_DEF) || (val_software == SU2_DOT) || (val_software == SU2_ERR)) && (Design_Variable[0] != NONE)) {
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT) && (Design_Variable[0] != NONE)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -4412,7 +4411,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT) || (val_software == SU2_ERR)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
@@ -5019,7 +5018,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
   }
 
-  if (val_software == SU2_DOT || val_software == SU2_ERR) {
+  if (val_software == SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
