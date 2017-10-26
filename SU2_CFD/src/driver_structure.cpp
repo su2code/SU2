@@ -797,7 +797,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
-    case ERR_GNORM_EULER: euler = true; disc_adj = true; gnorm = true; break;
+    case GRAD_ERR_EULER: euler = true; disc_adj = true; gnorm = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -901,7 +901,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if(gnorm)
-        solver_container[iMGlevel][ERR_GNORM_SOL] = new CGradErrSolver(geometry[iMGlevel], config, solver_container[iMGlevel][ADJFLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
+        solver_container[iMGlevel][GRAD_ERR_SOL] = new CGradErrSolver(geometry[iMGlevel], config, solver_container[iMGlevel][ADJFLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
     }
@@ -1009,7 +1009,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
-    case ERR_GNORM_EULER: euler = true; disc_adj = true; gnorm = true; break;
+    case GRAD_ERR_EULER: euler = true; disc_adj = true; gnorm = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/

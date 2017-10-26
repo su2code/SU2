@@ -207,7 +207,7 @@ enum ENUM_SOLVER {
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
-  ERR_GNORM_EULER = 59
+  GRAD_ERR_EULER = 59
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -225,7 +225,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
-("ERR_GNORM_EULER", ERR_GNORM_EULER)
+("GRAD_ERR_EULER", GRAD_ERR_EULER)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
@@ -364,7 +364,7 @@ enum RUNTIME_TYPE {
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
 const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-const int ERR_GNORM_SOL = 4; /*!< \brief Position of the error estimation solution in the solver container array. */
+const int GRAD_ERR_SOL = 4; /*!< \brief Position of the error estimation solution in the solver container array. */
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
@@ -404,12 +404,14 @@ const int EL_HEXA = 1;		/*!< \brief Elements of eight nodes (3D). */
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,		/*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2 /*< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 2, /*< \brief AD-based discrete adjoint problem. */
+  GRAD_ERROR = 3 /*< \brief Error estimation problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)
 ("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
-("DISCRETE_ADJOINT", DISCRETE_ADJOINT);
+("DISCRETE_ADJOINT", DISCRETE_ADJOINT)
+("GRAD_ERROR", GRAD_ERROR);
 
 /*!
  * \brief types of spatial discretizations
