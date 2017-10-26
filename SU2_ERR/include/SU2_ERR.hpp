@@ -44,7 +44,15 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+#include "../../Common/include/interpolation_structure.hpp"
+#include "../../SU2_CFD/include/driver_structure.hpp"
+#include "../../SU2_CFD/include/solver_structure.hpp"
+#include "../../SU2_CFD/include/integration_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
+#include "../../SU2_CFD/include/numerics_structure.hpp"
+#include "../../SU2_CFD/include/definition_structure.hpp"
+#include "../../SU2_CFD/include/iteration_structure.hpp"
+#include "../../SU2_CFD/include/transfer_structure.hpp"
 
 using namespace std;
 
