@@ -663,7 +663,7 @@ def findiff( config, state=None ):
         dvs_base = konfig['DV_VALUE_NEW']
 
     # initialize gradients
-    func_keys = func_base.keys()
+    func_keys = list(func_base.keys())
     func_keys = ['VARIABLE'] + func_keys + ['FINDIFF_STEP']
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
@@ -943,7 +943,7 @@ def directdiff( config, state=None ):
     n_dv = sum(Definition_DV['SIZE'])
 
     # initialize gradients
-    func_keys = su2io.grad_names_map.keys()
+    func_keys = list(su2io.grad_names_map.keys())
     func_keys = ['VARIABLE'] + func_keys
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
