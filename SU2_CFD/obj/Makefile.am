@@ -124,6 +124,7 @@ libSU2Core_sources = \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_error_estimate.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/SUBoom.cpp \

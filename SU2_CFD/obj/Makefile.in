@@ -206,6 +206,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
 	../src/solver_direct_elasticity.cpp \
+	../src/solver_error_estimate.cpp \
 	../src/solver_structure.cpp ../src/solver_template.cpp \
 	../src/SUBoom.cpp ../src/transfer_physics.cpp \
 	../src/transfer_structure.cpp ../src/transport_model.cpp \
@@ -267,6 +268,7 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_wave.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_elasticity.$(OBJEXT) \
+	../src/libSU2Core_a-solver_error_estimate.$(OBJEXT) \
 	../src/libSU2Core_a-solver_structure.$(OBJEXT) \
 	../src/libSU2Core_a-solver_template.$(OBJEXT) \
 	../src/libSU2Core_a-SUBoom.$(OBJEXT) \
@@ -359,6 +361,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
 	../src/solver_direct_elasticity.cpp \
+	../src/solver_error_estimate.cpp \
 	../src/solver_structure.cpp ../src/solver_template.cpp \
 	../src/SUBoom.cpp ../src/transfer_physics.cpp \
 	../src/transfer_structure.cpp ../src/transport_model.cpp \
@@ -421,6 +424,7 @@ am__objects_4 =  \
 	../src/___bin_SU2_CFD_AD-solver_direct_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_direct_wave.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_direct_elasticity.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-solver_error_estimate.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_template.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
