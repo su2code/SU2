@@ -534,11 +534,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
     }
   }
 
-  delete [] iPointmin;
   delete [] Coord;
-  delete [] y0;
-  if(nDim == 3) delete [] z0;
-  delete [] r2min;
   delete [] p0;
   delete [] p1;
 
