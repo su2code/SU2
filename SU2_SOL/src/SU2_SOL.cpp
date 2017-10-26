@@ -590,7 +590,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
             if (rank == MASTER_NODE){
               Objective_Function = 0.0;
               for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                Objective_Function += boom.p_rise2[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+                Objective_Function += (boom.p_rise + boom.p_rise2[iPhi])/boom.ray_N_phi; // Normalize by number of propagated signals
               }
             }
 

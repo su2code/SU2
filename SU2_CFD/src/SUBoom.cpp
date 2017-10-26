@@ -2060,8 +2060,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
     }
     sigFile.close();
     p_rise[iPhi] = signal.final_p[iPhi][0];
-    if(signal.final_p[iPhi][0] > -signal.final_p[iPhi][Msig-1]) p_rise2[iPhi] = signal.final_p[iPhi][0];
-    else p_rise2[iPhi] = signal.final_p[iPhi][Msig-1];
+    p_rise2[iPhi] = -signal.final_p[iPhi][Msig-1];
     cout << "p_rise = " << p_rise[iPhi] << ", p_max = " << p_max[iPhi] << ", p_int2 = " << p_int2[iPhi] << "." << endl;
 
   /*---Clean up---*/
