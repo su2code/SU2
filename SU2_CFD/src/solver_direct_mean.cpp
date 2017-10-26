@@ -6514,9 +6514,9 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) {
 
-  su2double *Residual, *local_Res_TruncError, Vol, Delta, Res, ktmp, du, dt;
-  unsigned short iVar, iStep, IterLinSol=0;
-  unsigned long iPoint, total_index, jPoint;
+  su2double *local_Res_TruncError, Vol, dt;
+  unsigned short iVar, IterLinSol=0;
+  unsigned long iPoint, total_index;
 
   bool adjoint = config->GetContinuous_Adjoint();
 
@@ -6646,9 +6646,9 @@ void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solve
 void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) {
 
-  su2double *Residual, *local_Res_TruncError, Vol, dt;
+  su2double *local_Res_TruncError, Vol, dt;
   unsigned short iVar, IterLinSol=0;
-  unsigned long iPoint, total_index, jPoint;
+  unsigned long iPoint, total_index;
 
   const su2double *RK_coeff_exp, *RK_coeff_imp;
 
