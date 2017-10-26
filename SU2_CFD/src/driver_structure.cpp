@@ -910,7 +910,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   /*--- Load restarts for any of the active solver containers. Note that
    these restart routines fill the fine grid and interpolate to all MG levels. ---*/
 
-  if (restart || restart_flow) {
+  if (restart || restart_flow || gnorm) {
     if (euler || ns) {
       solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
