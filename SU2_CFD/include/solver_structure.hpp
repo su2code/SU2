@@ -11673,7 +11673,7 @@ public:
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
    */
-  CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+  CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, CSolver *disc_adj_solver, unsigned short Kind_Solver, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.

@@ -41,7 +41,7 @@ CGradErrSolver::CGradErrSolver(CGeometry *geometry, CConfig *config)  : CSolver(
 
 }
 
-CGradErrSolver::CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver *disc_adj_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+CGradErrSolver::CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, CSolver *disc_adj_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   unsigned short iVar, iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -65,7 +65,7 @@ CGradErrSolver::CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver *di
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
   this->disc_adj_solver = disc_adj_solver;
-  this->direct_solver = disc_adj_solver->direct_solver;
+  this->direct_solver = direct_solver;
 
 
   nMarker      = config->GetnMarker_All();
