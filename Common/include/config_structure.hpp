@@ -479,7 +479,7 @@ private:
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  SpatialOrder_Heat,		/*!< \brief Order of the spatial numerical integration.*/  
+  unsigned short SpatialOrder_Heat;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool CHT_Problem;     /*!< \brief Boolean to determine whether the simulation is CHT or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
