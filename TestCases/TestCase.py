@@ -230,8 +230,14 @@ class TestCase:
                 timed_out = True
                 passed    = False
 
+        # Check for error output from that process
+        if process.poll() != 0:
+            passed = False
+            print("ERROR")
+            print("Output from the failed case:")
+            subprocess.call(["cat", logfilename])
 
-        if not timed_out:
+        if not timed_out and passed:
             # Compare files
             fromfile = self.reference_file
             tofile = self.test_file 
