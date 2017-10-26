@@ -722,7 +722,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj;
+  template_solver, disc_adj, gnorm;
   bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
   int val_iter = 0;
 
@@ -977,7 +977,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj;
+  template_solver, disc_adj, gnorm;
   
   /*--- Initialize some useful booleans ---*/
   
