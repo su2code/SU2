@@ -590,13 +590,9 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
             if (rank == MASTER_NODE){
               Objective_Function = 0.0;
               for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                Objective_Function += boom.p_int2[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+                Objective_Function += boom.p_rise2[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
               }
             }
-
-#ifdef HAVE_MPI
-            SU2_MPI::Bcast(&Objective_Function, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#endif
 
             /*---Write boom strength metrics to file---*/
             if (rank == MASTER_NODE){
