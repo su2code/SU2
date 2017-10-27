@@ -4587,6 +4587,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           }
           cout << "]" << endl;
           break;
+        case RUNGE_KUTTA_LIMEX_SMR91:
+          cout << "Linearized IMEX w/ SMR91 for the flow equations." << endl;
+          break;
         case EULER_EXPLICIT: cout << "Euler explicit method for the flow equations." << endl; break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
