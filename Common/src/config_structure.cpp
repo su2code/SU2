@@ -4467,7 +4467,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Runge-Kutta explicit method for the flow equations." << endl;
           cout << "Number of steps: " << nRKStep << endl;
           cout << "RK coefficients: " << endl;
-          cout << "  Amat = " << endl;
+          cout << "  A matrix = " << endl;
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << "    [";
             for (unsigned short jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
@@ -4475,12 +4475,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
             cout << "]" << endl;
           }
-          cout << "  bVec = [";
+          cout << "  b vector = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << " " << RK_bVec[iRKStep];
           }
           cout << "]" << endl;
-          cout << "  cVec = [";
+          cout << "  c vector = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << " " << RK_cVec[iRKStep];
           }
@@ -4549,7 +4549,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Linearized IMEX w/ EDIRK for the flow equations." << endl;
           cout << "Number of steps: " << nRKStep << endl;
           cout << "Explicit RK coefficients: " << endl;
-          cout << "  Amat = " << endl;
+          cout << "  A matrix = " << endl;
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << "    [";
             for (unsigned short jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
@@ -4557,18 +4557,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
             cout << "]" << endl;
           }
-          cout << "  bVec = [";
+          cout << "  b vector = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << " " << RK_bVec[iRKStep];
           }
           cout << "]" << endl;
-          cout << "  cVec = [";
+          cout << "  c vector = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
             cout << " " << RK_cVec[iRKStep];
           }
           cout << "]" << endl;
           cout << "Implicit RK coefficients: " << endl;
-          cout << "  AmatImp = " << endl;
+          cout << "  A matrix = " << endl;
           for (unsigned short iRKStep = 0; iRKStep < nRKStep-1; iRKStep++) {
             cout << "    [";
             for (unsigned short jRKStep = 0; jRKStep < nRKStep-1; jRKStep++) {
@@ -4576,12 +4576,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
             cout << "]" << endl;
           }
-          cout << "  bVecImp = [";
+          cout << "  b vector = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep-1; iRKStep++) {
             cout << " " << RK_bVec_imp[iRKStep];
           }
           cout << "]" << endl;
-          cout << "  cVecImp = [";
+          cout << "  c vector = [";
           for (unsigned short iRKStep = 0; iRKStep < nRKStep-1; iRKStep++) {
             cout << " " << RK_cVec_imp[iRKStep];
           }
