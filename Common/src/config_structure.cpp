@@ -4487,6 +4487,65 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "]" << endl;
           break;
         case RUNGE_KUTTA_LIMEX_EDIRK:
+          if (nRKStep == 0) {
+            cout << "No RK coefficients specified.  Defaulting to a 3 stage, 2nd order scheme." << endl;
+            nRKStep = 3;
+
+            // alloc and zero out space for explicit coefficients
+            RK_aMat = new su2double* [nRKStep];
+            RK_bVec = new su2double[nRKStep];
+            RK_cVec = new su2double[nRKStep];
+            for (unsigned int iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+              RK_bVec[iRKStep] = 0.0;
+              RK_cVec[iRKStep] = 0.0;
+
+              RK_aMat[iRKStep] = new su2double [nRKStep];
+              for (unsigned int jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
+                RK_aMat[iRKStep][jRKStep] = 0.0;
+              }
+            }
+
+            // set coeffs for explicit part of scheme
+            const su2double alpha = 1.0 - sqrt(2)/2.0;
+            const su2double delta = -2.0*sqrt(2.0)/3.0;
+
+            RK_aMat[1][0] = alpha;
+            RK_aMat[2][0] = delta;
+            RK_aMat[2][1] = 1.0 - delta;
+
+            RK_bVec[1] = 1.0 - alpha;
+            RK_bVec[2] = alpha;
+
+            RK_cVec[1] = alpha;
+            RK_cVec[2] = 1.0;
+
+            // alloc and zero out space for implicit coefficients
+            unsigned short int nImp = nRKStep - 1;
+            RK_aMat_imp = new su2double* [nImp];
+            RK_bVec_imp = new su2double[nImp];
+            RK_cVec_imp = new su2double[nImp];
+            for (unsigned int iRKStep = 0; iRKStep < nImp; iRKStep++) {
+              RK_bVec[iRKStep] = 0.0;
+              RK_cVec[iRKStep] = 0.0;
+
+              RK_aMat[iRKStep] = new su2double [nImp];
+              for (unsigned int jRKStep = 0; jRKStep < nImp; jRKStep++) {
+                RK_aMat[iRKStep][jRKStep] = 0.0;
+              }
+            }
+
+            // set coeffs for implicit part
+            RK_aMat_imp[0][0] = alpha;
+            RK_aMat_imp[1][0] = 1.0 - alpha;
+            RK_aMat_imp[1][1] = alpha;
+
+            RK_bVec_imp[0] = 1.0 - alpha;
+            RK_bVec_imp[1] = alpha;
+
+            RK_cVec[0] = alpha;
+            RK_cVec[1] = 1.0;
+          }
+
           cout << "Linearized IMEX w/ EDIRK for the flow equations." << endl;
           cout << "Number of steps: " << nRKStep << endl;
           cout << "Explicit RK coefficients: " << endl;
