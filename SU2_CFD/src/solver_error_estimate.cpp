@@ -407,16 +407,16 @@ void CGradErrSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Add any sources ---*/
     
-    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
+    //if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
     // Boom
-      if(config->GetKind_ObjFunc()==BOOM){
-        if (LocalPointIndex[iPoint] >= 0){
-          for (iVar = 0; iVar < nVar; iVar++){
-              Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
-           }
-        }
-      }
-    }
+    //  if(config->GetKind_ObjFunc()==BOOM){
+    //    if (LocalPointIndex[iPoint] >= 0){
+    //      for (iVar = 0; iVar < nVar; iVar++){
+    //          Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
+    //       }
+    //    }
+    //  }
+    //}
 
     /*--- Store the adjoint solution ---*/
 
@@ -516,8 +516,8 @@ void CGradErrSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
     if (dual_time) {
@@ -546,7 +546,7 @@ void CGradErrSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
 
 
-    direct_solver->node[iPoint]->SetAdjointSolution(Solution);
+    direct_solver->node[iPoint]->SetAdjointSolutionW(Solution[iVar], iVar);
   }
 }
 
