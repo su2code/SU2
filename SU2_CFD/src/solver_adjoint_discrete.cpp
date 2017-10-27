@@ -404,6 +404,19 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     direct_solver->node[iPoint]->GetAdjointSolution(Solution);
 
+    /*--- Add any sources ---*/
+    
+    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
+    // Boom
+      if(config->GetKind_ObjFunc()==BOOM){
+        if (LocalPointIndex[iPoint] >= 0){
+          for (iVar = 0; iVar < nVar; iVar++){
+              Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
+           }
+        }
+      }
+    }
+
     /*--- Store the adjoint solution ---*/
 
     node[iPoint]->SetSolution(Solution);
@@ -522,13 +535,13 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
     }
     // Boom
-    else if(config->GetKind_ObjFunc()==BOOM){
+    /*else if(config->GetKind_ObjFunc()==BOOM){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
             Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
          }
     }
-    }
+    }*/
     }
 
 
