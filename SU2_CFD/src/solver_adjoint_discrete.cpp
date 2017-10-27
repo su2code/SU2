@@ -454,8 +454,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
       if (config->GetSens_Remove_Sharp()) {
-        eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+        eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
           Sensitivity = 0.0;
       }
       if (!time_stepping) {
@@ -473,7 +473,6 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   unsigned long iVertex, iPoint;
   su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
   Total_Sens_Geo = 0.0;
-  su2double *MySens_Geo;
   string Monitoring_Tag, Marker_Tag;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -527,6 +526,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   }
 
 #ifdef HAVE_MPI
+  su2double *MySens_Geo;
   MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
