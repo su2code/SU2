@@ -4431,6 +4431,39 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
+          if (nRKStep == 0) {
+            cout << "No RK coefficients specified.  Defaulting to classical RK4." << endl;
+            nRKStep = 4;
+
+            // alloc and zero out space for coefficients
+            RK_aMat = new su2double* [nRKStep];
+            RK_bVec = new su2double[nRKStep];
+            RK_cVec = new su2double[nRKStep];
+            for (unsigned int iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+              RK_bVec[iRKStep] = 0.0;
+              RK_cVec[iRKStep] = 0.0;
+
+              RK_aMat[iRKStep] = new su2double [nRKStep];
+              for (unsigned int jRKStep = 0; jRKStep < nRKStep; jRKStep++) {
+                RK_aMat[iRKStep][jRKStep] = 0.0;
+              }
+            }
+
+            // set them
+            RK_aMat[1][0] = 0.5;
+            RK_aMat[2][1] = 0.5;
+            RK_aMat[3][2] = 1.0;
+
+            RK_bVec[0] = 1.0/6.0;
+            RK_bVec[1] = 1.0/3.0;
+            RK_bVec[2] = 1.0/3.0;
+            RK_bVec[3] = 1.0/6.0;
+
+            RK_cVec[1] = 0.5;
+            RK_cVec[2] = 0.5;
+            RK_cVec[3] = 1.0;
+          }
+
           cout << "Runge-Kutta explicit method for the flow equations." << endl;
           cout << "Number of steps: " << nRKStep << endl;
           cout << "RK coefficients: " << endl;
