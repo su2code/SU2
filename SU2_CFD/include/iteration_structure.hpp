@@ -1035,8 +1035,8 @@ public:
 
 /*!
  * \class CGradErrFluidIteration
- * \brief Class for driving an iteration of the error estimate fluid system.
- * \author T. Economon
+ * \brief Class for driving an iteration of the error estimation adjoint system.
+ * \author B. Munguia
  * \version 5.0.0 "Raven"
  */
 class CGradErrFluidIteration : public CIteration {

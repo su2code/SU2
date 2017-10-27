@@ -11623,7 +11623,7 @@ public:
 
 /*!
  * \class CGradErrSolver
- * \brief Main class for defining the error estimate solver.
+ * \brief Main class for defining the error estimation adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author B. Munguia
  * \version 5.0.0 "Raven"

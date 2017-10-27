@@ -744,9 +744,13 @@ public:
   ~CGradErrFluidDriver(void);
 
   /*!
-   * \brief Run a single iteration of the error estimatioon solver within multiple zones.
+   * \brief Run a single iteration of the error estimation adjoint solver within multiple zones.
    */
+  void Run();
 
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
+   */
   void DiscAdjRun();
 
   /*!
