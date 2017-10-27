@@ -4462,16 +4462,87 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                   su2double timeused,
                                   unsigned short val_iZone) {
   
-  bool output_surface  = (config[val_iZone]->GetnMarker_Analyze() != 0);
-  bool output_comboObj = (config[val_iZone]->GetnObj() > 1);
+  bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
+  bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
+  unsigned long iIntIter    = config[val_iZone]->GetIntIter();
+  unsigned long iExtIter    = config[val_iZone]->GetExtIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned short nZone       = config[val_iZone]->GetnZone();
+  unsigned short nZone      = config[val_iZone]->GetnZone();
+  bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
+  bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
+  bool output_files         = true;
   int rank;
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MASTER_NODE;
 #endif
+  
+  
+  if (!disc_adj) {
+    
+    if ((config[val_iZone]->GetFixed_CL_Mode()) &&
+        (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
+      output_files = false;
+    }
+    
+    /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
+    
+    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+      
+      if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
+      
+      /*--- For specific applications, evaluate and plot the surface. ---*/
+      
+      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+        SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                     geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- For specific applications, evaluate and plot the surface. ---*/
+      
+      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+        SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                 geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- For specific applications, evaluate and plot the equivalent area. ---*/
+      
+      if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
+        SpecialOutput_SonicBoom(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- Compute the forces at different sections. ---*/
+      
+      if (config[val_iZone]->GetPlot_Section_Forces()) {
+        SpecialOutput_SpanLoad(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                               geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- Output a file with the forces breakdown. ---*/
+      
+      if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iZone, nZone, output_files);
+      }
+      
+      /*--- Compute span-wise values file for turbomachinery. ---*/
+      
+      if (config[val_iZone]->GetBoolTurbomachinery()) {
+        SpecialOutput_Turbo(solver_container, geometry, config, val_iZone, output_files);
+      }
+      
+      /*--- Output a file with the forces breakdown. ---*/
+      
+      SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
+      
+      if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
+      
+    }
+    
+  }
   
   /*--- Output using only the master node ---*/
   
@@ -4488,8 +4559,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
     }
     
-    unsigned long iIntIter = config[val_iZone]->GetIntIter();
-    unsigned long iExtIter = config[val_iZone]->GetExtIter();
     unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
     if (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
         config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)
@@ -4525,8 +4594,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool thermal = (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
-    bool cont_adj = config[val_iZone]->GetContinuous_Adjoint();
-    bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
@@ -5539,7 +5606,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       switch (config[val_iZone]->GetKind_Solver()) {
         case EULER : case NAVIER_STOKES:
           
-          if (!DualTime_Iteration) {
+          /*--- Write history file ---*/
+          
+          if ((!DualTime_Iteration) && (output_files)) {
             if (!turbo) {
               ConvHist_file[0] << begin << direct_coeff;
               if (thermal) ConvHist_file[0] << heat_coeff;
@@ -5564,8 +5633,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          
+          /*--- Write screen output ---*/
 
+          if (val_iZone == 0){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5590,18 +5661,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout << Total_CNearFieldOF; }
               else if (turbo) {
                 cout.setf(ios::scientific, ios::floatfield);
-                /*--- singlezone output---*/
-                if (nZone < 2){
+                
+                if (nZone < 2) {
                   cout.width(15); cout << TotalPressureLoss[0][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[0][nSpanWiseSections]*100.0;
                 }
-                else{
-                  /*--- multizone output---*/
+                else {
                   cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1][nSpanWiseSections]*100.0;
                   cout.width(15); cout << EntropyGen[nTurboPerf -1][nSpanWiseSections]*100.0;
-
                 }
+                
                 cout.unsetf(ios_base::floatfield);
+                
               }
               else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
               if (aeroelastic) {
@@ -5617,8 +5688,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
         case RANS :
           
-          if (!DualTime_Iteration) {
-            
+          /*--- Write history file ---*/
+          
+          if ((!DualTime_Iteration) && (output_files)) {
+
             if (!turbo) {
               ConvHist_file[0] << begin << direct_coeff;
               if (thermal) ConvHist_file[0] << heat_coeff;
@@ -5643,6 +5716,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
+          
+          /*--- Write screen output ---*/
+
           if (val_iZone == 0){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
@@ -5945,7 +6021,7 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
 }
 
-void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone) {
+void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output) {
   
   char cstr[200];
   unsigned short iMarker_Monitoring;
@@ -5976,9 +6052,9 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   
   /*--- Output the mean flow solution using only the master node ---*/
   
-  if ((rank == MASTER_NODE) && (flow)) {
+  if ((rank == MASTER_NODE) && (flow) && (output)) {
     
-    cout << endl << "Writing the forces breakdown file." << endl;
+    cout << endl << "Writing the forces breakdown file ("<< config[val_iZone]->GetBreakdown_FileName() << ")." << endl;
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
@@ -7868,7 +7944,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
   }
 }
 
-void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config) {
+void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
@@ -8039,49 +8115,54 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         
         /*--- Write Cp at each section (tecplot format) ---*/
         
-        ofstream Cp_File;
-        if (iSection == 0) {
-          Cp_File.open("cp_sections.dat", ios::out);
-          Cp_File << "TITLE = \"Airfoil sections\"" << endl;
-          Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\"" << endl;
-        } else
-          Cp_File.open("cp_sections.dat", ios::app);
-        
-        
-        if (config->GetGeo_Description() == FUSELAGE) {
-          if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
-            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+        if (output) {
           
-          if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
-            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-        }
-        
-        if (config->GetGeo_Description() == WING) {
-          if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
-            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          ofstream Cp_File;
           
-          if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
-            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-        }
-        
-        /*--- Coordinates and pressure value ---*/
-        
-        if (config->GetSystemMeasurements() == SI) {
-          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-            Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
-            << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
-            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+          if (iSection == 0) {
+            Cp_File.open("cp_sections.dat", ios::out);
+            Cp_File << "TITLE = \"Airfoil sections\"" << endl;
+            Cp_File << "VARIABLES = \"x/c\",\"C<sub>p</sub>\",\"x\",\"y\",\"z\",\"y/c\",\"z/c\"" << endl;
+          } else
+            Cp_File.open("cp_sections.dat", ios::app);
+          
+          
+          if (config->GetGeo_Description() == FUSELAGE) {
+            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
+              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+            
+            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
+              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           }
-        }
-        if (config->GetSystemMeasurements() == US) {
-          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-            Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
-            << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
-            << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+          
+          if (config->GetGeo_Description() == WING) {
+            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
+              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+            
+            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
+              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           }
+          
+          /*--- Coordinates and pressure value ---*/
+          
+          if (config->GetSystemMeasurements() == SI) {
+            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
+              << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
+              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+            }
+          }
+          if (config->GetSystemMeasurements() == US) {
+            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+              Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
+              << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
+              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+            }
+          }
+          
+          Cp_File.close();
+          
         }
-        
-        Cp_File.close();
         
         /*--- Compute load distribution ---*/
         
@@ -8140,33 +8221,37 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         
         /*--- Write load distribution ---*/
         
-        ofstream Load_File;
-        if (iSection == 0) {
+        if (output) {
           
-          if (config->GetOutput_FileFormat() == PARAVIEW) {
-            Load_File.open("load_distribution.csv", ios::out);
-            Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
+          ofstream Load_File;
+          if (iSection == 0) {
+            
+            if (config->GetOutput_FileFormat() == PARAVIEW) {
+              Load_File.open("load_distribution.csv", ios::out);
+              Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
+            }
+            else {
+              Load_File.open("load_distribution.dat", ios::out);
+              Load_File << "TITLE = \"Load distribution\"" << endl;
+              Load_File << "VARIABLES = \"Percent Semispan\",\"Sectional C<sub>L</sub>\",\"Spanload (c C<sub>L</sub> / c<sub>ref</sub>) \",\"Elliptic Spanload\"" << endl;
+              Load_File << "ZONE T=\"Wing load distribution\"" << endl;
+            }
+          } else {
+            if (config->GetOutput_FileFormat() == PARAVIEW) Load_File.open("load_distribution.csv", ios::app);
+            else Load_File.open("load_distribution.dat", ios::app);
           }
-          else {
-            Load_File.open("load_distribution.dat", ios::out);
-            Load_File << "TITLE = \"Load distribution\"" << endl;
-            Load_File << "VARIABLES = \"Percent Semispan\",\"Sectional C<sub>L</sub>\",\"Spanload (c C<sub>L</sub> / c<sub>ref</sub>) \",\"Elliptic Spanload\"" << endl;
-            Load_File << "ZONE T=\"Wing load distribution\"" << endl;
-          }
-        } else {
-          if (config->GetOutput_FileFormat() == PARAVIEW) Load_File.open("load_distribution.csv", ios::app);
-          else Load_File.open("load_distribution.dat", ios::app);
+          
+          
+          /*--- CL and spanload ---*/
+          
+          if (config->GetOutput_FileFormat() == PARAVIEW)
+            Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
+          else
+            Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
+          
+          Load_File.close();
+          
         }
-        
-        
-        /*--- CL and spanload ---*/
-        
-        if (config->GetOutput_FileFormat() == PARAVIEW)
-          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
-        else
-          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
-        
-        Load_File.close();
         
       }
       
@@ -8486,7 +8571,7 @@ void COutput::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *ge
   
 }
 
-void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config) {
+void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
   
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
@@ -8898,40 +8983,45 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
     /*--- Create a file with the equivalent area distribution at each azimuthal angle ---*/
     
     NearFieldEA_file.precision(15);
-    NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
-    NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
     
-    if (config->GetSystemMeasurements() == US)
-      NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
-    else
-      NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
-    
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
-      else
-        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
-    }
-    
-    NearFieldEA_file << "\n";
-    for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
+    if (output) {
       
-      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-      su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
+      NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
+      NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
       
       if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+        NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
       else
-        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
+        NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
       
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
+        if (config->GetSystemMeasurements() == US)
+          NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        else
+          NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
       }
       
       NearFieldEA_file << "\n";
+      for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
+        
+        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+        su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
+        
+        if (config->GetSystemMeasurements() == US)
+          NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+        else
+          NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
+        
+        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
+        }
+        
+        NearFieldEA_file << "\n";
+        
+      }
+      NearFieldEA_file.close();
       
     }
-    NearFieldEA_file.close();
     
     /*--- Read target equivalent area from the configuration file,
      this first implementation requires a complete table (same as the original
@@ -9029,51 +9119,61 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
     /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
     
     EquivArea_file.precision(15);
-    EquivArea_file.open("nearfield_flow.dat", ios::out);
-    EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
     
-    if (config->GetSystemMeasurements() == US)
-      EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << "\n";
-    else
-      EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << "\n";
-    
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << "\n";
-      for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
-        
-        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-        su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
-        
-        if (config->GetSystemMeasurements() == US)
-          EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
-        else
-          EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
-        
-        EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << "\n";
+    if (output) {
+      
+      EquivArea_file.open("nearfield_flow.dat", ios::out);
+      EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
+      
+      if (config->GetSystemMeasurements() == US)
+        EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << "\n";
+      else
+        EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << "\n";
+      
+      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+        EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << "\n";
+        for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
+          
+          su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+          su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
+          
+          if (config->GetSystemMeasurements() == US)
+            EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+          else
+            EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
+          
+          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
+          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << "\n";
+        }
       }
+      
+      EquivArea_file.close();
+      
     }
-    
-    EquivArea_file.close();
     
     /*--- Write Weight file for adjoint computation ---*/
     
     FuncGrad_file.precision(15);
-    FuncGrad_file.open("WeightNF.dat", ios::out);
     
-    FuncGrad_file << scientific << "-1.0";
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
-    FuncGrad_file << "\n";
-    
-    for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
-      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-      FuncGrad_file << scientific << XcoordRot;
+    if (output) {
+      
+      FuncGrad_file.open("WeightNF.dat", ios::out);
+      
+      FuncGrad_file << scientific << "-1.0";
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
+        FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
       FuncGrad_file << "\n";
+      
+      for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
+        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+        FuncGrad_file << scientific << XcoordRot;
+        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+          FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
+        FuncGrad_file << "\n";
+      }
+      FuncGrad_file.close();
+      
     }
-    FuncGrad_file.close();
     
     /*--- Delete structures ---*/
     
@@ -9105,7 +9205,7 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
   
 }
 
-void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config) {
+void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
   
   unsigned short iMarker, iDim, iMarker_Analyze;
   unsigned long iPoint, iVertex;
@@ -9143,27 +9243,27 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
-
-  if (rank == MASTER_NODE) cout << endl << "Writing Surface Analysis file.";
-
-  /*--- Open and rrite file name with extension if unsteady ---*/
-
   ofstream SurfFlow_file;
 
-  if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
-  else strcpy (cstr, "surface_analysis.dat");
-  
-  SurfFlow_file.precision(15);
-  SurfFlow_file.open(cstr, ios::out);
+  if (output && (rank == MASTER_NODE)) {
 
-  if (config->GetOutput_FileFormat() == PARAVIEW) {
-    SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
-    SurfFlow_file << "vtk output" << endl;
-    SurfFlow_file << "ASCII" << endl;
-  }
-  else {
-    SurfFlow_file <<"TITLE = \"Surface Analysis\"" <<endl;
-    SurfFlow_file <<"VARIABLES = \"y(in)\", \"z(in)\", \"PT/PT<sub>inf</sub>\", \"TT/TT<sub>inf</sub>\", \"P/P<sub>inf</sub>\", \"T/T<sub>inf</sub>\", \"v<sub>x</sub>/v<sub>inf</sub>\", \"v<sub>y</sub>/v<sub>inf</sub>\", \"v<sub>z</sub>/v<sub>inf</sub>\", \"<greek>a</greek> (deg)\", \"<greek>b</greek> (deg)\", \"Mach\", \"Filtered <greek>a</greek> (deg)\", \"Filtered <greek>b</greek> (deg)\", \"Filtered Mach\"" << endl;
+    if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
+    else strcpy (cstr, "surface_analysis.dat");
+    
+    SurfFlow_file.precision(15);
+
+    SurfFlow_file.open(cstr, ios::out);
+    
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
+      SurfFlow_file << "vtk output" << endl;
+      SurfFlow_file << "ASCII" << endl;
+    }
+    else {
+      SurfFlow_file <<"TITLE = \"Surface Analysis\"" <<endl;
+      SurfFlow_file <<"VARIABLES = \"y(in)\", \"z(in)\", \"PT/PT<sub>inf</sub>\", \"TT/TT<sub>inf</sub>\", \"P/P<sub>inf</sub>\", \"T/T<sub>inf</sub>\", \"v<sub>x</sub>/v<sub>inf</sub>\", \"v<sub>y</sub>/v<sub>inf</sub>\", \"v<sub>z</sub>/v<sub>inf</sub>\", \"<greek>a</greek> (deg)\", \"<greek>b</greek> (deg)\", \"Mach\", \"Filtered <greek>a</greek> (deg)\", \"Filtered <greek>b</greek> (deg)\", \"Filtered Mach\"" << endl;
+    }
+    
   }
   
   /*--- Loop over all the markers to analyze ---*/
@@ -9970,171 +10070,175 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
         }
       }
       
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+      if (output) {
         
-        SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
-        SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            SurfFlow_file << ProbeArray[iAngle][iStation][1]-yCoord_CG << " " << ProbeArray[iAngle][iStation][2]-zCoord_CG << " 0.0 " <<" ";
+        if (config->GetOutput_FileFormat() == PARAVIEW) {
+          
+          SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
+          SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              SurfFlow_file << ProbeArray[iAngle][iStation][1]-yCoord_CG << " " << ProbeArray[iAngle][iStation][2]-zCoord_CG << " 0.0 " <<" ";
+            }
           }
+          
+          SurfFlow_file <<"\nCELLS " << nAngle*(nStation-1) <<" "<< nAngle*(nStation-1)*5 << endl;
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation-1; iStation++) {
+              a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
+              if (iAngle == nAngle-1) { b = iStation; c = b+1;   }
+              SurfFlow_file << "4 " << a  <<" "<< b <<" "<< c <<" "<< d <<" ";
+            }
+          }
+          
+          SurfFlow_file <<"\nCELL_TYPES " << nAngle*(nStation-1) << endl;
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation-1; iStation++) {
+              SurfFlow_file << "9 " ;
+            }
+          }
+          
+          SurfFlow_file <<"\nPOINT_DATA " << nAngle*nStation << endl;
+          SurfFlow_file <<"SCALARS PT/PT_inf float" << endl;
+          SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              SurfFlow_file << ProbeArray[iAngle][iStation][3] << " ";
+            }
+          }
+          
+          SurfFlow_file <<"SCALARS TT/TT_inf float" << endl;
+          SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              SurfFlow_file << ProbeArray[iAngle][iStation][4] << " ";
+            }
+          }
+          
+          SurfFlow_file <<"SCALARS Alpha float" << endl;
+          SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+              SurfFlow_file << Alpha << " ";
+            }
+          }
+          
+          SurfFlow_file <<"SCALARS Beta float" << endl;
+          SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+              SurfFlow_file << Beta << " ";
+            }
+          }
+          
+          SurfFlow_file <<"SCALARS Mach float" << endl;
+          SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              SurfFlow_file << ProbeArray[iAngle][iStation][7] << " ";
+            }
+          }
+          
+          SurfFlow_file <<"VECTORS Velocity float" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              SurfFlow_file << ProbeArray[iAngle][iStation][8] << " " << ProbeArray[iAngle][iStation][9] << " " << ProbeArray[iAngle][iStation][10] << " ";
+            }
+          }
+          
         }
-        
-        SurfFlow_file <<"\nCELLS " << nAngle*(nStation-1) <<" "<< nAngle*(nStation-1)*5 << endl;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation-1; iStation++) {
-            a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
-            if (iAngle == nAngle-1) { b = iStation; c = b+1;   }
-            SurfFlow_file << "4 " << a  <<" "<< b <<" "<< c <<" "<< d <<" ";
+        else {
+          
+          SurfFlow_file <<"ZONE T= \"" << Analyze_TagBound <<"\", NODES=" << nAngle*nStation << " , ELEMENTS= " << nAngle*(nStation-1) <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation; iStation++) {
+              
+              Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+              Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+              
+              Mach_ij = ProbeArray[iAngle][iStation][7];
+              if (iAngle+1 != nAngle) Mach_ip1j = ProbeArray[iAngle+1][iStation][7];
+              else Mach_ip1j = ProbeArray[0][iStation][7];
+              if (iAngle-1 != -1) Mach_im1j = ProbeArray[iAngle-1][iStation][7];
+              else Mach_im1j = ProbeArray[nAngle-1][iStation][7];
+              if (iStation+1 != nStation) Mach_ijp1 = ProbeArray[iAngle][iStation+1][7];
+              else Mach_ijp1 = ProbeArray[iAngle][0][7];
+              if (iStation-1 != -1) Mach_ijm1 = ProbeArray[iAngle][iStation-1][7];
+              else Mach_ijm1 = ProbeArray[iAngle][nStation-1][7];
+              Filtered_Mach = (4.0*Mach_ij+Mach_ip1j+Mach_im1j+Mach_ijp1+Mach_ijm1)/8.0;
+              
+              Alpha_ij = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+              if (iAngle+1 != nAngle) Alpha_ip1j = atan(ProbeArray[iAngle+1][iStation][10]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
+              else Alpha_ip1j = atan(ProbeArray[0][iStation][10]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
+              if (iAngle-1 != -1) Alpha_im1j = atan(ProbeArray[iAngle-1][iStation][10]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+              else Alpha_im1j = atan(ProbeArray[nAngle-1][iStation][10]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+              if (iStation+1 != nStation) Alpha_ijp1 = atan(ProbeArray[iAngle][iStation+1][10]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
+              else Alpha_ijp1 = atan(ProbeArray[iAngle][0][10]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
+              if (iStation-1 != -1) Alpha_ijm1 = atan(ProbeArray[iAngle][iStation-1][10]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
+              else Alpha_ijm1 = atan(ProbeArray[iAngle][nStation-1][10]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
+              Filtered_Alpha = (4.0*Alpha_ij+Alpha_ip1j+Alpha_im1j+Alpha_ijp1+Alpha_ijm1)/8.0;
+              
+              Beta_ij = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+              if (iAngle+1 != nAngle) Beta_ip1j = atan(ProbeArray[iAngle+1][iStation][9]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
+              else Beta_ip1j = atan(ProbeArray[0][iStation][9]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
+              if (iAngle-1 != -1) Beta_im1j = atan(ProbeArray[iAngle-1][iStation][9]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+              else Beta_im1j = atan(ProbeArray[nAngle-1][iStation][9]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+              if (iStation+1 != nStation) Beta_ijp1 = atan(ProbeArray[iAngle][iStation+1][9]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
+              else Beta_ijp1 = atan(ProbeArray[iAngle][0][9]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
+              if (iStation-1 != -1) Beta_ijm1 = atan(ProbeArray[iAngle][iStation-1][9]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
+              else Beta_ijm1 = atan(ProbeArray[iAngle][nStation-1][9]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
+              Filtered_Beta = (4.0*Beta_ij+Beta_ip1j+Beta_im1j+Beta_ijp1+Beta_ijm1)/8.0;
+              
+              
+              SurfFlow_file
+              << " "  << ProbeArray[iAngle][iStation][1]-yCoord_CG
+              <<" " << ProbeArray[iAngle][iStation][2]-zCoord_CG
+              <<" " << ProbeArray[iAngle][iStation][3] <<" " << ProbeArray[iAngle][iStation][4]
+              <<" " << ProbeArray[iAngle][iStation][5] <<" " << ProbeArray[iAngle][iStation][6]
+              <<" " << ProbeArray[iAngle][iStation][8] <<" " << ProbeArray[iAngle][iStation][9]
+              <<" " << ProbeArray[iAngle][iStation][10]
+              <<" " << Alpha <<" " << Beta << " " << ProbeArray[iAngle][iStation][7]
+              <<" " << Filtered_Alpha <<" " << Filtered_Beta << " " << Filtered_Mach << endl;
+              
+            }
           }
-        }
-        
-        SurfFlow_file <<"\nCELL_TYPES " << nAngle*(nStation-1) << endl;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation-1; iStation++) {
-            SurfFlow_file << "9 " ;
+          
+          for (iAngle = 0; iAngle < nAngle; iAngle++) {
+            for (iStation = 0; iStation < nStation-1; iStation++) {
+              a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
+              if (iAngle == nAngle-1) { b = iStation; c = b+1;   }
+              SurfFlow_file << a+1  <<" "<< b+1  <<" "<< c+1 <<" "<< d+1 << endl;
+            }
           }
-        }
-        
-        SurfFlow_file <<"\nPOINT_DATA " << nAngle*nStation << endl;
-        SurfFlow_file <<"SCALARS PT/PT_inf float" << endl;
-        SurfFlow_file <<"LOOKUP_TABLE default" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            SurfFlow_file << ProbeArray[iAngle][iStation][3] << " ";
-          }
-        }
-        
-        SurfFlow_file <<"SCALARS TT/TT_inf float" << endl;
-        SurfFlow_file <<"LOOKUP_TABLE default" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            SurfFlow_file << ProbeArray[iAngle][iStation][4] << " ";
-          }
-        }
-        
-        SurfFlow_file <<"SCALARS Alpha float" << endl;
-        SurfFlow_file <<"LOOKUP_TABLE default" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-            SurfFlow_file << Alpha << " ";
-          }
-        }
-        
-        SurfFlow_file <<"SCALARS Beta float" << endl;
-        SurfFlow_file <<"LOOKUP_TABLE default" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-            SurfFlow_file << Beta << " ";
-          }
-        }
-        
-        SurfFlow_file <<"SCALARS Mach float" << endl;
-        SurfFlow_file <<"LOOKUP_TABLE default" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            SurfFlow_file << ProbeArray[iAngle][iStation][7] << " ";
-          }
-        }
-        
-        SurfFlow_file <<"VECTORS Velocity float" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            SurfFlow_file << ProbeArray[iAngle][iStation][8] << " " << ProbeArray[iAngle][iStation][9] << " " << ProbeArray[iAngle][iStation][10] << " ";
-          }
+          
+          /*--- Add extra info ---*/
+          
+          SurfFlow_file << "TEXT X=14, Y=86, F=HELV-BOLD, C=BLUE, H=2.0, ";
+          unsigned short RackProbes = SU2_TYPE::Int(config->GetDistortionRack()[0]);
+          unsigned short RackAngle = SU2_TYPE::Int(config->GetDistortionRack()[1]);
+          SurfFlow_file << "T=\"Rack Size: " << RackProbes << " probes at "<< RackAngle << "deg." << "\\" << "\\n";
+          SurfFlow_file << "Mach " << config->GetMach() << ", Reynolds " << config->GetReynolds() << ", <greek>a</greek> "
+          << config->GetAoA() << "deg, <greek>b</greek> " << config->GetAoS() << "deg." << "\\" << "\\n";
+          SurfFlow_file.precision(1);
+          SurfFlow_file << fixed << "NetC<sub>T</sub> " << solver->GetTotal_NetCThrust()*10000 << "cts., Power " << solver->GetTotal_Power() <<  "HP";
+          SurfFlow_file.precision(4);
+          SurfFlow_file << ", MassFlow " << config->GetSurface_MassFlow(iMarker_Analyze) << ",\\" << "\\n";
+          SurfFlow_file << "IDC " << config->GetSurface_IDC(iMarker_Analyze)*100 << "%, IDCM " << config->GetSurface_IDC_Mach(iMarker_Analyze)*100 << "%, IDR " << config->GetSurface_IDR(iMarker_Analyze)*100 << "%,\\" << "\\n";
+          SurfFlow_file << "DC60 " << config->GetSurface_DC60(iMarker_Analyze) << ".\"" << endl;
+          
         }
         
       }
-      else {
-        
-        SurfFlow_file <<"ZONE T= \"" << Analyze_TagBound <<"\", NODES=" << nAngle*nStation << " , ELEMENTS= " << nAngle*(nStation-1) <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation; iStation++) {
-            
-            Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-            Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-            
-            Mach_ij = ProbeArray[iAngle][iStation][7];
-            if (iAngle+1 != nAngle) Mach_ip1j = ProbeArray[iAngle+1][iStation][7];
-            else Mach_ip1j = ProbeArray[0][iStation][7];
-            if (iAngle-1 != -1) Mach_im1j = ProbeArray[iAngle-1][iStation][7];
-            else Mach_im1j = ProbeArray[nAngle-1][iStation][7];
-            if (iStation+1 != nStation) Mach_ijp1 = ProbeArray[iAngle][iStation+1][7];
-            else Mach_ijp1 = ProbeArray[iAngle][0][7];
-            if (iStation-1 != -1) Mach_ijm1 = ProbeArray[iAngle][iStation-1][7];
-            else Mach_ijm1 = ProbeArray[iAngle][nStation-1][7];
-            Filtered_Mach = (4.0*Mach_ij+Mach_ip1j+Mach_im1j+Mach_ijp1+Mach_ijm1)/8.0;
-            
-            Alpha_ij = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-            if (iAngle+1 != nAngle) Alpha_ip1j = atan(ProbeArray[iAngle+1][iStation][10]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
-            else Alpha_ip1j = atan(ProbeArray[0][iStation][10]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
-            if (iAngle-1 != -1) Alpha_im1j = atan(ProbeArray[iAngle-1][iStation][10]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-            else Alpha_im1j = atan(ProbeArray[nAngle-1][iStation][10]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-            if (iStation+1 != nStation) Alpha_ijp1 = atan(ProbeArray[iAngle][iStation+1][10]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
-            else Alpha_ijp1 = atan(ProbeArray[iAngle][0][10]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
-            if (iStation-1 != -1) Alpha_ijm1 = atan(ProbeArray[iAngle][iStation-1][10]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
-            else Alpha_ijm1 = atan(ProbeArray[iAngle][nStation-1][10]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
-            Filtered_Alpha = (4.0*Alpha_ij+Alpha_ip1j+Alpha_im1j+Alpha_ijp1+Alpha_ijm1)/8.0;
-            
-            Beta_ij = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-            if (iAngle+1 != nAngle) Beta_ip1j = atan(ProbeArray[iAngle+1][iStation][9]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
-            else Beta_ip1j = atan(ProbeArray[0][iStation][9]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
-            if (iAngle-1 != -1) Beta_im1j = atan(ProbeArray[iAngle-1][iStation][9]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-            else Beta_im1j = atan(ProbeArray[nAngle-1][iStation][9]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-            if (iStation+1 != nStation) Beta_ijp1 = atan(ProbeArray[iAngle][iStation+1][9]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
-            else Beta_ijp1 = atan(ProbeArray[iAngle][0][9]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
-            if (iStation-1 != -1) Beta_ijm1 = atan(ProbeArray[iAngle][iStation-1][9]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
-            else Beta_ijm1 = atan(ProbeArray[iAngle][nStation-1][9]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
-            Filtered_Beta = (4.0*Beta_ij+Beta_ip1j+Beta_im1j+Beta_ijp1+Beta_ijm1)/8.0;
-            
-            
-            SurfFlow_file
-            << " "  << ProbeArray[iAngle][iStation][1]-yCoord_CG
-            <<" " << ProbeArray[iAngle][iStation][2]-zCoord_CG
-            <<" " << ProbeArray[iAngle][iStation][3] <<" " << ProbeArray[iAngle][iStation][4]
-            <<" " << ProbeArray[iAngle][iStation][5] <<" " << ProbeArray[iAngle][iStation][6]
-            <<" " << ProbeArray[iAngle][iStation][8] <<" " << ProbeArray[iAngle][iStation][9]
-            <<" " << ProbeArray[iAngle][iStation][10]
-            <<" " << Alpha <<" " << Beta << " " << ProbeArray[iAngle][iStation][7]
-            <<" " << Filtered_Alpha <<" " << Filtered_Beta << " " << Filtered_Mach << endl;
-            
-          }
-        }
-        
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
-          for (iStation = 0; iStation < nStation-1; iStation++) {
-            a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
-            if (iAngle == nAngle-1) { b = iStation; c = b+1;   }
-            SurfFlow_file << a+1  <<" "<< b+1  <<" "<< c+1 <<" "<< d+1 << endl;
-          }
-        }
-        
-        /*--- Add extra info ---*/
-        
-        SurfFlow_file << "TEXT X=14, Y=86, F=HELV-BOLD, C=BLUE, H=2.0, ";
-        unsigned short RackProbes = SU2_TYPE::Int(config->GetDistortionRack()[0]);
-        unsigned short RackAngle = SU2_TYPE::Int(config->GetDistortionRack()[1]);
-        SurfFlow_file << "T=\"Rack Size: " << RackProbes << " probes at "<< RackAngle << "deg." << "\\" << "\\n";
-        SurfFlow_file << "Mach " << config->GetMach() << ", Reynolds " << config->GetReynolds() << ", <greek>a</greek> "
-        << config->GetAoA() << "deg, <greek>b</greek> " << config->GetAoS() << "deg." << "\\" << "\\n";
-        SurfFlow_file.precision(1);
-        SurfFlow_file << fixed << "NetC<sub>T</sub> " << solver->GetTotal_NetCThrust()*10000 << "cts., Power " << solver->GetTotal_Power() <<  "HP";
-        SurfFlow_file.precision(4);
-        SurfFlow_file << ", MassFlow " << config->GetSurface_MassFlow(iMarker_Analyze) << ",\\" << "\\n";
-        SurfFlow_file << "IDC " << config->GetSurface_IDC(iMarker_Analyze)*100 << "%, IDCM " << config->GetSurface_IDC_Mach(iMarker_Analyze)*100 << "%, IDR " << config->GetSurface_IDR(iMarker_Analyze)*100 << "%,\\" << "\\n";
-        SurfFlow_file << "DC60 " << config->GetSurface_DC60(iMarker_Analyze) << ".\"" << endl;
-        
-      }
-      
+
       /*--- Release the recv buffers on the master node ---*/
       
       delete [] Buffer_Recv_Coord_x;
@@ -10165,17 +10269,17 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
       
     }
     
-    if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
-      
-      cout << "Surface ("<< Analyze_TagBound << "): ";
-      cout.precision(4);
-      cout.setf(ios::fixed, ios::floatfield);
-      cout << setprecision(1) << "Dist. coeff.: IDC " << 100*config->GetSurface_IDC(iMarker_Analyze)
-      << "%. IDC Mach " << 100*config->GetSurface_IDC_Mach(iMarker_Analyze)
-      << "%. IDR " << 100*config->GetSurface_IDR(iMarker_Analyze)
-      << "%. DC60 " << config->GetSurface_DC60(iMarker_Analyze) << "." << endl;
-      
-    }
+//    if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
+//
+//      cout << "Surface ("<< Analyze_TagBound << "): ";
+//      cout.precision(4);
+//      cout.setf(ios::fixed, ios::floatfield);
+//      cout << setprecision(1) << "IDC " << 100*config->GetSurface_IDC(iMarker_Analyze)
+//      << "%. IDC Mach " << 100*config->GetSurface_IDC_Mach(iMarker_Analyze)
+//      << "%. IDR " << 100*config->GetSurface_IDR(iMarker_Analyze)
+//      << "%. DC60 " << config->GetSurface_DC60(iMarker_Analyze) << "." << endl;
+//
+//    }
     
     /*--- Release the memory for the remaining buffers and exit ---*/
     
@@ -10199,8 +10303,12 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   
   /*--- Close the tecplot  file ---*/
   
-  SurfFlow_file.close();
-  
+  if (output) {
+    SurfFlow_file.close();
+  }
+    
+  if (rank == MASTER_NODE) cout << "Writing surface analysis files (surface_analysis.dat)." << endl;
+
 }
 
 void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone) {
@@ -10544,7 +10652,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
 }
 
 void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CConfig **config,
-                                       unsigned short val_iZone) {
+                                       unsigned short val_iZone, bool output) {
   
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config[val_iZone]->GetnZone();
@@ -10802,7 +10910,7 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
   }
 }
 
-void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone) {
+void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) {
   
   int rank = MASTER_NODE;
 
@@ -10911,7 +11019,8 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  unsigned short iZone;
+  unsigned short iZone, iVar;
+  unsigned long iPoint;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
@@ -10979,11 +11088,51 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       default: break;
     }
     
-    /*--- After loading the data local to a processor, we perform a sorting, 
+    /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
+
+    if ((config[iZone]->GetFixed_CL_Mode()) &&
+        (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
+      
+      if (rank == MASTER_NODE)
+        cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
+      
+      Local_Data_Copy = new su2double*[geometry[iZone][MESH_0]->GetnPoint()];
+      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+        Local_Data_Copy[iPoint] = new su2double[nVar_Par];
+      }
+      
+      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+        for (iVar = 0; iVar < nVar_Par; iVar++) {
+          Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
+        }
+      }
+      
+    }
+    
+    /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
+
+    if ((config[iZone]->GetFixed_CL_Mode()) &&
+        (config[iZone]->GetnExtIter() - 1 == iExtIter)) {
+      
+      if (rank == MASTER_NODE)
+        cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
+      
+      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+        for (iVar = 0; iVar < nVar_Par; iVar++) {
+          Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
+        }
+      }
+      
+      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++)
+        delete [] Local_Data_Copy[iPoint];
+      delete [] Local_Data_Copy;
+      
+    }
+    
+    /*--- After loading the data local to a processor, we perform a sorting,
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
     
-    if (rank == MASTER_NODE)
-      cout << "Sorting output data across all ranks." << endl;
+    if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
     SortOutputData(config[iZone], geometry[iZone][MESH_0]);
     
     /*--- Write either a binary or ASCII restart file in parallel. ---*/
@@ -16061,7 +16210,7 @@ void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometr
   
 }
 
-void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config) {
+void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
   
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
@@ -16341,15 +16490,12 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     
   }
   
-  
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
-  
-  if ((rank == MASTER_NODE) && write_heads && !config->GetDiscrete_Adjoint()) {
+  if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
     cout.precision(4);
     cout.setf(ios::fixed, ios::floatfield);
     
-    cout << endl << "--------------------------- Surface Analysis -------------------------" << endl;
+    cout << endl << "Computing surface mean values." << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
       cout << "Surface ("<< config->GetMarker_Analyze_TagBound(iMarker_Analyze);
@@ -16362,27 +16508,24 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
       cout << ", Mach: " << Mach;
       
       su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature;
-      else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature;
+      if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature << "," << endl;
+      else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature << "," << endl;
       
       su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", P (Pa): " << Pressure;
-      else if (config->GetSystemMeasurements() == US) cout << ", P (psf): " << Pressure;
-      
+      if (config->GetSystemMeasurements() == SI) cout << "     P (Pa): " << Pressure;
+      else if (config->GetSystemMeasurements() == US) cout << "     P (psf): " << Pressure;
       
       su2double Density = config->GetSurface_Density(iMarker_Analyze);
       if (config->GetSystemMeasurements() == SI) cout << ", Rho (kg/m^3): " << Density;
       else if (config->GetSystemMeasurements() == US) cout << ", Rho (lb/ft^3): " << Density;
       
       su2double NormalVelocity = config->GetSurface_NormalVelocity(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity;
-      else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity;
-      
+      if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity << "," << endl;
+      else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity << "," << endl;
       
       su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", TT (K): " << TotalTemperature;
-      else if (config->GetSystemMeasurements() == US) cout << ", TT (R): " << TotalTemperature;
-      
+      if (config->GetSystemMeasurements() == SI) cout << "     TT (K): " << TotalTemperature;
+      else if (config->GetSystemMeasurements() == US) cout << "     TT (R): " << TotalTemperature;
       
       su2double TotalPressure = config->GetSurface_TotalPressure(iMarker_Analyze);
       if (config->GetSystemMeasurements() == SI) cout << ", PT (Pa): " << TotalPressure << "." << endl;
