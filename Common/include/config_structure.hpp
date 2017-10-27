@@ -1874,6 +1874,13 @@ public:
   void SetRefArea(su2double val_area);
   
   /*!
+   * \brief In case the <i>SemiSpan</i> is equal to 0 then, it is necessary to compute the max y distance,
+   *        with this function we set the value of the semi span.
+   * \param[in] val_semispan - Value of the semispan.
+   */
+  void SetSemiSpan(su2double val_semispan);
+  
+  /*!
    * \brief Set the value of the domain volume computed on the finest grid.
    * \note This volume do not include the volume of the body that is being simulated.
    * \param[in] val_volume - Value of the domain volume computed on the finest grid.

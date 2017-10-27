@@ -5759,13 +5759,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                   su2double timeused,
                                   unsigned short val_iZone) {
   
-  bool output_surface  = (config[val_iZone]->GetnMarker_Analyze() != 0);
-  bool output_comboObj = (config[val_iZone]->GetnObj() > 1);
-  bool output_files = true;
-  unsigned long iIntIter = config[val_iZone]->GetIntIter();
-  unsigned long iExtIter = config[val_iZone]->GetExtIter();
+  bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
+  bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
+  unsigned long iIntIter    = config[val_iZone]->GetIntIter();
+  unsigned long iExtIter    = config[val_iZone]->GetExtIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned short nZone       = config[val_iZone]->GetnZone();
+  unsigned short nZone      = config[val_iZone]->GetnZone();
+  bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
+  bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
+  bool output_files         = true;
   int rank;
   
 #ifdef HAVE_MPI
@@ -5775,64 +5777,67 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 #endif
   
   
-  if ((config[val_iZone]->GetFixed_CL_Mode()) &&
-      (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
-    output_files = false;
-  }
-  
-  
-  /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
-  
-  if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
-      ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+  if (!disc_adj) {
     
-    if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
-
-    /*--- For specific applications, evaluate and plot the surface. ---*/
-    
-    if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-      SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                   geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+    if ((config[val_iZone]->GetFixed_CL_Mode()) &&
+        (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
+      output_files = false;
     }
     
-    /*--- For specific applications, evaluate and plot the surface. ---*/
+    /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
-    if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-      SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
+    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+      
+      if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
+      
+      /*--- For specific applications, evaluate and plot the surface. ---*/
+      
+      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+        SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                     geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- For specific applications, evaluate and plot the surface. ---*/
+      
+      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+        SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                 geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- For specific applications, evaluate and plot the equivalent area. ---*/
+      
+      if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
+        SpecialOutput_SonicBoom(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- Compute the forces at different sections. ---*/
+      
+      if (config[val_iZone]->GetPlot_Section_Forces()) {
+        SpecialOutput_SpanLoad(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+      }
+      
+      /*--- Output a file with the forces breakdown. ---*/
+      
+      if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iZone, nZone, output_files);
+      }
+      
+      /*--- Compute span-wise values file for turbomachinery. ---*/
+      
+      if (config[val_iZone]->GetBoolTurbomachinery()) {
+        SpecialOutput_Turbo(solver_container, geometry, config, val_iZone, output_files);
+      }
+      
+      /*--- Output a file with the forces breakdown. ---*/
+      
+      SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
+      
+      if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
+      
     }
-    
-    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-    
-    if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
-      SpecialOutput_SonicBoom(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                              geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-    }
-    
-    /*--- Compute the forces at different sections. ---*/
-    
-    if (config[val_iZone]->GetPlot_Section_Forces()) {
-      SpecialOutput_SpanLoad(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                             geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-    }
-    
-    /*--- Output a file with the forces breakdown. ---*/
-    
-    if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-      SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iZone, nZone, output_files);
-    }
-    
-    /*--- Compute span-wise values file for turbomachinery. ---*/
-    
-    if (config[val_iZone]->GetBoolTurbomachinery()) {
-      SpecialOutput_Turbo(solver_container, geometry, config, val_iZone, output_files);
-    }
-    
-    /*--- Output a file with the forces breakdown. ---*/
-    
-    SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
-
-    if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
     
   }
   
@@ -5886,8 +5891,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool thermal = (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
-    bool cont_adj = config[val_iZone]->GetContinuous_Adjoint();
-    bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
@@ -10880,12 +10883,12 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
   ofstream SurfFlow_file;
 
-  if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
-  else strcpy (cstr, "surface_analysis.dat");
-  
-  SurfFlow_file.precision(15);
-  
-  if (output) {
+  if (output && (rank == MASTER_NODE)) {
+
+    if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
+    else strcpy (cstr, "surface_analysis.dat");
+    
+    SurfFlow_file.precision(15);
 
     SurfFlow_file.open(cstr, ios::out);
     
