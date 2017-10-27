@@ -64,8 +64,8 @@ CGradErrSolver::CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
-  this->disc_adj_solver = disc_adj_solver;
   this->direct_solver = direct_solver;
+  this->disc_adj_solver = disc_adj_solver;
 
 
   nMarker      = config->GetnMarker_All();
