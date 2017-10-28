@@ -395,27 +395,28 @@ grad_names_directdiff = ["D_LIFT",
                          "D_ENTHALPY_OUT",
                          "D_TOTAL_ENTHALPY_OUT"]
 
-grad_names_map = ordered_bunch(MASS_FLOW_IN="D_MASS_FLOW_IN",
-                               MOMENT_Z="D_MOMENT_Z",
-                               FLOW_ANGLE_OUT="D_FLOW_ANGLE_OUT",
-                               MASS_FLOW_OUT="D_MASS_FLOW_OUT",
-                               FLOW_ANGLE_IN="D_FLOW_ANGLE_IN",
-                               FORCE_Z="D_FORCE_Z",
-                               FORCE_Y="D_FORCE_Y",
-                               FORCE_X="D_FORCE_X",
-                               TOTAL_EFFICIENCY="D_TOTAL_EFFICIENCY",
-                               TOTAL_STATIC_EFFICIENCY="D_TOTAL_STATIC_EFFICIENCY",
-                               PRESSURE_RATIO="D_PRESSURE_RATIO",
-                               EFFICIENCY="D_EFFICIENCY", 
-                               DRAG="D_DRAG",
-                               LIFT="D_LIFT",
-                               TOTAL_ENTHALPY_OUT="D_TOTAL_ENTHALPY_OUT",
-                               TOTAL_PRESSURE_LOSS="D_TOTAL_PRESSURE_LOSS",
-                               MOMENT_Y="D_MOMENT_Y",
-                               MOMENT_X="D_MOMENT_X",
-                               SIDEFORCE="D_SIDEFORCE",
-                               ENTHALPY_OUT="D_ENTHALPY_OUT",
-                               KINETIC_ENERGY_LOSS="D_KINETIC_ENERGY_LOSS")
+grad_names_map = ordered_bunch()
+grad_names_map.MASS_FLOW_IN = "D_MASS_FLOW_IN"
+grad_names_map.MOMENT_Z = "D_MOMENT_Z"
+grad_names_map.FLOW_ANGLE_OUT = "D_FLOW_ANGLE_OUT"
+grad_names_map.MASS_FLOW_OUT = "D_MASS_FLOW_OUT"
+grad_names_map.FLOW_ANGLE_IN = "D_FLOW_ANGLE_IN"
+grad_names_map.FORCE_Z = "D_FORCE_Z"
+grad_names_map.FORCE_Y = "D_FORCE_Y"
+grad_names_map.FORCE_X = "D_FORCE_X"
+grad_names_map.TOTAL_EFFICIENCY = "D_TOTAL_EFFICIENCY"
+grad_names_map.TOTAL_STATIC_EFFICIENCY = "D_TOTAL_STATIC_EFFICIENCY"
+grad_names_map.PRESSURE_RATIO = "D_PRESSURE_RATIO"
+grad_names_map.EFFICIENCY = "D_EFFICIENCY"
+grad_names_map.DRAG = "D_DRAG"
+grad_names_map.LIFT = "D_LIFT"
+grad_names_map.TOTAL_ENTHALPY_OUT = "D_TOTAL_ENTHALPY_OUT"
+grad_names_map.TOTAL_PRESSURE_LOSS = "D_TOTAL_PRESSURE_LOSS"
+grad_names_map.MOMENT_Y = "D_MOMENT_Y"
+grad_names_map.MOMENT_X="D_MOMENT_X"
+grad_names_map.SIDEFORCE = "D_SIDEFORCE"
+grad_names_map.ENTHALPY_OUT = "D_ENTHALPY_OUT"
+grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
 
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
