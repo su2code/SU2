@@ -4451,6 +4451,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   /*--- End of the header ---*/
   
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
+  char endfea[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
   
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
       (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
@@ -4511,9 +4512,14 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       
     case FEM_ELASTICITY:
       ConvHist_file[0] << begin << fem_coeff;
-      ConvHist_file[0] << fem_resid << end;
+      ConvHist_file[0] << fem_resid << endfea;
       break;
       
+    case DISC_ADJ_FEM:
+      ConvHist_file[0] << begin << fem_coeff;
+      ConvHist_file[0] << fem_resid << endfea;
+      break;
+
   }
   
   if (config->GetOutput_FileFormat() == TECPLOT ||

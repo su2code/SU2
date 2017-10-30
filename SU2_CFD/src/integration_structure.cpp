@@ -161,9 +161,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case LOAD_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case PRESSURE_BOUNDARY:
-        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
@@ -275,9 +272,6 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case LOAD_BOUNDARY:
           solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-          break;
-        case PRESSURE_BOUNDARY:
-          solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
           break;
         case DAMPER_BOUNDARY:
           solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);

@@ -997,8 +997,10 @@ void CFEM_ElasticitySolver::Set_ElementProperties(CGeometry *geometry, CConfig *
   /*--- In case there is no file, all elements get the same property (0) ---*/
 
   if (properties_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no element-based properties file. All elements get uniform properties." << endl;
+    if (rank == MASTER_NODE){
+      cout << "There is no element-based properties file." << endl;
+      cout << "The structural domain has uniform properties." << endl;
+    }
 
     for (iElem = 0; iElem < nElement; iElem++){
       element_properties[iElem] = new CElementProperty(0, 0, 0, 0);
@@ -3171,46 +3173,48 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   su2double TotalLoad;
   
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl;
+  su2double ModAmpl = 1.0;
   
-  bool Ramp_Load = config->GetRamp_Load();
-  su2double Ramp_Time = config->GetRamp_Time();
-  su2double Transfer_Time = 0.0;
+//  bool Ramp_Load = config->GetRamp_Load();
+//  su2double Ramp_Time = config->GetRamp_Time();
+//  su2double Transfer_Time = 0.0;
+//
+//  if (Ramp_Load) {
+//    if (Ramp_Time == 0.0)
+//      ModAmpl = 1.0;
+//    else
+//      Transfer_Time = CurrentTime / Ramp_Time;
+//
+//    switch (config->GetDynamic_LoadTransfer()) {
+//    case INSTANTANEOUS:
+//      ModAmpl = 1.0;
+//      break;
+//    case POL_ORDER_1:
+//      ModAmpl = Transfer_Time;
+//      break;
+//    case POL_ORDER_3:
+//      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+//      if (Transfer_Time > 1.0) ModAmpl = 1.0;
+//      break;
+//    case POL_ORDER_5:
+//      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+//      if (Transfer_Time > 1.0) ModAmpl = 1.0;
+//      break;
+//    case SIGMOID_10:
+//      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
+//      break;
+//    case SIGMOID_20:
+//      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
+//      break;
+//    }
+//    ModAmpl = max(ModAmpl,0.0);
+//    ModAmpl = min(ModAmpl,1.0);
+//  }
+//  else {
+//    ModAmpl = 1.0;
+//  }
 
-  if (Ramp_Load) {
-    if (Ramp_Time == 0.0)
-      ModAmpl = 1.0;
-    else
-      Transfer_Time = CurrentTime / Ramp_Time;
-
-    switch (config->GetDynamic_LoadTransfer()) {
-    case INSTANTANEOUS:
-      ModAmpl = 1.0;
-      break;
-    case POL_ORDER_1:
-      ModAmpl = Transfer_Time;
-      break;
-    case POL_ORDER_3:
-      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
-      if (Transfer_Time > 1.0) ModAmpl = 1.0;
-      break;
-    case POL_ORDER_5:
-      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
-      if (Transfer_Time > 1.0) ModAmpl = 1.0;
-      break;
-    case SIGMOID_10:
-      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
-      break;
-    case SIGMOID_20:
-      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
-      break;
-    }
-    ModAmpl = max(ModAmpl,0.0);
-    ModAmpl = min(ModAmpl,1.0);
-  }
-  else {
-    ModAmpl = 1.0;
-  }
+  ModAmpl = Compute_LoadCoefficient(CurrentTime, 0.0, config);
 
   TotalLoad = ModAmpl * LoadDirVal * LoadDirMult;
   
@@ -3377,8 +3381,78 @@ void CFEM_ElasticitySolver::BC_Damper(CGeometry *geometry, CSolver **solver_cont
 
 }
 
-void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) { }
+su2double CFEM_ElasticitySolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config){
+
+  su2double LoadCoeff = 1.0;
+
+  bool apply_coeff = false;
+  bool Ramp_Load = config->GetRamp_Load();
+  bool Sine_Load = config->GetSine_Load();
+  bool Ramp_And_Release = config->GetRampAndRelease_Load();
+
+  su2double StaticTime = config->GetStatic_Time();
+
+  su2double SineAmp = 0.0, SineFreq = 0.0, SinePhase = 0.0;
+
+  su2double TransferTime = 1.0;
+
+  if (CurrentTime < StaticTime){
+    LoadCoeff = 0.0;
+  }
+  else if ((Ramp_Load) && (RampTime > 0.0)){
+
+    TransferTime = (CurrentTime - StaticTime) / RampTime;
+
+    switch (config->GetDynamic_LoadTransfer()) {
+    case INSTANTANEOUS:
+      LoadCoeff = 1.0;
+      break;
+    case POL_ORDER_1:
+      LoadCoeff = TransferTime;
+      break;
+    case POL_ORDER_3:
+      LoadCoeff = -2.0 * pow(TransferTime,3.0) + 3.0 * pow(TransferTime,2.0);
+      break;
+    case POL_ORDER_5:
+      LoadCoeff = 6.0 * pow(TransferTime, 5.0) - 15.0 * pow(TransferTime, 4.0) + 10 * pow(TransferTime, 3.0);
+      break;
+    case SIGMOID_10:
+      LoadCoeff = (1 / (1+exp(-1.0 * 10.0 * (TransferTime - 0.5)) ) );
+      break;
+    case SIGMOID_20:
+      LoadCoeff = (1 / (1+exp(-1.0 * 20.0 * (TransferTime - 0.5)) ) );
+      break;
+    }
+
+    if (TransferTime > 1.0) LoadCoeff = 1.0;
+
+    LoadCoeff = max(LoadCoeff,0.0);
+    LoadCoeff = min(LoadCoeff,1.0);
+
+  }
+  else if (Sine_Load){
+
+      /*--- Retrieve amplitude, frequency (Hz) and phase (rad) ---*/
+      SineAmp   = config->GetLoad_Sine()[0];
+      SineFreq  = config->GetLoad_Sine()[1];
+      SinePhase = config->GetLoad_Sine()[2];
+
+      LoadCoeff = SineAmp * sin(2*PI_NUMBER*SineFreq*CurrentTime + SinePhase);
+  }
+
+  /*--- Add possibility to release the load after the ramp---*/
+  if ((Ramp_And_Release) && (CurrentTime > (StaticTime + RampTime))){
+    LoadCoeff = 0.0;
+  }
+
+  /*--- Store the force coefficient ---*/
+
+  SetForceCoeff(LoadCoeff);
+
+  return LoadCoeff;
+
+
+}
 
 void CFEM_ElasticitySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
