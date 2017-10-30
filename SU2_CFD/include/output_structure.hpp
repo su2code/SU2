@@ -116,8 +116,9 @@ class COutput {
   
   unsigned short nVar_Par;
   su2double **Local_Data;
-  su2double **Parallel_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
-  su2double **Parallel_Surf_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
+  su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
 
   su2double **Data;
@@ -233,8 +234,9 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
   /*!
    * \brief Writes inverse design.
@@ -261,8 +263,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
   /*!
    * \brief Writes one dimensional output.
@@ -270,9 +273,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
   /*!
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -281,8 +284,9 @@ public:
    * \param[in] FlowSolution - Flow solution.
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
 
   /*!
    * \brief Create and write the file with the FSI convergence history.
@@ -636,8 +640,9 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
+  void SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -682,8 +687,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - iZone index.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_Turbo(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
+  void SpecialOutput_Turbo(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
@@ -712,8 +718,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Number of Zones.
    * \param[in] val_iZone - Zone index.
+   * \param[in] output - Create output files.
    */
-  void SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone);
+  void SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
