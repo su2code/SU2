@@ -535,30 +535,8 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
             AD::StartRecording();
 			SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
-            if(rank == MASTER_NODE){
+            if(rank == MASTER_NODE)
               cout << "SUBoom initialized." << endl;
-              //cout << "Freeing up memory from config, solver, and geometry." << endl;
-            }
-            /*for (iZone = 0; iZone < nZone; iZone++){
-              ///if (solver_container[iZone] != NULL) {
-              ///  delete [] solver_container[iZone];
-              ///}
-
-              if(geometry_container != NULL){
-                if (geometry_container[iZone] != NULL) {
-                  delete [] geometry_container[iZone];
-                }
-              }
-                
-              if(config_container != NULL){
-                if (config_container[iZone] != NULL) {
-                  delete [] config_container[iZone];
-                }
-              }
-            }
-            ///delete [] solver_container;
-            delete [] config_container;
-            delete [] geometry_container;*/
 
             if (rank == MASTER_NODE){
               boom.ConditionAtmosphericData();
@@ -597,14 +575,14 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
             /*---Write boom strength metrics to file---*/
             if (rank == MASTER_NODE){
               ofstream sigFile;
-	          sigFile.open("boomSU2", ios::out);
-	          sigFile << "Objective_Function= " << Objective_Function << endl;
-			  sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
-			  for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-			    sigFile << boom.ray_phi[iPhi] << ", " << boom.p_max[iPhi] << "," << boom.p_rise[iPhi] << "," << boom.p_rise2[iPhi] << "," << boom.p_int2[iPhi] << endl;
-			  }
-			  sigFile.close();
-			}
+	            sigFile.open("boomSU2", ios::out);
+	            sigFile << "Objective_Function= " << Objective_Function << endl;
+			        sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
+			        for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+			          sigFile << boom.ray_phi[iPhi] << ", " << boom.p_max[iPhi] << "," << boom.p_rise[iPhi] << "," << boom.p_rise2[iPhi] << "," << boom.p_int2[iPhi] << endl;
+			        }
+			        sigFile.close();
+			      }
 
             if (rank==MASTER_NODE){
               SU2_TYPE::SetDerivative(Objective_Function,1.0);
@@ -640,26 +618,8 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 
             SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
-            if(rank == MASTER_NODE){
+            if(rank == MASTER_NODE)
               cout << "SUBoom initialized." << endl;
-              //cout << "Freeing up memory from config, solver, and geometry." << endl;
-            }
-            /*for (iZone = 0; iZone < nZone; iZone++){
-              ///if (solver_container[iZone] != NULL) {
-              ///  delete [] solver_container[iZone];
-              ///}
-            	
-              if (geometry_container[iZone] != NULL) {
-                delete [] geometry_container[iZone];
-              }
-                
-              if (config_container[iZone] != NULL) {
-                delete [] config_container[iZone];
-              }
-            }
-            ///delete [] solver_container;
-            delete [] config_container;
-            delete [] geometry_container;*/
 
             if (rank == MASTER_NODE){
               boom.ConditionAtmosphericData();
