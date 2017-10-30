@@ -862,8 +862,6 @@ inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *conf
 
 inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
-inline void CSolver::SetAdjoint_OutputW(CGeometry *geometry, CConfig *config){}
-
 inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){}
