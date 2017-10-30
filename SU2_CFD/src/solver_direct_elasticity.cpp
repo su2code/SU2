@@ -448,6 +448,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
     }
   }
+  else{
+    ForceCoeff        = 0.0;
+  }
 
   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
   PenaltyValue = 0.0;
