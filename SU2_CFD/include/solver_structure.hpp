@@ -11703,7 +11703,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
+  void SetAdjoint_OutputW(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration

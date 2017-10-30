@@ -1982,6 +1982,12 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+  /*!
+   * \brief Register the variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolutionW(bool input, unsigned short iVar);
   
   /*!
    * \brief Set the adjoint values of the solution.
@@ -2018,12 +2024,6 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void GetAdjointSolution_time_n1(su2double *adj_sol);
-
-  /*!
-   * \brief Set adjoint values for first error estimation adjoint equation.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  void SetAdjointSolutionW(su2double adj_sol, unsigned short iVar);
   
   /*!
    * \brief Set the sensitivity at the node

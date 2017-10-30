@@ -273,27 +273,30 @@ void CGradErrSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 }
 
-void CGradErrSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
+void CGradErrSolver::RegisterSolutionW(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, nPoint = geometry->GetnPoint();
+  unsigned short iVar;
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
   time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
   input = true;
 
-  /*--- Register solution at all necessary time instances and other variables on the tape ---*/
+  /*--- Register solution (transposed) at all necessary time instances and other variables on the tape ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    direct_solver->node[iPoint]->RegisterSolution(input);
-  }
-  if (time_n_needed) {
+  for(iVar = 0; iVar < nVar; iVar++){
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      direct_solver->node[iPoint]->RegisterSolution_time_n();
+      direct_solver->node[iPoint]->RegisterSolutionW(input, iVar);
     }
-  }
-  if (time_n1_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      direct_solver->node[iPoint]->RegisterSolution_time_n1();
+    if (time_n_needed) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        direct_solver->node[iPoint]->RegisterSolution_time_n();
+      }
+    }
+    if (time_n1_needed) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        direct_solver->node[iPoint]->RegisterSolution_time_n1();
+      }
     }
   }
 }
@@ -516,37 +519,15 @@ void CGradErrSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   unsigned long iPoint;
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
-    }
-    if (dual_time) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+      if (dual_time) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
-    }
 
-    // FWH
-    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
-    if (config->GetExtIter()<config->GetIter_Avg_Objective() && config->GetKind_ObjFunc()==NOISE){
-    if (LocalPointIndex[iPoint] >= 0){
-        for (iVar = 0; iVar < nVar; iVar++){
-            Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
-         }
+      direct_solver->node[iPoint]->SetAdjointSolution(Solution);
     }
-    }
-    // Boom
-    /*else if(config->GetKind_ObjFunc()==BOOM){
-    if (LocalPointIndex[iPoint] >= 0){
-        for (iVar = 0; iVar < nVar; iVar++){
-            Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
-         }
-    }
-    }*/
-    }
-
-
-    direct_solver->node[iPoint]->SetAdjointSolutionW(Solution[iVar], iVar);
   }
 }
 

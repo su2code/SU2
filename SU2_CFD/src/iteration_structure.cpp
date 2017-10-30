@@ -2260,9 +2260,9 @@ void CGradErrFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
     
     /*--- Register flow and turbulent variables as input ---*/
     
-    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == GRAD_ERR_EULER)) {
 
-      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolutionW(geometry_container[iZone][MESH_0], config_container[iZone]);
 
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
@@ -2310,7 +2310,7 @@ void CGradErrFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
   
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == GRAD_ERR_EULER)) {
   
   /*--- Register conservative variables as output of the iteration ---*/
   
