@@ -3045,6 +3045,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config_container - The particular config.
    */
+  virtual void RegisterSolutionW(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config_container - The particular config.
+   */
   virtual void RegisterOutput(CGeometry *geometry, CConfig *config);
 
   /*!
