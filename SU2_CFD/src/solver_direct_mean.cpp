@@ -106,8 +106,10 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   New_Func       = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  
+  AoA_FD_Change = false;
 
-  FluidModel   =NULL;
+  FluidModel   = NULL;
   
   SlidingState     = NULL;
   SlidingStateNodes = NULL;
@@ -285,8 +287,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
-  FluidModel=NULL;
+  
+  AoA_FD_Change = false;
 
+  FluidModel = NULL;
+  
   /*--- Initialize quantities for the average process for internal flow ---*/
 
   AverageVelocity                   = NULL;
@@ -8300,7 +8305,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   
   su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Old_AoA,
   dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
-  
+  unsigned long Wrt_Con_Freq;
   unsigned short iDim;
   
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
@@ -8426,40 +8431,29 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   }
 
 	unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
-	unsigned long Iter_dCL_dAlpha_Half = Iter_dCL_dAlpha/2;
 
-  if (((config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) ||
-  		(config->GetnExtIter()-Iter_dCL_dAlpha_Half == ExtIter)) && Output) {
+  if ((config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) && Output) {
 
     AoA_old = config->GetAoA();
 
     if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
-      AoA_inc = 0.01;
-    }
-    
-    if (config->GetnExtIter()-Iter_dCL_dAlpha_Half == ExtIter) {
+      Wrt_Con_Freq = SU2_TYPE::Int(su2double(config->GetIter_dCL_dAlpha())/10.0);
+      config->SetWrt_Con_Freq(Wrt_Con_Freq);
       Total_CD_Prev = Total_CD;
       Total_CL_Prev = Total_CL;
       Total_CMx_Prev = Total_CMx;
       Total_CMy_Prev = Total_CMy;
       Total_CMz_Prev = Total_CMz;
-      AoA_inc = -0.01;
+      AoA_inc = 0.001;
+      AoA_FD_Change = true;
     }
-
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) &&
-    		!config->GetDiscrete_Adjoint()) {
-
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+      
     	if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
-        cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-    		cout << " Change AoA by +0.01 deg to evaluate gradient." << endl;
-        cout << "-------------------------------------------------------------------------" << endl << endl;
-    	}
-
-    	if (config->GetnExtIter()-Iter_dCL_dAlpha_Half == ExtIter) {
-        cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-    		cout << " Change AoA by -0.01 deg to recover baseline." << endl;
-        cout << "-------------------------------------------------------------------------" << endl << endl;
-
+       cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+       cout << " Change AoA by +0.001 deg to evaluate gradient." << endl;
+       cout << "-------------------------------------------------------------------------" << endl << endl;
     	}
 
     }
@@ -8512,9 +8506,17 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
   
-  if ((config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  if (AoA_FD_Change && (config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
-  		dCL_dAlpha_ = -(Total_CL-Total_CL_Prev)/0.01;
+    /*--- Update angle of attack ---*/
+
+    AoA_old = config->GetAoA();
+    AoA = AoA_old - 0.001;
+    config->SetAoA(AoA);
+    
+    /*--- Use finite differences to compute  ---*/
+
+  		dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/0.001;
   		dCD_dCL_    = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
   		dCMx_dCL_   = (Total_CMx-Total_CMx_Prev)/(Total_CL-Total_CL_Prev);
   		dCMy_dCL_   = (Total_CMy-Total_CMy_Prev)/(Total_CL-Total_CL_Prev);
@@ -15006,6 +15008,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
+  
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {

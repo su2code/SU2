@@ -37,31 +37,30 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-    HB_Source = NULL;
-    Primitive = NULL;
-    Secondary = NULL;
-    
-  Gradient_Primitive = NULL;
-    Gradient_Secondary = NULL;
+  HB_Source = NULL;
+  Primitive = NULL;
+  Secondary = NULL;
   
-    Limiter_Primitive = NULL;
-    Limiter_Secondary = NULL;
+  Gradient_Primitive = NULL;
+  Gradient_Secondary = NULL;
+  
+  Limiter_Primitive = NULL;
+  Limiter_Secondary = NULL;
   
   WindGust    = NULL;
   WindGustDer = NULL;
-
+  
   nPrimVar     = 0;
   nPrimVarGrad = 0;
-
+  
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
- 
+  
   Undivided_Laplacian = NULL;
-
+  
   Solution_New = NULL;
 
   Solution_BGS_k = NULL;
- 
 }
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,

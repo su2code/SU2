@@ -391,6 +391,8 @@ inline su2double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
 inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 
+inline void CConfig::SetSemiSpan(su2double val_semispan) { SemiSpan = val_semispan; }
+
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
 
 inline void CConfig::SetnExtIter(unsigned long val_niter) { nExtIter = val_niter; }
@@ -710,6 +712,8 @@ inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
 inline unsigned long CConfig::GetWrt_Sol_Freq_DualTime(void) { return Wrt_Sol_Freq_DualTime; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
+
+inline void CConfig::SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
