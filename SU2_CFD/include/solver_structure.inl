@@ -858,6 +858,8 @@ inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) { return 0.
 
 inline void CSolver::RegisterSolution(CGeometry *geometry_container, CConfig *config){}
 
+inline void CSolver::RegisterSolutionW(CGeometry *geometry_container, CConfig *config){}
+
 inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config){}
 
 inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
