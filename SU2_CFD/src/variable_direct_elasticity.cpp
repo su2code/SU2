@@ -119,6 +119,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   Solution_Pred_Old     =  NULL;
   Solution_Pred_Old   = NULL;
   FlowTraction_n = NULL;
+  Solution_BGS_k = NULL;
   if (fsi_analysis) {
     FlowTraction       =  new su2double [nVar];
     Solution_Pred       =  new su2double [nVar];

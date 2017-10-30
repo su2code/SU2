@@ -686,9 +686,6 @@ inline void CSolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_containe
                    
 inline void CSolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
                                      unsigned short val_marker) { }             									 							 
-                   
-inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                   unsigned short val_marker) { }
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
@@ -946,6 +943,8 @@ inline void CSolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config)
 inline void CSolver::Set_Prestretch(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
+
+inline su2double CSolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
                       
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 

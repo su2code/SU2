@@ -827,17 +827,6 @@ public:
    */
   virtual void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  virtual void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                           unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -3562,6 +3551,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] CurrentTime - Current time step.
+   * \param[in] RampTime - Time for application of the ramp.*
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -11553,17 +11550,6 @@ public:
 
   
   /*!
-   * \brief Impose a load boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                   unsigned short val_marker);
-  
-  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -11910,6 +11896,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Get multiplier for loads.
+   * \param[in] CurrentTime - Current time step.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
 
 };
 

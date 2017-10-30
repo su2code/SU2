@@ -602,12 +602,16 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   int rank = MASTER_NODE;
+  bool fea = false;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    fea = ((config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ||
+           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM));
 
     /*--- Compute elements surrounding points, points surrounding points ---*/
 
@@ -644,12 +648,12 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Compute cell center of gravity ---*/
 
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+    if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
     geometry_container[iZone][MESH_0]->SetCoord_CG();
 
     /*--- Create the control volume structures ---*/
 
-    if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
+    if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
     geometry_container[iZone][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
     geometry_container[iZone][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
 
@@ -671,7 +675,7 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Compute the surface curvature ---*/
 
-    if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+    if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
     geometry_container[iZone][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
 
     /*--- Check for periodicity and disable MG if necessary. ---*/

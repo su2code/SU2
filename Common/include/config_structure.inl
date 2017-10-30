@@ -1650,6 +1650,12 @@ inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
 
 inline su2double CConfig::GetRamp_Time(void) { return Ramp_Time; }
 
+inline bool CConfig::GetRampAndRelease_Load(void) { return RampAndRelease; }
+
+inline bool CConfig::GetSine_Load(void) { return Sine_Load; }
+
+inline su2double* CConfig::GetLoad_Sine(void) { return SineLoad_Coeff; }
+
 inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
 
 inline su2double CConfig::GetTotalDV_Penalty(void) { return DV_Penalty; }
