@@ -3064,13 +3064,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  virtual void SetAdjoint_OutputW(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
@@ -11693,14 +11686,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CGradErrSolver(void);
-
-  /*!
-   * \brief Performs the preprocessing of the adjoint AD-based solver.
-   *        Registers all necessary variables on the tape. Called while tape is active.
-   * \param[in] geometry_container - The geometry container holding all grid levels.
-   * \param[in] config_container - The particular config.
-   */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

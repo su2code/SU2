@@ -405,7 +405,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     direct_solver->node[iPoint]->GetAdjointSolution(Solution);
 
     /*--- Add any sources ---*/
-    
     if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
     // Boom
       if(config->GetKind_ObjFunc()==BOOM){
