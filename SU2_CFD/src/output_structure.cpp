@@ -4379,7 +4379,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char engine_coeff[]= ",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char wave_coeff[]= ",\"CWave\"";
-  char fem_coeff[]= ",\"VM_Stress\"";
+  char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   char adj_turbo_coeff[]=",\"Sens_Geo\",\"Sens_PressOut\",\"Sens_TotTempIn\"";
   char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Avg_TotalTemp\",\"Avg_TotalPress\"";
@@ -4652,7 +4652,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000],
     fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
+    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker_Monitoring;
@@ -4709,6 +4709,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0;
+
+    su2double Total_ForceCoeff = 0.0, Total_VMStress = 0.0;
 
     unsigned short iSpan;
 
@@ -5036,8 +5038,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
         
-        Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_VMStress = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
         
+        Total_ForceCoeff = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetForceCoeff();
+
+        LinSolvIter = (unsigned long) solver_container[val_iZone][FinestMesh][FEA_SOL]->GetIterLinSolver();
+
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
         /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
@@ -5327,16 +5333,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
           case FEM_ELASTICITY:
             
-            SPRINTF (direct_coeff, ", %12.10f", Total_CFEM);
+            SPRINTF (fem_coeff, ", %14.8e, %14.8e", Total_VMStress, Total_ForceCoeff);
             /*--- FEM residual ---*/
             if (nDim == 2) {
-              if (linear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy, dummy, dummy);
-              if (nonlinear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]), dummy, dummy);
+              if (linear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
+              if (nonlinear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
             }
             else {
-              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]), dummy, dummy);
+              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
             }
-            
+            SPRINTF (end_fem, ", %lu, %12.10f\n", LinSolvIter, timeused/60.0);
+
             break;
 
           case DISC_ADJ_FEM:
@@ -5930,7 +5937,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case FEM_ELASTICITY:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << fem_coeff << fem_resid << end;
+            ConvHist_file[0] << begin << fem_coeff << fem_resid << end_fem;
             ConvHist_file[0].flush();
           }
           
