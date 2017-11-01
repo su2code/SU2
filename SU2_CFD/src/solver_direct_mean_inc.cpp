@@ -4639,7 +4639,7 @@ void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solv
       /*--- Compute the boundary state b ---*/
 
       for (iDim = 0; iDim < nDim; iDim++){
-        Velocity_b[iDim] = - config->GetTranspiration(Marker_Tag) * UnitNormal[iDim]; //Include the transpiration velocity in the residual.
+        Velocity_b[iDim] = - config->GetTranspiration(Marker_Tag) * NormalArea[iDim]; //Include the transpiration velocity in the residual.
         RhoU[iDim]       = Density*Velocity_b[iDim];
       }
 
