@@ -426,7 +426,7 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
 }
 
 
-void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   su2double *Turb_i, *Turb_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
   unsigned long iEdge, iPoint, jPoint;
@@ -591,14 +591,15 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-void CTurbSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
 
 }
 
 void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *numerics, CConfig *config,
+                                unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Convective fluxes across euler wall are equal to zero. ---*/
 
@@ -1494,7 +1495,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                    CConfig *config, unsigned short iMesh) {
+                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iPoint;
   
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
@@ -1581,7 +1582,7 @@ void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
   
@@ -1609,7 +1610,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                       unsigned short val_marker) {
+                                       unsigned short val_marker, unsigned short iRKStep) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
   
@@ -1635,7 +1636,7 @@ void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
   
 }
 
-void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
@@ -1698,7 +1699,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -1796,7 +1797,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 }
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                              CConfig *config, unsigned short val_marker) {
+                              CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
@@ -1893,7 +1894,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
   
 }
 
-void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex;
   unsigned short iDim;
@@ -1977,7 +1978,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint;
@@ -2067,23 +2068,22 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTurbSASolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
+                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
-             config,  val_marker, true);
+             config,  val_marker, true, iRKStep);
   
 }
 
 void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
-             config,  val_marker, false);
+             config,  val_marker, false, iRKStep);
   
 }
 
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                               CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                               CConfig *config, unsigned short val_marker, bool inlet_surface, unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
@@ -2236,7 +2236,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 }
 
 void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short val_marker) {
+                                          CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
@@ -2399,7 +2399,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
 }
 
 void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short val_marker) {
+                                          CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
@@ -2952,7 +2952,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned long iPoint;
   
@@ -3015,7 +3015,7 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
@@ -3071,7 +3071,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                        unsigned short val_marker) {
+                                        unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
@@ -3126,7 +3126,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   
 }
 
-void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
@@ -3193,7 +3193,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                              unsigned short val_marker) {
+                              unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -3282,7 +3282,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   
 }
 
-void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;

@@ -40,6 +40,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include <cassert>
 
 #include "../../Common/include/config_structure.hpp"
 #include "fluid_model.hpp"
@@ -77,10 +78,12 @@ protected:
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
   *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  su2double **rk_stage_vectors; /*!< \brief Storage for residual evaluations at RK substeps. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
                            have different number of nVar in the same problem. */
+  unsigned short nRKStep; /*!< \brief Number of RK substeps */
   unsigned short nPrimVar, nPrimVarGrad;    /*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
@@ -2010,6 +2013,22 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+  /*!
+   * \brief Store residual from RK substep
+   * \param[in] iRKStep - Substep index
+   * \param[in] iVar - The component to set
+   * \param[in] val - The value of the residual
+   */
+  void SetRKSubstepResidual(unsigned short iRKStep, unsigned short iVar, su2double val);
+
+  /*!
+   * \brief Retrieve residual from RK substep
+   * \param[in] iRKStep - Substep index
+   * \param[in] iVar - The component to get
+   * \return The residual value
+   */
+  su2double GetRKSubstepResidual(unsigned short iRKStep, unsigned short iVar);
 };
 
 /*!

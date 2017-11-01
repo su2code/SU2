@@ -193,7 +193,8 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
                                   CSolver **solver_container,
                                   CNumerics *numerics, CNumerics *second_numerics,
                                   CConfig   *config,
-                                  unsigned short iMesh) {
+                                  unsigned short iMesh,
+                                  unsigned short iRKStep) {
 
   if (config->GetUnsteady_Simulation() != STEADY) {
 
@@ -355,9 +356,9 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
+void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
-void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex, total_index;
   su2double Twall;
