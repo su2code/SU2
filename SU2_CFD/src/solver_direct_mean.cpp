@@ -8837,6 +8837,10 @@ void CEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_
     Jacobian_b[iVar] = new su2double[nVar];
     DubDu[iVar] = new su2double[nVar];
   }
+
+  /*--- Identify the boundary by string name ---*/
+  
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -8874,7 +8878,7 @@ void CEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_
       /*--- Compute the boundary state b ---*/
 
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity_b[iDim] = Velocity_i[iDim] - (ProjVelocity_i + config->GetTranspiration()) * UnitNormal[iDim]; //Force the velocity to be tangential to the surface.
+        Velocity_b[iDim] = Velocity_i[iDim] - (ProjVelocity_i + config->GetTranspiration(Marker_Tag)) * UnitNormal[iDim]; //Force the velocity to be the tangential + transpiration velocity.
 
       if (grid_movement) {
         GridVel = geometry->node[iPoint]->GetGridVel();

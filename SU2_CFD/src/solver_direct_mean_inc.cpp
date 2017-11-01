@@ -4587,6 +4587,107 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
   
 }
 
+void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+  
+  unsigned short iDim, iVar, jVar;
+  unsigned long iPoint, iVertex;
+
+  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
+                     (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    (config->GetKind_Turb_Model() == SST));
+  
+  Normal     = new su2double[nDim];
+  NormalArea = new su2double[nDim];
+  Velocity_b = new su2double[nDim];
+  RhoU       = new su2double[nDim];
+  
+  /*--- Identify the boundary by string name ---*/
+  
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Normal vector for this vertex (negative for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        NormalArea[iDim] = -Normal[iDim];
+      }
+
+      /*--- Get pressure and density ---*/
+
+      Pressure = node[iPoint]->GetPressure();
+      Density  = node[iPoint]->GetDensity();
+
+      /*--- Compute the boundary state b ---*/
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        Velocity_b[iDim] = - config->GetTranspiration(Marker_Tag) * UnitNormal[iDim]; //Include the transpiration velocity in the residual.
+        RhoU[iDim]       = Density*Velocity_b[iDim];
+      }
+
+      /*--- Compute the residual ---*/
+
+      Residual[0] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        Residual[0] += RhoU[iDim]*NormalArea[iDim];
+        Residual[iDim+1] = Pressure*NormalArea[iDim] + Velocity_b[iDim]*(RhoU[0]*NormalArea[0]+RhoU[1]*NormalArea[1]);
+        if(nDim == 3)
+          Residual[iDim+1] += Velocity_b[iDim]*RhoU[2]*NormalArea[2]
+      }
+
+      /*--- Add the Reynolds stress tensor contribution ---*/
+
+      if (tkeNeeded) {
+        turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual[iDim+1] += (2.0/3.0)*Density*turb_ke*NormalArea[iDim];
+      }
+      
+      /*--- Add value to the residual ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Form Jacobians for implicit computations ---*/
+      
+      if (implicit) {
+        
+        /*--- Initialize Jacobian ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][0] = -Normal[iDim];
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      }
+    }
+  }
+  
+  delete [] Normal;
+  delete [] NormalArea;
+  
+}
+
 void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
