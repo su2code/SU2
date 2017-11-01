@@ -251,7 +251,7 @@ private:
   *Marker_FlowLoad,					/*!< \brief Flow Load markers. */
   *Marker_Neumann,					/*!< \brief Neumann flow markers. */
   *Marker_Internal,					/*!< \brief Neumann flow markers. */
-  *Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
+  *Marker_All_TagBound,				/*!< \brief Global index for markers using grid information. */
   *Marker_Transpiration;            /*!< \brief Transpiration BC Marker */
   su2double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
   su2double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
