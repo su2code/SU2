@@ -4593,7 +4593,7 @@ void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solv
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
 
-  su2double Density = 0.0, Pressure = 0.0, Energy = 0.0, Vel, VelMag2_i, VelMag2_b, *Normal = NULL, Area, *NormalArea, turb_ke;
+  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
   su2double *Velocity_b, *RhoU;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -4635,26 +4635,13 @@ void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solv
 
       Pressure = node[iPoint]->GetPressure();
       Density  = node[iPoint]->GetDensity();
-      Energy = node[iPoint]->GetEnergy();
 
       /*--- Compute the boundary state b ---*/
 
-      VelMag2_i = 0.0;
-      VelMag2_b = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
         Velocity_b[iDim] = - config->GetTranspiration(Marker_Tag) * UnitNormal[iDim]; //Include the transpiration velocity in the residual.
         RhoU[iDim]       = Density*Velocity_b[iDim];
-        Vel = node[iPoint]->GetVelocity(iDim);
-        VelMag2_i += Vel*Vel;
-        VelMag2_b += Velocity_b[iDim]*Velocity_b[iDim];
       }
-
-      turb_ke = 0.0;
-      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-
-      StaticEnergy = Energy - 0.5 * VelMag2_i - turb_ke;
-      Energy = StaticEnergy + 0.5 * VelMag2_b + turb_ke;
-      Enthalpy = Energy + Pressure/Density;
 
       /*--- Compute the residual ---*/
 
@@ -4665,9 +4652,6 @@ void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solv
         if(nDim == 3)
           Residual[iDim+1] += Velocity_b[iDim]*RhoU[2]*NormalArea[2];
       }
-      Residual[nVar-1] = Enthalpy*(RhoU[0]*NormalArea[0]+RhoU[0]*NormalArea[0]);
-      if(nDim == 3)
-        Residual[nVar-1] += Enthalpy*RhoU[2]*NormalArea[2];
 
       /*--- Add the Reynolds stress tensor contribution ---*/
 
