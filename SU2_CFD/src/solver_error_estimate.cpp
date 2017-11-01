@@ -286,7 +286,7 @@ void CGradErrSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   for(iVar = 0; iVar < nVar; iVar++){
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      direct_solver->node[iPoint]->RegisterSolution(input, iVar);
+      direct_solver->node[iPoint]->RegisterSolution(input);
     }
     if (time_n_needed) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
