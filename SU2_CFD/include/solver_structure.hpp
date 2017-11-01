@@ -3045,13 +3045,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config_container - The particular config.
    */
-  virtual void RegisterSolutionW(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config_container - The particular config.
-   */
   virtual void RegisterOutput(CGeometry *geometry, CConfig *config);
 
   /*!
@@ -11693,7 +11686,7 @@ public:
    * \param[in] geometry_container - The geometry container holding all grid levels.
    * \param[in] config_container - The particular config.
    */
-  void RegisterSolutionW(CGeometry *geometry, CConfig *config);
+  void RegisterSolution(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

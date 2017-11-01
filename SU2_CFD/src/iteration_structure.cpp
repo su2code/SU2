@@ -2262,7 +2262,7 @@ void CGradErrFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
     
     if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == GRAD_ERR_EULER)) {
 
-      solver_container[iZone][MESH_0][GRAD_ERR_SOL]->RegisterSolutionW(geometry_container[iZone][MESH_0], config_container[iZone]);
+      solver_container[iZone][MESH_0][GRAD_ERR_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
 
       solver_container[iZone][MESH_0][GRAD_ERR_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     }

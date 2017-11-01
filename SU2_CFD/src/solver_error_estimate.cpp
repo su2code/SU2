@@ -273,7 +273,7 @@ void CGradErrSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 }
 
-void CGradErrSolver::RegisterSolutionW(CGeometry *geometry, CConfig *config) {
+void CGradErrSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, nPoint = geometry->GetnPoint();
   unsigned short iVar;
 
@@ -286,7 +286,7 @@ void CGradErrSolver::RegisterSolutionW(CGeometry *geometry, CConfig *config) {
 
   for(iVar = 0; iVar < nVar; iVar++){
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      direct_solver->node[iPoint]->RegisterSolutionW(input, iVar);
+      direct_solver->node[iPoint]->RegisterSolution(input, iVar);
     }
     if (time_n_needed) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -373,7 +373,7 @@ void CGradErrSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   bool input = false;
 
-  /*--- Register output variables on the tape ---*/
+  /*--- Register output variables on the tape (transposed)---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->node[iPoint]->RegisterSolution(input);
