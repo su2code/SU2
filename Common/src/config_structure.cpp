@@ -312,7 +312,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
   Marker_SymWall              = NULL;    Marker_Pressure         = NULL;    Marker_PerBound       = NULL;
   Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
-  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
+  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
   Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;
@@ -366,7 +366,7 @@ void CConfig::SetPointersNull(void) {
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
   FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
-  Periodic_Translate        = NULL;
+  Periodic_Translate        = NULL;     TransEps                    = NULL;
 
   Load_Dir            = NULL;    Load_Dir_Value      = NULL;    Load_Dir_Multiplier = NULL;
   Load_Sine_Dir       = NULL;    Load_Sine_Amplitude = NULL;    Load_Sine_Frequency = NULL;
@@ -797,6 +797,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
+  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Traanspiration boundary marker(s) \ingroup Config*/
+  addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
@@ -3382,7 +3384,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
-  iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
+  iMarker_Turbomachinery, iMarker_MixingPlaneInterface, iMarker_Transpiration;
 
   int size = SINGLE_NODE;
   
@@ -3401,7 +3403,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
+  nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_Transpiration;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -3823,6 +3825,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Transpiration = 0; iMarker_Transpiration < nMarker_Transpiration; iMarker_Transpiration++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Transpiration[iMarker_Transpiration];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = TRANSPIRATION;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Monitoring[iMarker_CfgFile] = NO;
     for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
@@ -3927,7 +3935,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
-  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
+  iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface, iMarker_Transpiration;
   
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
@@ -5294,6 +5302,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Transpiration != 0) {
+    cout << "Constant heat flux wall boundary marker(s): ";
+    for (iMarker_Transpiration = 0; iMarker_Transpiration < nMarker_Transpiration; iMarker_Transpiration++) {
+      cout << Marker_Transpiration[iMarker_Transpiration];
+      if (iMarker_Transpiration < nMarker_Transpiration-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+
 }
 
 bool CConfig::TokenizeString(string & str, string & option_name,
@@ -5876,6 +5893,7 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
+  if (TransEps != NULL)         delete[] TransEps;
 
   /*--- related to periodic boundary conditions ---*/
   
@@ -5929,6 +5947,7 @@ CConfig::~CConfig(void) {
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
   if (Marker_Internal != NULL )            delete[] Marker_Internal;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
+  if (Marker_Transpiration != NULL)         delete[] Marker_Transpiration;
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
   
@@ -6763,6 +6782,17 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   }
 
   return Heat_Flux[iMarker_HeatFlux];
+}
+
+su2double CConfig::GetTranspiration(string val_marker) {
+  unsigned short iMarker_Transpiration = 0;
+
+  if (nMarker_Transpiration > 0) {
+  for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++)
+    if (Marker_Transpiration[iMarker_Transpiration] == val_marker) break;
+  }
+
+  return TransEps[iMarker_Transpiration];
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {

@@ -210,6 +210,7 @@ private:
   nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
   nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
   nMarker_Internal,				/*!< \brief Number of Neumann flow markers. */
+  nMarker_Transpiration,        /*!< \brief Number of transpiration markers. */
   nMarker_All,					/*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					/*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
@@ -251,6 +252,7 @@ private:
   *Marker_Neumann,					/*!< \brief Neumann flow markers. */
   *Marker_Internal,					/*!< \brief Neumann flow markers. */
   *Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
+  *Marker_Transpiration;            /*!< \brief Transpiration BC Marker */
   su2double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
   su2double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
   su2double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
@@ -350,6 +352,7 @@ private:
   su2double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
+  su2double *TransEps;                     /*!< \brief Specified wall transpirations. */
   unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
   su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
   su2double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
@@ -5732,6 +5735,14 @@ public:
    */
   su2double GetWall_HeatFlux(string val_index);
 
+
+  /*!
+   * \brief Get the wall transpiration.
+   * \param[in] val_index - Index corresponding to the transpiration boundary.
+   * \return The transpiration
+   */
+  su2double GetTranspiration(string val_index);
+
   /*!
    * \brief Get the wall function treatment for the given boundary marker.
    * \param[in] val_marker - String of the viscous wall marker.
@@ -7415,7 +7426,7 @@ public:
    * \brief Get the interpolation method used for matching between zones.
    */
   inline unsigned short GetKindInterpolation(void);
-  
+
   /*!
    * \brief Get the AD support.
    */

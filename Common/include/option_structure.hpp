@@ -790,6 +790,7 @@ enum BC_TYPE {
   GILES_BOUNDARY= 37,   /*!< \brief Giles Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
+  TRANSPIRATION = 40,   /*!< \brief Transpiration definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
