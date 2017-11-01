@@ -108,6 +108,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case EULER_WALL:
         solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
+      case TRANSPIRATION:
+        solver_container[MainSolver]->BC_Euler_Transpiration(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
