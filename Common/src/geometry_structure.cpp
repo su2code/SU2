@@ -5263,7 +5263,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         
         if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL &&
+            config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)
           node[Point_Surface]->SetSolidBoundary(true);
       }
     }
@@ -9545,7 +9546,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
          (Boundary == HEAT_FLUX)               ||
          (Boundary == ISOTHERMAL)              ||
          (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+         (Boundary == DISPLACEMENT_BOUNDARY)   ||
+         (Boundary == TRANSPIRATION)) && (Monitoring == YES))
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -9911,7 +9913,8 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
         
         if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
+            config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)
           node[InvResult[iPoint]]->SetSolidBoundary(true);
       }
     }
@@ -14793,7 +14796,8 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION))
       nVertex_Wall += nVertex[iMarker];
   
   
@@ -14809,7 +14813,8 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)     )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
@@ -18149,7 +18154,8 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)              ||
+        (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION))
       nVertex_Wall += nVertex[iMarker];
   
   
@@ -18163,9 +18169,10 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Copy the boundary information to an array ---*/
   iVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
+          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)              ||
+          (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION))
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);

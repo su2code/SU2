@@ -5363,7 +5363,8 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
-        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
+        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)||
+        (Boundary == TRANSPIRATION)   ) {
       
       /*--- Forces initialization at each Marker ---*/
       
