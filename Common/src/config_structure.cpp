@@ -315,7 +315,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
-  Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;
+  Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;    Marker_Transpiration  = NULL;
   Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
   Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
   Marker_FlowLoad             = NULL;    Marker_Neumann          = NULL;    Marker_Internal       = NULL;
