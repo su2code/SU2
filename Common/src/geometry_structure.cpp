@@ -9626,15 +9626,42 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
   TotalWettedArea    = WettedArea;
 #endif
-    
+  
+  /*--- Set a reference area if no value is provided ---*/
+  
   if (config->GetRefArea() == 0.0) {
-  	if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
-  	else config->SetRefArea(TotalPositiveYArea);
+    if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
+    else config->SetRefArea(TotalPositiveYArea);
+    
+    if (nDim == 3) {
+      cout << "Reference area = "<< TotalPositiveZArea;
+      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
+    }
+    else {
+      cout << "Reference length = "<< TotalPositiveYArea;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+    }
+    
+  }
+  
+  /*--- Set a semi-span value if no value is provided ---*/
+
+  if (config->GetSemiSpan() == 0.0) {
+    
+    if (nDim == 3) config->SetSemiSpan(fabs(TotalMaxCoordY));
+    else config->SetSemiSpan(1.0);
+    
+    if (nDim == 3) {
+      cout << "Semi-span length = "<< TotalMaxCoordY;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+      
+    }
+    
   }
   
   if (rank == MASTER_NODE) {
 
-  	cout << "Wetted area = "<< TotalWettedArea;
+    cout << "Wetted area = "<< TotalWettedArea;
     if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
@@ -11042,7 +11069,11 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       mode_t nMode = 0733; // UNIX style permissions
       int nError = 0;
 #if defined(_WIN32)
+#ifdef __MINGW32__
+      nError = mkdir(sPath.c_str());  // MINGW on Windows
+#else
       nError = _mkdir(sPath.c_str()); // can be used on Windows
+#endif
 #else
       nError = mkdir(sPath.c_str(),nMode); // can be used on non-Windows
 #endif

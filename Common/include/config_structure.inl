@@ -357,6 +357,8 @@ inline su2double CConfig::GetDomainVolume(void) { return DomainVolume; }
 
 inline void CConfig::SetRefArea(su2double val_area) { RefArea = val_area; }
 
+inline void CConfig::SetSemiSpan(su2double val_semispan) { SemiSpan = val_semispan; }
+
 inline void CConfig::SetDomainVolume(su2double val_volume) { DomainVolume = val_volume; }
 
 inline void CConfig::SetnExtIter(unsigned long val_niter) { nExtIter = val_niter; }
@@ -492,11 +494,11 @@ inline void CConfig::SetRefOriginMoment_Z(unsigned short val_marker, su2double v
 
 inline su2double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
-inline su2double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
+inline su2double CConfig::GetVenkat_LimiterCoeff(void) { return Venkat_LimiterCoeff; }
 
 inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
 
-inline su2double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }
+inline su2double CConfig::GetAdjSharp_LimiterCoeff(void) { return AdjSharp_LimiterCoeff; }
 
 inline su2double CConfig::GetReynolds(void) { return Reynolds; }
 
@@ -677,6 +679,8 @@ inline unsigned long CConfig::GetWrt_Sol_Freq_DualTime(void) { return Wrt_Sol_Fr
 
 inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 
+inline void CConfig::SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
+
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
@@ -825,6 +829,8 @@ inline su2double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Er
 
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
+inline unsigned short CConfig::GetLinear_Solver_ILU_n(void) { return Linear_Solver_ILU_n; }
+
 inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return Linear_Solver_Restart_Frequency; }
 
 inline su2double CConfig::GetRelaxation_Factor_Flow(void) { return Relaxation_Factor_Flow; }
@@ -891,13 +897,15 @@ inline unsigned short CConfig::GetKind_Centered(void) { return Kind_Centered; }
 
 inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
 
-inline unsigned short CConfig::GetSpatialOrder(void) { return SpatialOrder; }
+inline bool CConfig::GetMUSCL(void) { return MUSCL; }
 
-inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_Flow; }
+inline bool CConfig::GetMUSCL_Flow(void) { return MUSCL_Flow; }
 
-inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
+inline bool CConfig::GetMUSCL_Turb(void) { return MUSCL_Turb; }
 
-inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
+inline bool CConfig::GetMUSCL_AdjFlow(void) { return MUSCL_AdjFlow; }
+
+inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
