@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
@@ -3751,8 +3751,8 @@ void CFluidDriver::Update() {
 
   for(iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, iZone);
+         solver_container, numerics_container, config_container,
+         surface_movement, grid_movement, FFDBox, iZone);
 }
 
 void CFluidDriver::ResetConvergence() {
@@ -4636,8 +4636,8 @@ void CHBDriver::Update() {
 
     /*--- Update the harmonic balance terms across all zones ---*/
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
   }
 
@@ -4970,6 +4970,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
   }
   delete [] P;
   delete [] Pinv;
+  delete [] Source;
   delete [] Source_old;
 
 }
