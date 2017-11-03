@@ -440,7 +440,6 @@ void CDriver::Postprocessing() {
       ConvHist_file[iZone].close();
     }
 
-    cout << "History file, closed." << endl;
   }
 
   if (rank == MASTER_NODE)
@@ -2951,95 +2950,81 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 void CDriver::Output(unsigned long ExtIter) {
   
   int rank = MASTER_NODE;
+  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
+  bool output_files = false;
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Solution output. Determine whether a solution needs to be written
-   after the current iteration, and if so, execute the output file writing
-   routines. ---*/
+  /*--- Determine whether a solution needs to be written
+   after the current iteration ---*/
   
-  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+  if (
+      
+      /*--- General if statements to print output statements ---*/
+      
+      (ExtIter+1 >= nExtIter) || (StopCalc) ||
+      
+      /*--- Fixed CL problem ---*/
+      
+      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
+       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == ExtIter)) ||
+      
+      /*--- Steady problems ---*/
+      
       ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-       !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-         (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
-         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING))) ||
-      (StopCalc) ||
+       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
+      
+      /*--- Unsteady problems ---*/
+      
       (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
        ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+      
       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
                            ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+      
       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-      (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-        ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-
+      
+      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+      
+      ) {
+    
+    output_files = true;
+    
+  }
+  
+  /*--- Determine whether a solution doesn't need to be written
+   after the current iteration ---*/
+  
+  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
+  }
+  
+  /*--- write the solution ---*/
+  
+  if (output_files) {
+    
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-    
-    /*--- For specific applications, evaluate and plot the surface. ---*/
-    
-    if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
-      output->SpecialOutput_AnalyzeSurface(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                           geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-    }
-
-    /*--- For specific applications, evaluate and plot the surface. ---*/
-    
-    if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
-      output->SpecialOutput_Distortion(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                       geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-    }
-    
-    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-    
-    if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0) {
-      output->SpecialOutput_SonicBoom(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-    }
-    
-    /*--- Compute the forces at different sections. ---*/
-    
-    if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
-      output->SpecialOutput_SpanLoad(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-    }
-    
-    /*--- Output per zones ---*/
-    
-    for (iZone = 0; iZone < nZone; iZone++) {
-    
-      /*--- Output a file with the forces breakdown. ---*/
-      
-      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-        output->SpecialOutput_HarmonicBalance(solver_container, geometry_container, config_container, iZone, nZone);
-      }
-
-      /*--- Compute span-wise values file for turbomachinery. ---*/
-      
-      if (config_container[iZone]->GetBoolTurbomachinery()) {
-        output->SpecialOutput_Turbo(solver_container, geometry_container, config_container, iZone);
-      }
-      
-      /*--- Output a file with the forces breakdown. ---*/
-      
-      output->SpecialOutput_ForcesBreakdown(solver_container, geometry_container, config_container, iZone);
-      
-    }
     
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-
+    
     output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
     
     
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     
   }
-
+  
 }
-
 CDriver::~CDriver(void) {}
 
 su2double CDriver::Get_Drag() {
@@ -4409,16 +4394,16 @@ void CDiscAdjFluidDriver::SetObjFunction(){
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
         
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-          output->SpecialOutput_AnalyzeSurface(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
+          output->SpecialOutput_AnalyzeSurface(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone], false);
         
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-          output->SpecialOutput_Distortion(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+          output->SpecialOutput_Distortion(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
         
         if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
-          output->SpecialOutput_SonicBoom(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+          output->SpecialOutput_SonicBoom(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
           
         if (config_container[ZONE_0]->GetPlot_Section_Forces())
-          output->SpecialOutput_SpanLoad(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+          output->SpecialOutput_SpanLoad(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
         
         break;
     }
