@@ -744,8 +744,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /*!\brief REF_AREA\n DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
   addDoubleOption("REF_AREA", RefArea, 1.0);
-  /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
-  addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
+  /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (0 implies automatic calculation) \ingroup Config*/
+  addDoubleOption("SEMI_SPAN", SemiSpan, 0.0);
   /*!\brief REF_LENGTH\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH", RefLength, 1.0);
   /*!\brief REF_SHARP_EDGES\n DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
@@ -4097,14 +4097,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     
-    if (RefArea == 0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
+    if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
     else { cout << "The reference area is " << RefArea;
-    	if (SystemMeasurements == US) cout << " in^2." << endl;
-    	else cout << " m^2." << endl;
+      if (SystemMeasurements == US) cout << " in^2." << endl; else cout << " m^2." << endl;
     }
+    
+    if (SemiSpan == 0.0) cout << "The semi-span will be computed using the max y(3D) value." << endl;
+    else { cout << "The semi-span length area is " << SemiSpan;
+      if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
+    }
+    
     cout << "The reference length is " << RefLength;
-  	if (SystemMeasurements == US) cout << " in." << endl;
-  	else cout << " m." << endl;
+    if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
       cout << "Surface(s) where the force coefficients are evaluated and \n";
@@ -4715,7 +4719,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
               }
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
               break;
             case FGMRES:
             case RESTARTED_FGMRES:
@@ -4727,7 +4731,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
               }
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
-              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
                break;
             case SMOOTHER_JACOBI:
               cout << "A Jacobi method is used for smoothing the linear system." << endl;
