@@ -264,14 +264,14 @@ int main(int argc, char *argv[]) {
        for (iZone = 0; iZone < nZone; iZone++) {
          solver_container[iZone] = NULL;
        }
-       unsigned short FinestMesh;
-       SolutionPostprocessing(geometry_container, config_container, solver_container, nZone)
+
+       SolutionPostprocessing(geometry_container, config_container, solver_container, nZone);
        AD::StartRecording();
 
        /*--- Compute pressure at boundary using transpiration velocity ---*/
        ComputeTranspirationPressure(geometry_container[ZONE_0], config_container[ZONE_0], solver_container[ZONE_0]);
        solver_container[ZONE_0]->Pressure_Forces(geometry_container[ZONE_0], config_container[ZONE_0]);
-       su2double Objective_Function = Total_ObjFunc(config_container[ZONE_0], solver_container[ZONE_0]);
+       su2double Objective_Function = Compute_TotalObjFunc(config_container[ZONE_0], solver_container[ZONE_0]);
 
        if (rank==MASTER_NODE){
          SU2_TYPE::SetDerivative(Objective_Function,1.0);
@@ -754,7 +754,18 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
 }
 
 void SolutionPostprocessing(CGeometry **geometry_container, CConfig **config_container, CSolver **solver_container, unsigned short nZone){
+
   unsigned short iZone;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPICommunicator,&rank);
+  MPI_Comm_size(MPICommunicator,&size);
+#else
+  SU2_Comm MPICommunicator(0);
+#endif
 
   /*--- Currently no FSI support ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady()) {
@@ -963,7 +974,7 @@ void ComputeTranspirationPressure(CGeometry *geometry, CConfig *config, CSolver 
 
 }
 
-su2double Get_ObjFunc(CConfig *config, CSolver *solver) {
+su2double Compute_TotalObjFunc(CConfig *config, CSolver *solver) {
   
   unsigned short iMarker_Monitoring;
   su2double Weight_ObjFunc, Total_ComboObj = 0.0;
@@ -1014,5 +1025,7 @@ su2double Get_ObjFunc(CConfig *config, CSolver *solver) {
 
     }
   }
+
+  return Total_ComboObj;
   
 }

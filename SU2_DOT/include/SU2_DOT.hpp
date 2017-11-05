@@ -81,7 +81,7 @@ void SolutionPostprocessing(CGeometry **geometry_container, CConfig **config_con
 
 void ComputeTranspirationPressure(CGeometry *geometry, CConfig *config, CSolver *solver);
 
-su2double Get_ObjFunc(CConfig *config, CSolver *solver)
+su2double Compute_TotalObjFunc(CConfig *config, CSolver *solver);
 
 /*!
  * \brief Prints the gradient information to a file.
