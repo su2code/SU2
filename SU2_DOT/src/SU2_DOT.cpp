@@ -906,6 +906,7 @@ void SolutionPostprocessing(CGeometry **geometry_container, CConfig **config_con
 
 void ComputeTranspirationPressure(CGeometry *geometry, CConfig *config, CSolver *solver){
   unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned short iMarker, nMarker = config->GetnMarker_All();
   unsigned long iPoint, iVertex;
   su2double eps, *Vel_b, Vel_i, Vel_2, Density_b, Energy_b, Pressure_b;
   su2double Area, *Normal, *NormalArea, *UnitNormal;
