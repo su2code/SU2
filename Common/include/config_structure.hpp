@@ -2385,6 +2385,12 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_Fluid_InterfaceBound(void);
+
+  /*!
+   * \brief Get the total number of transpiration markers.
+   * \return Total number of moving markers.
+   */
+  unsigned short GetnMarker_Transpiration(void);
   
   /*!
    * \brief Get the total number of boundary markers.

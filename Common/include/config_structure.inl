@@ -1196,6 +1196,8 @@ inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_
 
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
+inline unsigned short CConfig::GetnMarker_Transpiration(void) { return nMarker_Transpiration; }
+
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }

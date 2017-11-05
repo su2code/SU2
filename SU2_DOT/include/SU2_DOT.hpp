@@ -45,6 +45,7 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
+#include "../../SU2_CFD/include/solver_structure.hpp"
 
 using namespace std;
 
@@ -68,6 +69,19 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
  */
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Gradient);
+
+/*!
+ * \brief Postprocessing computations of the solution.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] solver - Solution class of the problem.
+ * \param[in] nZone - Number of zones for the problem.
+ */
+void SolutionPostprocessing(CGeometry **geometry_container, CConfig **config_container, CSolver **solver_container, unsigned short nZone);
+
+void ComputeTranspirationPressure(CGeometry *geometry, CConfig *config, CSolver *solver);
+
+su2double Get_ObjFunc(CConfig *config, CSolver *solver)
 
 /*!
  * \brief Prints the gradient information to a file.
