@@ -259,32 +259,32 @@ int main(int argc, char *argv[]) {
      if(config_container[ZONE_0]->GetnMarker_Transpiration() > 0 && config_container[ZONE_0]->GetAD_Mode()){
       if (rank == MASTER_NODE)
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
-      /*--- Initialize solver class ---*/
-      CSolver **solver_container = new CSolver*[nZone];
-       for (iZone = 0; iZone < nZone; iZone++) {
-         solver_container[iZone] = NULL;
-       }
+      //// /*--- Initialize solver class ---*/
+      //// CSolver **solver_container = new CSolver*[nZone];
+      //// for (iZone = 0; iZone < nZone; iZone++) {
+      ////   solver_container[iZone] = NULL;
+      //// }
 
-       SolutionPostprocessing(geometry_container, config_container, solver_container, nZone);
-       AD::StartRecording();
+      //// SolutionPostprocessing(geometry_container, config_container, solver_container, nZone);
+      //// AD::StartRecording();
 
-       /*--- Compute pressure at boundary using transpiration velocity ---*/
-       ComputeTranspirationPressure(geometry_container[ZONE_0], config_container[ZONE_0], solver_container[ZONE_0]);
-       solver_container[ZONE_0]->Pressure_Forces(geometry_container[ZONE_0], config_container[ZONE_0]);
-       su2double Objective_Function = Compute_TotalObjFunc(config_container[ZONE_0], solver_container[ZONE_0]);
+      //// /*--- Compute pressure at boundary using transpiration velocity ---*/
+      //// ComputeTranspirationPressure(geometry_container[ZONE_0], config_container[ZONE_0], solver_container[ZONE_0]);
+      //// solver_container[ZONE_0]->Pressure_Forces(geometry_container[ZONE_0], config_container[ZONE_0]);
+      //// su2double Objective_Function = Compute_TotalObjFunc(config_container[ZONE_0], solver_container[ZONE_0]);
 
-       if (rank==MASTER_NODE){
-         SU2_TYPE::SetDerivative(Objective_Function,1.0);
-       }else{
-         SU2_TYPE::SetDerivative(Objective_Function,0.0);
-       }
-       AD::StopRecording();
-       AD::ComputeAdjoint();
+      //// if (rank==MASTER_NODE){
+      ////   SU2_TYPE::SetDerivative(Objective_Function,1.0);
+      //// }else{
+      ////   SU2_TYPE::SetDerivative(Objective_Function,0.0);
+      //// }
+      //// AD::StopRecording();
+      //// AD::ComputeAdjoint();
 
-       su2double extracted_derivative;
-       su2double dJdalpha = SU2_TYPE::GetDerivative(extracted_derivative);
+      //// su2double extracted_derivative;
+      //// su2double dJdalpha = SU2_TYPE::GetDerivative(extracted_derivative);
 
-       cout << "partial_J/partial_alpha = " << dJdalpha << "on rank " << rank << endl;
+      //// cout << "partial_J/partial_alpha = " << dJdalpha << "on rank " << rank << endl;
        
      }
 

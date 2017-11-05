@@ -3082,6 +3082,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief  A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -11569,6 +11576,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Extract and set the transpiration velocity sensitivity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.

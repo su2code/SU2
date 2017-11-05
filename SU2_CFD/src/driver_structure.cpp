@@ -4250,6 +4250,47 @@ void CDiscAdjFluidDriver::Run() {
 
     AD::ClearAdjoints();
 
+    /*---  Compute the sensitivities to the transpiration boundary velocity ---*/
+    
+    if(config_container[ZONE_0]->GetnMarker_Transpiration() > 0){
+      /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+       * as argument ensures that all information from a previous recording is removed. ---*/
+
+      SetRecording(NONE);
+
+      /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
+
+      SetRecording(TRANSP_VEL);
+
+      /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+       *    of the current iteration. The values are passed to the AD tool. ---*/
+
+      for (iZone = 0; iZone < nZone; iZone++) {
+
+        iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
+
+      }
+
+      /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+      SetAdj_ObjFunction();
+
+      /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+      AD::ComputeAdjoint();
+
+      /*--- Extract the computed sensitivity values. ---*/
+
+      for (iZone = 0; iZone < nZone; iZone++) {
+        solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivityTranspiration(geometry_container[iZone][MESH_0],config_container[iZone]);
+      }
+
+      /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+      AD::ClearAdjoints();
+
+    }
+
   }
 
 }

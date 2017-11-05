@@ -11809,6 +11809,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
+  bool transp         = (config->GetnMarker_Transpiration() > 0);
   
   int *Local_Halo;
   
@@ -11967,6 +11968,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- All adjoint solvers write the surface sensitivity. ---*/
     
     nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
+
+    /*--- For the discrete adjoint with transpiration boundary, we have the field of sensitivity
+     wrt the transpiration velocity. ---*/
+
+    if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
+        (Kind_Solver == DISC_ADJ_RANS))) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Sensitivity_Transp");
+    }
     
     /*--- For the continouus adjoint, we write either convective scheme's
      dissipation sensor (centered) or limiter (uwpind) for adj. density. ---*/
@@ -12107,6 +12118,14 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(2);
           iVar++;
         }
+      }
+
+      /*--- Load data for the transpiration sensitivities. ---*/
+
+      if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
+          (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
+          (Kind_Solver == DISC_ADJ_RANS))) {
+        Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivityTranspiration(); iVar++;
       }
       
       if (!config->GetLow_MemoryOutput()) {

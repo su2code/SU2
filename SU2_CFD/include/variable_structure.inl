@@ -1186,6 +1186,14 @@ inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val)
 
 inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim) { return Sensitivity[iDim];}
 
+inline void CVariable::SetSensitivityTranspiration(su2double val) {}
+
+inline su2double CVariable::GetSensitivityTranspiration() { return 0.0; }
+
+inline void CDiscAdjVariable::SetSensitivityTranspiration(u2double val) {SensitivityTransp = val;}
+
+inline su2double CDiscAdjVariable::GetSensitivityTranspiration() { return SensitivityTransp;}
+
 inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direct; }
 
 inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct) {

@@ -1908,6 +1908,14 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
 
   }
 
+  if (kind_recording == TRANSP_VEL){
+
+    /*--- Register node coordinates as input ---*/
+
+    geometry_container[iZone][MESH_0]->RegisterTranspiration(config_container[iZone]);
+
+  }
+
 }
 
 void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){

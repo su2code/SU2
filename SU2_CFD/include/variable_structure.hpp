@@ -2032,6 +2032,18 @@ public:
    * \return value of the Sensitivity
    */
   virtual su2double GetSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Set the transpiration velocity sensitivity at the node
+   * \param[in] val - value of the Sensitivity
+   */
+  virtual void SetSensitivityTranspiration(su2double val);
+  
+  /*!
+   * \brief Get the transpiration velocity Sensitivity at the node
+   * \return value of the Sensitivity
+   */
+  virtual su2double GetSensitivityTranspiration(void);
   
   virtual void SetDual_Time_Derivative(unsigned short iVar, su2double der);
   
@@ -4308,6 +4320,18 @@ public:
    * \return value of the Sensitivity
    */
   su2double GetSensitivity(unsigned short iDim);
+
+  /*!
+   * \brief Set the transpiration velocity sensitivity at the node
+   * \param[in] val - value of the Sensitivity
+   */
+  void SetSensitivityTranspiration(su2double val);
+  
+  /*!
+   * \brief Get the Sensitivity at the node
+   * \return value of the Sensitivity
+   */
+  su2double GetSensitivityTranspiration();
   
   void SetDual_Time_Derivative(unsigned short iVar, su2double der);
   

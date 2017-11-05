@@ -68,6 +68,8 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
 
   Sensitivity = new su2double[nDim];
 
+  SensitivityTransp = 0.0;
+
   unsigned short iVar,iDim;
 
   for (iDim = 0; iDim < nDim; iDim++) {

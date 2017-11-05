@@ -445,6 +445,43 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
   SetSurface_Sensitivity(geometry, config);
 }
 
+void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iDim, iMarker, nMarker = geometry->nMarker;
+  unsigned long iPoint;
+  su2double Sensitivity, eps;
+  string Marker_Tag;
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+        Sensitivity = SU2_TYPE::GetDerivative(config->GetTranspiration(Marker_Tag));
+
+        /*--- Set the index manually to zero. ---*/
+
+        AD::ResetInput(config->GetTranspiration(Marker_Tag));
+
+        /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+
+        if (config->GetSens_Remove_Sharp()) {
+          eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+          if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
+            Sensitivity = 0.0;
+        }
+        if (!time_stepping) {
+          node[iPoint]->SetSensitivityTranspiration(Sensitivity);
+        } else {
+          node[iPoint]->SetSensitivityTranspiration(node[iPoint]->GetSensitivityTranspiration() + Sensitivity);
+        }
+
+
+      }
+    }
+  }
+}
+
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;

@@ -1508,7 +1508,8 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 enum ENUM_RECORDING {
   CONS_VARS   = 1,
   MESH_COORDS = 2,
-  COMBINED    = 3
+  COMBINED    = 3,
+  TRANSP_VEL  = 4
 };
 
 /*!
