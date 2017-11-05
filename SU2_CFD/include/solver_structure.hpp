@@ -4023,6 +4023,7 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
+  bool AoA_FD_Change;
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
@@ -11579,12 +11580,7 @@ class CDiscAdjSolver : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
-  su2double *Sens_Mach, /*!< \brief Mach sensitivity coefficient for each boundary. */
-  *Sens_AoA,      /*!< \brief Angle of attack sensitivity coefficient for each boundary. */
-  *Sens_Geo,      /*!< \brief Shape sensitivity coefficient for each boundary. */
-  *Sens_Press,      /*!< \brief Pressure sensitivity coefficient for each boundary. */
-  *Sens_Temp,      /*!< \brief Temperature sensitivity coefficient for each boundary. */
-  **CSensitivity;  /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  su2double **CSensitivity;  /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
   su2double Total_Sens_Mach;  /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_AoA;    /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Geo;    /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
