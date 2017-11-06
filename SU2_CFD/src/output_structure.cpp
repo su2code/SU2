@@ -2316,6 +2316,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool transp = (config->GetnMarker_Transpiration() > 0);
+  cout << "MergeSolution: Transp = " << transp << endl;
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
@@ -3795,6 +3796,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       (( Kind_Solver == DISC_ADJ_EULER         ) ||
        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
        ( Kind_Solver == DISC_ADJ_RANS          )));
+  cout << "MergeBaselineSolution: Transp = " << transp << endl;
   
   nVar_Total = config->fields.size() - 1;
   if(transp) nVar_Total += 1;
@@ -4045,6 +4047,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool transp = (config->GetnMarker_Transpiration() > 0);
+  cout << "SetRestart: Transp = " << transp << endl;
 
   /*--- Retrieve filename from config ---*/
   
