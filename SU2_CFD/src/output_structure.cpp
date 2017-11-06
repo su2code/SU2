@@ -1108,7 +1108,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position];
             if(transp){
-              SurfAdj_file << ", " << Buffer_Receive_Sens_Transp[position]
+              SurfAdj_file << ", " << Buffer_Receive_Sens_Transp[position];
             }
           }
           SurfAdj_file << "\n";
@@ -1150,7 +1150,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position] << ", " << Buffer_Receive_Sens_z[position];
             if(transp){
-              SurfAdj_file << ", " << Buffer_Receive_Sens_Transp[position]
+              SurfAdj_file << ", " << Buffer_Receive_Sens_Transp[position];
             }
           }
           SurfAdj_file << "\n";
