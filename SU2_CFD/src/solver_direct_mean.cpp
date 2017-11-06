@@ -3458,11 +3458,13 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   string Marker_Tag;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()) {
-        node[iPoint]->SetTranspiration(config->GetTranspiration(Marker_Tag));
+    if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          node[iPoint]->SetTranspiration(config->GetTranspiration(Marker_Tag));
+        }
       }
     }
   }
