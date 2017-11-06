@@ -413,8 +413,6 @@ inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { re
 
 inline void CGeometry::SetSensitivity(CConfig* config) {}
 
-inline void CGeometry::SetSensitivityTranspiration(CConfig* config) {}
-
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
 
 inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
@@ -422,10 +420,6 @@ inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigne
 inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {}
 
 inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {Sensitivity[iPoint*nDim+iDim] = val;}
-
-inline void CGeometry::SetSensitivityTranspiration(unsigned long iPoint, su2double val) {}
-
-inline void CPhysicalGeometry::SetSensitivityTranspiration(unsigned long iPoint, su2double val) {SensitivityTransp[iPoint] = val;}
 
 inline su2double* CPhysicalGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){return AverageTurboNormal[val_marker][val_span];}
 

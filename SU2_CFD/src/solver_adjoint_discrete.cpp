@@ -255,6 +255,23 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
      * extracted in the ExtractAdjointVariables routine. ---*/
 }
 
+void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config) {
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  string Marker_Tag;
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+        su2double TranspMag = node[iPoint]->GetTranspiration();
+        AD::RegisterInput(TranspMag);
+      }
+    }
+  }
+}
+
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint, nPoint = geometry->GetnPoint();
@@ -447,21 +464,24 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iDim, iMarker, nMarker = geometry->nMarker;
-  unsigned long iPoint;
-  su2double Sensitivity, eps;
+  unsigned short iMarker;
+  unsigned long iPoint, iVertex;
+  su2double Sensitivity, eps, VelEps;
   string Marker_Tag;
+
+  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
-        Sensitivity = SU2_TYPE::GetDerivative(config->GetTranspiration(Marker_Tag));
+        VelEps = node[iPoint]->GetTranspiration();
+        Sensitivity = SU2_TYPE::GetDerivative(VelEps);
 
         /*--- Set the index manually to zero. ---*/
 
-        AD::ResetInput(config->GetTranspiration(Marker_Tag));
+        AD::ResetInput(VelEps);
 
         /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 

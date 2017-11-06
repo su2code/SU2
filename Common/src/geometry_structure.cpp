@@ -1204,22 +1204,6 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   }
 }
 
-void CGeometry::RegisterTranspiration(CConfig *config) {
-  unsigned short iDim, iMarker;
-  unsigned long iPoint;
-  string Marker_Tag;
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()) {
-        AD::RegisterInput(config->GetTranspiration(Marker_Tag));
-      }
-    }
-  }
-}
-
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
   
   unsigned short iMesh;

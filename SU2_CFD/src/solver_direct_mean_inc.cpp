@@ -4594,7 +4594,7 @@ void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solv
   unsigned long iPoint, iVertex;
 
   su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
-  su2double *Velocity_b, *RhoU;
+  su2double *Velocity_b, *RhoU, VelEps;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
@@ -4637,9 +4637,9 @@ void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solv
       Density  = node[iPoint]->GetDensity();
 
       /*--- Compute the boundary state b ---*/
-
+      VelEps = node[iPoint]->GetTranspiration();
       for (iDim = 0; iDim < nDim; iDim++){
-        Velocity_b[iDim] = - config->GetTranspiration(Marker_Tag) * NormalArea[iDim]; //Include the transpiration velocity in the residual.
+        Velocity_b[iDim] = - VelEps * NormalArea[iDim]; //Include the transpiration velocity in the residual.
         RhoU[iDim]       = Density*Velocity_b[iDim];
       }
 

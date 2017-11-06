@@ -3452,6 +3452,22 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 }
 
+void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  string Marker_Tag;
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+        node[iPoint]->SetTranspiration(config->GetTranspiration(Marker_Tag));
+      }
+    }
+  }
+}
+
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
@@ -4262,6 +4278,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool transp               = (config->GetnMarker_Transpiration() > 0);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -4290,6 +4307,10 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute NearField MPI ---*/
 
   if (nearfield) { Set_MPI_Nearfield(geometry, config); }
+
+  /*--- Set transpiration values ---*/
+
+  if (transp) { SetTranspiration(geometry, config); }
 
  
   /*--- Upwind second order reconstruction ---*/
@@ -8820,7 +8841,7 @@ void CEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_
   su2double *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
   ProjGridVel = 0.0, turb_ke;
   su2double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
-  su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
+  su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i, VelEps;
   su2double **Jacobian_b, **DubDu;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -8877,9 +8898,9 @@ void CEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_
       Energy_i = node[iPoint]->GetEnergy();
 
       /*--- Compute the boundary state b ---*/
-
+      VelEps = node[iPoint]->GetTranspiration();
       for (iDim = 0; iDim < nDim; iDim++)
-        Velocity_b[iDim] = Velocity_i[iDim] - (ProjVelocity_i + config->GetTranspiration(Marker_Tag)) * UnitNormal[iDim]; //Force the velocity to be the tangential + transpiration velocity.
+        Velocity_b[iDim] = Velocity_i[iDim] - (ProjVelocity_i + VelEps) * UnitNormal[iDim]; //Force the velocity to be the tangential + transpiration velocity.
 
       if (grid_movement) {
         GridVel = geometry->node[iPoint]->GetGridVel();
@@ -15868,6 +15889,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool transp               = (config->GetnMarker_Transpiration() > 0);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -15895,6 +15917,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute NearField MPI ---*/
 
   if (nearfield) { Set_MPI_Nearfield(geometry, config); }
+
+  /*--- Set transpiration values ---*/
+
+  if (transp) { SetTranspiration(geometry, config); }
  
   /*--- Artificial dissipation ---*/
 

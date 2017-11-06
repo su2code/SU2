@@ -117,6 +117,8 @@ protected:
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
+  su2double TranspVel;  /*!< \brief Transpiration velocity magnitude. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -3046,6 +3048,13 @@ public:
    * \param[in] config_container - The particular config.
    */
   virtual void RegisterSolution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - The geometry container holding all grid levels.
+   * \param[in] config - The particular config.
+   */
+  virtual void RegisterTranspiration(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -4246,6 +4255,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set transpiration value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTranspiration(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Parallelization of Undivided Laplacian.
@@ -11537,6 +11553,13 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterSolution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Registers transpiration velocities on the tape. Called while tape is active.
+   * \param[in] geometry_container - The geometry container holding all grid levels.
+   * \param[in] config_container - The particular config.
+   */
+  void RegisterTranspiration(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

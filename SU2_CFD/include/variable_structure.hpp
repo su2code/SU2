@@ -71,7 +71,8 @@ protected:
   su2double Max_Lambda,  /*!< \brief Maximun eingenvalue. */
   Max_Lambda_Inv,    /*!< \brief Maximun inviscid eingenvalue. */
   Max_Lambda_Visc,  /*!< \brief Maximun viscous eingenvalue. */
-  Lambda;        /*!< \brief Value of the eingenvalue. */
+  Lambda,        /*!< \brief Value of the eingenvalue. */
+  TranspVel;     /*!< \brief Value of the transpiration velocity. */
   su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme. */
   su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
@@ -308,7 +309,11 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   su2double *GetSolution_time_n1(void);
-  
+
+  void SetTranspiration(su2double val);
+
+  su2double GetTranspiration(void);
+
   /*!
    * \brief Set the value of the old residual.
    * \param[in] val_residual_old - Pointer to the residual vector.
@@ -4283,6 +4288,7 @@ public:
 class CDiscAdjVariable : public CVariable {
 private:
   su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  su2double SensitivityTransp; /* Derivative of target functional with respect to the transpiration velocity at this node*/
   su2double* Solution_Direct;
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;

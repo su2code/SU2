@@ -1044,12 +1044,6 @@ public:
   void RegisterCoordinates(CConfig *config);
 
   /*!
-   * \brief Register the transpiration boundary velocity.
-   * \param[in] config
-   */
-  void RegisterTranspiration(CConfig *config);
-
-  /*!
    * \brief Update the multi-grid structure and the wall-distance.
    * \param geometry_container - Geometrical definition.
    * \param config - Config
@@ -1076,26 +1070,6 @@ public:
    * \param val - Value of the sensitivity
    */
   virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
-
-
-  /*!
-   * \brief A virtual member.
-   * \param config - Config
-   */
-  virtual void SetSensitivityTranspiration(CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param iPoint - Point
-   */
-  virtual su2double GetSensitivityTranspiration(unsigned long iPoint);
-
-  /*!
-   * \brief A virtual member.
-   * \param iPoint - Point
-   * \param val - Value of the sensitivity
-   */
-  virtual void SetSensitivityTranspiration(unsigned long iPoint, su2double val);
 
   /*!
 	 * \brief A virtual member.
@@ -1281,6 +1255,7 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
   su2double SensitivityTransp; /*! <\brief Scalar holding the transpiration velocity sensitivity at each point. */
+  su2double TranspVel; /*! <\brief Scalar holding the transpiration velocity at each point. */
 
 public:
   
@@ -1905,26 +1880,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] val - Value of the sensitivity.
    */
   void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
-
-  /*!
-   * \brief Read the sensitivity from adjoint solution file and store it.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSensitivityTranspiration(CConfig *config);
-
-  /*!
-   * \brief Get the Sensitivity at a specific point.
-   * \param[in] iPoint - The point where to get the sensitivity.
-   * \returns The sensitivity at point iPoint and dim. iDim.
-   */
-  su2double GetSensitivityTranspiration(unsigned long iPoint);
-
-  /*!
-   * \brief Set the Sensitivity at a specific point.
-   * \param[in] iPoint - The point where to get the sensitivity.
-   * \param[in] val - Value of the sensitivity.
-   */
-  void SetSensitivityTranspiration(unsigned long iPoint, su2double val);
   
   /*!
    * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.

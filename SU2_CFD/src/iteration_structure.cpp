@@ -1912,7 +1912,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
 
     /*--- Register node coordinates as input ---*/
 
-    geometry_container[iZone][MESH_0]->RegisterTranspiration(config_container[iZone]);
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterTranspiration(geometry_container[iZone][MESH_0], config_container[iZone]);
 
   }
 
