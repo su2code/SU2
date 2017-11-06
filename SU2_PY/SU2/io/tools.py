@@ -527,7 +527,8 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0
-    if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
+    if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" : return -1.0
+    if ObjFun_name == "TOTAL_HEATFLUX"          : return -1.0
     
     # otherwise
     return 1.0
