@@ -2315,7 +2315,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  bool transp = (config->GetnMarker_Transpiriation() > 0);
+  bool transp = (config->GetnMarker_Transpiration() > 0);
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
