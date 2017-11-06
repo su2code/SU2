@@ -2282,7 +2282,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_ViscCoeffs = 0, iVar_HeatCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
-  iVar_FEA_Extra = 0, iVar_SensDim = 0;
+  iVar_FEA_Extra = 0, iVar_SensDim = 0, iVar_Transp = 0;
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
@@ -2315,6 +2315,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool transp = (config->GetnMarker_Transpiriation() > 0);
   
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
@@ -2447,6 +2448,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         (Kind_Solver == DISC_ADJ_RANS)) {
       iVar_Sens    = nVar_Total; nVar_Total += 1;
       iVar_SensDim = nVar_Total; nVar_Total += nDim;
+    }
+
+    if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
+        (Kind_Solver == DISC_ADJ_RANS))) {
+      iVar_Transp = nVar_Total;
+      nVar_Total += 1;
     }
     
     if (config->GetExtraOutput()) {
@@ -3342,7 +3350,54 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-    
+    if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
+        (Kind_Solver == DISC_ADJ_RANS))) {
+      /*--- Loop over this partition to collect the current variable ---*/
+      
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+          
+          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+          
+          Buffer_Send_Var[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivityTranspiration();
+        }
+      }
+      
+      /*--- Gather the data on the master node. ---*/
+      
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+#endif
+      
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+      
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_Transp;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+            
+            /*--- Get global index, then loop over each variable and store ---*/
+            
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+
+            jPoint++;
+          }
+          
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+    }
+
     /*--- Communicate the Velocities for dynamic FEM problem ---*/
     
     if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
@@ -3969,6 +4024,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool transp = (config->GetnMarker_Transpiration() > 0);
 
   /*--- Retrieve filename from config ---*/
   
@@ -4088,6 +4144,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       if (geometry->GetnDim() == 3) {
         restart_file << "\t\"Sensitivity_z\"";
       }
+    }
+
+    if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
+        (Kind_Solver == DISC_ADJ_RANS))) {
+      restart_file << "\t\"Sensitivity_Transp\"";
     }
     
     if (Kind_Solver == FEM_ELASTICITY) {
@@ -11894,6 +11956,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Sensitivity_z");
   }
 
+  /*--- For the discrete adjoint with transpiration boundary, we have the field of sensitivity
+     wrt the transpiration velocity. ---*/
+
+    if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
+        (Kind_Solver == DISC_ADJ_RANS))) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Sensitivity_Transp");
+    }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -11968,16 +12040,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- All adjoint solvers write the surface sensitivity. ---*/
     
     nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
-
-    /*--- For the discrete adjoint with transpiration boundary, we have the field of sensitivity
-     wrt the transpiration velocity. ---*/
-
-    if (transp && ((Kind_Solver == DISC_ADJ_EULER) ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES)    ||
-        (Kind_Solver == DISC_ADJ_RANS))) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Sensitivity_Transp");
-    }
     
     /*--- For the continouus adjoint, we write either convective scheme's
      dissipation sensor (centered) or limiter (uwpind) for adj. density. ---*/

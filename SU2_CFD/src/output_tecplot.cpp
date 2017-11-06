@@ -45,6 +45,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  bool transp = (config->GetnMarker_Transpiration() > 0);
 
   char cstr[200], buffer[50];
   string filename;
@@ -202,6 +203,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
         if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
+        }
+        if(transp){
+          Tecplot_File << ",\"Sensitivity_Transp\"";
         }
       }
       
@@ -503,6 +507,9 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
         if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
+        }
+        if(config->GetnMarker_Transpiration() > 0){
+          Tecplot_File << ",\"Sensitivity_Transp\"";
         }
       }
       
