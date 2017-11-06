@@ -46,7 +46,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool transp = (config->GetnMarker_Transpiration() > 0);
-  cout << "SetTecplotASCII: Transp = " << transp << endl;
 
   char cstr[200], buffer[50];
   string filename;
