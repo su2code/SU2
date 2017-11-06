@@ -766,7 +766,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   ofstream SurfAdj_file;
 
   bool transp = (config->GetnMarker_Transpiration() > 0);
-  cout "SetSurfaceCSV_Adjoint: Transp = " << transp << endl;
+  cout << "SetSurfaceCSV_Adjoint: Transp = " << transp << endl;
   
   /*--- Write file name with extension if unsteady ---*/
   
@@ -898,7 +898,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   ofstream SurfAdj_file;
 
   bool transp = (config->GetnMarker_Transpiration() > 0);
-  cout "SetSurfaceCSV_Adjoint: Transp = " << transp << endl;
+  cout << "SetSurfaceCSV_Adjoint: Transp = " << transp << endl;
   
   /*--- Write the surface .csv file ---*/
   nLocalVertex_Surface = 0;
