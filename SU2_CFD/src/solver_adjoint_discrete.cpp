@@ -265,8 +265,9 @@ void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
-        su2double TranspMag = node[iPoint]->GetTranspiration();
+        su2double TranspMag = direct_solver->node[iPoint]->GetTranspiration();
         AD::RegisterInput(TranspMag);
+        direct_solver->node[iPoint]->SetSensitivityTranspiration(TranspMag);
       }
     }
   }
