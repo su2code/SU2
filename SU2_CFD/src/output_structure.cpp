@@ -3789,8 +3789,15 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   /*--- Local variables needed on all processors ---*/
   unsigned short iVar;
   unsigned long iPoint = 0, jPoint = 0;
+
+  unsigned short Kind_Solver  = config->GetKind_Solver();
+  bool transp = ((config->GetnMarker_Transpiration() > 0) && 
+      (( Kind_Solver == DISC_ADJ_EULER         ) ||
+       ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
+       ( Kind_Solver == DISC_ADJ_RANS          )));
   
   nVar_Total = config->fields.size() - 1;
+  if(transp) nVar_Total += 1;
   
   /*--- Merge the solution either in serial or parallel. ---*/
   
@@ -3829,7 +3836,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     if (!Local_Halo[iPoint]) nTotalPoints++;
   
   nGlobal_Poin = nTotalPoints;
-  Data = new su2double*[nVar_Total];
   for (iVar = 0; iVar < nVar_Total; iVar++) {
     Data[iVar] = new su2double[nGlobal_Poin];
   }
@@ -3844,9 +3850,18 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       /*--- Solution (first, and second system of equations) ---*/
       
       unsigned short jVar = 0;
-      for (iVar = 0; iVar < nVar_Total; iVar++) {
-        Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
-        jVar++;
+      if(transp){
+        for (iVar = 0; iVar < nVar_Total-1; iVar++) {
+          Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
+          jVar++;
+        }
+        Data[jVar][jPoint] = solver->node[iPoint]->GetSensitivityTranspiration();
+      }
+      else{
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+          Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
+          jVar++;
+        }
       }
     }
     
@@ -3958,7 +3973,12 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       if (!Local_Halo[iPoint] || Wrt_Halo) {
         
         /*--- Get this variable into the temporary send buffer. ---*/
-        Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
+        if(transp && iVar == nVar_Total-1){
+          Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSensitivityTranspiration();
+        }
+        else{
+          Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
+        }
         
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
         if (iVar == 0) {
