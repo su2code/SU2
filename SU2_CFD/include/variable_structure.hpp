@@ -1987,6 +1987,8 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+  void RegisterTranspiration();
   
   /*!
    * \brief Set the adjoint values of the solution.
@@ -1999,6 +2001,9 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void GetAdjointSolution(su2double *adj_sol);
+
+
+  void GetAdjointTranspiration(su2double adj_sol);
   
   /*!
    * \brief Set the adjoint values of the solution at time n.

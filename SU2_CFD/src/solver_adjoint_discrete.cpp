@@ -265,9 +265,10 @@ void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
-        su2double TranspMag = direct_solver->node[iPoint]->GetTranspiration();
-        AD::RegisterInput(TranspMag);
-        direct_solver->node[iPoint]->SetTranspiration(TranspMag);
+        direct_solver->node[iPoint]->RegisterTranspiration();
+        //su2double TranspMag = direct_solver->node[iPoint]->GetTranspiration();
+        //AD::RegisterInput(TranspMag);
+        //direct_solver->node[iPoint]->SetTranspiration(TranspMag);
       }
     }
   }
@@ -477,8 +478,9 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
-        VelEps = direct_solver->node[iPoint]->GetTranspiration();
-        Sensitivity = SU2_TYPE::GetDerivative(VelEps);
+        direct_solver->node[iPoint]->GetAdjointTranspiration(Sensitivity);
+        //VelEps = direct_solver->node[iPoint]->GetTranspiration();
+        //Sensitivity = SU2_TYPE::GetDerivative(VelEps);
 
         /*--- Set the index manually to zero. ---*/
 
@@ -520,6 +522,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
+       || config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 
