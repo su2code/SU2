@@ -421,13 +421,13 @@ inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim,
 
 inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {Sensitivity[iPoint*nDim+iDim] = val;}
 
-inline su2double CGeometry::GetSensitivityTranspiration(void) { return 0.0;}
+inline su2double CGeometry::GetSensitivityTranspiration(unsigned long iPoint) { return 0.0;}
 
-inline su2double CPhysicalGeometry::GetSensitivityTranspiration(void) { return SensitivityTransp;}
+inline su2double CPhysicalGeometry::GetSensitivityTranspiration(unsigned long iPoint) { return SensitivityTransp[iPoint];}
 
-inline void CGeometry::SetSensitivityTranspiration(su2double val) {}
+inline void CGeometry::SetSensitivityTranspiration(unsigned long iPoint, su2double val) {}
 
-inline void CPhysicalGeometry::SetSensitivityTranspiration(su2double val) {SensitivityTransp = val;}
+inline void CPhysicalGeometry::SetSensitivityTranspiration(unsigned long iPoint, su2double val) {SensitivityTransp[iPoint] = val;}
 
 inline su2double* CPhysicalGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){return AverageTurboNormal[val_marker][val_span];}
 

@@ -10466,7 +10466,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
         solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
       }
       if(nTransp == 1){
-        solver[iZone]->node[iPoint]->SetSolution(2*nDim+1, geometry[iZone]->node[iPoint]->GetSensitivityTranspiration());
+        solver[iZone]->node[iPoint]->SetSolution(2*nDim+1, geometry[iZone]->GetSensitivityTranspiration(iPoint));
       }
     }
 
