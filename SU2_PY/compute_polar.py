@@ -127,6 +127,7 @@ def main():
    # prepare config
    config.NUMBER_PART = options.partitions
    config.EXT_ITER    = options.iterations
+   config.NZONES      = 1
 
    # find solution files if they exist
    state.find_files(config)
@@ -264,6 +265,10 @@ def main():
                                   'PARAM': [[0.0, 0.05]],
                                   'SCALE': [1.0],
                                   'SIZE': [1]}
+         if not 'OPT_OBJECTIVE' in konfig:
+            obj = {}
+            obj['DRAG'] = {'SCALE':1.e-2,'OBJTYPE':'DEFAULT'}
+            konfig.OPT_OBJECTIVE  = obj
          #
          # --------- end of dummy optimization variables definition section -----------------------
          #
