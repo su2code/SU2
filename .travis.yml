@@ -31,10 +31,10 @@ env:
           CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc-4.7 --with-cxx=g++-4.7 --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
           TEST_SCRIPT=serial_regression_AD.py
         # Parallel build and test for AD:
-        - MPICH_CXX="g++-4.7"
-          MPICH_CC="gcc-4.7"
-          CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
-          TEST_SCRIPT=parallel_regression_AD.py
+        #- MPICH_CXX="g++-4.7"
+        # MPICH_CC="gcc-4.7"
+        # CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --disable-GEO --disable-DOT --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        # TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
     # install the necessary packages
@@ -60,7 +60,7 @@ before_script:
     # Get the test cases
     - git clone https://github.com/su2code/TestCases.git ./TestData
     - cd TestData/
-    - git checkout develop
+    - git checkout v5.0.0
     # Go back to SU2 root and copy the test data into the folder structure
     - cd $TRAVIS_BUILD_DIR
     - cp -R ./TestData/* ./TestCases/

@@ -583,11 +583,6 @@ void CDriver::Geometrical_Preprocessing() {
     if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
     geometry_container[iZone][MESH_0]->SetCoord_CG();
 
-    /*--- Compute the resolution tensors ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing cell resolution tensors." << endl;
-    geometry_container[iZone][MESH_0]->SetResolutionTensor();
-
     /*--- Create the control volume structures ---*/
 
     if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
@@ -599,6 +594,11 @@ void CDriver::Geometrical_Preprocessing() {
     if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
         (config_container[iZone]->GetVisualize_CV() < (long)geometry_container[iZone][MESH_0]->GetnPointDomain()))
       geometry_container[iZone][MESH_0]->VisualizeControlVolume(config_container[iZone], UPDATE);
+
+    /*--- Compute cell center of gravity ---*/
+
+    if (rank == MASTER_NODE) cout << "Computing cell resolution tensors." << endl;
+    geometry_container[iZone][MESH_0]->SetResolutionTensor();
 
     /*--- Identify closest normal neighbor ---*/
 
@@ -1414,9 +1414,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
-      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA_Neg(nDim, nVar_Turb, config);
-      else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
+      if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, true, config);
+      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, true, config);
+      else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, true, config);
       else if (zetaf_ke) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbKE(nDim, nVar_Turb, constants, config);
     }
     
@@ -1435,15 +1435,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, false, config);
       }
       else if (neg_spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, false, config);
       }
       else if (menter_sst) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, false, config);
       }
       else if (zetaf_ke) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbKE(nDim, nVar_Turb, config);
@@ -1823,6 +1823,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;           break;
       case KE:     zetaf_ke = true;             break;
+        
     }
   
   /*--- Solver definition for the template problem ---*/

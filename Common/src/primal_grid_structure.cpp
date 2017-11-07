@@ -31,7 +31,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
 #include "../include/primal_grid_structure.hpp"
 
 unsigned short CPrimalGrid::nDim;
@@ -396,6 +395,7 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
 	for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
 		Neighbor_Elements[iNeighbor_Elements]=-1;
 	}
+  
 }
 
 CQuadrilateral::~CQuadrilateral() {

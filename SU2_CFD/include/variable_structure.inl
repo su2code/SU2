@@ -1076,10 +1076,6 @@ inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, s
 
 inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
-inline void CTurbMLVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
-
-inline su2double CTurbMLVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
-
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 
 inline su2double CTurbSSTVariable::GetF2blending() { return F2; }

@@ -189,7 +189,8 @@ void CWaveSolver::Source_Residual(CGeometry *geometry,
                                     CSolver **solver_container, 
                                     CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig   *config, 
-                                    unsigned short iMesh) {
+                                    unsigned short iMesh,
+                                    unsigned short iRKStep) {
   
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
@@ -369,7 +370,8 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
                                   CSolver **solver_container, 
                                   CNumerics *numerics, 
                                   CConfig   *config, 
-                                  unsigned short val_marker) {
+                                  unsigned short val_marker,
+                                unsigned short iRKStep) {
   
   unsigned long iPoint, iVertex, total_index, iter;
   su2double deltaT, omega, time, ampl, *wave_sol;
@@ -419,7 +421,7 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
 
 void CWaveSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                               unsigned short val_marker) {
+                               unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Do nothing at the moment ---*/
   

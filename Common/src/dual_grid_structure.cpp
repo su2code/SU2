@@ -40,8 +40,10 @@ CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
 CDualGrid::~CDualGrid() {}
 
 CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
+
+  
   unsigned short iDim, jDim, kDim;
-	
+
   /*--- Element, point and edge structures initialization ---*/
   
   Elem.clear(); nElem = 0;
@@ -150,6 +152,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
+
   unsigned short iDim, jDim, kDim;
 
   /*--- Element, point and edge structures initialization ---*/
@@ -239,7 +242,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
-  
+
   /*--- Initialize the grid resolution tensor ---*/
 
   ResolutionTensor = new su2double*[nDim];
@@ -262,6 +265,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
+
   unsigned short iDim, jDim, kDim;
 
   /*--- Element, point and edge structures initialization ---*/
@@ -353,7 +357,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
-  
+
   /*--- Initialize the grid resolution tensor ---*/
 
   ResolutionTensor = new su2double*[nDim];

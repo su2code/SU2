@@ -685,6 +685,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
+  
 public:
   
 	/*!

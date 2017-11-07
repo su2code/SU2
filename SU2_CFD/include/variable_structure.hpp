@@ -40,6 +40,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include <cassert>
 
 #include "../../Common/include/config_structure.hpp"
 #include "fluid_model.hpp"
@@ -77,10 +78,12 @@ protected:
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
   *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  su2double **rk_stage_vectors; /*!< \brief Storage for residual evaluations at RK substeps. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
                            have different number of nVar in the same problem. */
+  unsigned short nRKStep; /*!< \brief Number of RK substeps */
   unsigned short nPrimVar, nPrimVarGrad;    /*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
@@ -2030,6 +2033,22 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+  /*!
+   * \brief Store residual from RK substep
+   * \param[in] iRKStep - Substep index
+   * \param[in] iVar - The component to set
+   * \param[in] val - The value of the residual
+   */
+  void SetRKSubstepResidual(unsigned short iRKStep, unsigned short iVar, su2double val);
+
+  /*!
+   * \brief Retrieve residual from RK substep
+   * \param[in] iRKStep - Substep index
+   * \param[in] iVar - The component to get
+   * \return The residual value
+   */
+  su2double GetRKSubstepResidual(unsigned short iRKStep, unsigned short iVar);
 };
 
 /*!
@@ -3636,53 +3655,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CTurbSAVariable(void);
-  
-  /*!
-   * \brief Set the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
-   */
-  void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
-  
-  /*!
-   * \brief Get the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
-   */
-  su2double GetHarmonicBalance_Source(unsigned short val_var);
-  
-};
-
-
-/*!
- * \class CTurbMLVariable
- * \brief Main class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-
-class CTurbMLVariable : public CTurbVariable {
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTurbMLVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbMLVariable(void);
   
   /*!
    * \brief Set the harmonic balance source term.
