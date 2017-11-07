@@ -3461,7 +3461,13 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
   string Marker_Tag;
-  
+
+  /*--- Initialize velocities to 0 everywhere ---*/
+  for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++){
+    node[iPoint]->SetTranspiration(0.0);
+  }
+
+  /*--_ Set velocities on transpiraiton boundaries ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
       Marker_Tag = config->GetMarker_All_TagBound(iMarker);
