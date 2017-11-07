@@ -186,6 +186,17 @@ def main():
     turb_flatplate.tol       = 0.00001
     test_list.append(turb_flatplate)
 
+    # Flat plate w/ v2-f
+    turb_flatplate_v2f           = TestCase('turb_flatplate_v2f')
+    turb_flatplate_v2f.cfg_dir   = "rans/flatplate"
+    turb_flatplate_v2f.cfg_file  = "turb_v2f_flatplate.cfg"
+    turb_flatplate_v2f.test_iter = 400
+    turb_flatplate_v2f.test_vals = [-1.431857, 3.700928, -0.187405, 0.003454] #last 4 columns
+    turb_flatplate_v2f.su2_exec  = "SU2_CFD"
+    turb_flatplate_v2f.timeout   = 1600
+    turb_flatplate_v2f.tol       = 0.00001
+    test_list.append(turb_flatplate_v2f)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
