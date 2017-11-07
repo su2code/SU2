@@ -3890,18 +3890,9 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       /*--- Solution (first, and second system of equations) ---*/
       
       unsigned short jVar = 0;
-      if(transp){
-        for (iVar = 0; iVar < nVar_Total-1; iVar++) {
-          Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
-          jVar++;
-        }
-        Data[jVar][jPoint] = solver->node[iPoint]->GetSensitivityTranspiration();
-      }
-      else{
-        for (iVar = 0; iVar < nVar_Total; iVar++) {
-          Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
-          jVar++;
-        }
+      for (iVar = 0; iVar < nVar_Total; iVar++) {
+        Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
+        jVar++;
       }
     }
     
@@ -4013,12 +4004,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       if (!Local_Halo[iPoint] || Wrt_Halo) {
         
         /*--- Get this variable into the temporary send buffer. ---*/
-        if(transp && iVar == nVar_Total-1){
-          Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSensitivityTranspiration();
-        }
-        else{
-          Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
-        }
+        Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
         
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
         if (iVar == 0) {
@@ -10436,7 +10422,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
 void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone) {
 
-  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
+  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar, nTransp;
   unsigned long iVertex, iPoint, nPoint, nVertex;
   su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
 
@@ -10451,6 +10437,8 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     nDim   = geometry[iZone]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
     nVar = nDim + 1;
+    if(config[ZONE_0]->GetnMarker_Transpiration() > 0) nTransp = 1;
+    else nTransp = 0;
 
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
@@ -10468,7 +10456,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     }
     fieldnames.push_back("\"Sensitivity\"");
 
-    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
+    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim+nTransp, fieldnames);
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -10476,6 +10464,9 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
       }
       for (iVar = 0; iVar < nDim; iVar++) {
         solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
+      }
+      if(nTransp == 1){
+        solver[iZone]->node[iPoint]->SetSolution(2*nDim+1, geometry[iZone]->node[iPoint]->GetSensitivityTranspiration());
       }
     }
 
@@ -10485,6 +10476,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
       if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == TRANSPIRATION ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
         
         nVertex = geometry[iZone]->GetnVertex(iMarker);

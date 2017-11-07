@@ -495,8 +495,10 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
         }
         if (!time_stepping) {
           node[iPoint]->SetSensitivityTranspiration(Sensitivity);
+          geometry->node[iPoint]->SetSensitivityTranspiration(Sensitivity);
         } else {
           node[iPoint]->SetSensitivityTranspiration(node[iPoint]->GetSensitivityTranspiration() + Sensitivity);
+          geometry->node[iPoint]->SetSensitivityTranspiration(node[iPoint]->GetSensitivityTranspiration() + Sensitivity);
         }
 
 
