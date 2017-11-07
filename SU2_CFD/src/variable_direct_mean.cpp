@@ -59,6 +59,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   Undivided_Laplacian = NULL;
   
   Solution_New = NULL;
+  
+  TranspVel = 0.0;
 
 }
 
@@ -261,6 +263,8 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Undivided_Laplacian = NULL;
 
   Solution_New = NULL;
+
+  TranspVel = 0.0;
  
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
