@@ -4552,13 +4552,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         for (iVar = 0; iVar < nVar_Flow; iVar++)
           residual_flow[iVar] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
-        /*--- Turbulent residual ---*/        
+        /*--- Turbulent residual ---*/
+        
         if (turbulent) {
           for (iVar = 0; iVar < nVar_Turb; iVar++)
             residual_turbulent[iVar] = solver_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
         
         /*--- Transition residual ---*/
+        
         if (transition) {
           for (iVar = 0; iVar < nVar_Trans; iVar++)
             residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
@@ -4824,7 +4826,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               switch(nVar_Turb) {
                 case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
-	        case 4: SPRINTF (turb_resid, ", %12.10f, %12.10f, %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1]), log10(residual_turbulent[2]), log10(residual_turbulent[3])); break;
+                case 4: SPRINTF (turb_resid, ", %12.10f, %12.10f, %12.10f, %12.10f",
+                                 log10(residual_turbulent[0]), log10(residual_turbulent[1]),
+                                 log10(residual_turbulent[2]), log10(residual_turbulent[3])); break;
               }
             }
             /*---- Averaged stagnation pressure at an exit ----*/
@@ -7124,11 +7128,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #ifdef HAVE_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
-    //jump
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
-    //      Wrt_Vol = false;
-    //      Wrt_Srf = false;
+      Wrt_Vol = false;
+      Wrt_Srf = false;
     }
 #endif
     
@@ -7195,7 +7198,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-      //cout << "Rank:" << rank << " Wrt_Vol:" << Wrt_Vol << endl;      
       if (Wrt_Vol) {
         
         switch (FileFormat) {

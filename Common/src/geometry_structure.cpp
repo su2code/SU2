@@ -893,7 +893,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     geometry_container[MESH_0]->Set_MPI_Coord(config);
 
     geometry_container[MESH_0]->SetCoord_CG();
-    geometry_container[MESH_0]->SetResolutionTensor();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetResolutionTensor();
