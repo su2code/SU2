@@ -3837,7 +3837,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
        ( Kind_Solver == DISC_ADJ_RANS          )));
   
   nVar_Total = config->fields.size() - 1;
-  if(transp) nVar_Total += 1;
+  //if(transp) nVar_Total += 1;
   
   /*--- Merge the solution either in serial or parallel. ---*/
   
@@ -10456,7 +10456,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     }
     fieldnames.push_back("\"Sensitivity\"");
 
-    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim+nTransp, fieldnames);
+    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -10464,9 +10464,6 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
       }
       for (iVar = 0; iVar < nDim; iVar++) {
         solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
-      }
-      if(nTransp == 1){
-        solver[iZone]->node[iPoint]->SetSolution(2*nDim+1, geometry[iZone]->GetSensitivityTranspiration(iPoint));
       }
     }
 

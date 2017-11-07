@@ -15038,7 +15038,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
-  bool transp = (config->GetnMarker_Transpiration() > 0);
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
@@ -15046,7 +15045,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   int counter = 0;
   
   Sensitivity = new su2double[nPoint*nDim];
-  if(transp) SensitivityTransp = new su2double[nPoint];
 
   if (config->GetUnsteady_Simulation()) {
     nExtIter = config->GetnExtIter();
@@ -15077,8 +15075,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
-    if(transp)
-      SensitivityTransp[iPoint] = 0.0;
   }
 
   iPoint_Global = 0;
@@ -15372,7 +15368,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
         index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
-        if(transp) SensitivityTransp[iPoint_Local] = Restart_Data[index+nDim];
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -15506,10 +15501,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++) {
         point_line >> Sens;
         Sensitivity[iPoint_Local*nDim+iDim] = Sens;
-      }
-      if(transp){
-        point_line >> Sens;
-        SensitivityTransp[iPoint_Local] = Sens;
       }
     }
 
