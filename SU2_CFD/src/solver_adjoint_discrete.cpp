@@ -486,6 +486,10 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 
         AD::ResetInput(VelEps);
 
+        if(abs(Sensitivity) > 1.0E-14){
+          cout << "iPoint = " << iPoint << ", Sens = " << Sensitivity << endl;
+        }
+
         /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
         if (config->GetSens_Remove_Sharp()) {
