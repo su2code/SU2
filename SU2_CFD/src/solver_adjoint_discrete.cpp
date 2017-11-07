@@ -268,14 +268,14 @@ void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config)
   unsigned long iVertex, iPoint;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+    //if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           direct_solver->node[iPoint]->RegisterTranspiration();
         }
       }
-    }
+    //}
   }
 }
 
@@ -478,7 +478,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
   bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+    //if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
@@ -504,7 +504,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 
         }
       }
-    }
+    //}
   }
 }
 
