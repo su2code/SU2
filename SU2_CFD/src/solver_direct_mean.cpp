@@ -814,7 +814,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize transpiration boundary velocity if necessary ---*/
 
-  if (transp) { SetTranspiration(geometry, config); }
+  SetTranspiration(geometry, config);
 
   /*--- Warning message about non-physical points ---*/
 
@@ -15800,7 +15800,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Initialize transpiration boundary velocity if necessary ---*/
 
-  if (transp) { SetTranspiration(geometry, config); }
+  SetTranspiration(geometry, config);
 
   /*--- Warning message about non-physical points ---*/
 
