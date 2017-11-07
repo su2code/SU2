@@ -174,6 +174,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  bool transp = (config->GetnMarker_Transpiration() > 0);
   string filename_ = config->GetSolution_FlowFileName();
 
   int rank = MASTER_NODE;
@@ -810,6 +811,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
 
   }
+
+  /*--- Initialize transpiration boundary velocity if necessary ---*/
+
+  if (transp) { SetTranspiration(geometry, config); }
 
   /*--- Warning message about non-physical points ---*/
 
@@ -4312,7 +4317,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Set transpiration values ---*/
 
-  if (transp) { SetTranspiration(geometry, config); }
+  //if (transp) { SetTranspiration(geometry, config); }
 
  
   /*--- Upwind second order reconstruction ---*/
@@ -15792,6 +15797,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   }
 
+  /*--- Initialize transpiration boundary velocity if necessary ---*/
+
+  if (transp) { SetTranspiration(geometry, config); }
+
   /*--- Warning message about non-physical points ---*/
 
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
@@ -15922,7 +15931,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Set transpiration values ---*/
 
-  if (transp) { SetTranspiration(geometry, config); }
+  //if (transp) { SetTranspiration(geometry, config); }
  
   /*--- Artificial dissipation ---*/
 
