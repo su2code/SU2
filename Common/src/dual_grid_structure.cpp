@@ -40,13 +40,11 @@ CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
 CDualGrid::~CDualGrid() {}
 
 CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
-
   
   unsigned short iDim, jDim, kDim;
 
   /*--- Element, point and edge structures initialization ---*/
-  
-  Elem.clear(); nElem = 0;
+  Elem.clear();  nElem = 0;
   Point.clear(); nPoint = 0;
   Edge.clear();
 
