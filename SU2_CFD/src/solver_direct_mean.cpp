@@ -814,7 +814,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize transpiration boundary velocity if necessary ---*/
 
-  //SetTranspiration(geometry, config);
+  if(transp) SetTranspiration(geometry, config);
 
   /*--- Warning message about non-physical points ---*/
 
@@ -4317,7 +4317,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Set transpiration values ---*/
 
-  if (transp) { SetTranspiration(geometry, config); }
+  //if (transp) { SetTranspiration(geometry, config); }
 
  
   /*--- Upwind second order reconstruction ---*/
@@ -15800,7 +15800,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Initialize transpiration boundary velocity if necessary ---*/
 
-  //SetTranspiration(geometry, config);
+  if(transp) SetTranspiration(geometry, config);
 
   /*--- Warning message about non-physical points ---*/
 
@@ -15932,7 +15932,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Set transpiration values ---*/
 
-  if (transp) { SetTranspiration(geometry, config); }
+  //if (transp) { SetTranspiration(geometry, config); }
  
   /*--- Artificial dissipation ---*/
 

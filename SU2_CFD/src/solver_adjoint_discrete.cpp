@@ -109,6 +109,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
 
+  /*--- Initialize transpiration velocities ---*/
+  if(config->GetnMarker_Transpiration() > 0) direct_solver->SetTranspiration(geometry, config);
+
 }
 
 CDiscAdjSolver::~CDiscAdjSolver(void) { 
