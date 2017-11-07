@@ -163,6 +163,14 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   direct_solver->Jacobian.SetValZero();
 
+  /*--- Reset the transpiration velocity ---*/
+  
+  if(config->GetnMarker_Transpiration() > 0){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->SetTranspiration(node[iPoint]->GetTranspiration_Direct());
+    }
+  }
+
   /*--- Set indices to zero ---*/
 
   RegisterVariables(geometry, config, true);

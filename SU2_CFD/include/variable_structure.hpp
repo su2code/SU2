@@ -1751,6 +1751,18 @@ public:
    * \return Pointer to the direct solution vector.
    */
   virtual su2double *GetSolution_Direct(void);
+
+  /*!
+   * \brief A virtual member. Set the transpiration velocity for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct solution.
+   */
+  virtual void SetTranspiration_Direct(su2double val_transp);
+  
+  /*!
+   * \brief A virtual member. Get the transpiration velocity for the adjoint solver.
+   * \return Pointer to the direct solution vector.
+   */
+  virtual su2double GetTranspiration_Direct(void);
   
   /*!
    * STRUCTURAL ANALYSIS: NEW VARIABLES
@@ -4297,6 +4309,7 @@ private:
   su2double* Solution_Direct;
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;
+  su2double TranspVel;
   
 public:
   /*!
@@ -4355,6 +4368,10 @@ public:
   void SetSolution_Direct(su2double *sol);
   
   su2double* GetSolution_Direct();
+
+  void SetTranspiration_Direct(su2double sol);
+  
+  su2double GetTranspiration_Direct();
 };
 
 

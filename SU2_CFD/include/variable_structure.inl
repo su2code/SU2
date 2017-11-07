@@ -491,6 +491,10 @@ inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
+inline su2double CVariable::GetTranspiration_Direct() { return 0.0; }
+
+inline void CVariable::SetTranspiration_Direct(su2double val_transp) { }
+
 inline void CVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { }
 
 inline su2double CVariable::GetHarmonicBalance_Source(unsigned short val_var) { return 0; }
@@ -1212,3 +1216,10 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
 }
+
+inline su2double CDiscAdjVariable::GetTranspriation_Direct() { return TranspVel; }
+
+inline void CDiscAdjVariable::SetTranspiration_Direct(su2double val_transp) {
+  TranspVel = val_transp;
+}
+

@@ -1761,6 +1761,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
       for (iPoint = 0; iPoint < geometry_container[val_iZone][iMesh]->GetnPoint(); iPoint++) {
         solver_container[val_iZone][iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSolution());
+        /*--- Store transpiration in adjoint solver if necessary ---*/
+        if(config_container[val_iZone]->GetnMarker_Transpiration() > 0){
+          solver_container[val_iZone][iMesh][ADJFLOW_SOL]->node[iPoint]->SetTranspiration_Direct(solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->GetTranspiration());
+        }
       }
     }
     if (turbulent && !config_container[val_iZone]->GetFrozen_Visc_Disc()) {
