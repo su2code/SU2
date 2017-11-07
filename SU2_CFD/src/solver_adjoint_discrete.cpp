@@ -267,7 +267,7 @@ void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config)
       if (geometry->node[iPoint]->GetDomain()) {
         su2double TranspMag = direct_solver->node[iPoint]->GetTranspiration();
         AD::RegisterInput(TranspMag);
-        direct_solver->node[iPoint]->SetSensitivityTranspiration(TranspMag);
+        direct_solver->node[iPoint]->SetTranspiration(TranspMag);
       }
     }
   }
@@ -477,7 +477,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
-        VelEps = node[iPoint]->GetTranspiration();
+        VelEps = direct_solver->node[iPoint]->GetTranspiration();
         Sensitivity = SU2_TYPE::GetDerivative(VelEps);
 
         /*--- Set the index manually to zero. ---*/
