@@ -484,7 +484,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 
         /*--- Set the index manually to zero. ---*/
 
-        AD::ResetInput(VelEps);
+        AD::ResetInput(direct_solver->node[iPoint]->GetTranspiration());
 
         if(abs(Sensitivity) > 1.0E-14){
           cout << "iPoint = " << iPoint << ", Sens = " << Sensitivity << endl;
