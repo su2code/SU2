@@ -15372,7 +15372,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
         index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
-        if(transp) SensitivityTransp[iPointLocal] = Restart_Data[index+nDim];
+        if(transp) SensitivityTransp[iPoint_Local] = Restart_Data[index+nDim];
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
