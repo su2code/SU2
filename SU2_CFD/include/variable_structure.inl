@@ -1217,7 +1217,7 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   }
 }
 
-inline su2double CDiscAdjVariable::GetTranspriation_Direct() { return TranspVel; }
+inline su2double CDiscAdjVariable::GetTranspiration_Direct() { return TranspVel; }
 
 inline void CDiscAdjVariable::SetTranspiration_Direct(su2double val_transp) {
   TranspVel = val_transp;
