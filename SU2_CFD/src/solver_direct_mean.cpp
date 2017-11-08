@@ -3487,19 +3487,16 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
     Global2Local = new long[n];
     /*--- First, set all indices to a negative value by default ---*/
 
-    cout << rank << ": Initialize all indices to negative value" << endl;
     for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
         Global2Local[iPoint] = -1;
     }
 
     /*--- Now fill array with the transform values only for local points ---*/
-    cout << rank << ": Fill Global2Local" << endl;
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
         Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
         node[iPoint]->SetTranspiration(0.0);
     }
 
-    cout << rank << ": Now read Transp_file" << endl;
     while (getline (Transp_file, text_line)){
         istringstream point_line(text_line);
         point_line >> iPoint_Global;
@@ -3510,9 +3507,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
         }
     }
 
-    cout << rank << ": Close Transp_file" << endl;
     Transp_file.close();
-    cout << rank << ": Delete Global2Local" << endl;
     delete [] Global2Local;
 }
 
