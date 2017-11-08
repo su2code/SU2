@@ -4253,6 +4253,7 @@ void CDiscAdjFluidDriver::Run() {
     /*---  Compute the sensitivities to the transpiration boundary velocity ---*/
     
     if(config_container[ZONE_0]->GetnMarker_Transpiration() > 0){
+      cout << "Computing transpiration sensitivities." << endl;
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
        * as argument ensures that all information from a previous recording is removed. ---*/
 
