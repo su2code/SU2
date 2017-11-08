@@ -863,6 +863,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     switch (Boundary) {
       case EULER_WALL:
+      case TRANSPIRATION:
       case HEAT_FLUX:
       case ISOTHERMAL:
         

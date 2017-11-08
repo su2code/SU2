@@ -160,6 +160,14 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   direct_solver->Jacobian.SetValZero();
 
+  /*--- Reset the transpiration velocity ---*/
+
+  if(config->GetnMarker_Transpiration() > 0){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->SetTranspiration(node[iPoint]->GetTranspiration_Direct());
+    }
+  }
+
   /*--- Set indices to zero ---*/
 
   RegisterVariables(geometry, config, true);
@@ -258,17 +266,16 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  string Marker_Tag;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()) {
-        su2double TranspMag = node[iPoint]->GetTranspiration();
-        AD::RegisterInput(TranspMag);
+    //if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          direct_solver->node[iPoint]->RegisterTranspiration();
+        }
       }
-    }
+    //}
   }
 }
 
@@ -467,38 +474,37 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
   unsigned short iMarker;
   unsigned long iPoint, iVertex;
   su2double Sensitivity, eps, VelEps;
-  string Marker_Tag;
 
   bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->node[iPoint]->GetDomain()) {
-        VelEps = node[iPoint]->GetTranspiration();
-        Sensitivity = SU2_TYPE::GetDerivative(VelEps);
+    //if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          direct_solver->node[iPoint]->GetAdjointTranspiration(Sensitivity);
 
-        /*--- Set the index manually to zero. ---*/
+          if(abs(Sensitivity) > 1.0E-14){
+            cout << "iPoint = " << iPoint << ", Sens = " << Sensitivity << endl;
+          }
 
-        AD::ResetInput(VelEps);
+          /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
-        /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+          if (config->GetSens_Remove_Sharp()) {
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
+              Sensitivity = 0.0;
+          }
+          if (!time_stepping) {
+            node[iPoint]->SetSensitivityTranspiration(Sensitivity);
+          } else {
+            node[iPoint]->SetSensitivityTranspiration(node[iPoint]->GetSensitivityTranspiration() + Sensitivity);
+          }
 
-        if (config->GetSens_Remove_Sharp()) {
-          eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-          if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
-            Sensitivity = 0.0;
+
         }
-        if (!time_stepping) {
-          node[iPoint]->SetSensitivityTranspiration(Sensitivity);
-        } else {
-          node[iPoint]->SetSensitivityTranspiration(node[iPoint]->GetSensitivityTranspiration() + Sensitivity);
-        }
-
-
       }
-    }
+    //}
   }
 }
 
@@ -519,6 +525,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
+       || config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 

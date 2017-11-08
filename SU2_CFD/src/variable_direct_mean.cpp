@@ -97,8 +97,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 
   Solution_New = NULL;
 
-  TranspVel = 0.0;
-
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }

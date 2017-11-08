@@ -764,6 +764,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   unsigned short iMarker;
   char cstr[200], buffer[50];
   ofstream SurfAdj_file;
+
+  bool transp = (config->GetnMarker_Transpiration() > 0);
   
   /*--- Write file name with extension if unsteady ---*/
   
@@ -796,6 +798,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
     if (config->GetDiscrete_Adjoint()) {
       SurfAdj_file << ",\"x_Sens\",\"y_Sens\"";
+      if(transp)
+        SurfAdj_file << ",\"Sens_Transp\"";
     }
     SurfAdj_file << "\n";
     
@@ -822,6 +826,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
                            << Solution[1] << ", " << Solution[2] <<", " << xCoord <<", "<< yCoord;
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1);
+            if(transp)
+              SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivityTranspiration();
           }
           SurfAdj_file << "\n";
         }
@@ -836,6 +842,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
     if (config->GetDiscrete_Adjoint()) {
       SurfAdj_file << ",\"x_Sens\",\"y_Sens\",\"z_Sens\"";
+      if(transp)
+        SurfAdj_file << ",\"Sens_Transp\"";
     }
     SurfAdj_file << "\n";
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -865,6 +873,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1)
             << ", " << AdjSolver->node[iPoint]->GetSensitivity(2);
+            if(transp)
+              SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivityTranspiration();
           }
           SurfAdj_file << "\n";
         }
@@ -885,6 +895,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   MaxLocalVertex_Surface = 0, nBuffer_Scalar;
   unsigned long *Buffer_Receive_nVertex = NULL;
   ofstream SurfAdj_file;
+
+  bool transp = (config->GetnMarker_Transpiration() > 0);
   
   /*--- Write the surface .csv file ---*/
   nLocalVertex_Surface = 0;
@@ -918,12 +930,16 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     Buffer_Send_PsiE =  new su2double[MaxLocalVertex_Surface];
 
   su2double *Buffer_Send_Sens_x = NULL, *Buffer_Send_Sens_y = NULL, *Buffer_Send_Sens_z = NULL;
+  su2double *Buffer_Send_Sens_Transp = NULL;
   
   if (config->GetDiscrete_Adjoint()) {
     Buffer_Send_Sens_x = new su2double[MaxLocalVertex_Surface];
     Buffer_Send_Sens_y = new su2double[MaxLocalVertex_Surface];
     if (nDim == 3) {
       Buffer_Send_Sens_z = new su2double[MaxLocalVertex_Surface];
+    }
+    if(transp){
+      Buffer_Send_Sens_Transp = new su2double[MaxLocalVertex_Surface];
     }
   }
   
@@ -956,6 +972,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             if (nDim == 3) {
               Buffer_Send_Sens_z[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(2);
             }
+            if(transp){
+              Buffer_Send_Sens_Transp[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivityTranspiration();
+            }
           }
           
           /*--- If US system, the output should be in inches ---*/
@@ -972,7 +991,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   
   su2double *Buffer_Receive_Coord_x = NULL, *Buffer_Receive_Coord_y = NULL, *Buffer_Receive_Coord_z = NULL, *Buffer_Receive_Sensitivity = NULL,
   *Buffer_Receive_PsiRho = NULL, *Buffer_Receive_Phi_x = NULL, *Buffer_Receive_Phi_y = NULL, *Buffer_Receive_Phi_z = NULL,
-  *Buffer_Receive_PsiE = NULL, *Buffer_Receive_Sens_x = NULL, *Buffer_Receive_Sens_y = NULL, *Buffer_Receive_Sens_z = NULL;
+  *Buffer_Receive_PsiE = NULL, *Buffer_Receive_Sens_x = NULL, *Buffer_Receive_Sens_y = NULL, *Buffer_Receive_Sens_z = NULL,
+  *Buffer_Receive_Sens_Transp = NULL;
   unsigned long *Buffer_Receive_GlobalPoint = NULL;
   
   if (rank == MASTER_NODE) {
@@ -992,6 +1012,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
       Buffer_Receive_Sens_y = new su2double[nProcessor*MaxLocalVertex_Surface];
       if (nDim == 3) {
         Buffer_Receive_Sens_z = new su2double[nProcessor*MaxLocalVertex_Surface];
+      }
+      if (transp) {
+        Buffer_Receive_Sens_Transp = new su2double[nProcessor*MaxLocalVertex_Surface];
       }
     }
   }
@@ -1015,6 +1038,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     SU2_MPI::Gather(Buffer_Send_Sens_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     if (nDim == 3) {
       SU2_MPI::Gather(Buffer_Send_Sens_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    }
+    if (transp) {
+      SU2_MPI::Gather(Buffer_Send_Sens_Transp, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_Transp, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     }
   }
   
@@ -1056,6 +1082,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
       if (config->GetDiscrete_Adjoint()) {
         SurfAdj_file << ",\" x_Sens\",\"y_Sens\"";
+        if(transp)
+          SurfAdj_file << ",\"Sens_Transp\"";
       }
       SurfAdj_file << "\n";
       
@@ -1079,6 +1107,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
                             ", "<< Buffer_Receive_Coord_y[position];
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position];
+            if(transp){
+              SurfAdj_file << ", " << Buffer_Receive_Sens_Transp[position];
+            }
           }
           SurfAdj_file << "\n";
         }
@@ -1093,6 +1124,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
       if (config->GetDiscrete_Adjoint()) {
         SurfAdj_file << ",\"x_Sens\",\"y_Sens\",\"z_Sens\"";
+        if(transp)
+          SurfAdj_file << ",\"Sens_Transp\"";
       }
       SurfAdj_file << "\n";
       
@@ -1116,6 +1149,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position] << ", " << Buffer_Receive_Sens_z[position];
+            if(transp){
+              SurfAdj_file << ", " << Buffer_Receive_Sens_Transp[position];
+            }
           }
           SurfAdj_file << "\n";
         }
@@ -1142,6 +1178,9 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
       if (nDim == 3) {
         delete [] Buffer_Receive_Sens_z;
       }
+      if (transp) {
+        delete [] Buffer_Receive_Sens_Transp;
+      }
     }
   }
   
@@ -1158,6 +1197,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   if (Buffer_Send_Sens_x != NULL) delete [] Buffer_Send_Sens_x;
   if (Buffer_Send_Sens_y != NULL) delete [] Buffer_Send_Sens_y;
   if (Buffer_Send_Sens_z != NULL) delete [] Buffer_Send_Sens_z;
+  if (Buffer_Send_Sens_Transp != NULL) delete [] Buffer_Send_Sens_Transp;
   
   SurfAdj_file.close();
   
@@ -3797,7 +3837,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
        ( Kind_Solver == DISC_ADJ_RANS          )));
   
   nVar_Total = config->fields.size() - 1;
-  if(transp) nVar_Total += 1;
+  //if(transp) nVar_Total += 1;
   
   /*--- Merge the solution either in serial or parallel. ---*/
   
@@ -3850,18 +3890,9 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       /*--- Solution (first, and second system of equations) ---*/
       
       unsigned short jVar = 0;
-      if(transp){
-        for (iVar = 0; iVar < nVar_Total-1; iVar++) {
-          Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
-          jVar++;
-        }
-        Data[jVar][jPoint] = solver->node[iPoint]->GetSensitivityTranspiration();
-      }
-      else{
-        for (iVar = 0; iVar < nVar_Total; iVar++) {
-          Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
-          jVar++;
-        }
+      for (iVar = 0; iVar < nVar_Total; iVar++) {
+        Data[jVar][jPoint] = solver->node[iPoint]->GetSolution(iVar);
+        jVar++;
       }
     }
     
@@ -3973,12 +4004,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
       if (!Local_Halo[iPoint] || Wrt_Halo) {
         
         /*--- Get this variable into the temporary send buffer. ---*/
-        if(transp && iVar == nVar_Total-1){
-          Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSensitivityTranspiration();
-        }
-        else{
-          Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
-        }
+        Buffer_Send_Var[jPoint] = solver->node[iPoint]->GetSolution(iVar);
         
         /*--- Only send/recv the volumes & global indices during the first loop ---*/
         if (iVar == 0) {
@@ -10396,7 +10422,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
 void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone) {
 
-  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
+  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar, nTransp;
   unsigned long iVertex, iPoint, nPoint, nVertex;
   su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
 
@@ -10411,6 +10437,8 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     nDim   = geometry[iZone]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
     nVar = nDim + 1;
+    if(config[ZONE_0]->GetnMarker_Transpiration() > 0) nTransp = 1;
+    else nTransp = 0;
 
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
@@ -10445,6 +10473,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
       if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == TRANSPIRATION ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
         
         nVertex = geometry[iZone]->GetnVertex(iMarker);
