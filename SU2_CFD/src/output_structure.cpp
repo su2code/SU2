@@ -6903,225 +6903,226 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     Breakdown_file << "to obtain the dimensional force."  << "\n" << "\n";
 
     Breakdown_file << "Total CL:    ";
-    Breakdown_file.width(11);
+    Breakdown_file.precision(15);
+    Breakdown_file.width(18);
     Breakdown_file << Total_CL;
     Breakdown_file << " | Pressure (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Inv_CL * 100.0) / (Total_CL + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Inv_CL;
     Breakdown_file << " | Friction (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Visc_CL * 100.0) / (Total_CL + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Visc_CL;
     Breakdown_file << " | Momentum (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Mnt_CL * 100.0) / (Total_CL + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Mnt_CL << "\n";
     
     Breakdown_file << "Total CD:    ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Total_CD;
     Breakdown_file << " | Pressure (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Inv_CD * 100.0) / (Total_CD + EPS)) << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Inv_CD;
     Breakdown_file << " | Friction (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Visc_CD * 100.0) / (Total_CD + EPS)) << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Visc_CD;
     Breakdown_file << " | Momentum (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Mnt_CD * 100.0) / (Total_CD + EPS)) << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Mnt_CD << "\n";
     
     if (nDim == 3) {
       Breakdown_file << "Total CSF:   ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Total_CSF;
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Inv_CSF * 100.0) / (Total_CSF + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Inv_CSF;
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
       Breakdown_file <<  SU2_TYPE::Int((Visc_CSF * 100.0) / (Total_CSF + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Visc_CSF;
       Breakdown_file << " | Momentum (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Mnt_CSF * 100.0) / (Total_CSF + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Mnt_CSF << "\n";
     }
     
     Breakdown_file << "Total CL/CD: ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Total_CEff;
     Breakdown_file << " | Pressure (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Inv_CEff * 100.0) / (Total_CEff + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Inv_CEff;
     Breakdown_file << " | Friction (";
     Breakdown_file.width(5);
     Breakdown_file <<  SU2_TYPE::Int((Visc_CEff * 100.0) / (Total_CEff + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Visc_CEff;
     Breakdown_file << " | Momentum (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Mnt_CEff * 100.0) / (Total_CEff + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Mnt_CEff << "\n";
     
     if (nDim == 3) {
       Breakdown_file << "Total CMx:   ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Total_CMx;
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Inv_CMx * 100.0) / (Total_CMx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Inv_CMx;
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Visc_CMx * 100.0) / (Total_CMx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Visc_CMx;
       Breakdown_file << " | Momentum (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Mnt_CMx * 100.0) / (Total_CMx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Mnt_CMx << "\n";
       
       Breakdown_file << "Total CMy:   ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Total_CMy;
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Inv_CMy * 100.0) / (Total_CMy + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Inv_CMy;
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Visc_CMy * 100.0) / (Total_CMy + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Visc_CMy;
       Breakdown_file << " | Momentum (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Mnt_CMz * 100.0) / (Total_CMz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Mnt_CMy << "\n";
     }
     
     Breakdown_file << "Total CMz:   ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Total_CMz;
     Breakdown_file << " | Pressure (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Inv_CMz * 100.0) / (Total_CMz + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Inv_CMz;
     Breakdown_file << " | Friction (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Visc_CMz * 100.0) / (Total_CMz + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Visc_CMz;
     Breakdown_file << " | Momentum (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Mnt_CMz * 100.0) / (Total_CMz + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Mnt_CMz << "\n";
     
     Breakdown_file << "Total CFx:   ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Total_CFx;
     Breakdown_file << " | Pressure (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Inv_CFx * 100.0) / (Total_CFx + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Inv_CFx;
     Breakdown_file << " | Friction (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Visc_CFx * 100.0) / (Total_CFx + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Visc_CFx;
     Breakdown_file << " | Momentum (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Mnt_CFx * 100.0) / (Total_CFx + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Mnt_CFx << "\n";
     
     Breakdown_file << "Total CFy:   ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Total_CFy;
     Breakdown_file << " | Pressure (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Inv_CFy * 100.0) / (Total_CFy + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Inv_CFy;
     Breakdown_file << " | Friction (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Visc_CFy * 100.0) / (Total_CFy + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Visc_CFy;
     Breakdown_file << " | Momentum (";
     Breakdown_file.width(5);
     Breakdown_file << SU2_TYPE::Int((Mnt_CFy * 100.0) / (Total_CFy + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11);
+    Breakdown_file.width(18);
     Breakdown_file << Mnt_CFy << "\n";
     
     if (nDim == 3) {
       Breakdown_file << "Total CFz:   ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Total_CFz;
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Inv_CFz * 100.0) / (Total_CFz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Inv_CFz;
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Visc_CFz * 100.0) / (Total_CFz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Visc_CFz;
       Breakdown_file << " | Momentum (";
       Breakdown_file.width(5);
       Breakdown_file << SU2_TYPE::Int((Mnt_CFz * 100.0) / (Total_CFz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Mnt_CFz << "\n";
     }
     
@@ -7142,7 +7143,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CL[iMarker_Monitoring] * 100.0)
                        / (Total_CL + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CL[iMarker_Monitoring];
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
@@ -7151,7 +7152,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CL_Inv[iMarker_Monitoring] * 100.0)
                        / (Surface_CL[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CL_Inv[iMarker_Monitoring];
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
@@ -7160,7 +7161,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CL_Visc[iMarker_Monitoring] * 100.0)
                        / (Surface_CL[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CL_Visc[iMarker_Monitoring];
       Breakdown_file << " | Momentum (";
       Breakdown_file.width(5);
@@ -7169,7 +7170,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CL_Mnt[iMarker_Monitoring] * 100.0)
                        / (Surface_CL[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CL_Mnt[iMarker_Monitoring] << "\n";
       
       Breakdown_file << "Total CD    (";
@@ -7179,7 +7180,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CD[iMarker_Monitoring] * 100.0)
                        / (Total_CD + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CD[iMarker_Monitoring];
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
@@ -7188,7 +7189,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CD_Inv[iMarker_Monitoring] * 100.0)
                        / (Surface_CD[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CD_Inv[iMarker_Monitoring];
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
@@ -7197,7 +7198,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CD_Visc[iMarker_Monitoring] * 100.0)
                        / (Surface_CD[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CD_Visc[iMarker_Monitoring];
       Breakdown_file << " | Momentum (";
       Breakdown_file.width(5);
@@ -7206,7 +7207,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CD_Mnt[iMarker_Monitoring] * 100.0)
                        / (Surface_CD[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CD_Mnt[iMarker_Monitoring] << "\n";
       
       if (nDim == 3) {
@@ -7217,7 +7218,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CSF[iMarker_Monitoring] * 100.0)
                          / (Total_CSF + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CSF[iMarker_Monitoring];
         Breakdown_file << " | Pressure (";
         Breakdown_file.width(5);
@@ -7226,7 +7227,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CSF_Inv[iMarker_Monitoring] * 100.0)
                          / (Surface_CSF[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CSF_Inv[iMarker_Monitoring];
         Breakdown_file << " | Friction (";
         Breakdown_file.width(5);
@@ -7235,7 +7236,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CSF_Visc[iMarker_Monitoring] * 100.0)
                          / (Surface_CSF[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CSF_Visc[iMarker_Monitoring];
         Breakdown_file << " | Momentum (";
@@ -7245,7 +7246,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CSF_Mnt[iMarker_Monitoring] * 100.0)
                          / (Surface_CSF[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CSF_Mnt[iMarker_Monitoring] << "\n";
       }
@@ -7256,7 +7257,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       << SU2_TYPE::Int(
                        (Surface_CEff[iMarker_Monitoring] * 100.0) / (Total_CEff + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CEff[iMarker_Monitoring];
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
@@ -7265,7 +7266,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CEff_Inv[iMarker_Monitoring] * 100.0)
                        / (Surface_CEff[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
@@ -7274,7 +7275,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CEff_Visc[iMarker_Monitoring] * 100.0)
                        / (Surface_CEff[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CEff_Visc[iMarker_Monitoring];
       Breakdown_file << " | Momentum (";
@@ -7284,7 +7285,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CEff_Mnt[iMarker_Monitoring] * 100.0)
                        / (Surface_CEff[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CEff_Mnt[iMarker_Monitoring] << "\n";
       
@@ -7296,7 +7297,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
         << SU2_TYPE::Int(
                          (Surface_CMx[iMarker_Monitoring] * 100.0) / (Total_CMx + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CMx[iMarker_Monitoring];
         Breakdown_file << " | Pressure (";
         Breakdown_file.width(5);
@@ -7305,7 +7306,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CMx_Inv[iMarker_Monitoring] * 100.0)
                          / (Surface_CMx[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
         Breakdown_file << " | Friction (";
         Breakdown_file.width(5);
@@ -7314,7 +7315,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CMx_Visc[iMarker_Monitoring] * 100.0)
                          / (Surface_CMx[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CMx_Visc[iMarker_Monitoring];
         Breakdown_file << " | Momentum (";
@@ -7324,7 +7325,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CMx_Mnt[iMarker_Monitoring] * 100.0)
                          / (Surface_CMx[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CMx_Mnt[iMarker_Monitoring] << "\n";
         
@@ -7334,7 +7335,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
         << SU2_TYPE::Int(
                          (Surface_CMy[iMarker_Monitoring] * 100.0) / (Total_CMy + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CMy[iMarker_Monitoring];
         Breakdown_file << " | Pressure (";
         Breakdown_file.width(5);
@@ -7343,7 +7344,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CMy_Inv[iMarker_Monitoring] * 100.0)
                          / (Surface_CMy[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
         Breakdown_file << " | Friction (";
         Breakdown_file.width(5);
@@ -7352,7 +7353,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CMy_Visc[iMarker_Monitoring] * 100.0)
                          / (Surface_CMy[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CMy_Visc[iMarker_Monitoring];
         Breakdown_file << " | Momentum (";
@@ -7362,7 +7363,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CMy_Mnt[iMarker_Monitoring] * 100.0)
                          / (Surface_CMy[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CMy_Mnt[iMarker_Monitoring] << "\n";
       }
@@ -7372,7 +7373,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       Breakdown_file
       << SU2_TYPE::Int((Surface_CMz[iMarker_Monitoring] * 100.0) / (Total_CMz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CMz[iMarker_Monitoring];
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
@@ -7381,7 +7382,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CMz_Inv[iMarker_Monitoring] * 100.0)
                        / (Surface_CMz[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
@@ -7390,7 +7391,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CMz_Visc[iMarker_Monitoring] * 100.0)
                        / (Surface_CMz[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CMz_Visc[iMarker_Monitoring];
       Breakdown_file << " | Momentum (";
@@ -7400,7 +7401,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CMz_Mnt[iMarker_Monitoring] * 100.0)
                        / (Surface_CMz[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CMz_Mnt[iMarker_Monitoring] << "\n";
       
@@ -7409,7 +7410,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       Breakdown_file
       << SU2_TYPE::Int((Surface_CFx[iMarker_Monitoring] * 100.0) / (Total_CFx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CFx[iMarker_Monitoring];
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
@@ -7418,7 +7419,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CFx_Inv[iMarker_Monitoring] * 100.0)
                        / (Surface_CFx[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
@@ -7427,7 +7428,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CFx_Visc[iMarker_Monitoring] * 100.0)
                        / (Surface_CFx[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CFx_Visc[iMarker_Monitoring];
       Breakdown_file << " | Momentum (";
@@ -7437,7 +7438,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CFx_Mnt[iMarker_Monitoring] * 100.0)
                        / (Surface_CFx[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CFx_Mnt[iMarker_Monitoring] << "\n";
       
@@ -7446,7 +7447,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       Breakdown_file
       << SU2_TYPE::Int((Surface_CFy[iMarker_Monitoring] * 100.0) / (Total_CFy + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CFy[iMarker_Monitoring];
       Breakdown_file << " | Pressure (";
       Breakdown_file.width(5);
@@ -7455,7 +7456,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CFy_Inv[iMarker_Monitoring] * 100.0)
                        / (Surface_CFy[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
       Breakdown_file << " | Friction (";
       Breakdown_file.width(5);
@@ -7464,7 +7465,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CFy_Visc[iMarker_Monitoring] * 100.0)
                        / (Surface_CFy[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CFy_Visc[iMarker_Monitoring];
       Breakdown_file << " | Momentum (";
@@ -7474,7 +7475,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                        (Surface_CFy_Mnt[iMarker_Monitoring] * 100.0)
                        / (Surface_CFy[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11);
+      Breakdown_file.width(18);
       Breakdown_file
       << Surface_CFy_Mnt[iMarker_Monitoring] << "\n";
       
@@ -7485,7 +7486,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
         << SU2_TYPE::Int(
                          (Surface_CFz[iMarker_Monitoring] * 100.0) / (Total_CFz + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CFz[iMarker_Monitoring];
         Breakdown_file << " | Pressure (";
         Breakdown_file.width(5);
@@ -7494,7 +7495,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CFz_Inv[iMarker_Monitoring] * 100.0)
                          / (Surface_CFz[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
         Breakdown_file << " | Friction (";
         Breakdown_file.width(5);
@@ -7503,7 +7504,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CFz_Visc[iMarker_Monitoring] * 100.0)
                          / (Surface_CFz[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CFz_Visc[iMarker_Monitoring];
         Breakdown_file << " | Momentum (";
@@ -7513,7 +7514,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
                          (Surface_CFz_Mnt[iMarker_Monitoring] * 100.0)
                          / (Surface_CFz[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11);
+        Breakdown_file.width(18);
         Breakdown_file
         << Surface_CFz_Mnt[iMarker_Monitoring] << "\n";
         
