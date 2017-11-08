@@ -2015,7 +2015,7 @@ public:
   void GetAdjointSolution(su2double *adj_sol);
 
 
-  void GetAdjointTranspiration(su2double adj_sol);
+  su2double GetAdjointTranspiration();
   
   /*!
    * \brief Set the adjoint values of the solution at time n.

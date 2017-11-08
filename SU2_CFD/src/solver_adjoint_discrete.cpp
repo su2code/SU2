@@ -482,7 +482,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          direct_solver->node[iPoint]->GetAdjointTranspiration(Sensitivity);
+          Sensitivity = direct_solver->node[iPoint]->GetAdjointTranspiration();
 
           if(abs(Sensitivity) > 1.0E-14){
             cout << "iPoint = " << iPoint << ", Sens = " << Sensitivity << endl;

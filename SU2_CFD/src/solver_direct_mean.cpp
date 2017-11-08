@@ -4321,7 +4321,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool transp               = (config->GetnMarker_Transpiration() > 0);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -4351,11 +4350,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (nearfield) { Set_MPI_Nearfield(geometry, config); }
 
-  /*--- Set transpiration values ---*/
-
-  //if (transp) { SetTranspiration(geometry, config); }
-
- 
   /*--- Upwind second order reconstruction ---*/
   
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
@@ -15938,7 +15932,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool transp               = (config->GetnMarker_Transpiration() > 0);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -15966,10 +15959,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute NearField MPI ---*/
 
   if (nearfield) { Set_MPI_Nearfield(geometry, config); }
-
-  /*--- Set transpiration values ---*/
-
-  //if (transp) { SetTranspiration(geometry, config); }
  
   /*--- Artificial dissipation ---*/
 
