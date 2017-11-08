@@ -3496,6 +3496,8 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
         iNode_Local = Global2Local[iPoint_Global];
         node[iNode_Local]->SetTranspiration(TranspVel);
     }
+
+    Transp_file.close();
     delete [] Global2Local;
 }
 
