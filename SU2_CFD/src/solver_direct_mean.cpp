@@ -3453,21 +3453,44 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
 }
 
 void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  string Marker_Tag;
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
-          node[iPoint]->SetTranspiration(config->GetTranspiration(Marker_Tag));
-        }
-      }
+    unsigned long iPoint, iPoint_Global, iPoint_Local, iNode_Local;
+    string text_line;
+    string fn = config->GetTranspirationFileName();
+    ifstream Transp_file;
+    su2double TranspVel;
+    const char *filename = fn.c_str();
+
+    Transp_file.open(filename, ios::in);
+    if(Transp_file.fail()){
+        cout<<"There is no file defining transpiration "<< filename << "."<<endl;
+        exit(EXIT_FAILURE);
     }
-  }
+    /*--- In case this is a parallel simulation, we need to perform the
+       Global2Local index transformation first. ---*/
+
+    long *Global2Local = NULL;
+    int n = geometry->GetGlobal_nPointDomain();
+    Global2Local = new long[n];
+    /*--- First, set all indices to a negative value by default ---*/
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+        Global2Local[iPoint] = -1;
+    }
+
+    /*--- Now fill array with the transform values only for local points ---*/
+
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+        Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    }
+
+    while (getline (Transp_file, text_line)){
+        istringstream point_line(text_line);
+        point_line >> iPoint_Global;
+        point_line >> TranspVel;
+        //iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+        iNode_Local = Global2Local[iPoint_Global];
+        node[iNode_Local]->SetTranspiration(TranspVel);
+    }
+    delete [] Global2Local;
 }
 
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
@@ -15759,6 +15782,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 

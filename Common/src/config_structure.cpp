@@ -799,6 +799,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
   /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Traanspiration boundary marker(s) \ingroup Config*/
   addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
+  /* DESCRIPTION:  transpiration input file */
+  addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
