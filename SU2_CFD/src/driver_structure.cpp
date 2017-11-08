@@ -1417,7 +1417,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, true, config);
       else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, true, config);
       else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, true, config);
-      else if (zetaf_ke) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbKE(nDim, nVar_Turb, constants, config);
+      else if (zetaf_ke) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbKE(nDim, nVar_Turb, constants, true, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1447,7 +1447,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       }
       else if (zetaf_ke) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbKE(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbKE(nDim, nVar_Turb, constants, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbKE(nDim, nVar_Turb, constants, false, config);
       }
     }
   }
