@@ -3471,7 +3471,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
 #endif
 
     if(rank == MASTER_NODE)
-      cout << "Reading transpiration data from file " << filename << endl;
+      cout << "Reading transpiration data from file " << filename << "." << endl;
 
     Transp_file.open(filename, ios::in);
     if(Transp_file.fail()){
@@ -3502,7 +3502,9 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
         point_line >> TranspVel;
         //iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
         iNode_Local = Global2Local[iPoint_Global];
-        node[iNode_Local]->SetTranspiration(TranspVel);
+        if(iNode_Local >- 0){
+          node[iNode_Local]->SetTranspiration(TranspVel);
+        }
     }
 
     Transp_file.close();
