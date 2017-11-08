@@ -8913,7 +8913,7 @@ void CEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_
       Energy_i = node[iPoint]->GetEnergy();
 
       /*--- Compute the boundary state b ---*/
-      VelEps = node[iPoint]->GetTranspiration();
+      VelEps = solver_container[FLOW_SOL]->node[iPoint]->GetTranspiration();
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity_b[iDim] = Velocity_i[iDim] - (ProjVelocity_i + VelEps) * UnitNormal[iDim]; //Force the velocity to be the tangential + transpiration velocity.
 
