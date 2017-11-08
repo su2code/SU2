@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
@@ -4129,8 +4129,8 @@ void CFluidDriver::Update() {
 
   for(iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, iZone);
+         solver_container, numerics_container, config_container,
+         surface_movement, grid_movement, FFDBox, iZone);
 }
 
 void CFluidDriver::ResetConvergence() {
@@ -4999,10 +4999,20 @@ void CHBDriver::Run() {
 void CHBDriver::Update() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Update the harmonic balance terms across all zones ---*/
+    /*--- Compute the harmonic balance terms across all zones ---*/
     SetHarmonicBalance(iZone);
 
+  }
+
+  /*--- Precondition the harmonic balance source terms ---*/
+  if (config_container[ZONE_0]->GetHB_Precondition() == YES) {
+    StabilizeHarmonicBalance();
+
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Update the harmonic balance terms across all zones ---*/
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone);
@@ -5171,6 +5181,175 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
   delete [] U_old;
   delete [] Psi;
   delete [] Psi_old;
+
+}
+
+void CHBDriver::StabilizeHarmonicBalance() {
+
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  unsigned short i, j, k, iVar, iZone, jZone, iMGlevel;
+  unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned long iPoint;
+  // bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
+  // if (adjoint) {
+  //   implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  // }
+
+  /*--- Retrieve values from the config file ---*/
+  su2double *Source     = new su2double[nZone];
+  su2double *Source_old = new su2double[nZone];
+  su2double Delta;
+
+  su2double **Pinv     = new su2double*[nZone];
+  su2double **P        = new su2double*[nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Pinv[iZone]       = new su2double[nZone];
+    P[iZone]          = new su2double[nZone];
+  }
+
+  /*--- Loop over all grid levels ---*/
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+
+    /*--- Loop over each node in the volume mesh ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+
+      /*--- Get time step for current node ---*/
+      Delta = solver_container[ZONE_0][iMGlevel][FLOW_SOL]->node[iPoint]->GetDelta_Time();
+
+      /*--- Setup stabilization matrix for this node ---*/
+      for (iZone = 0; iZone < nZone; iZone++) {
+        for (jZone = 0; jZone < nZone; jZone++) {
+          if (jZone == iZone ) {
+            Pinv[iZone][jZone] = 1.0 + Delta*D[iZone][jZone];
+          }
+          else {
+            Pinv[iZone][jZone] = Delta*D[iZone][jZone];
+          }
+        }
+      }
+
+      /*--- Invert stabilization matrix Pinv with Gauss elimination---*/
+
+      /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
+      su2double **temp = new su2double*[nZone];
+      for (i = 0; i < nZone; i++) {
+        temp[i] = new su2double[2 * nZone];
+      }
+
+      /*---  Copy the desired matrix into the temporary matrix ---*/
+      for (i = 0; i < nZone; i++) {
+        for (j = 0; j < nZone; j++) {
+          temp[i][j] = Pinv[i][j];
+          temp[i][nZone + j] = 0;
+        }
+        temp[i][nZone + i] = 1;
+      }
+
+      su2double max_val;
+      unsigned short max_idx;
+
+      /*---  Pivot each column such that the largest number possible divides the other rows  ---*/
+      for (k = 0; k < nZone - 1; k++) {
+        max_idx = k;
+        max_val = abs(temp[k][k]);
+        /*---  Find the largest value (pivot) in the column  ---*/
+        for (j = k; j < nZone; j++) {
+          if (abs(temp[j][k]) > max_val) {
+            max_idx = j;
+            max_val = abs(temp[j][k]);
+          }
+        }
+
+        /*---  Move the row with the highest value up  ---*/
+        for (j = 0; j < (nZone * 2); j++) {
+          su2double d = temp[k][j];
+          temp[k][j] = temp[max_idx][j];
+          temp[max_idx][j] = d;
+        }
+        /*---  Subtract the moved row from all other rows ---*/
+        for (i = k + 1; i < nZone; i++) {
+          su2double c = temp[i][k] / temp[k][k];
+          for (j = 0; j < (nZone * 2); j++) {
+            temp[i][j] = temp[i][j] - temp[k][j] * c;
+          }
+        }
+      }
+
+      /*---  Back-substitution  ---*/
+      for (k = nZone - 1; k > 0; k--) {
+        if (temp[k][k] != su2double(0.0)) {
+          for (int i = k - 1; i > -1; i--) {
+            su2double c = temp[i][k] / temp[k][k];
+            for (j = 0; j < (nZone * 2); j++) {
+              temp[i][j] = temp[i][j] - temp[k][j] * c;
+            }
+          }
+        }
+      }
+
+      /*---  Normalize the inverse  ---*/
+      for (i = 0; i < nZone; i++) {
+        su2double c = temp[i][i];
+        for (j = 0; j < nZone; j++) {
+          temp[i][j + nZone] = temp[i][j + nZone] / c;
+        }
+      }
+
+      /*---  Copy the inverse back to the main program flow ---*/
+      for (i = 0; i < nZone; i++) {
+        for (j = 0; j < nZone; j++) {
+          P[i][j] = temp[i][j + nZone];
+        }
+      }
+
+      /*---  Delete dynamic template  ---*/
+      for (iZone = 0; iZone < nZone; iZone++) {
+        delete[] temp[iZone];
+      }
+      delete[] temp;
+
+      /*--- Loop through variables to precondition ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+
+        /*--- Get current source terms (not yet preconditioned) and zero source array to prepare preconditioning ---*/
+        for (iZone = 0; iZone < nZone; iZone++) {
+          Source_old[iZone] = solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetHarmonicBalance_Source(iVar);
+          Source[iZone] = 0;
+        }
+
+        /*--- Step through columns ---*/
+        for (iZone = 0; iZone < nZone; iZone++) {
+          for (jZone = 0; jZone < nZone; jZone++) {
+            Source[iZone] += P[iZone][jZone]*Source_old[jZone];
+          }
+
+          /*--- Store updated source terms for current node ---*/
+          if (!adjoint) {
+            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iZone]);
+          }
+          else {
+            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iZone]);
+          }
+        }
+
+      }
+    }
+  }
+
+  /*--- Deallocate dynamic memory ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    delete [] P[iZone];
+    delete [] Pinv[iZone];
+  }
+  delete [] P;
+  delete [] Pinv;
+  delete [] Source;
+  delete [] Source_old;
 
 }
 
