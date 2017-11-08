@@ -77,28 +77,6 @@ def main():
     wedge.timeout   = 1600
     wedge.tol       = 0.00001
     test_list.append(wedge)
-
-    # ONERA M6 Wing
-    oneram6           = TestCase('oneram6')
-    oneram6.cfg_dir   = "euler/oneram6"
-    oneram6.cfg_file  = "inv_ONERAM6.cfg"
-    oneram6.test_iter = 10
-    oneram6.test_vals = [-13.393130, -12.928941, 0.282557, 0.012706] #last 4 columns
-    oneram6.su2_exec  = "SU2_CFD"
-    oneram6.timeout   = 9600
-    oneram6.tol       = 0.00001
-    test_list.append(oneram6)
-    
-    # Fixed CL NACA0012
-    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
-    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
-    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-6.707530,-1.319851,0.300017,0.019390] #last 4 columns
-    fixedCL_naca0012.su2_exec  = "SU2_CFD"
-    fixedCL_naca0012.timeout   = 1600
-    fixedCL_naca0012.tol       = 0.00001
-    test_list.append(fixedCL_naca0012)
     
     # Polar sweep of the inviscid NACA0012
     polar_naca0012           = TestCase('polar_naca0012')
@@ -260,28 +238,6 @@ def main():
     ### Cont. adj. compressible Euler ###
     #####################################
 
-    # Inviscid NACA0012
-    contadj_naca0012           = TestCase('contadj_naca0012')
-    contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
-    contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.787554, -15.192510, 0.300920, 0.019552] #last 4 columns
-    contadj_naca0012.su2_exec  = "SU2_CFD"
-    contadj_naca0012.timeout   = 1600
-    contadj_naca0012.tol       = 0.00001
-    test_list.append(contadj_naca0012)
-
-    # Inviscid ONERA M6
-    contadj_oneram6           = TestCase('contadj_oneram6')
-    contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
-    contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
-    contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-12.133352, -12.707213, 6.8590e-01, 0.007594] #last 4 columns
-    contadj_oneram6.su2_exec  = "SU2_CFD"
-    contadj_oneram6.timeout   = 1600
-    contadj_oneram6.tol       = 0.00001
-    test_list.append(contadj_oneram6)
-
     # Inviscid WEDGE: tests generalized adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
@@ -318,17 +274,6 @@ def main():
     contadj_ns_cylinder.timeout   = 1600
     contadj_ns_cylinder.tol       = 0.00001
     test_list.append(contadj_ns_cylinder)
-
-    # Adjoint laminar naca0012 subsonic
-    contadj_ns_naca0012_sub           = TestCase('contadj_ns_naca0012_sub')
-    contadj_ns_naca0012_sub.cfg_dir   = "cont_adj_navierstokes/naca0012_sub"
-    contadj_ns_naca0012_sub.cfg_file  = "lam_NACA0012.cfg"
-    contadj_ns_naca0012_sub.test_iter = 100
-    contadj_ns_naca0012_sub.test_vals = [-2.744551, -8.216469, 0.518810, 0.001210] #last 4 columns
-    contadj_ns_naca0012_sub.su2_exec  = "SU2_CFD"
-    contadj_ns_naca0012_sub.timeout   = 1600
-    contadj_ns_naca0012_sub.tol       = 0.00001
-    test_list.append(contadj_ns_naca0012_sub)
     
     # Adjoint laminar naca0012 transonic
     contadj_ns_naca0012_trans           = TestCase('contadj_ns_naca0012_trans')
