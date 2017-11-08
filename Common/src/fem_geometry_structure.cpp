@@ -1900,6 +1900,28 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nVolElemHaloPerTimeLevel[0] = nVolElemOwned;
   for(unsigned short i=0; i<nTimeLevels; ++i)
     nVolElemHaloPerTimeLevel[i+1] += nVolElemHaloPerTimeLevel[i];
+
+  /* Check for wall function treatment for the viscous wall boundaries. */
+  bool wallFunctions = false;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+         if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+           wallFunctions = true;
+        break;
+      }
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+
+  if( wallFunctions ) {
+    cout << endl << "Wall function preprocessing not implemented yet" << endl;
+    exit(EXIT_FAILURE);
+  }
 }
 
 void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
