@@ -3465,6 +3465,14 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
     su2double TranspVel;
     const char *filename = fn.c_str();
 
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+    if(rank == MASTER_NODE)
+      cout << "Reading transpiration data from file " << filename << endl;
+
     Transp_file.open(filename, ios::in);
     if(Transp_file.fail()){
         cout<<"There is no file defining transpiration "<< filename << "."<<endl;
