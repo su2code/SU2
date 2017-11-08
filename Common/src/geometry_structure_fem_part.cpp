@@ -2582,6 +2582,13 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   map<unsigned long, unsigned short> mapExternalElemIDToTimeLevel;
   DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
 
+  // COMMENT THAT MUST BE REMOVED AGAIN
+  //In DetermineTimeLevelElements the wall function treatment must be included.
+  //All elements that may contribute to the wall function implementation should
+  //belong to the same time level.
+  // END COMMENT
+
+
   /*--- Determine the ownership of the internal faces, i.e. which adjacent
         element is responsible for computing the fluxes through the face. ---*/
   for(unsigned long i=0; i<nFacesLoc; ++i) {
