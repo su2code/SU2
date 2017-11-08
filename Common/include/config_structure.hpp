@@ -353,6 +353,7 @@ private:
   su2double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
   su2double *TransEps;                     /*!< \brief Specified wall transpirations. */
+  string Transpiration_FileName;            /*!< \brief File specifying all transpiration values for each node */
   unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
   su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
   su2double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
@@ -5748,6 +5749,12 @@ public:
    * \return The transpiration
    */
   su2double GetTranspiration(string val_index);
+
+  /*!
+   * \brief Get the name of file containing all transpirations
+   * \return The transpiration
+   */
+  inline string GetTranspirationFileName();
 
   /*!
    * \brief Get the wall function treatment for the given boundary marker.

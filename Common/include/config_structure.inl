@@ -1636,3 +1636,4 @@ inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
+inline string CConfig::GetTranspirationFileName(){ return Transpiration_FileName; }
