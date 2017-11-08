@@ -4049,6 +4049,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case SA:     SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SST:     SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case KE:   	 SPRINTF (turb_resid, ",\" Res_Turb[0]\",\" Res_Turb[1]\",\" Res_Turb[2]\",\" Res_Turb[3]\""); break;
   }
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
@@ -4261,9 +4262,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     su2double *TotalStaticEfficiency = NULL,
     *TotalTotalEfficiency = NULL,
-    *KineticEnergyLoss     = NULL,
-    *TotalPressureLoss     = NULL,
-    *MassFlowIn           = NULL,
+    *KineticEnergyLoss 	  = NULL,
+    *TotalPressureLoss 	  = NULL,
+    *MassFlowIn 	  = NULL,
     *MassFlowOut          = NULL,
     *FlowAngleIn          = NULL,
     *FlowAngleOut         = NULL,
@@ -4324,6 +4325,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SA:     nVar_Turb = 1; break;
         case SA_NEG: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
+        case KE:     nVar_Turb = 4; break;
       }
     }
     if (transition) nVar_Trans = 2;
@@ -4342,6 +4344,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SA:     nVar_AdjTurb = 1; break;
         case SA_NEG: nVar_AdjTurb = 1; break;
         case SST:    nVar_AdjTurb = 2; break;
+        case KE:     nVar_AdjTurb = 4; break;
       }
     }
     
@@ -4373,9 +4376,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Allocate memory for the turboperformace ---*/
     TotalStaticEfficiency = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    KineticEnergyLoss     = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalPressureLoss     = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    KineticEnergyLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalPressureLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MassFlowIn 		  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
@@ -4823,6 +4826,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               switch(nVar_Turb) {
                 case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
+                case 4: SPRINTF (turb_resid, ", %12.10f, %12.10f, %12.10f, %12.10f",
+                                 log10(residual_turbulent[0]), log10(residual_turbulent[1]),
+                                 log10(residual_turbulent[2]), log10(residual_turbulent[3])); break;
               }
             }
             /*---- Averaged stagnation pressure at an exit ----*/
@@ -5195,6 +5201,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               case SA:     cout << "       Res[nu]"; break;
               case SA_NEG: cout << "       Res[nu]"; break;
               case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
+              case KE:	   cout << "      Res[kine]" << "      Res[epsi]" << "       Res[zeta]" << "       Res[f]    "; break;
             }
             
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
@@ -5449,7 +5456,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(15); cout << log10(residual_turbulent[1]); break;
+                    cout.width(15); cout << log10(residual_turbulent[1]); break;
+            case 4: cout.width(14); cout << log10(residual_turbulent[0]);
+                    cout.width(15); cout << log10(residual_turbulent[1]);
+                    cout.width(16); cout << log10(residual_turbulent[2]);
+                    cout.width(17); cout << log10(residual_turbulent[3]); break;
           }
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
@@ -7117,7 +7128,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #ifdef HAVE_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
-    
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
@@ -7188,7 +7198,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-      
       if (Wrt_Vol) {
         
         switch (FileFormat) {

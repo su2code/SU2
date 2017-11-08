@@ -13142,6 +13142,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
+  bool ke = config->GetKind_Turb_Model() == KE;
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val, AoASens;
@@ -13168,6 +13169,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
   if (sa)             { skipVar += skipMult*1;}
+  if (ke)             { skipVar += skipMult*4;}
   if (grid_movement)  { skipVar += nDim;}
   
   /*--- Sensitivity in normal direction ---*/

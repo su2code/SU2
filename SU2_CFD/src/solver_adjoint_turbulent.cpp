@@ -53,6 +53,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     case SA :     nVar = 1; break;
     case SA_NEG : nVar = 1; break;
     case SST :    nVar = 2; break;
+    case KE :     nVar = 4; break;
   }
   
   /*--- Initialize nVarGrad for deallocation ---*/

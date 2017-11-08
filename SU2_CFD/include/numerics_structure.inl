@@ -401,6 +401,12 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
+inline void CNumerics::SetTurbTimescale(su2double val_turb_L) {
+}
+
+inline void CNumerics::SetTurbLengthscale(su2double val_turb_L) {
+}
+
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 
   F1_j = val_F1_j;
@@ -414,7 +420,15 @@ inline void CSourcePieceWise_TurbSST::SetF2blending(su2double val_F2_i, su2doubl
 inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {
   CDkw_i = val_CDkw_i;
   CDkw_j = val_CDkw_j;
-}      
+}
+
+inline void CSourcePieceWise_TurbKE::SetTurbTimescale(su2double val_turb_L) {
+  Tm = val_turb_L;
+}
+
+inline void CSourcePieceWise_TurbKE::SetTurbLengthscale(su2double val_turb_L) {
+  Lm = val_turb_L;
+}
 
 inline void CSourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 

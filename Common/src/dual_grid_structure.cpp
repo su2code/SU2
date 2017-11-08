@@ -44,7 +44,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   unsigned short iDim, jDim, kDim;
 
   /*--- Element, point and edge structures initialization ---*/
-  Elem.clear();  nElem  = 0;
+  Elem.clear();  nElem = 0;
   Point.clear(); nPoint = 0;
   Edge.clear();
 

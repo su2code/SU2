@@ -837,6 +837,18 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of turbulent timescale
+   */
+  virtual su2double GetTurbTimescale(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the turbulent lengthscale
+   */
+  virtual su2double GetTurbLengthscale(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the flow enthalpy.
    */
   virtual su2double GetEnthalpy(void);
@@ -1008,6 +1020,14 @@ public:
    */
   virtual void SetEddyViscosity(su2double eddy_visc);
   
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_turb_T - The turbulent timescale
+   * \param[in] val_turb_L - The turbulent lengthscale
+   */
+  virtual void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
+
   /*!
    * \brief A virtual member.
    */
@@ -1656,7 +1676,7 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   virtual su2double GetCrossDiff(void) { return 0.0; };
-  
+
   /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
@@ -3767,6 +3787,68 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   su2double GetCrossDiff(void);
+};
+
+/*! swh
+ * \class CTurbKEVariable
+ * \brief Main class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author S. Haering
+ * \version 4.3.x "Cardinal"
+ */
+class CTurbKEVariable : public CTurbVariable {
+
+protected:
+  su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
+  su2double Tm,		/*!< \brief T_m k-eps. */
+    Lm,		        /*!< \brief L_m k-eps */
+    Re_T;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbKEVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi,
+                  su2double val_zeta, su2double val_f,
+                  su2double val_muT, su2double val_Tm, su2double val_Lm,
+                  unsigned short val_nDim, unsigned short val_nvar,
+                  su2double *constants, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbKEVariable(void);
+
+  /**
+   * \brief Get the large-eddy timescale of the turbulence
+   * \return The large-eddy timescale of the turbulence.
+   */
+  su2double GetTurbTimescale(void);
+
+  /**
+   * \brief Get the large-eddy lengthscale of the turbulence
+   * \return The large-eddy lengthscale of the turbulence
+   */
+  su2double GetTurbLengthscale(void);
+
+  /**
+   * \brief Sets the large-eddy lengthscale and the large-eddy timescale
+   * \param[in] val_turb_T - Large eddy timescale of the turbulence
+   * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
+   */
+  void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
 };
 
 

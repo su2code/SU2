@@ -44,6 +44,7 @@ before_install:
 
 install:
     - sudo pip install mpi4py
+    - ./bootstrap
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
