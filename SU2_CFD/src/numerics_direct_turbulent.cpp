@@ -1226,16 +1226,28 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual,
 
   // check for nans
 #ifndef NDEBUG
-  bool found_nan = (std::isnan(Pk)  || std::isnan(Dk)  ||
-                    std::isnan(Pe)  || std::isnan(De)  ||
-                    std::isnan(Pv2) || std::isnan(Dv2) ||
-                    std::isnan(Pf)  || std::isnan(Df)  ||
-                    std::isnan(Pk_rk)  || std::isnan(Pk_re)  || std::isnan(Pk_rv2)  ||
-                    std::isnan(Pe_rk)  || std::isnan(Pe_re)  || std::isnan(Pe_rv2)  ||
-                    std::isnan(Pv2_rk) || std::isnan(Pv2_re) || std::isnan(Pv2_rv2) ||
-                    std::isnan(Dk_rk)  || std::isnan(Dk_re)  || std::isnan(Dk_rv2)  ||
-                    std::isnan(De_rk)  || std::isnan(De_re)  || std::isnan(De_rv2)  ||
-                    std::isnan(Dv2_rk) || std::isnan(Dv2_re) || std::isnan(Dv2_rv2) );
+  // bool found_nan = (std::isnan(Pk)  || std::isnan(Dk)  ||
+  //                   std::isnan(Pe)  || std::isnan(De)  ||
+  //                   std::isnan(Pv2) || std::isnan(Dv2) ||
+  //                   std::isnan(Pf)  || std::isnan(Df)  ||
+  //                   std::isnan(Pk_rk)  || std::isnan(Pk_re)  || std::isnan(Pk_rv2)  ||
+  //                   std::isnan(Pe_rk)  || std::isnan(Pe_re)  || std::isnan(Pe_rv2)  ||
+  //                   std::isnan(Pv2_rk) || std::isnan(Pv2_re) || std::isnan(Pv2_rv2) ||
+  //                   std::isnan(Dk_rk)  || std::isnan(Dk_re)  || std::isnan(Dk_rv2)  ||
+  //                   std::isnan(De_rk)  || std::isnan(De_re)  || std::isnan(De_rv2)  ||
+  //                   std::isnan(Dv2_rk) || std::isnan(Dv2_re) || std::isnan(Dv2_rv2) );
+
+  bool found_nan = ((Pk!=Pk)         || (Dk!=Dk)         ||
+                    (Pe!=Pe)         || (De!=De)         ||
+                    (Pv2!=Pv2)       || (Dv2!=Dv2)       ||
+                    (Pf!=Pf)         || (Df!=Df)         ||
+                    (Pk_rk!=Pk_rk)   || (Pk_re!=Pk_re)   || (Pk_rv2!=Pk_rv2)   ||
+                    (Pe_rk!=Pe_rk)   || (Pe_re!=Pe_re)   || (Pe_rv2!=Pe_rv2)   ||
+                    (Pv2_rk!=Pv2_rk) || (Pv2_re!=Pv2_re) || (Pv2_rv2!=Pv2_rv2) ||
+                    (Dk_rk!=Dk_rk)   || (Dk_re!=Dk_re)   || (Dk_rv2!=Dk_rv2)   ||
+                    (De_rk!=De_rk)   || (De_re!=De_re)   || (De_rv2!=De_rv2)   ||
+                    (Dv2_rk!=Dv2_rk) || (Dv2_re!=Dv2_re) || (Dv2_rv2!=Dv2_rv2) );
+
 
   if (found_nan) {
     std::cout << "WTF!?! Found a nan at x = " << Coord_i[0] << ", " << Coord_i[1] << std::endl;
