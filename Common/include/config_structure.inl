@@ -39,6 +39,8 @@ inline su2double CConfig::GetCFL_AdaptParam(unsigned short val_index) { return C
 
 inline bool CConfig::GetCFL_Adapt(void) { return CFL_Adapt; }
 
+inline bool CConfig::GetHB_Precondition(void) { return HB_Precondition; }
+
 inline void CConfig::SetInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach) { Inflow_Mach[val_imarker] = val_fanface_mach; }
 
 inline void CConfig::SetInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure) { Inflow_Pressure[val_imarker] = val_fanface_pressure; }
