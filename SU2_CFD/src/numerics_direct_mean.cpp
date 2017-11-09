@@ -4051,7 +4051,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
     delete [] A_ij;
     delete [] newA_ij;
     delete [] Eig_Vec;
-    delete [] New_Eig_Vec
+    delete [] New_Eig_Vec;
     delete [] Corners;
     delete [] Eig_Val;
     delete [] Barycentric_Coord;
