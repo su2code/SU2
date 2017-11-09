@@ -720,6 +720,7 @@ private:
   Specific_Heat_Solid, /*!< \brief Specific heat in solids. */
   Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
+  Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
   External_Heating, /*!< \brief Parameter of external heating source. */
   Density_Solid,      /*!< \brief Total density in solids. */  
   *Velocity_FreeStream,     /*!< \brief Free-stream velocity vector of the fluid.  */
@@ -1568,6 +1569,12 @@ public:
    * \return Thermal conductivity (solid).
    */
   su2double GetThermalDiffusivity_Solid(void);
+
+  /*!
+   * \brief Get the temperature in solids at freestream conditions.
+   * \return Freestream temperature (solid).
+   */
+  su2double GetTemperature_Freestream_Solid(void);
 
   /*!
    * \brief Get the value of the external heating.

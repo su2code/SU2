@@ -698,6 +698,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SPECIFIC_HEAT_SOLID", Specific_Heat_Solid, 0.0);
   /* DESCRIPTION: Thermal conductivity used for heat equation */
   addDoubleOption("THERMAL_CONDUCTIVITY_SOLID", Thermal_Conductivity_Solid, 0.0);
+  /* DESCRIPTION: Solids temperature at freestream conditions */
+  addDoubleOption("TEMPERATURE_FREESTREAM_SOLID", Temperature_Freestream_Solid, 0.0);
   /* DESCRIPTION: External heating source */
   addDoubleOption("EXTERNAL_HEATING_SOURCE", External_Heating, 0.0);
   /* DESCRIPTION: Density used in solids */

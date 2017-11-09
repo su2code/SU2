@@ -329,6 +329,8 @@ inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
 inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
 
+inline su2double CConfig::GetTemperature_Freestream_Solid(void) { return Temperature_Freestream_Solid;  }
+
 inline su2double CConfig::GetElasticyMod(void) { return ElasticyMod; }
 
 inline su2double CConfig::GetBulk_Modulus_Struct(void) { return Bulk_Modulus_Struct; }

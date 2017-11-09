@@ -203,12 +203,13 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     cout << "Solid reference temperature: " << config->GetTemperature_Ref() << ", solid thermal diffusity (m^2/s): " << thermal_diffusivity_solid << endl;
   }
 
+  su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
 
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       if (flow)
         node[iPoint] = new CHeatVariable(1.0, nDim, nVar, config);
       else
-        node[iPoint] = new CHeatVariable(1.0, nDim, nVar, config);
+        node[iPoint] = new CHeatVariable(Temperature_Solid_Freestream_ND, nDim, nVar, config);
 
 
 
