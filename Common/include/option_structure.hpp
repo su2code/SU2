@@ -680,12 +680,16 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 enum ENUM_TIME_INT {
   RUNGE_KUTTA_EXPLICIT = 1,	/*!< \brief Explicit Runge-Kutta time integration definition. */
   EULER_EXPLICIT = 2,   	/*!< \brief Explicit Euler time integration definition. */
-  EULER_IMPLICIT = 3   	/*!< \brief Implicit Euler time integration definition. */
+  EULER_IMPLICIT = 3,   	/*!< \brief Implicit Euler time integration definition. */
+  RUNGE_KUTTA_LIMEX_SMR91 = 4,	/*!< \brief Linearly implicit Runge-Kutta w/ SMR 91 scheme. */
+  RUNGE_KUTTA_LIMEX_EDIRK = 5	/*!< \brief Linearly implicit Runge-Kutta w/ EDIRK scheme. */
 };
 static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_TIME_INT>
 ("RUNGE-KUTTA_EXPLICIT", RUNGE_KUTTA_EXPLICIT)
 ("EULER_EXPLICIT", EULER_EXPLICIT)
-("EULER_IMPLICIT", EULER_IMPLICIT);
+("EULER_IMPLICIT", EULER_IMPLICIT)
+("RUNGE-KUTTA_LIMEX_SMR91", RUNGE_KUTTA_LIMEX_SMR91)
+("RUNGE-KUTTA_LIMEX_EDIRK", RUNGE_KUTTA_LIMEX_EDIRK);
 
 /*!
  * \brief type of time integration schemes

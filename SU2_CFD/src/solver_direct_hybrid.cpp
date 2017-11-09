@@ -410,7 +410,7 @@ void CHybridSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *confi
 void CHybridSolver::Upwind_Residual(CGeometry *geometry,
                                       CSolver **solver_container,
                                       CNumerics *numerics, CConfig *config,
-                                      unsigned short iMesh) {
+                                      unsigned short iMesh, unsigned short iRKstep) {
 
   su2double *Hybrid_Param_i, *Hybrid_Param_j, *Limiter_i = NULL, *Limiter_j = NULL,
       *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
@@ -581,7 +581,8 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
                                           CNumerics *numerics,
                                           CNumerics *second_numerics,
                                           CConfig *config,
-                                          unsigned short iMesh) {
+                                          unsigned short iMesh,
+                                          unsigned short iRKstep) {
   unsigned long iPoint;
 
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
@@ -627,14 +628,14 @@ void CHybridConvSolver::Source_Residual(CGeometry *geometry,
   }
 }
 
-void CHybridSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
 
 }
 
 void CHybridConvSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   unsigned long iPoint, iVertex;
   unsigned short iVar;
@@ -1019,6 +1020,9 @@ void CHybridSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
       break;
     case SA:
       skipVars += 1;
+      break;
+    case KE:
+      skipVars += 4;
       break;
   }
 
@@ -1427,7 +1431,7 @@ void CHybridConvSolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
   }
 }
 
-void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
 
@@ -1455,7 +1459,7 @@ void CHybridConvSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
 }
 
 void CHybridConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                       unsigned short val_marker) {
+                                       unsigned short val_marker, unsigned short iRKstep) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
 
@@ -1482,7 +1486,7 @@ void CHybridConvSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver
 
 }
 
-void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
@@ -1547,7 +1551,7 @@ void CHybridConvSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CHybridConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
 
@@ -1575,7 +1579,7 @@ void CHybridConvSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 }
 
 void CHybridConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                              CConfig *config, unsigned short val_marker) {
+                              CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
@@ -1648,7 +1652,7 @@ void CHybridConvSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 
 }
 
-void CHybridConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   unsigned long iPoint, iVertex;
   unsigned short iDim;
@@ -1709,7 +1713,7 @@ void CHybridConvSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_c
 
 }
 
-void CHybridConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CHybridConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
@@ -1776,23 +1780,23 @@ void CHybridConvSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_
 }
 
 void CHybridConvSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
-             config,  val_marker, true);
+             config,  val_marker, true, iRKstep);
 
 }
 
 void CHybridConvSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics,
-             config,  val_marker, false);
+             config,  val_marker, false, iRKstep);
 
 }
 
 void CHybridConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                               CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                               CConfig *config, unsigned short val_marker, bool inlet_surface, unsigned short iRKstep) {
 
   unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
@@ -1907,13 +1911,13 @@ void CHybridConvSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CHybridConvSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short val_marker) {
+                                          CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
   cout << "ERROR: Interface boundary conditions are not implemented for the hybrid parameter solver!" << endl;
   exit(EXIT_FAILURE);
 }
 
 void CHybridConvSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short val_marker) {
+                                          CConfig *config, unsigned short val_marker, unsigned short iRKstep) {
   cout << "ERROR: Near-field boundary conditions are not implemented for the hybrid parameter solver!" << endl;
   exit(EXIT_FAILURE);
 }

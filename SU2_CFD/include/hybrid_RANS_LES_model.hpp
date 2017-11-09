@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include "../include/numerics_structure.hpp"
+#include "../../SU2_CFD/include/numerics_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/mpi_structure.hpp"
 

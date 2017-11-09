@@ -91,6 +91,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   DonorPrimVar = NULL; DonorGlobalIndex = NULL;
   ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
 
+  LinSysKexp = NULL; LinSysKimp = NULL;
+
   Smatrix = NULL; Cvector = NULL;
  
   Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
@@ -173,6 +175,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
     bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  bool implicit = ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+                   (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+                   (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit_rk = ((config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+                      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
   su2double AoA_, AoS_, BCThrust_;
   string filename = config->GetSolution_FlowFileName();
   string filename_ = config->GetSolution_FlowFileName();
@@ -451,6 +458,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
 
+  nRKStep = config->GetnRKStep();
+
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -537,13 +546,27 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
-  
+
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  if (implicit_rk) {
+    std::cout << "For RK too..." << std::endl;
+    LinSysDeltaU.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    LinSysKimp = new CSysVector [nRKStep];
+    LinSysKexp = new CSysVector [nRKStep];
+
+    for (unsigned int iRKStep = 0; iRKStep < nRKStep; iRKStep++ ){
+      LinSysKimp[iRKStep].Initialize(nPoint, nPointDomain, nVar, 0.0);
+      LinSysKexp[iRKStep].Initialize(nPoint, nPointDomain, nVar, 0.0);
+    }
+  }
   
   /*--- Jacobians and vector structures for implicit computations ---*/
   
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+  if (implicit) {
     
     Jacobian_i = new su2double* [nVar];
     Jacobian_j = new su2double* [nVar];
@@ -1116,6 +1139,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
+
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) rk_implicit = true;
+  else rk_implicit = false;
   
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
@@ -1366,7 +1392,9 @@ CEulerSolver::~CEulerSolver(void) {
   if (NormalMachIn          != NULL) delete [] NormalMachIn;
   if (NormalMachOut         != NULL) delete [] NormalMachOut;
   if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
-  
+
+  if (LinSysKimp            != NULL) delete [] LinSysKimp;
+  if (LinSysKexp            != NULL) delete [] LinSysKexp;
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -4444,7 +4472,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   unsigned long ExtIter = config->GetExtIter();
   bool adjoint          = config->GetContinuous_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
@@ -4584,8 +4616,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
-  
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+
   bool grid_movement = config->GetGrid_Movement();
     bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -4767,7 +4803,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   
   unsigned long iEdge, iPoint, jPoint;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
   bool second_order = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool grid_movement = config->GetGrid_Movement();
@@ -4822,7 +4861,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                   CConfig *config, unsigned short iMesh) {
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0;
@@ -4834,8 +4873,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
   
-  
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && ((iMesh == MESH_0) || low_fidelity));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
@@ -5076,11 +5118,15 @@ void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
 }
 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                   CConfig *config, unsigned short iMesh) {
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned short iVar;
   unsigned long iPoint;
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   bool gravity        = (config->GetGravityForce() == YES);
@@ -6251,36 +6297,63 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
+  su2double *Residual, *Res_TruncError, Vol, Delta, Res, ktmp, du;
+  unsigned short iVar, iStep;
   unsigned long iPoint;
-  
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+
+  const su2double *RK_coeff_vec;
+  su2double  RK_cVec_val;
   bool adjoint = config->GetContinuous_Adjoint();
-  
+
+  const bool final_step = (iRKStep+1 == nRKStep);
+
+  // FIXME: Not currently updating time!  Do it!
+  //RK_cVec_val = config->Get_RK_cVec_val(iRKStep);
+
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-  
+
   /*--- Update the solution ---*/
-  
+  if (!final_step) {
+    // If not on the final substep, use (a row of) aMat coefficients
+    // to update state
+    RK_coeff_vec = config->Get_RK_aMat_row(iRKStep);
+  } else {
+    // On final substep, use bVec to update state
+    RK_coeff_vec = config->Get_RK_bVec();
+  }
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
-    
+
     Res_TruncError = node[iPoint]->GetResTruncError();
     Residual = LinSysRes.GetBlock(iPoint);
-    
+
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
+
+        // Store residual from this substep
         Res = Residual[iVar] + Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+        node[iPoint]->SetRKSubstepResidual(iRKStep, iVar, Res);
+
+        // Update solution, either in prep for next substep residual
+        // eval or to complete the time step
+        // NB: RK_coeff_vec is either row of aMat or the whole bVec
+        du = 0.0;
+        for (iStep = 0; iStep <= iRKStep; iStep++) {
+          ktmp = node[iPoint]->GetRKSubstepResidual(iStep,iVar);
+          du += RK_coeff_vec[iStep]*ktmp;
+        }
+        du *= Delta;
+
+        node[iPoint]->AddSolution(iVar, -du);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
-    
   }
   
   /*--- MPI solution ---*/
@@ -6412,6 +6485,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   /*--- Solve or smooth the linear system ---*/
   
+
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
@@ -6438,6 +6512,297 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   SetResidual_RMS(geometry, config);
   
 }
+
+
+void CEulerSolver::LIMEX_RK_SMR91_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                            CConfig *config, unsigned short iRKStep) {
+
+  su2double *local_Res_TruncError, Vol, dt;
+  unsigned short iVar, IterLinSol=0;
+  unsigned long iPoint, total_index;
+
+  bool adjoint = config->GetContinuous_Adjoint();
+
+  const bool final_step = (iRKStep+1 == nRKStep);
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  // By assumption, we are using 'TIME_STEPPING' for these
+  // simulations, such that dt is the same for each node and we can
+  // just grab it off the first node.
+  assert(config->GetUnsteady_Simulation() == TIME_STEPPING);
+  dt = node[0]->GetDelta_Time();
+
+  // SMR91 coefficients are hardcoded for now
+  // TODO: Let user set these through the input file
+  su2double beta[3], alpha[3], gamma[3], zeta[2]; //, eta[4];
+
+  beta[0] = 37.0/160.0; beta[1] = 5.0/24.0; beta[2] = 1.0/6.0;
+  alpha[0] = 29.0/96.0; alpha[1] = -3.0/40.0; alpha[2] = 1.0/6.0;
+  gamma[0] = 8.0/15.0; gamma[1] = 5.0/12.0; gamma[2] = 3.0/4.0;
+  zeta[0] = -17.0/60.0; zeta[1] = -5.0/12.0;
+  //eta[0] = 0.0; eta[1] = 0.0; eta[2] = 8.0/15.0; eta[3] = 2.0/3.0;
+
+  // Step 0: Initialize residual
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]),
+                 geometry->node[iPoint]->GetGlobalIndex(),
+                 geometry->node[iPoint]->GetCoord());
+    }
+  }
+
+  /*--- Initialize residual at the ghost points ---*/
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+    }
+  }
+
+
+  // Step 1: Compute explicit piece of residual by subtracting off
+  // L*dU (where L = the jacobian).  NB: Can skip this step for
+  // iRKStep=0 b/c dU = 0.
+  if (iRKStep > 0) {
+    Jacobian.MatrixVectorProduct(LinSysDeltaU, LinSysAux, geometry, config);
+    LinSysRes -= LinSysAux;
+  } else {
+    LinSysDeltaU.SetValZero();
+  }
+
+
+  // Step 2: Save explicit piece of residual
+  LinSysKexp[iRKStep] = LinSysRes;
+
+  // Step 3: Form M*v^i/dt
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysKimp[0][total_index] = Vol*LinSysDeltaU[total_index]/dt;
+    }
+  }
+
+  // Step 4: Form alpha_i*J*v^i
+  Jacobian.MatrixVectorProduct(LinSysDeltaU, LinSysKimp[1], geometry, config);
+
+  // Step 5: Form RHS for linear solve
+  LinSysAux = LinSysKimp[0];
+  LinSysAux.Plus_AX(-alpha[iRKStep], LinSysKimp[1]);
+  LinSysAux.Plus_AX(-gamma[iRKStep], LinSysKexp[iRKStep]);
+
+  if (iRKStep>0) {
+    LinSysAux.Plus_AX(-zeta[iRKStep-1], LinSysKexp[iRKStep-1]);
+  }
+
+
+  // Step 6: Form M/(beta_i*dt) + J
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Jacobian.AddVal2Diag(iPoint, Vol/(beta[iRKStep]*dt));
+  }
+
+
+  // Step 7: Solve system
+  LinSysDeltaU.SetValZero();
+
+  CSysSolve system;
+  IterLinSol = system.Solve(Jacobian, LinSysAux, LinSysDeltaU, geometry, config);
+  SetIterLinSolver(IterLinSol);
+
+  LinSysDeltaU *= (1.0/beta[iRKStep]);
+
+  // Step 8: Update solution in preparation for next substep (or to complete step)
+  if (!adjoint) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->AddSolution(iVar, LinSysDeltaU[iPoint*nVar+iVar]);
+      }
+    }
+  }
+
+  // Step 9: Undo Jacobian modification in prep for next substep
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Jacobian.AddVal2Diag(iPoint, -Vol/(beta[iRKStep]*dt));
+  }
+
+
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+
+}
+
+void CEulerSolver::LIMEX_RK_EDIRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                            CConfig *config, unsigned short iRKStep) {
+
+  su2double *local_Res_TruncError, Vol, dt;
+  unsigned short iVar, IterLinSol=0;
+  unsigned long iPoint, total_index;
+
+  const su2double *RK_coeff_exp, *RK_coeff_imp;
+
+  bool adjoint = config->GetContinuous_Adjoint();
+
+  const bool final_step = (iRKStep+1 == nRKStep);
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  // By assumption, we are using 'TIME_STEPPING' for these
+  // simulations, such that dt is the same for each node and we can
+  // just grab it off the first node.
+  assert(config->GetUnsteady_Simulation() == TIME_STEPPING);
+  dt = node[0]->GetDelta_Time();
+
+  // Step 0: Initialize full residual
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]),
+                 geometry->node[iPoint]->GetGlobalIndex(),
+                 geometry->node[iPoint]->GetCoord());
+    }
+  }
+
+  /*--- Initialize residual at the ghost points ---*/
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+    }
+  }
+
+
+  // Step 1: Compute explicit piece of residual (\hat{k}_i in Persson
+  // notation) by subtracting off implicit piece L*dU (where L = the
+  // jacobian and dU comes from previous step).  NB: Can skip
+  // this step for iRKStep=0 b/c dU = 0.
+  if (iRKStep > 0) {
+    Jacobian.MatrixVectorProduct(LinSysDeltaU, LinSysKimp[iRKStep-1],
+                                 geometry, config);
+    LinSysRes -= LinSysKimp[iRKStep-1];
+  }
+
+  LinSysKexp[iRKStep] = LinSysRes;
+
+
+  // Step 2: Form RHS for linear solve
+
+  // Get coefficients, which depend on step
+  if (!final_step) {
+    // If not on the final substep, use (a row of) aMat coefficients
+    // to update state
+    // NB: this fcn gives the (iRKStep+1)th row of A
+    RK_coeff_exp = config->Get_RK_aMat_row(iRKStep);
+    RK_coeff_imp = config->Get_RK_aMat_row_imp(iRKStep);
+  } else {
+    // On final substep, use bVec to update state
+    RK_coeff_exp = config->Get_RK_bVec();
+    RK_coeff_imp = config->Get_RK_bVec_imp();
+  }
+
+  // Explicit part
+  LinSysAux.SetValZero();
+  for (unsigned int jj=0; jj<=iRKStep; jj++) {
+    LinSysAux.Plus_AX(RK_coeff_exp[jj],LinSysKexp[jj]);
+  }
+
+  // Implicit part
+  for (unsigned int jj=0; jj<iRKStep; jj++) {
+    LinSysAux.Plus_AX(RK_coeff_imp[jj], LinSysKimp[jj]);
+  }
+
+  // Step 3: Form and solve the linear system for dU
+  // NB: What this looks like depends on step...
+
+  if (!final_step) {
+
+    // ... Before last step, we do
+    // (M + dt*a_{ii}*J)*dU = rhs = (implicit piece) + (explicit piece)
+    // = dt*( \sum_{j=0}^{i-1} a_{ij}*k + \sum_{j=0}^{i} ah_{i+1,j}*kh )
+
+    // Step 3a: Form M/(a_{ii}*dt) + J
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      Vol = geometry->node[iPoint]->GetVolume();
+      Jacobian.AddVal2Diag(iPoint, Vol/(RK_coeff_imp[iRKStep]*dt));
+    }
+
+    // Step 3b: Solve system
+    LinSysDeltaU.SetValZero();
+
+    CSysSolve system;
+    IterLinSol = system.Solve(Jacobian, LinSysAux, LinSysDeltaU,
+                              geometry, config);
+    SetIterLinSolver(IterLinSol);
+
+    // Negative b/c residual is positive on LHS
+    LinSysDeltaU *= (-1.0/RK_coeff_imp[iRKStep]);
+
+    // Step 3c: Fix the Jacobian (i.e., set back to just J)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      Vol = geometry->node[iPoint]->GetVolume();
+      Jacobian.AddVal2Diag(iPoint, -Vol/(RK_coeff_imp[iRKStep]*dt));
+    }
+
+
+  } else {
+
+    // ... On last step, we do
+    // M*dU = rhs = (implicit piece) + (explicit piece)
+    // = dt*( \sum_{j=0}^{i-1} b_j*k_j + \sum_{j=0}^{i} bh_j*kh_j )
+
+    LinSysDeltaU.SetValZero();
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      Vol = geometry->node[iPoint]->GetVolume();
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        // Negative b/c residual is positive on LHS
+        LinSysDeltaU[total_index] = -dt*LinSysAux[total_index]/Vol;
+      }
+    }
+
+  }
+
+  // Step 4: Update solution in preparation for next substep (or to
+  // complete step)
+  if (!adjoint) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->AddSolution(iVar, LinSysDeltaU[iPoint*nVar+iVar]);
+      }
+    }
+  }
+
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+
+}
+
 
 void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, jPoint, iEdge, iVertex;
@@ -10078,7 +10443,8 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
 }
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                 CNumerics *numerics, CConfig *config,
+                                 unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim, iVar, jVar, kVar, jDim;
   unsigned long iPoint, iVertex;
@@ -10088,10 +10454,15 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
   su2double **Jacobian_b, **DubDu;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
+
   bool grid_movement = config->GetGrid_Movement();
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   
   Normal = new su2double[nDim];
   NormalArea = new su2double[nDim];
@@ -10257,7 +10628,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 }
 
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -10275,12 +10646,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   
   su2double Gas_Constant     = config->GetGas_ConstantND();
   
-  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous        = config->GetViscous();
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
                      (config->GetKind_Solver() == DISC_ADJ_RANS))
-                    && (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+                    && ( (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   
   su2double *Normal = new su2double[nDim];
   
@@ -10526,7 +10901,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
-                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
@@ -10538,13 +10913,17 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
@@ -11375,7 +11754,7 @@ void CEulerSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
-                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double  Area, UnitNormal[3];
@@ -11388,7 +11767,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
@@ -11880,7 +12263,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
-                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
@@ -11888,7 +12271,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   su2double *V_inlet, *V_domain;
   
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement        = config->GetGrid_Movement();
   su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
   su2double Gas_Constant       = config->GetGas_ConstantND();
@@ -11896,8 +12283,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -12191,7 +12578,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
-                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Pressure, P_Exit, Velocity[3],
@@ -12199,14 +12586,18 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   Area, UnitNormal[3];
   su2double *V_outlet, *V_domain;
   
-  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   su2double Gas_Constant     = config->GetGas_ConstantND();
   bool grid_movement      = config->GetGrid_Movement();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -12370,7 +12761,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                       CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_inlet, *V_domain;
@@ -12378,12 +12769,16 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   su2double Density, Pressure, Temperature, Energy, *Velocity, Velocity2;
   su2double Gas_Constant = config->GetGas_ConstantND();
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   su2double *Normal = new su2double[nDim];
   
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
@@ -12514,12 +12909,16 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 }
 
 void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
-                                        CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                        CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -12632,7 +13031,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
   
 }
 
-void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -12641,13 +13040,18 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   su2double *V_inflow, *V_domain;
   
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   unsigned short Kind_Engine_Inflow = config->GetKind_Engine_Inflow();
   bool viscous              = config->GetViscous();
   su2double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
   bool Engine_HalfModel = config->GetEngine_HalfModel();
 
@@ -12850,7 +13254,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 }
 
 
-void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -12858,11 +13262,16 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
   
   su2double Gas_Constant = config->GetGas_ConstantND();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
   su2double DampingFactor = config->GetDamp_Engine_Exhaust();
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
   
@@ -13101,21 +13510,24 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker) {
+                                CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   /*--- Call the Euler residual ---*/
-  
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker, iRKStep);
   
 }
 
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config) {
+                                      CConfig *config, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iVar, iMarker;
   
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement = config->GetGrid_Movement();
   
   su2double *Normal = new su2double[nDim];
@@ -13188,12 +13600,16 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short val_marker) {
+                                         CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
   unsigned short iDim, iVar;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -13249,12 +13665,16 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 }
 
 void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short val_marker) {
+                                         CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
   unsigned short iDim, iVar;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -13310,21 +13730,21 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
 }
 
 void CEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                    CConfig *config, unsigned short val_marker) {
+                                    CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
-  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true);
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true, iRKStep);
   
 }
 
 void CEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                     CConfig *config, unsigned short val_marker) {
+                                     CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
-  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false, iRKStep);
   
 }
 
 void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-        CConfig *config, unsigned short val_marker, bool inlet_surface) {
+        CConfig *config, unsigned short val_marker, bool inlet_surface, unsigned short iRKStep) {
 
     unsigned short iDim, iVar, jVar, jDim;
     unsigned long iVertex, iPoint, iPoint_Normal, GlobalIndex_donor, GlobalIndex;
@@ -13340,12 +13760,16 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     su2double turb_ke, a2, phi;
     bool ReverseFlow;
 
-    bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    bool implicit =
+      ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+       (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+       (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
     su2double Gas_Constant  = config->GetGas_ConstantND();
     bool viscous            = config->GetViscous();
     bool grid_movement      = config->GetGrid_Movement();
-    bool tkeNeeded                = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-            (config->GetKind_Turb_Model() == SST));
+    bool tkeNeeded          = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                               ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE)) );
     bool ratio                = (config->GetActDisk_Jump() == RATIO);
     su2double SecondaryFlow = config->GetSecondaryFlow_ActDisk();
 
@@ -13667,7 +14091,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
                     /*--- Turbulent kinetic energy ---*/
 
-                    if (config->GetKind_Turb_Model() == SST)
+                    if (config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == KE)
                         visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
                     /*--- Compute and update residual ---*/
@@ -13756,9 +14180,9 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 }
 
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
-                                CConfig *config, unsigned short val_marker) { }
+                                CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
-void CEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
+void CEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) { }
 
 void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
@@ -13771,8 +14195,15 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   su2double *U_time_nM1, *U_time_n, *U_time_nP1;
   su2double Volume_nM1, Volume_nP1, TimeStep;
   su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
-  
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) );
+
+  if ((config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) ) {
+    cout << "ERROR: Dual time stepping should not be used with linearly implicit RK schemes." << endl;
+    exit(EXIT_FAILURE);
+  }
+
   bool grid_movement  = config->GetGrid_Movement();
   
   /*--- Store the physical time step ---*/
@@ -14607,7 +15038,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool implicit = ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+                   (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+                   (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+  bool implicit_rk = ((config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+                      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
@@ -14789,6 +15225,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
+  nRKStep = config->GetnRKStep();
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -14877,10 +15314,23 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
+  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  if (implicit_rk) {
+    LinSysDeltaU.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    LinSysKimp = new CSysVector [nRKStep];
+    LinSysKexp = new CSysVector [nRKStep];
+
+    for (unsigned int iRKStep = 0; iRKStep < nRKStep; iRKStep++ ){
+      LinSysKimp[iRKStep].Initialize(nPoint, nPointDomain, nVar, 0.0);
+      LinSysKexp[iRKStep].Initialize(nPoint, nPointDomain, nVar, 0.0);
+    }
+  }
+
   /*--- Jacobians and vector structures for implicit computations ---*/
   
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+  if (implicit) {
     
     Jacobian_i = new su2double* [nVar];
     Jacobian_j = new su2double* [nVar];
@@ -15582,6 +16032,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
   
+  if ((config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+      (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) ){
+    rk_implicit = true;
+  } else {
+    rk_implicit = false;
+  }
+  
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
   
@@ -15670,7 +16127,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
   unsigned long ExtIter     = config->GetExtIter();
   bool adjoint              = config->GetContinuous_Adjoint();
-  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
   bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
@@ -15845,8 +16306,11 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   unsigned short iDim, iMarker;
   su2double ProjVel, ProjVel_i, ProjVel_j;
-  
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  bool implicit = ( (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK) ||
+                    (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91) );
+
   bool grid_movement = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -15971,6 +16435,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
       Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
@@ -16051,7 +16516,11 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, jPoint, iEdge;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -16526,7 +16995,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim, jDim, iVar, jVar;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -16539,7 +17008,11 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
   su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement  = config->GetGrid_Movement();
   
   /*--- Identify the boundary by string name ---*/
@@ -16762,7 +17235,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   }
 }
 
-void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -16780,7 +17253,11 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit =
+    ((config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_EDIRK && iRKStep == 0) ||
+     (config->GetKind_TimeIntScheme_Flow() == RUNGE_KUTTA_LIMEX_SMR91 && iRKStep == 0) );
+
   bool grid_movement  = config->GetGrid_Movement();
   
   /*--- Identify the boundary ---*/
