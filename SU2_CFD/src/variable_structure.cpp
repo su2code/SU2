@@ -51,7 +51,7 @@ CVariable::CVariable(void) {
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
-  
+  rk_stage_vectors = NULL;
 }
 
 CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
@@ -70,6 +70,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
+  rk_stage_vectors = NULL;
   
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
@@ -103,6 +104,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
+  rk_stage_vectors = NULL;
   
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
@@ -405,6 +407,19 @@ void CVariable::GetResTruncError(su2double *val_trunc_error) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     val_trunc_error[iVar] = Res_TruncError[iVar];
   
+}
+
+void CVariable::SetRKSubstepResidual(unsigned short iRKStep,
+                                     unsigned short iVar,
+                                     su2double val          ) {
+  assert(rk_stage_vectors!=NULL);
+  rk_stage_vectors[iRKStep][iVar] = val;
+}
+
+su2double CVariable::GetRKSubstepResidual(unsigned short iRKStep,
+                                          unsigned short iVar    ) {
+  assert(rk_stage_vectors!=NULL);
+  return rk_stage_vectors[iRKStep][iVar];
 }
 
 CBaselineVariable::CBaselineVariable(void) : CVariable() { }

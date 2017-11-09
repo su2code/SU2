@@ -180,7 +180,7 @@ void CPoissonSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_cont
  * \author A. Lonkar
  */
 void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                     CConfig *config, unsigned short iMesh) {
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 //  
 //  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 //  su2double a[3], b[3], c[3], d[3], Area_Local, Volume_Local;
@@ -441,7 +441,7 @@ void CPoissonSolver::AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long 
 }
 
 void CPoissonSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
-                                  CConfig *config, unsigned short val_marker) {
+                                  CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long Point, iVertex;
   
   /*--- Identify if a boundary is Dirichlet or Neumman ---*/

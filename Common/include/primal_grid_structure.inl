@@ -33,6 +33,19 @@
  
 #pragma once
 
+inline su2double inline_dot_prod(vector<su2double> v, vector<su2double> w) {
+  su2double dot_product = 0.0;
+  unsigned short nDim = v.size();
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    dot_product += v[iDim]*w[iDim];
+  }
+  return dot_product;
+}
+
+inline su2double inline_magnitude(vector<su2double> v) {
+  return sqrt(inline_dot_prod(v,v));
+}
+
 inline unsigned short CPrimalGrid::GetnNodesFace(unsigned short val_face) { return 0; }
 
 inline void CPrimalGrid::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
@@ -64,6 +77,12 @@ inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return GlobalIndex; }
 inline void CPrimalGrid::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
 
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
+
+inline su2double** CPrimalGrid::GetResolutionTensor(void) { return ResolutionTensor; }
+
+inline su2double** CPrimalGrid::GetResolutionVectors(void) { return ResolutionVectors; }
+
+inline su2double* CPrimalGrid::GetResolutionValues(void) { return ResolutionValues; }
 
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 

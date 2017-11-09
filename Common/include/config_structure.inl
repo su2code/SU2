@@ -433,6 +433,8 @@ inline su2double CConfig::GetTurbulenceIntensity_FreeStream(void) { return Turbu
 
 inline su2double CConfig::GetTurb2LamViscRatio_FreeStream(void) { return Turb2LamViscRatio_FreeStream;}
 
+inline su2double CConfig::GetTurbLength_FreeStream(void) { return TurbLength_FreeStream;}
+
 inline su2double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStream; }
 
 inline su2double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
@@ -608,7 +610,30 @@ inline unsigned short CConfig::GetFFD_CoordSystem(void) { return FFD_CoordSystem
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
-inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
+inline const su2double* CConfig::Get_RK_aMat_row(unsigned short val_step){
+  assert(RK_aMat!=NULL);
+  assert(val_step < nRKStep-1);
+  assert(RK_aMat[val_step+1]!=NULL);
+  return RK_aMat[val_step+1];
+}
+
+inline const su2double* CConfig::Get_RK_bVec(void){
+  assert(RK_bVec!=NULL);
+  return RK_bVec;
+}
+
+inline const su2double* CConfig::Get_RK_aMat_row_imp(unsigned short val_step){
+  assert(RK_aMat_imp!=NULL);
+  assert(val_step < nRKStep-1);
+  assert(RK_aMat_imp[val_step]!=NULL);
+  return RK_aMat_imp[val_step];
+}
+
+inline const su2double* CConfig::Get_RK_bVec_imp(void){
+  assert(RK_bVec_imp!=NULL);
+  return RK_bVec_imp;
+}
+
 
 inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
 
@@ -664,6 +689,8 @@ inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 
 inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; } 
+
+inline unsigned short CConfig::GetKind_FreeStreamTurbOption(void) { return Kind_FreeStreamTurbOption; }
 
 inline unsigned short CConfig::GetKind_InitOption(void) { return Kind_InitOption; }
 
@@ -1144,6 +1171,8 @@ inline string CConfig::GetSurfSens_FileName(void) { return SurfSens_FileName; }
 
 inline string CConfig::GetVolSens_FileName(void) { return VolSens_FileName; }
 
+inline string CConfig::GetHybrid_Const_FileName(void) { return Hybrid_Const_FileName; }
+
 inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
 
 inline unsigned short CConfig::GetCauchy_Func_Flow(void) { return Cauchy_Func_Flow; }
@@ -1163,6 +1192,10 @@ inline su2double CConfig::GetTotal_UnstTimeND(void) { return Total_UnstTimeND; }
 inline su2double CConfig::GetDelta_UnstTime(void) { return Delta_UnstTime; }
 
 inline su2double CConfig::GetCurrent_UnstTime(void) { return Current_UnstTime; }
+
+inline su2double CConfig::AddCurrent_UnstTime(su2double delta_time) { Current_UnstTime += delta_time; }
+
+inline void CConfig::SetCurrent_UnstTime(su2double val_time) { Current_UnstTime = val_time; }
 
 inline void CConfig::SetDelta_UnstTimeND(su2double val_delta_unsttimend) { Delta_UnstTimeND = val_delta_unsttimend; }
 
@@ -1235,6 +1268,14 @@ inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
+
+inline bool CConfig::isHybrid_Turb_Model(void) { return Hybrid_Turb_Model; }
+
+inline unsigned short CConfig::GetKind_Hybrid_Blending(void) { return Kind_Hybrid_Blending; }
+
+inline unsigned short CConfig::GetKind_Hybrid_Anisotropy_Model(void) { return Kind_Hybrid_Aniso_Model; }
+
+inline su2double CConfig::Get_Hybrid_Model_Const(void) { return Hybrid_Model_Constant; }
 
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 

@@ -354,8 +354,21 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
-  unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
-  su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
+  unsigned short nRKStep;	/*!< \brief Number of steps of the explicit Runge-Kutta method. */
+  unsigned short nRKAmat;       /*!< \brief Number of coeffs in lower triangular part of A matrix for explicit Runge-Kutta method. */
+  unsigned short nRKBvec;	/*!< \brief Number of coeffs in b vector for explicit Runge-Kutta method. */
+  unsigned short nRKCvec;	/*!< \brief Number of coeffs in c vector for explicit Runge-Kutta method. */
+  su2double *RK_aMat_read;      /*!< \brief Space to read A matrix coefficients. */
+  su2double **RK_aMat;        /*!< \brief Runge-Kutta matrix (usually denoted a in Butcher tableau). */
+  su2double *RK_bVec;         /*!< \brief Runge-Kutta weight vector (usually denoted b in Butcher tableau). */
+  su2double *RK_cVec;         /*!< \brief Runge-Kutta node vector (usually denoted c in Butcher tableau). */
+  unsigned short nRKAmatImp;       /*!< \brief Number of coeffs in lower triangular part of A matrix for explicit Runge-Kutta method. */
+  unsigned short nRKBvecImp;	/*!< \brief Number of coeffs in b vector for explicit Runge-Kutta method. */
+  unsigned short nRKCvecImp;	/*!< \brief Number of coeffs in c vector for explicit Runge-Kutta method. */
+  su2double *RK_aMat_read_imp;      /*!< \brief Space to read A matrix coefficients. */
+  su2double **RK_aMat_imp;        /*!< \brief Runge-Kutta matrix (usually denoted a in Butcher tableau). */
+  su2double *RK_bVec_imp;         /*!< \brief Runge-Kutta weight vector (usually denoted b in Butcher tableau). */
+  su2double *RK_cVec_imp;         /*!< \brief Runge-Kutta node vector (usually denoted c in Butcher tableau). */
   unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
   su2double
@@ -457,7 +470,12 @@ private:
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  bool Hybrid_Turb_Model;  /*!< \brief A hybrid RANS/LES model (other than DES) will be used. */
+  unsigned short Kind_Hybrid_Blending; /*!< \brief Hybrid RANS/LES blending definition */
+  unsigned short Kind_Hybrid_Aniso_Model; /*!< \brief Hybrid RANS/LES subgrid anisotropy model definition */
+  su2double Hybrid_Model_Constant; /*!< \brief Model constant relating the approximate second order structure function to the unresolved turbulent kinetic energy */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
+  Kind_FreeStreamTurbOption, /*!< \brief Kind of freestream boundary condition (Only used for two-equation models) */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
@@ -628,7 +646,8 @@ private:
   SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  Hybrid_Const_FileName;                /*!< \brief Input file for the hybrid RANS/LES constants. */
   bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
@@ -665,6 +684,7 @@ private:
   Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
+  TurbLength_FreeStream, /*!< \brief Freestream turbulent lengthscale */
   NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   SecondaryFlow_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
@@ -1120,10 +1140,16 @@ public:
    */
   CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
   
-  /*!
-   * \brief Constructor of the class which reads the input file.
-   */
-  CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
+        /*!
+         * \brief Constructor of the class which reads the input file.
+         */
+        CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
+
+        /*!
+         * \brief Contructor that sets all options to default values.
+         */
+        CConfig();
+
 
   /*!
    * \brief Destructor of the class.
@@ -1648,6 +1674,12 @@ public:
    */
   su2double GetTurb2LamViscRatio_FreeStream(void);
   
+  /*!
+   * \brief Get the freestream turbulent length scale
+   * \return Freestream turbulent length scale
+   */
+  su2double GetTurbLength_FreeStream(void);
+
   /*!
    * \brief Get the vector of free stream mass fraction values.
    * \return Ratio of species mass to mixture mass.
@@ -2568,11 +2600,30 @@ public:
   bool GetWrt_1D_Output(void);
   
   /*!
-   * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
+   * \brief Get a row of the a matrix coefficients for the Runge-Kutta integration scheme.
    * \param[in] val_step - Index of the step.
-   * \return Alpha coefficient for the Runge-Kutta integration scheme.
+   * \return Pointer to a row of coefficients
    */
-  su2double Get_Alpha_RKStep(unsigned short val_step);
+  const su2double* Get_RK_aMat_row(unsigned short val_step);
+
+  /*!
+   * \brief Get the b vector for the Runge-Kutta integration scheme.
+   * \return Pointer to the vector of coefficients
+   */
+  const su2double* Get_RK_bVec(void);
+
+  /*!
+   * \brief Get a row of the a matrix coefficients for the implicit Runge-Kutta integration scheme.
+   * \param[in] val_step - Index of the step.
+   * \return Pointer to a row of coefficients
+   */
+  const su2double* Get_RK_aMat_row_imp(unsigned short val_step);
+
+  /*!
+   * \brief Get the b vector for the Runge-Kutta integration scheme.
+   * \return Pointer to the vector of coefficients
+   */
+  const su2double* Get_RK_bVec_imp(void);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -3261,6 +3312,30 @@ public:
   void SetKind_SU2(unsigned short val_kind_su2);
   
   /*!
+   * \brief Checks if a hybrid LES/RANS method based on k-blending is used
+   * \return True if a hybrid method is used
+   */
+  bool isHybrid_Turb_Model(void);
+
+  /*!
+   * \brief Get the kind of hybrid RANS/LES blending scheme.
+   * \return Kind of blending scheme.
+   */
+  unsigned short GetKind_Hybrid_Blending(void);
+
+  /*!
+   * \brief Get the kind of hybrid RANS/LES subgrid anisotropy model.
+   * \return Kind of subgrid anisotropy model.
+   */
+  unsigned short GetKind_Hybrid_Anisotropy_Model(void);
+
+  /*!
+   * \brief Get the hybrid RANS/LES model constant.
+   * \return The hybrid RANS/LES model constant.
+   */
+  su2double Get_Hybrid_Model_Const(void);
+
+  /*!
    * \brief Get the kind of the turbulence model.
    * \return Kind of the turbulence model.
    */
@@ -3675,6 +3750,12 @@ public:
    */
   unsigned short GetKind_Inlet(void);
   
+  /*!
+   * \brief Free stream option to initialize the turbulence solution
+   * \return The type of freestream turbulence specification
+   */
+  unsigned short GetKind_FreeStreamTurbOption(void);
+
   
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
@@ -4227,6 +4308,12 @@ public:
   string GetVolSens_FileName(void);
   
   /*!
+   * \brief Get the name of the file with the hybrid RANS/LES constants.
+   * \return Name of the file with the hybrid RANS/LES constants.
+   */
+  string GetHybrid_Const_FileName(void);
+
+  /*!
    * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
@@ -4319,6 +4406,20 @@ public:
    */
   su2double GetCurrent_UnstTime(void);
   
+  /*!
+   * \brief If we are performing an unsteady simulation, this adds to the
+   * value of the current time.
+   * \param[in] Amount of time to be added (usually one time step)
+   */
+  su2double AddCurrent_UnstTime(su2double delta_time);
+
+  /*!
+   * \brief If we are performing an unsteady simulation, set the
+   *  value of current time.
+   * \param[in] val_time - Value of the physical time in an unsteady simulation.
+   */
+  void SetCurrent_UnstTime(su2double val_time);
+
   /*!
    * \brief Divide the rectbles and hexahedron.
    * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.

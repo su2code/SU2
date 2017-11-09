@@ -106,34 +106,6 @@ CTurbSAVariable::~CTurbSAVariable(void) {
   
 }
 
-CTurbMLVariable::CTurbMLVariable(void) : CTurbVariable() { }
-
-CTurbMLVariable::CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_nDim, val_nvar, config) {
-  
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
-  /*--- Initialization of S-A variables ---*/
-  Solution[0] = val_nu_tilde;    Solution_Old[0] = val_nu_tilde;
-  
-  /*--- Initialization of the eddy viscosity ---*/
-  muT = val_muT;
-  
-  /*--- Allocate and initialize solution for the dual time strategy ---*/
-  if (dual_time) {
-    Solution_time_n[0]  = val_nu_tilde;
-    Solution_time_n1[0] = val_nu_tilde;
-  }
-  
-}
-
-CTurbMLVariable::~CTurbMLVariable(void) {
-  
-  if (HB_Source != NULL) delete [] HB_Source;
-  
-}
-
 CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() { }
 
 CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
@@ -159,6 +131,11 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
   
   muT = val_muT;
   
+  /*--- Initialization of scales with isotropic turbulence assumption ---*/
+
+  L = sqrt(val_kine)/val_omega;
+  T = 1.0/val_omega;
+
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   
   if (dual_time) {
@@ -199,4 +176,49 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   arg2 = max(2.0*arg2A, arg2B);
   F2 = tanh(pow(arg2, 2.0));
   
+}
+
+// swh
+CTurbKEVariable::CTurbKEVariable(void) : CTurbVariable() { }
+
+CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi,
+                                 su2double val_zeta, su2double val_f,
+                                 su2double val_muT, su2double val_Tm,
+                                 su2double val_Lm, unsigned short val_nDim,
+                                 unsigned short val_nvar,
+                                 su2double *constants, CConfig *config)
+  :
+  CTurbVariable(val_nDim, val_nvar, config) {
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  /*--- Initialization of variables ---*/
+  Solution[0] = val_kine; Solution_Old[0] = val_kine;
+  Solution[1] = val_epsi;	Solution_Old[1] = val_epsi;
+  Solution[2] = val_zeta; Solution_Old[2] = val_zeta;
+  Solution[3] = val_f;	Solution_Old[3] = val_f;
+  Tm  = val_Tm;
+  Lm  = val_Lm;
+
+  /*--- Initialization of eddy viscosity ---*/  
+  muT = val_muT;
+
+  /*--- Allocate and initialize solution for the dual time strategy ---*/
+  if (dual_time) {
+    Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_epsi;
+    Solution_time_n1[0] = val_kine; Solution_time_n1[1] = val_epsi;
+    Solution_time_n[2]  = val_zeta; Solution_time_n[3]  = val_f;
+    Solution_time_n1[2] = val_zeta; Solution_time_n1[3] = val_f;
+  }
+
+}
+
+CTurbKEVariable::~CTurbKEVariable(void) {
+}
+
+su2double CTurbKEVariable::GetAnisoRatio(void) {
+  // XXX: This floor is arbitrary.
+  const su2double TKE_MIN = EPS;
+  return TWO3*Solution[0]/max(TKE_MIN, Solution[2]);
 }

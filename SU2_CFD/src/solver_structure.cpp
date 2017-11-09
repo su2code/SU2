@@ -177,7 +177,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) {
     
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2's CSolver has diverged. Now exiting... !!! \n" << endl;
       exit(EXIT_FAILURE);
     }
 
@@ -213,7 +213,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
       
       if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+        cout << "\n !!! Error: SU2's CSolver has diverged. Now exiting... !!! \n" << endl;
       
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
@@ -2104,6 +2104,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
   if (config->GetKind_Turb_Model() == SA) { GridVel_Index += 1; }
   else if (config->GetKind_Turb_Model() == SST) { GridVel_Index += 2; }
+  else if (config->GetKind_Turb_Model() == KE){ GridVel_Index += 4; }
   if (config->GetKind_Regime() != INCOMPRESSIBLE) { GridVel_Index += 1; }
   
 #ifdef HAVE_MPI

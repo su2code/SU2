@@ -171,6 +171,10 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
+  su2double** ResolutionTensor;       /*!< \brief A rank-2 tensor representing separation distances across the CV */
+  su2double*** ResolutionTensorGradient; /*!< \brief A rank-3 tensor representing gradients in the resolution. */
+  su2double* ResolutionValues;        /*! < \brief The approximate cell resolution in the three "principal directions" */
+  su2double** ResolutionVectors;      /*! < \brief An orthogonal set of "principal directions" for the cell-to-cell spacings */
 
 public:
 	
@@ -736,6 +740,113 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void AddNormal(su2double *val_face_normal);
+
+  /*!
+   * \brief Sets the resolution tensor for the given control volume.
+   *
+   * \param[in] iDim - The first array index of the entry to be set.
+   * \param[in] jDim - The second array index of the entry to be set.
+   * \param[in] tensor_value - The value to be set.
+   */
+  void SetResolutionTensor(unsigned short iDim, unsigned short jDim,
+                           su2double tensor_value);
+
+  /*!
+   * \brief Adds to the existing resolution tensor for the given control volume
+   *
+   * \param[in] iDim - The first array index of the entry to be added.
+   * \param[in] jDim - The second array index of the entry to be added.
+   * \param[in] tensor_value - The value to be added.
+   */
+  void AddResolutionTensor(unsigned short iDim, unsigned short jDim,
+                           su2double tensor_value);
+
+  /*!
+   * \brief Gets the resolution tensor for the given control volume
+   *
+   * \return A tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  su2double** GetResolutionTensor(void) const;
+
+  /*!
+   * \brief Gets a specific element of the resolution tensor array
+   * \param[in] iDim - The first array index
+   * \param[in] jDim - The second array index
+   * \return A tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  su2double GetResolutionTensor(unsigned short iDim,
+                                unsigned short jDim) const;
+
+  /*!
+   * \brief Sets the gradient of the resolution tensor for the control volume.
+   *
+   * The format is dM_{jk}/dx_{i}
+   *
+   * \param[in] iDim - The direction for the gradient operator.
+   * \param[in] jDim - The first array index of the entry to be set.
+   * \param[in] kDim - The second array index of the entry to be set.
+   * \param[in] grad_value - The scalar value to be used for the entry.
+   */
+  void SetResolutionGradient(unsigned short iDim, unsigned short jDim,
+                             unsigned short kDim, su2double grad_value);
+
+  /*!
+   * \brief Gets the gradient of the resolution tensor for the given CV
+   *
+   * \param[in] iDim - The direction in which to take the gradient
+   * \return A rank 2 tensor representing the gradient of the separation
+   *         distances across the cell in the global coordinates, with
+   *         the gradient taken in direction iDim
+   */
+  su2double** GetResolutionGradient(unsigned short iDim);
+
+  /*!
+   * \brief Gets the gradient of the resolution tensor for the given CV
+   *
+   * \return A rank 3 tensor representing the gradient of the separation
+   *         distances across the cell in the global coordinates.
+   */
+  su2double*** GetResolutionGradient();
+
+  /*!
+   * \brief Adds to the existing set of values for the resolution tensor.
+   *
+   * These values can be thought of as cell-to-cell distances along the
+   * "principal directions".
+   *
+   * \param[in] iDim - The first array index of the entry to be added.
+   * \param[in] scalar_value - The value to be added.
+   */
+  void AddResolutionValue(unsigned short iDim, su2double scalar_value);
+
+  /*!
+   * \brief Adds to the existing set of vectors for the resolution tensor.
+   *
+   * These vectors can be thought of as "principal directions" for the
+   * cell-to-cell separations.
+   *
+   * \param[in] iDim - The first array index of the entry to be added.
+   * \param[in] jDim - The second array index of the entry to be added.
+   * \param[in] scalar_value - The value to be added.
+   */
+  void AddResolutionVector(unsigned short iDim, unsigned short jDim,
+                                   su2double scalar_value);
+
+  /*!
+   * \brief Gets the set of values for the resolution tensor.
+   * \return The cell-to-cell distances along the "principal directions" of the
+   *         current cell.
+   */
+  su2double* GetResolutionValues(void);
+
+  /**
+   * \brief Gets the set of vectors for the resolution tensor.
+   * \return Vectors representing the "principal directions" for the
+   * cell-to-cell separations.
+   */
+  su2double** GetResolutionVectors(void);
 };
 
 /*! 

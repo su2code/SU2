@@ -277,7 +277,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
 }
 
-void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   su2double *trans_var_i, *trans_var_j, *U_i, *U_j;
   unsigned long iEdge, iPoint, jPoint;
 
@@ -365,7 +365,7 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                       CConfig *config, unsigned short iMesh) {
+                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iPoint;
   su2double gamma_sep = 0.0;
 
@@ -420,7 +420,7 @@ void CTransLMSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
                                        CConfig *config, unsigned short iMesh) {
 }
 
-void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *U_i;
@@ -499,7 +499,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   
 }
 
-void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long iPoint, iVertex;
   unsigned long total_index;
   unsigned short iVar;
@@ -528,19 +528,20 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                unsigned short val_marker) {
+                                unsigned short val_marker, unsigned short iRKStep) {
 //cout << "BC_Inlet reached -AA" << endl;
-BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, iRKStep);
 }
 
 void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                 CConfig *config, unsigned short val_marker) {
+                               CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
 //cout << "BC_Outlet reached -AA" << endl;
-BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, iRKStep);
 }
 
 void CTransLMSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                 CConfig *config, unsigned short val_marker) {
+                                  CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
 //cout << "BC_Outlet reached -AA" << endl;
-BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+// Why are we calling the wall BC anyway?
+BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker,iRKStep);
 }

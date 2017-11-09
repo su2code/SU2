@@ -124,7 +124,7 @@ class COutput {
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
   bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
   unsigned short wrote_base_file;
-  su2double RhoRes_New, RhoRes_Old;
+  su2double RhoRes_New, RhoRes_Old, RhoRes_Original, CFLThresh, CFLFactor;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
 

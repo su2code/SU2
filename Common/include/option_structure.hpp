@@ -345,6 +345,7 @@ enum RUNTIME_TYPE {
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_HYBRID_SYS = 23,  /*!< \brief One-physics case, the code is solving the a hybrid of RANS and LES */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -354,6 +355,7 @@ const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution i
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
+const int HYBRID_SOL = 5; /*!< \brief Position of the hybrid RANS/LES transport eqn. for the hybrid parameter(s) in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
@@ -626,12 +628,38 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
+  KE      = 4  /*!< \brief Kind of Turbulence model (Zeta KE). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST);
+("SST", SST)
+("KE", KE);
+
+/*!
+ * \brief Types of hybrid RANS/LES blending schemes.
+ *
+ * These define the transport equation for the hybrid parameter.
+ */
+enum ENUM_HYBRID_BLENDING {
+    RANS_ONLY = 0, /*!< \brief Kind of hybrid RANS/LES blending (RANS only). */
+    CONVECTIVE = 1 /*!< \brief Kind of hybrid RANS/LES blending (Convective). */
+};
+static const map<string, ENUM_HYBRID_BLENDING> Hybrid_Blending_Map = CCreateMap<string, ENUM_HYBRID_BLENDING>
+("RANS_ONLY", RANS_ONLY)
+("CONVECTIVE", CONVECTIVE);
+
+/*!
+ * \brief Types of hybrid RANS/LES subgrid anisotropy models.
+ */
+enum ENUM_HYBRID_ANISOTROPY {
+  ISOTROPIC = 0, /*!< \brief Kind of hybrid RANS/LES subgrid anisotropy (Isotropic) */
+  Q_BASED = 1    /*!< \brief Kind of hybrid RANS/LES subgrid anisotropy (Approximate Structure Function) */
+};
+static const map<string, ENUM_HYBRID_ANISOTROPY> Hybrid_Aniso_Map = CCreateMap<string, ENUM_HYBRID_ANISOTROPY>
+("ISOTROPIC", ISOTROPIC)
+("Q_BASED", Q_BASED);
 
 /*!
  * \brief types of transition models
@@ -652,12 +680,16 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 enum ENUM_TIME_INT {
   RUNGE_KUTTA_EXPLICIT = 1,	/*!< \brief Explicit Runge-Kutta time integration definition. */
   EULER_EXPLICIT = 2,   	/*!< \brief Explicit Euler time integration definition. */
-  EULER_IMPLICIT = 3   	/*!< \brief Implicit Euler time integration definition. */
+  EULER_IMPLICIT = 3,   	/*!< \brief Implicit Euler time integration definition. */
+  RUNGE_KUTTA_LIMEX_SMR91 = 4,	/*!< \brief Linearly implicit Runge-Kutta w/ SMR 91 scheme. */
+  RUNGE_KUTTA_LIMEX_EDIRK = 5	/*!< \brief Linearly implicit Runge-Kutta w/ EDIRK scheme. */
 };
 static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_TIME_INT>
 ("RUNGE-KUTTA_EXPLICIT", RUNGE_KUTTA_EXPLICIT)
 ("EULER_EXPLICIT", EULER_EXPLICIT)
-("EULER_IMPLICIT", EULER_IMPLICIT);
+("EULER_IMPLICIT", EULER_IMPLICIT)
+("RUNGE-KUTTA_LIMEX_SMR91", RUNGE_KUTTA_LIMEX_SMR91)
+("RUNGE-KUTTA_LIMEX_EDIRK", RUNGE_KUTTA_LIMEX_EDIRK);
 
 /*!
  * \brief type of time integration schemes
@@ -871,6 +903,17 @@ static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW)
 ("INPUT_FILE", INPUT_FILE);
+
+/*!
+ * \brief types freestream boundary condition specification
+ */
+enum FREESTREAM_TURB_OPTION {
+  EDDY_VISC_RATIO = 1,   /*!< \brief User specifies eddy viscosity ratio and turbulence intensity */
+  TURB_LENGTHSCALE = 2   /*!< \brief User specifies turbulent lengthscale and turbulence intensity */
+};
+static const map<string, FREESTREAM_TURB_OPTION> FreeStreamTurbOption_Map = CCreateMap<string, FREESTREAM_TURB_OPTION>
+("EDDY_VISC_RATIO", EDDY_VISC_RATIO)
+("TURB_LENGTHSCALE", TURB_LENGTHSCALE);
 
 /*!
  * \brief types engine inflow boundary treatments

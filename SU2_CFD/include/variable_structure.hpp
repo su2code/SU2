@@ -40,6 +40,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include <cassert>
 
 #include "../../Common/include/config_structure.hpp"
 #include "fluid_model.hpp"
@@ -77,10 +78,12 @@ protected:
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
   *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  su2double **rk_stage_vectors; /*!< \brief Storage for residual evaluations at RK substeps. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
                            have different number of nVar in the same problem. */
+  unsigned short nRKStep; /*!< \brief Number of RK substeps */
   unsigned short nPrimVar, nPrimVarGrad;    /*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
@@ -832,6 +835,49 @@ public:
    */
   virtual su2double GetEddyViscosity(void);
   
+  /**
+   * \brief A virtual member
+   * \return The normalized anisotropy tensor for the eddy viscosity.
+   */
+  virtual su2double** GetEddyViscAnisotropy(void);
+
+  /**
+   * \brief A virtual member
+   * \return A component of the normalized anisotropy tensor for the eddy viscosity.
+   */
+  virtual su2double GetEddyViscAnisotropy(unsigned short iDim,
+                                          unsigned short jDim);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of turbulent timescale
+   */
+  virtual su2double GetTurbTimescale(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the turbulent lengthscale
+   */
+  virtual su2double GetTurbLengthscale(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return The Reynolds stress component anisotropy ratio (max-to-min)
+   */
+  virtual su2double GetAnisoRatio(void);
+
+  /**
+   * \brief Get the resolution adequacy parameter for a hybrid RANS/LES model
+   * \return The resolution adequacy parameter
+   */
+  virtual su2double GetResolutionAdequacy(void);
+
+  /**
+   * \brief Get the RANS weighting for a hybrid RANS/LES model
+   * \return The RANS weight parameter
+   */
+  virtual su2double GetRANSWeight(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the flow enthalpy.
@@ -1005,6 +1051,31 @@ public:
    */
   virtual void SetEddyViscosity(su2double eddy_visc);
   
+  /**
+   * \brief A virtual member
+   * \param eddy_visc_anisotropy - The normalized anisotropy tensor for the eddy viscosity
+   */
+  virtual void SetEddyViscAnisotropy(su2double** eddy_visc_anisotropy);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_turb_T - The turbulent timescale
+   * \param[in] val_turb_L - The turbulent lengthscale
+   */
+  virtual void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_r_k - The resolution adequacy parameter for hybrid RANS/LES
+   */
+  virtual void SetResolutionAdequacy(su2double val_r_k);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_w_rans - The RANS weight for a hybrid RANS/LES model
+   */
+  virtual void SetRANSWeight(su2double val_w_rans);
+
   /*!
    * \brief A virtual member.
    */
@@ -1653,7 +1724,7 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   virtual su2double GetCrossDiff(void) { return 0.0; };
-  
+
   /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
@@ -2010,6 +2081,22 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+  /*!
+   * \brief Store residual from RK substep
+   * \param[in] iRKStep - Substep index
+   * \param[in] iVar - The component to set
+   * \param[in] val - The value of the residual
+   */
+  void SetRKSubstepResidual(unsigned short iRKStep, unsigned short iVar, su2double val);
+
+  /*!
+   * \brief Retrieve residual from RK substep
+   * \param[in] iRKStep - Substep index
+   * \param[in] iVar - The component to get
+   * \return The residual value
+   */
+  su2double GetRKSubstepResidual(unsigned short iRKStep, unsigned short iVar);
 };
 
 /*!
@@ -3294,6 +3381,7 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double** Eddy_Visc_Anisotropy; /*!< \brief Anisotropy of the eddy viscosity */
 public:
   
   /*!
@@ -3359,6 +3447,11 @@ public:
   void SetEddyViscosity(su2double eddy_visc);
   
   /*!
+   * \brief Sets the normalized anisotropy of the eddy viscosity
+   */
+  void SetEddyViscAnisotropy(su2double** val_anisotropy);
+  
+  /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
@@ -3376,6 +3469,16 @@ public:
    */
   su2double GetEddyViscosity(void);
   
+  /*!
+   * \brief Get the normalized anisotropy of the eddy viscosity
+   */
+  su2double** GetEddyViscAnisotropy();
+
+  /*!
+   * \brief Get a component of the normalized anisotropy of the eddy viscosity
+   */
+  su2double GetEddyViscAnisotropy(unsigned short iDim, unsigned short jDim);
+
   /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P  of the flow.
@@ -3633,53 +3736,6 @@ public:
   
 };
 
-
-/*!
- * \class CTurbMLVariable
- * \brief Main class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-
-class CTurbMLVariable : public CTurbVariable {
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTurbMLVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbMLVariable(void);
-  
-  /*!
-   * \brief Set the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
-   */
-  void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
-  
-  /*!
-   * \brief Get the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
-   */
-  su2double GetHarmonicBalance_Source(unsigned short val_var);
-  
-};
-
 /*!
  * \class CTransLMVariable
  * \brief Main class for defining the variables of the turbulence model.
@@ -3747,7 +3803,9 @@ protected:
   beta_star;
   su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   F2,            /*!< \brief Menter blending function for stress limiter. */
-  CDkw;           /*!< \brief Cross-diffusion. */
+  CDkw,           /*!< \brief Cross-diffusion. */
+  T,              /*!< \brief Turbulent timescale */
+  L;              /*!< \brief Turbulent lengthscale */
   
 public:
   /*!
@@ -3795,8 +3853,182 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   su2double GetCrossDiff(void);
+
+  /**
+   * \brief Get the large-eddy timescale of the turbulence
+   * \return The large-eddy timescale of the turbulence.
+   */
+  su2double GetTurbTimescale(void);
+
+  /**
+   * \brief Get the large-eddy lengthscale of the turbulence
+   * \return The large-eddy lengthscale of the turbulence
+   */
+  su2double GetTurbLengthscale(void);
+
+  /**
+   * \brief Sets the large-eddy lengthscale and the large-eddy timescale
+   * \param[in] val_turb_T - Large eddy timescale of the turbulence
+   * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
+   */
+  void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
 };
 
+/*!
+ * \class CHybridVariable
+ * \brief Base class for the "hybrid parameters"; the variables defining the
+ *        hybridization of RANS/LES.
+ * \ingroup Hybrid_Parameter_Model
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CHybridVariable : public CVariable {
+protected:
+  su2double Resolution_Adequacy; /*!< \brief A measure of the ability of the grid to resolve the turbulence */
+  su2double RANS_Weight; /*!< \brief The weight given to the RANS solution */
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHybridVariable(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHybridVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHybridVariable(unsigned short val_nDim, unsigned short val_nvar,
+                    CConfig *config);
+
+  /*!
+   * \brief Get the value of the resolution adequacy
+   * \return the value of the resolution adequacy
+   */
+  su2double GetResolutionAdequacy();
+
+  /*!
+   * \brief Set the value of the resolution adequacy
+   * \param[in] val_r_k - The value of the resolution adequacy
+   */
+  void SetResolutionAdequacy(su2double val_r_k);
+
+  /*!
+   * \brief Get the value of the RANS weight
+   * \return the RANS weight
+   */
+  su2double GetRANSWeight();
+
+  /*!
+   * \brief Set the value of the blending coefficient.
+   * \param[in] val_w_rans - RANS weight
+   */
+  void SetRANSWeight(su2double val_w_rans);
+};
+
+/*! swh
+ * \class CTurbKEVariable
+ * \brief Main class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author S. Haering
+ * \version 4.3.x "Cardinal"
+ */
+class CTurbKEVariable : public CTurbVariable {
+
+protected:
+  su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
+  su2double Tm,		/*!< \brief T_m k-eps. */
+    Lm,		        /*!< \brief L_m k-eps */
+    Re_T;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurbKEVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi,
+                  su2double val_zeta, su2double val_f,
+                  su2double val_muT, su2double val_Tm, su2double val_Lm,
+                  unsigned short val_nDim, unsigned short val_nvar,
+                  su2double *constants, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbKEVariable(void);
+
+  /**
+   * \brief Get the large-eddy timescale of the turbulence
+   * \return The large-eddy timescale of the turbulence.
+   */
+  su2double GetTurbTimescale(void);
+
+  /**
+   * \brief Get the large-eddy lengthscale of the turbulence
+   * \return The large-eddy lengthscale of the turbulence
+   */
+  su2double GetTurbLengthscale(void);
+
+  /*!
+   * \brief Get the component anisotropy ratio (max-to-min)
+   * \return The Reynolds stress component anisotropy ratio (max-to-min)
+   */
+  su2double GetAnisoRatio(void);
+
+  /**
+   * \brief Sets the large-eddy lengthscale and the large-eddy timescale
+   * \param[in] val_turb_T - Large eddy timescale of the turbulence
+   * \param[in] val_turb_L - Large eddy lengthscale of the turbulence
+   */
+  void SetTurbScales(su2double val_turb_T, su2double val_turb_L);
+};
+
+
+/*!
+ * \class CHybridConvVariable
+ * \brief Hybrid parameter corresponding to Gadebusch and Perot's method
+ * \ingroup Hybrid_Parameter_Model
+ * \author C. Pederson
+ * \version 5.0.0 "Raven"
+ */
+class CHybridConvVariable : public CHybridVariable {
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHybridConvVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] hybrid_param - The hybrid parameter ("energy flow" parameter)
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHybridConvVariable(su2double hybrid_param, unsigned short val_nDim,
+                      unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHybridConvVariable(void);
+};
 
 /*!
  * \class CAdjEulerVariable

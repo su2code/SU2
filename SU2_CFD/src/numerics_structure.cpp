@@ -133,7 +133,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new su2double [nDim];
   m = new su2double [nDim];
-  
 }
 
 CNumerics::~CNumerics(void) {
@@ -178,7 +177,6 @@ CNumerics::~CNumerics(void) {
 
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
-
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
@@ -1682,6 +1680,115 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
+                                   su2double **val_gradprimvar,
+                                   su2double val_turb_ke,
+                                   su2double *val_normal,
+                                   su2double val_laminar_viscosity,
+                                   su2double **val_eddy_viscosity) {
+    unsigned short iVar, iDim, jDim, kDim, lDim;
+    su2double** total_viscosity, **G;
+    su2double heat_flux_factor, div_vel, Cp, Density, trace_eddy_viscosity;
+
+    // TODO: Add 2D option, mostly for testing
+    if (nDim == 2) {
+      cout << "ERROR: The anisotropic eddy viscosity has not been implemented for 2D!" << endl;
+      cout << "In file: " << __FILE__ << endl;
+      cout << "At line: " << __LINE__ << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    Density = val_primvar[nDim+2];
+    total_viscosity = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      total_viscosity[iDim] = new su2double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        total_viscosity[iDim][jDim] = val_eddy_viscosity[iDim][jDim] +
+                                      delta[iDim][jDim]*val_laminar_viscosity;
+    }
+
+    /*--- Trace of the anisotropic eddy viscosity ---*/
+    trace_eddy_viscosity = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      trace_eddy_viscosity += val_eddy_viscosity[iDim][iDim];
+
+    Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+    heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam
+                             + trace_eddy_viscosity/(3.0*Prandtl_Turb));
+
+    div_vel = 0.0;
+    for (iDim = 0 ; iDim < nDim; iDim++)
+      div_vel += val_gradprimvar[iDim+1][iDim];
+
+    /*--- Anisotropic Velocity Gradient Tensor ---*/
+    G = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      G[iDim] = new su2double[nDim];
+      for (jDim = 0; jDim < nDim; jDim++)
+        G[iDim][jDim] = val_gradprimvar[iDim+1][jDim] -
+                                delta[iDim][jDim]*div_vel/3.0;
+    }
+
+    for (iDim = 0 ; iDim < nDim; iDim++) {
+      for (jDim = 0 ; jDim < nDim; jDim++) {
+        tau[iDim][jDim] = -2.0/3*Density*val_turb_ke*delta[iDim][jDim];
+        for (kDim = 0; kDim < nDim; kDim++) {
+          tau[iDim][jDim] += total_viscosity[iDim][kDim]*G[jDim][kDim] +
+                             total_viscosity[jDim][kDim]*G[iDim][kDim];
+          for (lDim = 0; lDim < nDim; lDim++) {
+            tau[iDim][jDim] -= 2.0*total_viscosity[kDim][lDim]*
+                               G[kDim][lDim]*delta[iDim][jDim];
+          }
+        }
+      }
+    }
+
+    /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+    if (nDim == 2) {
+      Flux_Tensor[0][0] = 0.0;
+      Flux_Tensor[1][0] = tau[0][0];
+      Flux_Tensor[2][0] = tau[0][1];
+      Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+          heat_flux_factor*val_gradprimvar[0][0];
+      Flux_Tensor[0][1] = 0.0;
+      Flux_Tensor[1][1] = tau[1][0];
+      Flux_Tensor[2][1] = tau[1][1];
+      Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+          heat_flux_factor*val_gradprimvar[0][1];
+    } else {
+      Flux_Tensor[0][0] = 0.0;
+      Flux_Tensor[1][0] = tau[0][0];
+      Flux_Tensor[2][0] = tau[0][1];
+      Flux_Tensor[3][0] = tau[0][2];
+      Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+          heat_flux_factor*val_gradprimvar[0][0];
+      Flux_Tensor[0][1] = 0.0;
+      Flux_Tensor[1][1] = tau[1][0];
+      Flux_Tensor[2][1] = tau[1][1];
+      Flux_Tensor[3][1] = tau[1][2];
+      Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+          heat_flux_factor*val_gradprimvar[0][1];
+      Flux_Tensor[0][2] = 0.0;
+      Flux_Tensor[1][2] = tau[2][0];
+      Flux_Tensor[2][2] = tau[2][1];
+      Flux_Tensor[3][2] = tau[2][2];
+      Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+          heat_flux_factor*val_gradprimvar[0][2];
+    }
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Proj_Flux_Tensor[iVar] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+    }
+
+    for (iDim  = 0; iDim < nDim; iDim++)
+      delete [] G[iDim];
+    delete [] G;
+    for (iDim  = 0; iDim < nDim; iDim++)
+      delete [] total_viscosity[iDim];
+    delete [] total_viscosity;
+  }
+
+void CNumerics::GetViscousProjFlux(su2double *val_primvar,
                                    su2double **val_gradprimvar, su2double val_turb_ke,
                                    su2double *val_normal,
                                    su2double val_laminar_viscosity,
@@ -1783,6 +1890,41 @@ void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = total_viscosity * val_gradprimvar[1][1];
     Flux_Tensor[2][1] = total_viscosity * val_gradprimvar[2][1];
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
+}
+
+void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double *val_normal, su2double val_laminar_viscosity,
+    su2double** val_eddy_viscosity) {
+  unsigned short iVar, iDim, jDim, kDim;
+  /**
+   * Eddy Viscosity Effects
+   * Anisotropic eddy viscosity defines the flux tensor as:
+   *  \tau_{ij} = \nu_{jk}*\pderiv{u_i}{x_k} + \nu_{ik}*\pderiv{u_j}{x_k}
+   */
+  for (iVar = 1; iVar < nVar; iVar++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Flux_Tensor[iVar][jDim] = 0;
+      for (kDim = 0; kDim < nDim; kDim++) {
+        // Note the "-1" and the "+1"
+        Flux_Tensor[iVar][jDim] += val_eddy_viscosity[iVar-1][kDim] *
+            val_gradprimvar[jDim+1][kDim];
+        Flux_Tensor[iVar][jDim] += val_eddy_viscosity[jDim][kDim] *
+            val_gradprimvar[iVar][kDim];
+      }
+    }
+  }
+
+  /*-- Laminar viscosity effects --*/
+  for (iVar = 1; iVar < nVar; iVar++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Flux_Tensor[iVar][jDim] += val_laminar_viscosity * val_gradprimvar[iVar][jDim];
+    }
   }
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1929,6 +2071,156 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_la
 //        }
 //      }
 //          getchar();
+
+}
+
+void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                                   su2double val_laminar_viscosity,
+                                   su2double** val_eddy_viscosity,
+                                   su2double val_dist_ij,
+                                   su2double *val_normal,
+                                   su2double val_dS,
+                                   su2double *val_Proj_Visc_Flux,
+                                   su2double **val_Proj_Jac_Tensor_i,
+                                   su2double **val_Proj_Jac_Tensor_j) {
+  unsigned short iDim, jDim, kDim, lDim, iVar, jVar;
+
+  su2double theta = 0.0, sqvel = 0.0, proj_viscousflux_vel = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    theta += val_normal[iDim]*val_normal[iDim];
+    sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
+    proj_viscousflux_vel += val_Proj_Visc_Flux[iDim+1]*val_Mean_PrimVar[iDim+1];
+  }
+
+  su2double phi = 0.5*(Gamma-1.0)*sqvel;
+  su2double Density = val_Mean_PrimVar[nDim+2];
+  su2double Pressure = val_Mean_PrimVar[nDim+1];
+
+  /*--- Total viscosity --*/
+  su2double** total_viscosity = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    total_viscosity[iDim] = new su2double[nDim];
+    for (jDim = 0; jDim < nDim; jDim++)
+      total_viscosity[iDim][jDim] = val_eddy_viscosity[iDim][jDim] +
+                                    delta[iDim][jDim]*val_laminar_viscosity;
+  }
+
+  /*--- Trace of the anisotropic viscosities ---*/
+  su2double trace_eddy_viscosity = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    trace_eddy_viscosity += val_eddy_viscosity[iDim][iDim];
+  }
+  su2double trace_total_viscosity = trace_eddy_viscosity/3
+                                    + val_laminar_viscosity;
+
+  su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam
+                               + trace_eddy_viscosity/(3*Prandtl_Turb);
+  su2double cpoR = Gamma/(Gamma-1.0); // cp over R
+  su2double factor = trace_total_viscosity*val_dS/(Density*val_dist_ij);
+  su2double phi_rho = -cpoR*heat_flux_factor*Pressure/(Density*Density);
+  su2double phi_p = cpoR*heat_flux_factor/(Density);
+  su2double rhoovisc = Density/(trace_total_viscosity); // rho over viscosity
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      val_Proj_Jac_Tensor_i[iVar][jVar] = 0.0;
+      val_Proj_Jac_Tensor_j[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*--- Viscous u,v,w terms ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      for (kDim = 0; kDim < nDim; kDim++) {
+        val_Proj_Jac_Tensor_i[iDim+1][jDim+1] +=   total_viscosity[iDim][kDim]*val_normal[jDim]*val_normal[kDim];
+        val_Proj_Jac_Tensor_i[iDim+1][jDim+1] -= 6*total_viscosity[jDim][kDim]*val_normal[iDim]*val_normal[kDim];
+        val_Proj_Jac_Tensor_i[iDim+1][jDim+1] += 2*total_viscosity[kDim][kDim]*val_normal[iDim]*val_normal[jDim];
+        for (lDim = 0; lDim < nDim; lDim++) {
+          val_Proj_Jac_Tensor_i[iDim+1][jDim+1] += 3*total_viscosity[kDim][lDim]*val_normal[kDim]*val_normal[lDim]*delta[iDim][jDim];
+        }
+      }
+      val_Proj_Jac_Tensor_i[iDim+1][jDim+1] *= -val_dS/(Density*val_dist_ij*3.0);
+    }
+  }
+
+  /*--- Temperature/pressure terms --*/
+  if (nDim == 2) {
+
+    su2double thetax = theta + val_normal[0]*val_normal[0]/3.0;
+    su2double thetay = theta + val_normal[1]*val_normal[1]/3.0;
+
+    su2double etaz = val_normal[0]*val_normal[1]/3.0;
+
+    su2double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz;
+    su2double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay;
+
+    val_Proj_Jac_Tensor_i[1][0] = factor*pix;
+    val_Proj_Jac_Tensor_i[2][0] = factor*piy;
+
+    val_Proj_Jac_Tensor_i[3][0] = -factor*(rhoovisc*theta*(phi_rho+phi*phi_p)- (pix*val_Mean_PrimVar[1]+piy*val_Mean_PrimVar[2]));
+    val_Proj_Jac_Tensor_i[3][1] = -factor*(pix-rhoovisc*theta*phi_p*(Gamma-1.0)*val_Mean_PrimVar[1]);
+    val_Proj_Jac_Tensor_i[3][2] = -factor*(piy-rhoovisc*theta*phi_p*(Gamma-1.0)*val_Mean_PrimVar[2]);
+    val_Proj_Jac_Tensor_i[3][3] = -factor*((Gamma-1.0)*rhoovisc*theta*phi_p);
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+
+    factor = 0.5/Density;
+    val_Proj_Jac_Tensor_i[3][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[3][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[3][1] += factor*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_j[3][2] += factor*val_Proj_Visc_Flux[2];
+
+
+  }
+  else {
+
+    su2double thetax = theta + val_normal[0]*val_normal[0]/3.0;
+    su2double thetay = theta + val_normal[1]*val_normal[1]/3.0;
+    su2double thetaz = theta + val_normal[2]*val_normal[2]/3.0;
+
+    su2double etax = val_normal[1]*val_normal[2]/3.0;
+    su2double etay = val_normal[0]*val_normal[2]/3.0;
+    su2double etaz = val_normal[0]*val_normal[1]/3.0;
+
+    su2double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz   + val_Mean_PrimVar[3]*etay;
+    su2double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay + val_Mean_PrimVar[3]*etax;
+    su2double piz = val_Mean_PrimVar[1]*etay   + val_Mean_PrimVar[2]*etax   + val_Mean_PrimVar[3]*thetaz;
+
+    val_Proj_Jac_Tensor_i[1][0] = factor*pix;
+    val_Proj_Jac_Tensor_i[2][0] = factor*piy;
+    val_Proj_Jac_Tensor_i[3][0] = factor*piz;
+    val_Proj_Jac_Tensor_i[4][0] = -factor*(rhoovisc*theta*(phi_rho+phi*phi_p) - (pix*val_Mean_PrimVar[1] + piy*val_Mean_PrimVar[2] + piz*val_Mean_PrimVar[3]));
+    val_Proj_Jac_Tensor_i[4][1] = -factor*(pix-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[1]);
+    val_Proj_Jac_Tensor_i[4][2] = -factor*(piy-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[2]);
+    val_Proj_Jac_Tensor_i[4][3] = -factor*(piz-rhoovisc*theta*phi_p*(Gamma-1)*val_Mean_PrimVar[3]);
+    val_Proj_Jac_Tensor_i[4][4] = -factor*((Gamma-1)*rhoovisc*theta*phi_p);
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+
+    factor = 0.5/Density;
+    val_Proj_Jac_Tensor_i[4][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[4][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[4][1] += factor*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_j[4][1] += factor*val_Proj_Visc_Flux[1];
+    val_Proj_Jac_Tensor_i[4][2] += factor*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_j[4][2] += factor*val_Proj_Visc_Flux[2];
+    val_Proj_Jac_Tensor_i[4][3] += factor*val_Proj_Visc_Flux[3];
+    val_Proj_Jac_Tensor_j[4][3] += factor*val_Proj_Visc_Flux[3];
+
+
+
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] total_viscosity[iDim];
+  delete [] total_viscosity;
 
 }
 

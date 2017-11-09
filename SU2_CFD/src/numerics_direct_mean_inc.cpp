@@ -457,6 +457,15 @@ CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned sho
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
   
+  /*--- Anisotropic eddy viscosity ---*/
+  Mean_Aniso_Eddy_Viscosity = new su2double*[nDim];
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    Mean_Aniso_Eddy_Viscosity[iDim] = new su2double[nDim];
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      Mean_Aniso_Eddy_Viscosity[iDim][jDim] = 0.0;
+    }
+  }
+
 }
 
 CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {

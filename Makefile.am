@@ -40,6 +40,7 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 SUBDIRS = externals
 
 SUBDIRS += Common/lib
+SUBDIRS += Common/test
 
 if BUILD_PY
 SUBDIRS += SU2_PY
@@ -47,6 +48,7 @@ endif
 
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
+SUBDIRS +=SU2_CFD/test
 endif
 
 if BUILD_DOT

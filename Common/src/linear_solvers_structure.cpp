@@ -142,7 +142,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   
   if (!Convergence) {
     if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      cout << "\n !!! Error: SU2's CSysSolve has diverged. Now exiting... !!! \n" << endl;
 #ifndef HAVE_MPI
 		exit(EXIT_DIVERGENCE);
 #else
@@ -471,7 +471,6 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 #endif
   
   /*--- Check the subspace size ---*/
-  
   if (m < 1) {
     if (rank == MASTER_NODE) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
@@ -717,6 +716,13 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
     SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
+  }
+
+  if (IterLinSol >= MaxIter) {
+    cout << "ERROR: Ran to the max number of iterations on the linear solver!" << endl;
+    cout << "       iter = " << IterLinSol << "\tmax = " << MaxIter << endl;
+    cout << "      error = " << LinSysRes.norm() << "\ttol = " << SolverTol << endl;
+    exit(EXIT_FAILURE);
   }
 
   return IterLinSol;

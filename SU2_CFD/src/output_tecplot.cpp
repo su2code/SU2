@@ -35,8 +35,9 @@
 
 void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
-  unsigned short iDim, iVar, nDim = geometry->GetnDim();
+  unsigned short iDim, jDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
+  bool hybrid = config->isHybrid_Turb_Model();
   
   unsigned long iPoint, iElem, iNode;
   unsigned long iExtIter = config->GetExtIter();
@@ -178,6 +179,29 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\"";
       }
       
+      if (hybrid) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          for (jDim = 0; jDim < nDim; jDim++)
+            Tecplot_File << ", \"a<sub>" << iDim << jDim << "</sub>\"";
+        for (iDim = 0; iDim < nDim; iDim++)
+          for (jDim = 0; jDim < nDim; jDim++)
+            Tecplot_File << ", \"M<sub>" << iDim << jDim << "</sub>\"";
+        switch (config->GetKind_Hybrid_Blending()) {
+          case RANS_ONLY:
+            // No extra variables
+            break;
+          case CONVECTIVE:
+            // Add resolution adequacy.
+            Tecplot_File << ", \"r<sub>k</sub>\"";
+            Tecplot_File << ", \"w<sub>rans</sub>\"";
+            Tecplot_File << ", \"L<sub>m</sub>\"";
+            Tecplot_File << ", \"T<sub>m</sub>\"";
+            break;
+          default:
+            cout << "WARNING: Could not find appropriate output for hybrid model." << endl;
+        }
+      }
+
       if (config->GetWrt_SharpEdges()) {
         if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
@@ -422,6 +446,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
   
   unsigned long iElem, iPoint;
   unsigned short iVar;
+  unsigned short iDim, jDim;
   bool grid_movement  = config->GetGrid_Movement();
   unsigned short Kind_Solver = config->GetKind_Solver();
   ofstream Tecplot_File;
@@ -489,6 +514,18 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
           if (geometry->GetnDim() == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
           else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
           if (Kind_Solver == RANS) { Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\""; }
+        }
+        if (config->isHybrid_Turb_Model()) {
+          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+            for (jDim = 0; jDim < geometry->GetnDim(); jDim++)
+              Tecplot_File << ", \"a<sub>" << iDim << jDim << "</sub>\"";
+            for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+              for (jDim = 0; jDim < geometry->GetnDim(); jDim++)
+                Tecplot_File << ", \"M<sub>" << iDim << jDim << "</sub>\"";
+          Tecplot_File << ", \"r<sub>k</sub>\"";
+          Tecplot_File << ", \"w<sub>rans</sub>\"";
+          Tecplot_File << ", \"L<sub>m</sub>\"";
+          Tecplot_File << ", \"T<sub>m</sub>\"";
         }
         if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
       }
@@ -3021,7 +3058,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
   stringstream variables; variables.str(string());
   unsigned short iVar;
   *NVar = 0;
-  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned short iDim, jDim, nDim = geometry->GetnDim();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   bool grid_movement = config->GetGrid_Movement();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
@@ -3115,6 +3152,29 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       *NVar += 1;
     }
     
+    if (config->isHybrid_Turb_Model()) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          variables << "Eddy_Viscosity_Anisotropy_" << iDim << jDim << " ";
+      *NVar += 9;
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          variables << "Resolution_Tensor_" << iDim << jDim << " ";
+      *NVar += 9;
+      switch (config->GetKind_Hybrid_Blending()) {
+        case RANS_ONLY:
+          // No extra variables
+          break;
+        case CONVECTIVE:
+          // Add resolution adequacy.
+          variables << "Resolution_Adequacy "; *NVar += 1;
+          variables << "RANS_Weight "; *NVar += 1;
+          variables << "Turb_Lengthscale "; *NVar += 1;
+          variables << "Turb_Timescale "; *NVar += 1;
+          break;
+      }
+    }
+
     if (config->GetWrt_SharpEdges()) {
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         variables << "Sharp_Edge_Dist ";

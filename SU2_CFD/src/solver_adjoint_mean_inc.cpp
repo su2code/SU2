@@ -1706,7 +1706,7 @@ void CAdjIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver
 }
 
 
-void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL,
   *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j, Non_Physical = 1.0;
@@ -1802,7 +1802,7 @@ void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 }
 
 void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                      CConfig *config, unsigned short iMesh) {
+                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned short iVar;
   unsigned long iPoint;
@@ -2086,39 +2086,42 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
 
 void CAdjIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                            CConfig *config, unsigned short iRKStep) {
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
-  unsigned long iPoint;
+  std::cout << "CAdjIncEulerSolver::ExplicitRK_Iteration is not currently working!" << std::endl;
+  exit(EXIT_FAILURE);
+
+  // su2double *Residual, *Res_TruncError, Vol, Delta, Res;
+  // unsigned short iVar;
+  // unsigned long iPoint;
   
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  // su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  // for (iVar = 0; iVar < nVar; iVar++) {
+  //   SetRes_RMS(iVar, 0.0);
+  //   SetRes_Max(iVar, 0.0, 0);
+  // }
   
-  /*--- Update the solution ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
-    Delta = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
+  // /*--- Update the solution ---*/
+  // for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //   Vol = geometry->node[iPoint]->GetVolume();
+  //   Delta = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
     
-    Res_TruncError = node[iPoint]->GetResTruncError();
-    Residual = LinSysRes.GetBlock(iPoint);
+  //   Res_TruncError = node[iPoint]->GetResTruncError();
+  //   Residual = LinSysRes.GetBlock(iPoint);
     
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Res = Residual[iVar] + Res_TruncError[iVar];
-      node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
-      AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-    }
+  //   for (iVar = 0; iVar < nVar; iVar++) {
+  //     Res = Residual[iVar] + Res_TruncError[iVar];
+  //     node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+  //     AddRes_RMS(iVar, Res*Res);
+  //     AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+  //   }
     
-  }
+  // }
   
-  /*--- MPI solution ---*/
-  Set_MPI_Solution(geometry, config);
+  // /*--- MPI solution ---*/
+  // Set_MPI_Solution(geometry, config);
   
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
+  // /*--- Compute the root mean square residual ---*/
+  // SetResidual_RMS(geometry, config);
   
 }
 
@@ -2560,7 +2563,7 @@ void CAdjIncEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solve
   
 }
 
-void CAdjIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   unsigned long iVertex, iPoint;
   su2double *d = NULL, *Normal, *U, *Psi_Aux, bcn, Area, *UnitNormal;
   su2double *Velocity, *Psi, phin, phis1, phis2, DensityInc = 0.0, BetaInc2 = 0.0;
@@ -2657,7 +2660,7 @@ void CAdjIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                   CConfig *config, unsigned short val_marker) {
+                                   CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint;
   su2double *Normal, Area, *UnitNormal,
@@ -2752,7 +2755,7 @@ void CAdjIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config) {
+                                            CConfig *config, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, jPoint;
   unsigned short iDim, iVar, iMarker;
@@ -2950,7 +2953,7 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
 }
 
 void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config) {
+                                            CConfig *config, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, jPoint, Pin, Pout;
   unsigned short iDim, iVar, iMarker;
@@ -3245,7 +3248,7 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
   
 }
 
-void CAdjIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iVar, iDim;
@@ -3350,7 +3353,7 @@ void CAdjIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
   delete [] Psi_domain; delete [] Psi_infty;
 }
 
-void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -3471,7 +3474,7 @@ void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
   
 }
 
-void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -4167,7 +4170,7 @@ void CAdjIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                   CConfig *config, unsigned short iMesh) {
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned long iPoint, jPoint, iEdge;
   
@@ -4616,7 +4619,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
 }
 
-void CAdjIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned short iDim, iVar, jVar;
   unsigned long iVertex, iPoint, total_index;
@@ -4736,7 +4739,7 @@ void CAdjIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_con
 }
 
 
-void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, unsigned short iRKStep) {
   
   unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar, jVar;

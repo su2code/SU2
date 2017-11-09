@@ -895,6 +895,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     geometry_container[MESH_0]->SetCoord_CG();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry_container[MESH_0]->SetResolutionTensor();
 
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         /*--- Update the control volume structures ---*/
@@ -902,6 +903,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
         geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
         geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
+        geometry_container[iMesh]->SetResolutionTensor();
 
     }
 
@@ -1347,7 +1349,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   unsigned short val_format = config->GetMesh_FileFormat();
 
   /*--- Initialize counters for local/global points & elements ---*/
-  
+
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
   
@@ -9519,15 +9521,15 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
   su2double **Coord;
-  
+
   /*--- Compute the center of gravity for elements ---*/
-  
+
   for (iElem = 0; iElem<nElem; iElem++) {
     nNode = elem[iElem]->GetnNodes();
     Coord = new su2double* [nNode];
     
     /*--- Store the coordinates for all the element nodes ---*/
-    
+
     for (iNode = 0; iNode < nNode; iNode++) {
       elem_poin = elem[iElem]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
@@ -9545,14 +9547,14 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   }
   
   /*--- Center of gravity for face elements ---*/
-  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
       nNode = bound[iMarker][iElem]->GetnNodes();
       Coord = new su2double* [nNode];
       
       /*--- Store the coordinates for all the element nodes ---*/
-      
+
       for (iNode = 0; iNode < nNode; iNode++) {
         elem_poin = bound[iMarker][iElem]->GetNode(iNode);
         Coord[iNode] = new su2double [nDim];
@@ -9560,13 +9562,13 @@ void CPhysicalGeometry::SetCoord_CG(void) {
           Coord[iNode][iDim]=node[elem_poin]->GetCoord(iDim);
       }
       /*--- Compute the element CG coordinates ---*/
-      
+
       bound[iMarker][iElem]->SetCoord_CG(Coord);
       for (iNode = 0; iNode < nNode; iNode++)
         if (Coord[iNode] != NULL) delete[] Coord[iNode];
       if (Coord != NULL) delete[] Coord;
     }
-  
+
   /*--- Center of gravity for edges ---*/
   
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
@@ -9574,22 +9576,317 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     Coord = new su2double* [nNode];
     
     /*--- Store the coordinates for all the element nodes ---*/
-    
+
     for (iNode = 0; iNode < nNode; iNode++) {
       edge_poin=edge[iEdge]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Coord[iNode][iDim]=node[edge_poin]->GetCoord(iDim);
     }
-    
+
     /*--- Compute the edge CG coordinates ---*/
-    
+
     edge[iEdge]->SetCoord_CG(Coord);
-    
+
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
   }
+}
+
+void CGeometry::SetResolutionTensor(void) {
+  unsigned long iElem, iElem_global, iPoint;
+  unsigned short iDim, jDim;
+  unsigned short nNode, iNode;
+  unsigned long elem_poin;
+  su2double temp_value;
+  su2double** temp_tensor;
+  su2double* temp_vector;
+  su2double **Coord;
+
+  /*--- Compute the resolution tensor for primal mesh elements ---*/
+
+  for (iElem = 0; iElem<nElem; iElem++) {
+    nNode = elem[iElem]->GetnNodes();
+    Coord = new su2double* [nNode];
+
+    /*--- Store the coordinates for all the element nodes ---*/
+
+    for (iNode = 0; iNode < nNode; iNode++) {
+      elem_poin = elem[iElem]->GetNode(iNode);
+      Coord[iNode] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Coord[iNode][iDim]=node[elem_poin]->GetCoord(iDim);
+    }
+
+    /*--- Compute the elemental resolution tensor coordinates ---*/
+
+    elem[iElem]->SetResolutionTensor(Coord);
+
+    for (iNode = 0; iNode < nNode; iNode++)
+      if (Coord[iNode] != NULL) delete[] Coord[iNode];
+    if (Coord != NULL) delete[] Coord;
+  }
+
+  /*--- Use the primal mesh to create the CV Resolution Tensors ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_tensor = elem[iElem_global]->GetResolutionTensor();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
+          if (temp_value > EPS)
+            node[iPoint]->AddResolutionTensor(iDim, jDim, temp_value);
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_LAPACK
+  /*--- NOTE: Since we're using averages across cells, averages of eigenvalues
+   * are not equal to the eigenvalues of the average tensor. ---*/
+  // TODO: Make this section actually compute eigenvalues and eigenvectors.
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_tensor = elem[iElem_global]->GetResolutionVectors();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
+          node[iPoint]->AddResolutionVector(iDim, jDim, temp_value);
+        }
+      }
+    }
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_vector = elem[iElem_global]->GetResolutionValues();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        temp_value = temp_vector[iDim] / (node[iPoint]->GetnElem());
+        node[iPoint]->AddResolutionValue(iDim, temp_value);
+      }
+    }
+  }
+#else
+  /*--- Use an approximate average of the eigenvalues and eigenvectors ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_tensor = elem[iElem_global]->GetResolutionVectors();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
+          node[iPoint]->AddResolutionVector(iDim, jDim, temp_value);
+        }
+      }
+    }
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_vector = elem[iElem_global]->GetResolutionValues();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        temp_value = temp_vector[iDim] / (node[iPoint]->GetnElem());
+        node[iPoint]->AddResolutionValue(iDim, temp_value);
+      }
+    }
+  }
+#endif
+
+  SetResolutionGradient();
+}
+
+void CGeometry::SetResolutionGradient(void) {
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iVar, iNeigh;
+  unsigned long iPoint, jPoint;
+  su2double** M_temp;
+  vector<vector<su2double> > M_i(nDim, vector<su2double>(nDim));
+  vector<vector<su2double> > M_j(nDim, vector<su2double>(nDim));
+  su2double** Smatrix;
+  su2double *Coord_i, *Coord_j,
+  r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
+  z22, z23, z33, product;
+  bool singular = false;
+
+  /** We use the least squares method to calculate gradients on the
+   *  unstructured mesh.
+   *
+   *  Vector representation is:
+   *  dM_{jk}/dx_i is stored in cvector as M[i][j][k]
+   */
+
+  /*--- Set up a scratch array for building the gradient ---*/
+  su2double*** cvector = new su2double** [nDim];
+  for (iDim = 0; iDim<nDim; iDim++) {
+    cvector[iDim] = new su2double* [nDim];
+    for (jDim = 0; jDim < nDim; jDim++) {
+      cvector[iDim][jDim] = new su2double [nDim];
+    }
+  }
+
+  /*--- Set up a scratch matrix for least-squares calculations ---*/
+  Smatrix = new su2double* [nDim];
+  for (iDim = 0; iDim<nDim; iDim++)
+    Smatrix[iDim] = new su2double[nDim];
+
+  /*--- Loop over points of the grid ---*/
+
+  for (iPoint = 0; iPoint < GetnPointDomain(); iPoint++) {
+
+    /*--- Set the value of the singular ---*/
+    singular = false;
+
+    /*--- Get coordinates ---*/
+
+    Coord_i = node[iPoint]->GetCoord();
+
+    /*--- Get the resolution squared at point i ---*/
+    M_temp = node[iPoint]->GetResolutionTensor();
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        M_i[iDim][jDim] = 0.0;
+        for (kDim = 0; kDim < nDim; kDim++) {
+          M_i[iDim][jDim] += M_temp[kDim][iDim]*M_temp[kDim][jDim];
+        }
+      }
+    }
+
+    /*--- Initialization of variables ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        for (kDim = 0; kDim < nDim; kDim++)
+          cvector[iDim][jDim][kDim] = 0.0;
+
+    r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
+
+    for (iNeigh = 0; iNeigh < node[iPoint]->GetnPoint(); iNeigh++) {
+      jPoint = node[iPoint]->GetPoint(iNeigh);
+      Coord_j = node[jPoint]->GetCoord();
+
+      /*--- Get the resolution squared at point j ---*/
+      M_temp = node[jPoint]->GetResolutionTensor();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          M_j[iDim][jDim] = 0.0;
+          for (kDim = 0; kDim < nDim; kDim++) {
+            M_j[iDim][jDim] += M_temp[kDim][iDim]*M_temp[kDim][jDim];
+          }
+        }
+      }
+
+      weight = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+
+      /*--- Summations for entries of upper triangular matrix R ---*/
+
+      if (weight != 0.0) {
+
+        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+        if (nDim == 3) {
+          r13   += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r33   += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+        }
+
+        /*--- Entries of c:= transpose(A)*b ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          for (jDim = 0; jDim < nDim; jDim++)
+            for (kDim = 0; kDim < nDim; kDim++)
+              cvector[iDim][jDim][kDim] += (Coord_j[iDim] - Coord_i[iDim])*
+                  (M_j[jDim][kDim] - M_i[jDim][kDim])/weight;
+      }
+
+    }
+
+    /*--- Entries of upper triangular matrix R ---*/
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+
+    if (nDim == 3) {
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
+    }
+
+    /*--- Compute determinant ---*/
+
+    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
+    else detR2 = (r11*r22*r33)*(r11*r22*r33);
+
+    /*--- Detect singular matrices ---*/
+
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
+
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    if (singular) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          Smatrix[iDim][jDim] = 0.0;
+    }
+    else {
+      if (nDim == 2) {
+        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+        Smatrix[0][1] = -r11*r12/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = r11*r11/detR2;
+      }
+      else {
+        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
+        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
+        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+        Smatrix[0][2] = (z13*z33)/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+        Smatrix[1][2] = (z23*z33)/detR2;
+        Smatrix[2][0] = Smatrix[0][2];
+        Smatrix[2][1] = Smatrix[1][2];
+        Smatrix[2][2] = (z33*z33)/detR2;
+      }
+    }
+
+    /*--- Computation of the gradient: S*c ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      for (jDim = 0; jDim < nDim; jDim++) {
+        for (kDim = 0; kDim < nDim; kDim++) {
+          product = 0.0;
+          for (lDim = 0; lDim < nDim; lDim++) {
+            product += Smatrix[iDim][lDim]*cvector[lDim][jDim][kDim];
+          }
+          node[iPoint]->SetResolutionGradient(iDim, jDim, kDim, product);
+        }
+      }
+    }
+
+  } /**-- End of point loop ---*/
+
+  /*--- Deallocate memory ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      delete [] cvector[iDim][jDim];
+    }
+    delete [] cvector[iDim];
+  }
+  delete [] cvector;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    delete [] Smatrix[iDim];
+  }
+  delete [] Smatrix;
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
@@ -12901,6 +13198,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
+  bool ke = config->GetKind_Turb_Model() == KE;
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val, AoASens;
@@ -12927,6 +13225,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
   if (sa)             { skipVar += skipMult*1;}
+  if (ke)             { skipVar += skipMult*4;}
   if (grid_movement)  { skipVar += nDim;}
   
   /*--- Sensitivity in normal direction ---*/
