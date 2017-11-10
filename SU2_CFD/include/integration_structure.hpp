@@ -141,7 +141,7 @@ public:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*! 
-   * \brief Do the convergence analisys to determine if the code must stop the execution.
+   * \brief Do the convergence analysis to determine if the code must stop the execution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iteration - Current iteration.
@@ -151,6 +151,17 @@ public:
                 unsigned long Iteration, su2double monitor, unsigned short iMesh);
   
   /*! 
+   * \brief Average the scalar output in case there is a unsteady solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iteration - Current iteration.
+   * \param[in] monitor - Objective function to be averaged.
+   * \param[in] iMesh - Index of the mesh.
+   */
+  void Average_Monitoring(CGeometry *geometry, CConfig *config,
+                unsigned long Iteration, su2double monitor, unsigned short iMesh);
+
+  /*!
    * \brief Do the convergence analysis to determine if the structural FEM analysis has converged.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

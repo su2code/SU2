@@ -4,8 +4,8 @@
  * \author S. Vitale
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -297,12 +297,3 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
   delete [] relVel;
 }
-
-
-su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan){return EntropyGen[iMarkerTP][iSpan];}
-su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan){return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER;}
-su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan){return MassFlowIn[iMarkerTP][iSpan];}
-
-
-
-

@@ -182,6 +182,7 @@ def read_history( History_filename, nZones = 1):
 # -------------------------------------------------------------------
 
 def get_headerMap(nZones = 1):
+
     """ returns a dictionary that maps history file header names
         to optimization problem function names
     """
@@ -201,22 +202,18 @@ def get_headerMap(nZones = 1):
                  "CFy"             : "FORCE_Y"                 ,
                  "CFz"             : "FORCE_Z"                 ,
                  "CL/CD"           : "EFFICIENCY"              ,
-                 "CEff"            : "EFFICIENCY"              ,
+                 "AoA"             : "AOA"                     ,
+                 "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
-                 "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
-                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
-                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
-                 "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
-                 "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
-                 "MassFlowRate"    : "MASS_FLOW_RATE"          ,
-                 "AeroCDrag"       : "AERO_DRAG"               ,
-                 "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
-                 "Circumferential_Distortion"      : "CIRCUMFERENTIAL_DISTORTION"              ,
+                 "Avg_TotalPress"  : "SURFACE_TOTAL_PRESSURE"  ,
+                 "Avg_Press"       : "SURFACE_STATIC_PRESSURE" ,
+                 "Avg_MassFlow"    : "SURFACE_MASSFLOW"        ,
+                 "Avg_Mach"        : "SURFACE_MACH"            ,
+                 "ComboObj"        : "COMBO"                   ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CL)"           : "D_LIFT"                  ,
                  "D(CD)"           : "D_DRAG"                  ,
@@ -228,7 +225,6 @@ def get_headerMap(nZones = 1):
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "ComboObj"        : "COMBO"                   ,
                  "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
@@ -286,20 +282,16 @@ optnames_aero = [ "LIFT"                    ,
                   "FIGURE_OF_MERIT"         ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
-                  "AVG_TOTAL_PRESSURE"      ,
-                  "AVG_OUTLET_PRESSURE"     ,
-                  "AVG_OUTLET_DENSITY"      ,
-                  "AVG_OUTLET_VELOCITY"     ,
-                  "MASS_FLOW_RATE"          ,
+                  "SURFACE_TOTAL_PRESSURE"  ,
+                  "SURFACE_STATIC_PRESSURE" ,
+                  "SURFACE_MASSFLOW"        ,
+                  "SURFACE_MACH"            ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
-                  "AERO_DRAG"               ,
-                  "RADIAL_DISTORTION"          ,
-                  "CIRCUMFERENTIAL_DISTORTION" ,
                   "CUSTOM_OBJFUNC"             ,
                   "COMBO"]
 
@@ -339,68 +331,50 @@ optnames_multi = [ "MULTIPOINT_LIFT"               ,
                    "MULTIPOINT_CUSTOM_OBJFUNC"]
 
 # Geometric Optimizer Function Names
-optnames_geo = [ "MAX_THICKNESS"      ,
-                 "1/4_THICKNESS"      ,
-                 "1/3_THICKNESS"      ,
-                 "1/2_THICKNESS"      ,
-                 "2/3_THICKNESS"      ,
-                 "3/4_THICKNESS"      ,
-                 "AREA"               ,
-                 "AOA"                ,
-                 "CHORD"              ,
-                 "WING_VOLUME"           ,
-                 "WING_MIN_MAXTHICKNESS" ,
-                 "WING_MAX_CHORD"        ,
-                 "WING_MIN_TOC"          ,
-                 "WING_MAX_TWIST"        ,
-                 "WING_MAX_CURVATURE"    ,
-                 "WING_MAX_DIHEDRAL"     ,
-                 "MAX_THICKNESS_SEC1" ,
-                 "MAX_THICKNESS_SEC2" ,
-                 "MAX_THICKNESS_SEC3" ,
-                 "MAX_THICKNESS_SEC4" ,
-                 "MAX_THICKNESS_SEC5" ,
-                 "1/4_THICKNESS_SEC1" ,
-                 "1/4_THICKNESS_SEC2" ,
-                 "1/4_THICKNESS_SEC3" ,
-                 "1/4_THICKNESS_SEC4" ,
-                 "1/4_THICKNESS_SEC5" ,
-                 "1/3_THICKNESS_SEC1" ,
-                 "1/3_THICKNESS_SEC2" ,
-                 "1/3_THICKNESS_SEC3" ,
-                 "1/3_THICKNESS_SEC4" ,
-                 "1/3_THICKNESS_SEC5" ,
-                 "1/2_THICKNESS_SEC1" ,
-                 "1/2_THICKNESS_SEC2" ,
-                 "1/2_THICKNESS_SEC3" ,
-                 "1/2_THICKNESS_SEC4" ,
-                 "1/2_THICKNESS_SEC5" ,
-                 "2/3_THICKNESS_SEC1" ,
-                 "2/3_THICKNESS_SEC2" ,
-                 "2/3_THICKNESS_SEC3" ,
-                 "2/3_THICKNESS_SEC4" ,
-                 "2/3_THICKNESS_SEC5" ,
-                 "3/4_THICKNESS_SEC1" ,
-                 "3/4_THICKNESS_SEC2" ,
-                 "3/4_THICKNESS_SEC3" ,
-                 "3/4_THICKNESS_SEC4" ,
-                 "3/4_THICKNESS_SEC5" ,
-                 "AREA_SEC1"          ,
-                 "AREA_SEC2"          ,
-                 "AREA_SEC3"          ,
-                 "AREA_SEC4"          ,
-                 "AREA_SEC5"          ,
-                 "AOA_SEC1"           ,
-                 "AOA_SEC2"           ,
-                 "AOA_SEC3"           ,
-                 "AOA_SEC4"           ,
-                 "AOA_SEC5"           ,
-                 "CHORD_SEC1"         ,
-                 "CHORD_SEC2"         ,
-                 "CHORD_SEC3"         ,
-                 "CHORD_SEC4"         ,
-                 "CHORD_SEC5"         ,
-                 "VOLUME"              ]
+optnames_geo = [ "AIRFOIL_AREA"                   ,
+                 "AIRFOIL_THICKNESS"              ,
+                 "AIRFOIL_CHORD"                  ,
+                 "AIRFOIL_LE_RADIUS"              ,
+                 "AIRFOIL_TOC"                    ,
+                 "AIRFOIL_ALPHA"                  ,
+                 "FUSELAGE_VOLUME"        ,
+                 "FUSELAGE_WETTED_AREA"   ,
+                 "FUSELAGE_MIN_WIDTH"     ,
+                 "FUSELAGE_MAX_WIDTH"     ,
+                 "FUSELAGE_MIN_WATERLINE_WIDTH"  ,
+                 "FUSELAGE_MAX_WATERLINE_WIDTH"  ,
+                 "FUSELAGE_MIN_HEIGHT"    ,
+                 "FUSELAGE_MAX_HEIGHT"    ,
+                 "FUSELAGE_MAX_CURVATURE" ,
+                 "WING_VOLUME"            ,
+                 "WING_MIN_THICKNESS" ,
+                 "WING_MAX_THICKNESS" ,
+                 "WING_MIN_CHORD"         ,
+                 "WING_MAX_CHORD"         ,
+                 "WING_MIN_LE_RADIUS"     ,
+                 "WING_MAX_LE_RADIUS"     ,
+                 "WING_MIN_TOC"           ,
+                 "WING_MAX_TOC"           ,
+                 "WING_OBJFUN_MIN_TOC"    ,
+                 "WING_MAX_TWIST"         ,
+                 "WING_MAX_CURVATURE"     ,
+                 "WING_MAX_DIHEDRAL"      ]
+                 
+PerStation = []
+for i in range(20):
+	PerStation.append("STATION" + str(i) + "_AREA")
+	PerStation.append("STATION" + str(i) + "_LENGTH")
+    	PerStation.append("STATION" + str(i) + "_WIDTH")
+    	PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
+    	PerStation.append("STATION" + str(i) + "_HEIGHT")
+    	PerStation.append("STATION" + str(i) + "_THICKNESS")
+    	PerStation.append("STATION" + str(i) + "_CHORD")
+    	PerStation.append("STATION" + str(i) + "_LE_RADIUS")
+    	PerStation.append("STATION" + str(i) + "_TOC")
+    	PerStation.append("STATION" + str(i) + "_TWIST")
+
+optnames_geo.extend(PerStation)
+                 
 #: optnames_geo
 
 grad_names_directdiff = ["D_LIFT"                  ,
@@ -541,7 +515,11 @@ def get_objectiveSign( ObjFun_name ):
             THRUST
             FIGURE_OF_MERIT
             MASS_FLOW_RATE
-            AVG_TOTAL_PRESSURE
+            SURFACE_TOTAL_PRESSURE
+            SURFACE_STATIC_PRESSURE
+            SURFACE_MASSFLOW
+            SURFACE_MACH
+            TOTAL_STATIC_EFFICIENCY
         returns +1 otherwise
     """
     
@@ -550,9 +528,10 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
-    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
-    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
-    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
+    if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return -1.0
+    if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
+    if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
+    if ObjFun_name == "SURFACE_MACH"            : return -1.0
     if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
     
     # otherwise
@@ -605,12 +584,12 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                  : "ct"        ,
                  "TORQUE"                  : "cq"        ,
                  "FIGURE_OF_MERIT"         : "merit"     ,
-                 "AVG_TOTAL_PRESSURE"      : "pt"        ,
-                 "AVG_OUTLET_PRESSURE"     : "pe"        ,
-                 "MASS_FLOW_RATE"          : "mfr"       ,
-                 "AERO_DRAG"               : "acd"       ,
-                 "RADIAL_DISTORTION"              : "rdis"       ,
-                 "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
+                 "SURFACE_TOTAL_PRESSURE"  : "pt"        ,
+                 "SURFACE_STATIC_PRESSURE" : "pe"        ,
+                 "SURFACE_MASSFLOW"        : "mfr"       ,
+                 "SURFACE_MACH"            : "mach"      ,
+                 "OUTFLOW_GENERALIZED"     : "chn"       ,
+                 "CUSTOM_OBJFUNC"          : "custom"    ,
                  "KINETIC_ENERGY_LOSS"     : "ke"        ,
                  "TOTAL_PRESSURE_LOSS"     : "pl"        ,
                  "ENTROPY_GENERATION"      : "entg"      ,
@@ -674,7 +653,7 @@ def get_dvMap():
     dv_map = { 1   : "HICKS_HENNE"           ,
                2   : "SURFACE_BUMP"          ,
                4   : "NACA_4DIGITS"          ,
-               5   : "TRANSLATION"          ,
+               5   : "TRANSLATION"           ,
                6   : "ROTATION"              ,
                7   : "FFD_CONTROL_POINT"     ,
                8   : "FFD_DIHEDRAL_ANGLE"    ,
@@ -682,12 +661,18 @@ def get_dvMap():
                10  : "FFD_ROTATION"          ,
                11  : "FFD_CAMBER"            ,
                12  : "FFD_THICKNESS"         ,
+               19  : "FFD_TWIST"             ,
+               22  : "FFD_NACELLE"           ,
+               23  : "FFD_GULL"              ,
+               25  : "FFD_ROTATION"          ,
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
-               20  : "CST"                   ,
+               20  : "FFD_TWIST_2D"          ,
                21  : "FFD_DIRECT_MANIPULATION",
                22  : "FFD_DIRECT_MANIPULATION_2D",
+               50  : "CUSTOM"                ,
+               51  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,
                102 : "FFD_ANGLE_OF_ATTACK"                    }
     
@@ -733,7 +718,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     write_format = []
     
     # handle plot formating
-    if   plot_format == 'TECPLOT': 
+    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header.append('VARIABLES=')
     elif plot_format == 'PARAVIEW':
         pass
@@ -757,8 +742,8 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
                 write_format.append(", %.10f, %.10f")
             if key == "ENGINE"     :
-                header.append(r',"Grad_AeroCDrag","Grad_Distortion"')
-                write_format.append(", %.10f, %.10f")
+                header.append(r',"Grad_AeroCDrag","Grad_SolidCDrag","Grad_Radial_Distortion","Grad_Circumferential_Distortion"')
+                write_format.append(", %.10f, %.10f, %.10f, %.10f")
             if key == "1D_OUTPUT"     :
                 header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_Avg_Pressure","Grad_Avg_Density","Grad_Avg_Velocity","Grad_Avg_Enthalpy"')
                 write_format.append(", %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f")
@@ -859,7 +844,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     write_format  = []
     
     # handle plot formating
-    if   plot_format == 'TECPLOT': 
+    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header_format = header_format + 'VARIABLES='
     elif plot_format == 'PARAVIEW':
         pass
@@ -878,8 +863,8 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
             write_format.append(r', %.10f, %.10f')
         if key == "ENGINE"     :
-            header_list.extend(["AeroCDrag","Distortion"])
-            write_format.append(r', %.10f, %.10f')
+            header_list.extend(["AeroCDrag","SolidCDrag","Radial_Distortion","Circumferential_Distortion"])
+            write_format.append(r', %.10f, %.10f, %.10f, %.10f')
         if key == "1D_OUTPUT":
             header_list.extend(["AreaAvg_TotalPress","AreaAvg_Mach","AreaAvg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
             write_format.append(r', %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')

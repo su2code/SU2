@@ -261,15 +261,14 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
   void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
-  
-  
+
   /*!
-	 * \brief Compute the minimum distance to the nearest deforming surface.
+	 * \brief Compute the minimum distance to the nearest solid surface.
 	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+  * \param[in] config - Definition of the particular problem.
 	 */
-  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
-    
+  void ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.

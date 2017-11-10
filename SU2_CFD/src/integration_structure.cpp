@@ -102,7 +102,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 
   /*--- Weak boundary conditions ---*/
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
@@ -141,7 +140,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	else{
-      		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	break;
       case FAR_FIELD:
@@ -460,7 +459,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     
     bool Already_Converged = Convergence;
     
-    /*--- Cauchi based convergence criteria ---*/
+    /*--- Cauchy based convergence criteria ---*/
     
     if (config->GetConvCriteria() == CAUCHY) {
       
@@ -572,7 +571,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   }
   
 }
-
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
