@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -94,15 +94,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
 
-  if (config->GetBoolNRBC() && config->GetSpatialFourier()){
-    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
+  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+    solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
 
-    solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
+    solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
 
 
   /*--- Weak boundary conditions ---*/
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
@@ -133,15 +132,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case SUPERSONIC_OUTLET:
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
-      case NRBC_BOUNDARY:
-      	solver_container[MainSolver]->BC_NonReflecting(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      case GILES_BOUNDARY:
+        solver_container[MainSolver]->BC_Giles(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case RIEMANN_BOUNDARY:
       	if (config->GetBoolTurbomachinery()){
       		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	else{
-      		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	break;
       case FAR_FIELD:
@@ -460,7 +459,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     
     bool Already_Converged = Convergence;
     
-    /*--- Cauchi based convergence criteria ---*/
+    /*--- Cauchy based convergence criteria ---*/
     
     if (config->GetConvCriteria() == CAUCHY) {
       
@@ -572,7 +571,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   }
   
 }
-
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;

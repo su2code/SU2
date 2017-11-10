@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -390,7 +390,7 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 
 
   Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
-  Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
+  Donor_Variable[1] = donor_solution->GetAveragePressure(Marker_Donor, iSpan);
   Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
   Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
 
@@ -403,7 +403,7 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 
   if(turbulent){
     Donor_Variable[5] = donor_solution->GetAverageNu(Marker_Donor, iSpan);
-    Donor_Variable[6] = donor_solution->GetAverageKei(Marker_Donor, iSpan);
+    Donor_Variable[6] = donor_solution->GetAverageKine(Marker_Donor, iSpan);
     Donor_Variable[7] = donor_solution->GetAverageOmega(Marker_Donor, iSpan);
   }
   else{
@@ -434,7 +434,7 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
   if(turbulent){
     target_solution->SetExtAverageNu(Marker_Target, iSpan, Target_Variable[5]);
-    target_solution->SetExtAverageKei(Marker_Target, iSpan, Target_Variable[6]);
+    target_solution->SetExtAverageKine(Marker_Target, iSpan, Target_Variable[6]);
     target_solution->SetExtAverageOmega(Marker_Target, iSpan,  Target_Variable[7]);
   }
 
@@ -444,12 +444,26 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
+    /*--- trnasfer inviscid quantities ---*/
     target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
+    /*--- transfer turbulent quantities ---*/
+    target_solution->SetKineIn(donor_solution->GetKineIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaIn(donor_solution->GetOmegaIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuIn(donor_solution->GetNuIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetKineOut(donor_solution->GetKineOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
+
+    /*--- transfer relative tangential velocity ---*/
+    target_solution->SetRelTangVelocityIn(donor_solution->GetRelTangVelocityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetRelTangVelocityOut(donor_solution->GetRelTangVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
   }
 }
 
@@ -459,10 +473,8 @@ void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_g
   for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
     target_geometry->SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
-    target_geometry->SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetTurboRadiusOut(donor_geometry->GetTurboRadiusOut(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetSpanAreaOut(donor_geometry->GetSpanAreaOut(donorZone, iSpan), donorZone, iSpan);
-    target_geometry->SetTangGridVelOut(donor_geometry->GetTangGridVelOut(donorZone, iSpan), donorZone, iSpan);
   }
 
 }
@@ -491,11 +503,11 @@ void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                                                 unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned short iVar;
-  su2double nVar = donor_solution->GetnPrimVar();
+  unsigned short iVar, nDonorVar;
+  nDonorVar = donor_solution->GetnPrimVar();
 
   /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
-  bool turbulent = (nVar == 2) ;
+  bool turbulent = (nDonorVar == 2) ;
 
   if (turbulent){
 
@@ -506,7 +518,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   } else{
 
     /*---  Retrieve primitive variables and set them as the donor variables ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nDonorVar; iVar++)
       Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
 
   }
@@ -516,12 +528,69 @@ void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CG
                           CConfig *target_config, unsigned long Marker_Target,
                           unsigned long Vertex_Target, unsigned long Point_Target) {
 
-  unsigned short iVar;
-  su2double nVar = target_solution->GetnPrimVar();
+  unsigned short iVar, iDonorVertex, nTargetVar;
+  nTargetVar = target_solution->GetnPrimVar();
   /*--- Set the Sliding solution with the value of the Target Variable ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
+  iDonorVertex = target_solution->GetnSlidingStates(Marker_Target, Vertex_Target);
 
+  for (iVar = 0; iVar < nTargetVar+1; iVar++)
+    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, iDonorVertex, Target_Variable[iVar]);
+
+  target_solution->SetnSlidingStates( Marker_Target, Vertex_Target, iDonorVertex + 1 );
 }
 
+void CTransfer_SlidingInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
+  unsigned short iSpan;
+
+  for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
+    target_geometry->SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetTurboRadiusOut(donor_geometry->GetTurboRadiusOut(donorZone, iSpan), donorZone, iSpan);
+    target_geometry->SetSpanAreaOut(donor_geometry->GetSpanAreaOut(donorZone, iSpan), donorZone, iSpan);
+  }
+}
+
+void  CTransfer_SlidingInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+  unsigned short iSpan;
+
+  for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
+    /*--- trnasfer inviscid quantities ---*/
+    target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
+    /*--- transfer turbulent quantities ---*/
+    target_solution->SetKineIn(donor_solution->GetKineIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaIn(donor_solution->GetOmegaIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuIn(donor_solution->GetNuIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetKineOut(donor_solution->GetKineOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
+
+    /*--- transfer relative tangential velocity ---*/
+    target_solution->SetRelTangVelocityIn(donor_solution->GetRelTangVelocityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetRelTangVelocityOut(donor_solution->GetRelTangVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
+  }
+}
+
+void  CTransfer_SlidingInterface::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config){
+
+  unsigned short iSpan;
+  nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
+
+
+  SpanValueCoeffTarget = new su2double[target_config->GetnSpanWiseSections() + 1];
+  SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
+
+
+  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++){
+    SpanValueCoeffTarget[iSpan] = 0.0;
+    SpanLevelDonor[iSpan]       = 1;
+  }
+
+}

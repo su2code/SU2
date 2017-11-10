@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
   
   char config_file_name[MAX_STRING_SIZE], *cstr;
   ofstream Gradient_file;
-	int rank = MASTER_NODE;
-	int size = SINGLE_NODE;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -488,13 +488,6 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetParabolic(geometry, config);
     }
     
-    /*--- Custom design variable ---*/
-
-    else if (config->GetDesign_Variable(iDV) == CUSTOM){
-      if (rank == MASTER_NODE)
-        cout <<"Custom design variable will be used in external script" << endl;
-    }
-    
     /*--- Design variable not implement ---*/
     
     else {
@@ -559,7 +552,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     Gradient[iDV][0] += localGradient;
     }
   }
-  }
+}
   
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){

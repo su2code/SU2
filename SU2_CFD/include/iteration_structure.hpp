@@ -5,8 +5,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -187,7 +187,6 @@ public:
                               CConfig** config_container,
                               COutput* output,
                               unsigned short iZone){}
-
 
 };
 
@@ -874,8 +873,6 @@ class CDiscAdjFluidIteration : public CIteration {
 
 private:
 
-  CFluidIteration* fluid_iteration; /*!< \brief Pointer to the fluid iteration class. */
-  unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
 public:

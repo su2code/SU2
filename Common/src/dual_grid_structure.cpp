@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -332,8 +332,8 @@ CPoint::~CPoint() {
   if (Coord_p1     != NULL) delete[] Coord_p1;
   if (GridVel      != NULL) delete[] GridVel;
   if (GridVel_Grad != NULL) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    delete [] GridVel_Grad[iDim];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
   
@@ -378,9 +378,9 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
-	
+    
   unsigned short iDim;
-	
+    
   /*--- Pointers initialization ---*/
   Coord_CG = NULL;
   Normal   = NULL;
@@ -497,7 +497,7 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
   Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0] );
 
   Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];		
+  Normal[1] += Dim_Normal[1];       
   Normal[2] += Dim_Normal[2];
 
   AD::SetPreaccOut(Normal, nDim);
@@ -588,7 +588,7 @@ CVertex::~CVertex() {
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
 
-  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0}, Dim_Normal[3] = {0.0,0.0,0.0};
+  su2double vec_a[3], vec_b[3];
   unsigned short iDim;
 
   AD::StartPreacc();
@@ -602,13 +602,9 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
     vec_b[iDim] = val_coord_FaceElem_CG[iDim]-val_coord_Edge_CG[iDim];
   }
 
-  Dim_Normal[0] =  0.5 * ( vec_a[1] * vec_b[2] - vec_a[2] * vec_b[1]);
-  Dim_Normal[1] = -0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0]);
-  Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
-
-  Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];	
-  Normal[2] += Dim_Normal[2];
+  Normal[0] += 0.5 * ( vec_a[1] * vec_b[2] - vec_a[2] * vec_b[1]);
+  Normal[1] -= 0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0]);
+  Normal[2] += 0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
@@ -617,18 +613,13 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
 
-  su2double Dim_Normal[2];
-
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord_Elem_CG, nDim);
   AD::SetPreaccIn(val_coord_Edge_CG, nDim);
   AD::SetPreaccIn(Normal, nDim);
 
-  Dim_Normal[0] =   val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
-  Dim_Normal[1] = -(val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
-
-  Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];
+  Normal[0] += val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
+  Normal[1] -= (val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
@@ -643,14 +634,16 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 
 }
 
-void CVertex::Allocate_DonorInfo(void) {
-
+void CVertex::Allocate_DonorInfo(void){
+  
+  if( Donor_Points != NULL )  delete [] Donor_Points;
+  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
+  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
+  
   Donor_Points = new unsigned long[nDonor_Points];
   Donor_Proc   = new unsigned long[nDonor_Points];
   Donor_Coeff  = new su2double[nDonor_Points];
-
 }
-
 
 CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
 	unsigned short iDim;

@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -230,6 +230,8 @@ inline su2double CNumerics::GetDestruction(void) { return 0; }
 
 inline su2double CNumerics::GetCrossProduction(void) { return 0; }
 
+inline su2double CNumerics::GetGammaBC(void) { return 0.0; }
+
 inline void CNumerics::SetTurbKineticEnergy(su2double val_turb_ke_i, su2double val_turb_ke_j) {
   turb_ke_i = val_turb_ke_i;
   turb_ke_j = val_turb_ke_j;
@@ -248,11 +250,6 @@ inline void CNumerics::SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j)
 inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j) {
   PsiVar_Grad_i = val_psivar_grad_i;
   PsiVar_Grad_j = val_psivar_grad_j;
-}
-
-inline void CNumerics::SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j) {
-  PsiVar_Lim_i = val_psivar_lim_i;
-  PsiVar_Lim_j = val_psivar_lim_j;
 }
 
 inline void CNumerics::SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
@@ -280,10 +277,6 @@ inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2dou
   PrimVar_Grad_j = val_primvar_grad_j;
 }
 
-inline void CNumerics::SetPrimVarLimiter(su2double *val_primvar_lim_i, su2double *val_primvar_lim_j) {
-  PrimVar_Lim_i = val_primvar_lim_i;
-  PrimVar_Lim_j = val_primvar_lim_j;
-}
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_i, su2double **val_consvar_grad_j) {
   ConsVar_Grad_i = val_consvar_grad_i;
@@ -425,6 +418,8 @@ inline void CSourcePieceWise_TurbSA::SetDestruction(su2double val_destruction) {
 inline void CSourcePieceWise_TurbSA::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
 
 inline su2double CSourcePieceWise_TurbSA::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
 
 inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
 

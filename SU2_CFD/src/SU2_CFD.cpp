@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   unsigned short nZone, nDim;
   unsigned short nTimeInstances, nGeomZones, nTotTimeInstances;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi;
+  bool fsi, turbo;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -73,8 +73,8 @@ int main(int argc, char *argv[]) {
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-
-  fsi = config->GetFSI_Simulation();
+  fsi   = config->GetFSI_Simulation();
+  turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 
     nTimeInstances = config->GetnTimeInstances();
 
-    /*--- Use the Harmonic Balance driver. ---*/
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
     driver = new CHBDriver(config_file_name, nTimeInstances, nDim, MPICommunicator);
 
@@ -130,25 +130,30 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-  	if (config->GetDiscrete_Adjoint()){
+    if (config->GetDiscrete_Adjoint()) {
 
-  		if (config->GetBoolTurbomachinery()){
+      if (turbo) {
 
-  			driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
-  		} else {
+      } else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
-  		}
+        
+      }
 
-  	} else if (config->GetBoolTurbomachinery()){
+    } else if (turbo) {
 
-  		driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
-  	} else {
+    } else {
 
-  		driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
-  	}
+      /*--- Instantiate the class for external aerodynamics ---*/
+
+      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      
+    }
+    
   }
 
   delete config;

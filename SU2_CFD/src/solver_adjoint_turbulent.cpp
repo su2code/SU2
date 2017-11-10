@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -142,9 +142,14 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
       exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- Read all lines in the restart file ---*/
@@ -597,10 +602,10 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 //  su2double *Limiter_i = NULL, *Limiter_j = NULL, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
 //  unsigned short iDim, iVar;
   
-  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
-  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+  bool muscl   = config->GetMUSCL_AdjTurb();
+  bool limiter = (config->GetKind_SlopeLimit_AdjTurb() != NO_LIMITER);
   
-  if (second_order) {
+  if (muscl) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     if (limiter) SetSolution_Limiter(geometry, config);
@@ -630,7 +635,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     TurbVar_Grad_j = solver_container[TURB_SOL]->node[jPoint]->GetGradient();
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
     
-//    if (second_order) {
+//    if (muscl) {
 //      
 //      /*--- Conservative solution using gradient reconstruction ---*/
 //      for (iDim = 0; iDim < nDim; iDim++) {
