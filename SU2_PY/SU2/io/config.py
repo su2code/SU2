@@ -445,7 +445,8 @@ def read_config(filename):
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
                     elif this_dvKind=='TRANSPIRATION':
-                        this_dvSize = this_dvParameters[0]
+                        this_dvSize   = this_dvParameters[0]
+                        this_dvFFDTag = []
                     else:
                         this_dvParameters = info_General[2].split(",")
                         # if FFD change the first element to work with numbers and float(x), save also the tag
@@ -742,6 +743,7 @@ def read_config(filename):
             for case in switch(this_param):
                 if case('TRANSPIRATION_FILENAME'):
                     transp_filename = this_value
+                    data_dict['TRANSPIRATION_FILENAME'] = transp_filename
                     break
 
         assert not transp_filename === '' , ('Config file has transpiration DV but no specification for transpiration boundary input file')
@@ -762,17 +764,21 @@ def read_config(filename):
 
             # split across equals sign
             line = line.split("\t")
-            this_node  = line[0].strip()
-            this_value = line[1].strip()
+            this_node  = int(line[0].strip())
+            this_value = float(line[1].strip())
 
             transp_node  = transp_node  + [this_node]
             transp_value = transp_value + [this_value]
 
         for i, knd_dv in enumerate(kind_dvs):
             if knd_dv == 'TRANSPIRATION':
-                data_dict['DEFINITION_DV']['PARAM'][i] = [transp_node, transp_value]
+                transp_data = []
+                data_dict['DEFINITION_DV']['PARAM'][i] = transp_value
+                for j in range(0,data_dict['DEFINITION_DV']['SIZE'][i]):
+                    transp_data = transp_data + [transp_node, transp_value]
+            break
 
-        data_dict['TRANSPIRATION_NODES'] = transp_node
+        data_dict['TRANSPIRATION'] = transp_data
 
     return data_dict
     
@@ -917,7 +923,7 @@ def write_config(filename,param_dict):
                         if i_mark+1 < n_mark:
                             output_file.write(", ")
                     #: for each marker
-                    if not this_kind in ['AOA','MACH_NUMBER','TRANSPIRATION']:
+                    if not this_kind in ['AOA','MACH_NUMBER']:
                         output_file.write(" | ")
                         # params
                         if this_kind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_ANGLE','FFD_TWIST','FFD_TWIST_2D','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
@@ -927,6 +933,14 @@ def write_config(filename,param_dict):
                                 output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
                                 if i_param+1 < n_param:
                                     output_file.write(", ")
+                        elif this_kind == 'TRANSPIRATION':
+                            output_file.write("%s " % new_value['SIZE'][i_dv])
+                            # also output new transpiration file
+                            transp_file = open(param_dict['TRANSPIRATION_FILENAME'],'w')
+                            for j_transp in range(0,new_value['SIZE'][i_dv])
+                                transp_file.write("%s\t" % param_dict['TRANSPIRATION'][j_transp][0])
+                                transp_file.write("%s\n" % param_dict['TRANSPIRATION'][j_transp][1])
+                            transp_file.close()
                         else:
                             n_param = len(new_value['PARAM'][i_dv])
                             for i_param in range(n_param):
