@@ -444,6 +444,8 @@ def read_config(filename):
 
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
+                    elif this_dvKind=='TRANSPIRATION':
+                        this_dvSize = this_dvParameters[0]
                     else:
                         this_dvParameters = info_General[2].split(",")
                         # if FFD change the first element to work with numbers and float(x), save also the tag
@@ -712,11 +714,69 @@ def read_config(filename):
             'SCALE': [1.0],
             'SIZE': [1]}
 
+    # Check if any DVs are transpiration
+    kind_dvs = data_dict['DEFINITION_DV']['KIND']
+    if 'TRANSPIRATION' in kind_dvs:
+        transp_filename = ''
+
+        while 1:
+            # break loop if file name specified
+            if not transp_filename == ''
+                break
+
+            # read the line
+            line = input_file.readline()
+            if not line:
+                break
+
+            # remove line returns
+            line = line.strip('\r\n')
+            # make sure it has useful data
+            if (not "=" in line) or (line[0] == '%'):
+                continue
+            # split across equals sign
+            line = line.split("=",1)
+            this_param = line[0].strip()
+            this_value = line[1].strip()
+
+            for case in switch(this_param):
+                if case('TRANSPIRATION_FILENAME'):
+                    transp_filename = this_value
+                    break
+
+        assert not transp_filename === '' , ('Config file has transpiration DV but no specification for transpiration boundary input file')
+
+        # read the transpiration boundary input file
+        transp_file  = open(transp_filename)
+        transp_node  = []
+        transp_value = []
+
+        while 1:
+            # read the line
+            line = input_file.readline()
+            if not line:
+                break
+
+            # remove line returns
+            line = line.strip('\r\n')
+
+            # split across equals sign
+            line = line.split("\t")
+            this_node  = line[0].strip()
+            this_value = line[1].strip()
+
+            transp_node  = transp_node  + [this_node]
+            transp_value = transp_value + [this_value]
+
+        for i, knd_dv in enumerate(kind_dvs):
+            if knd_dv == 'TRANSPIRATION':
+                data_dict['DEFINITION_DV']['PARAM'][i] = [transp_node, transp_value]
+
+        data_dict['TRANSPIRATION_NODES'] = transp_node
+
     return data_dict
     
 #: def read_config()
-
-
 
 # -------------------------------------------------------------------
 #  Set SU2 Configuration Parameters
@@ -857,7 +917,7 @@ def write_config(filename,param_dict):
                         if i_mark+1 < n_mark:
                             output_file.write(", ")
                     #: for each marker
-                    if not this_kind in ['AOA','MACH_NUMBER']:
+                    if not this_kind in ['AOA','MACH_NUMBER','TRANSPIRATION']:
                         output_file.write(" | ")
                         # params
                         if this_kind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_ANGLE','FFD_TWIST','FFD_TWIST_2D','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:

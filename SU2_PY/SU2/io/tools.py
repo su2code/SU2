@@ -667,7 +667,8 @@ def get_dvMap():
                50  : "CUSTOM"                ,
                51  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,
-               102 : "FFD_ANGLE_OF_ATTACK"                    }
+               102 : "FFD_ANGLE_OF_ATTACK"   ,
+               201 : "TRANSPIRATION"                 }
     
     return dv_map
 
@@ -801,6 +802,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s, %s')
     elif kindID == "ANGLE_OF_ATTACK"      : pass
     elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
+    elif kindID == "TRANSPIRATION"        : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 
