@@ -186,17 +186,17 @@ inline AMPI_Status* CMediMPIWrapper::convertStatus(MPI_Status* status) {
 
 inline AMPI_Op CMediMPIWrapper::convertOp(MPI_Op op) {
   if(MPI_SUM == op) {
-    return MediTool::OP_SUM;
+    return medi::AMPI_SUM;
   } else if(MPI_PROD == op) {
-    return MediTool::OP_PROD;
+    return medi::AMPI_PROD;
   } else if(MPI_MIN == op) {
-    return MediTool::OP_MIN;
+    return medi::AMPI_MIN;
   } else if(MPI_MAX == op) {
-    return MediTool::OP_MAX;
+    return medi::AMPI_MAX;
   } else {
     std::cerr << "Implement conversion." << std::endl;
     exit(-1);
-    return MediTool::OP_SUM;
+    return medi::AMPI_SUM;
   }
 }
 
