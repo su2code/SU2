@@ -528,6 +528,7 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   }
 
   unsigned long* TranspNodeGlobal = new unsigned long[nTranspGlobal];
+  unsigned long i = 0;
   su2double dummy;
 
   while (getline (Transp_file, text_line)){
