@@ -118,6 +118,7 @@ protected:
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
   su2double TranspVel;  /*!< \brief Transpiration velocity magnitude. */
+  unsigned long nTranspNode;  /*!< \brief Number of local transpiration nodes. */
 
 public:
   
@@ -294,6 +295,10 @@ public:
    * \brief Get the number of variables of the problem.
    */
   unsigned short GetnOutputVariables(void);
+
+  void SetnTranspNode(unsigned long);
+
+  unsigned long GetnTranspNode(void);
   
   /*!
    * \brief A virtual member.
@@ -3105,6 +3110,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief  A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -11613,6 +11625,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Write the transpiration velocity sensitivity file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config)
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.

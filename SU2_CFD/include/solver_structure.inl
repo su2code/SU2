@@ -820,6 +820,10 @@ inline unsigned short CSolver::GetnSecondaryVar(void) { return nSecondaryVar; }
 
 inline unsigned short CSolver::GetnSecondaryVarGrad(void) { return nSecondaryVarGrad; }
 
+inline void CSolver::SetnTranspNode(unsigned long);
+  
+inline unsigned long CSolver::GetnTranspNode(void);
+
 inline su2double CSolver::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
 inline su2double CSolver::GetMin_Delta_Time(void) { return Min_Delta_Time; }

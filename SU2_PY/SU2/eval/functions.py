@@ -241,6 +241,10 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+    # transpiration boundary input
+    if 'TRANSPIRATION' in config['DEFINITION_DV']['KIND']:
+        pull.append(config["TRANSPIRATION_FILE"])
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     

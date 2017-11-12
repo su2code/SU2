@@ -413,7 +413,12 @@ def read_config(filename):
                case("ITER_AVERAGE_OBJ")       or\
                case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
-                break                
+                break        
+
+            # string parameters
+            if case("TRANSPIRATION_FILENAME"):
+                data_dict[this_param] = int(this_value)
+                braek;        
             
             
             # unitary design variable definition
@@ -717,39 +722,12 @@ def read_config(filename):
 
     # Check if any DVs are transpiration
     kind_dvs = data_dict['DEFINITION_DV']['KIND']
-    if 'TRANSPIRATION' in kind_dvs:
-        transp_filename = ''
+    if kind_dvs.haskey('TRANSPIRATION'):
 
-        while 1:
-            # break loop if file name specified
-            if not transp_filename == ''
-                break
-
-            # read the line
-            line = input_file.readline()
-            if not line:
-                break
-
-            # remove line returns
-            line = line.strip('\r\n')
-            # make sure it has useful data
-            if (not "=" in line) or (line[0] == '%'):
-                continue
-            # split across equals sign
-            line = line.split("=",1)
-            this_param = line[0].strip()
-            this_value = line[1].strip()
-
-            for case in switch(this_param):
-                if case('TRANSPIRATION_FILENAME'):
-                    transp_filename = this_value
-                    data_dict['TRANSPIRATION_FILENAME'] = transp_filename
-                    break
-
-        assert not transp_filename === '' , ('Config file has transpiration DV but no specification for transpiration boundary input file')
+        assert data_dict.has_key('TRANSPIRATION_FILENAME') , ('Config file has transpiration DV but no specification for transpiration boundary input file')
 
         # read the transpiration boundary input file
-        transp_file  = open(transp_filename)
+        transp_file  = open(data_dict('TRANSPIRATION_FILENAME'))
         transp_node  = []
         transp_value = []
 
@@ -937,9 +915,9 @@ def write_config(filename,param_dict):
                             output_file.write("%s " % new_value['SIZE'][i_dv])
                             # also output new transpiration file
                             transp_file = open(param_dict['TRANSPIRATION_FILENAME'],'w')
-                            for j_transp in range(0,new_value['SIZE'][i_dv])
-                                transp_file.write("%s\t" % param_dict['TRANSPIRATION'][j_transp][0])
-                                transp_file.write("%s\n" % param_dict['TRANSPIRATION'][j_transp][1])
+                            for i_param in range(0,new_value['SIZE'][i_dv])
+                                transp_file.write("%s\t" % param_dict['TRANSPIRATION'][i_param][0])
+                                transp_file.write("%s\n" % param_dict['TRANSPIRATION'][i_param][1]+new_value['PARAM'][i_dv][i_param])
                             transp_file.close()
                         else:
                             n_param = len(new_value['PARAM'][i_dv])

@@ -502,6 +502,128 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
       }
     //}
   }
+  OutputTranspirationSensitivity(geometry, config);
+}
+
+void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config) {
+
+  unsigned long nTranspLoc = direct_solver->GetnTranspNode(), nTranspGlobal = 0;
+  string text_line;
+  string fn = config->GetTranspirationFileName();
+  ifstream Transp_file;
+  const char *filename = fn.c_str();
+
+  int rank = MASTER_NODE;
+  int nProcessor = SINGLE_NODE, iProcessor;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+  Transp_file.open(filename, ios::in);
+  if(Transp_file.fail()){
+      cout<<"There is no file defining transpiration "<< filename << "."<<endl;
+      exit(EXIT_FAILURE);
+  }
+
+  while (getline (Transp_file, text_line)){
+    nTranspGlobal++;
+  }
+
+  unsigned long* TranspNodeGlobal = new unsigned long[nTranspGlobal];
+  unsigned long i = 0;
+
+  while (getline (Transp_file, text_line)){
+    istringstream point_line(text_line);
+    point_line >> TranspNodeGlobal[i];
+    i++;
+  }
+  Transp_file.close();
+
+  /*--- Communicate sensitivities to Master ---*/
+  unsigned long nTranspMax;
+  if(rank == MASTER_NODE){
+    unsigned long *Buffer_Recv_n = new unsigned long[nProcessor];
+  }
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(&nTranspLoc , 1, MPI_UNSIGNED_LONG, Buffer_Recv_n, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nTranspLoc, &nTranspMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  Buffer_Recv_n[0] = nTranspGlobal;
+  nTranspMax = nTranspGlobal;
+#endif
+
+  su2double *Buffer_Send_Sens = new su2double[nTranspMax];
+  unsigned long* Buffer_Send_Ind = new unsigned long[nTranspMax];
+  if(rank == MASTER_NODE){
+    su2double *Buffer_Recv_Sens = new su2double[nTranspMax*nProcessor];
+    unsigned long *Buffer_Recv_Ind = new unsigned long[nTranspMax*nProcessor];
+  }
+
+  for(i = 0; i < nTranspMax; i++){
+    Buffer_Send_Sens[i] = 0.0;
+  }
+
+  i = 0;
+  unsigned long iNodeLocal, iNodeTransp;
+  for(iNodeLocal = 0; iNodelocal < geometry->GetnPointDomain(); iNodeLocal++){
+    iNodeGlobal = geometry->node[iNodeLocal]->GetGlobalIndex();
+    for(iNodeTransp = 0; iNodeTransp < nTranspGlobal; iNodeTransp++){
+      if(TranspNodeGlobal[iNodeTransp] == iNodeGlobal){
+        Buffer_Send_Sens[i] = node[iPoint]->GetSensitivityTranspiration();
+        Buffer_Send_Ind[i] = iNodeGlobal;
+        i++;
+        break;
+      }
+    }
+    if(i == nTranspLoc){
+      break;
+    }
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(&Buffer_Send_Sens, nTranspMax, MPI_DOUBLE, Buffer_Recv_Sens, nTranspMax, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(&Buffer_Send_Ind, nTranspMax, MPI_UNSIGNED_LONG, Buffer_Recv_Ind, nTranspMax, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  for(i = 0; i < nTranspGlobal; i++){
+    Buffer_Recv_Sens[i] = Buffer_Send_Sens[i];
+    Buffer_Recv_Ind[i] = Buffer_Send_Ind[i];
+  }
+#endif
+
+  /*--- Now sort and print sensitivities ---*/
+  if(rank == MASTER_NODE){
+    unsigned long Global_Index;
+    su2double *Sens_Print = new su2double[nTranspGlobal];
+    for(iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+      for(iNodeTransp = 0; iNodeTransp < Buffer_Recv_n[iProcessor]; iNodeTransp++){
+        Global_Index = Buffer_Recv_Ind[iProcessor*nTranspMax+iNodeTransp];
+        for(i = 0; i < nTranspGlobal; i++){
+          if(TranspNodeGlobal[i] == Global_Index){
+            Sens_Print[i] = Buffer_Recv_Sens[iProcessor*nTranspMax+iNodeTransp];
+            break;
+          }
+        }
+      }
+    }
+
+    ofstream Transp_AdjFile;
+    Transp_AdjFile.precision(15);
+    Transp_AdjFile.open("Adj_Transp.dat", ios::out);
+    for(iNodeTransp = 0; iNodeTransp < nTranspGlobal; iNodeTransp++){
+      Transp_AdjFile << TranspNodeGlobal[iNodeTransp] << "\t";
+      Transp_AdjFile << scientific << Sens_Print[iNodeTransp] << endl;
+    }
+    Transp_AdjFile.close();
+
+    delete [] Buffer_Recv_n;
+    delete [] Buffer_Recv_Sens;
+    delete [] Buffer_Recv_Ind;
+    delete [] Sens_Print;
+  }
+  delete [] TranspNodeGlobal;
+  delete [] Buffer_Send_Sens;
+  delete [] Buffer_Send_Ind;
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
