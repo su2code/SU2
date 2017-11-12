@@ -507,7 +507,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 
 void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config) {
 
-  unsigned long *nTranspLoc = new unsigned long[1];
+  unsigned long nTranspLoc = direct_solver->GetnTranspNode();
   unsigned long nTranspGlobal = 0;
   string text_line;
   string fn = config->GetTranspirationFileName();
@@ -545,13 +545,14 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
 
   /*--- Communicate sensitivities to Master ---*/
   unsigned long nTranspMax, *Buffer_Recv_n = NULL;
+  unsigned long *Buffer_Send_n = new unsigned long[1];
   if(rank == MASTER_NODE){
     Buffer_Recv_n = new unsigned long[nProcessor];
   }
-  nTranspLoc[0] = direct_solver->GetnTranspNode();
+  Buffer_Send_n[0] = nTranspLoc;
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&nTranspLoc, 1, MPI_UNSIGNED_LONG, Buffer_Recv_n, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nTranspLoc[0], &nTranspMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Gather(&Buffer_Send_n, 1, MPI_UNSIGNED_LONG, Buffer_Recv_n, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nTranspLoc, &nTranspMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 #else
   Buffer_Recv_n[0] = nTranspGlobal;
   nTranspMax = nTranspGlobal;
@@ -571,7 +572,7 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   i = 0;
   unsigned long iNodeLocal, iNodeTransp, iNodeGlobal;
   for(iNodeLocal = 0; iNodeLocal < geometry->GetnPointDomain(); iNodeLocal++){
-    if(i == nTranspLoc[0]){
+    if(i == nTranspLoc){
       break;
     }
     iNodeGlobal = geometry->node[iNodeLocal]->GetGlobalIndex();
@@ -625,7 +626,7 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
     delete [] Buffer_Recv_Ind;
     delete [] Sens_Print;
   }
-  delete [] nTranspLoc;
+  delete [] Buffer_Send_n;
   delete [] TranspNodeGlobal;
   delete [] Buffer_Send_Sens;
   delete [] Buffer_Send_Ind;
