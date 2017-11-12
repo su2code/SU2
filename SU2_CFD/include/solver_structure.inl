@@ -877,6 +877,8 @@ inline void CSolver::SetTranspiration(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config){}
+
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
 inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
