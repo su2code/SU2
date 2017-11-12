@@ -824,6 +824,10 @@ inline void CSolver::SetnTranspNode(unsigned long val_var){ nTranspNode = val_va
   
 inline unsigned long CSolver::GetnTranspNode(void){ return nTranspNode; }
 
+inline void CSolver::SetnTranspNode_Global(unsigned long val_var){ nTranspNode_Global = val_var; }
+  
+inline unsigned long CSolver::GetnTranspNode_Global(void){ return nTranspNode_Global; }
+
 inline su2double CSolver::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
 inline su2double CSolver::GetMin_Delta_Time(void) { return Min_Delta_Time; }

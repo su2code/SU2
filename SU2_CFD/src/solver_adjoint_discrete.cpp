@@ -508,7 +508,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config) {
 
   unsigned long nTranspLoc = direct_solver->GetnTranspNode();
-  unsigned long nTranspGlobal = 0;
+  unsigned long nTranspGlobal = direct_solver->GetnTranspNode_Global();
   string text_line;
   string fn = config->GetTranspirationFileName();
   ifstream Transp_file;
@@ -527,12 +527,7 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
       exit(EXIT_FAILURE);
   }
 
-  while (getline (Transp_file, text_line)){
-    nTranspGlobal++;
-  }
-
   unsigned long* TranspNodeGlobal = new unsigned long[nTranspGlobal];
-  unsigned long i = 0;
   su2double dummy;
 
   while (getline (Transp_file, text_line)){
@@ -544,7 +539,8 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   Transp_file.close();
 
   /*--- Communicate sensitivities to Master ---*/
-  unsigned long nTranspMax, *Buffer_Recv_n = NULL;
+  unsigned long nTranspMax;
+  unsigned long *Buffer_Recv_n = NULL;
   unsigned long *Buffer_Send_n = new unsigned long[1];
   if(rank == MASTER_NODE){
     Buffer_Recv_n = new unsigned long[nProcessor];
@@ -558,8 +554,10 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   nTranspMax = nTranspGlobal;
 #endif
 
-  su2double *Buffer_Recv_Sens = NULL, *Buffer_Send_Sens = new su2double[nTranspMax];
-  unsigned long *Buffer_Recv_Ind = NULL, *Buffer_Send_Ind = new unsigned long[nTranspMax];
+  su2double *Buffer_Recv_Sens = NULL;
+  su2double *Buffer_Send_Sens = new su2double[nTranspMax];
+  unsigned long *Buffer_Recv_Ind = NULL;
+  unsigned long *Buffer_Send_Ind = new unsigned long[nTranspMax];
   if(rank == MASTER_NODE){
     Buffer_Recv_Sens = new su2double[nTranspMax*nProcessor];
     Buffer_Recv_Ind = new unsigned long[nTranspMax*nProcessor];

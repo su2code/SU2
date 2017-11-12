@@ -3458,7 +3458,7 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
 }
 
 void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
-    unsigned long iPoint, iPoint_Global, nTranspNodeLoc;
+    unsigned long iPoint, iPoint_Global, nTranspNodeLoc, nTranspNodeGlobal;
     long iNode_Local;
     string text_line;
     string fn = config->GetTranspirationFileName();
@@ -3498,6 +3498,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
     }
 
     nTranspNodeLoc = 0;
+    nTranspNodeGlobal = 0;
     while (getline (Transp_file, text_line)){
         istringstream point_line(text_line);
         point_line >> iPoint_Global;
@@ -3507,9 +3508,11 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
           node[iNode_Local]->SetTranspiration(TranspVel);
           nTranspNodeLoc++;
         }
+        nTranspNodeGlobal++;
     }
 
     SetnTranspNode(nTranspNodeLoc);
+    SetnTranspNode_Global(nTranspNodeGlobal);
 
     Transp_file.close();
     delete [] Global2Local;

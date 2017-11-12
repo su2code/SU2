@@ -119,6 +119,7 @@ protected:
 
   su2double TranspVel;  /*!< \brief Transpiration velocity magnitude. */
   unsigned long nTranspNode;  /*!< \brief Number of local transpiration nodes. */
+  unsigned long nTranspNode_Global;  /*!< \brief Number of global transpiration nodes. */
 
 public:
   
@@ -305,6 +306,16 @@ public:
    * \brief Get the number of transpiration nodes for the problem.
    */
   unsigned long GetnTranspNode(void);
+
+  /*!
+   * \brief Set the total number of transpiration nodes for the problem.
+   */
+  void SetnTranspNode_Global(unsigned long val_var);
+
+  /*!
+   * \brief Get the total number of transpiration nodes for the problem.
+   */
+  unsigned long GetnTranspNode_Global(void);
   
   /*!
    * \brief A virtual member.
