@@ -582,8 +582,8 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&Buffer_Send_Sens, nTranspMax, MPI_DOUBLE, Buffer_Recv_Sens, nTranspMax, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&Buffer_Send_Ind, nTranspMax, MPI_UNSIGNED_LONG, Buffer_Recv_Ind, nTranspMax, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Sens, nTranspMax, MPI_DOUBLE, Buffer_Recv_Sens, nTranspMax, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Ind, nTranspMax, MPI_UNSIGNED_LONG, Buffer_Recv_Ind, nTranspMax, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #else
   for(i = 0; i < nTranspGlobal; i++){
     Buffer_Recv_Sens[i] = Buffer_Send_Sens[i];
