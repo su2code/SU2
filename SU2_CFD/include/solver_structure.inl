@@ -820,7 +820,7 @@ inline unsigned short CSolver::GetnSecondaryVar(void) { return nSecondaryVar; }
 
 inline unsigned short CSolver::GetnSecondaryVarGrad(void) { return nSecondaryVarGrad; }
 
-inline void CSolver::SetnTranspNode(unsigned long val_var){ nTranspNode = valVar; }
+inline void CSolver::SetnTranspNode(unsigned long val_var){ nTranspNode = val_var; }
   
 inline unsigned long CSolver::GetnTranspNode(void){ return nTranspNode; }
 
