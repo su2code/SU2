@@ -507,7 +507,8 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 
 void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config) {
 
-  unsigned long nTranspLoc = direct_solver->GetnTranspNode(), nTranspGlobal = 0;
+  unsigned long *nTranspLoc = new unsigned long[1];
+  unsigned long nTranspGlobal = 0;
   string text_line;
   string fn = config->GetTranspirationFileName();
   ifstream Transp_file;
@@ -532,29 +533,32 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
 
   unsigned long* TranspNodeGlobal = new unsigned long[nTranspGlobal];
   unsigned long i = 0;
+  su2double dummy;
 
   while (getline (Transp_file, text_line)){
     istringstream point_line(text_line);
     point_line >> TranspNodeGlobal[i];
+    point_line >> dummy;
     i++;
   }
   Transp_file.close();
 
   /*--- Communicate sensitivities to Master ---*/
-  unsigned long nTranspMax, *Buffer_Recv_n;
+  unsigned long nTranspMax, *Buffer_Recv_n = NULL;
   if(rank == MASTER_NODE){
     Buffer_Recv_n = new unsigned long[nProcessor];
   }
+  nTranspLoc[0] = direct_solver->GetnTranspNode();
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&nTranspLoc , 1, MPI_UNSIGNED_LONG, Buffer_Recv_n, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(&nTranspLoc, 1, MPI_UNSIGNED_LONG, Buffer_Recv_n, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nTranspLoc, &nTranspMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 #else
   Buffer_Recv_n[0] = nTranspGlobal;
   nTranspMax = nTranspGlobal;
 #endif
 
-  su2double *Buffer_Recv_Sens, *Buffer_Send_Sens = new su2double[nTranspMax];
-  unsigned long *Buffer_Recv_Ind, *Buffer_Send_Ind = new unsigned long[nTranspMax];
+  su2double *Buffer_Recv_Sens = NULL, *Buffer_Send_Sens = new su2double[nTranspMax];
+  unsigned long *Buffer_Recv_Ind = NULL, *Buffer_Send_Ind = new unsigned long[nTranspMax];
   if(rank == MASTER_NODE){
     Buffer_Recv_Sens = new su2double[nTranspMax*nProcessor];
     Buffer_Recv_Ind = new unsigned long[nTranspMax*nProcessor];
@@ -567,6 +571,9 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   i = 0;
   unsigned long iNodeLocal, iNodeTransp, iNodeGlobal;
   for(iNodeLocal = 0; iNodeLocal < geometry->GetnPointDomain(); iNodeLocal++){
+    if(i == nTranspLoc[0]){
+      break;
+    }
     iNodeGlobal = geometry->node[iNodeLocal]->GetGlobalIndex();
     for(iNodeTransp = 0; iNodeTransp < nTranspGlobal; iNodeTransp++){
       if(TranspNodeGlobal[iNodeTransp] == iNodeGlobal){
@@ -575,9 +582,6 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
         i++;
         break;
       }
-    }
-    if(i == nTranspLoc){
-      break;
     }
   }
 
@@ -621,6 +625,7 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
     delete [] Buffer_Recv_Ind;
     delete [] Sens_Print;
   }
+  delete [] nTranspLoc;
   delete [] TranspNodeGlobal;
   delete [] Buffer_Send_Sens;
   delete [] Buffer_Send_Ind;
