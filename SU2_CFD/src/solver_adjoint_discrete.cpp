@@ -541,9 +541,9 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   Transp_file.close();
 
   /*--- Communicate sensitivities to Master ---*/
-  unsigned long nTranspMax;
+  unsigned long nTranspMax, *Buffer_Recv_n;
   if(rank == MASTER_NODE){
-    unsigned long *Buffer_Recv_n = new unsigned long[nProcessor];
+    Buffer_Recv_n = new unsigned long[nProcessor];
   }
 #ifdef HAVE_MPI
   SU2_MPI::Gather(&nTranspLoc , 1, MPI_UNSIGNED_LONG, Buffer_Recv_n, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
@@ -553,11 +553,11 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   nTranspMax = nTranspGlobal;
 #endif
 
-  su2double *Buffer_Send_Sens = new su2double[nTranspMax];
-  unsigned long* Buffer_Send_Ind = new unsigned long[nTranspMax];
+  su2double *Buffer_Recv_Sens, *Buffer_Send_Sens = new su2double[nTranspMax];
+  unsigned long *Buffer_Recv_Ind, *Buffer_Send_Ind = new unsigned long[nTranspMax];
   if(rank == MASTER_NODE){
-    su2double *Buffer_Recv_Sens = new su2double[nTranspMax*nProcessor];
-    unsigned long *Buffer_Recv_Ind = new unsigned long[nTranspMax*nProcessor];
+    Buffer_Recv_Sens = new su2double[nTranspMax*nProcessor];
+    Buffer_Recv_Ind = new unsigned long[nTranspMax*nProcessor];
   }
 
   for(i = 0; i < nTranspMax; i++){
@@ -565,12 +565,12 @@ void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig
   }
 
   i = 0;
-  unsigned long iNodeLocal, iNodeTransp;
-  for(iNodeLocal = 0; iNodelocal < geometry->GetnPointDomain(); iNodeLocal++){
+  unsigned long iNodeLocal, iNodeTransp, iNodeGlobal;
+  for(iNodeLocal = 0; iNodeLocal < geometry->GetnPointDomain(); iNodeLocal++){
     iNodeGlobal = geometry->node[iNodeLocal]->GetGlobalIndex();
     for(iNodeTransp = 0; iNodeTransp < nTranspGlobal; iNodeTransp++){
       if(TranspNodeGlobal[iNodeTransp] == iNodeGlobal){
-        Buffer_Send_Sens[i] = node[iPoint]->GetSensitivityTranspiration();
+        Buffer_Send_Sens[i] = node[iNodeLocal]->GetSensitivityTranspiration();
         Buffer_Send_Ind[i] = iNodeGlobal;
         i++;
         break;
