@@ -296,8 +296,14 @@ public:
    */
   unsigned short GetnOutputVariables(void);
 
-  void SetnTranspNode(unsigned long);
+  /*!
+   * \brief Set the number of transpiration nodes for the problem.
+   */
+  void SetnTranspNode(unsigned long val_var);
 
+  /*!
+   * \brief Get the number of transpiration nodes for the problem.
+   */
   unsigned long GetnTranspNode(void);
   
   /*!
@@ -11631,7 +11637,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config)
+  void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.
