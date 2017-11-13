@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
        ifstream Transp_AdjFile;
        Transp_AdjFile.open("Adj_Transp.dat", ios::in);
 
-       if(Transp_file.fail()){
+       if(Transp_AdjFile.fail()){
          cout<<"There is no file defining transpiration Adj_Transp.dat."<<endl;
          exit(EXIT_FAILURE);
        }
