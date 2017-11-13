@@ -214,11 +214,15 @@ int main(int argc, char *argv[]) {
      /*--- Initialize structure to store the gradient ---*/
 
      Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+     bool transp = false;
 
      for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
        Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
        for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
          Gradient[iDV][iDV_Value] = 0.0;
+       }
+       if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSPIRATION){
+         transp = true;
        }
      }
 
@@ -256,36 +260,31 @@ int main(int argc, char *argv[]) {
      }
 
      /*--- Compute sensitivities of transpiration boundary velocity ---*/
-     if(config_container[ZONE_0]->GetnMarker_Transpiration() > 0 && config_container[ZONE_0]->GetAD_Mode()){
+     if(transp){
       if (rank == MASTER_NODE)
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
-      //// /*--- Initialize solver class ---*/
-      //// CSolver **solver_container = new CSolver*[nZone];
-      //// for (iZone = 0; iZone < nZone; iZone++) {
-      ////   solver_container[iZone] = NULL;
-      //// }
 
-      //// SolutionPostprocessing(geometry_container, config_container, solver_container, nZone);
-      //// AD::StartRecording();
+       string text_line;
+       ifstream Transp_AdjFile;
+       Transp_AdjFile.open("Adj_Transp.dat", ios::in);
 
-      //// /*--- Compute pressure at boundary using transpiration velocity ---*/
-      //// ComputeTranspirationPressure(geometry_container[ZONE_0], config_container[ZONE_0], solver_container[ZONE_0]);
-      //// solver_container[ZONE_0]->Pressure_Forces(geometry_container[ZONE_0], config_container[ZONE_0]);
-      //// su2double Objective_Function = Compute_TotalObjFunc(config_container[ZONE_0], solver_container[ZONE_0]);
+       if(Transp_file.fail()){
+         cout<<"There is no file defining transpiration "<< "Adj_Transp.dat" << "."<<endl;
+         exit(EXIT_FAILURE);
+       }
 
-      //// if (rank==MASTER_NODE){
-      ////   SU2_TYPE::SetDerivative(Objective_Function,1.0);
-      //// }else{
-      ////   SU2_TYPE::SetDerivative(Objective_Function,0.0);
-      //// }
-      //// AD::StopRecording();
-      //// AD::ComputeAdjoint();
+       unsigned long dummy;
 
-      //// su2double extracted_derivative;
-      //// su2double dJdalpha = SU2_TYPE::GetDerivative(extracted_derivative);
-
-      //// cout << "partial_J/partial_alpha = " << dJdalpha << "on rank " << rank << endl;
-       
+       for(iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++){
+         if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSPIRATION){
+           while (getline (Transp_AdjFile, text_line)){
+             istringstream point_line(text_line);
+             point_line >> dummy;
+             point_line >> Gradient[iDV][iDV_Value];
+           }
+         }
+       }
+       Transp_AdjFile.close();
      }
 
      /*--- Print gradients to screen and file ---*/
@@ -620,18 +619,21 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   
   for (iDV = 0; iDV < nDV; iDV++){
+
+    if(config->GetDesign_Variable(iDV) != TRANSPIRATION){
     
-    nDV_Value =  config->GetnDV_Value(iDV);
+      nDV_Value =  config->GetnDV_Value(iDV);
     
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       
-      /*--- Initilization with su2double resets the index ---*/
+        /*--- Initilization with su2double resets the index ---*/
       
-      DV_Value = 0.0;
+        DV_Value = 0.0;
       
-      AD::RegisterInput(DV_Value);
+        AD::RegisterInput(DV_Value);
       
-      config->SetDV_Value(iDV, iDV_Value, DV_Value);
+        config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      }
     }
   }
   
@@ -677,25 +679,29 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   AD::ComputeAdjoint();
   
   for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
-    
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-      localGradient = my_Gradient;
-#endif
-      /*--- Angle of Attack design variable (this is different,
-       the value comes form the input file) ---*/
-      
-      if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
-          (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
-        Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
-      }
 
-      Gradient[iDV][iDV_Value] += localGradient;
+    if(config->GetDesign_Variable(iDV) != TRANSPIRATION){
+
+      nDV_Value =  config->GetnDV_Value(iDV);
+    
+      for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+        DV_Value = config->GetDV_Value(iDV, iDV_Value);
+        my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+#ifdef HAVE_MPI
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        localGradient = my_Gradient;
+#endif
+        /*--- Angle of Attack design variable (this is different,
+         the value comes form the input file) ---*/
+      
+        if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
+            (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
+          Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
+        }
+
+        Gradient[iDV][iDV_Value] += localGradient;
+      }
     }
   }
 
