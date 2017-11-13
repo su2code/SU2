@@ -269,9 +269,12 @@ int main(int argc, char *argv[]) {
        Transp_AdjFile.open("Adj_Transp.dat", ios::in);
 
        if(Transp_file.fail()){
-         cout<<"There is no file defining transpiration "<< "Adj_Transp.dat" << "."<<endl;
+         cout<<"There is no file defining transpiration Adj_Transp.dat."<<endl;
          exit(EXIT_FAILURE);
        }
+
+       if(rank == MASTER_NODE)
+         cout << "Reading transpiration sensitivity file Adj_Transp.dat." << endl;
 
        unsigned long dummy;
 
