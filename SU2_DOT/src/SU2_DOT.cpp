@@ -280,10 +280,12 @@ int main(int argc, char *argv[]) {
 
        for(iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++){
          if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSPIRATION){
+          iDV_Value = 0;
            while (getline (Transp_AdjFile, text_line)){
              istringstream point_line(text_line);
              point_line >> dummy;
              point_line >> Gradient[iDV][iDV_Value];
+             iDV_Value++;
            }
          }
        }
