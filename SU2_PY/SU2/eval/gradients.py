@@ -262,8 +262,8 @@ def adjoint( func_name, config, state=None ):
         pull.append(files['TARGET_HEATFLUX'])
 
     # transpiration boundary input
-    if 'TRANSP_DV' in config['DEFINITION_DV']['KIND']:
-        pull.append(config["TRANSPIRATION_FILE"])
+    if config.has_key('TRANSPIRATION_FILE'):
+        pull.append(config['TRANSPIRATION_FILE'])
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
