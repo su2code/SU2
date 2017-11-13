@@ -208,6 +208,11 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
   geometry_container[ZONE_0]->ComputeSurf_Curvature(config_container[ZONE_0]);
   
+  /*--- Computation of positive surface area in the z-plane ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting reference area and span." << endl;
+  geometry_container[ZONE_0]->SetPositive_ZArea(config_container[ZONE_0]);
+  
   /*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
