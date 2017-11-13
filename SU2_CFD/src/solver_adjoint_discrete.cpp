@@ -266,13 +266,14 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
+  su2double Vel_Ref = config->GetVelocity_Ref();
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     //if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          direct_solver->node[iPoint]->RegisterTranspiration();
+          direct_solver->node[iPoint]->RegisterTranspiration(Vel_Ref);
         }
       }
     //}
