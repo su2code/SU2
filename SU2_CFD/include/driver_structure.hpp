@@ -887,9 +887,9 @@ public:
 
   /*!
    * \brief Set turbomachinery HB performance for all the geometrical zones(blade rows).
-   * \brief i-th geometrical zone, corresponding to the blade row.
+   * \brief i-th time instance.
    */
-  void SetAvgTurboPerformance_HB(unsigned short iGeomZone);
+  void SetAvgTurboPerformance_HB(unsigned short iTimeInstance);
 
   /*!
    * \brief Monitor the computation.

@@ -5389,12 +5389,8 @@ void CHBMultiZoneDriver::Run() {
       SetTurboPerformance(iTimeInstance);
   }
 
-  if (rank == MASTER_NODE){
-    for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++)
-      output->ComputeAvgTurboPerformance_HB(config_container[ZONE_0], nTimeInstances, iGeomZone);
-
-    output->WriteHBTurbomachineryOutput(solver_container, config_container, nTotTimeInstances, iTimeInstance);
-  }
+  if (rank == MASTER_NODE)
+      SetAvgTurboPerformance_HB(iTimeInstance);
 
 }
 
@@ -5510,8 +5506,12 @@ void CHBMultiZoneDriver::SetTurboPerformance(unsigned short iTimeInstance){
 
 }
 
-void CHBMultiZoneDriver::SetAvgTurboPerformance_HB(unsigned short iGeomZone){
+void CHBMultiZoneDriver::SetAvgTurboPerformance_HB(unsigned short iTimeInstance){
 
+  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++)
+    output->ComputeAvgTurboPerformance_HB(config_container[ZONE_0], nTimeInstances, iGeomZone);
+
+  output->WriteHBTurbomachineryOutput(solver_container, config_container, nTotTimeInstances, iTimeInstance);
 
 }
 
