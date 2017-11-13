@@ -449,7 +449,7 @@ def read_config(filename):
 
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
-                    elif this_dvKind=='TRANSPIRATION':
+                    elif this_dvKind=='TRANSP_DV':
                         this_dvSize   = this_dvParameters[0]
                         this_dvFFDTag = []
                     else:
@@ -722,7 +722,7 @@ def read_config(filename):
 
     # Check if any DVs are transpiration
     kind_dvs = data_dict['DEFINITION_DV']['KIND']
-    if kind_dvs.haskey('TRANSPIRATION'):
+    if kind_dvs.haskey('TRANSP_DV'):
 
         assert data_dict.has_key('TRANSPIRATION_FILENAME') , ('Config file has transpiration DV but no specification for transpiration boundary input file')
 
@@ -749,14 +749,14 @@ def read_config(filename):
             transp_value = transp_value + [this_value]
 
         for i, knd_dv in enumerate(kind_dvs):
-            if knd_dv == 'TRANSPIRATION':
+            if knd_dv == 'TRANSP_DV':
                 transp_data = []
                 data_dict['DEFINITION_DV']['PARAM'][i] = transp_value
                 for j in range(0,data_dict['DEFINITION_DV']['SIZE'][i]):
                     transp_data = transp_data + [transp_node, transp_value]
             break
 
-        data_dict['TRANSPIRATION'] = transp_data
+        data_dict['TRANSP_DV'] = transp_data
 
     return data_dict
     
@@ -911,13 +911,13 @@ def write_config(filename,param_dict):
                                 output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
                                 if i_param+1 < n_param:
                                     output_file.write(", ")
-                        elif this_kind == 'TRANSPIRATION':
+                        elif this_kind == 'TRANSP_DV':
                             output_file.write("%s " % new_value['SIZE'][i_dv])
                             # also output new transpiration file
                             transp_file = open(param_dict['TRANSPIRATION_FILENAME'],'w')
                             for i_param in range(0,new_value['SIZE'][i_dv])
-                                transp_file.write("%s\t" % param_dict['TRANSPIRATION'][i_param][0])
-                                transp_file.write("%s\n" % param_dict['TRANSPIRATION'][i_param][1]+new_value['PARAM'][i_dv][i_param])
+                                transp_file.write("%s\t" % param_dict['TRANSP_DV'][i_param][0])
+                                transp_file.write("%s\n" % param_dict['TRANSP_DV'][i_param][1]+new_value['PARAM'][i_dv][i_param])
                             transp_file.close()
                         else:
                             n_param = len(new_value['PARAM'][i_dv])

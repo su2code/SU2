@@ -1272,7 +1272,7 @@ enum ENUM_PARAM {
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102, /*!< \brief Angle of attack for FFD problem. */
-  TRANSPIRATION = 201        /*!< \brief Transpiration boundary problem. */
+  TRANSP_DV = 201        /*!< \brief Transpiration boundary problem. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1302,7 +1302,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("SURFACE_FILE", SURFACE_FILE)
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST)
-("TRANSPIRATION", TRANSPIRATION);
+("TRANSP_DV", TRANSP_DV);
 
 
 /*!
