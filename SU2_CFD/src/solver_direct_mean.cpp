@@ -9711,27 +9711,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
     invP_Tensor[iVar] = new su2double[nVar];
   }
 
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-
-  su2double Physical_t;
-  su2double Physical_dt;
-  /*--- Calculation of Physical time step for unsteady simulation ---*/
-  if (harmonic_balance) {
-
-    /*--- time interval using nTimeInstances ---*/
-    Physical_dt  = (su2double)config->GetHarmonicBalance_Period()/(su2double)(config->GetnTimeInstances());
-
-    /*--- Non-dimensionalization of time step.  ---*/
-    Physical_dt /= config->GetTime_Ref();
-    Physical_t  = config->GetiZone()*Physical_dt;
-  }
-  else {
-    Physical_dt = (su2double)config->GetDelta_UnstTimeND();
-    Physical_t  = (config->GetExtIter())*Physical_dt;
-  }
-  if (config->GetUnsteady_Simulation() == STEADY) Physical_t = 0;
-
-
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
     for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
@@ -9803,7 +9782,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
 
-          P_Total = config->GetRiemann_Var1(Marker_Tag)*( 1+0.04*sin(config->GetOmega_HB()[1]/config->GetOmega_Ref()*Physical_t));
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
@@ -12089,131 +12067,131 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
 
 void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-	unsigned short iDim;
-	unsigned long iVertex, iPoint, Point_Normal;
-	su2double Exhaust_Pressure, Exhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
-	su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
-
-	su2double Gas_Constant = config->GetGas_ConstantND();
-	bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool viscous = config->GetViscous();
-	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-	bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-			(config->GetKind_Turb_Model() == SST));
-	su2double DampingFactor = config->GetDamp_Engine_Exhaust();
-	su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
-
-	su2double *Normal = new su2double[nDim];
-
-	/*--- Retrieve the specified exhaust pressure in the engine (non-dimensional). ---*/
-
-	Target_Exhaust_Pressure = config->GetExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
-
-	/*--- Retrieve the old exhaust pressure in the engine exhaust (this has been computed in a preprocessing). ---*/
-
-	Exhaust_Pressure_old = config->GetExhaust_Pressure(Marker_Tag);
-
-	/*--- Compute the Pressure increment ---*/
-
-	Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * Baseline_Press;
-
-	/*--- Estimate the new exhaust pressure ---*/
-
-	Exhaust_Pressure = (1.0 - DampingFactor) * Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
-
-	/*--- The temperature is given (no iteration is required) ---*/
-
-	Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
-	Exhaust_Temperature /= config->GetTemperature_Ref();
-
-	/*--- The pressure is given (no iteration is required) ---*/
-
-	Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
-	Exhaust_Pressure /= config->GetPressure_Ref();
-
-	/*--- Loop over all the vertices on this boundary marker ---*/
-
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-		/*--- Allocate the value at the exhaust ---*/
-
-		V_exhaust = GetCharacPrimVar(val_marker, iVertex);
-
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-		if (geometry->node[iPoint]->GetDomain()) {
-
-			/*--- Index of the closest interior node ---*/
-
-			Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-			/*--- Normal vector for this vertex (negate for outward convention) ---*/
-
-			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-
-			Area = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt (Area);
-
-			for (iDim = 0; iDim < nDim; iDim++)
-				UnitNormal[iDim] = Normal[iDim]/Area;
-
-			/*--- Current solution at this boundary node ---*/
-
-			V_domain = node[iPoint]->GetPrimitive();
-
-			/*--- Subsonic inflow: there is one outgoing characteristic (u-c),
+  
+  unsigned short iDim;
+  unsigned long iVertex, iPoint, Point_Normal;
+  su2double Exhaust_Pressure, Exhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
+  su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
+  
+  su2double Gas_Constant = config->GetGas_ConstantND();
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool viscous = config->GetViscous();
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    (config->GetKind_Turb_Model() == SST));
+  su2double DampingFactor = config->GetDamp_Engine_Exhaust();
+  su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
+  
+  su2double *Normal = new su2double[nDim];
+  
+  /*--- Retrieve the specified exhaust pressure in the engine (non-dimensional). ---*/
+  
+  Target_Exhaust_Pressure = config->GetExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
+  
+  /*--- Retrieve the old exhaust pressure in the engine exhaust (this has been computed in a preprocessing). ---*/
+  
+  Exhaust_Pressure_old = config->GetExhaust_Pressure(Marker_Tag);
+  
+  /*--- Compute the Pressure increment ---*/
+  
+  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * Baseline_Press;
+  
+  /*--- Estimate the new exhaust pressure ---*/
+  
+  Exhaust_Pressure = (1.0 - DampingFactor) * Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
+  
+  /*--- The temperature is given (no iteration is required) ---*/
+  
+  Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
+  Exhaust_Temperature /= config->GetTemperature_Ref();
+  
+  /*--- The pressure is given (no iteration is required) ---*/
+  
+  Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
+  Exhaust_Pressure /= config->GetPressure_Ref();
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    /*--- Allocate the value at the exhaust ---*/
+    
+    V_exhaust = GetCharacPrimVar(val_marker, iVertex);
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Index of the closest interior node ---*/
+      
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+      
+      /*--- Current solution at this boundary node ---*/
+      
+      V_domain = node[iPoint]->GetPrimitive();
+      
+      /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
        therefore we can specify all but one state variable at the inlet.
        The outgoing Riemann invariant provides the final piece of info. ---*/
-
-			/*--- Store primitives and set some variables for clarity. ---*/
-
-			Density = V_domain[nDim+2];
-			Velocity2 = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Velocity[iDim] = V_domain[iDim+1];
-				Velocity2 += Velocity[iDim]*Velocity[iDim];
-			}
-			Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-			Pressure    = V_domain[nDim+1];
-			H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
-			SoundSpeed2 = Gamma*Pressure/Density;
-
-			/*--- Compute the acoustic Riemann invariant that is extrapolated
+      
+      /*--- Store primitives and set some variables for clarity. ---*/
+      
+      Density = V_domain[nDim+2];
+      Velocity2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[iDim+1];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      }
+      Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+      Pressure    = V_domain[nDim+1];
+      H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
+      SoundSpeed2 = Gamma*Pressure/Density;
+      
+      /*--- Compute the acoustic Riemann invariant that is extrapolated
        from the domain interior. ---*/
-
-			Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-			/*--- Total speed of sound ---*/
-
-			SoundSpeed_Exhaust2 = Gamma_Minus_One*(H_Exhaust - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
-
-			/*--- The flow direction is defined by the surface normal ---*/
-
-			for (iDim = 0; iDim < nDim; iDim++)
-				Flow_Dir[iDim] = -UnitNormal[iDim];
-
-			/*--- Dot product of normal and flow direction. This should
+      
+      Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Riemann += Velocity[iDim]*UnitNormal[iDim];
+      
+      /*--- Total speed of sound ---*/
+      
+      SoundSpeed_Exhaust2 = Gamma_Minus_One*(H_Exhaust - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
+      
+      /*--- The flow direction is defined by the surface normal ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        Flow_Dir[iDim] = -UnitNormal[iDim];
+      
+      /*--- Dot product of normal and flow direction. This should
        be negative due to outward facing boundary normal convention. ---*/
-
-			alpha = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				alpha += UnitNormal[iDim]*Flow_Dir[iDim];
-
-			/*--- Coefficients in the quadratic equation for the velocity ---*/
-
-			aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-			bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-			cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Exhaust2/Gamma_Minus_One;
-
-			/*--- Solve quadratic equation for velocity magnitude. Value must
+      
+      alpha = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        alpha += UnitNormal[iDim]*Flow_Dir[iDim];
+      
+      /*--- Coefficients in the quadratic equation for the velocity ---*/
+      
+      aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
+      bb = -1.0*Gamma_Minus_One*alpha*Riemann;
+      cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Exhaust2/Gamma_Minus_One;
+      
+      /*--- Solve quadratic equation for velocity magnitude. Value must
        be positive, so the choice of root is clear. ---*/
       
       dd      = bb*bb - 4.0*aa*cc;
@@ -15366,7 +15344,6 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
-  
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -15460,7 +15437,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
   
-
   /*--- Initialize nVarGrad for deallocation ---*/
   
   nVarGrad = nPrimVarGrad;
