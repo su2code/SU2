@@ -3505,7 +3505,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
         point_line >> TranspVel;
         iNode_Local = Global2Local[iPoint_Global];
         if(iNode_Local >= 0){
-          node[iNode_Local]->SetTranspiration(TranspVel);
+          node[iNode_Local]->SetTranspiration(TranspVel/config->GetVelocity_Ref());
           nTranspNodeLoc++;
         }
         nTranspNodeGlobal++;
