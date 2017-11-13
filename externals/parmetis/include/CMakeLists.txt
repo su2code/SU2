@@ -1,1 +1,0 @@
-install(FILES parmetis.h DESTINATION include)

@@ -71,19 +71,6 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Gradient);
 
 /*!
- * \brief Postprocessing computations of the solution.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] solver - Solution class of the problem.
- * \param[in] nZone - Number of zones for the problem.
- */
-void SolutionPostprocessing(CGeometry **geometry_container, CConfig **config_container, CSolver **solver_container, unsigned short nZone);
-
-void ComputeTranspirationPressure(CGeometry *geometry, CConfig *config, CSolver *solver);
-
-su2double Compute_TotalObjFunc(CConfig *config, CSolver *solver);
-
-/*!
  * \brief Prints the gradient information to a file.
  * \param[in] Gradient - The gradient data.
  * \param[in] config - Definition of the particular problem.
