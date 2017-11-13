@@ -86,6 +86,7 @@ COutput::COutput(CConfig *config) {
   Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
   Local_Data         = NULL;
+  Local_Data_Copy    = NULL;
   Parallel_Data      = NULL;
   Parallel_Surf_Data = NULL;
   
@@ -11152,6 +11153,9 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
+    bool cont_adj = config[iZone]->GetContinuous_Adjoint();
+    bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
+
     /*--- Flags identifying the types of files to be written. ---*/
     /*--- For now, we are disabling the parallel writers for Tecplot
           ASCII until we have parallel versions of all file formats
@@ -11218,9 +11222,9 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
-    if ((config[iZone]->GetFixed_CL_Mode()) &&
+    if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
         (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
-      
+
       if (rank == MASTER_NODE)
         cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
       
@@ -11239,9 +11243,9 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
 
-    if ((config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter() - 1 == iExtIter)) {
-      
+    if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
+        (config[iZone]->GetnExtIter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
+
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
       

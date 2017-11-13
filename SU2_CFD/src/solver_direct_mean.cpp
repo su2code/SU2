@@ -106,8 +106,10 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   New_Func       = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  
+  AoA_FD_Change = false;
 
-  FluidModel   =NULL;
+  FluidModel   = NULL;
   
   SlidingState     = NULL;
   SlidingStateNodes = NULL;
@@ -292,8 +294,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
-  FluidModel=NULL;
+  
+  AoA_FD_Change = false;
 
+  FluidModel = NULL;
+  
   /*--- Initialize quantities for the average process for internal flow ---*/
 
   AverageVelocity                   = NULL;
@@ -8515,6 +8520,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Total_CMy_Prev = Total_CMy;
       Total_CMz_Prev = Total_CMz;
       AoA_inc = 0.001;
+      AoA_FD_Change = true;
     }
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
@@ -8575,7 +8581,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   }
   
-  if ((config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+  if (AoA_FD_Change && (config->GetnExtIter()-1 == ExtIter) && Output && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
 
     /*--- Update angle of attack ---*/
 
@@ -15360,6 +15366,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
+  
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
