@@ -1232,7 +1232,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Z location of the waterline */
   addDoubleOption("GEO_WATERLINE_LOCATION", Geo_Waterline_Location, 0.0);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
-  addUnsignedShortOption("GEO_NUMBER_STATIONS", nWingStations, 101);
+  addUnsignedShortOption("GEO_NUMBER_STATIONS", nWingStations, 25);
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   /* DESCRIPTION: Output sectional forces for specified markers. */

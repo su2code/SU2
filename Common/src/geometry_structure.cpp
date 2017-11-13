@@ -588,23 +588,31 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
-  long MinDist_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, PointIndex, jVertex;
+  long Next_Edge;
+  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, iEdge, PointIndex, jEdge;
   su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
   *VarCoord = NULL, Variable_Interp;
-  passivedouble MinDist_Value, Dist_Value, Segment[3] = {0.0, 0.0, 0.0}, Tolerance = 1E-10;
+  bool Found_Edge;
+  passivedouble Dist_Value;
   vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
+  vector<unsigned long> IGlobalID_Index0, JGlobalID_Index0, IGlobalID_Index1, JGlobalID_Index1;
+  vector<unsigned long> IGlobalID_Airfoil, JGlobalID_Airfoil;
   vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
   int rank = MASTER_NODE;
   su2double **Coord_Variation = NULL;
+  vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra, IGlobalIDExtra, JGlobalIDExtra;
+  vector<bool> AddExtra;
+  unsigned long EdgeDonor;
+  bool FoundEdge;
   
 #ifdef HAVE_MPI
-  unsigned long nLocalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+  unsigned long nLocalEdge, MaxLocalEdge, *Buffer_Send_nEdge, *Buffer_Receive_nEdge, nBuffer_Coord, nBuffer_Variable, nBuffer_GlobalID;
   int nProcessor, iProcessor;
-  
   su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+  su2double *Buffer_Send_Variable, *Buffer_Receive_Variable;
+  unsigned long *Buffer_Send_GlobalID, *Buffer_Receive_GlobalID;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -612,6 +620,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   Ycoord_Airfoil.clear();
   Zcoord_Airfoil.clear();
   Variable_Airfoil.clear();
+  IGlobalID_Airfoil.clear();
+  JGlobalID_Airfoil.clear();
   
   /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
   
@@ -620,14 +630,14 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
   }
   
-  /*--- the grid variation is stored using a vertices information,
+  /*--- Grid movement is stored using a vertices information,
    we should go from vertex to points ---*/
   
   if (original_surface == false) {
     
     Coord_Variation = new su2double *[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-    Coord_Variation[iPoint] = new su2double [nDim];
+      Coord_Variation[iPoint] = new su2double [nDim];
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_GeoEval(iMarker) == YES) {
@@ -635,7 +645,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
           iPoint = vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < nDim; iDim++)
-          Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
         }
       }
     }
@@ -678,90 +688,104 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
               
               if (nDim == 2) {
-                
-                Xcoord_Index0.push_back(Segment_P0[0]);    Xcoord_Index1.push_back(Segment_P1[0]);
-                Ycoord_Index0.push_back(Segment_P0[2]);    Ycoord_Index1.push_back(Segment_P1[2]);
-                Zcoord_Index0.push_back(Segment_P0[1]);    Zcoord_Index1.push_back(Segment_P1[1]);
-                Variable_Index0.push_back(Variable_P0);    Variable_Index1.push_back(Variable_P1);
+                Xcoord_Index0.push_back(Segment_P0[0]);                     Xcoord_Index1.push_back(Segment_P1[0]);
+                Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
+                Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
+                Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
+                IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
+                JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
                 PointIndex++;
-                
               }
+              
               /*--- In 3D compute the intersection ---*/
               
               else if (nDim == 3) {
-                
                 intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-                
                 if (intersect == true) {
-                  
                   if (PointIndex == 0) {
                     Xcoord_Index0.push_back(Intersection[0]);
                     Ycoord_Index0.push_back(Intersection[1]);
                     Zcoord_Index0.push_back(Intersection[2]);
                     Variable_Index0.push_back(Variable_Interp);
+                    IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
+                    JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
                   }
                   if (PointIndex == 1) {
                     Xcoord_Index1.push_back(Intersection[0]);
                     Ycoord_Index1.push_back(Intersection[1]);
                     Zcoord_Index1.push_back(Intersection[2]);
                     Variable_Index1.push_back(Variable_Interp);
+                    IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
+                    JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
                   }
                   PointIndex++;
                 }
               }
               
             }
-            
           }
         }
-        
-        
         
       }
     }
   }
   
   if (original_surface == false) {
-    
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-    delete [] Coord_Variation[iPoint];
+      delete [] Coord_Variation[iPoint];
     delete [] Coord_Variation;
-    
   }
   
 #ifdef HAVE_MPI
   
   /*--- Copy the coordinates of all the points in the plane to the master node ---*/
   
-  nLocalVertex = 0, MaxLocalVertex = 0;
+  nLocalEdge = 0, MaxLocalEdge = 0;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  Buffer_Send_nEdge = new unsigned long [1];
+  Buffer_Receive_nEdge = new unsigned long [nProcessor];
   
-  nLocalVertex = Xcoord_Index0.size();
+  nLocalEdge = Xcoord_Index0.size();
   
-  Buffer_Send_nVertex[0] = nLocalVertex;
+  Buffer_Send_nEdge[0] = nLocalEdge;
   
-  SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalEdge, &MaxLocalEdge, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nEdge, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nEdge, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
-  Buffer_Send_Coord = new su2double [MaxLocalVertex*8];
-  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*8];
-  nBuffer = MaxLocalVertex*8;
+  Buffer_Send_Coord    = new su2double [MaxLocalEdge*6];
+  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalEdge*6];
   
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*8 + 0] = Xcoord_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 1] = Ycoord_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 2] = Zcoord_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 3] = Variable_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 4] = Xcoord_Index1[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 5] = Ycoord_Index1[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 6] = Zcoord_Index1[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 7] = Variable_Index1[iVertex];
+  Buffer_Send_Variable    = new su2double [MaxLocalEdge*2];
+  Buffer_Receive_Variable = new su2double [nProcessor*MaxLocalEdge*2];
+  
+  Buffer_Send_GlobalID    = new unsigned long [MaxLocalEdge*4];
+  Buffer_Receive_GlobalID = new unsigned long [nProcessor*MaxLocalEdge*4];
+  
+  nBuffer_Coord    = MaxLocalEdge*6;
+  nBuffer_Variable = MaxLocalEdge*2;
+  nBuffer_GlobalID = MaxLocalEdge*4;
+  
+  for (iEdge = 0; iEdge < nLocalEdge; iEdge++) {
+    Buffer_Send_Coord[iEdge*6 + 0] = Xcoord_Index0[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 1] = Ycoord_Index0[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 2] = Zcoord_Index0[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 3] = Xcoord_Index1[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 4] = Ycoord_Index1[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 5] = Zcoord_Index1[iEdge];
+    
+    Buffer_Send_Variable[iEdge*2 + 0] = Variable_Index0[iEdge];
+    Buffer_Send_Variable[iEdge*2 + 1] = Variable_Index1[iEdge];
+    
+    Buffer_Send_GlobalID[iEdge*4 + 0] = IGlobalID_Index0[iEdge];
+    Buffer_Send_GlobalID[iEdge*4 + 1] = JGlobalID_Index0[iEdge];
+    Buffer_Send_GlobalID[iEdge*4 + 2] = IGlobalID_Index1[iEdge];
+    Buffer_Send_GlobalID[iEdge*4 + 3] = JGlobalID_Index1[iEdge];
   }
   
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Variable, nBuffer_Variable, MPI_DOUBLE, Buffer_Receive_Variable, nBuffer_Variable, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalID, nBuffer_GlobalID, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalID, nBuffer_GlobalID, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
   /*--- Clean the vectors before adding the new vertices only to the master node ---*/
   
@@ -769,164 +793,126 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   Ycoord_Index0.clear();     Ycoord_Index1.clear();
   Zcoord_Index0.clear();     Zcoord_Index1.clear();
   Variable_Index0.clear();   Variable_Index1.clear();
+  IGlobalID_Index0.clear();  IGlobalID_Index1.clear();
+  JGlobalID_Index0.clear();  JGlobalID_Index1.clear();
   
   /*--- Copy the boundary to the master node vectors ---*/
   
   if (rank == MASTER_NODE) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 0] );
-        Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 1] );
-        Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 2] );
-        Variable_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 3] );
-        Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 4] );
-        Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 5] );
-        Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 6] );
-        Variable_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 7] );
+      for (iEdge = 0; iEdge < Buffer_Receive_nEdge[iProcessor]; iEdge++) {
+        Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 0] );
+        Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 1] );
+        Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 2] );
+        Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 3] );
+        Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 4] );
+        Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 5] );
+        
+        Variable_Index0.push_back( Buffer_Receive_Variable[ iProcessor*MaxLocalEdge*2 + iEdge*2 + 0] );
+        Variable_Index1.push_back( Buffer_Receive_Variable[ iProcessor*MaxLocalEdge*2 + iEdge*2 + 1] );
+        
+        IGlobalID_Index0.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 0] );
+        JGlobalID_Index0.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 1] );
+        IGlobalID_Index1.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 2] );
+        JGlobalID_Index1.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 3] );
+        
       }
     }
   }
   
-  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
+  delete[] Buffer_Send_Coord;      delete[] Buffer_Receive_Coord;
+  delete[] Buffer_Send_Variable;   delete[] Buffer_Receive_Variable;
+  delete[] Buffer_Send_GlobalID;   delete[] Buffer_Receive_GlobalID;
+  delete[] Buffer_Send_nEdge;    delete[] Buffer_Receive_nEdge;
   
 #endif
   
-  
-  
   if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
     
-    /*--- Remove edges with zero length ---*/
+    /*--- Remove singular edges ---*/
     
     bool Remove;
     
-    do {
-      
-      Remove = false;
-      
-      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+    do { Remove = false;
+      for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
         
-        Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[iVertex]);
-        Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[iVertex]);
-        Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[iVertex]);
-        
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        
-        if (Dist_Value <= Tolerance) {
+        if (((IGlobalID_Index0[iEdge] == IGlobalID_Index1[iEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index1[iEdge])) ||
+            ((IGlobalID_Index0[iEdge] == JGlobalID_Index1[iEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index1[iEdge]))) {
           
-          /*--- Remove edge with repeated points ---*/
+          Xcoord_Index0.erase (Xcoord_Index0.begin() + iEdge);
+          Ycoord_Index0.erase (Ycoord_Index0.begin() + iEdge);
+          Zcoord_Index0.erase (Zcoord_Index0.begin() + iEdge);
+          Variable_Index0.erase (Variable_Index0.begin() + iEdge);
+          IGlobalID_Index0.erase (IGlobalID_Index0.begin() + iEdge);
+          JGlobalID_Index0.erase (JGlobalID_Index0.begin() + iEdge);
           
-          Xcoord_Index0.erase (Xcoord_Index0.begin() + iVertex);
-          Ycoord_Index0.erase (Ycoord_Index0.begin() + iVertex);
-          Zcoord_Index0.erase (Zcoord_Index0.begin() + iVertex);
-          Variable_Index0.erase (Variable_Index0.begin() + iVertex);
-          
-          Xcoord_Index1.erase (Xcoord_Index1.begin() + iVertex);
-          Ycoord_Index1.erase (Ycoord_Index1.begin() + iVertex);
-          Zcoord_Index1.erase (Zcoord_Index1.begin() + iVertex);
-          Variable_Index1.erase (Variable_Index1.begin() + iVertex);
+          Xcoord_Index1.erase (Xcoord_Index1.begin() + iEdge);
+          Ycoord_Index1.erase (Ycoord_Index1.begin() + iEdge);
+          Zcoord_Index1.erase (Zcoord_Index1.begin() + iEdge);
+          Variable_Index1.erase (Variable_Index1.begin() + iEdge);
+          IGlobalID_Index1.erase (IGlobalID_Index1.begin() + iEdge);
+          JGlobalID_Index1.erase (JGlobalID_Index1.begin() + iEdge);
           
           Remove = true; break;
-          
         }
-        
         if (Remove) break;
-        
       }
-      
     } while (Remove == true);
     
+    /*--- Remove repeated edges computing distance, this could happend because the MPI ---*/
     
-    /*--- Remove repeated edges computing distance ---*/
-    
-    do {
-      
-      Remove = false;
-      
-      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
-        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+    do { Remove = false;
+      for (iEdge = 0; iEdge < Xcoord_Index0.size()-1; iEdge++) {
+        for (jEdge = iEdge+1; jEdge < Xcoord_Index0.size(); jEdge++) {
           
-          /*--- First check ---*/
+          /*--- Edges with the same orientation ---*/
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          if ((((IGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge])) ||
+               ((IGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge]))) &&
+              (((IGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge])) ||
+               ((IGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge])))) {
+                
+                Xcoord_Index0.erase (Xcoord_Index0.begin() + jEdge);
+                Ycoord_Index0.erase (Ycoord_Index0.begin() + jEdge);
+                Zcoord_Index0.erase (Zcoord_Index0.begin() + jEdge);
+                Variable_Index0.erase (Variable_Index0.begin() + jEdge);
+                IGlobalID_Index0.erase (IGlobalID_Index0.begin() + jEdge);
+                JGlobalID_Index0.erase (JGlobalID_Index0.begin() + jEdge);
+                
+                Xcoord_Index1.erase (Xcoord_Index1.begin() + jEdge);
+                Ycoord_Index1.erase (Ycoord_Index1.begin() + jEdge);
+                Zcoord_Index1.erase (Zcoord_Index1.begin() + jEdge);
+                Variable_Index1.erase (Variable_Index1.begin() + jEdge);
+                IGlobalID_Index1.erase (IGlobalID_Index1.begin() + jEdge);
+                JGlobalID_Index1.erase (JGlobalID_Index1.begin() + jEdge);
+                
+                Remove = true; break;
+                
+              }
           
-          /*--- Compute the distance to each point ---*/
+          /*--- Edges with oposite orientation ---*/
           
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          
-          /*--- Check the second point ---*/
-          
-          if (Dist_Value <= Tolerance) {
-            
-            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-            
-            /*--- Compute the distance to each point ---*/
-            
-            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-            
-            if (Dist_Value <= Tolerance) {
-              
-              /*--- Remove repeated point ---*/
-              
-              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
-              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
-              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
-              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
-              
-              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
-              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
-              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
-              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
-              
-              Remove = true; break;
-              
-            }
-            
-          }
-          
-          /*--- Second check ---*/
-          
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-          
-          /*--- Compute the distance to each point ---*/
-          
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          
-          /*--- Check the second point ---*/
-          
-          if (Dist_Value <= Tolerance) {
-            
-            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-            
-            /*--- Compute the distance to each point ---*/
-            
-            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-            
-            if (Dist_Value <= Tolerance) {
-              
-              /*--- Remove repeated point ---*/
-              
-              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
-              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
-              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
-              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
-              
-              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
-              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
-              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
-              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
-              
-              Remove = true; break;
-            }
-          }
+          if ((((IGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge])) ||
+               ((IGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge]))) &&
+              (((IGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge])) ||
+               ((IGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge])))) {
+                
+                Xcoord_Index0.erase (Xcoord_Index0.begin() + jEdge);
+                Ycoord_Index0.erase (Ycoord_Index0.begin() + jEdge);
+                Zcoord_Index0.erase (Zcoord_Index0.begin() + jEdge);
+                Variable_Index0.erase (Variable_Index0.begin() + jEdge);
+                IGlobalID_Index0.erase (IGlobalID_Index0.begin() + jEdge);
+                JGlobalID_Index0.erase (JGlobalID_Index0.begin() + jEdge);
+                
+                Xcoord_Index1.erase (Xcoord_Index1.begin() + jEdge);
+                Ycoord_Index1.erase (Ycoord_Index1.begin() + jEdge);
+                Zcoord_Index1.erase (Zcoord_Index1.begin() + jEdge);
+                Variable_Index1.erase (Variable_Index1.begin() + jEdge);
+                IGlobalID_Index1.erase (IGlobalID_Index1.begin() + jEdge);
+                JGlobalID_Index1.erase (JGlobalID_Index1.begin() + jEdge);
+                
+                Remove = true; break;
+              }
           if (Remove) break;
         }
         if (Remove) break;
@@ -936,31 +922,20 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     
     if (Xcoord_Index0.size() != 1) {
       
+      /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
+      
       if (config->GetGeo_Description() == FUSELAGE) {
-        
-        /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
-        
         su2double Angle = -0.5*PI_NUMBER;
-        
-        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-          
-          su2double XCoord = Xcoord_Index0[iVertex]*cos(Angle) - Ycoord_Index0[iVertex]*sin(Angle);
-          su2double YCoord = Ycoord_Index0[iVertex]*cos(Angle) + Xcoord_Index0[iVertex]*sin(Angle);
-          su2double ZCoord = Zcoord_Index0[iVertex];
-          
-          Xcoord_Index0[iVertex] = XCoord;
-          Ycoord_Index0[iVertex] = YCoord;
-          Zcoord_Index0[iVertex] = ZCoord;
-          
-          XCoord = Xcoord_Index1[iVertex]*cos(Angle) - Ycoord_Index1[iVertex]*sin(Angle);
-          YCoord = Ycoord_Index1[iVertex]*cos(Angle) + Xcoord_Index1[iVertex]*sin(Angle);
-          ZCoord = Zcoord_Index1[iVertex];
-          Xcoord_Index1[iVertex] = XCoord;
-          Ycoord_Index1[iVertex] = YCoord;
-          Zcoord_Index1[iVertex] = ZCoord;
-          
+        for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+          su2double XCoord = Xcoord_Index0[iEdge]*cos(Angle) - Ycoord_Index0[iEdge]*sin(Angle);
+          su2double YCoord = Ycoord_Index0[iEdge]*cos(Angle) + Xcoord_Index0[iEdge]*sin(Angle);
+          su2double ZCoord = Zcoord_Index0[iEdge];
+          Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
+          XCoord = Xcoord_Index1[iEdge]*cos(Angle) - Ycoord_Index1[iEdge]*sin(Angle);
+          YCoord = Ycoord_Index1[iEdge]*cos(Angle) + Xcoord_Index1[iEdge]*sin(Angle);
+          ZCoord = Zcoord_Index1[iEdge];
+          Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
         }
-        
       }
       
       /*--- Identify the extreme of the curve and close it ---*/
@@ -968,100 +943,93 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
       Conection_Index0.reserve(Xcoord_Index0.size()+1);
       Conection_Index1.reserve(Xcoord_Index0.size()+1);
       
-      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-        Conection_Index0[iVertex] = 0;
-        Conection_Index1[iVertex] = 0;
+      for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+        Conection_Index0[iEdge] = 0;
+        Conection_Index1[iEdge] = 0;
       }
       
-      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
-        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+      for (iEdge = 0; iEdge < Xcoord_Index0.size()-1; iEdge++) {
+        for (jEdge = iEdge+1; jEdge < Xcoord_Index0.size(); jEdge++) {
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index0[jVertex]++; }
+          if (((IGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge])) ||
+              ((IGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge])))
+          { Conection_Index0[iEdge]++; Conection_Index0[jEdge]++; }
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index1[jVertex]++; }
+          if (((IGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge])) ||
+              ((IGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge])))
+          { Conection_Index0[iEdge]++; Conection_Index1[jEdge]++; }
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index0[jVertex]++; }
+          if (((IGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge])) ||
+              ((IGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge])))
+          { Conection_Index1[iEdge]++; Conection_Index0[jEdge]++; }
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index1[jVertex]++; }
+          if (((IGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge])) ||
+              ((IGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge])))
+          { Conection_Index1[iEdge]++; Conection_Index1[jEdge]++; }
           
         }
       }
       
       /*--- Connect extremes of the curves ---*/
       
-      vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
-      vector<bool> AddExtra;
-      unsigned long VertexDonor;
-      bool FoundVertex;
+      /*--- First: Identify the extremes of the curve in the extra vector  ---*/
       
-      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-        if (Conection_Index0[iVertex] == 0) {
-          XcoordExtra.push_back(Xcoord_Index0[iVertex]);
-          YcoordExtra.push_back(Ycoord_Index0[iVertex]);
-          ZcoordExtra.push_back(Zcoord_Index0[iVertex]);
-          VariableExtra.push_back(Variable_Index0[iVertex]);
+      for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+        if (Conection_Index0[iEdge] == 0) {
+          XcoordExtra.push_back(Xcoord_Index0[iEdge]);
+          YcoordExtra.push_back(Ycoord_Index0[iEdge]);
+          ZcoordExtra.push_back(Zcoord_Index0[iEdge]);
+          VariableExtra.push_back(Variable_Index0[iEdge]);
+          IGlobalIDExtra.push_back(IGlobalID_Index0[iEdge]);
+          JGlobalIDExtra.push_back(JGlobalID_Index0[iEdge]);
           AddExtra.push_back(true);
         }
-        if (Conection_Index1[iVertex] == 0) {
-          XcoordExtra.push_back(Xcoord_Index1[iVertex]);
-          YcoordExtra.push_back(Ycoord_Index1[iVertex]);
-          ZcoordExtra.push_back(Zcoord_Index1[iVertex]);
-          VariableExtra.push_back(Variable_Index1[iVertex]);
+        if (Conection_Index1[iEdge] == 0) {
+          XcoordExtra.push_back(Xcoord_Index1[iEdge]);
+          YcoordExtra.push_back(Ycoord_Index1[iEdge]);
+          ZcoordExtra.push_back(Zcoord_Index1[iEdge]);
+          VariableExtra.push_back(Variable_Index1[iEdge]);
+          IGlobalIDExtra.push_back(IGlobalID_Index1[iEdge]);
+          JGlobalIDExtra.push_back(JGlobalID_Index1[iEdge]);
           AddExtra.push_back(true);
         }
       }
       
-      /*---Compute min distance from the points ---*/
+      /*--- Second, if it is an open curve then find the closest point to an extreme to close it  ---*/
       
       if (XcoordExtra.size() > 1) {
         
-        for (iVertex = 0; iVertex < XcoordExtra.size()-1; iVertex++) {
+        for (iEdge = 0; iEdge < XcoordExtra.size()-1; iEdge++) {
           
-          su2double MinDist = 1E6;
-          FoundVertex = false;
-          VertexDonor = 0;
-          
-          for (jVertex = iVertex+1; jVertex <XcoordExtra.size(); jVertex++) {
-            Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iVertex])-SU2_TYPE::GetValue(XcoordExtra[jVertex]), 2.0));
-            if ((Dist_Value < MinDist) && (AddExtra[iVertex]) && (AddExtra[jVertex])) {
-              VertexDonor = jVertex;
-              FoundVertex = true;
+          su2double MinDist = 1E6; FoundEdge = false; EdgeDonor = 0;
+          for (jEdge = iEdge+1; jEdge < XcoordExtra.size(); jEdge++) {
+            Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iEdge])-SU2_TYPE::GetValue(XcoordExtra[jEdge]), 2.0));
+            if ((Dist_Value < MinDist) && (AddExtra[iEdge]) && (AddExtra[jEdge])) {
+              EdgeDonor = jEdge; FoundEdge = true;
             }
           }
           
-          if (FoundVertex) {
+          if (FoundEdge) {
             
             /*--- Add first point of the new edge ---*/
             
-            Xcoord_Index0.push_back (XcoordExtra[iVertex]);
-            Ycoord_Index0.push_back (YcoordExtra[iVertex]);
-            Zcoord_Index0.push_back (ZcoordExtra[iVertex]);
-            Variable_Index0.push_back (VariableExtra[iVertex]);
-            AddExtra[iVertex] = false;
+            Xcoord_Index0.push_back (XcoordExtra[iEdge]);
+            Ycoord_Index0.push_back (YcoordExtra[iEdge]);
+            Zcoord_Index0.push_back (ZcoordExtra[iEdge]);
+            Variable_Index0.push_back (VariableExtra[iEdge]);
+            IGlobalID_Index0.push_back (IGlobalIDExtra[iEdge]);
+            JGlobalID_Index0.push_back (JGlobalIDExtra[iEdge]);
+            AddExtra[iEdge] = false;
             
             /*--- Add second (closest)  point of the new edge ---*/
             
-            Xcoord_Index1.push_back (XcoordExtra[VertexDonor]);
-            Ycoord_Index1.push_back (YcoordExtra[VertexDonor]);
-            Zcoord_Index1.push_back (ZcoordExtra[VertexDonor]);
-            Variable_Index1.push_back (VariableExtra[VertexDonor]);
-            AddExtra[VertexDonor] = false;
+            Xcoord_Index1.push_back (XcoordExtra[EdgeDonor]);
+            Ycoord_Index1.push_back (YcoordExtra[EdgeDonor]);
+            Zcoord_Index1.push_back (ZcoordExtra[EdgeDonor]);
+            Variable_Index1.push_back (VariableExtra[EdgeDonor]);
+            IGlobalID_Index1.push_back (IGlobalIDExtra[EdgeDonor]);
+            JGlobalID_Index1.push_back (JGlobalIDExtra[EdgeDonor]);
+            AddExtra[EdgeDonor] = false;
             
           }
           
@@ -1073,36 +1041,46 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         cout <<"There cutting system has failed, there is an incomplete curve (not used)." << endl;
       }
       
+      /*--- Find and add the trailing edge to to the list
+       and the contect the first point to the trailing edge ---*/
+      
       Trailing_Point = 0; Trailing_Coord = Xcoord_Index0[0];
-      for (iVertex = 1; iVertex < Xcoord_Index0.size(); iVertex++) {
-        if (Xcoord_Index0[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex; Trailing_Coord = Xcoord_Index0[iVertex];
+      for (iEdge = 1; iEdge < Xcoord_Index0.size(); iEdge++) {
+        if (Xcoord_Index0[iEdge] > Trailing_Coord) {
+          Trailing_Point = iEdge; Trailing_Coord = Xcoord_Index0[iEdge];
         }
       }
-      
-      /*--- Add the trailing edge to the list and the contect points to the trailing edge and remove from the original list ---*/
       
       Xcoord_Airfoil.push_back(Xcoord_Index0[Trailing_Point]);
       Ycoord_Airfoil.push_back(Ycoord_Index0[Trailing_Point]);
       Zcoord_Airfoil.push_back(Zcoord_Index0[Trailing_Point]);
       Variable_Airfoil.push_back(Variable_Index0[Trailing_Point]);
+      IGlobalID_Airfoil.push_back(IGlobalID_Index0[Trailing_Point]);
+      JGlobalID_Airfoil.push_back(JGlobalID_Index0[Trailing_Point]);
       
       Xcoord_Airfoil.push_back(Xcoord_Index1[Trailing_Point]);
       Ycoord_Airfoil.push_back(Ycoord_Index1[Trailing_Point]);
       Zcoord_Airfoil.push_back(Zcoord_Index1[Trailing_Point]);
       Variable_Airfoil.push_back(Variable_Index1[Trailing_Point]);
+      IGlobalID_Airfoil.push_back(IGlobalID_Index1[Trailing_Point]);
+      JGlobalID_Airfoil.push_back(JGlobalID_Index1[Trailing_Point]);
       
       Xcoord_Index0.erase (Xcoord_Index0.begin() + Trailing_Point);
       Ycoord_Index0.erase (Ycoord_Index0.begin() + Trailing_Point);
       Zcoord_Index0.erase (Zcoord_Index0.begin() + Trailing_Point);
       Variable_Index0.erase (Variable_Index0.begin() + Trailing_Point);
+      IGlobalID_Index0.erase (IGlobalID_Index0.begin() + Trailing_Point);
+      JGlobalID_Index0.erase (JGlobalID_Index0.begin() + Trailing_Point);
       
       Xcoord_Index1.erase (Xcoord_Index1.begin() + Trailing_Point);
       Ycoord_Index1.erase (Ycoord_Index1.begin() + Trailing_Point);
       Zcoord_Index1.erase (Zcoord_Index1.begin() + Trailing_Point);
       Variable_Index1.erase (Variable_Index1.begin() + Trailing_Point);
+      IGlobalID_Index1.erase (IGlobalID_Index1.begin() + Trailing_Point);
+      JGlobalID_Index1.erase (JGlobalID_Index1.begin() + Trailing_Point);
       
-      /*--- Algorithm for the rest of the points ---*/
+      
+      /*--- Algorithm for adding the rest of the points ---*/
       
       do {
         
@@ -1112,70 +1090,57 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         
         /*--- Find the closest point  ---*/
         
-        MinDist_Value = 1E6;
-        MinDist_Point = -1;
+        Found_Edge = false;
         
-        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
-          
-          /*--- Compute the distance to each point ---*/
-          
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= MinDist_Value) {
-            MinDist_Point = iVertex;
-            MinDist_Value = Dist_Value;
-            Index = 0;
+          if (((IGlobalID_Index0[iEdge] == IGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index0[iEdge] == JGlobalID_Airfoil[Airfoil_Point])) ||
+              ((IGlobalID_Index0[iEdge] == JGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index0[iEdge] == IGlobalID_Airfoil[Airfoil_Point]))) {
+            Next_Edge = iEdge; Found_Edge = true; Index = 0; break;
           }
           
-          /*--- Same with the second index  ---*/
-          
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
-          
-          /*--- Compute the distance to each point ---*/
-          
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= MinDist_Value) {
-            MinDist_Point = iVertex;
-            MinDist_Value = Dist_Value;
-            Index = 1;
+          if (((IGlobalID_Index1[iEdge] == IGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index1[iEdge] == JGlobalID_Airfoil[Airfoil_Point])) ||
+              ((IGlobalID_Index1[iEdge] == JGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index1[iEdge] == IGlobalID_Airfoil[Airfoil_Point]))) {
+            Next_Edge = iEdge; Found_Edge = true; Index = 1; break;
           }
           
         }
         
-        /*--- Add and remove the min distance to the list and the next point in the edge ---*/
+        /*--- Add and remove the next point to the list and the next point in the edge ---*/
         
-        if (MinDist_Value < Tolerance) {
+        if (Found_Edge) {
           
           if (Index == 0) {
-            
-            Xcoord_Airfoil.push_back(Xcoord_Index1[MinDist_Point]);
-            Ycoord_Airfoil.push_back(Ycoord_Index1[MinDist_Point]);
-            Zcoord_Airfoil.push_back(Zcoord_Index1[MinDist_Point]);
-            Variable_Airfoil.push_back(Variable_Index1[MinDist_Point]);
+            Xcoord_Airfoil.push_back(Xcoord_Index1[Next_Edge]);
+            Ycoord_Airfoil.push_back(Ycoord_Index1[Next_Edge]);
+            Zcoord_Airfoil.push_back(Zcoord_Index1[Next_Edge]);
+            Variable_Airfoil.push_back(Variable_Index1[Next_Edge]);
+            IGlobalID_Airfoil.push_back(IGlobalID_Index1[Next_Edge]);
+            JGlobalID_Airfoil.push_back(JGlobalID_Index1[Next_Edge]);
           }
           
           if (Index == 1) {
-            
-            Xcoord_Airfoil.push_back(Xcoord_Index0[MinDist_Point]);
-            Ycoord_Airfoil.push_back(Ycoord_Index0[MinDist_Point]);
-            Zcoord_Airfoil.push_back(Zcoord_Index0[MinDist_Point]);
-            Variable_Airfoil.push_back(Variable_Index0[MinDist_Point]);
+            Xcoord_Airfoil.push_back(Xcoord_Index0[Next_Edge]);
+            Ycoord_Airfoil.push_back(Ycoord_Index0[Next_Edge]);
+            Zcoord_Airfoil.push_back(Zcoord_Index0[Next_Edge]);
+            Variable_Airfoil.push_back(Variable_Index0[Next_Edge]);
+            IGlobalID_Airfoil.push_back(IGlobalID_Index0[Next_Edge]);
+            JGlobalID_Airfoil.push_back(JGlobalID_Index0[Next_Edge]);
           }
           
-          Xcoord_Index0.erase(Xcoord_Index0.begin() + MinDist_Point);
-          Ycoord_Index0.erase(Ycoord_Index0.begin() + MinDist_Point);
-          Zcoord_Index0.erase(Zcoord_Index0.begin() + MinDist_Point);
-          Variable_Index0.erase(Variable_Index0.begin() + MinDist_Point);
+          Xcoord_Index0.erase(Xcoord_Index0.begin() + Next_Edge);
+          Ycoord_Index0.erase(Ycoord_Index0.begin() + Next_Edge);
+          Zcoord_Index0.erase(Zcoord_Index0.begin() + Next_Edge);
+          Variable_Index0.erase(Variable_Index0.begin() + Next_Edge);
+          IGlobalID_Index0.erase(IGlobalID_Index0.begin() + Next_Edge);
+          JGlobalID_Index0.erase(JGlobalID_Index0.begin() + Next_Edge);
           
-          Xcoord_Index1.erase(Xcoord_Index1.begin() + MinDist_Point);
-          Ycoord_Index1.erase(Ycoord_Index1.begin() + MinDist_Point);
-          Zcoord_Index1.erase(Zcoord_Index1.begin() + MinDist_Point);
-          Variable_Index1.erase(Variable_Index1.begin() + MinDist_Point);
+          Xcoord_Index1.erase(Xcoord_Index1.begin() + Next_Edge);
+          Ycoord_Index1.erase(Ycoord_Index1.begin() + Next_Edge);
+          Zcoord_Index1.erase(Zcoord_Index1.begin() + Next_Edge);
+          Variable_Index1.erase(Variable_Index1.begin() + Next_Edge);
+          IGlobalID_Index1.erase(IGlobalID_Index1.begin() + Next_Edge);
+          JGlobalID_Index1.erase(JGlobalID_Index1.begin() + Next_Edge);
           
         }
         else { break; }
@@ -1184,8 +1149,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
       
       /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
       
-      Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();
-      Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();
+      Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();  IGlobalID_Index0.clear();  JGlobalID_Index0.clear();
+      Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();  IGlobalID_Index1.clear();  JGlobalID_Index1.clear();
       
     }
     
