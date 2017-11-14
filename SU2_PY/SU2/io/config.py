@@ -417,7 +417,7 @@ def read_config(filename):
 
             # string parameters
             if case("TRANSPIRATION_FILENAME"):
-                data_dict[this_param] = int(this_value)
+                data_dict[this_param] = this_value
                 braek;        
             
             
