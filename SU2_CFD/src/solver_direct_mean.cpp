@@ -3555,15 +3555,15 @@ su2double CEulerSolver::GetParametricTranspiration(su2double x, su2double y,
                                                    su2double y1, su2double y2, su2double y3, su2double y4,
                                                    su2double eps1, su2double eps2, su2double eps3, su2double eps4){
   su2double s[2];
-  su2double a[4] = {x1, x2, x3, x4};
-  su2double b[4] = {y1, y2, y3, y4};
+  su2double a[4] = {x1, -x1+x2, -x1+x4, x1-x2+x3-x4};
+  su2double b[4] = {y1, -y1+y2, -y1+y4, y1-y2+y3-y4};
   su2double aa, bb, cc, d;
   su2double eps = 0.0;
 
   /*--- Quadratic coefficients ---*/
   aa = a[3]*b[2] - a[2]*b[3];
   bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
-  cc = a[1]*b[0] = a[0]*b[1] + x*b[1] - y*a[1];
+  cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
 
   /*--- Logical coordinates ---*/
   ss[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
