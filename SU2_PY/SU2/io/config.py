@@ -915,7 +915,7 @@ def write_config(filename,param_dict):
                             output_file.write("%s " % new_value['SIZE'][i_dv])
                             # also output new transpiration file
                             transp_file = open(param_dict['TRANSPIRATION_FILENAME'],'w')
-                            for i_param in range(0,new_value['SIZE'][i_dv])
+                            for i_param in range(0,new_value['SIZE'][i_dv]):
                                 transp_file.write("%s\t" % param_dict['TRANSP_DV'][i_param][0])
                                 transp_file.write("%s\n" % param_dict['TRANSP_DV'][i_param][1]+new_value['PARAM'][i_dv][i_param])
                             transp_file.close()
