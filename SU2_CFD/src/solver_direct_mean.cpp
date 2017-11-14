@@ -3557,7 +3557,7 @@ su2double CEulerSolver::GetParametricTranspiration(su2double x, su2double y,
   su2double s[2];
   su2double a[4] = {x1, -x1+x2, -x1+x4, x1-x2+x3-x4};
   su2double b[4] = {y1, -y1+y2, -y1+y4, y1-y2+y3-y4};
-  su2double aa, bb, cc, d;
+  su2double aa, bb, cc;
   su2double eps = 0.0;
 
   /*--- Quadratic coefficients ---*/
@@ -3566,11 +3566,11 @@ su2double CEulerSolver::GetParametricTranspiration(su2double x, su2double y,
   cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
 
   /*--- Logical coordinates ---*/
-  ss[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
-  ss[0] = (x - a[0] - a[2]*ss[1])/(a[1] + a[3]*ss[1]);
+  s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
+  s[0] = (x - a[0] - a[2]*ss[1])/(a[1] + a[3]*ss[1]);
 
   if(ss[0] >= 0. && ss[0] <= 1. && ss[1] >= 0.0 && ss[1] <= 1.0){
-    eps = (1.-ss[0])*(1.-ss[1])*eps1 + ss[0]*(1.-ss[1])*eps2 + ss[0]*ss[1]*eps3 + (1.-ss[0])*ss[1]*eps4;
+    eps = (1.-s[0])*(1.-s[1])*eps1 + s[0]*(1.-s[1])*eps2 + s[0]*s[1]*eps3 + (1.-s[0])*s[1]*eps4;
   }
 
   return eps;
