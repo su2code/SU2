@@ -2726,11 +2726,11 @@ public:
         return badValue(option_value, "inlet", this->name);
       }
       istringstream ss_3rd(option_value[5*i + 3]);
-      if (!(ss_3rd >> this->eps0[i][0])) {
+      if (!(ss_3rd >> this->eps0[i])) {
         return badValue(option_value, "inlet", this->name);
       }
       istringstream ss_4th(option_value[5*i + 4]);
-      if (!(ss_4th >> this->eps1[i][1])) {
+      if (!(ss_4th >> this->eps1[i])) {
         return badValue(option_value, "inlet", this->name);
       }
     }

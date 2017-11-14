@@ -6814,8 +6814,8 @@ void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double
 
   x0 = Transx0[iMarker_Transpiration];
   x1 = Transx1[iMarker_Transpiration];
-  eps0 = Transeps0[iMarker_Transpiration];
-  eps1 = Transeps1[iMarker_Transpiration];
+  eps0 = TransEps0[iMarker_Transpiration];
+  eps1 = TransEps1[iMarker_Transpiration];
   
 }
 
