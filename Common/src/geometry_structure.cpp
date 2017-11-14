@@ -15017,7 +15017,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       if(transp){
         if(PointInDomain[iPoint]){
           /*--- Skip adjoint vars, coords, and mesh sens ---*/
-          for(unsigned short iVar = 0; iVar < config->GetnVar(); iVar++){
+          for(unsigned short iVar = 0; iVar < nDim+2; iVar++){
             point_line >> dummy;
           }
           for(unsigned short iVar = 0; iVar < 2*nDim; iVar++){
