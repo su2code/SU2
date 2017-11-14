@@ -3542,7 +3542,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
           x = geometry->node[iPoint]->GetCoord(0);
           s = (x-x0)/(x1-x0);
           if(s >= 0.0 && s <= 1.0){
-            eps = eps0*s + eps1*(1.0-s);
+            eps = eps1*s + eps0*(1.0-s);
             node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
           }
         }
