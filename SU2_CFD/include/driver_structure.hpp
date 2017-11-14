@@ -873,6 +873,9 @@ public:
    */
   void Run();
 
+  /*!
+   * \brief Transfer data among different geometrical zones and time instances.
+   */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
   /*!
@@ -898,6 +901,84 @@ public:
 
 };
 
+
+/*!
+ * \class CDiscAdjHBMultiZone
+ * \brief Class for driving an iteration of the discrete adjoint multi-zone HB.
+ * \author A.Rubino
+ * \version 5.0.0 "Raven"
+ */
+class CDiscAdjHBMultiZone : public  CHBMultiZoneDriver {
+
+public:
+
+	 /*!
+	   * \brief Constructor of the class.
+	   * \param[in] confFile - Configuration file name.
+	   * \param[in] val_nZone - Total number of zones.
+	   * \param[in] val_nDim - Number of dimensions.
+	   */
+  CDiscAdjHBMultiZone(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjHBMultiZone(void);
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  void DirectRun();
+
+//  /*!
+//   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+//   */
+//  void SetObjFunction();
+//
+//  /*!
+//   * \brief Initialize the adjoint value of the objective function.
+//   */
+//  void SetAdj_ObjFunction();
+
+//
+//  /*!
+//   * \brief Transfer data among different geometrical zones and time instances.
+//   */
+//  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+//
+//  /*!
+//   * \brief Set Obj.Function.
+//   */
+//  void SetObjFunction();
+//
+//  /*!
+//   * \brief Set perfomarnce interface within multiple zones.
+//   */
+//  void SetTurboPerformance(unsigned short targetZone);
+//
+//  /*!
+//   * \brief Set turbomachinery HB performance for all the geometrical zones(blade rows).
+//   * \brief i-th geometrical zone, corresponding to the blade row.
+//   */
+//  void SetAvgTurboPerformance_HB(unsigned short iGeomZone);
+
+
+};
 
 /*!
  * \class CFSIDriver

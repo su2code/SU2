@@ -5657,6 +5657,83 @@ bool CHBMultiZoneDriver::Monitor(unsigned long ExtIter) {
 
 }
 
+CDiscAdjHBMultiZone::CDiscAdjHBMultiZone(char* confFile,
+                                                           unsigned short val_nZone,
+                                                           unsigned short val_nDim,
+                                                           SU2_Comm MPICommunicator): CHBMultiZoneDriver(confFile, val_nZone, val_nDim, MPICommunicator ), C (confFile, val_nZone, val_nDim, MPICommunicator ){ }
+
+
+
+CDiscAdjHBMultiZone::~CDiscAdjHBMultiZone() { }
+
+
+void CDiscAdjHBMultiZone::DirectRun(){
+    mixingplane = true;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+//if (ExtIter > 1)
+//TODO REMOVE FOR DEBUG
+//feenableexcept(FE_INVALID | FE_OVERFLOW);
+  /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
+   all zones before beginning the iteration. ---*/
+
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
+    iteration_container[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iTimeInstance);
+
+//  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+//    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
+//      if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+//        interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
+//  }
+
+  /*--- For each time instance update transfer data ---*/
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
+    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++){
+      if(jTimeInstance != iTimeInstance && transfer_container[iTimeInstance][jTimeInstance] != NULL){
+        Transfer_Data(iTimeInstance, jTimeInstance);
+      }
+    }
+  }
+
+//  if(ExtIter == 0){
+//    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
+//      jTimeInstance = iTimeInstance;
+//      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
+//        jTimeInstance += nTimeInstances;
+//                  transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
+//                      geometry_container[iTimeInstance][MESH_0], iGeomZone);
+//      }
+//    }
+
+
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
+    iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iTimeInstance);
+  }
+
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
+    iteration_container[iTimeInstance]->Postprocess(config_container, geometry_container,
+        solver_container, iTimeInstance);
+
+  if (rank == MASTER_NODE){
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
+      SetTurboPerformance(iTimeInstance);
+  }
+
+  if (rank == MASTER_NODE)
+      SetAvgTurboPerformance_HB(iTimeInstance);
+
+
+
+}
+
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
