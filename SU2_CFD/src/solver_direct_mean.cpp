@@ -3521,7 +3521,6 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
 void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  su2double Vel_Ref = config->GetVelocity_Ref();
   su2double x0, x1, eps0, eps1;
   su2double x, s, eps;
 
@@ -3542,7 +3541,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
           x = geometry->node[iPoint]->GetCoord(0);
           s = (x-x0)/(x1-x0);
           if(s >= 0.0 && s <= 1.0){
-            eps = eps1*s + eps0*(1.0-s);
+            eps = eps0*(1.0-s) + eps1*s;
             node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
           }
         }

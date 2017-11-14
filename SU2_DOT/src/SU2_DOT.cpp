@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
        for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
          Gradient[iDV][iDV_Value] = 0.0;
        }
-       if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSPIRATION){
+       if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSP_DV){
          transp = true;
        }
      }
@@ -264,32 +264,10 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE)
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
 
-       string text_line;
-       ifstream Transp_AdjFile;
-       Transp_AdjFile.open("Adj_Transp.dat", ios::in);
-
-       if(Transp_AdjFile.fail()){
-         cout<<"There is no file defining transpiration Adj_Transp.dat."<<endl;
-         exit(EXIT_FAILURE);
-       }
-
-       if(rank == MASTER_NODE)
-         cout << "Reading transpiration sensitivity file Adj_Transp.dat." << endl;
-
-       unsigned long dummy;
-
-       for(iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++){
-         if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSPIRATION){
-          iDV_Value = 0;
-           while (getline (Transp_AdjFile, text_line)){
-             istringstream point_line(text_line);
-             point_line >> dummy;
-             point_line >> Gradient[iDV][iDV_Value];
-             iDV_Value++;
-           }
-         }
-       }
-       Transp_AdjFile.close();
+      for(iZone = 0; iZone < nZone; iZone++){
+        SetProjection_Transp(geometry_container[iZone], config_container[iZone]);
+      }
+       
      }
 
      /*--- Print gradients to screen and file ---*/
@@ -712,6 +690,42 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
   AD::Reset();
 
+}
+
+void SetProjection_Transp(CGeometry *geometry, CConfig *config){
+  unsigned long iPoint;
+  unsigned short iDV, iDV_Value, nDV_Value;
+  unsigned short iMarker = 0;
+
+  su2double x0, x1, eps0, eps1;
+  su2double x, s, eps;
+
+  string Marker_Tag;
+  
+  for(iDV = 0; iDV < config_->GetnDV(); iDV++){
+    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
+      nDV_Value = config->GetnDV_Value(iDV);
+      while(iMarker < config->GetnMarker_All()){
+        if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          config->GetTranspirationParams(Marker_Tag, x0, x1, eps0, eps1);
+          break;
+        }
+      }
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          x = geometry->node[iPoint]->GetCoord(0);
+          s = (x-x0)/(x1-x0);
+          /*--- (dF/deps_i)^T = (deps/deps_i)^T (dF/deps)^T ---
+            --- (deps/deps_0) = 1.0-s                       ---
+            --- (deps/deps_1) = s                           ---*/
+          Gradient[iDV][0] += (1.0-s)*geometry->GetSensitivityTranspiration(iPoint);
+          Gradient[iDV][1] += s*geometry->GetSensitivityTranspiration(iPoint);
+        }
+      }
+    }
+  }
 }
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){

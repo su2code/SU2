@@ -456,7 +456,7 @@ def read_config(filename):
                           this_dvFFDTag = this_dvParameters[0]
                           this_dvParameters[0] = '0'
                         elif this_dvKind=='TRANSP_DV':
-                            this_dvSize   = int(this_dvParameters[0])
+                            this_dvSize   = 2
                             this_dvFFDTag = []
                         else:
                           this_dvFFDTag = []
@@ -720,44 +720,6 @@ def read_config(filename):
             'SCALE': [1.0],
             'SIZE': [1]}
 
-    # Check if any DVs are transpiration
-    kind_dvs = data_dict['DEFINITION_DV']['KIND']
-    if 'TRANSP_DV' in kind_dvs:
-
-        assert data_dict.has_key('TRANSPIRATION_FILENAME') , ('Config file has transpiration DV but no specification for transpiration boundary input file')
-
-        # read the transpiration boundary input file
-        transp_file  = open(data_dict['TRANSPIRATION_FILENAME'])
-        transp_node  = []
-        transp_value = []
-
-        while 1:
-            # read the line
-            line = input_file.readline()
-            if not line:
-                break
-
-            # remove line returns
-            line = line.strip('\r\n')
-
-            # split across equals sign
-            line = line.split("\t")
-            this_node  = int(line[0].strip())
-            this_value = float(line[1].strip())
-
-            transp_node  = transp_node  + [this_node]
-            transp_value = transp_value + [this_value]
-
-        for i, knd_dv in enumerate(kind_dvs):
-            if knd_dv == 'TRANSP_DV':
-                transp_data = []
-                data_dict['DEFINITION_DV']['PARAM'][i] = transp_value
-                for j in range(0,data_dict['DEFINITION_DV']['SIZE'][i]):
-                    transp_data = transp_data + [transp_node, transp_value]
-            break
-
-        data_dict['TRANSP_DV'] = transp_data
-
     return data_dict
     
 #: def read_config()
@@ -912,13 +874,11 @@ def write_config(filename,param_dict):
                                 if i_param+1 < n_param:
                                     output_file.write(", ")
                         elif this_kind == 'TRANSP_DV':
-                            output_file.write("%s " % new_value['SIZE'][i_dv])
-                            # also output new transpiration file
-                            transp_file = open(new_value['TRANSPIRATION_FILENAME'],'w')
-                            for i_param in range(0,new_value['SIZE'][i_dv]):
-                                transp_file.write("%s\t" % new_value['TRANSP_DV'][i_param][0])
-                                transp_file.write("%s\n" % new_value['TRANSP_DV'][i_param][1]+new_value['PARAM'][i_dv][i_param])
-                            transp_file.close()
+                            n_param = len(new_value['PARAM'][i_dv])
+                            for i_param in range(1,n_param):
+                                output_file.write("%s " % new_value['PARAM'][i_dv])
+                                if i_param+1 < n_param:
+                                    output_file.write(", ")
                         else:
                             n_param = len(new_value['PARAM'][i_dv])
                             for i_param in range(n_param):
