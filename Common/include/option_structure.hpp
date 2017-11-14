@@ -2676,7 +2676,7 @@ class COptionTransp : public COptionBase {
   su2double* & eps1;
 
 public:
-  COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, su2double* & Transx0, su2double* & Transx1, su2double* & TransEps0, su2double* & TransEps1) : size(nMarker_Transpiration), marker(Marker_Transpiration), x0(Transx0), x1(Transx1), eps0(Transeps0), eps1(Transeps1) {
+  COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, su2double* & Transx0, su2double* & Transx1, su2double* & TransEps0, su2double* & TransEps1) : size(nMarker_Transpiration), marker(Marker_Transpiration), x0(Transx0), x1(Transx1), eps0(TransEps0), eps1(TransEps1) {
     this->name = option_field_name;
   }
 

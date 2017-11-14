@@ -800,7 +800,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Transpiration boundary marker(s) \ingroup Config*/
   //addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
   /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Parameterized transpiration boundary marker(s) \ingroup Config*/
-  addTranspParamListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, Transx0, Transx1, TransEps0, TransEps1);
+  addTranspParamOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, Transx0, Transx1, TransEps0, TransEps1);
   /* DESCRIPTION:  transpiration input file */
   addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH

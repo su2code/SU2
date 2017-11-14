@@ -1106,7 +1106,7 @@ private:
                       su2double* & x0, su2double* & x1, su2double* & eps0, su2double* & eps1) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionTransp(name, nMarker_Transpiration, Marker_Transpiration, x0, x1, ep0, eps1);
+    COptionBase* val = new COptionTransp(name, nMarker_Transpiration, Marker_Transpiration, x0, x1, eps0, eps1);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
