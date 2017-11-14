@@ -503,7 +503,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
       }
     //}
   }
-  OutputTranspirationSensitivity(geometry, config);
+  //OutputTranspirationSensitivity(geometry, config);
 }
 
 void CDiscAdjSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config) {
