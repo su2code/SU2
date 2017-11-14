@@ -882,7 +882,7 @@ inline void CSolver::SetTranspiration(CGeometry *geometry, CConfig *config){}
 inline su2double CSolver::GetParametricTranspiration(su2double x, su2double y, 
                                        su2double x1, su2double x2, su2double x3, su2double x4,
                                        su2double y1, su2double y2, su2double y3, su2double y4,
-                                       su2double eps1, su2double eps2, su2double eps3, su2double eps4){}
+                                       su2double eps1, su2double eps2, su2double eps3, su2double eps4){return 0.0;}
 
 inline void CSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *config){}
 

@@ -3524,7 +3524,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   su2double x0, x1, x2, x3;
   su2double y0, y1, y2, y3;
   su2double eps0, eps1, eps2, eps3;
-  su2double x, y, *s, eps;
+  su2double x, y, eps;
 
   string Marker_Tag;
 
@@ -3542,7 +3542,6 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
         if (geometry->node[iPoint]->GetDomain()) {
           x = geometry->node[iPoint]->GetCoord(0);
           y = geometry->node[iPoint]->GetCoord(1);
-          s = new su2double[2];
           eps = GetParametricTranspiration(x, y, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
           node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
         }
