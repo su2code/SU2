@@ -2666,6 +2666,88 @@ public:
   }
 };
 
+class COptionTransp : public COptionBase {
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  su2double* & x0;
+  su2double* & x1;
+  su2double* & eps0;
+  su2double* & eps1;
+
+public:
+  COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, su2double* & Transx0, su2double* & Transx1, su2double* & TransEps0, su2double* & TransEps1) : size(nMarker_Transpiration), marker(Marker_Transpiration), x0(Transx0), x1(Transx1), eps0(Transeps0), eps1(Transeps1) {
+    this->name = option_field_name;
+  }
+
+  ~COptionTransp() {};
+  string SetValue(vector<string> option_value) {
+
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = NULL;
+      this->x0 = NULL;
+      this->x1 = NULL;
+      this->eps0 = NULL;
+      this->eps1 = NULL;
+      return "";
+    }
+
+    if (totalVals % 5 != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 5");
+      this->size = 0;
+      this->marker = NULL;
+      this->x0 = NULL;
+      this->x1 = NULL;
+      this->eps0 = NULL;
+      this->eps1 = NULL;
+      return newstring;
+    }
+
+    unsigned short nVals = totalVals / 5;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->x0 = new su2double[nVals];
+    this->x1 = new su2double[nVals];
+    this->eps0 = new su2double[nVals];
+    this->eps1 = new su2double[nVals];
+
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[5*i]);
+      istringstream ss_1st(option_value[5*i + 1]);
+      if (!(ss_1st >> this->x0[i])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+      istringstream ss_2nd(option_value[5*i + 2]);
+      if (!(ss_2nd >> this->x1[i])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+      istringstream ss_3rd(option_value[5*i + 3]);
+      if (!(ss_3rd >> this->eps0[i][0])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+      istringstream ss_4th(option_value[5*i + 4]);
+      if (!(ss_4th >> this->eps1[i][1])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->marker = NULL;
+    this->x0 = NULL;
+    this->x1 = NULL;
+    this->eps0 = NULL;
+    this->eps1 = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
+
 class COptionInlet : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;

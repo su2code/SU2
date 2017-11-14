@@ -3457,7 +3457,7 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
+/*void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
     unsigned long iPoint, iPoint_Global, nTranspNodeLoc, nTranspNodeGlobal;
     long iNode_Local;
     string text_line;
@@ -3482,17 +3482,17 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
     /*--- In case this is a parallel simulation, we need to perform the
        Global2Local index transformation first. ---*/
 
-    long *Global2Local = NULL;
+/*    long *Global2Local = NULL;
     int n = geometry->GetGlobal_nPointDomain();
     Global2Local = new long[n];
     /*--- First, set all indices to a negative value by default ---*/
 
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+/*    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
         Global2Local[iPoint] = -1;
     }
 
     /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+/*    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
         Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
         node[iPoint]->SetTranspiration(0.0);
     }
@@ -3516,6 +3516,39 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
 
     Transp_file.close();
     delete [] Global2Local;
+}*/
+
+void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  su2double Vel_Ref = config->GetVelocity_Ref();
+  su2double x0, x1, eps0, eps1, *Coord;
+  su2double s, eps;
+
+  string Marker_Tag;
+
+  /*--- First initialize all transpiration values to 0 ---*/
+  for(iPoint = 0; iPoint < geometry->GetnPointDomain; iPoint++){
+    node[iPoint]->SetTranspiration(0.0);
+  }
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      config->GetTranspirationParams(Marker_Tag, x0, x1, eps0, eps1);
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (geometry->node[iPoint]->GetDomain()) {
+          Coord = geometry->node[iPoint]->GetCoord();
+          s = (Coord[0]-x0)/(x1-x0);
+          if(s >= 0.0 && s <= 1.0){
+            eps = eps0*s + eps1*(1-s);
+            node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
+          }
+        }
+      }
+    }
+  }
 }
 
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {

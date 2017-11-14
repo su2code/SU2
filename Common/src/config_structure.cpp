@@ -797,8 +797,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Traanspiration boundary marker(s) \ingroup Config*/
-  addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
+  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Transpiration boundary marker(s) \ingroup Config*/
+  //addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
+  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Parameterized transpiration boundary marker(s) \ingroup Config*/
+  addTranspParamListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, Transx0, Transx1, TransEps0, TransEps1);
   /* DESCRIPTION:  transpiration input file */
   addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
@@ -5897,6 +5899,10 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
   if (TransEps != NULL)         delete[] TransEps;
+  if (Transx0 != NULL)         delete[] Transx0;
+  if (Transx1 != NULL)         delete[] Transx1;
+  if (TransEps0 != NULL)         delete[] TransEps0;
+  if (TransEps1 != NULL)         delete[] TransEps1;
 
   /*--- related to periodic boundary conditions ---*/
   
@@ -6787,7 +6793,7 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-su2double CConfig::GetTranspiration(string val_marker) {
+/*su2double CConfig::GetTranspiration(string val_marker) {
   unsigned short iMarker_Transpiration = 0;
 
   if (nMarker_Transpiration > 0) {
@@ -6796,6 +6802,21 @@ su2double CConfig::GetTranspiration(string val_marker) {
   }
 
   return TransEps[iMarker_Transpiration];
+}*/
+
+void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &eps0, su2double &eps1) {
+  unsigned short iMarker_Transpiration = 0;
+
+  if (nMarker_Transpiration > 0) {
+  for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++)
+    if (Marker_Transpiration[iMarker_Transpiration] == val_marker) break;
+  }
+
+  x0 = Transx0[iMarker_Transpiration];
+  x1 = Transx1[iMarker_Transpiration];
+  eps0 = Transeps0[iMarker_Transpiration];
+  eps1 = Transeps1[iMarker_Transpiration];
+  
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {
