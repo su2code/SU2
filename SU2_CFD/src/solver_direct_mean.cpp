@@ -3539,7 +3539,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          x = geometry->node[iPoint]->GetCoord();
+          x = geometry->node[iPoint]->GetCoord(0);
           s = (x-x0)/(x1-x0);
           if(s >= 0.0 && s <= 1.0){
             eps = eps0*s + eps1*(1.0-s);
