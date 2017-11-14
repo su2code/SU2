@@ -727,7 +727,7 @@ def read_config(filename):
         assert data_dict.has_key('TRANSPIRATION_FILENAME') , ('Config file has transpiration DV but no specification for transpiration boundary input file')
 
         # read the transpiration boundary input file
-        transp_file  = open(data_dict('TRANSPIRATION_FILENAME'))
+        transp_file  = open(data_dict['TRANSPIRATION_FILENAME'])
         transp_node  = []
         transp_value = []
 
