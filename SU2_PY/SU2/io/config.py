@@ -456,7 +456,7 @@ def read_config(filename):
                           this_dvFFDTag = this_dvParameters[0]
                           this_dvParameters[0] = '0'
                         elif this_dvKind=='TRANSP_DV':
-                            this_dvSize   = this_dvParameters[0]
+                            this_dvSize   = int(this_dvParameters[0])
                             this_dvFFDTag = []
                         else:
                           this_dvFFDTag = []
