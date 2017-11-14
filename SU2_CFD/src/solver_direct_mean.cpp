@@ -3522,8 +3522,8 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
   su2double Vel_Ref = config->GetVelocity_Ref();
-  su2double x0, x1, eps0, eps1, *Coord;
-  su2double s, eps;
+  su2double x0, x1, eps0, eps1;
+  su2double x, s, eps;
 
   string Marker_Tag;
 
@@ -3539,18 +3539,16 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          Coord = geometry->node[iPoint]->GetCoord();
-          s = (Coord[0]-x0)/(x1-x0);
+          x = geometry->node[iPoint]->GetCoord();
+          s = (x-x0)/(x1-x0);
           if(s >= 0.0 && s <= 1.0){
-            eps = eps0*s + eps1*(1-s);
+            eps = eps0*s + eps1*(1.0-s);
             node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
           }
         }
       }
     }
   }
-  
-  delete [] Coord;
 }
 
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
