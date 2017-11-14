@@ -74,8 +74,9 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
  * \brief Projection of the surface transpirationsensitivity to transpiration parameters (eps_i).
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
+ * \param[in] Gradient - The gradient data.
  */
-void SetProjection_Transp(CGeometry *geometry, CConfig *config);
+void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Gradient);
 
 /*!
  * \brief Prints the gradient information to a file.

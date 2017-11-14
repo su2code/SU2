@@ -265,7 +265,7 @@ int main(int argc, char *argv[]) {
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
 
       for(iZone = 0; iZone < nZone; iZone++){
-        SetProjection_Transp(geometry_container[iZone], config_container[iZone]);
+        SetProjection_Transp(geometry_container[iZone], config_container[iZone], Gradient);
       }
        
      }
@@ -692,7 +692,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 }
 
-void SetProjection_Transp(CGeometry *geometry, CConfig *config){
+void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Gradient){
   unsigned long iPoint, iVertex;
   unsigned short iDV, iDV_Value, nDV_Value;
   unsigned short iMarker = 0;
