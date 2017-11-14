@@ -722,7 +722,7 @@ def read_config(filename):
 
     # Check if any DVs are transpiration
     kind_dvs = data_dict['DEFINITION_DV']['KIND']
-    if kind_dvs.has_key('TRANSP_DV'):
+    if 'TRANSP_DV' in kind_dvs:
 
         assert data_dict.has_key('TRANSPIRATION_FILENAME') , ('Config file has transpiration DV but no specification for transpiration boundary input file')
 
