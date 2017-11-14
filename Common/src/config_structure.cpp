@@ -366,7 +366,8 @@ void CConfig::SetPointersNull(void) {
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
   FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
-  Periodic_Translate        = NULL;     TransEps                    = NULL;
+  Periodic_Translate        = NULL;     TransEps                    = NULL;     Transx0               = NULL;
+  Transx1                   = NULL;     TransEps0                   = NULL;     TransEps1             = NULL;
 
   Load_Dir            = NULL;    Load_Dir_Value      = NULL;    Load_Dir_Multiplier = NULL;
   Load_Sine_Dir       = NULL;    Load_Sine_Amplitude = NULL;    Load_Sine_Frequency = NULL;

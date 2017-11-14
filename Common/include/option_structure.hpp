@@ -2719,19 +2719,19 @@ public:
       this->marker[i].assign(option_value[5*i]);
       istringstream ss_1st(option_value[5*i + 1]);
       if (!(ss_1st >> this->x0[i])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue(option_value, "transpiration", this->name);
       }
       istringstream ss_2nd(option_value[5*i + 2]);
       if (!(ss_2nd >> this->x1[i])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue(option_value, "transpiration", this->name);
       }
       istringstream ss_3rd(option_value[5*i + 3]);
       if (!(ss_3rd >> this->eps0[i])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue(option_value, "transpiration", this->name);
       }
       istringstream ss_4th(option_value[5*i + 4]);
       if (!(ss_4th >> this->eps1[i])) {
-        return badValue(option_value, "inlet", this->name);
+        return badValue(option_value, "transpiration", this->name);
       }
     }
 

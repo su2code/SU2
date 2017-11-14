@@ -3549,6 +3549,8 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
       }
     }
   }
+  
+  delete [] Coord;
 }
 
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
