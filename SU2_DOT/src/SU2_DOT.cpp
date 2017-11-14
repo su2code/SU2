@@ -700,7 +700,10 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
   su2double x0, x1, x2, x3;
   su2double y0, y1, y2, y3;
   su2double eps0, eps1, eps2, eps3;
-  su2double x, s, eps;
+  su2double x, y, eps;
+
+  su2double s[2], a[4], b[4], aa, bb, cc;
+
   su2double *my_Gradient, *localGradient;
 
   string Marker_Tag;
@@ -710,14 +713,19 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       nDV_Value = config->GetnDV_Value(iDV);
       my_Gradient = new su2double[nDV_Value];
       localGradient = new su2double[nDV_Value];
-      for(unsigned short i = 0; i < nDV_Value; i++){
-        my_Gradient[i] = 0.0;
-        localGradient[i] = 0.0;
+      for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+        my_Gradient[iDV_Value] = 0.0;
+        localGradient[iDV_Value] = 0.0;
       }
       while(iMarker < config->GetnMarker_All()){
         if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
+
+          /*--- Bilinear parametric interpolation ---*/
+          a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
+          b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
+
           break;
         }
       }
@@ -725,18 +733,44 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           x = geometry->node[iPoint]->GetCoord(0);
-          s = (x-x0)/(x1-x0);
+          y = geometry->node[iPoint]->GetCoord(1);
+
+          /*--- Quadratic coefficients ---*/
+          aa = a[3]*b[2] - a[2]*b[3];
+          bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
+          cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
+
+          /*--- Logical coordinates ---*/
+          s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
+          s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
+
           /*--- (dF/deps_i)^T = (deps/deps_i)^T (dF/deps)^T ---
-            --- (deps/deps_0) = 1.0-s                       ---
-            --- (deps/deps_1) = s                           ---*/
-          Gradient[iDV][0] += (1.0-s)*geometry->GetSensitivityTranspiration(iPoint);
-          Gradient[iDV][1] += s*geometry->GetSensitivityTranspiration(iPoint);
+            --- (deps/deps_0) = (1.0-s[0])*(1-s[1])         ---
+            --- (deps/deps_1) = s[0]*(1-s[1])               ---
+            --- (deps/deps_2) = s[0]*s[1]                   ---
+            --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
+          my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
+          my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
+          my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
+          my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
         }
+      }
+
+#ifdef HAVE_MPI
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, nDV_Value, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+      for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+        localGradient[iDV_Value] = my_Gradient[iDV_Value];
+      }
+#endif
+      for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+        Gradient[iDV][iDV_Value] += localGradient[iDV_Value];
+        my_Gradient[iDV_Value] = 0.0;
+        localGradient[iDV_Value] = 0.0;
       }
     }
   }
 
-  // TODO: MPI communication of gradients
 }
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){

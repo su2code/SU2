@@ -801,8 +801,8 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "TRANSP_DV"          :
-        header.append(r',"Transp_Marker","eps_0","eps_1"')
-        write_format.append(r', %s, %s, %s')
+        header.append(r',"Transp_Marker","eps_0","eps_1","eps_2","eps_3"')
+        write_format.append(r', %s, %s, %s, %s, %s')
     elif kindID == "ANGLE_OF_ATTACK"      : pass
     elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
     
