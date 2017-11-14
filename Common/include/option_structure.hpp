@@ -2687,7 +2687,7 @@ public:
   COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, 
                 su2double* & Transx0, su2double* & Transx1, su2double* & Transx2, su2double* & Transx3,
                 su2double* & Transy0, su2double* & Transy1, su2double* & Transy2, su2double* & Transy3, 
-                su2double* & TransEps0, su2double* & TransEps1, su2double* & TransEps1, su2double* & TransEps2) : 
+                su2double* & TransEps0, su2double* & TransEps1, su2double* & TransEps2, su2double* & TransEps3) : 
                   size(nMarker_Transpiration), marker(Marker_Transpiration), 
                   x0(Transx0), x1(Transx1), x2(Transx2), x3(Transx3), 
                   y0(Transy0), y1(Transy1), y2(Transy2), y3(Transy3), 
