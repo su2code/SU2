@@ -697,7 +697,9 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
   unsigned short iDV, iDV_Value, nDV_Value;
   unsigned short iMarker = 0;
 
-  su2double x0, x1, eps0, eps1;
+  su2double x0, x1, x2, x3;
+  su2double y0, y1, y2, y3;
+  su2double eps0, eps1, eps2, eps3;
   su2double x, s, eps;
   su2double *my_Gradient, *localGradient;
 
@@ -715,7 +717,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       while(iMarker < config->GetnMarker_All()){
         if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          config->GetTranspirationParams(Marker_Tag, x0, x1, eps0, eps1);
+          config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
           break;
         }
       }
