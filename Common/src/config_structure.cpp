@@ -367,7 +367,10 @@ void CConfig::SetPointersNull(void) {
   FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
   Periodic_Translate        = NULL;     TransEps                    = NULL;     Transx0               = NULL;
-  Transx1                   = NULL;     TransEps0                   = NULL;     TransEps1             = NULL;
+  Transx1                   = NULL;     Transx2                     = NULL;     Transx3               = NULL;
+  Transy0                   = NULL;     Transy1                     = NULL;     Transy2               = NULL;
+  Transy3                   = NULL;     TransEps0                   = NULL;     TransEps1             = NULL;
+  TransEps2                 = NULL;     TransEps3                   = NULL;
 
   Load_Dir            = NULL;    Load_Dir_Value      = NULL;    Load_Dir_Multiplier = NULL;
   Load_Sine_Dir       = NULL;    Load_Sine_Amplitude = NULL;    Load_Sine_Frequency = NULL;
@@ -801,7 +804,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Transpiration boundary marker(s) \ingroup Config*/
   //addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
   /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Parameterized transpiration boundary marker(s) \ingroup Config*/
-  addTranspParamOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, Transx0, Transx1, TransEps0, TransEps1);
+  addTranspParamOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, Transx0, Transx1, Transx2, Transx3,
+                                               Transy0, Transy1, Transy2, Transy3, 
+                                               TransEps0, TransEps1, TransEps2, TransEps3);
   /* DESCRIPTION:  transpiration input file */
   addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
@@ -5902,8 +5907,16 @@ CConfig::~CConfig(void) {
   if (TransEps != NULL)         delete[] TransEps;
   if (Transx0 != NULL)         delete[] Transx0;
   if (Transx1 != NULL)         delete[] Transx1;
-  if (TransEps0 != NULL)         delete[] TransEps0;
-  if (TransEps1 != NULL)         delete[] TransEps1;
+  if (Transx2 != NULL)         delete[] Transx2;
+  if (Transx3 != NULL)         delete[] Transx3;
+  if (Transy0 != NULL)         delete[] Transy0;
+  if (Transy1 != NULL)         delete[] Transy1;
+  if (Transy2 != NULL)         delete[] Transy2;
+  if (Transy3 != NULL)         delete[] Transy3;
+  if (TransEps0 != NULL)       delete[] TransEps0;
+  if (TransEps1 != NULL)       delete[] TransEps1;
+  if (TransEps2 != NULL)       delete[] TransEps2;
+  if (TransEps3 != NULL)       delete[] TransEps3;
 
   /*--- related to periodic boundary conditions ---*/
   
@@ -6805,7 +6818,9 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   return TransEps[iMarker_Transpiration];
 }*/
 
-void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &eps0, su2double &eps1) {
+void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &x2, su2double &x3,
+                                     su2double &y0, su2double &y1, su2double &y2, su2double &y3, 
+                                     su2double &eps0, su2double &eps1, su2double &eps2, su2double &eps3) {
   unsigned short iMarker_Transpiration = 0;
 
   if (nMarker_Transpiration > 0) {
@@ -6815,8 +6830,16 @@ void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double
 
   x0 = Transx0[iMarker_Transpiration];
   x1 = Transx1[iMarker_Transpiration];
+  x2 = Transx2[iMarker_Transpiration];
+  x3 = Transx3[iMarker_Transpiration];
+  y0 = Transy0[iMarker_Transpiration];
+  y1 = Transy1[iMarker_Transpiration];
+  y2 = Transy2[iMarker_Transpiration];
+  y3 = Transy3[iMarker_Transpiration];
   eps0 = TransEps0[iMarker_Transpiration];
   eps1 = TransEps1[iMarker_Transpiration];
+  eps2 = TransEps2[iMarker_Transpiration];
+  eps3 = TransEps3[iMarker_Transpiration];
   
 }
 

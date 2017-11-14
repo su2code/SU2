@@ -3121,6 +3121,11 @@ public:
    */
   virtual void SetTranspiration(CGeometry *geometry, CConfig *config);
 
+  virtual su2double GetParametricTranspiration(su2double x, su2double y, 
+                                               su2double x1, su2double x2, su2double x3, su2double x4,
+                                               su2double y1, su2double y2, su2double y3, su2double y4,
+                                               su2double eps1, su2double eps2, su2double eps3, su2double eps4);
+
   /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4298,6 +4303,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTranspiration(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Get transpiration value on patch given (x,y) and params.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double GetParametricTranspiration(su2double x, su2double y, 
+                                       su2double x1, su2double x2, su2double x3, su2double x4,
+                                       su2double y1, su2double y2, su2double y3, su2double y4,
+                                       su2double eps1, su2double eps2, su2double eps3, su2double eps4);
   
   /*!
    * \brief Parallelization of Undivided Laplacian.

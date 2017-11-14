@@ -2672,11 +2672,26 @@ class COptionTransp : public COptionBase {
   string * & marker;
   su2double* & x0;
   su2double* & x1;
+  su2double* & x2;
+  su2double* & x3;
+  su2double* & y0;
+  su2double* & y1;
+  su2double* & y2;
+  su2double* & y3;
   su2double* & eps0;
   su2double* & eps1;
+  su2double* & eps2;
+  su2double* & eps3;
 
 public:
-  COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, su2double* & Transx0, su2double* & Transx1, su2double* & TransEps0, su2double* & TransEps1) : size(nMarker_Transpiration), marker(Marker_Transpiration), x0(Transx0), x1(Transx1), eps0(TransEps0), eps1(TransEps1) {
+  COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, 
+                su2double* & Transx0, su2double* & Transx1, su2double* & Transx2, su2double* & Transx3,
+                su2double* & Transy0, su2double* & Transy1, su2double* & Transy2, su2double* & Transy3, 
+                su2double* & TransEps0, su2double* & TransEps1, su2double* & TransEps1, su2double* & TransEps2) : 
+                  size(nMarker_Transpiration), marker(Marker_Transpiration), 
+                  x0(Transx0), x1(Transx1), x2(Transx2), x3(Transx3), 
+                  y0(Transy0), y1(Transy1), y2(Transy2), y3(Transy3), 
+                  eps0(TransEps0), eps1(TransEps1), eps2(TransEps2), eps3(TransEps3) {
     this->name = option_field_name;
   }
 
@@ -2689,48 +2704,107 @@ public:
       this->marker = NULL;
       this->x0 = NULL;
       this->x1 = NULL;
+      this->x2 = NULL;
+      this->x3 = NULL;
+      this->y0 = NULL;
+      this->y1 = NULL;
+      this->y2 = NULL;
+      this->y3 = NULL;
       this->eps0 = NULL;
       this->eps1 = NULL;
+      this->eps2 = NULL;
+      this->eps3 = NULL;
       return "";
     }
 
-    if (totalVals % 5 != 0) {
+    if (totalVals % 13 != 0) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 5");
+      newstring.append(": must have a number of entries divisible by 13");
       this->size = 0;
       this->marker = NULL;
       this->x0 = NULL;
       this->x1 = NULL;
+      this->x2 = NULL;
+      this->x3 = NULL;
+      this->y0 = NULL;
+      this->y1 = NULL;
+      this->y2 = NULL;
+      this->y3 = NULL;
       this->eps0 = NULL;
       this->eps1 = NULL;
+      this->eps2 = NULL;
+      this->eps3 = NULL;
       return newstring;
     }
 
-    unsigned short nVals = totalVals / 5;
+    unsigned short nVals = totalVals / 13;
     this->size = nVals;
     this->marker = new string[nVals];
     this->x0 = new su2double[nVals];
     this->x1 = new su2double[nVals];
+    this->x2 = new su2double[nVals];
+    this->x3 = new su2double[nVals];
+    this->y0 = new su2double[nVals];
+    this->y1 = new su2double[nVals];
+    this->y2 = new su2double[nVals];
+    this->y3 = new su2double[nVals];
     this->eps0 = new su2double[nVals];
     this->eps1 = new su2double[nVals];
+    this->eps2 = new su2double[nVals];
+    this->eps3 = new su2double[nVals];
 
     for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[5*i]);
-      istringstream ss_1st(option_value[5*i + 1]);
+      this->marker[i].assign(option_value[13*i]);
+
+      istringstream ss_1st(option_value[13*i + 1]);
       if (!(ss_1st >> this->x0[i])) {
         return badValue(option_value, "transpiration", this->name);
       }
-      istringstream ss_2nd(option_value[5*i + 2]);
+      istringstream ss_2nd(option_value[13*i + 2]);
       if (!(ss_2nd >> this->x1[i])) {
         return badValue(option_value, "transpiration", this->name);
       }
-      istringstream ss_3rd(option_value[5*i + 3]);
-      if (!(ss_3rd >> this->eps0[i])) {
+      istringstream ss_3rd(option_value[13*i + 3]);
+      if (!(ss_3rd >> this->x2[i])) {
         return badValue(option_value, "transpiration", this->name);
       }
-      istringstream ss_4th(option_value[5*i + 4]);
-      if (!(ss_4th >> this->eps1[i])) {
+      istringstream ss_4th(option_value[13*i + 4]);
+      if (!(ss_4th >> this->x3[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+
+      istringstream ss_5th(option_value[13*i + 5]);
+      if (!(ss_5th >> this->y0[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_6th(option_value[13*i + 6]);
+      if (!(ss_6th >> this->y1[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_7th(option_value[13*i + 7]);
+      if (!(ss_7th >> this->y2[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_8th(option_value[13*i + 8]);
+      if (!(ss_8th >> this->y3[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+
+      istringstream ss_9th(option_value[13*i + 9]);
+      if (!(ss_9th >> this->eps0[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_10th(option_value[13*i + 10]);
+      if (!(ss_10th >> this->eps1[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_11th(option_value[13*i + 11]);
+      if (!(ss_11th >> this->eps2[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_12th(option_value[13*i + 12]);
+      if (!(ss_12th >> this->eps3[i])) {
         return badValue(option_value, "transpiration", this->name);
       }
     }
@@ -2742,8 +2816,16 @@ public:
     this->marker = NULL;
     this->x0 = NULL;
     this->x1 = NULL;
+    this->x2 = NULL;
+    this->x3 = NULL;
+    this->y0 = NULL;
+    this->y1 = NULL;
+    this->y2 = NULL;
+    this->y3 = NULL;
     this->eps0 = NULL;
     this->eps1 = NULL;
+    this->eps2 = NULL;
+    this->eps3 = NULL;
     this->size = 0; // There is no default value for list
   }
 };

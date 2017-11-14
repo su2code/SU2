@@ -3521,8 +3521,10 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
 void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  su2double x0, x1, eps0, eps1;
-  su2double x, s, eps;
+  su2double x0, x1, x2, x3;
+  su2double y0, y1, y2, y3;
+  su2double eps0, eps1, eps2, eps3;
+  su2double x, y, *s, eps;
 
   string Marker_Tag;
 
@@ -3534,20 +3536,45 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
       Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      config->GetTranspirationParams(Marker_Tag, x0, x1, eps0, eps1);
+      config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           x = geometry->node[iPoint]->GetCoord(0);
-          s = (x-x0)/(x1-x0);
-          if(s >= 0.0 && s <= 1.0){
-            eps = eps0*(1.0-s) + eps1*s;
-            node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
-          }
+          y = geometry->node[iPoint]->GetCoord(1);
+          s = new su2double[2];
+          eps = GetParametricTranspiration(x, y, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
+          node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
         }
       }
     }
   }
+}
+
+su2double CEulerSolver::GetParametricTranspiration(su2double x, su2double y, 
+                                                   su2double x1, su2double x2, su2double x3, su2double x4,
+                                                   su2double y1, su2double y2, su2double y3, su2double y4,
+                                                   su2double eps1, su2double eps2, su2double eps3, su2double eps4){
+  su2double s[2];
+  su2double a[4] = {x1, x2, x3, x4};
+  su2double b[4] = {y1, y2, y3, y4};
+  su2double aa, bb, cc, d;
+  su2double eps = 0.0;
+
+  /*--- Quadratic coefficients ---*/
+  aa = a[3]*b[2] - a[2]*b[3];
+  bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
+  cc = a[1]*b[0] = a[0]*b[1] + x*b[1] - y*a[1];
+
+  /*--- Logical coordinates ---*/
+  ss[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
+  ss[0] = (x - a[0] - a[2]*ss[1])/(a[1] + a[3]*ss[1]);
+
+  if(ss[0] >= 0. && ss[0] <= 1. && ss[1] >= 0.0 && ss[1] <= 1.0){
+    eps = (1.-ss[0])*(1.-ss[1])*eps1 + ss[0]*(1.-ss[1])*eps2 + ss[0]*ss[1]*eps3 + (1.-ss[0])*ss[1]*eps4;
+  }
+
+  return eps;
 }
 
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {

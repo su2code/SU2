@@ -355,8 +355,16 @@ private:
   su2double *TransEps;                 /*!< \brief Specified wall transpirations. */
   su2double *Transx0,                  /*!< \brief Specified wall transpiration parameter x0. */
             *Transx1,                  /*!< \brief Specified wall transpiration parameter x1. */
+            *Transx2,                  /*!< \brief Specified wall transpiration parameter x2. */
+            *Transx3,                  /*!< \brief Specified wall transpiration parameter x3. */
+            *Transy0,                  /*!< \brief Specified wall transpiration parameter y0. */
+            *Transy1,                  /*!< \brief Specified wall transpiration parameter y1. */
+            *Transy2,                  /*!< \brief Specified wall transpiration parameter y2. */
+            *Transy3,                  /*!< \brief Specified wall transpiration parameter y3. */
             *TransEps0,                /*!< \brief Specified wall transpiration parameter eps0. */
-            *TransEps1;                /*!< \brief Specified wall transpiration parameter eps1. */
+            *TransEps1,                /*!< \brief Specified wall transpiration parameter eps1. */
+            *TransEps2,                /*!< \brief Specified wall transpiration parameter eps2. */
+            *TransEps3;                /*!< \brief Specified wall transpiration parameter eps3. */
   string Transpiration_FileName;            /*!< \brief File specifying all transpiration values for each node */
   unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
   su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
@@ -1103,7 +1111,9 @@ private:
   }
 
   void addTranspParamOption(const string name, unsigned short & nMarker_Transpiration, string * & Marker_Transpiration,
-                      su2double* & x0, su2double* & x1, su2double* & eps0, su2double* & eps1) {
+                      su2double* & x0, su2double* & x1, su2double* & x2, su2double* & x3, 
+                      su2double* & y0, su2double* & y1, su2double* & y2, su2double* & y3, 
+                      su2double* & eps0, su2double* & eps1, su2double* & eps2, su2double* & eps3) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionTransp(name, nMarker_Transpiration, Marker_Transpiration, x0, x1, eps0, eps1);
@@ -5759,7 +5769,9 @@ public:
    * \brief Get the wall transpiration parameters.
    * \param[in] val_index - Index corresponding to the transpiration boundary.
    */
-  void GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &eps0, su2double &eps1);
+  void GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &x2, su2double &x3,
+                              su2double &y0, su2double &y1, su2double &y2, su2double &y3, 
+                              su2double &eps0, su2double &eps1, su2double &eps2, su2double &eps3);
 
   /*!
    * \brief Get the name of file containing all transpirations

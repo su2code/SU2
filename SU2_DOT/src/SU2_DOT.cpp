@@ -699,12 +699,19 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
   su2double x0, x1, eps0, eps1;
   su2double x, s, eps;
+  su2double *my_Gradient, *localGradient;
 
   string Marker_Tag;
   
   for(iDV = 0; iDV < config->GetnDV(); iDV++){
     if(config->GetDesign_Variable(iDV) == TRANSP_DV){
       nDV_Value = config->GetnDV_Value(iDV);
+      my_Gradient = new su2double[nDV_Value];
+      localGradient = new su2double[nDV_Value];
+      for(unsigned short i = 0; i < nDV_Value; i++){
+        my_Gradient[i] = 0.0;
+        localGradient[i] = 0.0;
+      }
       while(iMarker < config->GetnMarker_All()){
         if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
