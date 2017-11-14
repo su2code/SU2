@@ -693,7 +693,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 }
 
 void SetProjection_Transp(CGeometry *geometry, CConfig *config){
-  unsigned long iPoint;
+  unsigned long iPoint, iVertex;
   unsigned short iDV, iDV_Value, nDV_Value;
   unsigned short iMarker = 0;
 
@@ -702,7 +702,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config){
 
   string Marker_Tag;
   
-  for(iDV = 0; iDV < config_->GetnDV(); iDV++){
+  for(iDV = 0; iDV < config->GetnDV(); iDV++){
     if(config->GetDesign_Variable(iDV) == TRANSP_DV){
       nDV_Value = config->GetnDV_Value(iDV);
       while(iMarker < config->GetnMarker_All()){
@@ -726,6 +726,8 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config){
       }
     }
   }
+
+  // TODO: MPI communication of gradients
 }
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){
