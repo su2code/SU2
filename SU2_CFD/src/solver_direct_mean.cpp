@@ -3569,7 +3569,7 @@ su2double CEulerSolver::GetParametricTranspiration(su2double x, su2double y,
   s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
   s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
 
-  if(ss[0] >= 0. && ss[0] <= 1. && ss[1] >= 0.0 && ss[1] <= 1.0){
+  if(s[0] >= 0. && s[0] <= 1. && s[1] >= 0.0 && s[1] <= 1.0){
     eps = (1.-s[0])*(1.-s[1])*eps1 + s[0]*(1.-s[1])*eps2 + s[0]*s[1]*eps3 + (1.-s[0])*s[1]*eps4;
   }
 
