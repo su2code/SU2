@@ -727,7 +727,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
       for(iMarker = 0; iMarker < geometry->GetnMarker_All(); iMarker++){
-        if(geometry->GetMarker_Tag() == Marker_Tag) break;
+        if(geometry->GetMarker_Tag(iMarker) == Marker_Tag) break;
       }
 
       /*--- Bilinear parametric interpolation ---*/
