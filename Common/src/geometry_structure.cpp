@@ -14901,6 +14901,14 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
+  /*--- Check if we need transpiration sensitivity ---*/
+  for (unsigned short iDV = 0; iDV  < config->GetnDV(); iDV++){
+    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
+      transp = true;
+      break;
+    }
+  }
+
   nPointLocal = nPoint;
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -14926,6 +14934,10 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
           Point2Vertex[iPoint][1] = iVertex;
           PointInDomain[iPoint] = true;
           vertex[iMarker][iVertex]->SetAuxVar(0.0);
+
+          if(transp){
+            vertex[iMarker][iVertex]->SetAuxTransp(0.0);
+          }
         }
       }
   
@@ -14950,18 +14962,6 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     nExtIter = 1;
     delta_T  = 1.0;
     total_T  = 1.0;
-  }
-
-  /*--- Check if we need transpiration sensitivity ---*/
-  for (unsigned short iDV = 0; iDV  < config->GetnDV(); iDV++){
-    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
-      transp = true;
-      SensitivityTransp = new su2double[nPoint];
-      for(iPoint = 0; iPoint < nPoint; iPoint++){
-        SensitivityTransp[iPoint] = 0.0;
-      }
-      break;
-    }
   }
   
   for (iExtIter = 0; iExtIter < nExtIter; iExtIter++) {
@@ -15016,21 +15016,6 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       }
       stringstream  point_line(text_line);
       point_line >> iPoint >> Sensitivity;
-
-      if(transp){
-        if(PointInDomain[iPoint]){
-          /*--- Skip adjoint vars, coords, and mesh sens ---*/
-          for(unsigned short iVar = 0; iVar < nDim+2; iVar++){
-            point_line >> dummy;
-          }
-          for(unsigned short iVar = 0; iVar < 2*nDim; iVar++){
-            point_line >> dummy;
-          }
-          point_line >> Sensitivity_Transp;
-
-          SensitivityTransp[iPoint] = Sensitivity_Transp;
-        }
-      }
       
       if (PointInDomain[iPoint]) {
         
@@ -15044,6 +15029,19 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
          a single sensitivity value multiplied by 1.0. ---*/
         
         vertex[iMarker][iVertex]->AddAuxVar(Sensitivity*(delta_T/total_T));
+
+        if(transp){
+          /*--- Skip adjoint vars, coords, and mesh sens ---*/
+          for(unsigned short iVar = 0; iVar < nDim+2; iVar++){
+            point_line >> dummy;
+          }
+          for(unsigned short iVar = 0; iVar < 2*nDim; iVar++){
+            point_line >> dummy;
+          }
+          point_line >> Sensitivity_Transp;
+
+          vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp);
+        }
       }
       
     }

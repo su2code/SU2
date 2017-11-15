@@ -291,6 +291,12 @@ inline void CVertex::AddAuxVar(su2double val_auxvar) { Aux_Var += val_auxvar; }
 
 inline su2double CVertex::GetAuxVar(void) { return Aux_Var; }
 
+inline void CVertex::SetAuxTransp(su2double val_auxvar) { Aux_Var_Transp = val_auxvar; }
+
+inline void CVertex::AddAuxTransp(su2double val_auxvar){ Aux_Var_Transp += val_auxvar; }
+
+inline su2double CVertex::GetAuxTransp(void) { return Aux_Var_Transp; }
+
 inline void CVertex::GetNormal(su2double *val_normal) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
 		val_normal[iDim] = Normal[iDim]; 

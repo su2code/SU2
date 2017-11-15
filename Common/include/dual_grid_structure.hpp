@@ -886,6 +886,7 @@ protected:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
 	su2double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
 	su2double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
+	su2double Aux_Var_Transp;	/*!< \brief Auxiliar transpiration variable defined only on the surface. */
 	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
@@ -978,6 +979,24 @@ public:
 	 * \param[in] val_auxvar - Value of the auxiliar variable.
 	 */
 	void AddAuxVar(su2double val_auxvar);
+
+    /*!
+	 * \brief Set the value of an auxiliary tranpiration variable for gradient computation.
+	 * \param[in] val_auxvar - Value of the auxiliar variable.
+	 */
+	void SetAuxTransp(su2double val_auxvar);
+
+    /*!
+	 * \brief Add the value of an auxiliary tranpiration variable for gradient computation.
+	 * \param[in] val_auxvar - Value of the auxiliar variable.
+	 */
+    void AddAuxTransp(su2double val_auxvar);
+
+    /*!
+	 * \brief Get the value of an auxiliary tranpiration variable for gradient computation.
+	 * \param[in] val_auxvar - Value of the auxiliar variable.
+	 */
+    su2double GetAuxTransp(void);
   
 	/*! 
 	 * \brief Set the normal vector.
