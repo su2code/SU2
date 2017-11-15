@@ -15050,17 +15050,12 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
   
   Point2Vertex = new unsigned long[nPointGlobal][2];
   PointInDomain = new bool[nPointGlobal];
-  SensitivityTransp = new su2double[nPoint];
-
-  for(iPoint = 0; iPoint < nPoint; iPoint++){
-    SetSensitivityTranspiration(iPoint, 0.0);
-  }
   
   for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
     PointInDomain[iPoint] = false;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    //if (config->GetMarker_All_DV(iMarker) == YES){
+    if (config->GetMarker_All_DV(iMarker) == YES){
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         
         /*--- The sensitivity file uses the global numbering ---*/
@@ -15073,7 +15068,7 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
           vertex[iMarker][iVertex]->SetAuxTransp(0.0);
         }
       }
-    //}
+    }
   }
   
   /*--- Time-average any unsteady surface sensitivities ---*/
@@ -15149,7 +15144,6 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
         position = text_line.find( ",", 0 );
         if (position!=string::npos) text_line.erase (position,1);
       }
-      istringstream  point_line(text_line);
       point_line >> iPoint >> dummy;
 
       /*--- Skip adjoint vars, coords, and mesh sens ---*/
@@ -15172,10 +15166,8 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
          a single sensitivity value multiplied by 1.0. ---*/
           
         point_line >> Sensitivity_Transp;
-
+        
         vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp*(delta_T/total_T));
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        SetSensitivityTranspiration(iPoint, GetSensitivityTranspiration(iPoint) + Sensitivity_Transp);
       }
       
     }

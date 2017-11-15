@@ -770,7 +770,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             /*--- Only care about values within box ---*/
             if(s[0] >= 0.0 && s[0] < 1.0 && s[1] >= 0.0 && s[1] < 1.0){
               cout << "iPoint = " << iPoint;
-              cout << ", SensTransp = " << geometry->GetSensitivityTranspiration(iPoint);
+              //cout << ", SensTransp = " << geometry->GetSensitivityTranspiration(iPoint);
               cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
               cout << ", s[0] = " << s[0] ;
               cout << ", s[1] = " << s[1] << endl;
