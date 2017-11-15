@@ -726,7 +726,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       cout << "GetTranspiraitonParams_" << endl;
       config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
-      for(iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++){
+      for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
         if(geometry->GetMarker_Tag(iMarker) == Marker_Tag) break;
       }
 
