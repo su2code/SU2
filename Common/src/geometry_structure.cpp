@@ -14957,6 +14957,9 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     if(config->GetDesign_Variable(iDV) == TRANSP_DV){
       transp = true;
       SensitivityTransp = new su2double[nPoint];
+      for(iPoint = 0; iPoint < nPoint; iPoint++){
+        SensitivityTransp[iPoint] = 0.0;
+      }
       break;
     }
   }
@@ -15025,10 +15028,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
           }
           point_line >> Sensitivity_Transp;
 
-          SetSensitivityTranspiration(iPoint, Sensitivity_Transp);
-        }
-        else{
-          SetSensitivityTranspiration(iPoint, 0.0);
+          SensitivityTransp[iPoint] = Sensitivity_Transp;
         }
       }
       
