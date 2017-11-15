@@ -2379,9 +2379,9 @@ public:
     this->valueDV = new su2double*[this->nDV];
     this->nDV_Value = new unsigned short[this->nDV];
 
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
-      this->valueDV[iDV] = new su2double[3];
-    }
+    //for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      //this->valueDV[iDV] = new su2double[3];
+    //}
 
     unsigned short nValueDV = 0;
     unsigned short totalnValueDV = 0;
@@ -2414,6 +2414,7 @@ public:
       }
 
       this->nDV_Value[iDV] = nValueDV;
+      this->valueDV[iDV] = new su2double[nValueDV];
 
       totalnValueDV += nValueDV;
 
