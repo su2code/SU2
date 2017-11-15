@@ -704,21 +704,20 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
   su2double s[2], a[4], b[4], aa, bb, cc;
 
-  su2double *my_Gradient, *localGradient;
+  su2double *my_Gradient = new su2double[4];
+  su2double *localGradient = new su2double[4];
 
   string Marker_Tag;
 
   config->SetTranspirationParams_DV();
   
   for(iDV = 0; iDV < config->GetnDV(); iDV++){
-    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
-      nDV_Value = config->GetnDV_Value(iDV);
-      my_Gradient = new su2double[nDV_Value];
-      localGradient = new su2double[nDV_Value];
-      for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+    for(iDV_Value = 0; iDV_Value < 4; iDV_Value++){
         my_Gradient[iDV_Value] = 0.0;
         localGradient[iDV_Value] = 0.0;
       }
+    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
+      nDV_Value = config->GetnDV_Value(iDV);
 
       Marker_Tag = config->GetTranspTag(iDV);
       config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
@@ -751,6 +750,10 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             --- (deps/deps_1) = s[0]*(1-s[1])               ---
             --- (deps/deps_2) = s[0]*s[1]                   ---
             --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
+          cout << "iPoint = " << iPoint;
+          cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+          cout << ", s[0] = " << s[0] ;
+          cout << ", s[1] = " << s[1] << endl;
           my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
