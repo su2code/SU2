@@ -755,6 +755,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             --- (deps/deps_2) = s[0]*s[1]                   ---
             --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
           cout << "my_Gradient" << endl;
+          cout << "nDV_Value = " << nDV_Value << endl;
           my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
           my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
           my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
