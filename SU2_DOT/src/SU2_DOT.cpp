@@ -265,7 +265,12 @@ int main(int argc, char *argv[]) {
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
 
       for(iZone = 0; iZone < nZone; iZone++){
+        if(rank == MASTER_NODE)
+          cout << "Set boundary transpiration sensitivities." << endl;
         SetBoundSensitivityTranspiration(config_container[iZone]);
+        
+        if(rank == MASTER_NODE)
+          cout << "Project transpiration sensitivities to design variables." << endl;
         SetProjection_Transp(geometry_container[iZone], config_container[iZone], Gradient);
       }
        
