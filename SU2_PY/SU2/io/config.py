@@ -329,6 +329,7 @@ def read_config(filename):
                case("MARKER_PLOTTING")   or\
                case("MARKER_MONITORING") or\
                case("MARKER_SYM")        or\
+               case("MARKER_TRANSPIRATION") or\
                case("DV_KIND")           : 
                 # remove white space
                 this_value = ''.join(this_value.split())   
@@ -793,7 +794,22 @@ def write_config(filename,param_dict):
             if case("MARKER_FAR")        : pass
             if case("MARKER_PLOTTING")   : pass
             if case("MARKER_MONITORING") : pass
-            if case("MARKER_SYM")        : pass            
+            if case("MARKER_SYM")        : pass
+            if case("MARKER_TRANSPIRATION"): pass
+#                n_dv = len(param_dict["DEFINITION_DV"]["KIND"])
+#                for i_dv in range(n_dv)
+#                    this_kind = param_dict["DEFINITION_DV"]["KIND"][i_dv]
+#                    if this_kind == "TRANSP_DV":
+#                        output_file.write("( %s," % new_value['MARKER'][i_dv])
+#                        n_param = len(new_value['PARAM'][i_dv])
+#                        for i_param in range(1,n_param):
+#                            output_file.write(" %s," % new_value['PARAM'][i_dv][i_param])
+#                        for i_value in range(1,n_value):
+#                            output_file.write(" %s" % new_value[''][i_dv][i_value])
+#                            if i_value+1 < n_value
+#                                output_file.write(", ")
+#                        output_file.write(" );")
+
             if case("DV_MARKER") : 
                 if not isinstance(new_value,list):
                     new_value = [ new_value ]                
@@ -876,7 +892,7 @@ def write_config(filename,param_dict):
                         elif this_kind == 'TRANSP_DV':
                             n_param = len(new_value['PARAM'][i_dv])
                             for i_param in range(1,n_param):
-                                output_file.write("%s " % new_value['PARAM'][i_dv])
+                                output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
                                 if i_param+1 < n_param:
                                     output_file.write(", ")
                         else:

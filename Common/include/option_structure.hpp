@@ -2185,10 +2185,11 @@ class COptionDVParam : public COptionBase {
   unsigned short & nDV;
   su2double ** & paramDV;
   string * & FFDTag;
+  string * & TranspTag;
   unsigned short* & design_variable;
 
 public:
-  COptionDVParam(string option_field_name, unsigned short & nDV_field, su2double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, su2double** & paramDV_field, string* & FFDTag_field, string* & TranspTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), TranspTag(TranspTag_field), design_variable(design_variable_field) {
     this->name = option_field_name;
   }
 
@@ -2242,6 +2243,7 @@ public:
     }
 
     this->FFDTag = new string[this->nDV];
+    this->TranspTag = new string[this->nDV];
 
     unsigned short nParamDV = 0;
     stringstream ss;
@@ -2274,7 +2276,7 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-        case TRANSP_DV:            nParamDV = 4; break;
+        case TRANSP_DV:            nParamDV = 9; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2306,6 +2308,11 @@ public:
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
+        else if ((iParamDV == 0) &&
+                 (this->design_variable[iDV] == TRANSP_DV)){
+              ss >> this->TranspTag[iDV];
+              this->param[iDV][iParamDV] = 0;
+        }
         else
           ss >> this->paramDV[iDV][iParamDV];
 
@@ -2330,6 +2337,7 @@ public:
     this->nDV = 0;
     this->paramDV = NULL;
     this->FFDTag = NULL;
+    this->TranspTag = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };

@@ -477,6 +477,7 @@ void CConfig::SetPointersNull(void) {
   CoordFFDBox           = NULL;
   DegreeFFDBox          = NULL;
   FFDTag                = NULL;
+  TranspTag             = NULL;
   nDV_Value             = NULL;
   TagFFDBox             = NULL;
  
@@ -1562,7 +1563,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
-	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
+	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, TranspTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
@@ -4332,7 +4333,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
-        if (Design_Variable[iDV] == TRANSP_DV) nParamDV = 4;
+        if (Design_Variable[iDV] == TRANSP_DV) nParamDV = 8;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
@@ -6000,6 +6001,7 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
 
   if (FFDTag != NULL) delete [] FFDTag;
+  if (TranspTag != NULL) delete [] TranspTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
   if (TagFFDBox != NULL) delete [] TagFFDBox;
   
@@ -6843,6 +6845,32 @@ void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double
   eps2 = TransEps2[iMarker_Transpiration];
   eps3 = TransEps3[iMarker_Transpiration];
   
+}
+
+void CConfig::SetTranspirationParams_DV() {
+  unsigned short iDV;
+  unsigned short iMarker_Transpiration = 0, iMarker_DV = 0;
+
+  if (nMarker_Transpiration > 0 && nDV > 0) {
+  for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++){
+    for(iDV = 0; iDV < nDV; iDV++){
+      if (TranspTag[iDV] == Marker_Transpiration[iMarker_Transpiration]){
+        Transx0[iMarker_Transpiration] = ParamDV[iDV][1];
+        Transx1[iMarker_Transpiration] = ParamDV[iDV][2];
+        Transx2[iMarker_Transpiration] = ParamDV[iDV][3];
+        Transx3[iMarker_Transpiration] = ParamDV[iDV][4];
+        Transy0[iMarker_Transpiration] = ParamDV[iDV][5];
+        Transy1[iMarker_Transpiration] = ParamDV[iDV][6];
+        Transy2[iMarker_Transpiration] = ParamDV[iDV][7];
+        Transy3[iMarker_Transpiration] = ParamDV[iDV][8];
+        Transeps0[iMarker_Transpiration] = DV_Value[iDV][0];
+        Transeps1[iMarker_Transpiration] = DV_Value[iDV][0];
+        Transeps2[iMarker_Transpiration] = DV_Value[iDV][0];
+        Transeps3[iMarker_Transpiration] = DV_Value[iDV][0];
+      }
+    }
+  }
+  }
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {

@@ -409,6 +409,7 @@ private:
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
   string *FFDTag;				/*!< \brief Parameters of the design variable. */
+  string *TranspTag;    /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;				/*!< \brief Tag of the FFD box. */
   unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
   unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
@@ -1072,11 +1073,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
+  void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag, string* & TranspTag,
                         unsigned short* & design_variable) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, TranspTag, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -5772,6 +5773,12 @@ public:
   void GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &x2, su2double &x3,
                               su2double &y0, su2double &y1, su2double &y2, su2double &y3, 
                               su2double &eps0, su2double &eps1, su2double &eps2, su2double &eps3);
+
+  /*!
+   * \brief Set the transpiration params using DV values.
+   * \param[in] val_index - Index corresponding to the transpiration boundary.
+   */
+  void SetTranspirationParams_DV();
 
   /*!
    * \brief Get the name of file containing all transpirations
