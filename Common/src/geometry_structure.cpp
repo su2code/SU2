@@ -15144,6 +15144,7 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
         position = text_line.find( ",", 0 );
         if (position!=string::npos) text_line.erase (position,1);
       }
+      stringstream  point_line(text_line);
       point_line >> iPoint >> dummy;
 
       /*--- Skip adjoint vars, coords, and mesh sens ---*/
