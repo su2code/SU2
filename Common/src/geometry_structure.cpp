@@ -15059,8 +15059,8 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
   for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
     PointInDomain[iPoint] = false;
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    if (config->GetMarker_All_DV(iMarker) == YES)
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    //if (config->GetMarker_All_DV(iMarker) == YES)
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         
         /*--- The sensitivity file uses the global numbering ---*/
@@ -15071,7 +15071,8 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
           Point2Vertex[iPoint][1] = iVertex;
           PointInDomain[iPoint] = true;
         }
-      }
+      //}
+  }
   
   /*--- Time-average any unsteady surface sensitivities ---*/
   
