@@ -15169,7 +15169,8 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
         point_line >> Sensitivity_Transp;
 
         //vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp*(delta_T/total_T));
-        SetSensitivityTranspiration(vertex[iMarker][iVertex]->GetNode(), GetSensitivityTranspiration(iPoint_Local) + Sensitivity_Transp);
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        SetSensitivityTranspiration(iPoint, GetSensitivityTranspiration(iPoint) + Sensitivity_Transp);
       }
       
     }
