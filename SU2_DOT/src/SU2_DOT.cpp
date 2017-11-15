@@ -749,7 +749,6 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
             //iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
-            iPoint_Local = iPoint;
             x = geometry->node[iPoint]->GetCoord(0);
             y = geometry->node[iPoint]->GetCoord(1);
 
@@ -771,13 +770,13 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             /*--- Only care about values within box ---*/
             if(s[0] >= 0.0 && s[0] < 1.0 && s[1] >= 0.0 && s[1] < 1.0){
               cout << "iPoint = " << iPoint;
-              cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint_Local);
+              cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint);
               cout << ", s[0] = " << s[0] ;
               cout << ", s[1] = " << s[1] << endl;
-              my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint_Local);
-              my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint_Local);
-              my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint_Local);
-              my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->GetSensitivityTranspiration(iPoint_Local);
+              my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
+              my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
+              my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
+              my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
             }
           }
         }
