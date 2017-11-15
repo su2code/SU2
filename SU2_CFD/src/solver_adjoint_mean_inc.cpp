@@ -226,7 +226,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
   /*--- If outflow objective, nonzero initialization ---*/
-  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)){
+  if ((config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)){
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
@@ -259,7 +259,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE || config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1502,8 +1502,8 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
    adjoint equations (note that the flow problem may use different methods). ---*/
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order   = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER));
-  bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool muscl          = config->GetMUSCL_AdjFlow();
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
 
@@ -1531,7 +1531,7 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   }
   
   
-  if ((second_order) && (iMesh == MESH_0)) {
+  if ((muscl) && (iMesh == MESH_0)) {
     
     /*--- Compute gradients for upwind second-order reconstruction ---*/
 
@@ -1577,7 +1577,7 @@ void CAdjIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
   bool grid_movement  = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1606,7 +1606,7 @@ void CAdjIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver
     numerics->SetLambda(solver_container[FLOW_SOL]->node[iPoint]->GetLambda(),
                         solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
     
-    if (second_order) {
+    if (jst_scheme) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -1650,8 +1650,8 @@ void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
   unsigned short iDim, iVar;
   
   bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order     = (((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
-  bool limiter          = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool muscl            = (config->GetMUSCL_AdjFlow() && (iMesh == MESH_0));
+  bool limiter          = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool grid_movement    = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1682,7 +1682,7 @@ void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
     
     /*--- High order reconstruction using MUSCL strategy ---*/
     
-    if (second_order) {
+    if (muscl) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -1939,7 +1939,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
   
-  eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+  eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
   Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
   Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
   
@@ -1948,7 +1948,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps);
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps);
     
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
@@ -1960,60 +1960,6 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
     node[iPoint]->SetSensor(Sensor);
     
   }
-  
-  //  su2double dx = 0.1;
-  //  su2double LimK = 0.03;
-  //  su2double eps2 =  pow((LimK*dx),3);
-  //
-  //  unsigned long iPoint, jPoint;
-  //  unsigned short iNeigh, nNeigh, iDim;
-  //  su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
-  //  du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
-  //
-  //
-  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //
-  //    if (geometry->node[iPoint]->GetDomain()) {
-  //
-  //      Solution_i = node[iPoint]->GetSolution();
-  //      Gradient_i = node[iPoint]->GetGradient();
-  //      Coord_i = geometry->node[iPoint]->GetCoord();
-  //      nNeigh = geometry->node[iPoint]->GetnPoint();
-  //
-  //      /*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-  //      du_max = 1.0E-8; du_min = -1.0E-8;
-  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //        Solution_j = node[jPoint]->GetSolution();
-  //        du_max = max(du_max, Solution_j[0] - Solution_i[0]);
-  //        du_min = min(du_min, Solution_j[0] - Solution_i[0]);
-  //      }
-  //
-  //      r_u = 1.0;
-  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //
-  //        /*--- Unconstrained reconstructed solution ---*/
-  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //        Solution_j = node[jPoint]->GetSolution();
-  //        Coord_j = geometry->node[jPoint]->GetCoord();
-  //        u_ij = Solution_i[0]; dist_ij = 0;
-  //        for (iDim = 0; iDim < nDim; iDim++) {
-  //          diff_coord = Coord_j[iDim]-Coord_i[iDim];
-  //          u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
-  //        }
-  //
-  //        /*--- Venkatakrishnan limiter ---*/
-  //        if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
-  //        else  dp = du_min;
-  //        dm = u_ij - Solution_i[0];
-  //        r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
-  //
-  //        /*--- Take the smallest value of the limiter ---*/
-  //        r_u = min(r_u, r_u_ij);
-  //
-  //      }
-  //      node[iPoint]->SetSensor(1.0-r_u);
-  //    }
   
   /*--- MPI parallelization ---*/
   Set_MPI_Dissipation_Switch(geometry, config);
@@ -2222,9 +2168,9 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+      (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+ if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE))
    factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
@@ -2327,8 +2273,8 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
@@ -3921,7 +3867,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -3978,7 +3924,7 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
    adjoint equations (note that the flow problem may use different methods). ---*/
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
 
   /*--- Residual initialization ---*/
@@ -4113,7 +4059,6 @@ void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Gradient of adjoint variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
-    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 
     /*--- Set volume ---*/
     
@@ -4296,9 +4241,9 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+      (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE)) factor = 1.0/Area_Monitored;
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
@@ -4489,8 +4434,8 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           

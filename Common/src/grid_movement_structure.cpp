@@ -32,6 +32,7 @@
  */
 
 #include "../include/grid_movement_structure.hpp"
+#include "../include/adt_structure.hpp"
 #include <list>
 
 using namespace std;
@@ -164,21 +165,19 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     NumError = MinVolume * Tol_Factor;
     
-    /*--- Set the boundary displacements (as prescribed by the design variable
-     perturbations controlling the surface shape) as a Dirichlet BC. ---*/
+    /*--- Set the boundary and volume displacements (as prescribed by the 
+     design variable perturbations controlling the surface shape) 
+     as a Dirichlet BC. ---*/
     
     SetBoundaryDisplacements(geometry, config);
 
-    /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
-
-    if (Derivative) {
-      SetBoundaryDerivatives(geometry, config);
-    }
-    
     /*--- Fix the location of any points in the domain, if requested. ---*/
     
-    if (config->GetHold_GridFixed())
-      SetDomainDisplacements(geometry, config);
+    SetDomainDisplacements(geometry, config);
+
+    /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
+
+    if (Derivative) { SetBoundaryDerivatives(geometry, config); }
     
     CMatrixVectorProduct* mat_vec = NULL;
     CPreconditioner* precond = NULL;
@@ -204,7 +203,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     		precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU0 preconditioner." << endl;
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner();
     		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
@@ -222,7 +221,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     	if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
     			(config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU0 preconditioner." << endl;
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
     		StiffMatrix.BuildILUPreconditioner(true);
     		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
     		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
@@ -417,332 +416,101 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   
 }
 
-void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
-  
-  su2double *coord, dist2, dist;
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_DefWall;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  MaxDistance = -1E22; MinDistance = 1E22;
-  
-  
-  if (rank == MASTER_NODE)
-    cout << "Computing distances to the nearest deforming surface." << endl;
-  
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
-   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
-  
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-  
-#ifndef HAVE_MPI
-  
-  /*--- Compute the total number of nodes on deforming boundaries ---*/
-  
-  nVertex_DefWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
-        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
-      nVertex_DefWall += geometry->GetnVertex(iMarker);
-  
-  /*--- Allocate an array to hold boundary node coordinates ---*/
-  
-  su2double **Coord_bound;
-  Coord_bound = new su2double* [nVertex_DefWall];
-  for (iVertex = 0; iVertex < nVertex_DefWall; iVertex++)
-    Coord_bound[iVertex] = new su2double [nDim];
-  
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes ---*/
-  
-  nVertex_DefWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
-        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Coord_bound[nVertex_DefWall][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_DefWall++;
-      }
-  }
-  
-  /*--- Loop over all interior mesh nodes and compute the distances to each
-   of the deforming boundary nodes. Store the minimum distance to the wall for
-   each interior mesh node. Store the global minimum distance. ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_DefWall; iVertex++) {
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim]) *(coord[iDim]-Coord_bound[iVertex][iDim]);
-      if (dist2 < dist) dist = dist2;
-    }
-    
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS) MinDistance = min(MinDistance, sqrt(dist));
-    
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-  }
-  
-  /*--- Distance from  0 to 1 ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
-    geometry->node[iPoint]->SetWall_Distance(dist);
-  }
-  
-  /*--- Deallocate the vector of boundary coordinates. ---*/
-  
-  for (iVertex = 0; iVertex < nVertex_DefWall; iVertex++)
-    delete[] Coord_bound[iVertex];
-  delete[] Coord_bound;
-  
-  
-#else
-  
-  /*--- Variables and buffers needed for MPI ---*/
-  
-  int iProcessor, nProcessor;
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  unsigned long nLocalVertex_DefWall = 0, nGlobalVertex_DefWall = 0, MaxLocalVertex_DefWall = 0;
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  /*--- Count the total number of nodes on deforming boundaries within the
-   local partition. ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
-        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
-      nLocalVertex_DefWall += geometry->GetnVertex(iMarker);
-  
-  /*--- Communicate to all processors the total number of deforming boundary
-   nodes, the maximum number of deforming boundary nodes on any single
-   partition, and the number of deforming nodes on each partition. ---*/
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_DefWall;
-  SU2_MPI::Allreduce(&nLocalVertex_DefWall, &nGlobalVertex_DefWall,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_DefWall, &MaxLocalVertex_DefWall, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  /*--- Create and initialize to zero some buffers to hold the coordinates
-   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
-  
-  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_DefWall*nDim];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_DefWall*nDim];
-  unsigned long nBuffer = MaxLocalVertex_DefWall*nDim;
-  
-  for (iVertex = 0; iVertex < MaxLocalVertex_DefWall; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes on
-   the local partition and broadcast them to all partitions. ---*/
-  
-  nVertex_DefWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
-        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_DefWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_DefWall++;
-      }
 
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Loop over all interior mesh nodes on the local partition and compute
-   the distances to each of the deforming boundary nodes in the entire mesh.
-   Store the minimum distance to the wall for each interior mesh node. ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = EPS*EPS;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_DefWall+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_DefWall+iVertex)*nDim+iDim]);
-        
-        if (dist2 < dist) dist = dist2;
-      }
-    
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
-    
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-  }
-  
-  su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
-  su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
-  SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  
-  /*--- Distance from  0 to 1 ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
-    geometry->node[iPoint]->SetWall_Distance(dist);
-  }
-  
-  /*--- Deallocate the buffers needed for the MPI communication. ---*/
-  
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
-}
 
 void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
+  
+  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
+  unsigned short iMarker, iDim;
+  su2double dist, MaxDistance_Local, MinDistance_Local;
+  int rankID;
 
-  su2double *coord, dist2, dist;
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall;
-
-  int rank = MASTER_NODE;
-  int iProcessor, nProcessor = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+  /*--- Initialize min and max distance ---*/
 
   MaxDistance = -1E22; MinDistance = 1E22;
-
-  if (rank == MASTER_NODE)
-    cout << "Computing distances to the nearest solid surface (except internal surfaces)." << endl;
-
-  unsigned long nLocalVertex_SolidWall = 0, nGlobalVertex_SolidWall = 0, MaxLocalVertex_SolidWall = 0;
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-
-  /*--- Count the total number of nodes on deforming boundaries within the
-   local partition. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-    		config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-    	nLocalVertex_SolidWall += geometry->GetnVertex(iMarker);
-
-  /*--- Communicate to all processors the total number of deforming boundary
-   nodes, the maximum number of deforming boundary nodes on any single
-   partition, and the number of deforming nodes on each partition. ---*/
-
-  Buffer_Send_nVertex[0] = nLocalVertex_SolidWall;
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &nGlobalVertex_SolidWall,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &MaxLocalVertex_SolidWall, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  nGlobalVertex_SolidWall = nLocalVertex_SolidWall;
-  MaxLocalVertex_SolidWall = nLocalVertex_SolidWall;
-  Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
-#endif
-
-
-  /*--- Create and initialize to zero some buffers to hold the coordinates
-   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
-
-  unsigned long nBuffer = MaxLocalVertex_SolidWall*nDim;
-  su2double *Buffer_Send_Coord    = new su2double [nBuffer];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*nBuffer];
-
-  for (iVertex = 0; iVertex < MaxLocalVertex_SolidWall; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes on
-   the local partition and broadcast them to all partitions. ---*/
-
+  
+  /*--- Compute the total number of nodes on no-slip boundaries ---*/
+  
   nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-    		config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      nVertex_SolidWall += geometry->GetnVertex(iMarker);
+    }
+  }
+  
+  /*--- Allocate the vectors to hold boundary node coordinates
+   and its local ID. ---*/
+  
+  vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
+  vector<unsigned long> PointIDs(nVertex_SolidWall);
+  
+  /*--- Retrieve and store the coordinates of the no-slip boundary nodes
+   and their local point IDs. ---*/
+  
+  ii = 0; jj = 0;
+  for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
+        PointIDs[jj++] = iPoint;
+        for (iDim=0; iDim<nDim; ++iDim)
+          Coord_bound[ii++] = geometry->node[iPoint]->GetCoord(iDim);
       }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-#else
-  for (iVertex = 0; iVertex < MaxLocalVertex_SolidWall; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
-#endif
-
-  /*--- Loop over all interior mesh nodes on the local partition and compute
-   the distances to each of the deforming boundary nodes in the entire mesh.
-   Store the minimum distance to the wall for each interior mesh node. ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = EPS*EPS;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim]);
-
-        if (dist2 < dist) dist = dist2;
-      }
-
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
-
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-
+    }
   }
-
-  su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
-  su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-#else
-  MaxDistance = MaxDistance_Local;
-  MinDistance = MinDistance_Local;
-#endif
-
-  /*--- Distance from  0 to 1 ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
-    geometry->node[iPoint]->SetWall_Distance(dist);
+  
+  /*--- Build the ADT of the boundary nodes. ---*/
+  
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  
+  /*--- Loop over all interior mesh nodes and compute the distances to each
+   of the no-slip boundary nodes. Store the minimum distance to the wall
+   for each interior mesh node. ---*/
+  
+  if( WallADT.IsEmpty() ) {
+    
+    /*--- No solid wall boundary nodes in the entire mesh.
+     Set the wall distance to zero for all nodes. ---*/
+    
+    for (iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint)
+      geometry->node[iPoint]->SetWall_Distance(0.0);
   }
-
-  /*--- Deallocate the buffers needed for the MPI communication. ---*/
-
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-
+  else {
+    
+    /*--- Solid wall boundary nodes are present. Compute the wall
+     distance for all nodes. ---*/
+    
+    for(iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint) {
+      
+      WallADT.DetermineNearestNode(geometry->node[iPoint]->GetCoord(), dist,
+                                   pointID, rankID);
+      geometry->node[iPoint]->SetWall_Distance(dist);
+      
+      MaxDistance = max(MaxDistance, dist);
+      
+      /*--- To discard points on the surface we use > EPS ---*/
+       
+      if (sqrt(dist) > EPS)  MinDistance = min(MinDistance, dist);
+      
+    }
+    
+    MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
+    MinDistance_Local = MinDistance; MinDistance = 0.0;
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else
+    MaxDistance = MaxDistance_Local;
+    MinDistance = MinDistance_Local;
+#endif
+    
+  }
+  
 }
 
 su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
@@ -771,19 +539,11 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
   if (rank == MASTER_NODE) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
   
-  
-  /*--- Compute the distance to the nearest deforming surface if needed
-   as part of the stiffness calculation.. ---*/
-  
-  if (config->GetDeform_Stiffness_Type() == DEF_WALL_DISTANCE) {
-    ComputeDeforming_Wall_Distance(geometry, config, MinDistance, MaxDistance);
-    if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
-  }
-
   /*--- Compute the distance to the nearest surface if needed
    as part of the stiffness calculation.. ---*/
 
-  if (config->GetDeform_Stiffness_Type() == BOUNDARY_DISTANCE) {
+  if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) ||
+      (config->GetDeform_Limit() < 1E6)) {
     ComputeSolid_Wall_Distance(geometry, config, MinDistance, MaxDistance);
     if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
@@ -810,8 +570,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     
     ElemVolume = geometry->elem[iElem]->GetVolume();
     
-    if ((config->GetDeform_Stiffness_Type() == DEF_WALL_DISTANCE) ||
-    		(config->GetDeform_Stiffness_Type() == BOUNDARY_DISTANCE)) {
+    if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE)) {
       ElemDistance = 0.0;
       for (iNodes = 0; iNodes < nNodes; iNodes++)
         ElemDistance += geometry->node[PointCorners[iNodes]]->GetWall_Distance();
@@ -1830,8 +1589,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
-      case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case BOUNDARY_DISTANCE: E = 1.0 / ElemDistance; break;
+      case SOLID_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
@@ -1970,8 +1728,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
-      case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case BOUNDARY_DISTANCE: E = 1.0 / ElemDistance; break;
+      case SOLID_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
@@ -2055,10 +1812,10 @@ void CVolumetricMovement::AddFEA_StiffMatrix(CGeometry *geometry, su2double **St
 }
 
 void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config) {
-
-	unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
-	unsigned long iPoint, total_index, iVertex;
-	su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
+  
+  unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
+  unsigned long iPoint, total_index, iVertex;
+  su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
   
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
    deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
@@ -2073,7 +1830,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 	
   /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
+   plane, internal and periodic bc the receive boundaries and periodic boundaries. ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
@@ -2093,60 +1851,92 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
+  /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
+      
+      for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        VarCoord = geometry->node[iPoint]->GetCoord();
+        for (iDim = 0; iDim < nDim; iDim++)
+          MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
+      }
+      for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
+      if (nDim==3) {
+        if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
+        if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
+        if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
+      }
+      else {
+        if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
+        if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
+      }
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        total_index = iPoint*nDim + axis;
+        LinSysRes[total_index] = 0.0;
+        LinSysSol[total_index] = 0.0;
+        StiffMatrix.DeleteValsRowi(total_index);
+      }
+    }
+  }
 
-	/*--- Set the known displacements, note that some points of the moving surfaces
+  /*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
   
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
         ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
           LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
           StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
+        }
+      }
     }
   }
   
   /*--- Don't move the nearfield plane ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = 0.0;
-					LinSysSol[total_index] = 0.0;
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = 0.0;
+          LinSysSol[total_index] = 0.0;
           StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
+        }
+      }
     }
   }
 
   /*--- Move the FSI interfaces ---*/
-
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
           LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-					StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-		}
-	}
+          StiffMatrix.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
 
   /*--- Transform DoFs to normal and tangential coordinate system ---*/
 
@@ -2358,88 +2148,114 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
   unsigned long iPoint, total_index;
   su2double *Coord, *MinCoordValues, *MaxCoordValues, *Hold_GridFixed_Coord;
   
-  MinCoordValues = new su2double [nDim];
-  MaxCoordValues = new su2double [nDim];
-  
-		for (iDim = 0; iDim < nDim; iDim++) {
+  if (config->GetHold_GridFixed()) {
+    
+    MinCoordValues = new su2double [nDim];
+    MaxCoordValues = new su2double [nDim];
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
       MinCoordValues[iDim] = 0.0;
       MaxCoordValues[iDim] = 0.0;
     }
+    
+    Hold_GridFixed_Coord = config->GetHold_GridFixed_Coord();
+    
+    MinCoordValues[0] = Hold_GridFixed_Coord[0];
+    MinCoordValues[1] = Hold_GridFixed_Coord[1];
+    MinCoordValues[2] = Hold_GridFixed_Coord[2];
+    MaxCoordValues[0] = Hold_GridFixed_Coord[3];
+    MaxCoordValues[1] = Hold_GridFixed_Coord[4];
+    MaxCoordValues[2] = Hold_GridFixed_Coord[5];
+    
+    /*--- Set to zero displacements of all the points that are not going to be moved
+     except the surfaces ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Coord = geometry->node[iPoint]->GetCoord();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = 0.0;
+          LinSysSol[total_index] = 0.0;
+          StiffMatrix.DeleteValsRowi(total_index);
+        }
+      }
+    }
+    
+    delete [] MinCoordValues;
+    delete [] MaxCoordValues;
+    
+  }
   
-  Hold_GridFixed_Coord = config->GetHold_GridFixed_Coord();
+  /*--- Don't move the volume grid outside the limits based 
+   on the distance to the solid surface ---*/
   
-  MinCoordValues[0] = Hold_GridFixed_Coord[0];
-  MinCoordValues[1] = Hold_GridFixed_Coord[1];
-  MinCoordValues[2] = Hold_GridFixed_Coord[2];
-  MaxCoordValues[0] = Hold_GridFixed_Coord[3];
-  MaxCoordValues[1] = Hold_GridFixed_Coord[4];
-  MaxCoordValues[2] = Hold_GridFixed_Coord[5];
-  
-  /*--- Set to zero displacements of all the points that are not going to be moved
-   except the surfaces ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Coord = geometry->node[iPoint]->GetCoord();
-    for (iDim = 0; iDim < nDim; iDim++) {
-      if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
-        total_index = iPoint*nDim + iDim;
-        LinSysRes[total_index] = 0.0;
-        LinSysSol[total_index] = 0.0;
-        StiffMatrix.DeleteValsRowi(total_index);
+  if (config->GetDeform_Limit() < 1E6) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      if (geometry->node[iPoint]->GetWall_Distance() >= config->GetDeform_Limit()) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = 0.0;
+          LinSysSol[total_index] = 0.0;
+          StiffMatrix.DeleteValsRowi(total_index);
+        }
       }
     }
   }
   
-  delete [] MinCoordValues;
-  delete [] MaxCoordValues;
-  
 }
 
 void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
-                                         unsigned short iZone, unsigned long iter) {
-  
+    unsigned short iZone, unsigned long iter) {
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-	/*--- Local variables ---*/
-	unsigned short iDim, nDim; 
-	unsigned long iPoint;
+
+  /*--- Local variables ---*/
+  unsigned short iDim, nDim;
+  unsigned long iPoint;
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord;
   su2double Center[3] = {0.0,0.0,0.0}, Omega[3] = {0.0,0.0,0.0}, Lref;
   su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
-	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
-	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
-	su2double cosPhi, sinPhi, cosPsi, sinPsi;
-	bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-	bool adjoint = config->GetContinuous_Adjoint();
+  su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  su2double dTheta, dPhi, dPsi, cosTheta, sinTheta;
+  su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double time;
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool adjoint = config->GetContinuous_Adjoint();
 
 
-	/*--- Problem dimension and physical time step ---*/
-	nDim = geometry->GetnDim();
-	dt   = config->GetDelta_UnstTimeND();
-	Lref = config->GetLength_Ref();
+  /*--- Problem dimension and physical time step ---*/
+  nDim = geometry->GetnDim();
+  dt   = config->GetDelta_UnstTimeND();
+  Lref = config->GetLength_Ref();
 
-  /*--- For harmonic balance, motion is the same in each zone (at each instance).
-   *    This is used for calls to the config container ---*/
-  if (harmonic_balance)
-	  iZone = ZONE_0;
-  
+//  /*--- For harmonic balance, motion is the same in each zone (at each instance).
+//   *    This is used for calls to the config container ---*/
+//  if (harmonic_balance)
+//    iZone = ZONE_0;
+
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
+    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long directIter = nFlowIter - iter - 1;
+    time = static_cast<su2double>(directIter)*dt;
     /*--- Set the first adjoint mesh position to the final direct one ---*/
     if (iter == 0) dt = ((su2double)config->GetnExtIter()-1)*dt;
     /*--- Reverse the rotation direction for the adjoint ---*/
     else dt = -1.0*dt;
   } else {
     /*--- No rotation at all for the first direct solution ---*/
+    time = static_cast<su2double>(iter)*dt;
     if (iter == 0) dt = 0;
   }
-  
+
+
   /*--- Center of rotation & angular velocity vector from config ---*/
-  
+
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
   Center[2] = config->GetMotion_Origin_Z(iZone);
@@ -2449,123 +2265,166 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 
   /*-- Set dt for harmonic balance cases ---*/
   if (harmonic_balance) {
-	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  su2double period = config->GetHarmonicBalance_Period();
-	  period /= config->GetTime_Ref();
-	  dt = period * (su2double)iter/(su2double)(config->GetnTimeInstances());
+    /*--- period of oscillation & compute time interval using nTimeInstances ---*/
+    su2double period = config->GetHarmonicBalance_Period();
+    period /= config->GetTime_Ref();
+    dt = period * (su2double)iter/(su2double)(config->GetnTimeInstances());
   }
-  
+
   /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
 
-  dtheta = Omega[0]*dt;
-  dphi   = Omega[1]*dt;
-  dpsi   = Omega[2]*dt;
+  dTheta = Omega[0]*dt;
+  dPhi   = Omega[1]*dt;
+  dPsi   = Omega[2]*dt;
+
+  /*--- update periodic mesh taking into account periodicity ---*/
+  if (config->GetPeriodic_Rigid_Movement()){
+
+    su2double periodicTheta, periodicPhi, periodicPsi;
+    periodicTheta = config->GetPeriodicityRotation_X(iZone)/180*PI_NUMBER;
+    periodicPhi   = config->GetPeriodicityRotation_Y(iZone)/180*PI_NUMBER;
+    periodicPsi   = config->GetPeriodicityRotation_Z(iZone)/180*PI_NUMBER;
+
+    su2double dTheta_Periodic, dPhi_Periodic, dPsi_Periodic;
+
+    if (iter == 0){
+
+      /*--- Initialize variable at first iteration for periodic movement ---*/
+      periodic_count[0] = 0;
+      periodic_count[1] = 0;
+      periodic_count[2] = 0;
+      dTheta_Periodic = 0.0;
+      dPhi_Periodic   = 0.0;
+      dPsi_Periodic   = 0.0;
+    }
+
+    /*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
+    dTheta_Periodic = fabs(Omega[0]*time) - periodicTheta * periodic_count[0];
+    dPhi_Periodic   = fabs(Omega[1]*time) - periodicPhi   * periodic_count[1];
+    dPsi_Periodic   = fabs(Omega[2]*time) - periodicPsi   * periodic_count[2];
+
+    /*--- Reset grid movement according the given periodicity ---*/
+    if ( dTheta_Periodic >= periodicTheta && dTheta !=0. ){
+      periodic_count[0]++;
+      (Omega[0] < 0.) ? (dTheta += periodicTheta) : (dTheta -= periodicTheta);
+    }
+    if ( dPhi_Periodic >= periodicPhi && dPhi !=0. ){
+      periodic_count[1]++;
+      (Omega[1] < 0.) ? (dPhi += periodicPhi) : (dPhi -= periodicPhi);
+    }
+    if ( dPsi_Periodic >= periodicPsi && dPsi !=0. ){
+      periodic_count[2]++;
+      (Omega[2] < 0.) ? (dPsi += periodicPsi) : (dPsi -= periodicPsi);
+    }
+
+  }
+
 
   if (rank == MASTER_NODE && iter == 0) {
     cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
     cout << ", " << Omega[2] << ") rad/s." << endl;
   }
-  
-	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-  
-	cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-	sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
-  
-	/*--- Compute the rotation matrix. Note that the implicit
+
+  /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+
+  cosTheta = cos(dTheta);  cosPhi = cos(dPhi);  cosPsi = cos(dPsi);
+  sinTheta = sin(dTheta);  sinPhi = sin(dPhi);  sinPsi = sin(dPsi);
+
+  /*--- Compute the rotation matrix. Note that the implicit
    ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-  
-	rotMatrix[0][0] = cosPhi*cosPsi;
-	rotMatrix[1][0] = cosPhi*sinPsi;
-	rotMatrix[2][0] = -sinPhi;
-  
-	rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-	rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-	rotMatrix[2][1] = sinTheta*cosPhi;
-  
-	rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-	rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-	rotMatrix[2][2] = cosTheta*cosPhi;
-  
-	/*--- Loop over and rotate each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
+  rotMatrix[0][0] = cosPhi*cosPsi;
+  rotMatrix[1][0] = cosPhi*sinPsi;
+  rotMatrix[2][0] = -sinPhi;
+
+  rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+  rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+  rotMatrix[2][1] = sinTheta*cosPhi;
+
+  rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+  rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+  rotMatrix[2][2] = cosTheta*cosPhi;
+
+  /*--- Loop over and rotate each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
     /*--- Coordinates of the current point ---*/
     Coord   = geometry->node[iPoint]->GetCoord();
     GridVel = geometry->node[iPoint]->GetGridVel();
-    
+
     /*--- Calculate non-dim. position from rotation center ---*/
     r[0] = (Coord[0]-Center[0])/Lref;
     r[1] = (Coord[1]-Center[1])/Lref;
     if (nDim == 3) r[2] = (Coord[2]-Center[2])/Lref;
-    
+
     /*--- Compute transformed point coordinates ---*/
     rotCoord[0] = rotMatrix[0][0]*r[0] 
-                + rotMatrix[0][1]*r[1] 
-                + rotMatrix[0][2]*r[2];
-    
+                                    + rotMatrix[0][1]*r[1]
+                                                        + rotMatrix[0][2]*r[2];
+
     rotCoord[1] = rotMatrix[1][0]*r[0] 
-                + rotMatrix[1][1]*r[1] 
-                + rotMatrix[1][2]*r[2];
-    
+                                    + rotMatrix[1][1]*r[1]
+                                                        + rotMatrix[1][2]*r[2];
+
     rotCoord[2] = rotMatrix[2][0]*r[0] 
-                + rotMatrix[2][1]*r[1] 
-                + rotMatrix[2][2]*r[2];
-    
+                                    + rotMatrix[2][1]*r[1]
+                                                        + rotMatrix[2][2]*r[2];
+
     /*--- Cross Product of angular velocity and distance from center.
      Note that we have assumed the grid velocities have been set to
      an initial value in the plunging routine. ---*/
-    
+
     newGridVel[0] = GridVel[0] + Omega[1]*rotCoord[2] - Omega[2]*rotCoord[1];
     newGridVel[1] = GridVel[1] + Omega[2]*rotCoord[0] - Omega[0]*rotCoord[2];
     newGridVel[2] = GridVel[2] + Omega[0]*rotCoord[1] - Omega[1]*rotCoord[0];
-    
+
     /*--- Store new node location & grid velocity. Add center. 
      Do not store the grid velocity if this is an adjoint calculation.---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim] + Center[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
-      
+
     }
   }
-  
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the rotation. ---*/
-  
+
   for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-    
+
     Center_Moment[0] = config->GetRefOriginMoment_X(jMarker);
     Center_Moment[1] = config->GetRefOriginMoment_Y(jMarker);
     Center_Moment[2] = config->GetRefOriginMoment_Z(jMarker);
-    
+
     /*--- Calculate non-dim. position from rotation center ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++)
       r[iDim] = (Center_Moment[iDim]-Center[iDim])/Lref;
     if (nDim == 2) r[nDim] = 0.0;
-    
+
     /*--- Compute transformed point coordinates ---*/
-    
+
     rotCoord[0] = rotMatrix[0][0]*r[0]
-    + rotMatrix[0][1]*r[1]
-    + rotMatrix[0][2]*r[2];
-    
+                                    + rotMatrix[0][1]*r[1]
+                                                        + rotMatrix[0][2]*r[2];
+
     rotCoord[1] = rotMatrix[1][0]*r[0]
-    + rotMatrix[1][1]*r[1]
-    + rotMatrix[1][2]*r[2];
-    
+                                    + rotMatrix[1][1]*r[1]
+                                                        + rotMatrix[1][2]*r[2];
+
     rotCoord[2] = rotMatrix[2][0]*r[0]
-    + rotMatrix[2][1]*r[1]
-    + rotMatrix[2][2]*r[2];
-    
+                                    + rotMatrix[2][1]*r[1]
+                                                        + rotMatrix[2][2]*r[2];
+
     config->SetRefOriginMoment_X(jMarker, Center[0]+rotCoord[0]);
     config->SetRefOriginMoment_Y(jMarker, Center[1]+rotCoord[1]);
     config->SetRefOriginMoment_Z(jMarker, Center[2]+rotCoord[2]);
   }
-  
-	/*--- After moving all nodes, update geometry class ---*/
-  
-	UpdateDualGrid(geometry, config);
+
+  /*--- After moving all nodes, update geometry class ---*/
+
+  UpdateDualGrid(geometry, config);
 
 }
 
@@ -2737,12 +2596,12 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 }
 
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Local variables ---*/
   su2double deltaX[3], newCoord[3], Center[3], *Coord, Omega[3], Ampl[3], Lref;
   su2double *GridVel, newGridVel[3], xDot[3];
@@ -2752,16 +2611,16 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
 
-  
+
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
-  
+
   /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
   if (harmonic_balance) {
-	  iZone = ZONE_0;
+    iZone = ZONE_0;
   }
-  
+
   /*--- Plunging frequency and amplitude from config. ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
@@ -2772,14 +2631,14 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   Ampl[0]   = config->GetPlunging_Ampl_X(iZone)/Lref;
   Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
   Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
-  
+
   if (harmonic_balance) {
-	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetHarmonicBalance_Period();
-	  period /= config->GetTime_Ref();
-	  deltaT = period/(su2double)(config->GetnTimeInstances());
+    /*--- period of oscillation & time interval using nTimeInstances ---*/
+    su2double period = config->GetHarmonicBalance_Period();
+    period /= config->GetTime_Ref();
+    deltaT = period/(su2double)(config->GetnTimeInstances());
   }
-  
+
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
@@ -2793,78 +2652,78 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
     if (harmonic_balance) {
-    	/*--- For harmonic balance, begin movement from the zero position ---*/
-    	time_old = 0.0;
+      /*--- For harmonic balance, begin movement from the zero position ---*/
+      time_old = 0.0;
     } else {
-    	time_old = time_new;
-    	if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
+      time_old = time_new;
+      if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
     }
   }
-  
-	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
-	deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
-	deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
-	deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
-  
+
+  /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+  deltaX[0] = -Ampl[0]*(sin(Omega[0]*time_new) - sin(Omega[0]*time_old));
+  deltaX[1] = -Ampl[1]*(sin(Omega[1]*time_new) - sin(Omega[1]*time_old));
+  deltaX[2] = -Ampl[2]*(sin(Omega[2]*time_new) - sin(Omega[2]*time_old));
+
   /*--- Compute grid velocity due to plunge in the x, y, & z directions. ---*/
-	xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
-	xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
-	xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
-  
+  xDot[0] = -Ampl[0]*Omega[0]*(cos(Omega[0]*time_new));
+  xDot[1] = -Ampl[1]*Omega[1]*(cos(Omega[1]*time_new));
+  xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
+
   if (rank == MASTER_NODE && iter == 0) {
     cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
     cout << ", " << Omega[2] << ") rad/s." << endl;
     cout << " Plunging amplitude: (" << Ampl[0] << ", ";
     cout << Ampl[1] << ", " << Ampl[2] <<  ") m."<< endl;
   }
-  
-	/*--- Loop over and move each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
+  /*--- Loop over and move each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
     /*--- Coordinates of the current point ---*/
     Coord   = geometry->node[iPoint]->GetCoord();
     GridVel = geometry->node[iPoint]->GetGridVel();
-    
+
     /*--- Increment the node position using the delta values. ---*/
     for (iDim = 0; iDim < nDim; iDim++)
       newCoord[iDim] = Coord[iDim] + deltaX[iDim];
-    
+
     /*--- Cross Product of angular velocity and distance from center.
      Note that we have assumed the grid velocities have been set to
      an initial value in the plunging routine. ---*/
-    
+
     newGridVel[0] = GridVel[0] + xDot[0];
     newGridVel[1] = GridVel[1] + xDot[1];
     newGridVel[2] = GridVel[2] + xDot[2];
-    
+
     /*--- Store new node location & grid velocity. Do not store the grid
      velocity if this is an adjoint calculation. ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
     }
   }
-  
+
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
-  
+
   config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
   config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
-  
+
   /*--- As the body origin may have moved, print it to the console ---*/
-  
-//  if (rank == MASTER_NODE) {
-//    cout << " Body origin: (" << Center[0]+deltaX[0];
-//    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
-//    cout << ")." << endl;
-//  }
-  
+
+  //  if (rank == MASTER_NODE) {
+  //    cout << " Body origin: (" << Center[0]+deltaX[0];
+  //    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
+  //    cout << ")." << endl;
+  //  }
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
-  
+
   for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
@@ -2873,11 +2732,11 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
     config->SetRefOriginMoment_Y(jMarker, Center[1]);
     config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
-  
-	/*--- After moving all nodes, update geometry class ---*/
-	
+
+  /*--- After moving all nodes, update geometry class ---*/
+
   UpdateDualGrid(geometry, config);
-  
+
 }
 
 void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
@@ -2900,11 +2759,6 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-	  iZone = ZONE_0;
-  }
-
   /*--- Get motion center and translation rates from config ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
@@ -2953,6 +2807,50 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     cout << ", " << xDot[2] << ") m/s." << endl;
     }
   }
+
+
+  /*--- update periodic mesh taking into account periodicity ---*/
+  if (config->GetPeriodic_Rigid_Movement()){
+
+
+    su2double periodicX[3];
+    periodicX[0] = config->GetPeriodicityTranslation_X(iZone);
+    periodicX[1] = config->GetPeriodicityTranslation_Y(iZone);
+    periodicX[2] = config->GetPeriodicityTranslation_Z(iZone);
+
+    su2double deltaX_Periodic[3];
+
+    if (iter == 0){
+
+      /*--- Initialize variable at first iteration for periodic movement ---*/
+      periodic_count[0]  = 0;
+      periodic_count[1]  = 0;
+      periodic_count[2]  = 0;
+      deltaX_Periodic[0] = 0.0;
+      deltaX_Periodic[1] = 0.0;
+      deltaX_Periodic[2] = 0.0;
+    }
+
+    /*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
+    deltaX_Periodic[0] = fabs(xDot[0]*time_new) - periodicX[0]*periodic_count[0];
+    deltaX_Periodic[1] = fabs(xDot[1]*time_new) - periodicX[1]*periodic_count[1];
+    deltaX_Periodic[2] = fabs(xDot[2]*time_new) - periodicX[2]*periodic_count[2];
+
+    /*--- Reset grid movement according the given periodicity ---*/
+    if ( deltaX_Periodic[0] >= periodicX[0] && deltaX[0] !=0. ){
+      periodic_count[0]++;
+      (xDot[0] < 0.) ? (deltaX[0] += periodicX[0]) : (deltaX[0] -= periodicX[0]);
+    }
+    if ( deltaX_Periodic[1] >= periodicX[1] && deltaX[1] !=0. ){
+      periodic_count[1]++;
+      (xDot[1] < 0.) ? (deltaX[1] += periodicX[1]) : (deltaX[1] -= periodicX[1]);
+    }
+    if ( deltaX_Periodic[2] >= periodicX[2] && deltaX[2] !=0. ){
+      periodic_count[2]++;
+      (xDot[2] < 0.) ? (deltaX[2] += periodicX[2]) : (deltaX[2] -= periodicX[2]);
+    }
+
+  }
   
 	/*--- Loop over and move each node in the volume mesh ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -2998,6 +2896,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   UpdateDualGrid(geometry, config);
   
 }
+
 
 void CVolumetricMovement::SetVolume_Scaling(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
   

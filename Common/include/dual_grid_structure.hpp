@@ -1259,6 +1259,8 @@ private:
   su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
   su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
   su2double RelAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+su2double RadiusCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+su2double SpanCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
 
   unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
   int GlobalIndex;						/*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
@@ -1352,10 +1354,28 @@ public:
    */
   void SetRelAngularCoord(su2double minAngCoord);
 
-  /*!
-   * \brief get angular coord.
-   */
-  su2double GetRelAngularCoord(void);
+/*!
+ * \brief get angular coord.
+ */
+su2double GetRelAngularCoord(void);
+/*!
+ * \brief set span coord.
+ */
+void SetSpanCoord(su2double spanCoord);
+
+/*!
+ * \brief get span coord.
+ */
+su2double GetSpanCoord(void);
+/*!
+ * \brief set radius coord.
+ */
+void SetRadiusCoord(su2double radiusCoord);
+
+/*!
+ * \brief get radius coord.
+ */
+su2double GetRadiusCoord(void);
 
 };
 

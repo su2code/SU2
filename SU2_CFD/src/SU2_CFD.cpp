@@ -38,9 +38,10 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
+  unsigned short nTimeInstances, nGeomZones, nTotTimeInstances;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi;
-  
+  bool fsi, turbo;
+  bool disc_adj;
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
@@ -52,7 +53,7 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
-  
+
   /*--- Create a pointer to the main SU2 Driver ---*/
   
   CDriver *driver = NULL;
@@ -72,7 +73,9 @@ int main(int argc, char *argv[]) {
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  fsi = config->GetFSI_Simulation();
+  fsi   = config->GetFSI_Simulation();
+  turbo = config->GetBoolTurbomachinery();
+  disc_adj = config->GetDiscrete_Adjoint();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -92,11 +95,46 @@ int main(int argc, char *argv[]) {
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
 
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && nZone == 1 && !config->GetBoolTurbomachinery() ) {
 
-    /*--- Use the Harmonic Balance driver. ---*/
+    nTimeInstances = config->GetnTimeInstances();
 
-    driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
+
+    driver = new CHBDriver(config_file_name, nTimeInstances, nDim, MPICommunicator);
+
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetBoolTurbomachinery() && !disc_adj ) {
+
+    /*--- Define the meaning of 'zones' for HB multi-zone only.
+     * Geometrical zones correspond to the physical domains.
+     * A set of time instances is  associated with the single geometrical zone.
+     * The current approach is limited to the same number of time instances in
+     * each geometrical zone.---*/
+
+    nTimeInstances = config->GetnTimeInstances();
+    nGeomZones = nZone;
+    nTotTimeInstances = nTimeInstances*nGeomZones;
+
+    /*--- Use the MultiZone Harmonic Balance driver. ---*/
+
+    driver = new CHBMultiZoneDriver(config_file_name, nTotTimeInstances, nDim, MPICommunicator);
+
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetBoolTurbomachinery() && disc_adj ) {
+
+    /*--- Define the meaning of 'zones' for HB multi-zone only.
+     * Geometrical zones correspond to the physical domains.
+     * A set of time instances is  associated with the single geometrical zone.
+     * The current approach is limited to the same number of time instances in
+     * each geometrical zone.---*/
+
+    nTimeInstances = config->GetnTimeInstances();
+    nGeomZones = nZone;
+    nTotTimeInstances = nTimeInstances*nGeomZones;
+
+    /*--- Use the MultiZone Harmonic Balance driver. ---*/
+
+    driver = new CDiscAdjHBMultiZone(config_file_name, nTotTimeInstances, nDim, MPICommunicator);
+
 
   } else if ((nZone == 2) && fsi) {
 
@@ -109,25 +147,30 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    if (config->GetDiscrete_Adjoint()){
+    if (config->GetDiscrete_Adjoint()) {
 
-      if (config->GetBoolTurbomachinery()){
+      if (turbo) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
       } else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+        
       }
 
-    } else if (config->GetBoolTurbomachinery()){
+    } else if (turbo) {
 
       driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
     } else {
 
+      /*--- Instantiate the class for external aerodynamics ---*/
+
       driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      
     }
+    
   }
 
   delete config;

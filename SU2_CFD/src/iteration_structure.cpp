@@ -56,10 +56,15 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
 
   /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
+  unsigned short nTimeInstances = 1;
   if (harmonic_balance) {
-    ExtIter = val_iZone;
-    Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
+    nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
+    ExtIter = val_iZone%nTimeInstances;
+    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(val_iZone/nTimeInstances);
   }
+  /*--- Define the geometrical zone.
+   * This may differ in the case of harmonic balance calculation ---*/
+  unsigned short iGeomZone = val_iZone/nTimeInstances;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -80,13 +85,13 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
        velocities for the fine mesh. ---*/
 
       grid_movement[val_iZone]->Rigid_Translation(geometry_container[val_iZone][MESH_0],
-                                       config_container[val_iZone], val_iZone, ExtIter);
+                                       config_container[iGeomZone], iGeomZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Plunging(geometry_container[val_iZone][MESH_0],
-                                    config_container[val_iZone], val_iZone, ExtIter);
+                                    config_container[iGeomZone], iGeomZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Pitching(geometry_container[val_iZone][MESH_0],
-                                    config_container[val_iZone], val_iZone, ExtIter);
+                                    config_container[iGeomZone], iGeomZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Rotation(geometry_container[val_iZone][MESH_0],
-                                    config_container[val_iZone], val_iZone, ExtIter);
+                                    config_container[iGeomZone], iGeomZone, ExtIter);
 
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
@@ -452,10 +457,9 @@ void CFluidIteration::Iterate(COutput *output,
   }
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-  
+
   integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
-  
   
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
       ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
@@ -492,11 +496,14 @@ void CFluidIteration::Iterate(COutput *output,
   }
   
   
-  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() )
-    
-  /*--- Write the convergence history (only screen output) ---*/
+  /*--- Write the convergence history ---*/
+
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
     
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+    
+  }
+  
 }
 
 void CFluidIteration::Update(COutput *output,
@@ -814,6 +821,7 @@ void CTurboIteration::Preprocess(COutput *output,
   /*--- Average quantities at the inflow and outflow boundaries ---*/ 
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
   solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[val_iZone], geometry_container[val_iZone][MESH_0]);
 
 }
 
@@ -833,7 +841,9 @@ void CTurboIteration::Postprocess( CConfig **config_container,
 
 
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
+
 CWaveIteration::~CWaveIteration(void) { }
+
 void CWaveIteration::Preprocess(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
@@ -844,6 +854,7 @@ void CWaveIteration::Preprocess(COutput *output,
                                 CVolumetricMovement **grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone) { }
+
 void CWaveIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -859,16 +870,19 @@ void CWaveIteration::Iterate(COutput *output,
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Set the value of the internal iteration ---*/
+  
   IntIter = ExtIter;
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
   
   /*--- Wave equations ---*/
+  
   config_container[val_iZone]->SetGlobalParam(WAVE_EQUATION, RUNTIME_WAVE_SYS, ExtIter);
   integration_container[val_iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_WAVE_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
+  
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
@@ -883,6 +897,7 @@ void CWaveIteration::Iterate(COutput *output,
   }
   
 }
+
 void CWaveIteration::Update(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
@@ -914,7 +929,9 @@ void CWaveIteration::Update(COutput *output,
 }
 
 void CWaveIteration::Monitor()     { }
+
 void CWaveIteration::Output()      { }
+
 void CWaveIteration::Postprocess(CConfig **config_container,
                                  CGeometry ***geometry_container,
                                  CSolver ****solver_container,
@@ -922,7 +939,9 @@ void CWaveIteration::Postprocess(CConfig **config_container,
 
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
+
 CHeatIteration::~CHeatIteration(void) { }
+
 void CHeatIteration::Preprocess(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
@@ -933,6 +952,7 @@ void CHeatIteration::Preprocess(COutput *output,
                                 CVolumetricMovement **grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone) { }
+
 void CHeatIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
@@ -948,16 +968,19 @@ void CHeatIteration::Iterate(COutput *output,
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Set the value of the internal iteration ---*/
+  
   IntIter = ExtIter;
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
   
   /*--- Heat equation ---*/
+  
   config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
   integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
+  
   if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
     
@@ -1592,6 +1615,7 @@ CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(con
 }
 
 CDiscAdjFluidIteration::~CDiscAdjFluidIteration(void) { }
+
 void CDiscAdjFluidIteration::Preprocess(COutput *output,
                                            CIntegration ***integration_container,
                                            CGeometry ***geometry_container,
@@ -1609,18 +1633,19 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   bool dual_time_1st = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
+  bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   unsigned short iMesh;
   int Direct_Iter;
 
-  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config_container[val_iZone]->GetUnsteady_Simulation()) {
+  if (config_container[val_iZone]->GetUnsteady_Simulation() && !harmonic_balance) {
 
     Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 2;
 
@@ -1809,8 +1834,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config_container[val_iZone]->GetKind_Solver();
-  unsigned IntIter = 0;
-  bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
+  unsigned long IntIter = 0;
+  bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY && config_container[val_iZone]->GetUnsteady_Simulation() != HARMONIC_BALANCE;
   bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
 
   if (!unsteady)

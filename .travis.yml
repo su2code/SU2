@@ -12,9 +12,8 @@ compiler:
 notifications:
     email:
         recipients:
-            - s.vitale@tudelft.nl
-            - tim.albring@scicomp.uni-kl.de
-
+            - a.rubino@tudelft.nl
+  
 branches:
     only:
         - feature_turbo_ffd

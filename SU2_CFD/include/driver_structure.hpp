@@ -647,6 +647,11 @@ public:
    */
   bool Monitor(unsigned long ExtIter);
 
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
+
 
 
 };
@@ -767,7 +772,7 @@ public:
  */
 class CHBDriver : public CDriver {
 
-private:
+protected:
 
   su2double **D; /*!< \brief Harmonic Balance operator. */
 
@@ -797,16 +802,21 @@ public:
 
   /*!
    * \brief Computation and storage of the Harmonic Balance method source terms.
-   * \author T. Economon, K. Naik
+   * \author T. Economon, K. Naik, A. Rubino
    * \param[in] iZone - Current zone number.
    */
-  void SetHarmonicBalance(unsigned short iZone);
+  void SetHarmonicBalance(unsigned short iTimeInstance);
+  /*!
+   * \brief Precondition Harmonic Balance source term for stability
+   * \author J. Howison
+   */
+  void StabilizeHarmonicBalance();
 
   /*!
    * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
    * \author A. Rubino, S. Nimmagadda
    */
-  void ComputeHB_Operator();
+  void ComputeHB_Operator(unsigned short nZone);
 
   /*!
    * \brief Update the solution for the Harmonic Balance.
@@ -819,6 +829,138 @@ public:
   void ResetConvergence();
 };
 
+
+
+/*!
+ * \class CHBMultiZoneDriver
+ * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time and geometric zones.
+ * \author A.Rubino
+ * \version 5.0.0 "Raven"
+ */
+class CHBMultiZoneDriver : public CHBDriver{
+
+protected:
+
+  unsigned short nTotTimeInstances,  /*!< \brief Total number of time instances.*/
+                 nTimeInstances,     /*!< \brief Number of time instances in a single geometrical zone.*/
+                 nGeomZones,         /*!< \brief Total number of physical zones.*/
+                 iTimeInstance,      /*!< \brief i-th time instance .*/
+                 jTimeInstance,      /*!< \brief j-th time instance.*/
+                 iGeomZone,          /*!< \brief i-th geometrical zone.*/
+                 jGeomZone;          /*!< \brief j-th geometrical zone.*/
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CHBMultiZoneDriver(char* confFile,
+      unsigned short val_nZone,
+      unsigned short val_nDim,
+      SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHBMultiZoneDriver(void);
+
+  /*!
+   * \brief Run a single iteration of a Harmonic Balance problem.
+   */
+  void Run();
+
+  /*!
+   * \brief Transfer data among different geometrical zones and time instances.
+   */
+  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Update the solution for the Harmonic Balance.
+   */
+  void Update();
+
+  /*!
+   * \brief Set turbomachienery performance within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Set turbomachinery HB performance for all the geometrical zones(blade rows).
+   * \brief i-th time instance.
+   */
+  void SetAvgTurboPerformance_HB(unsigned short iTimeInstance);
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
+
+};
+
+
+/*!
+ * \class CDiscAdjHBMultiZone
+ * \brief Class for driving an iteration of the discrete adjoint multi-zone HB.
+ * \author A.Rubino
+ * \version 5.0.0 "Raven"
+ */
+class CDiscAdjHBMultiZone : public  CHBMultiZoneDriver {
+
+protected:
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
+
+public:
+
+	 /*!
+	   * \brief Constructor of the class.
+	   * \param[in] confFile - Configuration file name.
+	   * \param[in] val_nZone - Total number of zones.
+	   * \param[in] val_nDim - Number of dimensions.
+	   */
+  CDiscAdjHBMultiZone(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjHBMultiZone(void);
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  void DirectRun();
+
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
+  void SetObjFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
+
+};
 
 /*!
  * \class CFSIDriver

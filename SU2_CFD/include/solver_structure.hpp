@@ -438,13 +438,6 @@ public:
    */
   virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Compute the pressure laplacian using in a incompressible solver.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1224,20 +1217,6 @@ public:
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1245,26 +1224,12 @@ public:
    */
   virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief A virtual member.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  virtual void SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -1814,15 +1779,6 @@ public:
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
   virtual su2double GetInflow_MassFlow(unsigned short val_marker);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  virtual void GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
-                                           CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
    * \brief A virtual member.
@@ -1830,13 +1786,6 @@ public:
    * \param[in] solution - Container vector with all the solutions.
    */
   virtual void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   */
-  virtual void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -2873,100 +2822,6 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return average total pressure evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_TotalPress(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_exit_pt: value of the total average pressure at the exit.
-   */
-  virtual void SetOneD_TotalPress(su2double AveragePressure);
-  
-  /*!
-   * \brief A virtual member.
-   *\return average Mach number evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_Mach(void);
-  
-  /*!
-   * \brief A virtual member.
-   * set average Mach number evaluated at an exit boundary marker
-   */
-  virtual void SetOneD_Mach(su2double AverageMach);
-  
-  /*!
-   * \brief A virtual member.
-   *\return average temperature evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_Temp(void);
-  
-  /*!
-   * \brief A virtual member.
-   * set average temperature evaluated at an exit boundary marker
-   */
-  virtual void SetOneD_Temp(su2double AverageTemperature);
-  
-  /*!
-   * \brief A virtual member.
-   * \return average mass flow rate evaluated at an exit boundary marker
-   */
-  virtual su2double GetOneD_MassFlowRate(void);
-  
-  /*!
-   * \brief A virtual member.
-   * set average mass flow rate evaluated at an exit boundary marker
-   */
-  virtual void SetOneD_MassFlowRate(su2double MassFlowRate);
-  
-  /*!
-   * \brief A virtual member.
-   * \ Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
-   */
-  virtual su2double GetOneD_AvgPress(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \ Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
-   */
-  virtual void SetOneD_AvgPress(su2double Pressure1D);
-  /*!
-   * \brief A virtual member.
-   * \ Get the one-dimensionalized density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
-   */
-  virtual su2double GetOneD_AvgDensity(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \ Set the one-dimensionalized density at a marker.( \f$= (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
-   */
-  virtual void SetOneD_AvgDensity(su2double Density1D);
-  
-  /*!
-   * \brief A virtual member.
-   * \ Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
-   */
-  virtual su2double GetOneD_AvgVelocity(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \ Set the one-dimensionalized velocity at a marker. = \f$ \sqrt (  \frac{\int((rho*u)*u^2dA)}{\int(rho*u*dA) }) \f$
-   */
-  virtual void SetOneD_AvgVelocity(su2double Velocity1D);
-  
-  /*!
-   * \brief A virtual member.
-   * \ Get the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA )} \f$
-   */
-  virtual su2double GetOneD_AvgEnthalpy(void);
-  /*!
-   * \brief A virtual member.
-   * \ Set the one-dimensionalized enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
-   */
-  virtual void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
-
-  /*!
-   * \brief A virtual member.
    * \param[in] fea_geometry - Geometrical definition of the problem.
    * \param[in] flow_solution - Container vector with all the solutions.
    * \param[in] fea_config - Definition of the particular problem.
@@ -3965,14 +3820,6 @@ protected:
    AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
   
   su2double
-  OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
-  OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
-  OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_Pressure1D, /*!< \brief area average Pressure evaluated at an exit */
-  OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_Density1D, /*!< \brief one-dimensionalized density evaluated at an exit */
-  OneD_Enthalpy1D, /*!< \brief one-dimensionalized enthalpy evaluated at an exit */
-  OneD_Velocity1D, /*!< \brief one-dimensionalized velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -4064,6 +3911,7 @@ protected:
   New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
+  bool AoA_FD_Change;
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
@@ -4367,22 +4215,6 @@ public:
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -4397,21 +4229,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the limiter of the primitive variables.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -4751,24 +4568,8 @@ public:
    * \brief Compute the Fan face Mach number.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
-                                   CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
-
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
    */
   void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-  
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   */
-  void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -5830,86 +5631,6 @@ public:
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
 
   /*!
-   * \brief Provide the averaged total pressure at a marker.
-   */
-  su2double GetOneD_TotalPress(void);
-  
-  /*!
-   * \brief Set the value of averaged total pressure
-   * \param[in] val_exit_pt - value of the averaged pressure
-   */
-  void SetOneD_TotalPress(su2double AveragePressure);
-  
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_Mach(void);
-  
-  /*!
-   * \brief Set the averaged Mach number at a marker.
-   */
-  void SetOneD_Mach(su2double AverageMach);
-  
-  /*!
-   * \brief Provide the averaged Temperature number at a marker.
-   */
-  su2double GetOneD_Temp(void);
-  
-  /*!
-   * \brief Set the averaged Temperature at a marker.
-   */
-  void SetOneD_Temp(su2double AverageTemperature);
-  
-  /*!
-   * \brief Provide the averaged mass flow rate at a marker.
-   */
-  su2double GetOneD_MassFlowRate(void);
-  
-  /*!
-   * \brief Set the averaged mass flow rate at a marker.
-   */
-  void SetOneD_MassFlowRate(su2double MassFlowRate);
-  
-  /*!
-     * \brief Get the one-dimensionalized pressure at a marker.(same as area averaged pressure)
-     */
-    su2double GetOneD_AvgPress(void);
-
-    /*!
-     * \brief Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
-     */
-    void SetOneD_AvgPress(su2double Pressure1D);
-
-    /*!
-     * \brief Get the one-dimensionalized density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-     */
-    su2double GetOneD_AvgDensity(void);
-
-    /*!
-     * \brief Set the one-dimensionalized density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-     */
-    void SetOneD_AvgDensity(su2double Density1D);
-
-    /*!
-     * \brief Get the one-dimensionalized velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
-     */
-    su2double GetOneD_AvgVelocity(void);
-
-    /*!
-     * \brief Set the one-dimensionalized velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
-     */
-    void SetOneD_AvgVelocity(su2double Velocity1D);
-
-    /*!
-     * \brief Get the one-dimensionalized enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-     */
-    su2double GetOneD_AvgEnthalpy(void);
-
-    /*!
-     * \brief Set the one-dimensionalized enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-     */
-    void SetOneD_AvgEnthalpy(su2double Enthalpy1D);
-  /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -6503,14 +6224,6 @@ protected:
   AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
 
   su2double
-  OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
-  OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
-  OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
-  OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
-  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
-  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -6535,6 +6248,7 @@ protected:
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
   Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_HeatFluxDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double *Surface_CL,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CD,          /*!< \brief Drag coefficient for each monitoring surface. */
@@ -6806,22 +6520,6 @@ public:
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -6837,21 +6535,6 @@ public:
    */
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
-  
-  //  /*!
-  //   * \brief Compute the limiter of the primitive variables.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6879,10 +6562,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(CConfig *config);
+
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
-   *
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -7288,7 +6977,21 @@ public:
    * \param[in] val_Total_CLift - Value of the total lift coefficient.
    */
   void SetTotal_CLift(su2double val_Total_CLift);
-  
+
+  /*!
+   * \brief Set the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
+   */
+  void SetTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
+
+  /*!
+   * \brief Add the value of the custom objective function.
+   * \param[in] val_Total_Custom_ObjFunc - Value of the total custom objective function.
+   * \param[in] val_weight - Value of the weight for the custom objective function.
+   */
+  void AddTotal_Custom_ObjFunc(su2double val_total_custom_objfunc, su2double val_weight);
+
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
@@ -7404,7 +7107,13 @@ public:
    * \return Value of the rotor efficiency coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_CMerit(void);
-  
+
+  /*!
+   * \brief Provide the total custom objective function.
+   * \return Value of the custom objective function.
+   */
+  su2double GetTotal_Custom_ObjFunc(void);
+
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CDrag - Value of the total drag coefficient.
@@ -7562,87 +7271,6 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
-  
-  /*!
-   * \brief Provide the averaged total pressure at a marker.
-   */
-  su2double GetOneD_TotalPress(void);
-  
-  /*!
-   * \brief Set the value of averaged total pressure
-   * \param[in] val_exit_pt - value of the averaged pressure
-   */
-  void SetOneD_TotalPress(su2double AveragePressure);
-  
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_Mach(void);
-  
-  /*!
-   * \brief Set the averaged Mach number at a marker.
-   */
-  void SetOneD_Mach(su2double AverageMach);
-  
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_Temp(void);
-  
-  /*!
-   * \brief Set the averaged Temperature at a marker.
-   */
-  void SetOneD_Temp(su2double AverageTemperature);
-  
-  /*!
-   * \brief Provide the averaged Mach number at a marker.
-   */
-  su2double GetOneD_MassFlowRate(void);
-  
-  /*!
-   * \brief Set the averaged Temperature at a marker.
-   */
-  void SetOneD_MassFlowRate(su2double MassFlowRate);
-  
-  /*!
-   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
-   */
-  su2double GetOneD_FluxAvgPress(void);
-  
-  /*!
-   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
-   */
-  void SetOneD_FluxAvgPress(su2double PressureRef);
-  
-  /*!
-   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  su2double GetOneD_FluxAvgDensity(void);
-  
-  /*!
-   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-   */
-  void SetOneD_FluxAvgDensity(su2double DensityRef);
-  
-  /*!
-   * \brief Get the flux averaged velocity at a marker. = \f$ \sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )\f$
-   */
-  su2double GetOneD_FluxAvgVelocity(void);
-  
-  /*!
-   * \brief Set the flux averaged velocity at a marker. =\f$ sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) ) \f$
-   */
-  void SetOneD_FluxAvgVelocity(su2double VelocityRef);
-  
-  /*!
-   * \brief Get the flux averaged enthalpy at a marker. = \f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  su2double GetOneD_FluxAvgEntalpy(void);
-  
-  /*!
-   * \brief Set the flux averaged enthalpy at a marker. =\f$ \int(rho*u*h dA) / \int(rho *u *dA ) \f$
-   */
-  void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
   
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -11891,12 +11519,7 @@ class CDiscAdjSolver : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
-  su2double *Sens_Mach, /*!< \brief Mach sensitivity coefficient for each boundary. */
-  *Sens_AoA,      /*!< \brief Angle of attack sensitivity coefficient for each boundary. */
-  *Sens_Geo,      /*!< \brief Shape sensitivity coefficient for each boundary. */
-  *Sens_Press,      /*!< \brief Pressure sensitivity coefficient for each boundary. */
-  *Sens_Temp,      /*!< \brief Temperature sensitivity coefficient for each boundary. */
-  **CSensitivity;  /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  su2double **CSensitivity;  /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
   su2double Total_Sens_Mach;  /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_AoA;    /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Geo;    /*!< \brief Total shape sensitivity coefficient for all the boundaries. */

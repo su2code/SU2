@@ -52,6 +52,7 @@ CInterpolator::CInterpolator(void) {
   Buffer_Send_nFaceNodes_Donor     = NULL;
   Buffer_Receive_GlobalPoint       = NULL;
   Buffer_Send_GlobalPoint          = NULL;
+
   Buffer_Send_FaceIndex            = NULL;
   Buffer_Receive_FaceIndex         = NULL;
   Buffer_Send_FaceNodes            = NULL;
@@ -282,19 +283,22 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
   return -1;
 }
 
+inline void CInterpolator::Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,  CConfig *donor_config,
+      CConfig *target_config, unsigned short iMarkerInt){}
+
+inline void CInterpolator::SetSpanWiseLevels(CConfig *target_config){}
 
 void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
   CGeometry *geom = Geometry[val_zone][MESH_0];
     
-  int nProcessor, rank, iRank;
+  int rank;
   unsigned long iVertex, jVertex, kVertex;
     
-  unsigned long count, iTmp, iTmp2, *uptr, tmp_index, tmp_index_2, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+  unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
    
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
-    
-    
+  
   nDim = geom->GetnDim();
   
   if( val_marker != -1 )
@@ -311,13 +315,13 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
 
 #ifdef HAVE_MPI
-  
+  int nProcessor, iRank;
+  unsigned long iTmp2, tmp_index, tmp_index_2;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
 #else
 
-  nProcessor = SINGLE_NODE;
   rank = MASTER_NODE;
 
 #endif
@@ -1550,7 +1554,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   /* --- General variables --- */
 
   bool check;
-  int rank, nProcessor;
   
   unsigned short iDim, nDim;
   
@@ -1576,7 +1579,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
 
   unsigned short iMarkerInt, nMarkerInt; 
 
-  unsigned long iVertex, nVertexDonor, nVertexTarget;
+  unsigned long iVertex, nVertexTarget;
 
   int markDonor, markTarget;
 
@@ -1606,11 +1609,9 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   /*  1 - Variable pre-processing - */
 
 #ifdef HAVE_MPI
+  int rank, nProcessor;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-  rank = MASTER_NODE;
 #endif
 
   nDim = donor_geometry->GetnDim();
@@ -1646,11 +1647,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
-
-    if(markDonor != -1)
-      nVertexDonor  = donor_geometry->GetnVertex(  markDonor  );
-    else
-      nVertexDonor  = 0;
 
     if(markTarget != -1)
       nVertexTarget = target_geometry->GetnVertex( markTarget );
@@ -2772,3 +2768,462 @@ bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 
   return (check == 3);     
 }
+
+CTurboInterpolation::CTurboInterpolation(void):  CInterpolator() {
+
+  SpanLevelDonor     = NULL;
+  SpanValueCoeffTarget = NULL;
+}
+
+CTurboInterpolation::CTurboInterpolation(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
+
+//  Set_TransferCoeff(config);
+
+  SpanLevelDonor     = NULL;
+  SpanValueCoeffTarget = NULL;
+
+}
+
+CTurboInterpolation::~CTurboInterpolation() {
+
+  if (SpanValueCoeffTarget != NULL) delete[] SpanValueCoeffTarget;
+  if (SpanLevelDonor       != NULL) delete[] SpanLevelDonor;
+
+}
+
+void CTurboInterpolation::Set_TransferCoeff(CConfig **config) {
+
+  int iProcessor, pProcessor, nProcessor;
+  int markDonor, markTarget, Target_check, Donor_check;
+
+  unsigned short iDim, nDim, iMarkerInt, nMarkerInt, iDonor;
+
+  unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
+  unsigned long iPrimalVertex_Target, PrimalPoint_Target;
+  unsigned long nVertexSpanTarget, nVertexSpanDonor;
+  unsigned long nSpanSectionsDonor, nSpanSectionsTarget;
+  unsigned long Global_Point_Donor, pGlobalPoint=0;
+
+  su2double PitchTarget, AngularCoord_Target,  MinAngularCoord_Target, MaxAngularCoord_Target;
+  su2double PitchDonor, AngularCoord_Donor, MinAngularCoord_Donor, MaxAngularCoord_Donor;
+  su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
+
+
+#ifdef HAVE_MPI
+
+  int rank = MASTER_NODE;
+  int *Buffer_Recv_mark=NULL, iRank;
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+
+  //  if (rank == MASTER_NODE)
+  Buffer_Recv_mark = new int[nProcessor];
+
+#else
+
+  nProcessor = SINGLE_NODE;
+
+#endif
+
+  /*--- Initialize variables --- */
+
+  nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
+  nSpanSectionsTarget = config[targetZone]->GetnSpanWiseSections();
+  nDim = donor_geometry->GetnDim();
+
+  iDonor = 0;
+
+  Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+
+  /*--- Cycle over nMarkersInt interface to determine communication pattern ---*/
+
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+
+    for (unsigned short iSpan= 0; iSpan < nSpanSectionsTarget ; iSpan++){
+      /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
+      markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+
+      /*--- On the target side: find the tag of the boundary sharing the interface ---*/
+      markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+
+#ifdef HAVE_MPI
+
+      Donor_check  = -1;
+      Target_check = -1;
+
+      /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+
+      SU2_MPI::Allgather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
+
+      for (iRank = 0; iRank < nProcessor; iRank++)
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
+        }
+
+
+      SU2_MPI::Allgather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MPI_COMM_WORLD);
+
+      for (iRank = 0; iRank < nProcessor; iRank++)
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }
+
+#else
+      Donor_check  = markDonor;
+      Target_check = markTarget;
+#endif
+
+      /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
+      if(Target_check == -1 || Donor_check == -1)
+        continue;
+
+      if(markDonor != -1){
+        nVertexSpanDonor   =  donor_geometry->GetnVertexSpan( markDonor,  iSpan );
+      }
+      else{
+        nVertexDonor  = 0;
+        nVertexSpanDonor  = 0;
+      }
+
+      if(markTarget != -1){
+        nVertexSpanTarget   = target_geometry->GetnVertexSpan( markTarget, iSpan );
+      }
+      else{
+        nVertexSpanTarget  = 0;
+      }
+      Buffer_Send_nVertex_Donor  = new unsigned long [ 1 ];
+
+      /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+      Determine_ArraySize(false, markDonor, markTarget, nVertexSpanDonor, iSpan, nDim);
+
+      Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor ];
+      Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
+      Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor ];
+      Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
+
+      /*-- Collect coordinates, global points, and normal vectors ---*/
+      Collect_TurboVertexInfo( false, markDonor, markTarget, nVertexSpanDonor, iSpan ,nDim );
+
+      if (nVertexSpanTarget != 0 ){
+        MinAngularCoord_Target = target_geometry->GetMinAngularCoord(markTarget, iSpan);
+        MaxAngularCoord_Target = target_geometry->GetMaxAngularCoord(markTarget, iSpan);
+        PitchTarget = abs(MaxAngularCoord_Target - MinAngularCoord_Target);
+      }
+
+      /*--- Compute the closest point to a Near-Field boundary point ---*/
+      maxdist = 0.0;
+
+      for (iVertexTarget = 0; iVertexTarget < nVertexSpanTarget; iVertexTarget++) {
+
+        iPrimalVertex_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetOldVertex();
+
+        if ( target_geometry->node[Point_Target]->GetDomain() ) {
+
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetnDonorPoints(1);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->Allocate_DonorInfo(); // Possible meme leak?
+
+          /*--- Coordinates of the boundary point ---*/
+          AngularCoord_Target = target_geometry->turbovertex[markTarget][iSpan][iVertexTarget]->GetAngularCoord();
+
+          mindist    = HUGE;
+          pProcessor = 0;
+          su2double donor_count = 0;
+
+
+          /*--- Loop over all the boundaries to find the pair ---*/
+
+          for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+            for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+
+              Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
+
+              /*--- Compute the dist ---*/
+              dist  = 0.0;
+
+              AngularCoord_Donor = Buffer_Receive_Coord[ Global_Point_Donor];
+
+
+              if ( AngularCoord_Donor > MaxAngularCoord_Target ){
+                dist = abs(AngularCoord_Donor - (AngularCoord_Target + PitchTarget));
+              }
+              else if ( AngularCoord_Donor <=  MinAngularCoord_Target  ){
+                dist = abs(AngularCoord_Donor - (AngularCoord_Target - PitchTarget));
+              }
+              else
+                dist = abs(AngularCoord_Donor - AngularCoord_Target);
+
+
+              if (dist < mindist) {
+                mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+                donor_count = jVertex;
+              }
+
+              if (dist == 0.0) break;
+            }
+
+          }
+
+          /*--- Store the value of the pair ---*/
+          maxdist = max(maxdist, mindist);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorPoint(iDonor, pGlobalPoint);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetInterpDonorProcessor(iDonor, pProcessor);
+          target_geometry->vertex[markTarget][iPrimalVertex_Target]->SetDonorCoeff(iDonor, 1.0);
+        }
+      }
+
+      delete[] Buffer_Send_Coord;
+      delete[] Buffer_Send_GlobalPoint;
+
+      delete[] Buffer_Receive_Coord;
+      delete[] Buffer_Receive_GlobalPoint;
+
+      delete[] Buffer_Send_nVertex_Donor;
+    }
+  }
+
+  delete[] Buffer_Receive_nVertex_Donor;
+
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE)
+    delete [] Buffer_Recv_mark;
+#endif
+}
+
+void CTurboInterpolation::Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan , unsigned short nDim) {
+  unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0;
+  unsigned long iVertex, iPointDonor = 0;
+
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int nProcessor = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+  nLocalVertex_Donor = nVertexDonor;
+
+  Buffer_Send_nVertex_Donor[0] = nLocalVertex_Donor;
+
+  /*--- Send Interface vertex information --*/
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nLocalVertex_Donor, &MaxLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nVertex_Donor, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  MaxLocalVertex_Donor    = nLocalVertex_Donor;
+  Buffer_Receive_nVertex_Donor[0] = Buffer_Send_nVertex_Donor[0];
+#endif
+
+}
+
+void CTurboInterpolation::Collect_TurboVertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan ,unsigned short nDim) {
+  unsigned long nLocalVertex_Donor = 0;
+  unsigned long iVertex, iPointDonor = 0, iVertexDonor, nBuffer_Coord, nBuffer_Point;
+  unsigned short iDim;
+  /* Only needed if face data is also collected */
+  su2double  *Normal;
+
+#ifdef HAVE_MPI
+  int rank;
+  int nProcessor = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+
+  for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) {
+    Buffer_Send_GlobalPoint[iVertex] = 0;
+    Buffer_Send_Coord[iVertex] = HUGE;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (faces)
+        Buffer_Send_Normal[iVertex*nDim+iDim] = 0.0;
+    }
+  }
+
+
+  /*--- Copy coordinates and point to the auxiliar vector --*/
+  nLocalVertex_Donor = 0;
+
+  for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
+    iPointDonor = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNode();
+    if (donor_geometry->node[iPointDonor]->GetDomain()) {
+      Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
+      Buffer_Send_Coord[nLocalVertex_Donor] = donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetAngularCoord();
+
+      if (faces) {
+        Normal =  donor_geometry->turbovertex[markDonor][iSpan][iVertexDonor]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Send_Normal[nLocalVertex_Donor*nDim+iDim] = Normal[iDim];
+      }
+      nLocalVertex_Donor++;
+    }
+  }
+  nBuffer_Coord = MaxLocalVertex_Donor;
+  nBuffer_Point = MaxLocalVertex_Donor;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  if (faces) {
+    SU2_MPI::Allgather(Buffer_Send_Normal, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Normal, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  }
+#else
+  for (iVertex = 0; iVertex < nBuffer_Coord; iVertex++)
+    Buffer_Receive_Coord[iVertex] = Buffer_Send_Coord[iVertex];
+
+  for (iVertex = 0; iVertex < nBuffer_Point; iVertex++)
+    Buffer_Receive_GlobalPoint[iVertex] = Buffer_Send_GlobalPoint[iVertex];
+
+  if (faces) {
+    for (iVertex = 0; iVertex < nBuffer_Coord; iVertex++)
+      Buffer_Receive_Normal[iVertex] = Buffer_Send_Normal[iVertex];
+  }
+#endif
+
+//  cout << " ===== Receive_Coord ===== " << endl;
+//for (iVertex = 0; iVertex < nBuffer_Point; iVertex++)
+//  cout << Buffer_Receive_Coord[iVertex] << endl;
+
+}
+
+void CTurboInterpolation::Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,
+    CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+
+  unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+  unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short iSpan,jSpan, tSpan,kSpan, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
+  int Marker_Donor = -1, Marker_Target = -1;
+
+  su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE, iSize;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int *BuffMarkerDonor, *BuffDonorFlag;
+#endif
+
+
+  nMarkerDonor   = donor_geometry->GetnMarker();
+  nMarkerTarget  = target_geometry->GetnMarker();
+  //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
+  //TODO turbo initialization needed for the MPI routine should be place somewhere else.
+  nSpanDonor     = donor_config->GetnSpanWiseSections()  + 1;
+  nSpanTarget    = target_config->GetnSpanWiseSections() + 1;
+
+  /*--- On the donor side ---*/
+  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+    /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+    if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+      /*--- We have identified the local index of the Donor marker ---*/
+      /*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
+      /*--- Store the identifier for the structural marker ---*/
+      Marker_Donor = iMarkerDonor;
+      Donor_Flag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerDonor);
+      //							cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
+      /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+      break;
+    }
+    else {
+      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+      Marker_Donor = -1;
+      Donor_Flag   = -1;
+    }
+  }
+
+#ifdef HAVE_MPI
+  BuffMarkerDonor						 = new int[size];
+  BuffDonorFlag            = new int[size];
+  for (iSize=0; iSize<size;iSize++){
+    BuffMarkerDonor[iSize]							= -1;
+    BuffDonorFlag[iSize]              = -1;
+  }
+
+  SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&Donor_Flag, 1 , MPI_INT, BuffDonorFlag, 1, MPI_INT, MPI_COMM_WORLD);
+
+
+  Marker_Donor= -1;
+  Donor_Flag= -1;
+
+
+  for (iSize=0; iSize<size;iSize++){
+    if(BuffMarkerDonor[iSize] > 0.0){
+      Marker_Donor = BuffMarkerDonor[iSize];
+      Donor_Flag   = BuffDonorFlag[iSize];
+      break;
+    }
+  }
+  delete [] BuffMarkerDonor;
+  delete [] BuffDonorFlag;
+#endif
+
+  /*--- On the target side we have to identify the marker as well ---*/
+
+  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+//TODO this should not work with the MixingPlane interface marker. To be changed.
+    /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
+    if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+      /*--- Store the identifier for the fluid marker ---*/
+      Marker_Target = iMarkerTarget;
+      Target_Flag = target_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
+      break;
+    }
+    else {
+      /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+      Marker_Target = -1;
+    }
+  }
+
+  if (Marker_Target != -1 && Marker_Donor != -1){
+
+    SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
+    SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
+
+    /*--- Look for span level using nearest neighbor approach ---*/
+    for(iSpan = 0; iSpan <nSpanTarget-2; iSpan++){
+      dist  = 10E+06;
+      dist2 = 10E+06;
+      for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+        test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
+        test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
+        if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
+          dist = test;
+          kSpan = jSpan;
+        }
+        if(test2 < dist2){
+          dist2 = test2;
+          tSpan =jSpan;
+        }
+
+      }
+      SpanLevelDonor[iSpan]        = iSpan;
+      SpanValueCoeffTarget[iSpan]  = 0.0;
+
+    }
+  }
+}
+
+
+void CTurboInterpolation::SetSpanWiseLevels(CConfig *target_config){
+
+  unsigned short iSpan;
+//  nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
+
+
+  SpanValueCoeffTarget = new su2double[target_config->GetnSpanWiseSections() + 1];
+  SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
+
+
+  for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++){
+    SpanValueCoeffTarget[iSpan] = 0.0;
+    SpanLevelDonor[iSpan]       = 0;
+  }
+
+}
+

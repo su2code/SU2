@@ -176,6 +176,22 @@ public:
    */
   void Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
 
+  /*!
+   * \brief Transfer pre-processing for turbomachinery interpolation interface.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  virtual void Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,  CConfig *donor_config,
+      CConfig *target_config, unsigned short iMarkerInt);
+
+  /*!
+   * \brief Initialize quantities for spanwise sections for turbomachinery interpolation.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  virtual void SetSpanWiseLevels(CConfig *target_config);
+
 
 };
 
@@ -379,4 +395,84 @@ public:
   bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
 };
 
+/*!
+ * \class CTurboInterpolation
+ * \brief Main class for turbomachinery interface interpolation
+ * \author A. Rubino
+ * \version 5.0.0 "Raven"
+ */
+class CTurboInterpolation : public CInterpolator {
 
+protected:
+
+  su2double 	 *SpanValueCoeffTarget;
+  unsigned short *SpanLevelDonor;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTurboInterpolation(void);
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
+   */
+  CTurboInterpolation(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurboInterpolation(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_TransferCoeff(CConfig **config);
+
+  /*!
+   * \brief Determine array sizes used to collect and send coordinate and global point
+   * information.
+   * \param[in] faces - boolean that determines whether or not to set face information as well
+   * \param[in] markDonor - Index of the boundary on the donor domain.
+   * \param[in] markTarget - Index of the boundary on the target domain.
+   * \param[in] nVertexDonor - Number of vertices on the donor boundary.
+   * \param[in] iSpan - span index for turbo-vertex data structure.
+   * \param[in] nDim - number of physical dimensions.
+   */
+  void Determine_ArraySize(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan, unsigned short nDim);
+
+  /*!
+   * \brief Collect and communicate vertex info: coord, global point, and if faces=true the normal vector
+   * \param[in] faces - boolean that determines whether or not to set face information as well
+   * \param[in] markDonor - Index of the boundary on the donor domain.
+   * \param[in] markTarget - Index of the boundary on the target domain.
+   * \param[in] nVertexDonor - Number of vertices on the donor boundary.
+   * \param[in] iSpan - span index for turbo-vertex data structure.
+   * \param[in] nDim - number of physical dimensions.
+   */
+  void Collect_TurboVertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short iSpan, unsigned short nDim);
+
+  /*!
+   * \brief Transfer pre-processing for turbomachinery interpolation interface.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void Preprocessing_InterpolationInterface(CGeometry *donor_geometry, CGeometry *target_geometry,  CConfig *donor_config,
+      CConfig *target_config, unsigned short iMarkerInt);
+
+  /*!
+   * \brief Initialize quantities for spanwise sections for interpolation.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void SetSpanWiseLevels(CConfig *target_config);
+
+
+};

@@ -56,12 +56,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   CSensitivity = NULL;
 
-  Sens_Geo   = NULL;
-  Sens_Mach  = NULL;
-  Sens_AoA   = NULL;
-  Sens_Press = NULL;
-  Sens_Temp  = NULL;
-
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
   this->direct_solver = direct_solver;
@@ -104,18 +98,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
   }
 
-  Sens_Geo  = new su2double[nMarker];
-  Sens_Mach = new su2double[nMarker];
-  Sens_AoA  = new su2double[nMarker];
-  Sens_Press = new su2double[nMarker];
-  Sens_Temp  = new su2double[nMarker];
-
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Sens_Geo[iMarker]  = 0.0;
-      Sens_Mach[iMarker] = 0.0;
-      Sens_AoA[iMarker]  = 0.0;
-      Sens_Press[iMarker] = 0.0;
-      Sens_Temp[iMarker]  = 0.0;
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           CSensitivity[iMarker][iVertex] = 0.0;
       }
@@ -138,12 +121,6 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
     }
     delete [] CSensitivity;
   }
-
-  if (Sens_Geo   != NULL) delete [] Sens_Geo;
-  if (Sens_Mach  != NULL) delete [] Sens_Mach;
-  if (Sens_AoA   != NULL) delete [] Sens_AoA;
-  if (Sens_Press != NULL) delete [] Sens_Press;
-  if (Sens_Temp  != NULL) delete [] Sens_Temp;
 
 }
 
@@ -454,8 +431,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
       if (config->GetSens_Remove_Sharp()) {
-        eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+        eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
           Sensitivity = 0.0;
       }
       if (!time_stepping) {
@@ -471,13 +448,17 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex, *Sens_Geo;
   Total_Sens_Geo = 0.0;
-  su2double *MySens_Geo;
   string Monitoring_Tag, Marker_Tag;
 
+  Sens_Geo = new su2double[config->GetnMarker_Monitoring()];
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Sens_Geo[iMarker_Monitoring] = 0.0;
+  }
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Sens_Geo[iMarker] = 0.0;
+
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
@@ -527,6 +508,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
   }
 
 #ifdef HAVE_MPI
+  su2double *MySens_Geo;
   MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -542,6 +524,9 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
     Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
   }
+  
+  delete [] Sens_Geo;
+
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
