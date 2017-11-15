@@ -14891,8 +14891,8 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
 void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   unsigned short iMarker, icommas;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double Sensitivity, Sensitivity_Transp, dummy;
-  bool *PointInDomain, transp = false;
+  su2double Sensitivity;
+  bool *PointInDomain;
   
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
@@ -14900,14 +14900,6 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-  
-  /*--- Check if we need transpiration sensitivity ---*/
-  for (unsigned short iDV = 0; iDV  < config->GetnDV(); iDV++){
-    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
-      transp = true;
-      break;
-    }
-  }
 
   nPointLocal = nPoint;
 #ifdef HAVE_MPI
@@ -14934,10 +14926,6 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
           Point2Vertex[iPoint][1] = iVertex;
           PointInDomain[iPoint] = true;
           vertex[iMarker][iVertex]->SetAuxVar(0.0);
-
-          if(transp){
-            vertex[iMarker][iVertex]->SetAuxTransp(0.0);
-          }
         }
       }
   
@@ -15029,20 +15017,157 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
          a single sensitivity value multiplied by 1.0. ---*/
         
         vertex[iMarker][iVertex]->AddAuxVar(Sensitivity*(delta_T/total_T));
+      }
+      
+    }
+    Surface_file.close();
+  }
+  
+  delete[] Point2Vertex;
+  delete[] PointInDomain;
+  
+}
 
-        if(transp){
-          /*--- Skip adjoint vars, coords, and mesh sens ---*/
-          for(unsigned short iVar = 0; iVar < nDim+2; iVar++){
-            point_line >> dummy;
-          }
-          for(unsigned short iVar = 0; iVar < 2*nDim; iVar++){
-            point_line >> dummy;
-          }
-          point_line >> Sensitivity_Transp;
-          cout << "Surface file sensitivity [" << iPoint << "] = " << Sensitivity_Transp << endl;
+void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
+  unsigned short iMarker, icommas;
+  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+  su2double Sensitivity_Transp, dummy;
+  bool *PointInDomain;
+  
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
 
-          vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp*(delta_T/total_T));
+  nPointLocal = nPoint;
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nPointGlobal = nPointLocal;
+#endif
+  
+  Point2Vertex = new unsigned long[nPointGlobal][2];
+  PointInDomain = new bool[nPointGlobal];
+  
+  for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
+    PointInDomain[iPoint] = false;
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    if (config->GetMarker_All_DV(iMarker) == YES)
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        
+        /*--- The sensitivity file uses the global numbering ---*/
+        iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+
+        if (vertex[iMarker][iVertex]->GetNode() < GetnPointDomain()) {
+          Point2Vertex[iPoint][0] = iMarker;
+          Point2Vertex[iPoint][1] = iVertex;
+          PointInDomain[iPoint] = true;
+          vertex[iMarker][iVertex]->SetAuxTransp(0.0);
         }
+      }
+  
+  /*--- Time-average any unsteady surface sensitivities ---*/
+  
+  unsigned long iExtIter, nExtIter;
+  su2double delta_T, total_T;
+  if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+    nExtIter = config->GetUnst_AdjointIter();
+    delta_T  = config->GetDelta_UnstTime();
+    total_T  = (su2double)nExtIter*delta_T;
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    
+    /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+    
+    su2double period = config->GetHarmonicBalance_Period();
+    nExtIter  = config->GetnTimeInstances();
+    delta_T   = period/(su2double)nExtIter;
+    total_T   = period;
+    
+  } else {
+    nExtIter = 1;
+    delta_T  = 1.0;
+    total_T  = 1.0;
+  }
+  
+  for (iExtIter = 0; iExtIter < nExtIter; iExtIter++) {
+    
+    /*--- Prepare to read surface sensitivity files (CSV) ---*/
+    
+    string text_line;
+    ifstream Surface_file;
+    char buffer[50];
+    char cstr[MAX_STRING_SIZE];
+    string surfadj_filename = config->GetSurfAdjCoeff_FileName();
+    strcpy (cstr, surfadj_filename.c_str());
+    
+    /*--- Write file name with extension if unsteady or steady ---*/
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+
+    if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+        (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
+      if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.csv",    SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+    }
+    else
+      SPRINTF (buffer, ".csv");
+    
+    strcat (cstr, buffer);
+    
+    /*--- Read the sensitivity file ---*/
+    
+    string::size_type position;
+    
+    Surface_file.open(cstr, ios::in);
+    
+    /*--- Read extra inofmration ---*/
+    
+    getline(Surface_file, text_line);
+    text_line.erase (0,9);
+    su2double AoASens = atof(text_line.c_str());
+    config->SetAoA_Sens(AoASens);
+    
+    /*--- File header ---*/
+    
+    getline(Surface_file, text_line);
+    
+    while (getline(Surface_file, text_line)) {
+      for (icommas = 0; icommas < 50; icommas++) {
+        position = text_line.find( ",", 0 );
+        if (position!=string::npos) text_line.erase (position,1);
+      }
+      stringstream  point_line(text_line);
+      point_line >> iPoint >> dummy;
+
+      /*--- Skip adjoint vars, coords, and mesh sens ---*/
+      for(unsigned short iVar = 0; iVar < nDim+2; iVar++){
+        point_line >> dummy;
+      }
+      for(unsigned short iVar = 0; iVar < 2*nDim; iVar++){
+        point_line >> dummy;
+      }
+      
+      if (PointInDomain[iPoint]) {
+        
+        /*--- Find the vertex for the Point and Marker ---*/
+        
+        iMarker = Point2Vertex[iPoint][0];
+        iVertex = Point2Vertex[iPoint][1];
+        
+        /*--- Increment the auxiliary transpiration variable with the contribution of
+         this unsteady timestep. For steady problems, this reduces to
+         a single sensitivity value multiplied by 1.0. ---*/
+          
+        point_line >> Sensitivity_Transp;
+        cout << "Surface file sensitivity [" << iPoint << "] = " << Sensitivity_Transp << endl;
+
+        vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp*(delta_T/total_T));
       }
       
     }

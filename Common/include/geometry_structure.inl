@@ -320,6 +320,8 @@ inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
 
+inline void CGeometry::SetBoundSensitivityTranspiration(CConfig *config) { }
+
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
 inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }

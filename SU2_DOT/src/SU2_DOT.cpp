@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
 
       for(iZone = 0; iZone < nZone; iZone++){
+        SetBoundSensitivityTranspiration(config_container[iZone]);
         SetProjection_Transp(geometry_container[iZone], config_container[iZone], Gradient);
       }
        
