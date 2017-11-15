@@ -3479,18 +3479,20 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
         cout<<"There is no file defining transpiration "<< filename << "."<<endl;
         exit(EXIT_FAILURE);
     }
+*/
     /*--- In case this is a parallel simulation, we need to perform the
        Global2Local index transformation first. ---*/
 
 /*    long *Global2Local = NULL;
     int n = geometry->GetGlobal_nPointDomain();
     Global2Local = new long[n];
+*/
     /*--- First, set all indices to a negative value by default ---*/
 
 /*    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
         Global2Local[iPoint] = -1;
     }
-
+*/
     /*--- Now fill array with the transform values only for local points ---*/
 /*    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
         Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;

@@ -700,7 +700,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
   su2double x0, x1, x2, x3;
   su2double y0, y1, y2, y3;
   su2double eps0, eps1, eps2, eps3;
-  su2double x, y, eps;
+  su2double x, y;
 
   su2double s[2], a[4], b[4], aa, bb, cc;
 
