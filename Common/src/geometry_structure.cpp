@@ -15039,8 +15039,9 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
             point_line >> dummy;
           }
           point_line >> Sensitivity_Transp;
+          cout << "Surface file sensitivity [" << iPoint << "] = " << Sensitivity_Transp << endl;
 
-          vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp);
+          vertex[iMarker][iVertex]->AddAuxTransp(Sensitivity_Transp*(delta_T/total_T));
         }
       }
       
