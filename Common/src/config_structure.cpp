@@ -4270,8 +4270,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       if ((Design_Variable[iDV] != NO_DEFORMATION) &&
           (Design_Variable[iDV] != FFD_SETTING) &&
-          (Design_Variable[iDV] != SURFACE_FILE) &&
-          (Design_Variable[iDV] != TRANSP_DV)) {
+          (Design_Variable[iDV] != SURFACE_FILE)) {
         
         if (iDV == 0)
           cout << "Design variables definition (markers <-> value <-> param):" << endl;
@@ -4339,7 +4338,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
+        if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 9;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -4361,6 +4360,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
                (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];
+          else if((iParamDV == 0) &&
+                  (Design_Variable[iDV] == TRANSP_DV)) cout << TranspTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
@@ -6852,24 +6853,26 @@ void CConfig::SetTranspirationParams_DV() {
   unsigned short iMarker_Transpiration = 0, iMarker_DV = 0;
 
   if (nMarker_Transpiration > 0 && nDV > 0) {
-  for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++){
     for(iDV = 0; iDV < nDV; iDV++){
-      if (TranspTag[iDV] == Marker_Transpiration[iMarker_Transpiration]){
-        Transx0[iMarker_Transpiration] = ParamDV[iDV][1];
-        Transx1[iMarker_Transpiration] = ParamDV[iDV][2];
-        Transx2[iMarker_Transpiration] = ParamDV[iDV][3];
-        Transx3[iMarker_Transpiration] = ParamDV[iDV][4];
-        Transy0[iMarker_Transpiration] = ParamDV[iDV][5];
-        Transy1[iMarker_Transpiration] = ParamDV[iDV][6];
-        Transy2[iMarker_Transpiration] = ParamDV[iDV][7];
-        Transy3[iMarker_Transpiration] = ParamDV[iDV][8];
-        TransEps0[iMarker_Transpiration] = DV_Value[iDV][0];
-        TransEps1[iMarker_Transpiration] = DV_Value[iDV][0];
-        TransEps2[iMarker_Transpiration] = DV_Value[iDV][0];
-        TransEps3[iMarker_Transpiration] = DV_Value[iDV][0];
+      if(Design_Variable[iDV] == TRANSP_DV){
+        for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++){
+          if (TranspTag[iDV] == Marker_Transpiration[iMarker_Transpiration]){
+            Transx0[iMarker_Transpiration] = ParamDV[iDV][1];
+            Transx1[iMarker_Transpiration] = ParamDV[iDV][2];
+            Transx2[iMarker_Transpiration] = ParamDV[iDV][3];
+            Transx3[iMarker_Transpiration] = ParamDV[iDV][4];
+            Transy0[iMarker_Transpiration] = ParamDV[iDV][5];
+            Transy1[iMarker_Transpiration] = ParamDV[iDV][6];
+            Transy2[iMarker_Transpiration] = ParamDV[iDV][7];
+            Transy3[iMarker_Transpiration] = ParamDV[iDV][8];
+            TransEps0[iMarker_Transpiration] = DV_Value[iDV][0];
+            TransEps1[iMarker_Transpiration] = DV_Value[iDV][1];
+            TransEps2[iMarker_Transpiration] = DV_Value[iDV][2];
+            TransEps3[iMarker_Transpiration] = DV_Value[iDV][3];
+          }
+        }
       }
     }
-  }
   }
 }
 
