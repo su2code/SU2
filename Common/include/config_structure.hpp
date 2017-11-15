@@ -5084,6 +5084,13 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv);
+
+  /*!
+   * \brief Obtain the marker of a transpiration DV.
+   * \param[in] val_dv - Number of the design variable that we want to read.
+   * \return Transpiration boundary identification.
+   */
+  string GetTranspTag(unsigned short val_dv);
   
   /*!
    * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.

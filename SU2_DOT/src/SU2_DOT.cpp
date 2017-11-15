@@ -717,18 +717,14 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
         my_Gradient[iDV_Value] = 0.0;
         localGradient[iDV_Value] = 0.0;
       }
-      while(iMarker < config->GetnMarker_All()){
-        if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
-          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
-          /*--- Bilinear parametric interpolation ---*/
-          a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
-          b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
+      Marke_Tag = config->GetTranspTag(iDV);
+      config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
-          break;
-        }
-      }
+      /*--- Bilinear parametric interpolation ---*/
+      a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
+      b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
+
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
@@ -770,6 +766,9 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       }
     }
   }
+
+  delete [] my_Gradient;
+  delete [] localGradient;
 
 }
 
