@@ -2274,6 +2274,7 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
+        case TRANSP_DV:            nParamDV = 4; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2396,6 +2397,9 @@ public:
           } else {
             nValueDV = 1;
           }
+          break;
+        case TRANSP_DV:
+          nValueDV = 4;
           break;
         default :
           nValueDV = 1;
