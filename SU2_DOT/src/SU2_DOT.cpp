@@ -719,9 +719,9 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
   
   for(iDV = 0; iDV < config->GetnDV(); iDV++){
     for(iDV_Value = 0; iDV_Value < 4; iDV_Value++){
-        my_Gradient[iDV_Value] = 0.0;
-        localGradient[iDV_Value] = 0.0;
-      }
+      my_Gradient[iDV_Value] = 0.0;
+      localGradient[iDV_Value] = 0.0;
+    }
     if(config->GetDesign_Variable(iDV) == TRANSP_DV){
       nDV_Value = config->GetnDV_Value(iDV);
 
@@ -731,6 +731,9 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
         if(geometry->GetMarker_Tag(iMarker) == Marker_Tag) break;
       }
+
+      cout << "DV_Marker = " << Marker_Tag << endl;
+      cout << "Geo_Marker( " << iMarker " ) = " << geometry->GetMarker_tag(iMarker) << endl;
 
       /*--- Bilinear parametric interpolation ---*/
       a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
@@ -760,10 +763,14 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
           cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           cout << ", s[0] = " << s[0] ;
           cout << ", s[1] = " << s[1] << endl;
-          my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-          my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-          my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-          my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+
+          /*--- Only care about values within box ---*/
+          if(s[0] >= 0.0 && s[0] < 1.0 && s[1] >= 0.0 && s[1] < 1.0){
+            my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+            my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+            my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+            my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+          }
         }
       }
 
