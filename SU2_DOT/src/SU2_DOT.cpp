@@ -730,7 +730,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
       bool transp = false;
       for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-        if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION && geometry->GetMarker_Tag(iMarker) == Marker_Tag){
+        if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION && config->GetMarker_All_TagBound(iMarker) == Marker_Tag){
           transp = true;
           break;
         }
