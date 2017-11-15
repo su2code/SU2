@@ -708,7 +708,6 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
   string Marker_Tag;
 
-  cout << "SetTranspiraitonParams_DV" << endl;
   config->SetTranspirationParams_DV();
   
   for(iDV = 0; iDV < config->GetnDV(); iDV++){
@@ -720,10 +719,8 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
         my_Gradient[iDV_Value] = 0.0;
         localGradient[iDV_Value] = 0.0;
       }
-      cout << "GetTranspTag" << endl;
 
       Marker_Tag = config->GetTranspTag(iDV);
-      cout << "GetTranspiraitonParams_" << endl;
       config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
       for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
@@ -731,25 +728,21 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       }
 
       /*--- Bilinear parametric interpolation ---*/
-      cout << "Bilinear parametric interpolation" << endl;
       a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
       b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          cout << "x,y" << endl;
           x = geometry->node[iPoint]->GetCoord(0);
           y = geometry->node[iPoint]->GetCoord(1);
 
           /*--- Quadratic coefficients ---*/
-          cout << "Quadratic coefficients" << endl;
           aa = a[3]*b[2] - a[2]*b[3];
           bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
           cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
 
           /*--- Logical coordinates ---*/
-          cout << "Logical coordinates" << endl;
           s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
           s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
 
@@ -758,8 +751,6 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             --- (deps/deps_1) = s[0]*(1-s[1])               ---
             --- (deps/deps_2) = s[0]*s[1]                   ---
             --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
-          cout << "my_Gradient" << endl;
-          cout << "nDV_Value = " << nDV_Value << endl;
           my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
@@ -769,7 +760,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
       cout << "MPI" << endl;
 #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(&my_Gradient, &localGradient, nDV_Value, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(my_Gradient, localGradient, nDV_Value, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
       for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
         localGradient[iDV_Value] = my_Gradient[iDV_Value];
