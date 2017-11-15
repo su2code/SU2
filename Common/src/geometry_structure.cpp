@@ -15050,6 +15050,7 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
   
   Point2Vertex = new unsigned long[nPointGlobal][2];
   PointInDomain = new bool[nPointGlobal];
+  SensitivityTransp = new su2double[nPoint];
   
   for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
     PointInDomain[iPoint] = false;
