@@ -6863,10 +6863,10 @@ void CConfig::SetTranspirationParams_DV() {
         Transy1[iMarker_Transpiration] = ParamDV[iDV][6];
         Transy2[iMarker_Transpiration] = ParamDV[iDV][7];
         Transy3[iMarker_Transpiration] = ParamDV[iDV][8];
-        Transeps0[iMarker_Transpiration] = DV_Value[iDV][0];
-        Transeps1[iMarker_Transpiration] = DV_Value[iDV][0];
-        Transeps2[iMarker_Transpiration] = DV_Value[iDV][0];
-        Transeps3[iMarker_Transpiration] = DV_Value[iDV][0];
+        TransEps0[iMarker_Transpiration] = DV_Value[iDV][0];
+        TransEps1[iMarker_Transpiration] = DV_Value[iDV][0];
+        TransEps2[iMarker_Transpiration] = DV_Value[iDV][0];
+        TransEps3[iMarker_Transpiration] = DV_Value[iDV][0];
       }
     }
   }

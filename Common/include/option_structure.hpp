@@ -2311,7 +2311,7 @@ public:
         else if ((iParamDV == 0) &&
                  (this->design_variable[iDV] == TRANSP_DV)){
               ss >> this->TranspTag[iDV];
-              this->param[iDV][iParamDV] = 0;
+              this->paramDV[iDV][iParamDV] = 0;
         }
         else
           ss >> this->paramDV[iDV][iParamDV];
