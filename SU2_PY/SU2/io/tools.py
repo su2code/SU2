@@ -932,7 +932,7 @@ def get_specialCases(config):
         if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
             
-    if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
+    if config.get('UNSTEADY_SIMULATION','NO') != 'NO' and config['UNSTEADY_SIMULATION'] != 'HARMONIC_BALANCE':
         special_cases.append('UNSTEADY_SIMULATION')
      
     # no support for more than one special case

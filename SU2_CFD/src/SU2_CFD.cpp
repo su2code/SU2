@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
   unsigned short nTimeInstances, nGeomZones, nTotTimeInstances;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, turbo;
-  
+  bool disc_adj;
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
@@ -75,6 +75,7 @@ int main(int argc, char *argv[]) {
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi   = config->GetFSI_Simulation();
   turbo = config->GetBoolTurbomachinery();
+  disc_adj = config->GetDiscrete_Adjoint();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
 
     driver = new CHBDriver(config_file_name, nTimeInstances, nDim, MPICommunicator);
 
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetBoolTurbomachinery() ) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetBoolTurbomachinery() && !disc_adj ) {
 
     /*--- Define the meaning of 'zones' for HB multi-zone only.
      * Geometrical zones correspond to the physical domains.
@@ -117,6 +118,22 @@ int main(int argc, char *argv[]) {
     /*--- Use the MultiZone Harmonic Balance driver. ---*/
 
     driver = new CHBMultiZoneDriver(config_file_name, nTotTimeInstances, nDim, MPICommunicator);
+
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetBoolTurbomachinery() && disc_adj ) {
+
+    /*--- Define the meaning of 'zones' for HB multi-zone only.
+     * Geometrical zones correspond to the physical domains.
+     * A set of time instances is  associated with the single geometrical zone.
+     * The current approach is limited to the same number of time instances in
+     * each geometrical zone.---*/
+
+    nTimeInstances = config->GetnTimeInstances();
+    nGeomZones = nZone;
+    nTotTimeInstances = nTimeInstances*nGeomZones;
+
+    /*--- Use the MultiZone Harmonic Balance driver. ---*/
+
+    driver = new CDiscAdjHBMultiZone(config_file_name, nTotTimeInstances, nDim, MPICommunicator);
 
 
   } else if ((nZone == 2) && fsi) {

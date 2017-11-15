@@ -5384,6 +5384,8 @@ void CHBMultiZoneDriver::Run() {
     iteration_container[iTimeInstance]->Postprocess(config_container, geometry_container,
         solver_container, iTimeInstance);
 
+//TODO move here SetHarmonicBalance
+
   if (rank == MASTER_NODE){
     for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
       SetTurboPerformance(iTimeInstance);
@@ -5660,11 +5662,276 @@ bool CHBMultiZoneDriver::Monitor(unsigned long ExtIter) {
 CDiscAdjHBMultiZone::CDiscAdjHBMultiZone(char* confFile,
                                                            unsigned short val_nZone,
                                                            unsigned short val_nDim,
-                                                           SU2_Comm MPICommunicator): CHBMultiZoneDriver(confFile, val_nZone, val_nDim, MPICommunicator ), C (confFile, val_nZone, val_nDim, MPICommunicator ){ }
+                                                           SU2_Comm MPICommunicator): CHBMultiZoneDriver(confFile, val_nZone, val_nDim, MPICommunicator ) {
+
+  RecordingState = NONE;
+  ObjFunc = 0.;
+  unsigned short iZone;
+
+  direct_iteration = new CIteration*[nZone];
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    if(config_container[iZone]->GetBoolTurbomachinery()){
+      direct_iteration[iZone] = new CTurboIteration(config_container[iZone]);
+    }
+    else{
+      direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+    }
+  }
+
+}
+
+CDiscAdjHBMultiZone::~CDiscAdjHBMultiZone() {
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    delete direct_iteration[iZone];
+  }
+
+  delete [] direct_iteration;
+
+}
+
+void CDiscAdjHBMultiZone::Run() {
+
+  unsigned short iZone = 0, checkConvergence;
+  unsigned long IntIter, nIntIter;
+
+  bool unsteady;
+
+  unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+  /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
+
+  if (unsteady)
+    nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+  else
+    nIntIter = 1;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                                     solver_container, numerics_container, config_container,
+                                                     surface_movement, grid_movement, FFDBox, iZone);
+  }
 
 
+  /*--- For the adjoint iteration we need the derivatives of the iteration function with
+   *    respect to the conservative flow variables. Since these derivatives do not change in the steady state case
+   *    we only have to record if the current recording is different from cons. variables. ---*/
 
-CDiscAdjHBMultiZone::~CDiscAdjHBMultiZone() { }
+  if (RecordingState != CONS_VARS || unsteady){
+
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+     *    as argument ensures that all information from a previous recording is removed. ---*/
+
+    SetRecording(NONE);
+
+    /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+
+    SetRecording(CONS_VARS);
+
+  }
+
+  for (IntIter = 0; IntIter < nIntIter; IntIter++) {
+
+
+    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+   *    of the previous iteration. The values are passed to the AD tool. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      config_container[iZone]->SetIntIter(IntIter);
+
+      iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
+
+    }
+
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+    SetAdj_ObjFunction();
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+                                          solver_container, numerics_container, config_container,
+                                          surface_movement, grid_movement, FFDBox, iZone);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Check convergence in each zone --*/
+
+    checkConvergence = 0;
+    for (iZone = 0; iZone < nZone; iZone++)
+      checkConvergence += (int) integration_container[iZone][ADJFLOW_SOL]->GetConvergence();
+
+    /*--- If convergence was reached in every zone --*/
+
+    if (checkConvergence == nZone) break;
+
+    /*--- Write the convergence history (only screen output) ---*/
+
+    if (unsteady)
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+
+  }
+
+  /*--- Compute the geometrical sensitivities ---*/
+
+  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+      integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence() ||
+      (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) || unsteady){
+
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+     * as argument ensures that all information from a previous recording is removed. ---*/
+
+    SetRecording(NONE);
+
+    /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
+
+    SetRecording(MESH_COORDS);
+
+    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+     *    of the current iteration. The values are passed to the AD tool. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
+
+    }
+
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+    SetAdj_ObjFunction();
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the computed sensitivity values. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][MESH_0],config_container[iZone]);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+  }
+
+}
+
+
+void CDiscAdjHBMultiZone::SetRecording(unsigned short kind_recording){
+  unsigned short iZone, iMesh;
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  AD::Reset();
+
+  /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+      solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
+    }
+    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+      solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+  }
+
+
+  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
+
+  if (kind_recording != NONE){
+
+    AD::StartRecording();
+
+    if (rank == MASTER_NODE && ((ExtIter == 0)) && kind_recording == CONS_VARS) {
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << "Direct iteration to store computational graph." << endl;
+      cout << "Compute residuals to check the convergence of the direct problem." << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
+    }
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone]->RegisterInput(solver_container, geometry_container, config_container, iZone, kind_recording);
+    }
+
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
+  }
+
+  /*--- Do one iteration of the direct flow solver ---*/
+
+  DirectRun();
+
+  /*--- Print residuals in the first iteration ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+      cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+      }
+    }
+  }
+
+  RecordingState = kind_recording;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
+  }
+
+  /*--- Extract the objective function and store it --- */
+
+  SetObjFunction();
+
+  AD::StopRecording();
+
+}
+
+void CDiscAdjHBMultiZone::SetAdj_ObjFunction(){
+
+  int rank = MASTER_NODE;
+
+  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
+  unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  su2double seeding = 1.0;
+
+  if (time_stepping){
+    if (ExtIter < IterAvg_Obj){
+      seeding = 1.0/((su2double)IterAvg_Obj);
+    }
+    else{
+      seeding = 0.0;
+    }
+  }
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE){
+    SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc, 0.0);
+  }
+
+}
 
 
 void CDiscAdjHBMultiZone::DirectRun(){
@@ -5675,22 +5942,12 @@ void CDiscAdjHBMultiZone::DirectRun(){
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-//if (ExtIter > 1)
-//TODO REMOVE FOR DEBUG
-//feenableexcept(FE_INVALID | FE_OVERFLOW);
-  /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
-   all zones before beginning the iteration. ---*/
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
-    iteration_container[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
+    direct_iteration[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-//  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
-//    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
-//      if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
-//        interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
-//  }
 
   /*--- For each time instance update transfer data ---*/
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
@@ -5701,25 +5958,14 @@ void CDiscAdjHBMultiZone::DirectRun(){
     }
   }
 
-//  if(ExtIter == 0){
-//    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
-//      jTimeInstance = iTimeInstance;
-//      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
-//        jTimeInstance += nTimeInstances;
-//                  transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
-//                      geometry_container[iTimeInstance][MESH_0], iGeomZone);
-//      }
-//    }
-
-
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
-    iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
+    direct_iteration[iTimeInstance]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
   }
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
-    iteration_container[iTimeInstance]->Postprocess(config_container, geometry_container,
+    direct_iteration[iTimeInstance]->Postprocess(config_container, geometry_container,
         solver_container, iTimeInstance);
 
   if (rank == MASTER_NODE){
@@ -5730,9 +5976,45 @@ void CDiscAdjHBMultiZone::DirectRun(){
   if (rank == MASTER_NODE)
       SetAvgTurboPerformance_HB(iTimeInstance);
 
-
-
 }
+
+void CDiscAdjHBMultiZone::SetObjFunction(){
+
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+//TODO generalize this with HB outputs!
+  switch (config_container[ZONE_0]->GetKind_ObjFunc()){
+  case ENTROPY_GENERATION:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case FLOW_ANGLE_OUT:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case MASS_FLOW_IN:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case TOTAL_PRESSURE_LOSS:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetTotalPressureLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case KINETIC_ENERGY_LOSS:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetKineticEnergyLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  default:
+    break;
+  }
+
+  ObjFunc = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+
+  if (rank == MASTER_NODE){
+    AD::RegisterOutput(ObjFunc);
+  }
+}
+
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,

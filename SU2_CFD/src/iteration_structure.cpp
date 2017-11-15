@@ -1633,6 +1633,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   bool dual_time_1st = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
+  bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   unsigned short iMesh;
   int Direct_Iter;
 
@@ -1644,7 +1645,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config_container[val_iZone]->GetUnsteady_Simulation()) {
+  if (config_container[val_iZone]->GetUnsteady_Simulation() && !harmonic_balance) {
 
     Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 2;
 
@@ -1834,7 +1835,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config_container[val_iZone]->GetKind_Solver();
   unsigned long IntIter = 0;
-  bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
+  bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY && config_container[val_iZone]->GetUnsteady_Simulation() != HARMONIC_BALANCE;
   bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
 
   if (!unsteady)

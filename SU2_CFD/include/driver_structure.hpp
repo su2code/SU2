@@ -910,6 +910,11 @@ public:
  */
 class CDiscAdjHBMultiZone : public  CHBMultiZoneDriver {
 
+protected:
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
+
 public:
 
 	 /*!
@@ -945,38 +950,15 @@ public:
    */
   void DirectRun();
 
-//  /*!
-//   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
-//   */
-//  void SetObjFunction();
-//
-//  /*!
-//   * \brief Initialize the adjoint value of the objective function.
-//   */
-//  void SetAdj_ObjFunction();
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
+  void SetObjFunction();
 
-//
-//  /*!
-//   * \brief Transfer data among different geometrical zones and time instances.
-//   */
-//  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
-//
-//  /*!
-//   * \brief Set Obj.Function.
-//   */
-//  void SetObjFunction();
-//
-//  /*!
-//   * \brief Set perfomarnce interface within multiple zones.
-//   */
-//  void SetTurboPerformance(unsigned short targetZone);
-//
-//  /*!
-//   * \brief Set turbomachinery HB performance for all the geometrical zones(blade rows).
-//   * \brief i-th geometrical zone, corresponding to the blade row.
-//   */
-//  void SetAvgTurboPerformance_HB(unsigned short iGeomZone);
-
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
 
 };
 

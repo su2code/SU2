@@ -3408,7 +3408,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
-    if (Unsteady_Simulation) {
+    if (Unsteady_Simulation && Unsteady_Simulation != HARMONIC_BALANCE) {
 
       Restart_Flow = false;
 
@@ -4767,33 +4767,33 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
     if (Kind_Solver != FEM_ELASTICITY) {
-		switch (Unsteady_Simulation) {
-		  case NO:
-			cout << "Local time stepping (steady state simulation)." << endl; break;
-		  case TIME_STEPPING:
-			cout << "Unsteady simulation using a time stepping strategy."<< endl;
-			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-			break;
-		  case DT_STEPPING_1ST: case DT_STEPPING_2ND:
-			if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
-			if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-			cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
-			break;
-		}
+      switch (Unsteady_Simulation) {
+      case NO:
+        cout << "Local time stepping (steady state simulation)." << endl; break;
+      case TIME_STEPPING:
+        cout << "Unsteady simulation using a time stepping strategy."<< endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        break;
+      case DT_STEPPING_1ST: case DT_STEPPING_2ND:
+        if (Unsteady_Simulation == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
+        if (Unsteady_Simulation == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+        break;
+      }
     }
-	else {
-		switch (Dynamic_Analysis) {
-		  case NO:
-			cout << "Static structural analysis." << endl; break;
-		  case YES:
-			cout << "Dynamic structural analysis."<< endl;
-			cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-			break;
-		}
-	}
+    else {
+      switch (Dynamic_Analysis) {
+      case NO:
+        cout << "Static structural analysis." << endl; break;
+      case YES:
+        cout << "Dynamic structural analysis."<< endl;
+        cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+        break;
+      }
+    }
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
@@ -4900,13 +4900,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-			if (Unsteady_Simulation != TIME_STEPPING) {
-				cout << "Courant-Friedrichs-Lewy number:   ";
-				cout.precision(3);
-				cout.width(6); cout << CFL[0];
-				cout << endl;
-			}
-			
+      if (Unsteady_Simulation != TIME_STEPPING) {
+        cout << "Courant-Friedrichs-Lewy number:   ";
+        cout.precision(3);
+        cout.width(6); cout << CFL[0];
+        cout << endl;
+      }
+
 
       if (nMGLevels !=0) {
         cout.precision(3);
