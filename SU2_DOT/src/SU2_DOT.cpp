@@ -759,13 +759,13 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             --- (deps/deps_1) = s[0]*(1-s[1])               ---
             --- (deps/deps_2) = s[0]*s[1]                   ---
             --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
-          cout << "iPoint = " << iPoint;
-          cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint);
-          cout << ", s[0] = " << s[0] ;
-          cout << ", s[1] = " << s[1] << endl;
 
           /*--- Only care about values within box ---*/
           if(s[0] >= 0.0 && s[0] < 1.0 && s[1] >= 0.0 && s[1] < 1.0){
+            cout << "iPoint = " << iPoint;
+            cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint);
+            cout << ", s[0] = " << s[0] ;
+            cout << ", s[1] = " << s[1] << endl;
             my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
             my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
             my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
