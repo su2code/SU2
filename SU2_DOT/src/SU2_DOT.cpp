@@ -777,7 +777,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
       cout << "MPI" << endl;
 #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(my_Gradient, localGradient, nDV_Value, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, nDV_Value, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
       for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
         localGradient[iDV_Value] = my_Gradient[iDV_Value];
