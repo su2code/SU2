@@ -748,8 +748,9 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
-            x = geometry->node[iPoint]->GetCoord(0);
-            y = geometry->node[iPoint]->GetCoord(1);
+            iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
+            x = geometry->node[iPoint_Local]->GetCoord(0);
+            y = geometry->node[iPoint_Local]->GetCoord(1);
 
             /*--- Quadratic coefficients ---*/
             aa = a[3]*b[2] - a[2]*b[3];
@@ -768,7 +769,6 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
             /*--- Only care about values within box ---*/
             if(s[0] >= 0.0 && s[0] < 1.0 && s[1] >= 0.0 && s[1] < 1.0){
-              iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
               cout << "iPoint = " << iPoint;
               cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint_Local);
               cout << ", s[0] = " << s[0] ;
