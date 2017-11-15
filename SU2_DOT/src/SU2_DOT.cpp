@@ -733,7 +733,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
       }
 
       cout << "DV_Marker = " << Marker_Tag << endl;
-      cout << "Geo_Marker( " << iMarker " ) = " << geometry->GetMarker_tag(iMarker) << endl;
+      cout << "Geo_Marker( " << iMarker << " ) = " << geometry->GetMarker_tag(iMarker) << endl;
 
       /*--- Bilinear parametric interpolation ---*/
       a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
