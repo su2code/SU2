@@ -747,7 +747,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (iPoint < geometry->GetnNodeDomain()) {
+          if (iPoint < geometry->GetnPointDomain()) {
             //iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
             x = geometry->node[iPoint]->GetCoord(0);
             y = geometry->node[iPoint]->GetCoord(1);
