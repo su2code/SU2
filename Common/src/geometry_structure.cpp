@@ -15055,7 +15055,7 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
     PointInDomain[iPoint] = false;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    if (config->GetMarker_All_DV(iMarker) == YES){
+    if (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         
         /*--- The sensitivity file uses the global numbering ---*/
