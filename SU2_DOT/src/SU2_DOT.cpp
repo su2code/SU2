@@ -762,11 +762,11 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
           /*--- Only care about values within box ---*/
           if(s[0] >= 0.0 && s[0] < 1.0 && s[1] >= 0.0 && s[1] < 1.0){
+            iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
             cout << "iPoint = " << iPoint;
-            cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint);
+            cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint_Local);
             cout << ", s[0] = " << s[0] ;
             cout << ", s[1] = " << s[1] << endl;
-            iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
             my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint_Local);
             my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint_Local);
             my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint_Local);
