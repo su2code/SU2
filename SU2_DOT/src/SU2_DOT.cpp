@@ -738,8 +738,8 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
       if(transp){
 
-        cout << "DV_Marker = " << Marker_Tag << endl;
-        cout << "Geo_Marker( " << iMarker << " ) = " << config->GetMarker_All_TagBound(iMarker) << endl;
+        //cout << "DV_Marker = " << Marker_Tag << endl;
+        //cout << "Geo_Marker( " << iMarker << " ) = " << config->GetMarker_All_TagBound(iMarker) << endl;
 
         /*--- Bilinear parametric interpolation ---*/
         a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
@@ -769,11 +769,11 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
 
             /*--- Only care about values within box ---*/
             if(s[0] >= 0.0 && s[0] <= 1.0 && s[1] >= 0.0 && s[1] <= 1.0){
-              cout << "iPoint = " << iPoint;
+              //cout << "iPoint = " << iPoint;
               //cout << ", SensTransp = " << geometry->GetSensitivityTranspiration(iPoint);
-              cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-              cout << ", s[0] = " << s[0] ;
-              cout << ", s[1] = " << s[1] << endl;
+              //cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+              //cout << ", s[0] = " << s[0] ;
+              //cout << ", s[1] = " << s[1] << endl;
               my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
               my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
               my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
@@ -783,14 +783,14 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
         }
       }
 
-      cout << "MPI" << endl;
+      //cout << "MPI" << endl;
       for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
 #ifdef HAVE_MPI
         SU2_MPI::Allreduce(&my_Gradient[iDV_Value], &localGradient[iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
         localGradient[iDV_Value] = my_Gradient[iDV_Value];
 #endif
-        cout << "Gradient[ " << iDV_Value << " ] " << endl;
+        //cout << "Gradient[ " << iDV_Value << " ] " << endl;
         Gradient[iDV][iDV_Value] += localGradient[iDV_Value];
         my_Gradient[iDV_Value] = 0.0;
         localGradient[iDV_Value] = 0.0;
@@ -798,7 +798,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
     }
   }
 
-  cout << "Delete" << endl;
+  //cout << "Delete" << endl;
   delete [] my_Gradient;
   delete [] localGradient;
 
