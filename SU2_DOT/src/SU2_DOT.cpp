@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
         if(rank == MASTER_NODE)
           cout << "Set boundary transpiration sensitivities." << endl;
         geometry_container[iZone]->SetBoundSensitivityTranspiration(config_container[iZone]);
-        
+
         if(rank == MASTER_NODE)
           cout << "Project transpiration sensitivities to design variables." << endl;
         SetProjection_Transp(geometry_container[iZone], config_container[iZone], Gradient);
@@ -756,10 +756,10 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             --- (deps/deps_1) = s[0]*(1-s[1])               ---
             --- (deps/deps_2) = s[0]*s[1]                   ---
             --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
-          //cout << "iPoint = " << iPoint;
-          //cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-          //cout << ", s[0] = " << s[0] ;
-          //cout << ", s[1] = " << s[1] << endl;
+          cout << "iPoint = " << iPoint;
+          cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+          cout << ", s[0] = " << s[0] ;
+          cout << ", s[1] = " << s[1] << endl;
           my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
           my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
