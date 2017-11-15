@@ -718,7 +718,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
         localGradient[iDV_Value] = 0.0;
       }
 
-      Marke_Tag = config->GetTranspTag(iDV);
+      Marker_Tag = config->GetTranspTag(iDV);
       config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
       /*--- Bilinear parametric interpolation ---*/
