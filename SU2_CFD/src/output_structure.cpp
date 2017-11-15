@@ -10434,8 +10434,6 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     nDim   = geometry[iZone]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
     nVar = nDim + 1;
-    if(config[ZONE_0]->GetnMarker_Transpiration() > 0) nTransp = 1;
-    else nTransp = 0;
 
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
