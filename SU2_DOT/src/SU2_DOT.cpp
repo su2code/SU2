@@ -699,7 +699,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 }
 
 void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Gradient){
-  unsigned long iPoint, iVertex;
+  unsigned long iPoint, iPoint_Local, iVertex;
   unsigned short iDV, iDV_Value, nDV_Value;
   unsigned short iMarker = 0;
 
@@ -766,10 +766,11 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             cout << ", AuxTransp = " << geometry->GetSensitivityTranspiration(iPoint);
             cout << ", s[0] = " << s[0] ;
             cout << ", s[1] = " << s[1] << endl;
-            my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
-            my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint);
-            my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
-            my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->GetSensitivityTranspiration(iPoint);
+            iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
+            my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint_Local);
+            my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->GetSensitivityTranspiration(iPoint_Local);
+            my_Gradient[2] += s[0]       * s[1]       * geometry->GetSensitivityTranspiration(iPoint_Local);
+            my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->GetSensitivityTranspiration(iPoint_Local);
           }
         }
       }
