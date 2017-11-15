@@ -749,8 +749,8 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
             iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
-            x = geometry->node[iPoint_Local]->GetCoord(0);
-            y = geometry->node[iPoint_Local]->GetCoord(1);
+            x = geometry->node[iPoint]->GetCoord(0);
+            y = geometry->node[iPoint]->GetCoord(1);
 
             /*--- Quadratic coefficients ---*/
             aa = a[3]*b[2] - a[2]*b[3];
