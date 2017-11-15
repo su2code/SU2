@@ -15051,6 +15051,10 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
   Point2Vertex = new unsigned long[nPointGlobal][2];
   PointInDomain = new bool[nPointGlobal];
   SensitivityTransp = new su2double[nPoint];
+
+  for(iPoint = 0; iPoint < nPoint; iPoint++){
+    SetSensitivityTranspiration(iPoint, 0.0);
+  }
   
   for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
     PointInDomain[iPoint] = false;
@@ -15066,8 +15070,6 @@ void CPhysicalGeometry::SetBoundSensitivityTranspiration(CConfig *config) {
           Point2Vertex[iPoint][0] = iMarker;
           Point2Vertex[iPoint][1] = iVertex;
           PointInDomain[iPoint] = true;
-          //vertex[iMarker][iVertex]->SetAuxTransp(0.0);
-          SetSensitivityTranspiration(vertex[iMarker][iVertex]->GetNode(), 0.0);
         }
       }
   
