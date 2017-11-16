@@ -15054,6 +15054,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
@@ -15098,13 +15099,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   filename = config->GetObjFunc_Extension(filename);
 
-  if (config->GetUnsteady_Simulation()) {
+  if (config->GetUnsteady_Simulation() && !harmonic_balance) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
-	if (config->GetnZone() > 1){
-		filename = config->GetMultizone_FileName(filename, config->GetiZone());
-	}
+  if (config->GetnZone() > 1 || config->GetnTimeInstances() > 1 ){
+    filename = config->GetMultizone_FileName(filename, config->GetiZone());
+  }
 
   if (config->GetRead_Binary_Restart()) {
 

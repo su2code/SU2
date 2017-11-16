@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
   config = new CConfig(config_file_name, SU2_DEF);
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone *= CConfig::GetnHBTimeZones(config);
 
 
   /*--- Definition of the containers per zones ---*/
