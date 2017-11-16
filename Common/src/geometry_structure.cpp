@@ -15063,7 +15063,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()) {
+  if (config->GetUnsteady_Simulation() && !harmonic_balance) {
     nExtIter = config->GetnExtIter();
   }else {
     nExtIter = 1;
