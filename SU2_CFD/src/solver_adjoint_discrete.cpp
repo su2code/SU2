@@ -415,7 +415,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+//  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool time_stepping = false;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Coord = geometry->node[iPoint]->GetCoord();

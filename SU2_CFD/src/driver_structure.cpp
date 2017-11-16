@@ -5907,7 +5907,8 @@ void CDiscAdjHBMultiZone::SetAdj_ObjFunction(){
 
   int rank = MASTER_NODE;
 
-  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY &&
+      config_container[ZONE_0]->GetUnsteady_Simulation() != HARMONIC_BALANCE;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   su2double seeding = 1.0;
@@ -5935,8 +5936,7 @@ void CDiscAdjHBMultiZone::SetAdj_ObjFunction(){
 
 
 void CDiscAdjHBMultiZone::DirectRun(){
-    mixingplane = true;
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
