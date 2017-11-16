@@ -362,7 +362,7 @@ def read_config(filename):
                     else:
                         this_dvFFDTag = []
 
-                    if not data_dict["DV_KIND"][0] in ['NO_DEFORMATION']:
+                    if not data_dict["DV_KIND"][0] in ['NO_DEFORMATION', 'TRANSP_DV']:
                         this_dvParam = [ float(x) for x in this_dvParam ]
 
                     if data_dict["DV_KIND"][0] in ['FFD_CONTROL_POINT_2D']:
@@ -450,15 +450,17 @@ def read_config(filename):
 
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
+                    elif this_dvKind=='TRANSP_DV':
+                        this_dvParameters = info_General[2].split(",")
+                        this_dvSize   = 4
+                        this_dvFFDTag = []
+
                     else:
                         this_dvParameters = info_General[2].split(",")
                         # if FFD change the first element to work with numbers and float(x), save also the tag
                         if this_dvKind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST','FFD_TWIST_2D','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                           this_dvFFDTag = this_dvParameters[0]
                           this_dvParameters[0] = '0'
-                        elif this_dvKind=='TRANSP_DV':
-                            this_dvSize   = 4
-                            this_dvFFDTag = []
                         else:
                           this_dvFFDTag = []
                         
