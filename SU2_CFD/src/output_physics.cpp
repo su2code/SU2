@@ -317,6 +317,7 @@ void COutput::ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTim
 
   EntropyGenAverage_HB     [iGeomZone] = 0.;
   TotPressureLossAverage_HB[iGeomZone] = 0.;
+  EntropyGenAverage_HB[nBladesRow] = 0.;
   TotalTotalEfficiencyAverage_HB = 0.;
   TotalStaticEfficiencyAverage_HB= 0.;
 
@@ -327,8 +328,11 @@ void COutput::ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTim
 
   EntropyGenAverage_HB[iGeomZone] /= nTimeInstances;
   TotPressureLossAverage_HB[iGeomZone] /= nTimeInstances;
-//  cout << EntropyGenAverage_HB[iGeomZone] << endl;
-//  cout << TotPressureLossAverage_HB[iGeomZone] << endl;
+
+  for (unsigned short i = 0; i < iGeomZone+1; i++ ){
+    EntropyGenAverage_HB[nBladesRow] += EntropyGenAverage_HB[iGeomZone];
+  }
+    EntropyGenAverage_HB[nBladesRow] /= nBladesRow;
 
   if (nBladesRow > 1){
     for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
