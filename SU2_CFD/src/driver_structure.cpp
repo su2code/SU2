@@ -2971,7 +2971,10 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   /*--- Evaluate the new CFL number (adaptive). ---*/
 
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES){
-  	output->SetCFL_Number(solver_container, config_container, ZONE_0);
+
+    for (iZone = 0; iZone < nZone; iZone++){
+      output->SetCFL_Number(solver_container, config_container, iZone);
+    }
   }
 
   /*--- Check whether the current simulation has reached the specified
