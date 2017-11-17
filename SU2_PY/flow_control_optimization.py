@@ -142,7 +142,7 @@ def flow_control_optimization( filename                           ,
     xb_up            = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration factor
 
     # Bounds for flow control design variables
-    if dev_dv.has_key('TRANSP_DV'):
+    if 'TRANSP_DV' in def_dv['KIND']:
         afc_upper = float( config.OPT_BOUND_UPPER_AFC )
         afc_lower = float( config.OPT_BOUND_LOWER_AFC )
         n_kind = len(def_dv)
