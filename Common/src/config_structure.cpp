@@ -1875,6 +1875,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Lower bound for the optimizer */
   addPythonOption("OPT_BOUND_LOWER");
 
+  /* DESCRIPTION: Upper bound for the optimizer (active flow control) */
+  addPythonOption("OPT_BOUND_UPPER_AFC");
+  
+  /* DESCRIPTION: Lower bound for the optimizer (active flow control) */
+  addPythonOption("OPT_BOUND_LOWER_AFC");
+
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
 
