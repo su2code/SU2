@@ -264,7 +264,9 @@ def scipy_bfgs(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         fprime         = obj_df
 
     # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    # n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
     project.n_dv = n_dv
 
     # Initial guess
