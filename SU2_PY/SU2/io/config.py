@@ -610,9 +610,9 @@ def read_config(filename):
     if not data_dict.has_key('OPT_BOUND_LOWER'):
         data_dict['OPT_BOUND_LOWER'] = -1e10
     if not data_dict.has_key('OPT_BOUND_UPPER_AFC'):
-        data_dict['OPT_BOUND_UPPER_AFC'] = 1e3
+        data_dict['OPT_BOUND_UPPER_AFC'] = 1e2
     if not data_dict.has_key('OPT_BOUND_LOWER_AFC'):
-        data_dict['OPT_BOUND_LOWER_AFC'] = -1e3
+        data_dict['OPT_BOUND_LOWER_AFC'] = -1e2
     if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
     if not data_dict.has_key('OPT_CONSTRAINT'):
