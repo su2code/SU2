@@ -145,7 +145,7 @@ def flow_control_optimization( filename                           ,
     if 'TRANSP_DV' in def_dv['KIND']:
         afc_upper = float( config.OPT_BOUND_UPPER_AFC )
         afc_lower = float( config.OPT_BOUND_LOWER_AFC )
-        n_kind = len(def_dv)
+        n_kind = len(def_dv['KIND'])
         i_off = 0
         for i_kind in range(n_kind):
         	if def_dv['KIND'][i_kind] == 'TRANSP_DV':
