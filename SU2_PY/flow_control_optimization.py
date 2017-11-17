@@ -102,23 +102,23 @@ def main():
     sys.stdout.write('| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
 
-    shape_optimization( options.filename    ,
-                        options.projectname ,
-                        options.partitions  ,
-                        options.gradient    ,
-                        options.optimization ,
-                        options.quiet       ,
-                        options.nzones      )
+    flow_control_optimization( options.filename    ,
+                        	   options.projectname ,
+                        	   options.partitions  ,
+                        	   options.gradient    ,
+                        	   options.optimization ,
+                        	   options.quiet       ,
+                        	   options.nzones      )
     
 #: main()
 
 def flow_control_optimization( filename                           ,
-                        projectname = ''                   ,
-                        partitions  = 0                    ,
-                        gradient    = 'DISCRETE_ADJOINT' ,
-                        optimization = 'SLSQP'             ,
-                        quiet       = False                ,
-                        nzones      = 1                    ):
+                        	   projectname = ''                   ,
+                        	   partitions  = 0                    ,
+                        	   gradient    = 'DISCRETE_ADJOINT' ,
+                        	   optimization = 'SLSQP'             ,
+                        	   quiet       = False                ,
+                        	   nzones      = 1                    ):
   
     # Config
     config = SU2.io.Config(filename)
