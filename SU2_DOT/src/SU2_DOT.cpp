@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_DEF);
+  config = new CConfig(config_file_name, SU2_DOT);
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nZone *= CConfig::GetnHBTimeZones(config);

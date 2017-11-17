@@ -5907,7 +5907,8 @@ void CDiscAdjHBMultiZone::SetAdj_ObjFunction(){
 
   int rank = MASTER_NODE;
 
-  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
+  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY &&
+      config_container[ZONE_0]->GetUnsteady_Simulation() != HARMONIC_BALANCE;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   su2double seeding = 1.0;
@@ -5935,8 +5936,7 @@ void CDiscAdjHBMultiZone::SetAdj_ObjFunction(){
 
 
 void CDiscAdjHBMultiZone::DirectRun(){
-    mixingplane = true;
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -5987,10 +5987,10 @@ void CDiscAdjHBMultiZone::SetObjFunction(){
 #endif
 
   solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
-//TODO generalize this with HB outputs!
+//TODO finish generalize this with HB outputs
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case ENTROPY_GENERATION:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGenAvg_HB(config_container[ZONE_0]->GetnMarker_TurboPerformance()));
     break;
   case FLOW_ANGLE_OUT:
     solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));

@@ -702,6 +702,12 @@ public:
   su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
+   * \brief Give the average entropy generation performance parameterfors HB  turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   */
+  su2double GetEntropyGenAvg_HB(unsigned short iMarkerTP);
+
+  /*!
    * \brief Give the flow outlet angle  performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.

@@ -289,8 +289,8 @@ COutput::COutput(CConfig *config) {
       }
     }
 
-    EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
-    TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
+    EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery() + 1]();
+    TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery() + 1]();
 
   }
 }
