@@ -150,8 +150,8 @@ def flow_control_optimization( filename                           ,
         for i_kind in range(n_kind):
         	if def_dv['KIND'][i_kind] == 'TRANSP_DV':
         		for i in range(def_dv['SIZE'][i_kind]):
-        			xb_low[i_off+i] = afc_lower/def_dv['SCALE'][i_kind]
-        			xb_up[i_off+i]  = afc_upper/def_dv['SCALE'][i_kind]
+        			xb_low[i_off+i] = afc_lower*def_dv['SCALE'][i_kind]
+        			xb_up[i_off+i]  = afc_upper*def_dv['SCALE'][i_kind]
         	i_off = i_off + def_dv['SIZE'][i_kind]
 
     xb = zip(xb_low,xb_up) # design bounds
