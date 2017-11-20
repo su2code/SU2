@@ -581,7 +581,10 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
 }
 
 void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-                                       su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
+                                       su2double MinXCoord, su2double MaxXCoord,
+                                       su2double MinYCoord, su2double MaxYCoord,
+                                       su2double MinZCoord, su2double MaxZCoord,
+                                       su2double *FlowVariable,
                                        vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
@@ -602,7 +605,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   vector<unsigned long>::iterator it;
   int rank = MASTER_NODE;
   su2double **Coord_Variation = NULL;
-  vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra, IGlobalIDExtra, JGlobalIDExtra;
+  vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
+  vector<unsigned long> IGlobalIDExtra, JGlobalIDExtra;
   vector<bool> AddExtra;
   unsigned long EdgeDonor;
   bool FoundEdge;
@@ -664,7 +668,10 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
             jPoint = bound[iMarker][iElem]->GetNode(jNode);
             
-            if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
+            if ((jPoint > iPoint)
+                && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))
+                && ((node[iPoint]->GetCoord(1) > MinYCoord) && (node[iPoint]->GetCoord(1) < MaxYCoord))
+                && ((node[iPoint]->GetCoord(2) > MinZCoord) && (node[iPoint]->GetCoord(2) < MaxZCoord))) {
               
               Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
               Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
@@ -934,6 +941,23 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           XCoord = Xcoord_Index1[iEdge]*cos(Angle) - Ycoord_Index1[iEdge]*sin(Angle);
           YCoord = Ycoord_Index1[iEdge]*cos(Angle) + Xcoord_Index1[iEdge]*sin(Angle);
           ZCoord = Zcoord_Index1[iEdge];
+          Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
+        }
+      }
+      
+      /*--- Rotate nacelle secction to a X-Z plane to reuse the rest of subroutines  ---*/
+      
+      if (config->GetGeo_Description() == NACELLE) {
+        su2double Angle = atan(-Plane_Normal[1]/Plane_Normal[2]);
+        Angle += 0.5*PI_NUMBER;
+        for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+          su2double XCoord = Xcoord_Index0[iEdge];
+          su2double YCoord = Ycoord_Index0[iEdge]*cos(Angle) - Zcoord_Index0[iEdge]*sin(Angle);
+          su2double ZCoord = Zcoord_Index0[iEdge]*cos(Angle) + Ycoord_Index0[iEdge]*sin(Angle);
+          Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
+          XCoord = Xcoord_Index1[iEdge];
+          YCoord = Ycoord_Index1[iEdge]*cos(Angle) - Zcoord_Index1[iEdge]*sin(Angle);
+          ZCoord = Zcoord_Index1[iEdge]*cos(Angle) + Ycoord_Index1[iEdge]*sin(Angle);
           Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
         }
       }
@@ -16089,7 +16113,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
+  su2double Angle, MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
@@ -16139,11 +16163,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
 
-    if (config->GetGeo_Description() == FUSELAGE) {
-      Plane_Normal[iPlane][0] = 1.0;
-      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
-    }
-
     if (config->GetGeo_Description() == WING) {
       Plane_Normal[iPlane][1] = 1.0;
       Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
@@ -16153,7 +16172,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       Plane_Normal[iPlane][2] = 1.0;
       Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
     }
-
+    
   }
   
   /*--- Allocate some vectors for storing airfoil coordinates ---*/
@@ -16168,7 +16187,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
 
@@ -16277,9 +16296,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
     			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
     			           <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
-
-
-
     		}
     		else  {
     			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
@@ -16456,20 +16472,8 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
 
-    if (config->GetGeo_Description() == FUSELAGE) {
-      Plane_Normal[iPlane][0] = 1.0;
-      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
-    }
-
-    if (config->GetGeo_Description() == WING) {
-      Plane_Normal[iPlane][1] = 1.0;
-      Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
-    }
-
-    if (config->GetGeo_Description() == TWOD_AIRFOIL) {
-      Plane_Normal[iPlane][2] = 1.0;
-      Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
-    }
+    Plane_Normal[iPlane][0] = 1.0;
+    Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
 
   }
 
@@ -16485,7 +16489,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
   }
@@ -16691,6 +16695,274 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   delete [] Height;
   delete [] Curvature;
 
+}
+
+void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
+                                        su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness,
+                                        su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                                        su2double &Nacelle_MaxMaxThickness, su2double &Nacelle_MinLERadius,
+                                        su2double &Nacelle_MaxLERadius, su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                                        su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) {
+
+  unsigned short iPlane, iDim, nPlane = 0;
+  unsigned long iVertex;
+  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, SemiSpan;
+  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  ofstream Nacelle_File, Section_File;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  
+  /*--- Make a large number of section cuts for approximating volume ---*/
+  
+  nPlane = config->GetnWingStations();
+  SemiSpan = config->GetSemiSpan();
+  
+  /*--- Allocate memory for the section cutting ---*/
+  
+  Area = new su2double [nPlane];
+  MaxThickness = new su2double [nPlane];
+  Chord = new su2double [nPlane];
+  LERadius = new su2double [nPlane];
+  ToC = new su2double [nPlane];
+  Twist = new su2double [nPlane];
+  
+  su2double **LeadingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    LeadingEdge[iPlane] = new su2double[nDim];
+  
+  su2double **TrailingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    TrailingEdge[iPlane] = new su2double[nDim];
+  
+  su2double **Plane_P0 = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_P0[iPlane] = new su2double[nDim];
+  
+  su2double **Plane_Normal = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_Normal[iPlane] = new su2double[nDim];
+  
+  MinAngle = config->GetStations_Bounds(0); MaxAngle = config->GetStations_Bounds(1);
+  dAngle = fabs((MaxAngle - MinAngle)/su2double(nPlane-1));
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+    Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
+    Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+    
+    Angle = iPlane*dAngle*PI_NUMBER/180.0;
+    Plane_Normal[iPlane][0] = 0.0;
+    Plane_Normal[iPlane][1] = -sin(Angle);
+    Plane_Normal[iPlane][2] = cos(Angle);
+    Plane_P0[iPlane][0] = config->GetNacelleLocation(0);
+    Plane_P0[iPlane][1] = config->GetNacelleLocation(1);
+    Plane_P0[iPlane][2] = config->GetNacelleLocation(2);
+  }
+  
+  /*--- Allocate some vectors for storing airfoil coordinates ---*/
+  
+  Xcoord_Airfoil   = new vector<su2double>[nPlane];
+  Ycoord_Airfoil   = new vector<su2double>[nPlane];
+  Zcoord_Airfoil   = new vector<su2double>[nPlane];
+  Variable_Airfoil = new vector<su2double>[nPlane];
+  
+  /*--- Create the section slices through the geometry ---*/
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    
+    ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                           Variable_Airfoil[iPlane], original_surface, config);
+    
+  }
+  
+  /*--- Compute airfoil characteristic only in the master node ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Write an output file---*/
+    
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      Nacelle_File.open("nacelle_distribution.csv", ios::out);
+      if (config->GetSystemMeasurements() == US)
+        Nacelle_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
+      else
+        Nacelle_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
+    }
+    else {
+      Nacelle_File.open("nacelle_description.dat", ios::out);
+      Nacelle_File << "TITLE = \"Nacelle description\"" << endl;
+      if (config->GetSystemMeasurements() == US)
+        Nacelle_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
+      else
+        Nacelle_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
+      Nacelle_File << "ZONE T= \"Baseline nacelle\"" << endl;
+    }
+    
+    
+    /*--- Evaluate  geometrical quatities that do not require any kind of filter, local to each point ---*/
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LeadingEdge[iPlane][iDim]  = 0.0;
+        TrailingEdge[iPlane][iDim] = 0.0;
+      }
+      
+      Area[iPlane]                = 0.0;
+      MaxThickness[iPlane]        = 0.0;
+      Chord[iPlane]               = 0.0;
+      LERadius[iPlane]            = 0.0;
+      ToC[iPlane]                 = 0.0;
+      Twist[iPlane]               = 0.0;
+      
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        
+        Compute_Wing_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        MaxThickness[iPlane] = Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
+        
+        
+      }
+      
+    }
+    
+    /*--- Plot the geometrical quatities ---*/
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        if (config->GetOutput_FileFormat() == PARAVIEW) {
+          Nacelle_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+          <<", "<< Twist[iPlane] <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
+          <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+        }
+        else  {
+          Nacelle_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+          <<" "<< Twist[iPlane] <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
+          <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+          
+        }
+      }
+    }
+    
+    Nacelle_File.close();
+    
+    Section_File.open("nacelle_slices.dat", ios::out);
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      
+      if (iPlane == 0) {
+        Section_File << "TITLE = \"Nacelle Slices\"" << endl;
+        if (config->GetSystemMeasurements() == US)
+          Section_File << "VARIABLES = \"x (in)\", \"y (in)\", \"z (in)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
+        else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
+      }
+      
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        
+        Section_File << "ZONE T=\"<greek>h</greek> = " << Ycoord_Airfoil[iPlane][0]/SemiSpan << " \", I= " << Xcoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
+        
+        for (iVertex = 0; iVertex < Xcoord_Airfoil[iPlane].size(); iVertex++) {
+          
+          /*--- Move to the origin  ---*/
+          
+          su2double XValue_ = Xcoord_Airfoil[iPlane][iVertex] - LeadingEdge[iPlane][0];
+          su2double ZValue_ = Zcoord_Airfoil[iPlane][iVertex] - LeadingEdge[iPlane][2];
+          
+          /*--- Rotate the airfoil and divide by the chord ---*/
+          
+          su2double ValCos = cos(Twist[iPlane]*PI_NUMBER/180.0);
+          su2double ValSin = sin(Twist[iPlane]*PI_NUMBER/180.0);
+          
+          su2double XValue = (XValue_*ValCos - ZValue_*ValSin) / Chord[iPlane];
+          su2double ZValue = (ZValue_*ValCos + XValue_*ValSin) / Chord[iPlane];
+          
+          /*--- Write the file ---*/
+          
+          Section_File  << Xcoord_Airfoil[iPlane][iVertex] << " " << Ycoord_Airfoil[iPlane][iVertex] << " " << Zcoord_Airfoil[iPlane][iVertex] << " " << XValue  << " " << ZValue << endl;
+        }
+      }
+      
+    }
+    
+    Section_File.close();
+    
+    
+    /*--- Compute the wing volume using a composite Simpson's rule ---*/
+    
+    Nacelle_Volume = 0.0;
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        Nacelle_Volume += (1.0/3.0)*dAngle*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+      }
+    }
+    
+    /*--- Evaluate Max and Min quantities ---*/
+    
+    Nacelle_MaxMaxThickness = -1E6; Nacelle_MinMaxThickness = 1E6; Nacelle_MinChord = 1E6; Nacelle_MaxChord = -1E6;
+    Nacelle_MinLERadius = 1E6; Nacelle_MaxLERadius = -1E6; Nacelle_MinToC = 1E6; Nacelle_MaxToC = -1E6;
+    Nacelle_MaxTwist = -1E6;
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      if (MaxThickness[iPlane] != 0.0) Nacelle_MinMaxThickness = min(Nacelle_MinMaxThickness, MaxThickness[iPlane]);
+      Nacelle_MaxMaxThickness = max(Nacelle_MaxMaxThickness, MaxThickness[iPlane]);
+      if (Chord[iPlane] != 0.0) Nacelle_MinChord = min(Nacelle_MinChord, Chord[iPlane]);
+      Nacelle_MaxChord = max(Nacelle_MaxChord, Chord[iPlane]);
+      if (LERadius[iPlane] != 0.0) Nacelle_MinLERadius = min(Nacelle_MinLERadius, LERadius[iPlane]);
+      Nacelle_MaxLERadius = max(Nacelle_MaxLERadius, LERadius[iPlane]);
+      if (ToC[iPlane] != 0.0) Nacelle_MinToC = min(Nacelle_MinToC, ToC[iPlane]);
+      Nacelle_MaxToC = max(Nacelle_MaxToC, ToC[iPlane]);
+      Nacelle_ObjFun_MinToC = sqrt((Nacelle_MinToC - 0.07)*(Nacelle_MinToC - 0.07));
+      Nacelle_MaxTwist = max(Nacelle_MaxTwist, fabs(Twist[iPlane]));
+    }
+    
+  }
+  
+  /*--- Free memory for the section cuts ---*/
+  
+  delete [] Xcoord_Airfoil;
+  delete [] Ycoord_Airfoil;
+  delete [] Zcoord_Airfoil;
+  delete [] Variable_Airfoil;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] LeadingEdge[iPlane];
+  delete [] LeadingEdge;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] TrailingEdge[iPlane];
+  delete [] TrailingEdge;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_P0[iPlane];
+  delete [] Plane_P0;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_Normal[iPlane];
+  delete [] Plane_Normal;
+  
+  delete [] Area;
+  delete [] MaxThickness;
+  delete [] Chord;
+  delete [] LERadius;
+  delete [] ToC;
+  delete [] Twist;
+  
 }
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
