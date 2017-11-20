@@ -616,6 +616,7 @@ private:
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
+  bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -1843,6 +1844,13 @@ public:
   void SetRefArea(su2double val_area);
   
   /*!
+   * \brief In case the <i>SemiSpan</i> is equal to 0 then, it is necessary to compute the max y distance,
+   *        with this function we set the value of the semi span.
+   * \param[in] val_semispan - Value of the semispan.
+   */
+  void SetSemiSpan(su2double val_semispan);
+  
+  /*!
    * \brief Set the value of the domain volume computed on the finest grid.
    * \note This volume do not include the volume of the body that is being simulated.
    * \param[in] val_volume - Value of the domain volume computed on the finest grid.
@@ -2546,6 +2554,12 @@ public:
    */
   unsigned long GetWrt_Con_Freq(void);
   
+  /*!
+   * \brief Set the frequency for writing the convergence file.
+   * \return It writes the convergence file with this frequency.
+   */
+  void SetWrt_Con_Freq(unsigned long val_freq);
+
   /*!
    * \brief Get the frequency for writing the convergence file in Dual Time.
    * \return It writes the convergence file with this frequency.
@@ -4922,6 +4936,12 @@ public:
    * \return Harmonic Balance Frequency pointer.
    */
   su2double* GetOmega_HB(void);
+	
+  /*!
+   * \brief Get if harmonic balance source term is to be preconditioned
+   * \return yes or no to harmonic balance preconditioning
+   */
+  bool GetHB_Precondition(void);
   
   /*!
    * \brief Get if we should update the motion origin.
