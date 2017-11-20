@@ -35,7 +35,7 @@
 
 COutput::COutput(CConfig *config) {
 
-	unsigned short iDim, iSpan, iMarker;
+  unsigned short iDim, iZone, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
   
@@ -108,7 +108,8 @@ COutput::COutput(CConfig *config) {
   /*--- Initialize residual ---*/
   
   RhoRes_New = EPS;
-  RhoRes_Old = EPS;
+  RhoRes_Old = new su2double[config->GetnZone()];
+  for (iZone = 0; iZone < config->GetnZone(); iZone++) RhoRes_Old[iZone] = EPS;
   
   wrote_Paraview_base = false;
 
@@ -5962,10 +5963,10 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   }
   
   if (RhoRes_New < EPS) RhoRes_New = EPS;
-  if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
+  if (RhoRes_Old[val_iZone] < EPS) RhoRes_Old[val_iZone] = RhoRes_New;
   
-  Div = RhoRes_Old/RhoRes_New;
-  Diff = RhoRes_New-RhoRes_Old;
+  Div = RhoRes_Old[val_iZone]/RhoRes_New;
+  Diff = RhoRes_New-RhoRes_Old[val_iZone];
   
   /*--- Compute MG factor ---*/
   
@@ -6008,13 +6009,13 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
-    RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
     break;
   case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    RhoRes_Old = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
     break;
   case HEAT_EQUATION:
-    RhoRes_Old = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
     break;
   }
   
