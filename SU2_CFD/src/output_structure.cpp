@@ -5949,10 +5949,12 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
   
+  bool heat = config[val_iZone]->GetHeat_Inc();
 
   switch( config[val_iZone]->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES : case RANS:
       RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+      if (heat) RhoRes_New = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
       break;
     case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
       RhoRes_New = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
@@ -6010,6 +6012,7 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
     RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+    if (heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
     break;
   case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
     RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
