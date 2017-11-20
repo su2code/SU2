@@ -7949,7 +7949,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
-  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure,
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure, Angle,
   Force[3], ForceInviscid[3], MomentInviscid[3] =
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
@@ -8028,20 +8028,13 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
       Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
       
-      if (config->GetGeo_Description() == FUSELAGE) {
-		      Plane_Normal[0] = 1.0;
-		      Plane_P0[0] = config->GetLocationStations(iSection);
-      }
-      
-      if (config->GetGeo_Description() == WING) {
-        Plane_Normal[1] = 1.0;
-        Plane_P0[1] = config->GetLocationStations(iSection);
-      }
-      
+      Plane_Normal[1] = 1.0;
+      Plane_P0[1] = config->GetLocationStations(iSection);
+
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
-      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
-                                       1E6, CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+                                       CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
                                        CPressure_Airfoil, true, config);
       
       if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
@@ -8053,18 +8046,11 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       
       Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
       
-      if (config->GetGeo_Description() == FUSELAGE) {
-		      if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
-        else Plane_P0_[0] = config->GetLocationStations(iSection) - 0.01;
-      }
-      
-      if (config->GetGeo_Description() == WING) {
-        if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
-        else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
-      }
-      
-      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6,
-                                       1E6, CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+      if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
+      else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+
+      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+                                       CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
                                        CPressure_Airfoil_, true, config);
       
       /*--- Output the pressure on each section (tecplot format) ---*/
@@ -8127,22 +8113,11 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           } else
             Cp_File.open("cp_sections.dat", ios::app);
           
+          if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
+            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           
-          if (config->GetGeo_Description() == FUSELAGE) {
-            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-            
-            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-          }
-          
-          if (config->GetGeo_Description() == WING) {
-            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-            
-            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-          }
+          if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
+            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           
           /*--- Coordinates and pressure value ---*/
           

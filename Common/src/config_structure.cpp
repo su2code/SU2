@@ -467,6 +467,7 @@ void CConfig::SetPointersNull(void) {
   default_inc_crit           = NULL;
   default_htp_axis           = NULL;
   default_body_force         = NULL;
+  default_nacelle_location   = NULL;
 
   Riemann_FlowDir       = NULL;
   Giles_FlowDir         = NULL;
@@ -555,6 +556,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit           = new su2double[3];
   default_htp_axis           = new su2double[2];
   default_body_force         = new su2double[3];
+  default_nacelle_location   = new su2double[6];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -1222,7 +1224,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
   * with area-averaged outlet primitive variables. This is used with the genereralized outflow
   * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_obj_coeff);
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF", 5, Obj_ChainRuleCoeff, default_obj_coeff);
 
   default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
@@ -1235,6 +1237,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("GEO_NUMBER_STATIONS", nWingStations, 25);
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
+  default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
+  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0; default_nacelle_location[5] = 0.0;
+  /* DESCRIPTION: Definition of the nacelle location (point and axis) */
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 6, NacelleLocation, default_nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -5956,6 +5962,7 @@ CConfig::~CConfig(void) {
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
   if (default_htp_axis      != NULL) delete [] default_htp_axis;
   if (default_body_force    != NULL) delete [] default_body_force;
+  if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
