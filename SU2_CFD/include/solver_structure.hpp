@@ -1949,6 +1949,12 @@ public:
    * \return Value of the heat load (integrated heat flux).
    */
   virtual su2double GetTotal_HeatFlux(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the average temperature.
+   */
+  virtual su2double GetTotal_AvgTemperature(void);
   
   /*!
    * \brief A virtual member.
@@ -10615,7 +10621,9 @@ public:
 class CHeatSolver : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
-  su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux, *Primitive, *Primitive_Flow_i, *Primitive_Flow_j;
+  su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
+            *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
+            *Primitive, *Primitive_Flow_i, *Primitive_Flow_j;
   su2double ***ConjugateVar, ***InterfaceVar;
 
   char cstr[200];
@@ -10787,6 +10795,8 @@ public:
   void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   su2double GetTotal_HeatFlux(void);
+
+  su2double GetTotal_AvgTemperature(void);
 
   /*!
    * \brief Update the solution using an implicit solver.

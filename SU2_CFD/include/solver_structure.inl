@@ -368,6 +368,8 @@ inline su2double CSolver::GetTotal_CQ() { return 0; }
 
 inline su2double CSolver::GetTotal_HeatFlux() { return 0; }
 
+inline su2double CSolver::GetTotal_AvgTemperature() { return 0; }
+
 inline su2double CSolver::GetTotal_MaxHeatFlux() { return 0; }
 
 inline su2double CSolver::Get_PressureDrag() { return 0; }
@@ -1815,6 +1817,8 @@ inline void CIncNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { Strain
 inline void CIncNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
 inline su2double CHeatSolver::GetTotal_HeatFlux() { return Total_HeatFlux; }
+
+inline su2double CHeatSolver::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
 
 inline su2double CHeatSolver::GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
 
