@@ -128,8 +128,6 @@ def flow_control_optimization( filename                           ,
     config.GRADIENT_METHOD = gradient
     
     its              = int ( config.OPT_ITERATIONS )                      # number of opt iterations
-    bound_upper      = float ( config.OPT_BOUND_UPPER )                   # variable bound to be scaled by the line search
-    bound_lower      = float ( config.OPT_BOUND_LOWER )                   # variable bound to be scaled by the line search
     relax_factor     = float ( config.OPT_RELAX_FACTOR )                  # line search scale
     gradient_factor  = float ( config.OPT_GRADIENT_FACTOR )               # objective function and gradient scale
     def_dv           = config.DEFINITION_DV                               # complete definition of the desing variable
