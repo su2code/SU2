@@ -772,7 +772,6 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
     if (!LinSysSol[i].isActive()) {
-      //TODO: Ask tim if this check is necessary. Usually every output shuld be registered
 #if CODI_PRIMAL_INDEX_TAPE
       oldValues[i] = AD::globalTape.registerExtFunctionOutput(LinSysSol[i]);
 #else
