@@ -63,7 +63,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Array initialization ---*/
@@ -333,7 +333,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -450,7 +450,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *conf
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -566,7 +566,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -682,7 +682,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   su2double **Gradient = new su2double* [nVar];
@@ -805,7 +805,7 @@ void CAdjIncEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfi
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -920,7 +920,7 @@ void CAdjIncEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -992,7 +992,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
@@ -1203,9 +1203,9 @@ void CAdjIncEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solv
     #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
     #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-        MPI_Finalize();
+        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Abort(MPI_COMM_WORLD, 1);
+        SU2_MPI::Finalize();
     #endif
   }
     
@@ -1495,7 +1495,7 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -2695,9 +2695,9 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1];
+  SU2_MPI::Status send_stat[1], recv_stat[1];
   SU2_MPI::Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
   su2double *Buffer_Send_Psi = new su2double[nVar];
@@ -2818,7 +2818,7 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
     }
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   delete[] Buffer_Send_Psi;
   delete[] Buffer_Receive_Psi;
@@ -2942,10 +2942,10 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
 #else
   
   int rank, jProcessor;
-  MPI_Status status;
-  //MPI_Status send_stat[1], recv_stat[1];
+  SU2_MPI::Status status;
+  //SU2_MPI::Status send_stat[1], recv_stat[1];
   //SU2_MPI::Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
   su2double *Buffer_Send_Psi = new su2double[nVar];
@@ -3108,7 +3108,7 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
     }
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   delete[] Buffer_Send_Psi;
   delete[] Buffer_Receive_Psi;
@@ -3577,7 +3577,7 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Skip coordinates ---*/
@@ -3651,9 +3651,9 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+    SU2_MPI::Finalize();
 #endif
   }
 
@@ -3706,7 +3706,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Norm heat flux objective test ---*/
@@ -3917,7 +3917,7 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Retrieve information about the spatial and temporal integration for the

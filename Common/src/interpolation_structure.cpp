@@ -114,8 +114,8 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
   for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
@@ -209,8 +209,8 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
 #ifdef HAVE_MPI
   int rank;
   int nProcessor = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
 
@@ -312,8 +312,8 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 #ifdef HAVE_MPI
   int nProcessor, iRank;
   unsigned long iTmp2, tmp_index, tmp_index_2;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 
 #else
 
@@ -533,8 +533,8 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget){
   int *Buffer_Recv_mark = NULL;
   int iRank,  rank, nProcessor;
   
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[nProcessor];
@@ -620,7 +620,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = SINGLE_NODE;
 #endif
@@ -789,8 +789,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   Normal = new su2double[nDim];
 
 #ifdef HAVE_MPI  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = SINGLE_NODE;
 #endif
@@ -1322,8 +1322,8 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = SINGLE_NODE;
 #endif
@@ -1605,8 +1605,8 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
 
 #ifdef HAVE_MPI
   int rank, nProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
   nDim = donor_geometry->GetnDim();

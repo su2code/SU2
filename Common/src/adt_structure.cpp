@@ -255,8 +255,8 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   int rank, iProcessor, nProcessor;
   unsigned long  iVertex, nBuffer;
   unsigned short iDim;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long nLocalVertex = nPoints, nGlobalVertex = 0, MaxLocalVertex = 0;
   

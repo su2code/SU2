@@ -605,7 +605,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   int nProcessor, iProcessor;
   
   su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   Xcoord_Airfoil.clear();
@@ -734,7 +734,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   /*--- Copy the coordinates of all the points in the plane to the master node ---*/
   
   nLocalVertex = 0, MaxLocalVertex = 0;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   Buffer_Send_nVertex = new unsigned long [1];
   Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -1243,7 +1243,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 #ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Allocate surface curvature ---*/
@@ -1534,7 +1534,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   /*--- Variables and buffers needed for MPI ---*/
   
 #ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = 1;
 #endif
@@ -1708,7 +1708,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   string val_mesh_filename  = config->GetMesh_FileName();
@@ -1731,9 +1731,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
 #endif
       break;
   }
@@ -1906,18 +1906,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- MPI initialization ---*/
   
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
   
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
-  MPI_Status status, status2;
+  SU2_MPI::Status status, status2;
   unsigned long source;
   int recv_count=0;
   
   int offset = 17;
-  MPI_Status *send_stat = new MPI_Status[offset+size];
-  MPI_Status *recv_stat = new MPI_Status[offset+size];
+  SU2_MPI::Status *send_stat = new SU2_MPI::Status[offset+size];
+  SU2_MPI::Status *recv_stat = new SU2_MPI::Status[offset+size];
   
   SU2_MPI::Request *send_req = new SU2_MPI::Request[offset+size];
   SU2_MPI::Request *recv_req = new SU2_MPI::Request[offset+size];
@@ -2165,7 +2165,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] local_colour_temp;
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- This loop gets the array sizes of points, elements, etc. for each
@@ -2525,7 +2525,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     
 #ifdef HAVE_MPI
     if ((unsigned long)rank != iDomain) SU2_MPI::Waitall(13, send_req, send_stat);
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     
   }
@@ -2866,7 +2866,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- The next section begins the recv of all data for the interior
@@ -3117,7 +3117,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   /*--- Recv all of the element data. First decide which elements we need to own on each proc ---*/
   
@@ -3289,7 +3289,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- iElem now contains the number of elements that this processor needs in
@@ -3614,7 +3614,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     if ((unsigned long)rank != iDomain) SU2_MPI::Waitall(16, send_req, send_stat);
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- Free all of the memory used for communicating points and elements ---*/
@@ -4633,7 +4633,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- The MASTER should wait for the sends above to complete ---*/
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- Set the value of Marker_All_SendRecv and Marker_All_TagBound in the config structure ---*/
@@ -4822,8 +4822,8 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   
 #ifdef HAVE_MPI
   /*--- MPI initialization ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   if (rank == MASTER_NODE && size > SINGLE_NODE)
@@ -4987,7 +4987,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
 #ifdef HAVE_MPI
   /*--- MPI initialization ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   nDomain = size+1;
@@ -5315,8 +5315,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Initialize counters for local/global points & elements ---*/
   
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   unsigned long LocalIndex, j;
 #endif
   
@@ -5353,9 +5353,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
 #endif
     }
     
@@ -5847,9 +5847,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+    SU2_MPI::Finalize();
 #endif
   }
   
@@ -5995,9 +5995,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
+        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Abort(MPI_COMM_WORLD,1);
+        SU2_MPI::Finalize();
 #endif
       }
       
@@ -7092,9 +7092,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
-                    MPI_Barrier(MPI_COMM_WORLD);
-                    MPI_Abort(MPI_COMM_WORLD,1);
-                    MPI_Finalize();
+                    SU2_MPI::Barrier(MPI_COMM_WORLD);
+                    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+                    SU2_MPI::Finalize();
 #endif
                   }
                   
@@ -7253,9 +7253,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
-              MPI_Barrier(MPI_COMM_WORLD);
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
+              SU2_MPI::Barrier(MPI_COMM_WORLD);
+              SU2_MPI::Abort(MPI_COMM_WORLD,1);
+              SU2_MPI::Finalize();
 #endif
             }
           }
@@ -7372,13 +7372,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
   SU2_MPI::Request *send_req, *recv_req;
-  MPI_Status  status;
+  SU2_MPI::Status  status;
   int ind;
 #endif
   
@@ -7433,9 +7433,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+    SU2_MPI::Finalize();
 #endif
   }
   
@@ -7469,9 +7469,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+    SU2_MPI::Finalize();
 #endif
   }
   
@@ -7503,9 +7503,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
 #endif
     }
     
@@ -7581,9 +7581,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
+        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Abort(MPI_COMM_WORLD,1);
+        SU2_MPI::Finalize();
 #endif
       }
       
@@ -7674,9 +7674,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
           exit(EXIT_FAILURE);
 #else
-          MPI_Barrier(MPI_COMM_WORLD);
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
+          SU2_MPI::Barrier(MPI_COMM_WORLD);
+          SU2_MPI::Abort(MPI_COMM_WORLD,1);
+          SU2_MPI::Finalize();
 #endif
         }
         if ( cg_coord_read(fn, i, j, coordname, datatype, &range_min,
@@ -7893,9 +7893,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
-              MPI_Barrier(MPI_COMM_WORLD);
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
+              SU2_MPI::Barrier(MPI_COMM_WORLD);
+              SU2_MPI::Abort(MPI_COMM_WORLD,1);
+              SU2_MPI::Finalize();
 #endif
               break;
             default:
@@ -7909,8 +7909,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
+              SU2_MPI::Abort(MPI_COMM_WORLD,1);
+              SU2_MPI::Finalize();
 #endif
               break;
           }
@@ -8055,9 +8055,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
 #else
-                MPI_Barrier(MPI_COMM_WORLD);
-                MPI_Abort(MPI_COMM_WORLD,1);
-                MPI_Finalize();
+                SU2_MPI::Barrier(MPI_COMM_WORLD);
+                SU2_MPI::Abort(MPI_COMM_WORLD,1);
+                SU2_MPI::Finalize();
 #endif
                 break;
               case MIXED:
@@ -8073,8 +8073,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
 #else
-                MPI_Abort(MPI_COMM_WORLD,1);
-                MPI_Finalize();
+                SU2_MPI::Abort(MPI_COMM_WORLD,1);
+                SU2_MPI::Finalize();
 #endif
                 break;
             }
@@ -8640,9 +8640,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
-              MPI_Barrier(MPI_COMM_WORLD);
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
+              SU2_MPI::Barrier(MPI_COMM_WORLD);
+              SU2_MPI::Abort(MPI_COMM_WORLD,1);
+              SU2_MPI::Finalize();
 #endif
               break;
           }
@@ -8828,9 +8828,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
-                    MPI_Barrier(MPI_COMM_WORLD);
-                    MPI_Abort(MPI_COMM_WORLD,1);
-                    MPI_Finalize();
+                    SU2_MPI::Barrier(MPI_COMM_WORLD);
+                    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+                    SU2_MPI::Finalize();
 #endif
                     break;
                 }
@@ -8867,9 +8867,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
-                    MPI_Barrier(MPI_COMM_WORLD);
-                    MPI_Abort(MPI_COMM_WORLD,1);
-                    MPI_Finalize();
+                    SU2_MPI::Barrier(MPI_COMM_WORLD);
+                    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+                    SU2_MPI::Finalize();
 #endif
                   }
                   bound[iMarker][ielem] = new CLine(vnodes_cgns[0], vnodes_cgns[1],2);
@@ -9010,7 +9010,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Loop over all the elements ---*/
@@ -9294,7 +9294,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -9528,7 +9528,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   PositiveXArea = 0.0;
@@ -10047,8 +10047,8 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 #ifdef HAVE_MPI
   unsigned short iSize;
   int size, nSpan_max;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
   su2double MyMin, MyMax, *MyTotValueSpan =NULL,*MyValueSpan =NULL;
 #endif
@@ -10371,8 +10371,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 #ifdef HAVE_MPI
   unsigned short iSize, kSize = 0, jSize;
   int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   su2double MyMin,MyIntMin, MyMax;
   su2double *x_gb = NULL, *y_gb = NULL, *z_gb = NULL, *angCoord_gb = NULL, *deltaAngCoord_gb = NULL;
   bool *checkAssign_gb =NULL;
@@ -11252,8 +11252,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 #ifdef HAVE_MPI
   int rank, size;
   su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   /*--- Intialization of the vector for the interested boundary ---*/
@@ -11525,8 +11525,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
     su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
     int *TotMarkerTP;
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 
     n1          = 6;
     n2          = 3;
@@ -11854,8 +11854,8 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     rank = MASTER_NODE;
     nProcessor = SINGLE_NODE;
 #else
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
     
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
@@ -12053,8 +12053,8 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     rank = MASTER_NODE;
     nProcessor = SINGLE_NODE;
 #else
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
     
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
@@ -12259,8 +12259,8 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       rank = MASTER_NODE;
       nProcessor = SINGLE_NODE;
 #else
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+      SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+      SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
       
       unsigned long *Buffer_Send_nVertex = new unsigned long [1];
@@ -12502,8 +12502,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   unsigned long nLocalVertex_Zone = 0, nGlobalVertex_Zone = 0, MaxLocalVertex_Zone = 0;
   int rank, nProcessor;
   
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -12629,7 +12629,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 #ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Update values of faces of the edge ---*/
@@ -13371,8 +13371,8 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   idx_t ne = 0, nn, *elmnts = NULL, *epart = NULL, *npart = NULL, nparts, edgecut, *eptr;
   int rank, size;
   
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   
   if (size != SINGLE_ZONE)
     cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
@@ -13549,8 +13549,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   unsigned long iPoint;
   int rank, size;
   MPI_Comm comm = MPI_COMM_WORLD;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   
   /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
   
@@ -13680,7 +13680,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Center of rotation & angular velocity vector from config ---*/
@@ -13765,7 +13765,7 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Get the translational velocity vector from config ---*/
@@ -13845,7 +13845,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -13978,7 +13978,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -14109,7 +14109,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -14860,8 +14860,8 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   nPointLocal = nPoint;
@@ -15016,7 +15016,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   }
     int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
  
   if (rank == MASTER_NODE)
@@ -15139,14 +15139,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    MPI_Status status;
+    SU2_MPI::Status status;
     MPI_Datatype etype, filetype;
     MPI_Offset disp;
     unsigned long iPoint_Global, iChar;
     string field_buf;
 
     int rank = MASTER_NODE, ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
@@ -15157,9 +15157,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     if (ierr) {
       if (rank == MASTER_NODE)
         cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
     }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
@@ -15183,9 +15183,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         cout << " Note that backward compatibility for ASCII restart files is" << endl;
         cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
       }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
     }
 
     /*--- Store the number of fields for simplicity. ---*/
@@ -15386,7 +15386,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     MPI_File fhw;
     int ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
@@ -15397,9 +15397,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     if (ierr) {
       if (rank == MASTER_NODE)
         cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
     }
 
     /*--- Have the master attempt to read the magic number. ---*/
@@ -15421,9 +15421,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         cout << " Note that backward compatibility for ASCII restart files is" << endl;
         cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
       }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
     }
     
     MPI_File_close(&fhw);
@@ -15436,9 +15436,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Finalize();
 #endif
   }
   
@@ -15493,7 +15493,7 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Check for the presence of any periodic BCs ---*/
@@ -16098,7 +16098,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   
@@ -16418,7 +16418,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
@@ -16722,8 +16722,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   rank = MASTER_NODE;
 #else
   int send_to, receive_from;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Status status;
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Status status;
 #endif
   
   nDim = fine_grid->GetnDim(); // Write the number of dimensions of the coarse grid.
@@ -17692,7 +17692,7 @@ void CMultiGridGeometry::MatchNearField(CConfig *config) {
 #ifndef HAVE_MPI
   iProcessor = MASTER_NODE;
 #else
-  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -17717,7 +17717,7 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
 #ifndef HAVE_MPI
   iProcessor = MASTER_NODE;
 #else
-  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -17743,7 +17743,7 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
 #ifndef HAVE_MPI
   iProcessor = MASTER_NODE;
 #else
-  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
