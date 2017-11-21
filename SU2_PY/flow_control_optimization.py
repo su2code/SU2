@@ -137,22 +137,32 @@ def flow_control_optimization( filename                           ,
     accu             = float ( config.OPT_ACCURACY ) * gradient_factor    # optimizer accuracy
     x0          = [0.0]*n_dv # initial design
 
-    # Bounds for shape design variables
-    xb_low           = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
-    xb_up            = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration factor
+    # Bounds for design variables
+    xb_low = [-1.0E10]*n_dv
+    xb_up  = [1.0E10]*n_dv
 
-    # Bounds for flow control design variables
-    if 'TRANSP_DV' in def_dv['KIND']:
-        afc_upper = float( config.OPT_BOUND_UPPER_AFC )
-        afc_lower = float( config.OPT_BOUND_LOWER_AFC )
-        n_kind = len(def_dv['KIND'])
-        i_off = 0
-        for i_kind in range(n_kind):
-        	if def_dv['KIND'][i_kind] == 'TRANSP_DV':
-        		for i in range(def_dv['SIZE'][i_kind]):
-        			xb_low[i_off+i] = afc_lower*def_dv['SCALE'][i_kind]
-        			xb_up[i_off+i]  = afc_upper*def_dv['SCALE'][i_kind]
-        	i_off = i_off + def_dv['SIZE'][i_kind]
+    shape_upper = [float(x) for x in config.OPT_BOUND_UPPER.split(",")]
+    shape_lower = [float(x) for x in config.OPT_BOUND_LOWER.split(",")]
+
+    afc_upper = [float(x) for x in config.OPT_BOUND_UPPER_AFC.split(",")]
+    afc_lower = [float(x) for x in config.OPT_BOUND_LOWER_AFC.split(",")]
+
+    n_kind = len(def_dv['KIND'])
+    i_off = 0
+    i_afc = 0
+    i_ffd = 0
+    for i_kind in range(n_kind):
+        if def_dv['KIND'][i_kind] == 'TRANSP_DV':
+        	for i in range(def_dv['SIZE'][i_kind]):
+        		xb_low[i_off+i] = afc_lower[i_afc]*def_dv['SCALE'][i_kind]
+        		xb_up[i_off+i]  = afc_upper[i_afc]*def_dv['SCALE'][i_kind]
+            i_afc = i_afc + 1
+        else:
+            for i in range(def_dv['SIZE'][i_kind]):
+                xb_low[i_off+i] = shape_lower[i_ffd]*def_dv['SCALE'][i_kind]
+                xb_up[i_off+i]  = shape_upper[i_ffd]*def_dv['SCALE'][i_kind]
+            i_ffd = i_ffd + 1
+        i_off = i_off + def_dv['SIZE'][i_kind]
 
     xb = zip(xb_low,xb_up) # design bounds
     
