@@ -151,9 +151,9 @@ def flow_control_optimization( filename                           ,
     i_ffd = 0
     for i_kind in range(n_kind):
         if def_dv['KIND'][i_kind] == 'TRANSP_DV':
-        	for i in range(def_dv['SIZE'][i_kind]):
-        		xb_low[i_off+i] = afc_lower[i_afc]*def_dv['SCALE'][i_kind]
-        		xb_up[i_off+i]  = afc_upper[i_afc]*def_dv['SCALE'][i_kind]
+            for i in range(def_dv['SIZE'][i_kind]):
+                xb_low[i_off+i] = afc_lower[i_afc]*def_dv['SCALE'][i_kind]
+                xb_up[i_off+i]  = afc_upper[i_afc]*def_dv['SCALE'][i_kind]
             i_afc = i_afc + 1
         else:
             for i in range(def_dv['SIZE'][i_kind]):
