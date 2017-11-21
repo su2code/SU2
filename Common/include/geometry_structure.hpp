@@ -656,6 +656,12 @@ public:
 	 */
 	virtual void SetBoundSensitivity(CConfig *config);
 
+    /*! 
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetBoundSensitivityTranspiration(CConfig *config);
+
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1769,6 +1775,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundSensitivity(CConfig *config);
+
+  /*!
+   * \brief Read the transpiration sensitivity from an input file.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundSensitivityTranspiration(CConfig *config);
   
   /*!
    * \brief Compute the maximum thickness of an airfoil.

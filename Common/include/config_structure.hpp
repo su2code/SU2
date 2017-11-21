@@ -352,7 +352,19 @@ private:
   su2double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
-  su2double *TransEps;                     /*!< \brief Specified wall transpirations. */
+  su2double *TransEps;                 /*!< \brief Specified wall transpirations. */
+  su2double *Transx0,                  /*!< \brief Specified wall transpiration parameter x0. */
+            *Transx1,                  /*!< \brief Specified wall transpiration parameter x1. */
+            *Transx2,                  /*!< \brief Specified wall transpiration parameter x2. */
+            *Transx3,                  /*!< \brief Specified wall transpiration parameter x3. */
+            *Transy0,                  /*!< \brief Specified wall transpiration parameter y0. */
+            *Transy1,                  /*!< \brief Specified wall transpiration parameter y1. */
+            *Transy2,                  /*!< \brief Specified wall transpiration parameter y2. */
+            *Transy3,                  /*!< \brief Specified wall transpiration parameter y3. */
+            *TransEps0,                /*!< \brief Specified wall transpiration parameter eps0. */
+            *TransEps1,                /*!< \brief Specified wall transpiration parameter eps1. */
+            *TransEps2,                /*!< \brief Specified wall transpiration parameter eps2. */
+            *TransEps3;                /*!< \brief Specified wall transpiration parameter eps3. */
   string Transpiration_FileName;            /*!< \brief File specifying all transpiration values for each node */
   unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
   su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
@@ -397,6 +409,7 @@ private:
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
   string *FFDTag;				/*!< \brief Parameters of the design variable. */
+  string *TranspTag;    /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;				/*!< \brief Tag of the FFD box. */
   unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
   unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
@@ -1060,11 +1073,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
+  void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag, string* & TranspTag,
                         unsigned short* & design_variable) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, TranspTag, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -1095,6 +1108,16 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addTranspParamOption(const string name, unsigned short & nMarker_Transpiration, string * & Marker_Transpiration,
+                      su2double* & x0, su2double* & x1, su2double* & x2, su2double* & x3, 
+                      su2double* & y0, su2double* & y1, su2double* & y2, su2double* & y3, 
+                      su2double* & eps0, su2double* & eps1, su2double* & eps2, su2double* & eps3) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionTransp(name, nMarker_Transpiration, Marker_Transpiration, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -5061,6 +5084,13 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv);
+
+  /*!
+   * \brief Obtain the marker of a transpiration DV.
+   * \param[in] val_dv - Number of the design variable that we want to read.
+   * \return Transpiration boundary identification.
+   */
+  string GetTranspTag(unsigned short val_dv);
   
   /*!
    * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.
@@ -5744,11 +5774,18 @@ public:
 
 
   /*!
-   * \brief Get the wall transpiration.
+   * \brief Get the wall transpiration parameters.
    * \param[in] val_index - Index corresponding to the transpiration boundary.
-   * \return The transpiration
    */
-  su2double GetTranspiration(string val_index);
+  void GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &x2, su2double &x3,
+                              su2double &y0, su2double &y1, su2double &y2, su2double &y3, 
+                              su2double &eps0, su2double &eps1, su2double &eps2, su2double &eps3);
+
+  /*!
+   * \brief Set the transpiration params using DV values.
+   * \param[in] val_index - Index corresponding to the transpiration boundary.
+   */
+  void SetTranspirationParams_DV();
 
   /*!
    * \brief Get the name of file containing all transpirations

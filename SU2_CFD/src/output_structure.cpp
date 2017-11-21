@@ -3831,10 +3831,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   unsigned long iPoint = 0, jPoint = 0;
 
   unsigned short Kind_Solver  = config->GetKind_Solver();
-  bool transp = ((config->GetnMarker_Transpiration() > 0) && 
-      (( Kind_Solver == DISC_ADJ_EULER         ) ||
-       ( Kind_Solver == DISC_ADJ_NAVIER_STOKES ) ||
-       ( Kind_Solver == DISC_ADJ_RANS          )));
   
   nVar_Total = config->fields.size() - 1;
   //if(transp) nVar_Total += 1;
@@ -10423,7 +10419,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
 void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone) {
 
-  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar, nTransp;
+  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
   unsigned long iVertex, iPoint, nPoint, nVertex;
   su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
 
@@ -10438,8 +10434,6 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     nDim   = geometry[iZone]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
     nVar = nDim + 1;
-    if(config[ZONE_0]->GetnMarker_Transpiration() > 0) nTransp = 1;
-    else nTransp = 0;
 
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 

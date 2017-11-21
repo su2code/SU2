@@ -1136,8 +1136,10 @@ inline void CVariable::SetAdjointSolution(su2double *adj_sol) {
         SU2_TYPE::SetDerivative(Solution[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
-inline void CVariable::RegisterTranspiration(){
+inline void CVariable::RegisterTranspiration(su2double Vel_Ref){
+	TranspVel *= Vel_Ref;
 	AD::RegisterInput(TranspVel);
+	TranspVel /= Vel_Ref;
 }
 
 inline void CVariable::GetAdjointSolution(su2double *adj_sol) {

@@ -1271,7 +1271,8 @@ enum ENUM_PARAM {
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
-  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_ANGLE_OF_ATTACK = 102, /*!< \brief Angle of attack for FFD problem. */
+  TRANSP_DV = 201        /*!< \brief Transpiration boundary problem. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1300,7 +1301,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
 ("NO_DEFORMATION", NO_DEFORMATION)
-("CST", CST);
+("CST", CST)
+("TRANSP_DV", TRANSP_DV);
 
 
 /*!
@@ -2183,10 +2185,11 @@ class COptionDVParam : public COptionBase {
   unsigned short & nDV;
   su2double ** & paramDV;
   string * & FFDTag;
+  string * & TranspTag;
   unsigned short* & design_variable;
 
 public:
-  COptionDVParam(string option_field_name, unsigned short & nDV_field, su2double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, su2double** & paramDV_field, string* & FFDTag_field, string* & TranspTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), TranspTag(TranspTag_field), design_variable(design_variable_field) {
     this->name = option_field_name;
   }
 
@@ -2240,6 +2243,7 @@ public:
     }
 
     this->FFDTag = new string[this->nDV];
+    this->TranspTag = new string[this->nDV];
 
     unsigned short nParamDV = 0;
     stringstream ss;
@@ -2272,6 +2276,7 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
+        case TRANSP_DV:            nParamDV = 9; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2303,6 +2308,11 @@ public:
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
+        else if ((iParamDV == 0) &&
+                 (this->design_variable[iDV] == TRANSP_DV)){
+              ss >> this->TranspTag[iDV];
+              this->paramDV[iDV][iParamDV] = 0;
+        }
         else
           ss >> this->paramDV[iDV][iParamDV];
 
@@ -2327,6 +2337,7 @@ public:
     this->nDV = 0;
     this->paramDV = NULL;
     this->FFDTag = NULL;
+    this->TranspTag = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
@@ -2368,9 +2379,9 @@ public:
     this->valueDV = new su2double*[this->nDV];
     this->nDV_Value = new unsigned short[this->nDV];
 
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
-      this->valueDV[iDV] = new su2double[3];
-    }
+    //for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      //this->valueDV[iDV] = new su2double[3];
+    //}
 
     unsigned short nValueDV = 0;
     unsigned short totalnValueDV = 0;
@@ -2395,11 +2406,15 @@ public:
             nValueDV = 1;
           }
           break;
+        case TRANSP_DV:
+          nValueDV = 4;
+          break;
         default :
           nValueDV = 1;
       }
 
       this->nDV_Value[iDV] = nValueDV;
+      this->valueDV[iDV] = new su2double[nValueDV];
 
       totalnValueDV += nValueDV;
 
@@ -2660,6 +2675,170 @@ public:
   }
 
   void SetDefault() {
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionTransp : public COptionBase {
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  su2double* & x0;
+  su2double* & x1;
+  su2double* & x2;
+  su2double* & x3;
+  su2double* & y0;
+  su2double* & y1;
+  su2double* & y2;
+  su2double* & y3;
+  su2double* & eps0;
+  su2double* & eps1;
+  su2double* & eps2;
+  su2double* & eps3;
+
+public:
+  COptionTransp(string option_field_name, unsigned short & nMarker_Transpiration, string* & Marker_Transpiration, 
+                su2double* & Transx0, su2double* & Transx1, su2double* & Transx2, su2double* & Transx3,
+                su2double* & Transy0, su2double* & Transy1, su2double* & Transy2, su2double* & Transy3, 
+                su2double* & TransEps0, su2double* & TransEps1, su2double* & TransEps2, su2double* & TransEps3) : 
+                  size(nMarker_Transpiration), marker(Marker_Transpiration), 
+                  x0(Transx0), x1(Transx1), x2(Transx2), x3(Transx3), 
+                  y0(Transy0), y1(Transy1), y2(Transy2), y3(Transy3), 
+                  eps0(TransEps0), eps1(TransEps1), eps2(TransEps2), eps3(TransEps3) {
+    this->name = option_field_name;
+  }
+
+  ~COptionTransp() {};
+  string SetValue(vector<string> option_value) {
+
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = NULL;
+      this->x0 = NULL;
+      this->x1 = NULL;
+      this->x2 = NULL;
+      this->x3 = NULL;
+      this->y0 = NULL;
+      this->y1 = NULL;
+      this->y2 = NULL;
+      this->y3 = NULL;
+      this->eps0 = NULL;
+      this->eps1 = NULL;
+      this->eps2 = NULL;
+      this->eps3 = NULL;
+      return "";
+    }
+
+    if (totalVals % 13 != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 13");
+      this->size = 0;
+      this->marker = NULL;
+      this->x0 = NULL;
+      this->x1 = NULL;
+      this->x2 = NULL;
+      this->x3 = NULL;
+      this->y0 = NULL;
+      this->y1 = NULL;
+      this->y2 = NULL;
+      this->y3 = NULL;
+      this->eps0 = NULL;
+      this->eps1 = NULL;
+      this->eps2 = NULL;
+      this->eps3 = NULL;
+      return newstring;
+    }
+
+    unsigned short nVals = totalVals / 13;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->x0 = new su2double[nVals];
+    this->x1 = new su2double[nVals];
+    this->x2 = new su2double[nVals];
+    this->x3 = new su2double[nVals];
+    this->y0 = new su2double[nVals];
+    this->y1 = new su2double[nVals];
+    this->y2 = new su2double[nVals];
+    this->y3 = new su2double[nVals];
+    this->eps0 = new su2double[nVals];
+    this->eps1 = new su2double[nVals];
+    this->eps2 = new su2double[nVals];
+    this->eps3 = new su2double[nVals];
+
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[13*i]);
+
+      istringstream ss_1st(option_value[13*i + 1]);
+      if (!(ss_1st >> this->x0[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_2nd(option_value[13*i + 2]);
+      if (!(ss_2nd >> this->x1[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_3rd(option_value[13*i + 3]);
+      if (!(ss_3rd >> this->x2[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_4th(option_value[13*i + 4]);
+      if (!(ss_4th >> this->x3[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+
+      istringstream ss_5th(option_value[13*i + 5]);
+      if (!(ss_5th >> this->y0[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_6th(option_value[13*i + 6]);
+      if (!(ss_6th >> this->y1[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_7th(option_value[13*i + 7]);
+      if (!(ss_7th >> this->y2[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_8th(option_value[13*i + 8]);
+      if (!(ss_8th >> this->y3[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+
+      istringstream ss_9th(option_value[13*i + 9]);
+      if (!(ss_9th >> this->eps0[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_10th(option_value[13*i + 10]);
+      if (!(ss_10th >> this->eps1[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_11th(option_value[13*i + 11]);
+      if (!(ss_11th >> this->eps2[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+      istringstream ss_12th(option_value[13*i + 12]);
+      if (!(ss_12th >> this->eps3[i])) {
+        return badValue(option_value, "transpiration", this->name);
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->marker = NULL;
+    this->x0 = NULL;
+    this->x1 = NULL;
+    this->x2 = NULL;
+    this->x3 = NULL;
+    this->y0 = NULL;
+    this->y1 = NULL;
+    this->y2 = NULL;
+    this->y3 = NULL;
+    this->eps0 = NULL;
+    this->eps1 = NULL;
+    this->eps2 = NULL;
+    this->eps3 = NULL;
     this->size = 0; // There is no default value for list
   }
 };

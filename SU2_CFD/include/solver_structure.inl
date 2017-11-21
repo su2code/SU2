@@ -820,6 +820,14 @@ inline unsigned short CSolver::GetnSecondaryVar(void) { return nSecondaryVar; }
 
 inline unsigned short CSolver::GetnSecondaryVarGrad(void) { return nSecondaryVarGrad; }
 
+inline void CSolver::SetnTranspNode(unsigned long val_var){ nTranspNode = val_var; }
+  
+inline unsigned long CSolver::GetnTranspNode(void){ return nTranspNode; }
+
+inline void CSolver::SetnTranspNode_Global(unsigned long val_var){ nTranspNode_Global = val_var; }
+  
+inline unsigned long CSolver::GetnTranspNode_Global(void){ return nTranspNode_Global; }
+
 inline su2double CSolver::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
 inline su2double CSolver::GetMin_Delta_Time(void) { return Min_Delta_Time; }
@@ -872,6 +880,8 @@ inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
 inline void CSolver::SetTranspiration(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config){}
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 

@@ -366,7 +366,11 @@ void CConfig::SetPointersNull(void) {
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
   FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
-  Periodic_Translate        = NULL;     TransEps                    = NULL;
+  Periodic_Translate        = NULL;     TransEps                    = NULL;     Transx0               = NULL;
+  Transx1                   = NULL;     Transx2                     = NULL;     Transx3               = NULL;
+  Transy0                   = NULL;     Transy1                     = NULL;     Transy2               = NULL;
+  Transy3                   = NULL;     TransEps0                   = NULL;     TransEps1             = NULL;
+  TransEps2                 = NULL;     TransEps3                   = NULL;
 
   Load_Dir            = NULL;    Load_Dir_Value      = NULL;    Load_Dir_Multiplier = NULL;
   Load_Sine_Dir       = NULL;    Load_Sine_Amplitude = NULL;    Load_Sine_Frequency = NULL;
@@ -473,6 +477,7 @@ void CConfig::SetPointersNull(void) {
   CoordFFDBox           = NULL;
   DegreeFFDBox          = NULL;
   FFDTag                = NULL;
+  TranspTag             = NULL;
   nDV_Value             = NULL;
   TagFFDBox             = NULL;
  
@@ -797,8 +802,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Traanspiration boundary marker(s) \ingroup Config*/
-  addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
+  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Transpiration boundary marker(s) \ingroup Config*/
+  //addStringDoubleListOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, TransEps);
+  /*!\brief MARKER_TRANSPIRATION \n DESCRIPTION: Parameterized transpiration boundary marker(s) \ingroup Config*/
+  addTranspParamOption("MARKER_TRANSPIRATION", nMarker_Transpiration, Marker_Transpiration, Transx0, Transx1, Transx2, Transx3,
+                                               Transy0, Transy1, Transy2, Transy3, 
+                                               TransEps0, TransEps1, TransEps2, TransEps3);
   /* DESCRIPTION:  transpiration input file */
   addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
@@ -1554,7 +1563,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
-	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
+	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, TranspTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
@@ -1865,6 +1874,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Lower bound for the optimizer */
   addPythonOption("OPT_BOUND_LOWER");
+
+  /* DESCRIPTION: Upper bound for the optimizer (active flow control) */
+  addPythonOption("OPT_BOUND_UPPER_AFC");
+  
+  /* DESCRIPTION: Lower bound for the optimizer (active flow control) */
+  addPythonOption("OPT_BOUND_LOWER_AFC");
 
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
@@ -4290,6 +4305,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) -> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
+          case TRANSP_DV:             cout << "Transpiration <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -4322,12 +4338,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
+        if (Design_Variable[iDV] == TRANSP_DV) nParamDV = 8;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
-        if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
+        if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 9;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -4349,6 +4366,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
                (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];
+          else if((iParamDV == 0) &&
+                  (Design_Variable[iDV] == TRANSP_DV)) cout << TranspTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
@@ -5896,6 +5915,18 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
   if (TransEps != NULL)         delete[] TransEps;
+  if (Transx0 != NULL)         delete[] Transx0;
+  if (Transx1 != NULL)         delete[] Transx1;
+  if (Transx2 != NULL)         delete[] Transx2;
+  if (Transx3 != NULL)         delete[] Transx3;
+  if (Transy0 != NULL)         delete[] Transy0;
+  if (Transy1 != NULL)         delete[] Transy1;
+  if (Transy2 != NULL)         delete[] Transy2;
+  if (Transy3 != NULL)         delete[] Transy3;
+  if (TransEps0 != NULL)       delete[] TransEps0;
+  if (TransEps1 != NULL)       delete[] TransEps1;
+  if (TransEps2 != NULL)       delete[] TransEps2;
+  if (TransEps3 != NULL)       delete[] TransEps3;
 
   /*--- related to periodic boundary conditions ---*/
   
@@ -5977,6 +6008,7 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
 
   if (FFDTag != NULL) delete [] FFDTag;
+  if (TranspTag != NULL) delete [] TranspTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
   if (TagFFDBox != NULL) delete [] TagFFDBox;
   
@@ -6786,7 +6818,7 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-su2double CConfig::GetTranspiration(string val_marker) {
+/*su2double CConfig::GetTranspiration(string val_marker) {
   unsigned short iMarker_Transpiration = 0;
 
   if (nMarker_Transpiration > 0) {
@@ -6795,6 +6827,59 @@ su2double CConfig::GetTranspiration(string val_marker) {
   }
 
   return TransEps[iMarker_Transpiration];
+}*/
+
+void CConfig::GetTranspirationParams(string val_marker, su2double &x0, su2double &x1, su2double &x2, su2double &x3,
+                                     su2double &y0, su2double &y1, su2double &y2, su2double &y3, 
+                                     su2double &eps0, su2double &eps1, su2double &eps2, su2double &eps3) {
+  unsigned short iMarker_Transpiration = 0;
+
+  if (nMarker_Transpiration > 0) {
+  for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++)
+    if (Marker_Transpiration[iMarker_Transpiration] == val_marker) break;
+  }
+
+  x0 = Transx0[iMarker_Transpiration];
+  x1 = Transx1[iMarker_Transpiration];
+  x2 = Transx2[iMarker_Transpiration];
+  x3 = Transx3[iMarker_Transpiration];
+  y0 = Transy0[iMarker_Transpiration];
+  y1 = Transy1[iMarker_Transpiration];
+  y2 = Transy2[iMarker_Transpiration];
+  y3 = Transy3[iMarker_Transpiration];
+  eps0 = TransEps0[iMarker_Transpiration];
+  eps1 = TransEps1[iMarker_Transpiration];
+  eps2 = TransEps2[iMarker_Transpiration];
+  eps3 = TransEps3[iMarker_Transpiration];
+  
+}
+
+void CConfig::SetTranspirationParams_DV() {
+  unsigned short iDV;
+  unsigned short iMarker_Transpiration = 0, iMarker_DV = 0;
+
+  if (nMarker_Transpiration > 0 && nDV > 0) {
+    for(iDV = 0; iDV < nDV; iDV++){
+      if(Design_Variable[iDV] == TRANSP_DV){
+        for (iMarker_Transpiration = 0; iMarker_Transpiration< nMarker_Transpiration; iMarker_Transpiration++){
+          if (TranspTag[iDV] == Marker_Transpiration[iMarker_Transpiration]){
+            Transx0[iMarker_Transpiration] = ParamDV[iDV][1];
+            Transx1[iMarker_Transpiration] = ParamDV[iDV][2];
+            Transx2[iMarker_Transpiration] = ParamDV[iDV][3];
+            Transx3[iMarker_Transpiration] = ParamDV[iDV][4];
+            Transy0[iMarker_Transpiration] = ParamDV[iDV][5];
+            Transy1[iMarker_Transpiration] = ParamDV[iDV][6];
+            Transy2[iMarker_Transpiration] = ParamDV[iDV][7];
+            Transy3[iMarker_Transpiration] = ParamDV[iDV][8];
+            TransEps0[iMarker_Transpiration] = DV_Value[iDV][0];
+            TransEps1[iMarker_Transpiration] = DV_Value[iDV][1];
+            TransEps2[iMarker_Transpiration] = DV_Value[iDV][2];
+            TransEps3[iMarker_Transpiration] = DV_Value[iDV][3];
+          }
+        }
+      }
+    }
+  }
 }
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) {

@@ -667,7 +667,8 @@ def get_dvMap():
                50  : "CUSTOM"                ,
                51  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,
-               102 : "FFD_ANGLE_OF_ATTACK"                    }
+               102 : "FFD_ANGLE_OF_ATTACK"   ,
+               201 : "TRANSP_DV"                 }
     
     return dv_map
 
@@ -799,6 +800,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "FFD_THICKNESS"      : 
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
+    elif kindID == "TRANSP_DV"          :
+        header.append(r',"Transp_Marker","eps_0","eps_1","eps_2","eps_3"')
+        write_format.append(r', %s, %s, %s, %s, %s')
     elif kindID == "ANGLE_OF_ATTACK"      : pass
     elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
     

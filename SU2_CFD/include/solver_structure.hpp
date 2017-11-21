@@ -118,6 +118,8 @@ protected:
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
   su2double TranspVel;  /*!< \brief Transpiration velocity magnitude. */
+  unsigned long nTranspNode;  /*!< \brief Number of local transpiration nodes. */
+  unsigned long nTranspNode_Global;  /*!< \brief Number of global transpiration nodes. */
 
 public:
   
@@ -294,6 +296,26 @@ public:
    * \brief Get the number of variables of the problem.
    */
   unsigned short GetnOutputVariables(void);
+
+  /*!
+   * \brief Set the number of transpiration nodes for the problem.
+   */
+  void SetnTranspNode(unsigned long val_var);
+
+  /*!
+   * \brief Get the number of transpiration nodes for the problem.
+   */
+  unsigned long GetnTranspNode(void);
+
+  /*!
+   * \brief Set the total number of transpiration nodes for the problem.
+   */
+  void SetnTranspNode_Global(unsigned long val_var);
+
+  /*!
+   * \brief Get the total number of transpiration nodes for the problem.
+   */
+  unsigned long GetnTranspNode_Global(void);
   
   /*!
    * \brief A virtual member.
@@ -3105,6 +3127,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief  A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -4269,7 +4298,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTranspiration(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Parallelization of Undivided Laplacian.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11613,6 +11642,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Write the transpiration velocity sensitivity file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.

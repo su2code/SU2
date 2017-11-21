@@ -172,8 +172,8 @@ class Config(ordered_bunch):
         k = 0
         for i, dv_scl in enumerate(dv_scales):
             for j in range(def_dv['SIZE'][i]):
-                dv_new[k] = dv_new[k]*dv_scl;
-                dv_old[k] = dv_old[k]*dv_scl;
+                dv_new[k] = dv_new[k]/dv_scl;
+                dv_old[k] = dv_old[k]/dv_scl;
                 k = k + 1
         
         # Change the parameters of the design variables
@@ -329,6 +329,7 @@ def read_config(filename):
                case("MARKER_PLOTTING")   or\
                case("MARKER_MONITORING") or\
                case("MARKER_SYM")        or\
+               case("MARKER_TRANSPIRATION") or\
                case("DV_KIND")           : 
                 # remove white space
                 this_value = ''.join(this_value.split())   
@@ -361,7 +362,7 @@ def read_config(filename):
                     else:
                         this_dvFFDTag = []
 
-                    if not data_dict["DV_KIND"][0] in ['NO_DEFORMATION']:
+                    if not data_dict["DV_KIND"][0] in ['NO_DEFORMATION', 'TRANSP_DV']:
                         this_dvParam = [ float(x) for x in this_dvParam ]
 
                     if data_dict["DV_KIND"][0] in ['FFD_CONTROL_POINT_2D']:
@@ -413,7 +414,12 @@ def read_config(filename):
                case("ITER_AVERAGE_OBJ")       or\
                case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
-                break                
+                break        
+
+            # string parameters
+            if case("TRANSPIRATION_FILENAME"):
+                data_dict[this_param] = this_value
+                break;        
             
             
             # unitary design variable definition
@@ -444,6 +450,11 @@ def read_config(filename):
 
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
+                    elif this_dvKind=='TRANSP_DV':
+                        this_dvParameters = info_General[2].split(",")
+                        this_dvSize   = 4
+                        this_dvFFDTag = []
+
                     else:
                         this_dvParameters = info_General[2].split(",")
                         # if FFD change the first element to work with numbers and float(x), save also the tag
@@ -598,6 +609,10 @@ def read_config(filename):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):
         data_dict['OPT_BOUND_LOWER'] = -1e10
+    if not data_dict.has_key('OPT_BOUND_UPPER_AFC'):
+        data_dict['OPT_BOUND_UPPER_AFC'] = 1e2
+    if not data_dict.has_key('OPT_BOUND_LOWER_AFC'):
+        data_dict['OPT_BOUND_LOWER_AFC'] = -1e2
     if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
     if not data_dict.has_key('OPT_CONSTRAINT'):
@@ -716,8 +731,6 @@ def read_config(filename):
     
 #: def read_config()
 
-
-
 # -------------------------------------------------------------------
 #  Set SU2 Configuration Parameters
 # -------------------------------------------------------------------
@@ -787,7 +800,22 @@ def write_config(filename,param_dict):
             if case("MARKER_FAR")        : pass
             if case("MARKER_PLOTTING")   : pass
             if case("MARKER_MONITORING") : pass
-            if case("MARKER_SYM")        : pass            
+            if case("MARKER_SYM")        : pass
+            if case("MARKER_TRANSPIRATION"): pass
+#                n_dv = len(param_dict["DEFINITION_DV"]["KIND"])
+#                for i_dv in range(n_dv)
+#                    this_kind = param_dict["DEFINITION_DV"]["KIND"][i_dv]
+#                    if this_kind == "TRANSP_DV":
+#                        output_file.write("( %s," % new_value['MARKER'][i_dv])
+#                        n_param = len(new_value['PARAM'][i_dv])
+#                        for i_param in range(1,n_param):
+#                            output_file.write(" %s," % new_value['PARAM'][i_dv][i_param])
+#                        for i_value in range(1,n_value):
+#                            output_file.write(" %s" % new_value[''][i_dv][i_value])
+#                            if i_value+1 < n_value
+#                                output_file.write(", ")
+#                        output_file.write(" );")
+
             if case("DV_MARKER") : 
                 if not isinstance(new_value,list):
                     new_value = [ new_value ]                
@@ -863,6 +891,12 @@ def write_config(filename,param_dict):
                         if this_kind in ['FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_ANGLE','FFD_TWIST','FFD_TWIST_2D','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                             n_param = len(new_value['PARAM'][i_dv])
                             output_file.write("%s , " % new_value['FFDTAG'][i_dv])
+                            for i_param in range(1,n_param):
+                                output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
+                                if i_param+1 < n_param:
+                                    output_file.write(", ")
+                        elif this_kind == 'TRANSP_DV':
+                            n_param = len(new_value['PARAM'][i_dv])
                             for i_param in range(1,n_param):
                                 output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
                                 if i_param+1 < n_param:

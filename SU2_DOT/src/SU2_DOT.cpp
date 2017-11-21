@@ -214,11 +214,15 @@ int main(int argc, char *argv[]) {
      /*--- Initialize structure to store the gradient ---*/
 
      Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+     bool transp = false;
 
      for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
        Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
        for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
          Gradient[iDV][iDV_Value] = 0.0;
+       }
+       if(config_container[ZONE_0]->GetDesign_Variable(iDV) == TRANSP_DV){
+         transp = true;
        }
      }
 
@@ -256,35 +260,19 @@ int main(int argc, char *argv[]) {
      }
 
      /*--- Compute sensitivities of transpiration boundary velocity ---*/
-     if(config_container[ZONE_0]->GetnMarker_Transpiration() > 0 && config_container[ZONE_0]->GetAD_Mode()){
+     if(transp){
       if (rank == MASTER_NODE)
         cout << endl <<"------------------------- Transpiration boundary sensitivitiy -----------------------" << endl;
-      //// /*--- Initialize solver class ---*/
-      //// CSolver **solver_container = new CSolver*[nZone];
-      //// for (iZone = 0; iZone < nZone; iZone++) {
-      ////   solver_container[iZone] = NULL;
-      //// }
 
-      //// SolutionPostprocessing(geometry_container, config_container, solver_container, nZone);
-      //// AD::StartRecording();
+      for(iZone = 0; iZone < nZone; iZone++){
+        if(rank == MASTER_NODE)
+          cout << "Set boundary transpiration sensitivities." << endl;
+        geometry_container[iZone]->SetBoundSensitivityTranspiration(config_container[iZone]);
 
-      //// /*--- Compute pressure at boundary using transpiration velocity ---*/
-      //// ComputeTranspirationPressure(geometry_container[ZONE_0], config_container[ZONE_0], solver_container[ZONE_0]);
-      //// solver_container[ZONE_0]->Pressure_Forces(geometry_container[ZONE_0], config_container[ZONE_0]);
-      //// su2double Objective_Function = Compute_TotalObjFunc(config_container[ZONE_0], solver_container[ZONE_0]);
-
-      //// if (rank==MASTER_NODE){
-      ////   SU2_TYPE::SetDerivative(Objective_Function,1.0);
-      //// }else{
-      ////   SU2_TYPE::SetDerivative(Objective_Function,0.0);
-      //// }
-      //// AD::StopRecording();
-      //// AD::ComputeAdjoint();
-
-      //// su2double extracted_derivative;
-      //// su2double dJdalpha = SU2_TYPE::GetDerivative(extracted_derivative);
-
-      //// cout << "partial_J/partial_alpha = " << dJdalpha << "on rank " << rank << endl;
+        if(rank == MASTER_NODE)
+          cout << "Project transpiration sensitivities to design variables." << endl;
+        SetProjection_Transp(geometry_container[iZone], config_container[iZone], Gradient);
+      }
        
      }
 
@@ -620,18 +608,21 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   
   for (iDV = 0; iDV < nDV; iDV++){
+
+    if(config->GetDesign_Variable(iDV) != TRANSPIRATION){
     
-    nDV_Value =  config->GetnDV_Value(iDV);
+      nDV_Value =  config->GetnDV_Value(iDV);
     
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       
-      /*--- Initilization with su2double resets the index ---*/
+        /*--- Initilization with su2double resets the index ---*/
       
-      DV_Value = 0.0;
+        DV_Value = 0.0;
       
-      AD::RegisterInput(DV_Value);
+        AD::RegisterInput(DV_Value);
       
-      config->SetDV_Value(iDV, iDV_Value, DV_Value);
+        config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      }
     }
   }
   
@@ -677,29 +668,139 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   AD::ComputeAdjoint();
   
   for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
-    
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-      localGradient = my_Gradient;
-#endif
-      /*--- Angle of Attack design variable (this is different,
-       the value comes form the input file) ---*/
-      
-      if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
-          (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
-        Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
-      }
 
-      Gradient[iDV][iDV_Value] += localGradient;
+    if(config->GetDesign_Variable(iDV) != TRANSPIRATION){
+
+      nDV_Value =  config->GetnDV_Value(iDV);
+    
+      for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+        DV_Value = config->GetDV_Value(iDV, iDV_Value);
+        my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+#ifdef HAVE_MPI
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        localGradient = my_Gradient;
+#endif
+        /*--- Angle of Attack design variable (this is different,
+         the value comes form the input file) ---*/
+      
+        if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
+            (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
+          Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
+        }
+
+        Gradient[iDV][iDV_Value] += localGradient;
+      }
     }
   }
 
   AD::Reset();
+
+}
+
+void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Gradient){
+  unsigned long iPoint, iPoint_Local, iVertex;
+  unsigned short iDV, iDV_Value, nDV_Value;
+  unsigned short iMarker = 0;
+
+  su2double x0, x1, x2, x3;
+  su2double y0, y1, y2, y3;
+  su2double eps0, eps1, eps2, eps3;
+  su2double x, y;
+
+  su2double s[2], a[4], b[4], aa, bb, cc;
+
+  su2double *my_Gradient = new su2double[4];
+  su2double *localGradient = new su2double[4];
+
+  string Marker_Tag;
+
+  config->SetTranspirationParams_DV();
+  
+  for(iDV = 0; iDV < config->GetnDV(); iDV++){
+    for(iDV_Value = 0; iDV_Value < 4; iDV_Value++){
+      my_Gradient[iDV_Value] = 0.0;
+      localGradient[iDV_Value] = 0.0;
+    }
+    if(config->GetDesign_Variable(iDV) == TRANSP_DV){
+      nDV_Value = config->GetnDV_Value(iDV);
+
+      Marker_Tag = config->GetTranspTag(iDV);
+      config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
+
+      bool transp = false;
+      for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+        if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION && config->GetMarker_All_TagBound(iMarker) == Marker_Tag){
+          transp = true;
+          break;
+        }
+      }
+
+      if(transp){
+
+        //cout << "DV_Marker = " << Marker_Tag << endl;
+        //cout << "Geo_Marker( " << iMarker << " ) = " << config->GetMarker_All_TagBound(iMarker) << endl;
+
+        /*--- Bilinear parametric interpolation ---*/
+        a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
+        b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            //iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint);
+            x = geometry->node[iPoint]->GetCoord(0);
+            y = geometry->node[iPoint]->GetCoord(1);
+
+            /*--- Quadratic coefficients ---*/
+            aa = a[3]*b[2] - a[2]*b[3];
+            bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
+            cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
+
+            /*--- Logical coordinates ---*/
+            s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
+            s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
+
+            /*--- (dF/deps_i)^T = (deps/deps_i)^T (dF/deps)^T ---
+              --- (deps/deps_0) = (1.0-s[0])*(1-s[1])         ---
+              --- (deps/deps_1) = s[0]*(1-s[1])               ---
+              --- (deps/deps_2) = s[0]*s[1]                   ---
+              --- (deps/deps_3) = (1.0-s[0])*s[1]             ---*/
+
+            /*--- Only care about values within box ---*/
+            if(s[0] >= 0.0 && s[0] <= 1.0 && s[1] >= 0.0 && s[1] <= 1.0){
+              //cout << "iPoint = " << iPoint;
+              //cout << ", SensTransp = " << geometry->GetSensitivityTranspiration(iPoint);
+              //cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+              //cout << ", s[0] = " << s[0] ;
+              //cout << ", s[1] = " << s[1] << endl;
+              my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+              my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+              my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+              my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+            }
+          }
+        }
+      }
+
+      //cout << "MPI" << endl;
+      for(iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+#ifdef HAVE_MPI
+        SU2_MPI::Allreduce(&my_Gradient[iDV_Value], &localGradient[iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+        localGradient[iDV_Value] = my_Gradient[iDV_Value];
+#endif
+        //cout << "Gradient[ " << iDV_Value << " ] " << endl;
+        Gradient[iDV][iDV_Value] += localGradient[iDV_Value];
+        my_Gradient[iDV_Value] = 0.0;
+        localGradient[iDV_Value] = 0.0;
+      }
+    }
+  }
+
+  //cout << "Delete" << endl;
+  delete [] my_Gradient;
+  delete [] localGradient;
 
 }
 
@@ -751,281 +852,4 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
       cout <<"-------------------------------------------------------------------------" << endl;
     }
   }
-}
-
-void SolutionPostprocessing(CGeometry **geometry_container, CConfig **config_container, CSolver **solver_container, unsigned short nZone){
-
-  unsigned short iZone;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
-
-  /*--- Currently no FSI support ---*/
-  if (config_container[ZONE_0]->GetWrt_Unsteady()) {
-
-      /*--- Unsteady simulation: merge all unsteady time steps. First,
-       find the frequency and total number of files to write. ---*/
-
-      su2double Physical_dt, Physical_t;
-      unsigned long iExtIter = 0;
-      bool StopCalc = false;
-      bool *SolutionInstantiated = new bool[nZone];
-
-      for (iZone = 0; iZone < nZone; iZone++)
-        SolutionInstantiated[iZone] = false;
-
-      /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
-      if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-        iExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
-
-      while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
-
-        /*--- Check several conditions in order to merge the correct time step files. ---*/
-        Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
-        Physical_t  = (iExtIter+1)*Physical_dt;
-        if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime())
-          StopCalc = true;
-
-        if ((iExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
-            ((iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (iExtIter != 0) &&
-             !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-               (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
-            (StopCalc) ||
-            (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
-             ((iExtIter == 0) || (iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
-
-              /*--- Read in the restart file for this time step ---*/
-              for (iZone = 0; iZone < nZone; iZone++) {
-
-                /*--- Set the current iteration number in the config class. ---*/
-                config_container[iZone]->SetExtIter(iExtIter);
-
-                /*--- Either instantiate the solution class or load a restart file. ---*/
-                if (SolutionInstantiated[iZone] == false &&
-                    (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
-                                                                                  iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
-                                                                                  iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
-                  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-                  SolutionInstantiated[iZone] = true;
-                }
-                  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-              }
-
-            }
-
-        iExtIter++;
-        if (StopCalc) break;
-      }
-
-    }
-
-    else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-
-      /*--- Read in the restart file for this time step ---*/
-      for (iZone = 0; iZone < nZone; iZone++) {
-
-        /*--- Either instantiate the solution class or load a restart file. ---*/
-        solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-        solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-
-        /*--- Print progress in solution writing to the screen. ---*/
-        if (rank == MASTER_NODE) {
-          cout << "Storing the volume solution for time instance " << iZone << "." << endl;
-        }
-
-      }
-
-    }
-
-    else if (config_container[ZONE_0]->GetWrt_Dynamic()){
-
-      /*--- Dynamic simulation: merge all unsteady time steps. First,
-       find the frequency and total number of files to write. ---*/
-
-      su2double Physical_dt, Physical_t;
-      unsigned long iExtIter = 0;
-      bool StopCalc = false;
-      bool SolutionInstantiated = false;
-
-
-
-      /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-      if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY &&
-          config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-        iExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
-
-      while (iExtIter < config_container[ZONE_0]->GetnExtIter()) {
-
-        /*--- Check several conditions in order to merge the correct time step files. ---*/
-        /*--- If the solver is structural, the total and delta_t are obtained from different functions. ---*/
-
-        Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
-        Physical_t  = (iExtIter+1)*Physical_dt;
-        if (Physical_t >=  config_container[ZONE_0]->GetTotal_DynTime())
-          StopCalc = true;
-
-        if ((iExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
-            (StopCalc) ||
-            ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-             ((iExtIter == 0) || (iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
-
-              /*--- Set the current iteration number in the config class. ---*/
-              config_container[ZONE_0]->SetExtIter(iExtIter);
-
-              /*--- Read in the restart file for this time step ---*/
-              for (iZone = 0; iZone < nZone; iZone++) {
-
-                /*--- Either instantiate the solution class or load a restart file. ---*/
-                if (SolutionInstantiated == false &&
-                    (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetDyn_RestartIter())) ||
-                                       iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
-                                       iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
-                  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-                  SolutionInstantiated = true;
-                }
-                  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-              }
-
-            }
-        
-        iExtIter++;
-        if (StopCalc) break;
-      }
-      
-      }
-    
-    else {
-
-      /*--- Steady simulation: merge the single solution file. ---*/
-
-      for (iZone = 0; iZone < nZone; iZone++) {
-        /*--- Definition of the solution class ---*/
-        solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-        solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
-      }
-
-      }
-}
-
-void ComputeTranspirationPressure(CGeometry *geometry, CConfig *config, CSolver *solver){
-  unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned short iMarker, nMarker = config->GetnMarker_All();
-  unsigned long iPoint, iVertex;
-  su2double eps, *Vel_b, Vel_i, Vel_2, Density_b, Energy_b, Pressure_b;
-  su2double Area, *Normal, *NormalArea, *UnitNormal;
-
-  Vel_b = new su2double[nDim];
-  Normal = new su2double[nDim];
-  NormalArea = new su2double[nDim];
-  UnitNormal = new su2double[nDim];
-
-  string Marker_Tag;
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if(config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION){
-     Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
-     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-         if (geometry->node[iPoint]->GetDomain()) {
-
-           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-      
-           Area = 0.0;
-           for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-           Area = sqrt (Area);
-      
-           for (iDim = 0; iDim < nDim; iDim++) {
-             NormalArea[iDim] = -Normal[iDim];
-             UnitNormal[iDim] = -Normal[iDim]/Area;
-           }
-
-           for(iDim = 0; iDim < nDim; iDim++){
-             Vel_b[iDim] = solver->node[iPoint]->GetVelocity(iDim);
-           }
-           eps = config->GetTranspiration(Marker_Tag);
-           Density_b = solver->node[iPoint]->GetDensity();
-           Energy_b = solver->node[iPoint]->GetEnergy();
-           Vel_2  = 0.0;
-           AD::RegisterInput(eps);
-           for(iDim = 0; iDim < nDim; iDim++){
-             Vel_i = Vel_b[iDim] - eps*UnitNormal[iDim];
-             Vel_2 += Vel_i*Vel_i;
-           }
-           Pressure_b = (Energy_b - 0.5*Vel_2)*Density_b*(config->GetGamma()-1);
-
-           solver->node[iPoint]->SetPressure(Pressure_b);
-         }
-       }
-    }
-  }
-
-  delete [] Vel_b;
-  delete [] Normal;
-  delete [] NormalArea;
-  delete [] UnitNormal;
-
-}
-
-su2double Compute_TotalObjFunc(CConfig *config, CSolver *solver) {
-  
-  unsigned short iMarker_Monitoring;
-  su2double Weight_ObjFunc, Total_ComboObj = 0.0;
-  
-  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
-  
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    
-    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
-      case DRAG_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CD(iMarker_Monitoring);
-        break;
-      case LIFT_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CL(iMarker_Monitoring);
-        break;
-      case SIDEFORCE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CSF(iMarker_Monitoring);
-        break;
-      case EFFICIENCY:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CEff(iMarker_Monitoring);
-        break;
-      case MOMENT_X_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CMx(iMarker_Monitoring);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CMy(iMarker_Monitoring);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CMz(iMarker_Monitoring);
-        break;
-      case FORCE_X_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CFx(iMarker_Monitoring);
-        break;
-      case FORCE_Y_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CFy(iMarker_Monitoring);
-        break;
-      case FORCE_Z_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_CFz(iMarker_Monitoring);
-        break;
-      case TOTAL_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_HF_Visc(iMarker_Monitoring);
-        break;
-      case MAXIMUM_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*solver->GetSurface_MaxHF_Visc(iMarker_Monitoring);
-        break;
-
-    }
-  }
-
-  return Total_ComboObj;
-  
 }
