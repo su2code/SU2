@@ -603,19 +603,6 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
 
 /*!
- * \brief Spatial numerical order integration
- */
-enum ENUM_SPATIAL_ORDER {
-  FIRST_ORDER = 0,        /*!< \brief First order */
-  SECOND_ORDER = 1,        /*!< \brief Second order. */
-  SECOND_ORDER_LIMITER = 2 /*!< \brief Second order with limiter. */
-};
-static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<string, ENUM_SPATIAL_ORDER>
-("1ST_ORDER", FIRST_ORDER)
-("2ND_ORDER", SECOND_ORDER)
-("2ND_ORDER_LIMITER", SECOND_ORDER_LIMITER);
-
-/*!
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
@@ -663,6 +650,25 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("NONE", NO_TRANS_MODEL)
 ("LM", LM)
 ("BC", BC); //BAS-CAKMAKCIOGLU
+
+/*!
+ * \brief types of wall functions.
+ */
+enum ENUM_WALL_FUNCTIONS {
+  NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
+  ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
+  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
+  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
+  NONEQUILIBRIUM_WALL_MODEL = 5    /*!< \brief Non-equilibrium wall model for LES. */
+};
+static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<string, ENUM_WALL_FUNCTIONS>
+("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
+("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
+("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
+("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
+("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
+("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL);
 
 /*!
  * \brief type of time integration schemes
@@ -1334,7 +1340,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU0", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1392,7 +1398,7 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU0", ILU);
+("ILU", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries
@@ -1461,14 +1467,12 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  DEF_WALL_DISTANCE = 2,			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
-  BOUNDARY_DISTANCE = 3			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
-("DEF_WALL_DISTANCE", DEF_WALL_DISTANCE)
-("WALL_DISTANCE", BOUNDARY_DISTANCE);
+("WALL_DISTANCE", SOLID_WALL_DISTANCE);
 
 /*!
  * \brief The direct differentation variables.
@@ -3378,5 +3382,202 @@ public:
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
+  }
+};
+
+
+class COptionWallFunction : public COptionBase {
+  string name; // identifier for the option
+  unsigned short &nMarkers;
+  string* &markers;
+  unsigned short*  &walltype;
+  unsigned short** &intInfo;
+  su2double**      &doubleInfo;
+
+public:
+  COptionWallFunction(const string name, unsigned short &nMarker_WF, 
+                      string* &Marker_WF, unsigned short* &type_WF,
+                      unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
+  nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
+  intInfo(intInfo_WF), doubleInfo(doubleInfo_WF) {
+    this->name = name;
+  }
+
+  ~COptionWallFunction(){}
+
+  string SetValue(vector<string> option_value) {
+
+    /*--- First check if NONE is specified. ---*/
+    unsigned short totalSize = option_value.size();
+    if ((totalSize == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->SetDefault();
+      return "";
+    }
+
+    /*--- Determine the number of markers, for which a wall
+          function treatment has been specified. ---*/
+    unsigned short counter = 0, nVals = 0;
+    while (counter < totalSize ) {
+
+      /* Update the counter for the number of markers specified
+         and store the current index for possible error messages. */
+      ++nVals;
+      const unsigned short indMarker = counter;
+
+      /* Check if a wall function type has been specified for this marker.
+         If not, create an error message and return. */
+      ++counter;
+      const unsigned short indWallType = counter;
+      unsigned short typeWF = NO_WALL_FUNCTION;
+      bool validWF = true;
+      if (counter == totalSize) validWF = false;
+      else {
+        map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+        it = Wall_Functions_Map.find(option_value[counter]);
+        if(it == Wall_Functions_Map.end()) validWF = false;
+        else                               typeWF  = it->second;
+      }
+
+      if (!validWF ) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": Invalid wall function type, ");
+        newstring.append(option_value[counter]);
+        newstring.append(", encountered for marker ");
+        newstring.append(option_value[indMarker]);
+        return newstring;
+      }
+
+      /* Update the counter, as the wall function type is valid. */
+      ++counter;
+
+      /*--- For some wall function types some additional info
+            must be specified. Hence the counter must be updated
+            accordingly. ---*/
+      switch( typeWF ) {
+        case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
+        case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
+        default: break;
+      }
+
+      /* In case the counter is larger than totalSize, the data for
+         this wall function type has not been specified correctly. */
+      if (counter > totalSize) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(", marker ");
+        newstring.append(option_value[indMarker]);
+        newstring.append(", wall function type ");
+        newstring.append(option_value[indWallType]);
+        newstring.append(": Additional information is missing.");
+        return newstring;
+      }
+    }
+
+    /* Allocate the memory to store the data for the wall function markers. */
+    this->nMarkers   = nVals;
+    this->markers    = new string[nVals];
+    this->walltype   = new unsigned short[nVals];
+    this->intInfo    = new unsigned short*[nVals];
+    this->doubleInfo = new su2double*[nVals];
+
+    for (unsigned short i=0; i<nVals; i++) {
+      this->intInfo[i]    = NULL;
+      this->doubleInfo[i] = NULL;
+    }
+
+    /*--- Loop over the wall markers and store the info in the
+          appropriate arrays. ---*/
+    counter = 0;
+    for (unsigned short i=0; i<nVals; i++) {
+
+      /* Set the name of the wall function marker. */
+      this->markers[i].assign(option_value[counter++]);
+
+      /* Determine the wall function type. As their validaties have
+         already been tested, there is no need to do so again. */
+      map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+      it = Wall_Functions_Map.find(option_value[counter++]);
+
+      this->walltype[i] = it->second;
+
+      /*--- For some wall function types, some additional info
+            is needed, which is extracted from option_value. ---*/
+      switch( this->walltype[i] ) {
+
+        case EQUILIBRIUM_WALL_MODEL: {
+
+          /* LES equilibrium wall model. The exchange distance, stretching
+             factor and number of points in the wall model must be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[2];
+
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          istringstream ss_2nd(option_value[counter++]);
+          if (!(ss_2nd >> this->doubleInfo[i][1])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          istringstream ss_3rd(option_value[counter++]);
+          if (!(ss_3rd >> this->intInfo[i][0])) {
+            return badValue(option_value, "unsigned short", this->name);
+          }
+
+          break;
+        }
+
+        case NONEQUILIBRIUM_WALL_MODEL: {
+
+          /* LES non-equilibrium model. The RANS turbulence model and
+             the exchange distance need to be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[1];
+
+          /* Check for a valid RANS turbulence model. */
+          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          iit = Turb_Model_Map.find(option_value[counter++]);
+          if(iit == Turb_Model_Map.end()) {
+            string newstring;
+            newstring.append(this->name);
+            newstring.append(", marker ");
+            newstring.append(this->markers[i]);
+            newstring.append(", wall function type ");
+            newstring.append(option_value[counter-2]);
+            newstring.append(": Invalid RANS turbulence model, ");
+            newstring.append(option_value[counter-1]);
+            newstring.append(", specified");
+            return newstring;
+          }
+
+          this->intInfo[i][0] = iit->second;
+
+          /* Extract the exchange distance. */
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          break;
+        }
+
+        default: // Just to avoid a compiler warning.
+          break;
+      }
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nMarkers   = 0;
+    this->markers    = NULL;
+    this->walltype   = NULL;
+    this->intInfo    = NULL;
+    this->doubleInfo = NULL;
   }
 };

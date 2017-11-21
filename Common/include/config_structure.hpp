@@ -151,9 +151,9 @@ private:
   unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
-  su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
+  su2double Venkat_LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
-  su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  su2double AdjSharp_LimiterCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
@@ -462,12 +462,12 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
-  SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
+  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  bool MUSCL,		/*!< \brief MUSCL scheme .*/
+  MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
+  MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
+  MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
+  MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
@@ -482,6 +482,7 @@ private:
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
@@ -494,7 +495,7 @@ private:
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
@@ -512,6 +513,7 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
+  su2double Deform_Limit; /*!< Deform limit */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -569,7 +571,8 @@ private:
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
@@ -577,7 +580,11 @@ private:
   *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  *Marker_DV;            /*!< \brief Markers affected by the design variables. */
+  *Marker_DV,            /*!< \brief Markers affected by the design variables. */
+  *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
+  unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
+  su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
@@ -610,6 +617,7 @@ private:
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
+  bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -847,11 +855,12 @@ private:
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
-  *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_jst_coeff,         /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_ffd_coeff,         /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   *default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
   *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
   *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
-  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -1146,6 +1155,16 @@ private:
     COptionBase* val = new COptionActDisk(name,
                                           nMarker_ActDiskInlet, nMarker_ActDiskOutlet, Marker_ActDiskInlet, Marker_ActDiskOutlet,
                                           ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addWallFunctionOption(const string &name,               unsigned short &list_size,
+                             string* &string_field,            unsigned short* &val_Kind_WF,
+                             unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionWallFunction(name, list_size, string_field, val_Kind_WF,
+                                               val_IntInfo_WF, val_DoubleInfo_WF);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -1826,6 +1845,13 @@ public:
   void SetRefArea(su2double val_area);
   
   /*!
+   * \brief In case the <i>SemiSpan</i> is equal to 0 then, it is necessary to compute the max y distance,
+   *        with this function we set the value of the semi span.
+   * \param[in] val_semispan - Value of the semispan.
+   */
+  void SetSemiSpan(su2double val_semispan);
+  
+  /*!
    * \brief Set the value of the domain volume computed on the finest grid.
    * \note This volume do not include the volume of the body that is being simulated.
    * \param[in] val_volume - Value of the domain volume computed on the finest grid.
@@ -1855,15 +1881,16 @@ public:
    * \param[in] val_kind_centered - If centered scheme, kind of centered scheme (JST, etc.).
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
+   * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
+                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, bool val_muscl);
   
   /*!
    * \brief Get the value of limiter coefficient.
    * \return Value of the limiter coefficient.
    */
-  su2double GetLimiterCoeff(void);
+  su2double GetVenkat_LimiterCoeff(void);
   
   /*!
    * \brief Freeze the value of the limiter after a number of iterations.
@@ -1875,7 +1902,7 @@ public:
    * \brief Get the value of sharp edge limiter.
    * \return Value of the sharp edge limiter coefficient.
    */
-  su2double GetSharpEdgesCoeff(void);
+  su2double GetAdjSharp_LimiterCoeff(void);
   
   /*!
    * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces
@@ -2529,6 +2556,12 @@ public:
   unsigned long GetWrt_Con_Freq(void);
   
   /*!
+   * \brief Set the frequency for writing the convergence file.
+   * \return It writes the convergence file with this frequency.
+   */
+  void SetWrt_Con_Freq(unsigned long val_freq);
+
+  /*!
    * \brief Get the frequency for writing the convergence file in Dual Time.
    * \return It writes the convergence file with this frequency.
    */
@@ -3172,6 +3205,12 @@ public:
   unsigned long GetLinear_Solver_Iter(void);
   
   /*!
+   * \brief Get the ILU fill-in level for the linear solver.
+   * \return Fill in level of the ILU preconditioner for the linear solver.
+   */
+  unsigned short GetLinear_Solver_ILU_n(void);
+
+  /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.
    * \return Restart frequency of the linear solver for the implicit formulation.
    */
@@ -3298,6 +3337,12 @@ public:
   su2double GetDeform_Coeff(void);
   
   /*!
+   * \brief Get limit for the volumetric deformation.
+   * \return Distance to the surface to be deformed.
+   */
+  su2double GetDeform_Limit(void);
+  
+  /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
    */
   su2double GetDeform_ElasticityMod(void);
@@ -3405,41 +3450,50 @@ public:
   unsigned short GetKind_Upwind(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder(void);
+  bool GetMUSCL(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_Flow(void);
+  bool GetMUSCL_Flow(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_Turb(void);
+  bool GetMUSCL_Turb(void);
   
   /*!
-   * \brief Get the order of the spatial integration.
+   * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return Kind of upwind scheme for the convective terms.
+   * \return MUSCL scheme.
    */
-  unsigned short GetSpatialOrder_AdjFlow(void);
+  bool GetMUSCL_AdjFlow(void);
   
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  bool GetMUSCL_AdjTurb(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
@@ -4883,6 +4937,12 @@ public:
    * \return Harmonic Balance Frequency pointer.
    */
   su2double* GetOmega_HB(void);
+	
+  /*!
+   * \brief Get if harmonic balance source term is to be preconditioned
+   * \return yes or no to harmonic balance preconditioning
+   */
+  bool GetHB_Precondition(void);
   
   /*!
    * \brief Get if we should update the motion origin.
@@ -5679,6 +5739,29 @@ public:
    * \return The heat flux.
    */
   su2double GetWall_HeatFlux(string val_index);
+
+  /*!
+   * \brief Get the wall function treatment for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return The type of wall function treatment.
+   */
+  unsigned short GetWallFunction_Treatment(string val_marker);
+
+  /*!
+   * \brief Get the additional integer info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the integer info for the given marker.
+   */
+  unsigned short* GetWallFunction_IntInfo(string val_marker);
+
+  /*!
+   * \brief Get the additional double info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the double info for the given marker.
+   */
+  su2double* GetWallFunction_DoubleInfo(string val_marker);
   
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
