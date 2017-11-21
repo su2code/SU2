@@ -5324,7 +5324,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (nMarker_Transpiration != 0) {
-    cout << "Constant heat flux wall boundary marker(s): ";
+    cout << "Transpiration wall boundary marker(s): ";
     for (iMarker_Transpiration = 0; iMarker_Transpiration < nMarker_Transpiration; iMarker_Transpiration++) {
       cout << Marker_Transpiration[iMarker_Transpiration];
       if (iMarker_Transpiration < nMarker_Transpiration-1) cout << ", ";
