@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - tim.albring@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_medi
+        - develop
 
 env:
     global:
