@@ -40,6 +40,7 @@
 #endif
 
 #include "./datatype_structure.hpp"
+#include <stdlib.h>
 
 #ifdef HAVE_MPI
 
@@ -160,6 +161,8 @@ public:
                        MPI_Datatype recvtype,int source, int recvtag,
                        MPI_Comm comm, MPI_Status *status);
 };
+
+typedef MPI_Comm SU2_Comm;
 
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
@@ -330,6 +333,7 @@ public:
   static void CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype);
   
 };
+typedef double SU2_Comm;
 typedef CMPIWrapper SU2_MPI;
 extern CMPIWrapper::Status* MPI_STATUS_IGNORE;
 
