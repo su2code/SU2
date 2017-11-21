@@ -624,12 +624,161 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   return (unsigned long) i;
 }
 
+void CSysSolve::MultiGrid_LinSolver(CSysMatrix **Jacobian, CSysVector **LinSysRes, CSysVector **LinSysSol, CGeometry **geometry, CConfig *config, unsigned short iMesh, unsigned short mu, double tol, unsigned long m, bool monitoring) {
+
+  CSysVector A_x(*LinSysRes[iMesh]);
+  CSysVector ResAux(*LinSysRes[iMesh]);
+  CSysVector SolAux(*LinSysSol[iMesh]);
+  CMatrixVectorProduct *mat_vec;
+  su2double Residual;
+  unsigned long IterLinSol;
+
+  unsigned short Smoother = config->GetKind_Linear_Solver_Prec();
+
+  /*--- Smooth the solution on the fine grid: Jac_h Sol_h = Res_h ---*/
+
+  // can check number of smoothing iters here
+
+  switch (Smoother) {
+
+    case LU_SGS:
+      mat_vec = new CSysMatrixVectorProduct(*Jacobian[iMesh], geometry[iMesh], config);
+      IterLinSol = Jacobian[iMesh]->LU_SGS_Smoother(*LinSysRes[iMesh], *LinSysSol[iMesh], *mat_vec, tol, m, &Residual, false, geometry[iMesh], config);
+      delete mat_vec;
+      break;
+    case JACOBI:
+      mat_vec = new CSysMatrixVectorProduct(*Jacobian[iMesh], geometry[iMesh], config);
+      Jacobian[iMesh]->BuildJacobiPreconditioner();
+      IterLinSol = Jacobian[iMesh]->Jacobi_Smoother(*LinSysRes[iMesh], *LinSysSol[iMesh], *mat_vec, tol, m, &Residual, false, geometry[iMesh], config);
+      delete mat_vec;
+      break;
+    case ILU:
+      mat_vec = new CSysMatrixVectorProduct(*Jacobian[iMesh], geometry[iMesh], config);
+      Jacobian[iMesh]->BuildILUPreconditioner();
+      IterLinSol = Jacobian[iMesh]->ILU_Smoother(*LinSysRes[iMesh], *LinSysSol[iMesh], *mat_vec, tol, m, &Residual, false, geometry[iMesh], config);
+      delete mat_vec;
+      break;
+    case LINELET:
+      Jacobian[iMesh]->BuildJacobiPreconditioner();
+      Jacobian[iMesh]->ComputeLineletPreconditioner(*LinSysRes[iMesh], *LinSysSol[iMesh], geometry[iMesh], config);
+      IterLinSol = 1;
+      break;
+  }
+
+  if (iMesh < config->GetnMGLevels()) {
+
+    /*--- Compute the residual in the finest grid: ResAux_h = Jac_h.Sol_h - Res_h ---*/
+
+    Jacobian[iMesh]->MatrixVectorProduct(*LinSysSol[iMesh], A_x, geometry[iMesh], config);
+    ResAux -= A_x;
+
+    /*--- Restrict the residual to the coarse grid: Res_H = I^H_h.ResAux_h ---*/
+
+    SetRestricted_Residual(&ResAux, LinSysRes[iMesh+1], geometry[iMesh+1], config);
+
+    /*--- Recursive call to MultiGrid_LinSolver ---*/
+
+    for (unsigned short imu = 0; imu <= mu; imu++) {
+      if (iMesh == config->GetnMGLevels()-2)
+        MultiGrid_LinSolver(Jacobian, LinSysRes, LinSysSol, geometry, config, iMesh+1, 0, tol, m, monitoring);
+      else MultiGrid_LinSolver(Jacobian, LinSysRes, LinSysSol, geometry, config, iMesh+1, mu, tol, m, monitoring);
+    }
+
+    /*--- Prolongate solution to the fine grid solution: SolAux_h = I^h_H.Sol_H ---*/
+
+    SetProlongated_Solution(&SolAux, LinSysSol[iMesh+1], geometry[iMesh+1], config);
+
+    /*--- Update the fine grid solution: Sol_h += SolAux_h ---*/
+
+    *LinSysSol[iMesh] += config->GetDamp_Correc_Prolong()*SolAux;
+  }
+
+  // post smoothing here too (don't delete things until afterward)
+
+}
+
+void CSysSolve::SetRestricted_Residual(CSysVector *res_fine, CSysVector *res_coarse, CGeometry *geo_coarse, CConfig *config) {
+
+  /*--- Restrict the residual to coarse levels ---*/
+
+  unsigned long iVertex, Point_Fine, Point_Coarse;
+  unsigned short iMarker, iVar, iChildren, iDim;
+  double *Residual_Fine;
+
+  unsigned short nVar = res_fine->GetNVar();
+
+  double *Residual = new double[nVar];
+
+  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
+    res_coarse->SetBlock_Zero(Point_Coarse);
+
+    for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+      Residual_Fine = res_fine->GetBlock(Point_Fine);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] += config->GetDamp_Res_Restric()*Residual_Fine[iVar];
+      }
+    }
+
+    res_coarse->SetBlock(Point_Coarse, Residual);
+  }
+
+  /*--- Set the dirichlet boundary condition (only Navier-Stokes) ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+      for(iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < geo_coarse->GetnDim(); iDim++)
+          res_coarse->SetBlock_Zero(Point_Coarse, iDim+1);
+      }
+    }
+  }
+  
+  delete [] Residual;
+  
+}
+
+void CSysSolve::SetProlongated_Solution(CSysVector *sol_fine, CSysVector *sol_coarse, CGeometry *geo_coarse, CConfig *config) {
+
+  unsigned long Point_Fine, Point_Coarse, iVertex;
+  unsigned short iChildren, iMarker, iDim;
+  double *Solution_Coarse;
+
+  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+      Solution_Coarse = sol_coarse->GetBlock(Point_Coarse);
+      sol_fine->SetBlock(Point_Fine, Solution_Coarse);
+    }
+  }
+
+  /*--- Set the dirichlet boundary condition (only Navier-Stokes) ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+      for(iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < geo_coarse->GetnDim(); iDim++)
+          sol_fine->SetBlock_Zero(Point_Coarse, iDim+1);
+      }
+    }
+  }
+  
+}
+
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
   
   su2double SolverTol = config->GetLinear_Solver_Error(), Residual;
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
   CMatrixVectorProduct *mat_vec;
+  unsigned short iMesh = MESH_0;
 
   bool TapeActive = NO;
 
@@ -702,6 +851,14 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     delete mat_vec;
     delete precond;
     
+  }
+
+  /*--- Solve the linear system using a linear multigrid method ---*/
+
+  else if (config->GetKind_Linear_Solver() == MULTIGRID) {
+
+    //MultiGrid_LinSolver(Jacobian, LinSysRes, LinSysSol, geometry, config, iMesh, config->GetMGCycle(), SolverTol, MaxIter, true);
+
   }
   
   /*--- Smooth the linear system. ---*/

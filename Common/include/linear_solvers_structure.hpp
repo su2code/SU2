@@ -198,7 +198,40 @@ public:
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                         CPreconditioner & precond, su2double tol,
                         unsigned long m, su2double *residual, bool monitoring);
-  
+
+  /*!
+   * \brief Linear Multigrid solver
+   * \param[in] Jacobian - Jacobian Matrix for the linear system
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in] LinSysSol - Linear system solution
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level of the multigrid algorithm
+   * \param[in] mu - type of multigrid cycle (V or W)
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - max number of smoothing iterations
+   * \param[in] monitoring - turn on printing residuals from solver to screen.
+   */
+  void MultiGrid_LinSolver(CSysMatrix **Jacobian, CSysVector **LinSysRes, CSysVector **LinSysSol, CGeometry **geometry, CConfig *config, unsigned short iMesh, unsigned short mu, double tol, unsigned long m, bool monitoring);
+
+  /*!
+   * \brief Restricts residual vector from the fine grid to a coarse grid
+   * \param[in] res_fine - residual on the fine mesh
+   * \param[in] res_coarse - residual on the coarse mesh
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRestricted_Residual(CSysVector *res_fine, CSysVector *res_coarse, CGeometry *geo_coarse, CConfig *config);
+
+  /*!
+   * \brief Prolongates system solution from the coarse grid to a fine grid
+   * \param[in] sol_fine - solution on the fine mesh
+   * \param[in] sol_coarse - solution on the coarse mesh
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetProlongated_Solution(CSysVector *sol_fine, CSysVector *sol_coarse, CGeometry *geo_coarse, CConfig *config);
+
   /*!
    * \brief Solve the linear system using a Krylov subspace method
    * \param[in] Jacobian - Jacobian Matrix for the linear system

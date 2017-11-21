@@ -1327,7 +1327,8 @@ enum ENUM_LINEAR_SOLVER {
   SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
   SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
   SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
-  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
+  SMOOTHER_LINELET = 11,  /*!< \brief Linelet smoother. */
+  MULTIGRID = 12  /*!< \brief Linear multigrid solver. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1340,7 +1341,8 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU)
+("MULTIGRID", MULTIGRID);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
