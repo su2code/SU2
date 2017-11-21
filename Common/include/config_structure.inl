@@ -1666,6 +1666,8 @@ inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
 inline bool CConfig::GetHeat_Inc(void) { return Heat_Inc;}
 
+inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
+
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}

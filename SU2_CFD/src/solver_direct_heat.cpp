@@ -854,16 +854,41 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double Wall_HeatFlux, Area, *Normal, rho_cp;
+  su2double Wall_HeatFlux, Area, Total_Area, *Normal;
 
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
 
-  if(!flow) {
-    rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
-    Wall_HeatFlux = Wall_HeatFlux/rho_cp;
+  if(config->GetIntegrated_HeatFlux()) {
+
+    Total_Area = 0.0;
+
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      if (geometry->node[iPoint]->GetDomain()) {
+
+        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt (Area);
+
+        Total_Area += Area;
+      }
+    }
+
+    Wall_HeatFlux = Wall_HeatFlux / Total_Area;
+  }
+
+  if(flow) {
+    Wall_HeatFlux = Wall_HeatFlux/(config->GetViscosity_Ref()*config->GetSpecificHeat_Fluid()*config->GetTemperature_FreeStream());
+  }
+  else {
+    Wall_HeatFlux = Wall_HeatFlux/(config->GetDensity_Solid()*config->GetSpecificHeat_Solid()*config->GetTemperature_FreeStream());
   }
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

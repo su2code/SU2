@@ -132,7 +132,8 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Heat_Inc; /*!< \brief Flag for heat equation for incompressible flow.*/
+  Heat_Inc, /*!< \brief Flag for heat equation for incompressible flow.*/
+  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -7578,6 +7579,12 @@ public:
    * \return YES if heat equation for inc. flow is enabled.
    */
   bool GetHeat_Inc(void);
+
+  /*!
+   * \brief Get the heat flux BC parameter.
+   * \return YES if the passed values is the integrated heat flux over the marker's surface.
+   */
+  bool GetIntegrated_HeatFlux(void);
 };
 
 #include "config_structure.inl"
