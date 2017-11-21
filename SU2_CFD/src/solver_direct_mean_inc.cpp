@@ -1671,9 +1671,12 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
   Length_Ref   = config->GetLength_Reynolds();            config->SetLength_Ref(Length_Ref);
   Density_Ref  = Density_FreeStream;                      config->SetDensity_Ref(Density_Ref);
-  Velocity_Ref = ModVel_FreeStream;                       config->SetVelocity_Ref(Velocity_Ref);
   Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref); config->SetPressure_Ref(Pressure_Ref);
   Omega_Ref = Velocity_Ref / Length_Ref;                  config->SetOmega_Ref(Omega_Ref);
+
+  /*--- For cases with zero freestream velocity ---*/
+  if (ModVel_FreeStream == 0.0) Velocity_Ref = 1.0;
+  else Velocity_Ref = ModVel_FreeStream;                  config->SetVelocity_Ref(Velocity_Ref);
 
   if (viscous) {
     Viscosity_FreeStream = config->GetViscosity_FreeStream();
@@ -1689,12 +1692,14 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
   if (nDim == 2) Alpha = atan(config->GetVelocity_FreeStream()[1]/config->GetVelocity_FreeStream()[0])*180.0/PI_NUMBER;
   else Alpha = atan(config->GetVelocity_FreeStream()[2]/config->GetVelocity_FreeStream()[0])*180.0/PI_NUMBER;
+  if (ModVel_FreeStream == 0.0) Alpha = 0.0;
   config->SetAoA(Alpha);
 
   /*--- Compute Beta angle ---*/
 
   if (nDim == 2) Beta = 0.0;
   else Beta = asin(config->GetVelocity_FreeStream()[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
+  if (ModVel_FreeStream == 0.0) Beta = 0.0;
   config->SetAoS(Beta);
 
   /*--- Compute Froude ---*/
