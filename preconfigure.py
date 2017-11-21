@@ -319,9 +319,9 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
         if os.path.exists('externals/'+alt_name_codi):
             print 'Removing' + ' externals/' + alt_name_codi
             shutil.rmtree('externals/'+alt_name_codi)
-        if os.path.exists('externals/'+alt_name_ampi):
-            print 'Removing' + ' externals/' + alt_name_ampi
-            shutil.rmtree('externals/'+alt_name_ampi)
+        if os.path.exists('externals/'+alt_name_medi):
+            print 'Removing' + ' externals/' + alt_name_medi
+            shutil.rmtree('externals/'+alt_name_medi)
 
     os.chdir('externals')
 
