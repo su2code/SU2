@@ -48,7 +48,7 @@ CDriver::CDriver(char* confFile,
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPICommunicator, &rank);
+  SU2_MPI::Comm_rank(MPICommunicator, &rank);
 #endif
 
   /*--- Create pointers to all of the classes that may be used throughout
@@ -410,8 +410,8 @@ void CDriver::Postprocessing() {
   int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
     /*--- Output some information to the console. ---*/
@@ -565,7 +565,7 @@ void CDriver::Geometrical_Preprocessing() {
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -727,7 +727,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Initialize some useful booleans ---*/
@@ -954,9 +954,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Abort(MPI_COMM_WORLD,1);
+    SU2_MPI::Finalize();
 #endif
   }
 
@@ -2248,7 +2248,7 @@ void CDriver::Iteration_Preprocessing() {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Initial print to console for this zone. ---*/
@@ -2329,8 +2329,8 @@ void CDriver::Interface_Preprocessing() {
 #ifdef HAVE_MPI
   int *Buffer_Recv_mark = NULL, iRank, nProcessor = 1;;
 
-  MPI_Comm_rank(config_container[ZONE_0]->GetMPICommunicator(), &rank);
-  MPI_Comm_size(config_container[ZONE_0]->GetMPICommunicator(), &nProcessor);
+  SU2_MPI::Comm_rank(config_container[ZONE_0]->GetMPICommunicator(), &rank);
+  SU2_MPI::Comm_size(config_container[ZONE_0]->GetMPICommunicator(), &nProcessor);
 
   if (rank == MASTER_NODE)
   Buffer_Recv_mark = new int[nProcessor];
@@ -2581,7 +2581,7 @@ void CDriver::InitStaticMeshMovement(){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -2657,7 +2657,7 @@ void CDriver::TurbomachineryPreprocessing(){
   bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Create turbovertex structure ---*/
@@ -2785,7 +2785,7 @@ void CDriver::StartSolver() {
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
@@ -2874,7 +2874,7 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
   }
 
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
 }
@@ -2942,7 +2942,7 @@ void CDriver::Output(unsigned long ExtIter) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Solution output. Determine whether a solution needs to be written
@@ -3589,7 +3589,7 @@ void CGeneralDriver::StaticMeshUpdate() {
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
@@ -3697,7 +3697,7 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
 
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
@@ -3825,7 +3825,7 @@ void CFluidDriver::StaticMeshUpdate() {
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   for(iZone = 0; iZone < nZone; iZone++) {
@@ -3879,7 +3879,7 @@ void CTurbomachineryDriver::Run() {
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
@@ -3962,7 +3962,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   int rank = MASTER_NODE;
   bool print;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- Synchronization point after a single solver iteration. Compute the
@@ -4275,7 +4275,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   AD::Reset();
@@ -4362,7 +4362,7 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
   }
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   if (rank == MASTER_NODE){
@@ -4377,7 +4377,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   ObjFunc = 0.0;
@@ -4430,7 +4430,7 @@ void CDiscAdjFluidDriver::DirectRun(){
 
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
@@ -4489,7 +4489,7 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
@@ -4533,7 +4533,7 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
@@ -4688,7 +4688,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   unsigned short iVar, jZone, iMGlevel;
@@ -5010,7 +5010,7 @@ void CFSIDriver::Run() {
 
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
@@ -5149,7 +5149,7 @@ void CFSIDriver::Predict_Displacements(unsigned short donorZone, unsigned short 
 
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   solver_container[donorZone][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[donorZone], config_container[donorZone],
@@ -5170,7 +5170,7 @@ void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short
 
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
@@ -5241,7 +5241,7 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
 
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
@@ -5309,7 +5309,7 @@ void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned sho
 
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*-------------------- Aitken's relaxation ------------------------*/

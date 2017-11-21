@@ -50,8 +50,8 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm_rank(MPICommunicator,&rank);
+  SU2_MPI::Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;
@@ -314,7 +314,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
   
   nDV = config->GetnDV();
@@ -563,7 +563,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
   
   nMarker = config->GetnMarker_All();
@@ -676,7 +676,7 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
   
   nDV = config->GetnDV();

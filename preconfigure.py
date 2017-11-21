@@ -198,6 +198,17 @@ def prepare_source(replace = False, remove = False, revert = False):
                         'MPI_Sendrecv'  : 'SU2_MPI::Sendrecv',
                         'MPI_Init'      : 'SU2_MPI::Init',
                         'MPI_Recv'      : 'SU2_MPI::Recv',
+                        'MPI_Comm_size' : 'SU2_MPI::Comm_size',
+                        'MPI_Comm_rank' : 'SU2_MPI::Comm_rank',
+                        'MPI_Init'      : 'SU2_MPI::Init',
+                        'MPI_Barrier'   : 'SU2_MPI::Barrier',
+                        'MPI_Abort'     : 'SU2_MPI::Abort',
+                        'MPI_Request'   : 'SU2_MPI::Request',
+                        'MPI_Get_count' : 'SU2_MPI::Get_count',
+                        'MPI_Finalize'  : 'SU2_MPI::Finalize',
+                        'MPI_Buffer_detach': 'SU2_MPI::Buffer_detach',
+                        'MPI_Buffer_attach': 'SU2_MPI::Buffer_attach',
+                        'MPI_Status'    : 'SU2_MPI::Status',
                         'sprintf'       : 'SPRINTF'}
     regex_cast_1 = re.compile(r'(^|[^\w|^\\])(int)(\s*\()')
     replacement_cast_1 = r'\1SU2_TYPE::Int\3'

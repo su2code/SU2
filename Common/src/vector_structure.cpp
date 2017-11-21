@@ -83,7 +83,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
 #ifdef HAVE_MPI
   int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -126,7 +126,7 @@ CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
 
 #ifdef HAVE_MPI
   int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
