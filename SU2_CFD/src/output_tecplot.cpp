@@ -125,9 +125,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
      variables with the appropriate string tags stored in the config class. ---*/
     Tecplot_File << "VARIABLES = ";
     nVar_Total = config->fields.size() - 1;
-    for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
-      Tecplot_File << config->fields[iField];
+    for (unsigned short iField = 1; iField < config->fields.size()-1; iField++) {
+      Tecplot_File << config->fields[iField] << ",";
     }
+    Tecplot_File << config->fields[config->fields.size()-1];
     Tecplot_File << endl;
     
   } else {
@@ -1234,7 +1235,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
       /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
       su2double period = config->GetHarmonicBalance_Period();
       su2double deltaT = period/(su2double)(config->GetnTimeInstances());
-      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone+1)<<", SOLUTIONTIME="<<deltaT*val_iZone<<", ";
+      Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone%nTimeInstances+1)<<", SOLUTIONTIME="<<deltaT*(val_iZone%nTimeInstances)<<", ";
     }
     if (nDim == 2) {
       if (surf_sol) Tecplot_File << "NODES= "<< nGlobal_Surf_Poin <<", ELEMENTS= "<< nSurf_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
