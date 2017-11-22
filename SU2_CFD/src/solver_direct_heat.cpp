@@ -247,7 +247,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     su2double rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
     su2double thermal_diffusivity_solid = config->GetThermalConductivity_Solid() / rho_cp;
     config->SetThermalDiffusivity_Solid(thermal_diffusivity_solid);
-    cout << "Solid reference temperature: " << config->GetTemperature_Ref() << ", solid thermal diffusity (m^2/s): " << thermal_diffusivity_solid << endl;
   }
 
   su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
