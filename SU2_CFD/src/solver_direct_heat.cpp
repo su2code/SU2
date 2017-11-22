@@ -1440,7 +1440,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           }
 
           Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_FreeStream()*Area;
-          AvgTemperature[iMarker] = Twall*config->GetTemperature_FreeStream()*Area;
+          AvgTemperature[iMarker] += Twall*config->GetTemperature_FreeStream()*Area;
 
         }
 
