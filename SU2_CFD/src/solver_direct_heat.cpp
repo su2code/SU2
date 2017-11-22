@@ -1227,7 +1227,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool flow          = (config->GetKind_Solver() != HEAT_EQUATION) && (config->GetKind_Solver() != DISC_ADJ_HEAT);
+  bool flow          = (config->GetKind_Solver() != HEAT_EQUATION);
 
   su2double *Normal = new su2double[nDim];
 

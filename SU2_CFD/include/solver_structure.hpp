@@ -10783,8 +10783,6 @@ public:
 
   void BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
-  void BC_ConjugateHFBased_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-
   su2double GetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
 
   void SetConjugateVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
