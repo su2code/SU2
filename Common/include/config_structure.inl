@@ -1145,6 +1145,8 @@ inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marke
 
 inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
 
+inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { return Marker_HeatFlux[val_marker]; }
+
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
@@ -1239,6 +1241,8 @@ inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
+
+inline unsigned short CConfig::GetnMarker_HeatFlux(void) { return nMarker_HeatFlux; }
 
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
 

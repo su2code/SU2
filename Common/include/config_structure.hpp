@@ -2489,6 +2489,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Analyze(void);
+
+  /*!
+   * \brief Get the total number of heat flux markers.
+   * \return Total number of heat flux markers.
+   */
+  unsigned short GetnMarker_HeatFlux(void);
   
   /*!
    * \brief Get the total number of objectives in kind_objective list
@@ -2763,6 +2769,14 @@ public:
    */
   string GetMarker_Monitoring_TagBound(unsigned short val_marker);
   
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_HeatFlux_TagBound(unsigned short val_marker);
+
   /*!
    * \brief Get the tag if the iMarker defined in the geometry file.
    * \param[in] val_tag - Value of the tag in which we are interested.

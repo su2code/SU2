@@ -10623,7 +10623,8 @@ protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
   su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
             *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
-            *Primitive, *Primitive_Flow_i, *Primitive_Flow_j;
+            *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
+            *Surface_Areas;
   su2double ***ConjugateVar, ***InterfaceVar;
 
   char cstr[200];
