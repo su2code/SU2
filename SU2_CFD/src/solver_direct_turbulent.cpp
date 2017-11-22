@@ -1584,6 +1584,35 @@ void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_contai
   
 }
 
+void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
+                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+
+    unsigned long iPoint, iVertex;
+    unsigned short iVar;
+
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+      if (geometry->node[iPoint]->GetDomain()) {
+
+        /*--- Get the velocity vector ---*/
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution[iVar] = 0.0;
+
+        node[iPoint]->SetSolution_Old(Solution);
+        LinSysRes.SetBlock_Zero(iPoint);
+
+        /*--- includes 1 in the diagonal ---*/
+
+        Jacobian.DeleteValsRowi(iPoint);
+      }
+    }
+
+}
+
 void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
   unsigned short iVar;
@@ -3284,6 +3313,62 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh) {
   
+}
+
+void CTurbSSTSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
+                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+
+    unsigned long iPoint, jPoint, iVertex, total_index;
+    unsigned short iDim, iVar;
+    su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
+
+    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (geometry->node[iPoint]->GetDomain()) {
+
+        /*--- distance to closest neighbor ---*/
+        jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        distance = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          distance += (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim))*
+          (geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+        }
+        distance = sqrt(distance);
+
+        /*--- Set wall values ---*/
+        if (compressible) {
+          density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+          laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+        }
+        if (incompressible) {
+          density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+          laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+        }
+
+        beta_1 = constants[4];
+
+        Solution[0] = 0.0;
+        Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
+
+        /*--- Set the solution values and zero the residual ---*/
+        node[iPoint]->SetSolution_Old(Solution);
+        node[iPoint]->SetSolution(Solution);
+        LinSysRes.SetBlock_Zero(iPoint);
+
+        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+
+      }
+    }
+
 }
 
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
