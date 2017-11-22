@@ -16866,8 +16866,10 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
     /*--- Get the specified wall heat flux from config as well as the
           wall function treatment.---*/
 
-    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-    Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+    //Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+    //Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+    Wall_HeatFlux = 0.0;
+    Wall_Function = NO_WALL_FUNCTION;
     if(Wall_Function != NO_WALL_FUNCTION) {
 
       cout << endl << "Wall function treament not implemented yet" << endl << endl;
