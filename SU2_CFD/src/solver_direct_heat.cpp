@@ -157,6 +157,14 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   AvgTemperature = new su2double[nMarker];
   Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
+  for(iMarker = 0; iMarker < nMarker; iMarker++) {
+    Heat_Flux[iMarker] = 0.0;
+    AvgTemperature[iMarker] = 0.0;
+  }
+  for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
+    Surface_Areas[iMarker] = 0.0;
+  }
+
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
    used for IO with a donor cell ---*/
   unsigned short nConjVariables = 3;
@@ -231,6 +239,11 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       Surface_Areas[iMarker_HeatFlux] = Local_Surface_Areas[iMarker_HeatFlux];
     }
 #endif
+
+  Total_HeatFlux_Areas = 0.0;
+  for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+    Total_HeatFlux_Areas += Surface_Areas[iMarker_HeatFlux];
+  }
 
   delete[] Local_Surface_Areas;
 
@@ -1337,10 +1350,10 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned long iVertex, iPoint, iPointNormal;
-  unsigned short Boundary, Monitoring, iMarker, iDim;
-  su2double *Coord, *Coord_Normal, *Normal, Area, Total_Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
+  unsigned short Boundary, Monitoring, iMarker, iMarker_HeatFlux, iDim;
+  su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
       eddy_viscosity, thermal_conductivity, thermal_conductivityND;
-  string Marker_Tag;
+  string Marker_Tag, HeatFlux_Tag;
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
 #ifdef HAVE_MPI
@@ -1354,6 +1367,8 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   AllBound_AvgTemperature = 0.0;
       
   for ( iMarker = 0; iMarker < nMarker; iMarker++ ) {
+
+    AvgTemperature[iMarker] = 0.0;
     
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
@@ -1403,9 +1418,6 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
     }
     else if ( (Boundary == CHT_WALL_INTERFACE || Boundary == HEAT_FLUX) && Monitoring == YES) {
 
-      AvgTemperature[iMarker] = 0.0;
-      Total_Area = 0.0;
-
       for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1422,7 +1434,6 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-          Total_Area += Area;
 
           dist = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
@@ -1440,14 +1451,15 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           }
 
           Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_FreeStream()*Area;
-          AvgTemperature[iMarker] += Twall*config->GetTemperature_FreeStream()*Area;
+
+          /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
+          if ( Boundary == HEAT_FLUX ) {
+
+            AvgTemperature[iMarker] += Twall*config->GetTemperature_FreeStream()*Area;
+          }
 
         }
-
       }
-
-      AvgTemperature[iMarker] = AvgTemperature[iMarker] / Total_Area;
-
     }
     else { }
 
@@ -1465,9 +1477,14 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
 #endif
 
-  Total_HeatFlux = AllBound_HeatFlux;
-  Total_AvgTemperature = AllBound_AvgTemperature;
+  if (Total_HeatFlux_Areas != 0.0) {
+    Total_AvgTemperature = AllBound_AvgTemperature/Total_HeatFlux_Areas;
+  }
+  else {
+    Total_AvgTemperature = 0.0;
+  }
 
+  Total_HeatFlux = AllBound_HeatFlux;
 }
 
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,

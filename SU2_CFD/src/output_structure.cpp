@@ -4728,7 +4728,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
 
         if (cht) {
-          Total_Heat_CHT     = solver_container[1][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+          Total_Heat_CHT        = solver_container[1][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+          Total_AvgTemperature  = solver_container[1][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
         }
         
         if (equiv_area) {
