@@ -5468,26 +5468,53 @@ void CCHTDriver::Run() {
 
     for (IntIter = 0; IntIter < nIntIter; IntIter++){
 
-      /*--- Transfer temperature and heat flux data from the fluid zone to the target (heat) solvers. ---*/
-      iZone = 0;
-      for (jZone = 0; jZone < nZone; jZone++)
-        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
-          Transfer_Data(iZone, jZone);
+      if (config_container[ZONE_0]->GetKindCHT_Method() == FLUID_BASED) {
 
-      iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
-                                      solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+        /*--- Transfer temperature and heat flux data from the fluid zone to the target (heat) solvers. ---*/
+        iZone = 0;
+        for (jZone = 0; jZone < nZone; jZone++)
+          if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+            Transfer_Data(iZone, jZone);
 
-      /*--- Transfer temperature and heat flux data from the solids zones to the taget (temperature) solver. ---*/
-      /*--- This should be done first since temperature can be used initially. ---*/
-      jZone = 0;
-      for (iZone = 0; iZone < nZone; iZone++)
-        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
-          Transfer_Data(iZone, jZone);
+        iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
 
-      iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
-                                              solver_container, numerics_container, config_container,
-                                              surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+        /*--- Transfer temperature and heat flux data from the solids zones to the taget (temperature) solver. ---*/
+        /*--- This should be done first since temperature can be used initially. ---*/
+        jZone = 0;
+        for (iZone = 0; iZone < nZone; iZone++)
+          if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+            Transfer_Data(iZone, jZone);
+
+        iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+                                                solver_container, numerics_container, config_container,
+                                                surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+      }
+      else if (config_container[ZONE_0]->GetKindCHT_Method() == SOLID_BASED) {
+
+        /*--- Transfer temperature and heat flux data from the solids zones to the taget (temperature) solver. ---*/
+        /*--- This should be done first since temperature can be used initially. ---*/
+        jZone = 0;
+        for (iZone = 0; iZone < nZone; iZone++)
+          if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+            Transfer_Data(iZone, jZone);
+
+        iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+                                                solver_container, numerics_container, config_container,
+                                                surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+        /*--- Transfer temperature and heat flux data from the fluid zone to the target (heat) solvers. ---*/
+        iZone = 0;
+        for (jZone = 0; jZone < nZone; jZone++)
+          if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+            Transfer_Data(iZone, jZone);
+
+        iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+      }
 
     }
 
