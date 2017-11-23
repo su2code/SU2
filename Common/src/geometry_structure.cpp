@@ -5261,9 +5261,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
-            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL &&
+        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
+            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX  ||
+            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
             config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)
           node[Point_Surface]->SetSolidBoundary(true);
       }
@@ -9460,7 +9460,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   nVertex_SolidWall = 0;
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+       (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)) {
       nVertex_SolidWall += GetnVertex(iMarker);
     }
   }
@@ -9477,7 +9478,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   ii = 0; jj = 0;
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if ( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)   ||
+       (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)) {
       for (iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
