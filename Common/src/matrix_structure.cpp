@@ -1974,7 +1974,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
           (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
           (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION.         ) ||
+          (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION          ) ||
           (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
         iLinelet = 0;
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
