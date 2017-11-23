@@ -384,8 +384,6 @@ inline void CMPIWrapper::Waitall(int nrequests, Request *request, Status *status
 inline void CMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {}
 
-inline void Probe(int source, int tag, MPI_Comm comm, MPI_Status *status){}
-
 inline void CMPIWrapper::Send(void *buf, int count, Datatype datatype, int dest,
                               int tag, Comm comm) {}
 
@@ -445,8 +443,7 @@ inline void CMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sendtyp
   CopyData(sendbuf, recvbuf, recvcount, sendtype);
 }
 
-inline int CMPIWrapper::Probe(int source, int tag, Comm comm, Status *status){return 0;}
-
+inline void CMPIWrapper::Probe(int source, int tag, Comm comm, Status *status){}
 
 inline void CMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype){
   switch (datatype) {
