@@ -96,12 +96,19 @@ inline void CMPIWrapper::Wait(SU2_MPI::Request *request, MPI_Status *status) {
 #endif
 }
 
-inline void CMPIWrapper::Waitall(int nrequests, SU2_MPI::Request *request, MPI_Status *status) {
+inline void CMPIWrapper::Testall(int count, SU2_MPI::Request *array_of_requests, int *flag, MPI_Status *array_of_statuses) {
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
-  AMPI_Waitall(nrequests,request,status);
+  AMPI_Testall(count,array_of_requests,flag, array_of_statuses);
 #else
-  MPI_Waitall(nrequests,request,status);
+  MPI_Testall(count,array_of_requests,flag, array_of_statuses);
 #endif
+}
+
+inline void CMPIWrapper::Waitall(int nrequests, SU2_MPI::Request *request, MPI_Status *status) {
+
+}
+inline void CMPIWrapper::Probe(int source, int tag, MPI_Comm comm, MPI_Status *status){
+  MPI_Probe(source, tag, comm, status);
 }
 
 inline void CMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
@@ -149,6 +156,14 @@ inline void CMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype send
   MPI_Allgather(sendbuf,sendcnt,sendtype, recvbuf, recvcnt, recvtype, comm);
 }
 
+inline void CMPIWrapper::Allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                                        void *recvbuf, int *recvcounts, int *displs, MPI_Datatype recvtype, MPI_Comm comm){
+  MPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
+}
+
+inline void CMPIWrapper::Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
+  MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
+}
 
 inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
@@ -233,6 +248,10 @@ inline void CMediMPIWrapper::Waitall(int nrequests, SU2_MPI::Request *request, M
   AMPI_Waitall(nrequests,request,convertStatus(status));
 }
 
+inline void CMediMPIWrapper::Probe(int source, int tag, MPI_Comm comm, MPI_Status *status){
+  AMPI_Probe(source, tag, convertComm(comm), convertStatus(status));
+}
+
 inline void CMediMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
     MPI_Send(buf,count,datatype,dest,tag,comm);
@@ -305,11 +324,27 @@ inline void CMediMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype 
   }
 }
 
+inline void CMediMPIWrapper::Allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int *recvcounts, int *displs, MPI_Datatype recvtype, MPI_Comm comm){
+  if (sendtype != MPI_DOUBLE) {
+    MPI_Allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, comm);
+  } else {
+    AMPI_Allgatherv((su2double*)sendbuf,sendcount,AMPI_ADOUBLE, (su2double*)recvbuf, recvcounts, displs, AMPI_ADOUBLE, convertComm(comm));
+  }
+}
+
+inline void CMediMPIWrapper::Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm){
+  if (sendtype != MPI_DOUBLE) {
+    MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
+  } else {
+    AMPI_Alltoall((su2double*)sendbuf, sendcount, AMPI_ADOUBLE, (su2double*)recvbuf, recvcount, AMPI_ADOUBLE, convertComm(comm));
+  }
+}
+
 inline void CMediMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf, int recvcnt, MPI_Datatype recvtype,int source, int recvtag, MPI_Comm comm, MPI_Status *status) {
   if(sendtype != MPI_DOUBLE) {
     MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
   } else {
-    AMPI_Sendrecv((su2double*)sendbuf,sendcnt,AMPI_ADOUBLE,dest,sendtag,(su2double*)recvbuf,recvcnt,AMPI_ADOUBLE,source,recvtag,convertComm(comm),convertStatus(status));
+    AMPI_Sendrecv((su2double*)sendbuf,sendcnt,AMPI_ADOUBLE,dest,sendtag,(su2double*)recvbuf,recvcnt,AMPI_ADOUBLE,source,recvtag, convertComm(comm),convertStatus(status));
   }
 }
 
@@ -349,6 +384,8 @@ inline void CMPIWrapper::Waitall(int nrequests, Request *request, Status *status
 inline void CMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {}
 
+inline void Probe(int source, int tag, MPI_Comm comm, MPI_Status *status){}
+
 inline void CMPIWrapper::Send(void *buf, int count, Datatype datatype, int dest,
                               int tag, Comm comm) {}
 
@@ -381,6 +418,11 @@ inline void CMPIWrapper::Scatter(void *sendbuf, int sendcnt, Datatype sendtype,
                     void *recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm){
   CopyData(sendbuf, recvbuf, sendcnt, sendtype);
 
+}
+
+inline void CMPIWrapper::Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
+                                   void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm){
+  CopyData(sendbuf, recvbuf, sendcnt, sendtype);
 }
 
 inline void CMPIWrapper::Allgather(void *sendbuf, int sendcnt, Datatype sendtype,
