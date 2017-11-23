@@ -314,7 +314,7 @@ public:
   static void Waitany(int nrequests, Request *request,
                       int *index, Status *status);
 
-  static void Probe(int source, int tag, MPI_Comm comm, MPI_Status *status);
+  static void Probe(int source, int tag, Comm comm, Status *status);
 
   static void Send(void *buf, int count, Datatype datatype, int dest,
                    int tag, Comm comm);
@@ -354,9 +354,7 @@ public:
   static void Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
                            void *recvbuf, int recvcount, Datatype recvtype,
                            Comm comm);
-  
-  static int Probe(int source, int tag, Comm comm, Status *status);
-  
+    
   static void CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype);
   
 };
