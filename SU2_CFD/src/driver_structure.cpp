@@ -314,12 +314,11 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-        unsigned short nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
-        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
-        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
-        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
-
+//      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+//        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
+//        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
+//        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
+//      }
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN) {
@@ -5333,14 +5332,21 @@ void CHBMultiZoneDriver::Run() {
 
   mixingplane = true;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool restart = (config_container[ZONE_0]->GetRestart());
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-//if (ExtIter > 1)
-//TODO REMOVE FOR DEBUG
-//feenableexcept(FE_INVALID | FE_OVERFLOW);
+
+//  if (ExtIter == 0 && !restart) {
+  if (ExtIter == 0 ) {
+    for (iZone = 0; iZone < nZone; iZone++){
+      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
+      geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
+      geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
+    }
+  }
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
 
@@ -5348,12 +5354,6 @@ void CHBMultiZoneDriver::Run() {
     iteration_container[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
-
-//  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
-//    for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
-//      if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
-//        interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
-//  }
 
   /*--- For each time instance update transfer data ---*/
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
@@ -5363,17 +5363,6 @@ void CHBMultiZoneDriver::Run() {
       }
     }
   }
-
-//  if(ExtIter == 0){
-//    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
-//      jTimeInstance = iTimeInstance;
-//      for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
-//        jTimeInstance += nTimeInstances;
-//                  transfer_performance_container[jTimeInstance][iTimeInstance]->GatherAverageTurboGeoValues(geometry_container[jTimeInstance][MESH_0],
-//                      geometry_container[iTimeInstance][MESH_0], iGeomZone);
-//      }
-//    }
-
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
