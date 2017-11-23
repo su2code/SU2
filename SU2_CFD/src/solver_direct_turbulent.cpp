@@ -607,13 +607,6 @@ void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CTurbSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  
-  /*--- Convective fluxes across euler wall are equal to zero. ---*/
-
-}
-
 void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
