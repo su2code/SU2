@@ -129,6 +129,10 @@ public:
   static void Waitany(int nrequests, Request *request,
                       int *index, MPI_Status *status);
 
+  static void Testall(int count, Request* array_of_requests, int *flag, MPI_Status* array_of_statuses);
+
+  static void Probe(int source, int tag, MPI_Comm comm, MPI_Status *status);
+
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
                    int tag, MPI_Comm comm);
 
@@ -155,6 +159,14 @@ public:
 
   static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                         void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
+
+  static void Allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                         void *recvbuf, int *recvcounts, int *displs,
+                         MPI_Datatype recvtype, MPI_Comm comm);
+
+  static void Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                       void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                       MPI_Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
@@ -198,6 +210,8 @@ public:
   static void Waitany(int nrequests, SU2_MPI::Request *request,
                       int *index, MPI_Status *status);
 
+  static void Probe(int source, int tag, MPI_Comm comm, MPI_Status *status);
+
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
                    int tag, MPI_Comm comm);
 
@@ -224,6 +238,14 @@ public:
 
   static void Allgather(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                         void *recvbuf, int recvcnt, MPI_Datatype recvtype, MPI_Comm comm);
+
+  static void Allgatherv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                         void *recvbuf, int *recvcounts, int *displs,
+                         MPI_Datatype recvtype, MPI_Comm comm);
+
+  static void Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                       void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                       MPI_Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
@@ -292,6 +314,8 @@ public:
   static void Waitany(int nrequests, Request *request,
                       int *index, Status *status);
 
+  static void Probe(int source, int tag, MPI_Comm comm, MPI_Status *status);
+
   static void Send(void *buf, int count, Datatype datatype, int dest,
                    int tag, Comm comm);
 
@@ -318,6 +342,9 @@ public:
 
   static void Allgather(void *sendbuf, int sendcnt, Datatype sendtype,
                         void *recvbuf, int recvcnt, Datatype recvtype, Comm comm);
+
+  static void Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
+                         void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
