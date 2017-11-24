@@ -90,6 +90,12 @@ public:
   typedef MPI_Op       Op;
   typedef MPI_Comm     Comm;
 
+  static int Rank;
+
+  static Comm currentComm;
+
+  static void Error(std::string ErrorMsg, std::string FunctionName);
+
   static void Init(int *argc, char***argv);
   
   static void Buffer_attach(void *buffer, int size);
@@ -183,9 +189,9 @@ public:
   typedef AMPI_Request Request;
   typedef AMPI_Status Status;
 
-  static AMPI_Comm convertComm(MPI_Comm comm);
+  static AMPI_Comm     convertComm(MPI_Comm comm);
 
-  static AMPI_Op convertOp(MPI_Op op);
+  static AMPI_Op       convertOp(MPI_Op op);
 
   static AMPI_Datatype convertDatatype(MPI_Datatype datatype);
 
@@ -284,7 +290,7 @@ public:
 class CBaseMPIWrapper {
   
 public:
-  typedef double Comm;
+  typedef int Comm;
   typedef int Datatype;
   typedef int Request;
   typedef int Op;
@@ -294,6 +300,12 @@ public:
     int MPI_SOURCE;
     Status(): MPI_TAG(0), MPI_SOURCE(0){}
   };
+
+  static int Rank;
+
+  static Comm currentComm;
+
+  static void Error(std::string ErrorMsg, std::string FunctionName);
     
   static void Init(int *argc, char***argv);
   
@@ -370,9 +382,26 @@ public:
   static void CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype);
   
 };
-typedef double SU2_Comm;
+typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
 extern CBaseMPIWrapper::Status* MPI_STATUS_IGNORE;
 
 #endif
+
+/* Depending on the compiler, define the correct macro to get the current function name */
+
+#if defined(__GNUC__) || (defined(__ICC) && (__ICC >= 600))
+# define CURRENT_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__FUNCSIG__)
+# define CURRENT_FUNCTION __FUNCSIG__
+#elif (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 600))
+# define CURRENT_FUNCTION __FUNCTION__
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901)
+# define CURRENT_FUNCTION __func__
+#elif defined(__cplusplus) && (__cplusplus >= 201103)
+# define CURRENT_FUNCTION __func__
+#else
+# define CURRENT_FUNCTION "(unknown)"
+#endif
+
 #include "mpi_structure.inl"
