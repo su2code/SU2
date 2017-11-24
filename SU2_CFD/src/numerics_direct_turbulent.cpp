@@ -1339,7 +1339,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM (su2double turb_ke, CConfig *conf
     su2double *New_Coord;
 
     unsigned short Eig_Val_Comp = config->GetEig_Val_Comp();
-    bool beta_delta = config->GetBeta_Delta();
+    su2double beta_delta = config->GetBeta_Delta();
     su2double urlx = config->GetURLX();
     bool permute = config->GetPermute();
 
