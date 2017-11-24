@@ -33,11 +33,13 @@
 
 #include "../include/mpi_structure.hpp"
 
-#ifdef HAVE_MPI
+int CBaseMPIWrapper::Rank = 0;
+CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
 
+#ifdef HAVE_MPI
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 //AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
 #include <medi/medi.cpp>
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 
-#endif // HAVE_MPI
+#endif// HAVE_MPI

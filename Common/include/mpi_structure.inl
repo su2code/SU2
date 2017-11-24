@@ -34,8 +34,20 @@
 #pragma once
 
 #ifdef HAVE_MPI
+
+inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
+  if (Rank == 0){
+    std::cout << std::endl << "-------------------------------- Error ---------------------------------" << std::endl;
+    std::cout << "In \"" << FunctionName << "\": " << std::endl;
+    std::cout << ErrorMsg << std::endl;
+    std::cout << "Exiting now ..." << std::endl;
+  }
+  Abort(currentComm, 0);
+}
+
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
+  MPI_Comm_rank(currentComm, &Rank);
 }
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size){
@@ -341,6 +353,17 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
 }
 #endif
 #else
+
+inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
+  if (Rank == 0){
+    std::cout << std::endl << "-------------------------------- Error ---------------------------------" << std::endl;
+    std::cout << "In \"" << FunctionName << "\": " << std::endl;
+    std::cout << ErrorMsg << std::endl;
+    std::cout << "Exiting now ..." << std::endl;
+  }
+  exit(EXIT_FAILURE);
+}
+
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {}
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size) {}
