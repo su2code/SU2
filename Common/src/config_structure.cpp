@@ -134,11 +134,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Search the mesh file for the 'NZONE' keyword. ---*/
 
@@ -150,16 +145,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       strcpy (cstr, val_mesh_filename.c_str());
       mesh_file.open(cstr, ios::in);
       if (mesh_file.fail()) {
-        if (rank == MASTER_NODE) {
-          cout << "There is no geometry file called " << cstr << "." << endl;
-        }
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
-        SU2_MPI::Abort(MPI_COMM_WORLD,1);
-        SU2_MPI::Finalize();
-#endif
+        SU2_MPI::Error(string("There is no geometry file called ") + string(cstr), CURRENT_FUNCTION);
       }
 
       /*--- Read the SU2 mesh file ---*/
@@ -234,10 +220,9 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
     /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
     if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-      printf( "\n\n   !!! Error !!!\n" );
-      printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
-      printf( " Now exiting...\n\n");
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file.") +
+                     string("Now exiting..."),
+                     CURRENT_FUNCTION);
     }
 
     /*--- Open the CGNS file for reading. The value of fn returned
@@ -256,10 +241,9 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
        only handle one database. ---*/
 
     if ( nbases > 1 ) {
-      printf("\n\n   !!! Error !!!\n" );
-      printf("CGNS reader currently incapable of handling more than 1 database.");
-      printf("Now exiting...\n\n");
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("CGNS reader currently incapable of handling more than 1 database.") +
+                     string("Now exiting..."),
+                     CURRENT_FUNCTION);
     }
 
     /*--- Read the databases. Note that the indexing starts at 1. ---*/
@@ -1908,19 +1892,13 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Read the configuration file ---*/
   
   case_file.open(case_filename, ios::in);
 
   if (case_file.fail()) {
-    if (rank == MASTER_NODE) cout << endl << "The configuration file (.cfg) is missing!!" << endl << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("The configuration file (.cfg) is missing!!", CURRENT_FUNCTION);
   }
 
   string errorString;
@@ -1996,8 +1974,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   /*--- See if there were any errors parsing the config file ---*/
       
   if (errorString.size() != 0) {
-    if (rank == MASTER_NODE) cout << errorString << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(errorString, CURRENT_FUNCTION);
   }
 
   /*--- Set the default values for all of the options that weren't set ---*/
@@ -2014,11 +1991,6 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Read the configuration file ---*/
   
@@ -2091,8 +2063,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   /*--- See if there were any errors parsing the runtime file ---*/
   
   if (errorString.size() != 0) {
-    if (rank == MASTER_NODE) cout << errorString << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(errorString, CURRENT_FUNCTION);
   }
   
   case_file.close();
@@ -2120,7 +2091,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Output_FileFormat = TECPLOT;
   }
 #endif
-  
+
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
   if (Fixed_CM_Mode) {
@@ -2167,9 +2138,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (nObjW<nObj) {
     if (Weight_ObjFunc!= NULL) {
-      cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
-          "or be deleted from the config file (equal weights will be applied)."<< endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
+                     string("or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
@@ -2194,10 +2164,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Marker_Monitoring[iMarker] = marker;
       }
       else if(nObj>1) {
-        cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
-            "For multiple surfaces per objective, list the objective multiple times. \n"<<
-            "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n ") +
+                       string("For multiple surfaces per objective, list the objective multiple times. \n") +
+                       string("For multiple objectives per marker either use one marker overall or list the marker multiple times."),
+                       CURRENT_FUNCTION);
       }
     }
   }
@@ -2274,8 +2244,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for unsupported features. ---*/
 
   if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)){
-    cout << "Harmonic Balance not yet implemented for the incompressible solver." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
   
   /*--- Check for Fluid model consistency ---*/
@@ -2306,16 +2275,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Measurement System ---*/
   
   if (SystemMeasurements == US && !standard_air) {
-    cout << "Only STANDARD_AIR fluid model can be used with US Measurement System" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
   
   /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
     if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
-      cout << "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
     }
 
   }
@@ -2328,25 +2295,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check if Giles are used with turbo markers ---*/
 
   if (nMarker_Giles > 0 && !GetBoolTurbomachinery()){
-    cout << "Giles Boundary conditions can only be used with turbomachinery markers" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
   }
 
   /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
-      cout << "Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
     if (nMarker_Outlet != 0) {
-      cout << "Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids " << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
     
     if (nMarker_FarField != 0) {
-      cout << "Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids " << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Riemann Boundary conditions or Giles must be used outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
     
   }
@@ -2356,13 +2319,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (ideal_gas) {
     if (SystemMeasurements == US && standard_air) {
       if (Kind_ViscosityModel != SUTHERLAND) {
-        cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
       }
     }
     if (Kind_ConductivityModel != CONSTANT_PRANDTL ) {
-      cout << "Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS", CURRENT_FUNCTION);
     }
     
   }
@@ -2431,8 +2392,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for (unsigned short iZone = 0; iZone < nZone; iZone++ )
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
-      cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2484,8 +2444,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE) &&
       (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
-    cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!", CURRENT_FUNCTION);
   }
   
   /*--- In case the grid movement parameters have not been declared in the
@@ -2504,8 +2463,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Motion_Origin_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2515,8 +2473,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Motion_Origin_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2526,8 +2483,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Motion_Origin_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
-      cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2537,8 +2493,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       MoveMotion_Origin[iZone] = 0;
   } else {
     if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
-      cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2550,8 +2505,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Translation_Rate_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2561,8 +2515,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Translation_Rate_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2572,8 +2525,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Translation_Rate_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
-      cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2585,8 +2537,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Rotation_Rate_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2596,8 +2547,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Rotation_Rate_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2607,8 +2557,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Rotation_Rate_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
-      cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2620,8 +2569,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Omega_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2631,8 +2579,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Omega_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2642,8 +2589,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Omega_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
-      cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2655,8 +2601,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Ampl_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2666,8 +2611,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Ampl_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2677,8 +2621,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Ampl_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
-      cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2690,8 +2633,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Phase_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2701,8 +2643,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Phase_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2712,8 +2653,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Pitching_Phase_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
-      cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2725,8 +2665,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Plunging_Omega_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PLUNGING_PHASE_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2736,8 +2675,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Plunging_Omega_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PLUNGING_PHASE_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2747,8 +2685,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Plunging_Omega_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
-      cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PLUNGING_PHASE_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2760,8 +2697,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Plunging_Ampl_X[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2771,8 +2707,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Plunging_Ampl_Y[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2782,8 +2717,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Plunging_Ampl_Z[iZone] = 0.0;
   } else {
     if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
-      cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2792,8 +2726,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Unsteady_Simulation == HARMONIC_BALANCE) {
   	HarmonicBalance_Period = GetHarmonicBalance_Period();
   	if (HarmonicBalance_Period < 0)  {
-  		cout << "Not a valid value for time period!!" << endl;
-  		exit(EXIT_FAILURE);
+      SU2_MPI::Error("Not a valid value for time period!!", CURRENT_FUNCTION);
   	}
   	/* Initialize the Harmonic balance Frequency pointer */
   	if (Omega_HB == NULL) {
@@ -2802,9 +2735,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   			Omega_HB[iZone] = 0.0;
   	}else {
   		if (nOmega_HB != nTimeInstances) {
-  			cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
-  			exit(EXIT_FAILURE);
-  		}
+        SU2_MPI::Error("Length of omega_HB  must match the number TIME_INSTANCES!!" , CURRENT_FUNCTION);
+      }
   	}
   }
 
@@ -2878,8 +2810,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   
   if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
-    cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!", CURRENT_FUNCTION);
   }
   
   if (RefOriginMoment_X == NULL) {
@@ -2898,8 +2829,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
     }
     else if (nRefOriginMoment_X != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2919,8 +2849,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
     }
     else if (nRefOriginMoment_Y != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!", CURRENT_FUNCTION);
     }
   }
   
@@ -2940,8 +2869,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
     }
     else if (nRefOriginMoment_Z != nMarker_Monitoring) {
-      cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!", CURRENT_FUNCTION);
     }
   }
   
@@ -3170,8 +3098,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
-    cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("PHYSICAL_PROBLEM must be set in the configuration file", CURRENT_FUNCTION);
   }
   
   /*--- Set a flag for viscous simulations ---*/
@@ -3243,10 +3170,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if ((Kind_Turb_Model != SA) && (Kind_Trans_Model == BC)){
-    if (rank == MASTER_NODE){
-      cout << "Config error: BC transition model currently only available in combination with SA turbulence model!" << endl;
-    }
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
   }
   
   /*--- Check for constant lift mode. Initialize the update flag for
@@ -3258,9 +3182,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (DirectDiff != NO_DERIVATIVE) {
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
-        cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
-        cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
+                       string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
+                       CURRENT_FUNCTION);
       }
 #endif
     /*--- Initialize the derivative values ---*/
@@ -3293,21 +3217,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 #else
   if (AD_Mode == YES) {
-    if (rank == MASTER_NODE){
-      cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
-      cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
-    }
+    SU2_MPI::Error(string("AUTO_DIFF=YES requires Automatic Differentiation support.\n") +
+                   string("Please use correct executables (configuration/compilation is done using the preconfigure.py script)."),
+                   CURRENT_FUNCTION);
   }
 #endif
 
   if (DiscreteAdjoint) {
-#if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
+#if !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
-      if (rank == MASTER_NODE){
-        cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
-        cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
-      }
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!\n") +
+                     string("Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)."),
+                     CURRENT_FUNCTION);
     }
 #endif
 
@@ -3319,16 +3240,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Restart_Flow = false;
 
       if (Grid_Movement) {
-        cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("Dynamic mesh movement currently not supported for the discrete adjoint solver.", CURRENT_FUNCTION);
       }
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
-        if (rank == MASTER_NODE){
-          cout << "Invalid iteration number requested for unsteady adjoint. " << endl;
-          cout << "Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER." << endl;
-        }
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER."),
+                       CURRENT_FUNCTION);
       }
 
       /*--- If the averaging interval is not set, we average over all time-steps ---*/
@@ -5468,8 +5386,7 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
       return iMarker_CfgFile;
 
-  cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
-  exit(EXIT_FAILURE);
+  SU2_MPI::Error(string("The configuration file doesn't have any definition for marker ") + val_marker, CURRENT_FUNCTION);
   
 }
 
@@ -6002,8 +5919,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   /*--- Check that a positive value iteration is requested (for now). ---*/
   
   if (val_iter < 0) {
-    cout << "Requesting a negative iteration number for the restart file!!" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("Requesting a negative iteration number for the restart file!!", CURRENT_FUNCTION);
   }
 
   /*--- Append iteration number for unsteady cases ---*/
