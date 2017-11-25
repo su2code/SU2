@@ -380,7 +380,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
 
-  delete [] Normal;
+  if(Normal != NULL) delete [] Normal;
 
 }
 
