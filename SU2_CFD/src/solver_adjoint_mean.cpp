@@ -98,6 +98,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   FlowPrimVar_j = NULL;
   DonorAdjVar = NULL;
   DonorGlobalIndex = NULL;
+  Normal = NULL;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
