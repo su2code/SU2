@@ -206,6 +206,8 @@ public:
 
   static AMPI_Datatype convertDatatype(MPI_Datatype datatype);
 
+  static void SetComm(Comm NewComm);
+  
   static void Init(int *argc, char***argv);
 
   static void Buffer_attach(void *buffer, int size);

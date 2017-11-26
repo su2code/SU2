@@ -44,7 +44,7 @@ CDriver::CDriver(char* confFile,
   unsigned short Kind_Grid_Movement;
   bool initStaticMovement;
 
-
+  SU2_MPI::SetComm(MPICommunicator);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
