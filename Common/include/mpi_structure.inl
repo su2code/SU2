@@ -230,6 +230,9 @@ inline AMPI_Datatype CMediMPIWrapper::convertDatatype(MPI_Datatype datatype){
   }
   else if (datatype == MPI_INT){
     return AMPI_INT;
+  } else {
+    Error("Conversion not implemented", CURRENT_FUNCTION);
+    return AMPI_DOUBLE;
   }
 }
 
@@ -243,8 +246,7 @@ inline AMPI_Op CMediMPIWrapper::convertOp(MPI_Op op) {
   } else if(MPI_MAX == op) {
     return medi::AMPI_MAX;
   } else {
-    std::cerr << "Implement conversion." << std::endl;
-    exit(-1);
+    Error("Conversion not implemented", CURRENT_FUNCTION);
     return medi::AMPI_SUM;
   }
 }
