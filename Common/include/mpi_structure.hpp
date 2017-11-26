@@ -83,16 +83,25 @@ typedef CBaseMPIWrapper SU2_MPI;
 class CBaseMPIWrapper {
 
 public:
-
+  
   typedef MPI_Request  Request;
   typedef MPI_Status   Status;
   typedef MPI_Datatype Datatype;
   typedef MPI_Op       Op;
   typedef MPI_Comm     Comm;
-
+  
+protected:
+  
   static int Rank;
-
   static Comm currentComm;
+  
+public:
+  
+  static int GetRank();
+  
+  static Comm GetComm();
+  
+  static void SetComm(Comm NewComm);
 
   static void Error(std::string ErrorMsg, std::string FunctionName);
 
@@ -301,10 +310,17 @@ public:
     Status(): MPI_TAG(0), MPI_SOURCE(0){}
   };
 
+private:
   static int Rank;
-
   static Comm currentComm;
 
+public:
+  static int GetRank();
+  
+  static Comm GetComm();
+  
+  static void SetComm(Comm NewComm);
+  
   static void Error(std::string ErrorMsg, std::string FunctionName);
     
   static void Init(int *argc, char***argv);
