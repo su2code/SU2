@@ -50,9 +50,14 @@ inline int CBaseMPIWrapper::GetRank(){
   return Rank;
 }
 
+inline int CBaseMPIWrapper::GetSize(){
+  return Size;
+}
+
 inline void CBaseMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
   MPI_Comm_rank(currentComm, &Rank);  
+  MPI_Comm_size(currentComm, &Size);
 }
 
 inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
@@ -62,6 +67,7 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &Rank);    
+  MPI_Comm_size(currentComm, &Size);  
 }
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size){
@@ -382,11 +388,15 @@ inline int CBaseMPIWrapper::GetRank(){
   return Rank;
 }
 
+inline int CBaseMPIWrapper::GetSize(){
+  return Size;
+}
+
 inline void CBaseMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
 }
 
-inline Comm CBaseMPIWrapper::GetComm(){
+inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
   return currentComm;
 }
 

@@ -34,6 +34,7 @@
 #include "../include/mpi_structure.hpp"
 
 int CBaseMPIWrapper::Rank = 0;
+int CBaseMPIWrapper::Size = 1;
 CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
 
 #ifdef HAVE_MPI
