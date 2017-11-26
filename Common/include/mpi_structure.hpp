@@ -92,12 +92,14 @@ public:
   
 protected:
   
-  static int Rank;
+  static int Rank, Size;
   static Comm currentComm;
   
 public:
   
   static int GetRank();
+  
+  static int GetSize();
   
   static Comm GetComm();
   
@@ -311,11 +313,13 @@ public:
   };
 
 private:
-  static int Rank;
+  static int Rank, Size;
   static Comm currentComm;
 
 public:
   static int GetRank();
+  
+  static int GetSize();  
   
   static Comm GetComm();
   
