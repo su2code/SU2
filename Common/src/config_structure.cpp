@@ -38,11 +38,10 @@
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
-#endif
+  /*--- Store MPI rank and size ---*/ 
+  
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 
   /*--- Initialize pointers to Null---*/
 
@@ -73,6 +72,11 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
+  /*--- Store MPI rank and size ---*/ 
+  
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+  
   /*--- Initialize pointers to Null---*/
 
   SetPointersNull();
@@ -93,6 +97,11 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
+  /*--- Store MPI rank and size ---*/ 
+  
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+  
   bool runtime_file = false;
 
   /*--- Initialize pointers to Null---*/
@@ -2077,13 +2086,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   unsigned short iZone, iCFL, iMarker;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
