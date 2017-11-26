@@ -45,9 +45,23 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
   Abort(currentComm, 0);
 }
 
+
+inline int CBaseMPIWrapper::GetRank(){
+  return Rank;
+}
+
+inline void CBaseMPIWrapper::SetComm(Comm newComm){
+  currentComm = newComm;
+  MPI_Comm_rank(currentComm, &Rank);  
+}
+
+inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
+  return currentComm;
+}
+
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
-  MPI_Comm_rank(currentComm, &Rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &Rank);    
 }
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size){
@@ -362,6 +376,18 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout << "Exiting now ..." << std::endl;
   }
   exit(EXIT_FAILURE);
+}
+
+inline int CBaseMPIWrapper::GetRank(){
+  return Rank;
+}
+
+inline void CBaseMPIWrapper::SetComm(Comm newComm){
+  currentComm = newComm;
+}
+
+inline Comm CBaseMPIWrapper::GetComm(){
+  return currentComm;
 }
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {}
