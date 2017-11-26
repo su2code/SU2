@@ -2606,6 +2606,10 @@ void CVolumetricMovement::SetVolume_Rotation(CGeometry *geometry, CConfig *confi
 }
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
 	nFFDBox = 0;
   nLevel = 0;
 	FFDBoxDefinition = false;

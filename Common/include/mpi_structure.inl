@@ -39,7 +39,9 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
   if (Rank == 0){
     std::cout << std::endl << "-------------------------------- Error ---------------------------------" << std::endl;
     std::cout << "In \"" << FunctionName << "\": " << std::endl;
+    std::cout <<  "------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
+    std::cout <<  "------------------------------------------------------------------------" << std::endl;    
     std::cout << "Exiting now ..." << std::endl;
   }
   Abort(currentComm, 0);
@@ -66,7 +68,7 @@ inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
 
 inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &Rank);    
+  MPI_Comm_rank(currentComm, &Rank);    
   MPI_Comm_size(currentComm, &Size);  
 }
 
@@ -200,6 +202,14 @@ inline void CBaseMPIWrapper::Waitany(int nrequests, Request *request,
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
   MediTool::init();
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);    
+  AMPI_Comm_size(convertComm(currentComm), &Size);  
+}
+
+inline void CMediMPIWrapper::SetComm(Comm newComm){
+  currentComm = newComm;
+  AMPI_Comm_rank(convertComm(currentComm), &Rank);  
+  AMPI_Comm_size(convertComm(currentComm), &Size);
 }
 
 inline AMPI_Comm CMediMPIWrapper::convertComm(MPI_Comm comm) {
