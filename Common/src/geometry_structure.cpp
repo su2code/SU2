@@ -11313,10 +11313,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
-#ifdef HAVE_MPI
-  unsigned short i, n1, n2, n1t, n2t;
-#endif
-
   su2double tangGridVelIn, tangGridVelOut;
   su2double areaIn, areaOut, pitchIn, Pitch;
   su2double radiusIn, radiusOut, *turboNormal;
@@ -14851,11 +14847,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (Restart_Vars[0] != 535532) {
-      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     /*--- Store the number of fields for simplicity. ---*/
@@ -15113,8 +15108,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
@@ -15125,11 +15119,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     fclose(fhw);
@@ -18570,7 +18563,7 @@ void CMultiGridQueue::RemoveCV(unsigned long val_remove_point) {
   short Number_Neighbors = Priority[val_remove_point];
   if (Number_Neighbors == -1) {
     char buf[200];
-    SPRINTF(buf, "The CV %u is not in the priority list.", val_remove_point);
+    SPRINTF(buf, "The CV %lu is not in the priority list.", val_remove_point);
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
@@ -18619,7 +18612,7 @@ void CMultiGridQueue::IncrPriorityCV(unsigned long val_incr_point) {
   short Number_Neighbors = Priority[val_incr_point];
   if (Number_Neighbors == -1) {
     char buf[200];
-    SPRINTF(buf, "The CV %u is not in the priority list.", val_incr_point);
+    SPRINTF(buf, "The CV %lu is not in the priority list.", val_incr_point);
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
@@ -18637,7 +18630,7 @@ void CMultiGridQueue::RedPriorityCV(unsigned long val_red_point) {
   short Number_Neighbors = Priority[val_red_point];
   if (Number_Neighbors == -1) {
     char buf[200];
-    SPRINTF(buf, "The CV %u is not in the priority list.", val_red_point);
+    SPRINTF(buf, "The CV %lu is not in the priority list.", val_red_point);
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   

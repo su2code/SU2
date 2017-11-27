@@ -1373,7 +1373,7 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   
   if (m < 1) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for smoothing iterations, m = %u", m );
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
@@ -1613,7 +1613,7 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   
   if (m < 1) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for smoothing iterations, m = %u", m );
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
@@ -1793,7 +1793,7 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   if (m < 1) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for smoothing iterations, m = %u", m );
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
