@@ -716,6 +716,29 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
   string Marker_Tag;
 
   config->SetTranspirationParams_DV();
+
+  if (config->GetRef_NonDim() == DIMENSIONAL) {
+    Pressure_Ref      = 1.0;
+    Density_Ref       = 1.0;
+    Temperature_Ref   = 1.0;
+  }
+  else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
+    Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
+    Density_Ref       = Density_FreeStream;      // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;  // Temperature_FreeStream = 1.0
+  }
+  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
+    Pressure_Ref      = Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+    Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+  }
+  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
+    Pressure_Ref      = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
+    Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
+  }
+
+  Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
   
   for(iDV = 0; iDV < config->GetnDV(); iDV++){
     for(iDV_Value = 0; iDV_Value < 4; iDV_Value++){
@@ -774,10 +797,10 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
               //cout << ", AuxTransp = " << geometry->vertex[iMarker][iVertex]->GetAuxTransp();
               //cout << ", s[0] = " << s[0] ;
               //cout << ", s[1] = " << s[1] << endl;
-              my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-              my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-              my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-              my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+              my_Gradient[0] += (1.0-s[0]) * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp()/Velocity_Ref;
+              my_Gradient[1] += s[0]       * (1.0-s[1]) * geometry->vertex[iMarker][iVertex]->GetAuxTransp()/Velocity_Ref;
+              my_Gradient[2] += s[0]       * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp()/Velocity_Ref;
+              my_Gradient[3] += (1.0-s[0]) * s[1]       * geometry->vertex[iMarker][iVertex]->GetAuxTransp()/Velocity_Ref;
             }
           }
         }

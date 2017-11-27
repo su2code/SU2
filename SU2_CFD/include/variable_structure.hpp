@@ -2000,7 +2000,7 @@ public:
    */
   void RegisterSolution_time_n1();
 
-  void RegisterTranspiration(su2double Vel_Ref);
+  void RegisterTranspiration();
   
   /*!
    * \brief Set the adjoint values of the solution.
