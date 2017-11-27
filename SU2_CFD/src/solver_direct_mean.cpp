@@ -3498,7 +3498,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
 
           /*--- Logical coordinates ---*/
           s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
-          if(s[1] < 0.0 || s[1] > 1.0){s[1] = (-bb - sqrt(bb*bb - 4.*aa*cc))/(2.*aa);}
+          //if(s[1] < 0.0 || s[1] > 1.0){s[1] = (-bb - sqrt(bb*bb - 4.*aa*cc))/(2.*aa);}
           s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
 
           if(s[0] >= 0. && s[0] <= 1. && s[1] >= 0.0 && s[1] <= 1.0){
