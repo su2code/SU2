@@ -744,7 +744,7 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
 
-  Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
+  su2double Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
   
   for(iDV = 0; iDV < config->GetnDV(); iDV++){
     for(iDV_Value = 0; iDV_Value < 4; iDV_Value++){
