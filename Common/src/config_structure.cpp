@@ -5389,7 +5389,7 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
       return iMarker_CfgFile;
 
   SU2_MPI::Error(string("The configuration file doesn't have any definition for marker ") + val_marker, CURRENT_FUNCTION);
-  
+  return 0;
 }
 
 string CConfig::GetMarker_CfgFile_TagBound(unsigned short val_marker) {
