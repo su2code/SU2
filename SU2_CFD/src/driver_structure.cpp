@@ -314,11 +314,11 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-//      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
-//        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
-//        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
-//        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
-//      }
+      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
+        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
+        geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
+      }
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN) {
@@ -5330,23 +5330,13 @@ CHBMultiZoneDriver::~CHBMultiZoneDriver(void) {}
 
 void CHBMultiZoneDriver::Run() {
 
-  mixingplane = true;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  bool restart = (config_container[ZONE_0]->GetRestart());
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-//  if (ExtIter == 0 && !restart) {
-  if (ExtIter == 0 ) {
-    for (iZone = 0; iZone < nZone; iZone++){
-      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
-      geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
-      geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
-    }
-  }
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
 

@@ -47,11 +47,11 @@ def read_gradients( Grad_filename , scale = 1.0):
     """ reads the raw gradients from the gradient file
         returns a list of floats
     """
-        
+
     # open file and skip first line
     gradfile = open(Grad_filename)
     gradfile.readline()
-    
+
     # read values
     grad_vals = []
     for line in gradfile:
@@ -60,7 +60,7 @@ def read_gradients( Grad_filename , scale = 1.0):
             break
         grad_vals.append(float(line) * scale)
     #: for each line
-    
+
     return grad_vals
 
 #: def read_gradients()
@@ -75,12 +75,12 @@ def read_plot( filename ):
         returns an ordered bunch with the headers for keys
         and a list of each header's floats for values.
     """
-    
+
     extension = os.path.splitext( filename )[1]
-    
+
     # open history file
     plot_file = open(filename)
-    
+
     # title?
     line = plot_file.readline()
     if line.startswith('TITLE'):
@@ -93,45 +93,45 @@ def read_plot( filename ):
     line = line.split(",")
     Variables = [ x.strip('" ') for x in line ]
     n_Vars = len(Variables)
-    
+
     # initialize plot data dictionary
     plot_data = ordered_bunch.fromkeys(Variables)
     # must default each value to avoid pointer problems
-    for key in plot_data.keys(): plot_data[key] = [] 
-    
+    for key in plot_data.keys(): plot_data[key] = []
+
     # zone list
     zones = []
-        
+
     # read all data rows
     while 1:
         # read line
         line = plot_file.readline()
         if not line:
             break
-        
+
         #zone?
         if line.startswith('ZONE'):
             zone = line.split('=')[1].strip('" ')
             zones.append(zone)
             continue
-        
+
         # split line
         line_data = line.strip().split(',')
-        line_data = [ float(x.strip()) for x in line_data ]  
-        
+        line_data = [ float(x.strip()) for x in line_data ]
+
         # store to dictionary
         for i_Var in range(n_Vars):
-            this_variable = Variables[i_Var] 
+            this_variable = Variables[i_Var]
             plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
-    
+
     #: for each line
 
     # check for number of zones
     if len(zones) > 1:
         raise IOError , 'multiple zones not supported'
-    
+
     # done
-    plot_file.close()              
+    plot_file.close()
     return plot_data
 
 
@@ -148,7 +148,7 @@ def read_history( History_filename, nZones = 1):
         Iter and Time(min) headers are mapped to ITERATION and TIME
         respectively.
     """
-    
+
 
     if int(nZones) > 1:
         History_filename = History_filename.split(".")
@@ -156,13 +156,13 @@ def read_history( History_filename, nZones = 1):
 
     # read plot file
     plot_data = read_plot( History_filename )
-    
+
     # initialize history data dictionary
-    history_data = ordered_bunch()    
-    
+    history_data = ordered_bunch()
+
     # header name to config file name map
-    map_dict = get_headerMap(nZones)    
-    
+    map_dict = get_headerMap(nZones)
+
     # map header names
     for key in plot_data.keys():
         if map_dict.has_key(key):
@@ -170,9 +170,9 @@ def read_history( History_filename, nZones = 1):
         else:
             var = key
         history_data[var] = plot_data[key]
-    
+
     return history_data
-    
+
 #: def read_history()
 
 
@@ -228,7 +228,7 @@ def get_headerMap(nZones = 1):
                  "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
-                 "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
+                 "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,
                  "FlowAngleOut_1"          : "FLOW_ANGLE_OUT"         ,
                  "FlowAngleIn_1"           : "FLOW_ANGLE_IN"          ,
                  "MassFlowIn_1"            : "MASS_FLOW_IN"           ,
@@ -248,14 +248,14 @@ def get_headerMap(nZones = 1):
                  "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
- 
-    return history_header_map   	 
+
+    return history_header_map
 
 def getTurboPerfIndex(nZones = 1):
 
   if int(nZones) > 1:
     index = int(nZones) + int(int(nZones)/2.0) + 1
-  else: 
+  else:
     index = 1
   return index
 
@@ -359,7 +359,7 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  "WING_MAX_TWIST"         ,
                  "WING_MAX_CURVATURE"     ,
                  "WING_MAX_DIHEDRAL"      ]
-                 
+
 PerStation = []
 for i in range(20):
 	PerStation.append("STATION" + str(i) + "_AREA")
@@ -374,7 +374,7 @@ for i in range(20):
     	PerStation.append("STATION" + str(i) + "_TWIST")
 
 optnames_geo.extend(PerStation)
-                 
+
 #: optnames_geo
 
 grad_names_directdiff = ["D_LIFT"                  ,
@@ -409,7 +409,7 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_X"   : "D_FORCE_X"     ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
-                   "EFFICIENCY" : "D_EFFICIENCY" , 
+                   "EFFICIENCY" : "D_EFFICIENCY" ,
                    "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
                    "TOTAL_EFFICIENCY"        : "D_TOTAL_EFFICIENCY"       ,
                    "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
@@ -453,7 +453,7 @@ def update_persurface(config, state):
             for marker in config['MARKER_MONITORING']:
                 if state['HISTORY']['DIRECT'].has_key(base2+'_'+marker):
                     state['FUNCTIONS'][base2+'_'+marker] = state['HISTORY']['DIRECT'][base2+'_'+marker][-1]
-                    
+
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -467,10 +467,10 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
             if special cases has 'UNSTEADY_SIMULATION', returns time averaged data
             otherwise returns final value from history file
     """
-    
+
     # read the history data
     history_data = read_history(History_filename, nZones)
-    
+
     # list of functions to pull
     func_names = optnames_aero + grad_names_directdiff + optnames_turbo
 
@@ -478,13 +478,13 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     Func_Values = ordered_bunch()
     for this_objfun in func_names:
         if history_data.has_key(this_objfun):
-            Func_Values[this_objfun] = history_data[this_objfun] 
-    
+            Func_Values[this_objfun] = history_data[this_objfun]
+
     # for unsteady cases, average time-accurate objective function values
     if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = sum(value)/len(value)
-         
+
     # average the final iterations   
     elif final_avg:
         for key,value in Func_Values.iteritems():
@@ -492,14 +492,14 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
             i_fin = min([final_avg,len(value)])
             value = value[-i_fin:]
             Func_Values[key] = sum(value)/len(value)
-    
+
     # otherwise, keep only last value
     else:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = value[-1]
-                    
+
     return Func_Values
-    
+
 #: def read_aerodynamics()
 
 
@@ -522,7 +522,7 @@ def get_objectiveSign( ObjFun_name ):
             TOTAL_STATIC_EFFICIENCY
         returns +1 otherwise
     """
-    
+
     # flip sign for maximization problems
     if ObjFun_name == "LIFT"            : return -1.0
     if ObjFun_name == "EFFICIENCY"      : return -1.0
@@ -533,7 +533,7 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0
     if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
-    
+
     # otherwise
     return 1.0
 
@@ -551,7 +551,7 @@ def get_constraintSign( sign ):
     sign_map = { '>' : -1.0 ,
                  '<' : +1.0  }
     assert not sign=='=' , 'Sign "=" not valid'
-    
+
     return sign_map[sign]
 
 #: def get_constraintSign()
@@ -563,7 +563,7 @@ def get_constraintSign( sign ):
 
 def get_adjointSuffix(objective_function=None):
     """ gets the adjoint suffix given an objective function """
-    
+
     # adjoint name map
     name_map = { "DRAG"                    : "cd"        ,
                  "LIFT"                    : "cl"        ,
@@ -601,7 +601,7 @@ def get_adjointSuffix(objective_function=None):
                  "TOTAL_EFFICIENCY"        : "teff"      ,
                  "TOTAL_STATIC_EFFICIENCY" : "tseff"     ,
                  "COMBO"                   : "combo"}
-    
+
     # if none or false, return map
     if not objective_function:
         return name_map
@@ -614,13 +614,13 @@ def get_adjointSuffix(objective_function=None):
             return "combo"
         if name_map.has_key(objective[0]):
             return name_map[objective[0]]
-    
+
         # otherwise...
         else:
             raise Exception('Unrecognized adjoint function name')
-    
+
 #: def get_adjointSuffix()
-    
+
 # -------------------------------------------------------------------
 #  Add a Suffix
 # -------------------------------------------------------------------
@@ -633,12 +633,12 @@ def add_suffix(base_name,suffix):
             suffix      = 'new'
             suffix_name = 'input_new.txt'
     """
-    
-    base_name = os.path.splitext(base_name)    
+
+    base_name = os.path.splitext(base_name)
     suffix_name = base_name[0] + '_' + suffix + base_name[1]
-    
+
     return suffix_name
-    
+
 #: def add_suffix()
 
 
@@ -673,7 +673,7 @@ def get_dvMap():
                51  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,
                102 : "FFD_ANGLE_OF_ATTACK"                    }
-    
+
     return dv_map
 
 #: def get_dvMap()
@@ -684,9 +684,9 @@ def get_dvMap():
 def get_dvKind( kindID ):
     """ get design variable kind name from id number """
     dv_map = get_dvMap()
-    try: 
+    try:
         return dv_map[ kindID ]
-    except KeyError: 
+    except KeyError:
         raise Exception('Unrecognized Design Variable ID')
 # def get_dvKind()
 
@@ -697,47 +697,47 @@ def get_dvID( kindName ):
     """ get design variable kind id number from name """
     dv_map = get_dvMap()
     id_map = dict((v,k) for (k,v) in dv_map.iteritems())
-    try: 
+    try:
         return id_map[ kindName ]
-    except KeyError: 
+    except KeyError:
         raise Exception('Unrecognized Design Variable Name: %s' , kindName)
 #: def get_dvID()
-  
-  
-    
+
+
+
 # -------------------------------------------------------------------
 #  Get Gradient File Header
 # -------------------------------------------------------------------
 
 def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
-    
+
     # start header, build a list of strings and join at the end
     header       = []
     write_format = []
-    
+
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'):
         header.append('VARIABLES=')
     elif plot_format == 'PARAVIEW':
         pass
     else: raise Exception('output plot format not recognized')
-    
+
     # Case: continuous adjoint
     if grad_type == 'CONTINUOUS_ADJOINT':
         header.append(r'"iVar","Gradient","FinDiff_Step"')
         write_format.append(r'%4d, %.10f, %f')
-        
+
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
         header.append(r'"iVar","Grad_CL","Grad_CD","Grad_CSF","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_CL/CD","Grad_Custom_ObjFunc","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
 
-        for key in special_cases: 
-            if key == "ROTATING_FRAME" : 
+        for key in special_cases:
+            if key == "ROTATING_FRAME" :
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
                 write_format.append(", %.10f, %.10f, %.10f")
-            if key == "EQUIV_AREA"     : 
-                header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
+            if key == "EQUIV_AREA"     :
+                header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"')
                 write_format.append(", %.10f, %.10f")
             if key == "ENGINE"     :
                 header.append(r',"Grad_AeroCDrag","Grad_SolidCDrag","Grad_Radial_Distortion","Grad_Circumferential_Distortion"')
@@ -753,8 +753,8 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 write_format.append(", %.10f")
 
     # otherwise...
-    else: raise Exception('Unrecognized Gradient Type')          
-        
+    else: raise Exception('Unrecognized Gradient Type')
+
     # design variable parameters
     if kindID == "FFD_CONTROL_POINT_2D"  :
         header.append(r',"FFD_Box_ID","xIndex","yIndex","xAxis","yAxis"')
@@ -780,69 +780,69 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "NACA_4DIGITS"       :
         header.append(r',"1st_digit","2nd_digit","3rd&4th_digits"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "TRANSLATION"       : 
+    elif kindID == "TRANSLATION"       :
         header.append(r',"x_Disp","y_Disp","z_Disp"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "ROTATION"           : 
+    elif kindID == "ROTATION"           :
         header.append(r',"x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s')
-    elif kindID == "FFD_CONTROL_POINT"  : 
+    elif kindID == "FFD_CONTROL_POINT"  :
         header.append(r',"FFD_Box_ID","xIndex","yIndex","zIndex","xAxis","yAxis","zAxis"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
-    elif kindID == "FFD_DIHEDRAL_ANGLE" : 
+    elif kindID == "FFD_DIHEDRAL_ANGLE" :
         header.append(r',"FFD_Box_ID","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
-    elif kindID == "FFD_TWIST_ANGLE"    : 
+    elif kindID == "FFD_TWIST_ANGLE"    :
         header.append(r',"FFD_Box_ID","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
-    elif kindID == "FFD_ROTATION"       : 
+    elif kindID == "FFD_ROTATION"       :
         header.append(r',"FFD_Box_ID","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
-    elif kindID == "FFD_CAMBER"         : 
+    elif kindID == "FFD_CAMBER"         :
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "FFD_THICKNESS"      : 
+    elif kindID == "FFD_THICKNESS"      :
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "ANGLE_OF_ATTACK"      : pass
     elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
-    
+
     # otherwise...
-    else: raise Exception('Unrecognized Design Variable Kind') 
-    
+    else: raise Exception('Unrecognized Design Variable Kind')
+
     # finite difference step
-    if grad_type == 'FINITE_DIFFERENCE':    
-        header.append(r',"FinDiff_Step"')  
+    if grad_type == 'FINITE_DIFFERENCE':
+        header.append(r',"FinDiff_Step"')
         write_format.append(r', %.10f')
-    
+
     # finish format
-    header.append('\n')  
+    header.append('\n')
     write_format.append('\n')
-        
+
     header       = ''.join(header)
     write_format = ''.join(write_format)
-    
+
     return [header,write_format]
-        
+
 #: def get_gradFileFormat()
-    
-    
-    
+
+
+
 # -------------------------------------------------------------------
 #  Get Optimization File Header
 # -------------------------------------------------------------------    
-    
+
 def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
-    
+
     if special_cases is None: special_cases = []
-    
+
     # start header, build a list of strings and join at the end
     header_list   = []
     header_format = ''
     write_format  = []
-    
+
     # handle plot formating
-    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
+    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'):
         header_format = header_format + 'VARIABLES='
     elif plot_format == 'PARAVIEW':
         pass
@@ -851,14 +851,14 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     # start header
     header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum"])
     write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
-        
+
     # special cases
-    for key in special_cases: 
-        if key == "ROTATING_FRAME" : 
+    for key in special_cases:
+        if key == "ROTATING_FRAME" :
             header_list.extend(["CMerit","CT","CQ"])
             write_format.append(r', %.10f, %.10f, %.10f')
-        if key == "EQUIV_AREA"     : 
-            header_list.extend(["CEquivArea","CNearFieldOF"]) 
+        if key == "EQUIV_AREA"     :
+            header_list.extend(["CEquivArea","CNearFieldOF"])
             write_format.append(r', %.10f, %.10f')
         if key == "ENGINE"     :
             header_list.extend(["AeroCDrag","SolidCDrag","Radial_Distortion","Circumferential_Distortion"])
@@ -876,33 +876,33 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
     write_format  = ''.join(write_format)  + ' \n'
-            
+
     # build list of objective function names
     header_vars = []
     map_dict = get_headerMap(nZones)
     for variable in header_list:
         assert map_dict.has_key(variable) , 'unrecognized header variable'
         header_vars.append(map_dict[variable])
-    
+
     # done
     return [header_format,header_vars,write_format]
-        
+
 #: def get_optFileFormat()
-  
-  
-  
+
+
+
 # -------------------------------------------------------------------
 #  Get Extension Name
 # -------------------------------------------------------------------
 
 def get_extension(output_format):
-  
+
     if (output_format == "PARAVIEW")        : return ".vtk"
     if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
-    if (output_format == "SOLUTION")        : return ".dat"  
-    if (output_format == "RESTART")         : return ".dat"  
-    if (output_format == "CONFIG")          : return ".cfg"  
+    if (output_format == "SOLUTION")        : return ".dat"
+    if (output_format == "RESTART")         : return ".dat"
+    if (output_format == "CONFIG")          : return ".cfg"
 
     # otherwise
     raise Exception("Output Format Unknown")
@@ -918,31 +918,31 @@ def get_specialCases(config):
     """ returns a list of special physical problems that were
         specified in the config file, and set to 'yes'
     """
-    
+
     all_special_cases = [ 'ROTATING_FRAME'                   ,
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
                           'INV_DESIGN_HEATFLUX'              ]
-    
+
     special_cases = []
     for key in all_special_cases:
         if config.has_key(key) and config[key] == 'YES':
             special_cases.append(key)
         if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
-            
+
     if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
         special_cases.append('UNSTEADY_SIMULATION')
-     
+
     # no support for more than one special case
     if len(special_cases) > 1:
         error_str = 'Currently cannot support ' + ' and '.join(special_cases) + ' at once'
-        raise Exception(error_str)   
-    
+        raise Exception(error_str)
+
     if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
-  
+
     # Special case for harmonic balance
     if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
         special_cases.append('HARMONIC_BALANCE')
@@ -950,7 +950,7 @@ def get_specialCases(config):
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
-        
+
     return special_cases
 
 #: def get_specialCases()
@@ -962,14 +962,14 @@ def get_multizone(config):
     """ returns a list of special physical problems that were
         specified in the config file, and set to 'yes'
     """
-    
+
     all_multizone_problems = ['FLUID_STRUCTURE_INTERACTION']
-    
+
     multizone = []
     for key in all_multizone_problems:
         if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
             multizone.append(key)
-            
+
     return multizone
 
 #: def get_multizone()
@@ -987,24 +987,24 @@ def next_folder(folder_format,num_format='%03d'):
             folder - a folder with the next index number inserted in 
             the wild card, first index is 1
     """
-    
+
     assert '*' in folder_format , 'wildcard (*) missing in folder_format name'
-    
+
     folders = glob.glob(folder_format)
     split   = folder_format.split('*')
     folder  = folder_format.replace('*',num_format)
-    
+
     if folders:
         # find folder number, could be done with regex...
         max_folder = max(folders)
         if split[0]:
             max_folder = max_folder.split(split[0])[1]
         if split[1]:
-            max_folder = max_folder.rsplit(split[1])[0]            
-        
+            max_folder = max_folder.rsplit(split[1])[0]
+
         # last folder number
         max_i = int(max_folder)
-        
+
         # increment folder number
         folder = folder % (max_i+1)
     else:
@@ -1019,7 +1019,8 @@ def expand_part(name,config):
     return names
 
 def expand_time(name,config):
-    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
+    # if 'UNSTEADY_SIMULATION' in get_specialCases(config) and 'HARMONIC_BALANCE' not in get_specialCases(config):
+    if 1 == 0:
         n_time = config['UNST_ADJOINT_ITER']
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%05d')
@@ -1061,35 +1062,35 @@ def make_link(src,dst):
         
         Windows links currently unsupported, will copy file instead
     """
-    
+
     assert os.path.exists(src) , 'source file does not exist \n%s' % src
-    
+
     if os.name == 'nt':
         # can't make a link in windows, need to look for other options
         if os.path.exists(dst): os.remove(dst)
         shutil.copy(src,dst)
-    
+
     else:
         # find real file, incase source itself is a link
-        src = os.path.realpath(src) 
-        
+        src = os.path.realpath(src)
+
         # normalize paths
         src = os.path.normpath(src)
-        dst = os.path.normpath(dst)        
-        
+        dst = os.path.normpath(dst)
+
         # check for self referencing
-        if src == dst: return        
-        
+        if src == dst: return
+
         # find relative folder path
         srcfolder = os.path.join( os.path.split(src)[0] ) + '/'
         dstfolder = os.path.join( os.path.split(dst)[0] ) + '/'
         srcfolder = os.path.relpath(srcfolder,dstfolder)
         src = os.path.join( srcfolder, os.path.split(src)[1] )
-        
+
         # make unix link
         if os.path.exists(dst): os.remove(dst)
         os.symlink(src,dst)
-    
+
 def restart2solution(config,state={}):
     """ restart2solution(config,state={})
         moves restart file to solution file, 
@@ -1102,7 +1103,7 @@ def restart2solution(config,state={}):
     if config.MATH_PROBLEM == 'DIRECT':
         restart  = config.RESTART_FLOW_FILENAME
         solution = config.SOLUTION_FLOW_FILENAME
-        
+
         # expand zones
         restarts  = expand_zones(restart,config)
         solutions = expand_zones(solution,config)
@@ -1114,11 +1115,11 @@ def restart2solution(config,state={}):
             shutil.move( res , sol )
         # update state
         if state: state.FILES.DIRECT = solution
-        
+
     # adjoint solution
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
-        solution = config.SOLUTION_ADJ_FILENAME           
+        solution = config.SOLUTION_ADJ_FILENAME
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
         suffix    = get_adjointSuffix(func_name)
@@ -1138,7 +1139,7 @@ def restart2solution(config,state={}):
             func_name="COMBO"
         ADJ_NAME = 'ADJOINT_' + func_name
         if state: state.FILES[ADJ_NAME] = solution
-        
+
     else:
         raise Exception, 'unknown math problem'
 
