@@ -38,12 +38,7 @@ CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   unsigned long iPoint;
   unsigned short iDim, iVar, nLineLets;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
+
   nDim = geometry->GetnDim();
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -142,14 +137,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
-      SU2_MPI::Abort(MPI_COMM_WORLD,1);
-      SU2_MPI::Finalize();
-#endif
+      SU2_MPI::Error(string("There is no adjoint restart file ") + filename, CURRENT_FUNCTION);
     }
     
     /*--- Read all lines in the restart file ---*/
@@ -191,17 +179,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
     if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
-      SU2_MPI::Abort(MPI_COMM_WORLD,1);
-      SU2_MPI::Finalize();
-#endif
+        SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                       string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
     
     /*--- Instantiate the variable class with an arbitrary solution

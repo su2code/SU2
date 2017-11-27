@@ -96,11 +96,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   su2double E = config->GetElasticyMod();
   
   nElement      = geometry->GetnElem();
@@ -855,11 +850,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   string filename;
   ifstream prestretch_file;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   
   /*--- Restart the solution from file information ---*/
   
@@ -876,9 +866,7 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   /*--- In case there is no file ---*/
   
   if (prestretch_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no FEM prestretch reference file!!" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("There is no FEM prestretch reference file ") + filename, CURRENT_FUNCTION);
   }
   
   /*--- Read all lines in the restart file ---*/
@@ -921,17 +909,8 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-    SU2_MPI::Abort(MPI_COMM_WORLD,1);
-    SU2_MPI::Finalize();
-#endif
+      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
   
   /*--- TODO: We need to communicate here the prestretched geometry for the halo nodes. ---*/
@@ -1879,11 +1858,6 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
   
   su2double solNorm = 0.0, solNorm_recv = 0.0;
-  
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   if (nonlinear_analysis) {
     
@@ -3269,12 +3243,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
 #else
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-  
   unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
   
   unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
@@ -3655,8 +3623,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
           Point_Struct_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
           
           if (Point_Struct_Check < 0) {
-            cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
           }
           
           for (iDim = 0; iDim < nDim; iDim++)
@@ -3756,11 +3723,6 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
   
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   ofstream historyFile_FSI;
   bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
@@ -3979,11 +3941,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
   su2double *Sol = new su2double[nSolVar];
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
@@ -4064,17 +4021,8 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-    SU2_MPI::Abort(MPI_COMM_WORLD,1);
-    SU2_MPI::Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- MPI. If dynamic, we also need to communicate the old solution ---*/

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE, iMarker;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
-  int rank = MASTER_NODE, size = SINGLE_NODE;
+  int rank, size;
   string str;
   bool allmoving=true;
 
@@ -48,11 +48,12 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-  SU2_MPI::Comm_rank(MPICommunicator,&rank);
-  SU2_MPI::Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   /*--- Pointer to different structures that will be used throughout 
    the entire code ---*/
