@@ -439,12 +439,6 @@ public:
 
   /*!
    * \brief Write a Tecplot ASCII solution file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol);
-
-  /*!
-   * \brief Write a Tecplot ASCII solution file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - Current zone.
