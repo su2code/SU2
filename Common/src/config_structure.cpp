@@ -3225,8 +3225,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
     
-    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
-      LocationStations[iSections] = LocationStations[iSections]/12.0;
+    if (Geo_Description != NACELLE) {
+      for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+        LocationStations[iSections] = LocationStations[iSections]/12.0;
+      }
     }
 
     Stations_Bounds[0] = Stations_Bounds[0]/12.0;

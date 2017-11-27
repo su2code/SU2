@@ -236,15 +236,15 @@ int main(int argc, char *argv[]) {
         Plane_Normal[iPlane][0] = 1.0;
         Plane_P0[iPlane][0] = config_container[ZONE_0]->GetLocationStations(iPlane);
       }
-      if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+      else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
         Plane_Normal[iPlane][0] = 0.0;
-        Plane_Normal[iPlane][1] = -sin(config->GetLocationStations(iStation)*PI_NUMBER/180.0);
-        Plane_Normal[iPlane][2] = -cos(config->GetLocationStations(iStation)*PI_NUMBER/180.0);
-        Plane_P0[iPlane][0] = config->GetNacelleLocation(0);
-        Plane_P0[iPlane][1] = config->GetNacelleLocation(1);
-        Plane_P0[iPlane][2] = config->GetNacelleLocation(2);
+        Plane_Normal[iPlane][1] = -sin(config_container[ZONE_0]->GetLocationStations(iPlane)*PI_NUMBER/180.0);
+        Plane_Normal[iPlane][2] = cos(config_container[ZONE_0]->GetLocationStations(iPlane)*PI_NUMBER/180.0);
+        Plane_P0[iPlane][0] = config_container[ZONE_0]->GetNacelleLocation(0);
+        Plane_P0[iPlane][1] = config_container[ZONE_0]->GetNacelleLocation(1);
+        Plane_P0[iPlane][2] = config_container[ZONE_0]->GetNacelleLocation(2);
       }
-      else (config_container[ZONE_0]->GetGeo_Description() == WING) {
+      else {
         Plane_Normal[iPlane][1] = 1.0;
         Plane_P0[iPlane][1] = config_container[ZONE_0]->GetLocationStations(iPlane);
       }
@@ -389,10 +389,19 @@ int main(int argc, char *argv[]) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
         
         cout << "\nStation " << (iPlane+1);
-        if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) cout << ". XCoord: " << Plane_P0[iPlane][0] << ", ";
-        if (config_container[ZONE_0]->GetGeo_Description() == WING) cout << ". YCoord: " << Plane_P0[iPlane][1] << ", ";
-        if (config_container[ZONE_0]->GetGeo_Description() == TWOD_AIRFOIL) cout << ". ZCoord: " << Plane_P0[iPlane][2] << ", ";
-        if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) cout << ". Theta: " << atan(-Plane_Normal[iPlane][1]/Plane_Normal[iPlane][2])*180/PI_NUMBER << ", ";
+        if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << ". XCoord: " << Plane_P0[iPlane][0] << " in, ";
+          else cout << ". XCoord: " << Plane_P0[iPlane][0] << " m, ";
+        }
+        if (config_container[ZONE_0]->GetGeo_Description() == WING) {
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << ". YCoord: " << Plane_P0[iPlane][1] << " in, ";
+          else cout << ". YCoord: " << Plane_P0[iPlane][1] << " m, ";
+        }
+        if (config_container[ZONE_0]->GetGeo_Description() == TWOD_AIRFOIL) {
+          if (config_container[ZONE_0]->GetSystemMeasurements() == US) cout << ". ZCoord: " << Plane_P0[iPlane][2] << " in, ";
+          else cout << ". ZCoord: " << Plane_P0[iPlane][2] << " m, ";
+        }
+        if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) cout << ". Theta: " << atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180 << " deg, ";
 
         if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
           ObjectiveFunc[0*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
@@ -412,7 +421,7 @@ int main(int argc, char *argv[]) {
           if (config_container[ZONE_0]->GetSystemMeasurements() == US)  cout << "Height: "           << ObjectiveFunc[4*nPlane+iPlane] << " in.";
           else cout << "Height: "            << ObjectiveFunc[4*nPlane+iPlane] << " m.";
         }
-        if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+        else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
           ObjectiveFunc[0*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
           ObjectiveFunc[1*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
           ObjectiveFunc[2*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
@@ -482,7 +491,7 @@ int main(int argc, char *argv[]) {
           if (iPlane != nPlane-1) ObjFunc_file << ",";
         }
       }
-      if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+      else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
         ObjFunc_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
@@ -520,7 +529,7 @@ int main(int argc, char *argv[]) {
         if (iPlane != (nPlane*5)-1) ObjFunc_file <<", ";
       }
     }
-    if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+    else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
       if (geometry_container[ZONE_0]->GetnDim() == 3) {
         ObjFunc_file << Nacelle_Volume <<", "<< Nacelle_MinThickness <<", "<< Nacelle_MaxThickness <<", "<< Nacelle_MinChord <<", "<< Nacelle_MaxChord <<", "<< Nacelle_MinLERadius <<", "<< Nacelle_MaxLERadius<<", "<< Nacelle_MinToC <<", "<< Nacelle_MaxToC <<", "<< Nacelle_ObjFun_MinToC <<", "<< Nacelle_MaxTwist <<", ";
       }
@@ -836,7 +845,7 @@ int main(int argc, char *argv[]) {
             Fuselage_MaxCurvature_Grad = (Fuselage_MaxCurvature_New - Fuselage_MaxCurvature) / delta_eps;
             
           }
-          if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+          else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
             Nacelle_Volume_Grad = (Nacelle_Volume_New - Nacelle_Volume) / delta_eps;
             Nacelle_MinThickness_Grad = (Nacelle_MinThickness_New - Nacelle_MinThickness) / delta_eps;
             Nacelle_MaxThickness_Grad = (Nacelle_MaxThickness_New - Nacelle_MaxThickness) / delta_eps;
@@ -887,7 +896,7 @@ int main(int argc, char *argv[]) {
                 
               }
               
-              if else (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
+              else if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
                 
                 ObjectiveFunc_New[0*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
                 Gradient[0*nPlane + iPlane] = (ObjectiveFunc_New[0*nPlane + iPlane] - ObjectiveFunc[0*nPlane + iPlane]) / delta_eps;
@@ -958,7 +967,7 @@ int main(int argc, char *argv[]) {
             }
             
           }
-          if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+          else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
             Nacelle_Volume_Grad          = 0.0;
             Nacelle_MinThickness_Grad    = 0.0;
             Nacelle_MaxThickness_Grad    = 0.0;
@@ -1033,7 +1042,7 @@ int main(int argc, char *argv[]) {
             }
           }
         }
-        if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+        else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
           if (geometry_container[ZONE_0]->GetnDim() == 3) {
             cout << "\nNacelle volume grad.: "             << Nacelle_Volume_Grad << ". ";
             cout << "Nacelle min. thickness grad.: "  << Nacelle_MinThickness_Grad << ". ";
@@ -1113,9 +1122,9 @@ int main(int argc, char *argv[]) {
                 if (iPlane != nPlane-1) Gradient_file << ",";
               }
             }
-            if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+            else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
               Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
-              Gradient_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",\";
+              Gradient_file << "\"NACELLE_VOLUME\",\"NACELLE_MIN_THICKNESS\",\"NACELLE_MAX_THICKNESS\",\"NACELLE_MIN_CHORD\",\"NACELLE_MAX_CHORD\",\"NACELLE_MIN_LE_RADIUS\",\"NACELLE_MAX_LE_RADIUS\",\"NACELLE_MIN_TOC\",\"NACELLE_MAX_TOC\",\"NACELLE_OBJFUN_MIN_TOC\",\"NACELLE_MAX_TWIST\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_THICKNESS\",";
               for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"STATION"<< (iPlane+1) << "_CHORD\",";
@@ -1157,7 +1166,7 @@ int main(int argc, char *argv[]) {
             if (iPlane != (nPlane*5)-1) Gradient_file <<",";
           }
         }
-        if else (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
+        else if (config_container[ZONE_0]->GetGeo_Description() == NACELLE) {
           if (geometry_container[ZONE_0]->GetnDim() == 3) {
             Gradient_file << Nacelle_Volume_Grad <<","<< Nacelle_MinThickness_Grad <<","<< Nacelle_MaxThickness_Grad <<","<< Nacelle_MinChord_Grad <<","<< Nacelle_MaxChord_Grad <<","<< Nacelle_MinLERadius_Grad <<","<< Nacelle_MaxLERadius_Grad<<","<< Nacelle_MinToC_Grad <<","<< Nacelle_MaxToC_Grad <<","<< Nacelle_ObjFun_MinToC_Grad <<","<< Nacelle_MaxTwist_Grad <<",";
           }
