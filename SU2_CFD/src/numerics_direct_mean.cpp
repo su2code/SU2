@@ -4236,15 +4236,7 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
     val_residual[2] = smy*Volume;
     val_residual[3] = se*Volume;
   } else {
-    cout << "ERROR: You should only be in the gust source term in two dimensions" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-    SU2_MPI::Abort(MPI_COMM_WORLD,1);
-    SU2_MPI::Finalize();
-#endif
-    
+    SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
   }
   
   /*--- For now the source term Jacobian is just set to zero ---*/

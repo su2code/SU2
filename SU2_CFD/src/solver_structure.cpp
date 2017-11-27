@@ -2318,8 +2318,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		/*--- Error check for opening the file. ---*/
 
 		if (!fhw) {
-			cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-			exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open restart file ") + string(fname), CURRENT_FUNCTION);
 		}
 
 		/*--- First, read the number of variables and points. ---*/
