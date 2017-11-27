@@ -131,9 +131,8 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+    SU2_MPI::Error("There is no flow restart file!!", CURRENT_FUNCTION);
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);

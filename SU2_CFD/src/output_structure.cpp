@@ -1577,8 +1577,10 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      nLocalElem = 0;
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Find the max number of this element type among all
@@ -1949,8 +1951,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Find the max number of this element type among all
@@ -2237,8 +2240,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+        break;
     }
   }
   
@@ -12633,8 +12636,9 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -13157,8 +13161,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -13218,8 +13222,9 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -13742,8 +13747,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       if (nParallel_BoundQuad > 0) Conn_BoundQuad_Par = Conn_Elem;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -15862,8 +15867,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
-    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, write the number of variables and points. ---*/
@@ -15930,11 +15934,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    if (rank == MASTER_NODE)
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-    SU2_MPI::Abort(MPI_COMM_WORLD,1);
-    SU2_MPI::Finalize();
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, write the number of variables and points (i.e., cols and rows),

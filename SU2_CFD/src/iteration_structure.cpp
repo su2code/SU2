@@ -757,9 +757,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long &nVortex, vecto
   file.open("vortex_distribution.txt");
   /*--- In case there is no vortex file ---*/
   if (file.fail()) {
-    cout << "There is no vortex data file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(EXIT_FAILURE);
+    SU2_MPI::Error("There is no vortex data file!!", CURRENT_FUNCTION);
   }
   
   // Ignore line containing the header

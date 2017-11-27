@@ -9279,10 +9279,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         break;
 
       default:
-        cout << "Warning! Invalid Riemann input!" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("Invalid Riemann input!", CURRENT_FUNCTION);
         break;
-
       }
       
       /*--- Compute P (matrix of right eigenvectors) ---*/
@@ -9776,10 +9774,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             break;
 
           default:
-            cout << "Warning! Invalid Riemann input!" << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("Invalid Riemann input!", CURRENT_FUNCTION);
             break;
-
         }
 
         /*--- Compute P (matrix of right eigenvectors) ---*/
@@ -10764,10 +10760,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
         break;
 
       default:
-        cout << "Warning! Invalid Giles input!" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("Invalid Giles input!", CURRENT_FUNCTION);
         break;
-
       }
       
       /*--- Compute primitive jump from characteristic variables  ---*/
