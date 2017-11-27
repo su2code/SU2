@@ -87,8 +87,7 @@ int main(int argc, char *argv[]) {
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
     if (nZone > 1 ) {
-      cout << "The required solver doesn't support multizone simulations" << endl; 
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);

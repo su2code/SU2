@@ -49,11 +49,12 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-  SU2_MPI::Comm_rank(MPICommunicator,&rank);
-  SU2_MPI::Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -163,8 +164,7 @@ int main(int argc, char *argv[]) {
   if (fsi){
 
     if (nZone < 2){
-      cout << "For multizone computations, please add the number of zones as a second argument for SU2_SOL. " << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
     }
 
     su2double Physical_dt, Physical_t;
@@ -177,8 +177,7 @@ int main(int argc, char *argv[]) {
       iExtIterFlow = config_container[ZONE_0]->GetUnst_RestartIter();
       iExtIterFEM = config_container[ZONE_1]->GetDyn_RestartIter();
       if (iExtIterFlow != iExtIterFEM) {
-        if (rank == MASTER_NODE) cout << "The restart iteration is different from Flow to Structure!!" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
       }
       else {
         iExtIter = iExtIterFlow;

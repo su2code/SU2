@@ -1752,13 +1752,6 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   int iProcessor;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Write file name with extension ---*/
   if (surf_sol) {
     if (adjoint || disc_adj)

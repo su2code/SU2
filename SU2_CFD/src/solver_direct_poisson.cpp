@@ -40,10 +40,6 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
   unsigned long nPoint, iPoint;
   unsigned short iVar, iDim;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   nDim =          geometry->GetnDim();
   nPoint =        geometry->GetnPoint();

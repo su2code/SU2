@@ -34,6 +34,9 @@
 #include "../include/transfer_structure.hpp"
 
 CTransfer::CTransfer(void) {
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   Physical_Constants = NULL;
   Donor_Variable     = NULL;
@@ -47,6 +50,9 @@ CTransfer::CTransfer(void) {
 
 CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) {
   
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
   unsigned short iVar;
   
   Physical_Constants = new su2double[val_nConst];
@@ -102,12 +108,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   bool fsi = donor_config->GetFSI_Simulation();
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
 
   if (rank == MASTER_NODE) 
@@ -437,8 +438,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
           Point_Target_Check = Buffer_Recv_TargetIndices[indexPoint_iVertex];
           
           if (Point_Target_Check < 0 && fsi) {
-            cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
           }
           
           for (iVar = 0; iVar < nVar; iVar++)
@@ -497,12 +497,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   bool fsi = donor_config->GetFSI_Simulation();
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
   
   if (rank == MASTER_NODE) 
@@ -760,8 +755,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
           Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
           
           if (Point_Target_Check < 0 && fsi) {
-            cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
           }
           
           for (iVar = 0; iVar < nVar; iVar++)
@@ -815,14 +809,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
   bool fsi = donor_config->GetFSI_Simulation();
   
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
 
   if (rank == MASTER_NODE) 
@@ -1111,8 +1100,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
             if (Point_Target_Check < 0 && fsi) {
-                cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-                exit(EXIT_FAILURE);
+              SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
             }
             else{
                 for (iVar = 0; iVar < nVar; iVar++)
@@ -1173,13 +1161,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   unsigned long Point_Donor, Point_Target;
   
   bool fsi = donor_config->GetFSI_Simulation();
-  
-  int size = SINGLE_NODE;
-  
+    
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
   
   if (rank == MASTER_NODE) 
@@ -1408,8 +1391,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
             Point_Target_Check = Buffer_Recv_DonorIndices[indexPoint_iVertex];
             
             if (Point_Target_Check < 0 && fsi) {
-              cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-              exit(EXIT_FAILURE);
+              SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
             }
             
             for (iVar = 0; iVar < nVar; iVar++)
@@ -1454,12 +1436,8 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
 
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE, iSize;
+  int iSize;
   int *BuffMarkerDonor, *BuffDonorFlag;
-
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
 
@@ -1574,8 +1552,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
         SpanValueCoeffTarget[iSpan]  = (SpanValuesTarget[iSpan] - SpanValuesDonor[kSpan])/(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
         break;
       default:
-        cout << "MixinPlane interface option not implemented yet" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("MixingPlane interface option not implemented yet", CURRENT_FUNCTION);
         break;
 
       }
@@ -1596,12 +1573,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
       *avgTangVelDonor = NULL, *avg3DVelDonor = NULL, *avgNuDonor = NULL, *avgOmegaDonor = NULL, *avgKineDonor = NULL;
   su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL,
       *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL, *avgOmegaTarget = NULL, *avgKineTarget = NULL;
-  int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  int size, iSize;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  int iSize;
   su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
       *BuffAvgTangVelDonor = NULL, *BuffAvgNuDonor = NULL, *BuffAvgKineDonor = NULL, *BuffAvgOmegaDonor = NULL;
   int nSpanSize, *BuffMarkerDonor;

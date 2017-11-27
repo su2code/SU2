@@ -413,13 +413,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
 
 void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned long iElem, iPoint;
   unsigned short iVar;
   bool grid_movement  = config->GetGrid_Movement();
@@ -1052,11 +1045,6 @@ void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
 	vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Variable_Airfoil;
 	ofstream csv_File;
 
-	int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-	SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 	if (nDim == 3) {
 
 		Plane_P0 = new su2double[3];
@@ -1138,14 +1126,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   
   int iProcessor;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
+
   char cstr[200], buffer[50];
   string filename;
   ofstream Tecplot_File;

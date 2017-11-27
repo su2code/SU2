@@ -33,7 +33,11 @@
 
 #include "../include/iteration_structure.hpp"
 
-CIteration::CIteration(CConfig *config) { }
+CIteration::CIteration(CConfig *config) {
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+}
+
 CIteration::~CIteration(void) { }
 
 void CIteration::SetGrid_Movement(CGeometry ***geometry_container, 
@@ -60,11 +64,6 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
     ExtIter = val_iZone;
     Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
   }
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Perform mesh movement depending on specified type ---*/
   switch (Kind_Grid_Movement) {
@@ -572,11 +571,6 @@ void CFluidIteration::SetWind_GustField(CConfig *config_container, CGeometry **g
   // If the gust derivatives are zero the source term is also zero.
   // The source term itself is implemented in the class CSourceWindGust
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   if (rank == MASTER_NODE)
     cout << endl << "Running simulation with a Wind Gust." << endl;
   unsigned short iDim, nDim = geometry_container[MESH_0]->GetnDim(); //We assume nDim = 2
@@ -630,14 +624,7 @@ void CFluidIteration::SetWind_GustField(CConfig *config_container, CGeometry **g
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
-    if (rank == MASTER_NODE) cout << "ERROR: The gust length needs to be positive" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-    SU2_MPI::Abort(MPI_COMM_WORLD,1);
-    SU2_MPI::Finalize();
-#endif
+    SU2_MPI::Error("The gust length needs to be positive", CURRENT_FUNCTION);
   }
   
   /*--- Loop over all multigrid levels ---*/
@@ -1096,11 +1083,6 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
                                   unsigned short val_iZone
                                 ) {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   su2double loadIncrement;
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
@@ -1407,11 +1389,6 @@ void CAdjFluidIteration::Preprocess(COutput *output,
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
   
   if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !harmonic_balance) {
@@ -1630,12 +1607,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   unsigned short iMesh;
   int Direct_Iter;
 
-#ifdef HAVE_MPI
-  int rank;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
   if (config_container[val_iZone]->GetUnsteady_Simulation()) {
@@ -1785,11 +1756,6 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_contain
                                            CConfig **config_container,
                                            unsigned short val_iZone, int val_DirectIter) {
   unsigned short iMesh;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && val_iZone == ZONE_0)

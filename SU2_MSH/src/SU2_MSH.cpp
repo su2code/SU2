@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   char file_name[MAX_STRING_SIZE];
-  int rank = MASTER_NODE, size = SINGLE_NODE;
+  int rank, size;
   string str;
   
   /*--- MPI initialization ---*/
@@ -50,11 +50,12 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-  SU2_MPI::Comm_rank(MPICommunicator,&rank);
-  SU2_MPI::Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 	
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
@@ -208,10 +209,7 @@ int main(int argc, char *argv[]) {
 				grid_adaptation->SetIndicator_Computable(geometry_container[ZONE_0], config_container[ZONE_0]);
 				break;
 			case REMAINING:
-				cout << "Adaptation method not implemented."<< endl;
-				cout << "Press any key to exit..." << endl;
-				cin.get();
-				exit(1);
+        SU2_MPI::Error("Adaptation method not implemented.", CURRENT_FUNCTION);
 				break;
 			default :
 				cout << "The adaptation is not defined" << endl;
