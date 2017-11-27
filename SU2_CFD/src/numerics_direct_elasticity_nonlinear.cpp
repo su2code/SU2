@@ -345,8 +345,8 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
   unsigned short iDim ;
 
   su2double GradNi_Mat_Term;
-  su2double Vol_current, Vol_reference;
-  su2double Avg_kappa;
+  su2double Vol_current = 0.0, Vol_reference;
+  su2double Avg_kappa = 0.0;
   su2double el_Pressure;
 
 
@@ -411,8 +411,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 
   }
   else {
-    cout << "Warning: Negative volume computed during FE structural analysis. Exiting..." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(" Negative volume computed during FE structural analysis.", CURRENT_FUNCTION);
   }
 
   for (iNode = 0; iNode < nNode; iNode++) {

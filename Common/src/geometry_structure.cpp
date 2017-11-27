@@ -205,10 +205,10 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
   
   if (iPoint == second_point) return node[first_point]->GetEdge(iNode);
   else {
-    cout << "\n\n   !!! Error !!!\n" << endl;
-    cout <<"Can't find the edge that connects "<< first_point <<" and "<< second_point <<"."<< endl;
-    exit(EXIT_FAILURE);
-    return -1;
+    char buf[100];
+    SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+    SU2_MPI::Error(buf, CURRENT_FUNCTION);
+    return 0;
   }
 }
 
@@ -9798,8 +9798,9 @@ void CPhysicalGeometry::SetBoundVolume(void) {
         }
       }
       if (!CheckVol) {
-        cout << "The surface element ("<< iMarker <<", "<< iElem_Surface << ") doesn't have an associated volume element." << endl;
-        exit(EXIT_FAILURE);
+        char buf[100];
+        SPRINTF(buf,"The surface element (%u, %lu) doesn't have an associated volume element", iMarker, iElem_Surface );
+        SU2_MPI::Error(buf, CURRENT_FUNCTION);
       }
     }
 }
@@ -10170,11 +10171,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
     if(marker_flag == OUTFLOW){
       if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
-        if(rank == MASTER_NODE){
-          cout << " At the moment only turbomachinery with the same amount of span-wise section can be simulated" << endl;
-          cout <<"nSpan inflow "<< nSpanWiseSections[INFLOW] << " nSpan outflow " << nSpanWiseSections[OUTFLOW]<<endl;
-        }
-        exit(EXIT_FAILURE);
+        char buf[100];
+        SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW], nSpanWiseSections[OUTFLOW]);
+        SU2_MPI::Error(string(" At the moment only turbomachinery with the same amount of span-wise section can be simulated\n") + buf, CURRENT_FUNCTION);
       }
       else{
         config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW -1]);
@@ -14835,8 +14834,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + fname, CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points. ---*/

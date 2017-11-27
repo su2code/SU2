@@ -130,9 +130,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
     restart_file.open(cstr, ios::in);
         
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no wave restart file!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("There is no wave restart file.", CURRENT_FUNCTION);
     }
     unsigned long index;
     string text_line;

@@ -2723,10 +2723,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     }
     
     else {
-      
-      cout << "There are not FFD boxes in the mesh file!!" << endl;
-      exit(EXIT_FAILURE);
-      
+      SU2_MPI::Error("There are not FFD boxes in the mesh file!!", CURRENT_FUNCTION);
     }
     
   }
@@ -2762,21 +2759,16 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       /*--- If the FFDBox was not defined in the input file ---*/
       
       if (!GetFFDBoxDefinition()) {
-        
-        cout << endl << "There is not FFD box definition in the mesh file," << endl;
-        cout << "run DV_KIND=FFD_SETTING first !!" << endl;
-        exit(EXIT_FAILURE);
-        
+        SU2_MPI::Error(string("There is not FFD box definition in the mesh file,\n") +
+                       string("run DV_KIND=FFD_SETTING first !!"), CURRENT_FUNCTION);
       }
       
       /* --- Check if the FFD boxes referenced in the design variable definition can be found --- */
       
       for (iDV = 0; iDV < config->GetnDV(); iDV++) {
         if (!CheckFFDBoxDefinition(config, iDV)) {
-          cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
-          << "\" defined in the mesh file." << endl;
-          cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
-          exit(EXIT_FAILURE);
+          SU2_MPI::Error(string("There is no FFD box with tag \"") + config->GetFFDTag(iDV) + string("\" defined in the mesh file.\n") +
+                         string("Check the definition of the design variables and/or the FFD settings !!"), CURRENT_FUNCTION);
         }
       }
       
@@ -6717,26 +6709,26 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   cout << "Enter the name of file with the airfoil information: ";
   ierr = scanf("%255s", AirfoilFile);
-  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+  if (ierr == 0) { SU2_MPI::Error("No input read!!", CURRENT_FUNCTION); }
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     SU2_MPI::Error(string("There is no airfoil file ") + string(AirfoilFile), CURRENT_FUNCTION);
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
   ierr = scanf("%14s", AirfoilFormat);
-  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+  if (ierr == 0) { SU2_MPI::Error("No input read!!", CURRENT_FUNCTION); }
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
   ierr = scanf("%lf", &AirfoilScale);
-  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+  if (ierr == 0) { SU2_MPI::Error("No input read!!", CURRENT_FUNCTION); }
 
   cout << "Close the airfoil (Yes or No)?: ";
   ierr = scanf("%14s", AirfoilClose);
-  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+  if (ierr == 0) { SU2_MPI::Error("No input read!!", CURRENT_FUNCTION); }
 
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
   ierr = scanf("%14s", MeshOrientation);
-  if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
+  if (ierr == 0) { SU2_MPI::Error("No input read!!", CURRENT_FUNCTION); }
 
   /*--- The first line is the header ---*/
   
@@ -6952,8 +6944,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	
 	mesh_file.open(cstr, ios::in);
 	if (mesh_file.fail()) {
-		cout << "There is no geometry file (ReadFFDInfo)!!" << endl;
-		exit(EXIT_FAILURE);
+    SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
 	}
 	
 	while (getline (mesh_file, text_line)) {
@@ -7081,12 +7072,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
         getline (mesh_file, text_line);
         if (text_line.substr(0,12) != "FFD_BLENDING"){
-          if (rank == MASTER_NODE) {
-            cout << endl << "Deprecated FFD information found in mesh file." << endl;
-            cout << "FFD information generated with SU2 version <= 4.3 is incompatible with the current version." << endl;
-            cout << "Run SU2_DEF again with DV_KIND= FFD_SETTING." << endl;
-          }
-          exit(EXIT_FAILURE);
+          SU2_MPI::Error(string("Deprecated FFD information found in mesh file.\n") +
+                         string("FFD information generated with SU2 version <= 4.3 is incompatible with the current version.") +
+                         string("Run SU2_DEF again with DV_KIND= FFD_SETTING."), CURRENT_FUNCTION);
         }
         text_line.erase(0,14);
         if (text_line == "BEZIER"){

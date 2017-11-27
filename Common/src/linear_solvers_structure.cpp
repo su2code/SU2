@@ -769,8 +769,8 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
       Jacobian.BuildJacobiPreconditioner(true);
       break;
     default:
-      cout << "The specified preconditioner is not yet implemented for the discrete adjoint method." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      break;
   }
 
   /*--- Push the external function to the AD tape ---*/
