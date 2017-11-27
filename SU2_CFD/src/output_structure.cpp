@@ -7949,7 +7949,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
-  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure, Angle,
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *Plane_Normal_, *CPressure, Angle,
   Force[3], ForceInviscid[3], MomentInviscid[3] =
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
@@ -7976,6 +7976,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Plane_P0 = new su2double[3];
   Plane_P0_ = new su2double[3];
   Plane_Normal = new su2double[3];
+  Plane_Normal_ = new su2double[3];
   CPressure = new su2double[geometry->GetnPoint()];
   
   /*--- Compute some reference quantities and necessary values ---*/
@@ -8028,8 +8029,19 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
       Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
       
-      Plane_Normal[1] = 1.0;
-      Plane_P0[1] = config->GetLocationStations(iSection);
+      if (config->GetGeo_Description() == FUSELAGE) {
+        Plane_Normal[0] = 1.0;
+        Plane_P0[0] = config->GetLocationStations(iSection);
+      }
+      else if (config->GetGeo_Description() == NACELLE) {
+        Plane_Normal[0] = 0.0;
+        Plane_Normal[1] = -sin(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+        Plane_Normal[2] = cos(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+      }
+      else {
+        Plane_Normal[1] = 1.0;
+        Plane_P0[1] = config->GetLocationStations(iSection);
+      }
 
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
@@ -8038,18 +8050,43 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
                                        CPressure_Airfoil, true, config);
       
       if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-        cout << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+        if ((config->GetGeo_Description() == FUSELAGE) || (config->GetGeo_Description() == WING))
+          cout << endl << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+        if (config->GetGeo_Description() == NACELLE)
+          cout << endl << "Please check the config file, the section (" << Plane_Normal[0] <<", " << Plane_Normal[1] <<", " << Plane_Normal[2] << ") has not been detected." << endl;
       }
       
       
       /*--- Compute dihedral using a step in the station value ---*/
       
-      Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
-      
-      if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
-      else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+      Plane_P0_[0] = 0.0; Plane_Normal_[0] = 0.0;
+      Plane_P0_[1] = 0.0; Plane_Normal_[1] = 0.0;
+      Plane_P0_[2] = 0.0; Plane_Normal_[2] = 0.0;
 
-      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+      if (config->GetGeo_Description() == FUSELAGE) {
+        Plane_Normal_[0] = 1.0;
+        if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+        else Plane_P0_[0] = config->GetLocationStations(iSection) - 0.01;
+      }
+      else if (config->GetGeo_Description() == NACELLE) {
+        if (iSection == 0) {
+          Plane_Normal_[0] = 0.0;
+          Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+          Plane_Normal_[2] = cos((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+        }
+        else {
+          Plane_Normal_[0] = 0.0;
+          Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+          Plane_Normal_[2] = cos((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+        }
+      }
+      else {
+        Plane_Normal_[1] = 1.0;
+        if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
+        else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
+      }
+   
+      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal_, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
                                        CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
                                        CPressure_Airfoil_, true, config);
       
@@ -8113,27 +8150,49 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           } else
             Cp_File.open("cp_sections.dat", ios::app);
           
-          if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
-            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          if (config->GetGeo_Description() == NACELLE) {
+            su2double theta_deg = atan2(Plane_Normal[1], -Plane_Normal[2])/PI_NUMBER*180 + 180;
+            Cp_File << "ZONE T=\"Theta = " << theta_deg << " deg\", I= " << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          }
+          else {
+            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
+              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+            
+            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
+              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          }
           
-          if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[1]*12.0 << " in\", I= "
-            << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+
           
           /*--- Coordinates and pressure value ---*/
           
-          if (config->GetSystemMeasurements() == SI) {
-            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
-              << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
-              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            su2double XCoord = Xcoord_Airfoil[iVertex];
+            su2double YCoord = Ycoord_Airfoil[iVertex];
+            su2double ZCoord = Zcoord_Airfoil[iVertex];
+            
+            /*--- Undo the transformation based on the Theta angle ---*/
+            
+            if (config->GetGeo_Description() == NACELLE) {
+              su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+              su2double Angle = theta_deg*PI_NUMBER/180 - 0.5*PI_NUMBER;
+              XCoord = Xcoord_Airfoil[iVertex];
+              YCoord = Ycoord_Airfoil[iVertex]*cos(Angle) - Zcoord_Airfoil[iVertex]*sin(Angle);
+              ZCoord = Zcoord_Airfoil[iVertex]*cos(Angle) + Ycoord_Airfoil[iVertex]*sin(Angle);
             }
-          }
-          if (config->GetSystemMeasurements() == US) {
-            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            if (config->GetSystemMeasurements() == US) {
               Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
-              << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
-              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+              << " " << XCoord * 12.0 << " " << YCoord * 12.0 << " " << ZCoord * 12.0
+              << " " << (Ycoord_Airfoil[iVertex] - Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
             }
+            else {
+              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
+              << " " << XCoord << " " << YCoord << " " << ZCoord
+              << " " << (Ycoord_Airfoil[iVertex] - Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+            }
+            
           }
           
           Cp_File.close();
@@ -8240,6 +8299,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   delete[] Plane_P0;
   delete[] Plane_P0_;
   delete[] Plane_Normal;
+  delete[] Plane_Normal_;
   delete[] CPressure;
   
 }
