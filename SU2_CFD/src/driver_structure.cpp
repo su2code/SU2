@@ -1284,7 +1284,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("No convective scheme.", CURRENT_FUNCTION);
         break;
         
       case SPACE_CENTERED :
@@ -1591,7 +1591,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("No convective scheme.", CURRENT_FUNCTION);
         break;
         
       case SPACE_CENTERED :
@@ -3960,8 +3960,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
             Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
             KindBCOption       = config_container[iZone]->GetKind_Data_Riemann(Marker_Tag);
             if(KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM ){
-              cout << "Outlet pressure ramp only implemented for NRBC" <<endl;
-              exit(EXIT_FAILURE);
+              SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
             }
             break;
           case GILES_BOUNDARY:
