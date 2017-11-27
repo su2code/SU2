@@ -195,7 +195,7 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
   
   if (m < 1) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size, m = %u", m );
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
@@ -312,7 +312,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   
   if (m < 1) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size, m = %u", m );
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
@@ -320,7 +320,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   
   if (m > 1000) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size (too high), m = %u", m );
+    SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
@@ -459,7 +459,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   
   if (m < 1) {
     char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size, m = %u", m );
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
