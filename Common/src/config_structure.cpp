@@ -1010,6 +1010,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
   addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
+  /* DESCRIPTION:  Turn on/off harmonic balance preconditioning */
+  addBoolOption("HB_PRECONDITION", HB_Precondition, false);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */

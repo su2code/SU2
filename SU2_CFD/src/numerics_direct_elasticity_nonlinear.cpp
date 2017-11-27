@@ -1384,7 +1384,7 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
   /* -- Zhao, X. and Suo, Z. (2008) (full reference in class constructor). ---*/
 
   unsigned short iVar, jVar;
-  su2double dij;
+  su2double dij = 0.0;
 
   /*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
   Compute_Isochoric_F_b();

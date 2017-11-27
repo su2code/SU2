@@ -809,6 +809,12 @@ public:
    * \param[in] iZone - Current zone number.
    */
   void SetHarmonicBalance(unsigned short iZone);
+	
+  /*!
+   * \brief Precondition Harmonic Balance source term for stability
+   * \author J. Howison
+   */
+  void StabilizeHarmonicBalance();
 
   /*!
    * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.

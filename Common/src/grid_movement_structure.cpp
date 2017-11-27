@@ -9579,7 +9579,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
   unsigned short iDim, jDim;
 
-  su2double *VarCoord;
+  su2double *VarCoord = NULL;
 
   unsigned long iNode, iVertex;
   unsigned long iPoint, jPoint;
@@ -9679,7 +9679,7 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
 
-  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual;
+  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual = 1.0;
 
   unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
   unsigned long IterLinSol = 0;
@@ -9689,7 +9689,6 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
   /*--- Initialize the structures to solve the system ---*/
 
   CMatrixVectorProduct* mat_vec = NULL;
-  CPreconditioner* precond = NULL;
   CSysSolve *system  = new CSysSolve();
 
   bool TapeActive = NO;
