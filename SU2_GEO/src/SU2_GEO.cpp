@@ -56,19 +56,19 @@ int main(int argc, char *argv[]) {
  	char *cstr;
   bool Local_MoveSurface, MoveSurface = false;
   ofstream Gradient_file, ObjFunc_file;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+  int rank, size;
   
   /*--- MPI initialization ---*/
   
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-  SU2_MPI::Comm_rank(MPICommunicator,&rank);
-  SU2_MPI::Comm_size(MPICommunicator,&size);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
@@ -705,16 +705,7 @@ int main(int argc, char *argv[]) {
         delta_eps = config_container[ZONE_0]->GetDV_Value(iDV);
         
         if (delta_eps == 0) {
-          cout << "The finite difference steps is zero!!" << endl;
-          cout << "Press any key to exit..." << endl;
-          cin.get();
-#ifdef HAVE_MPI
-          SU2_MPI::Barrier(MPI_COMM_WORLD);
-          SU2_MPI::Abort(MPI_COMM_WORLD,1);
-          SU2_MPI::Finalize();
-#else
-          exit(EXIT_FAILURE);
-#endif
+          SU2_MPI::Error("The finite difference steps is zero!!", CURRENT_FUNCTION);
         }
         
         if (MoveSurface) {
