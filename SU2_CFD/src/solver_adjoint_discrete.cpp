@@ -273,7 +273,7 @@ void CDiscAdjSolver::RegisterTranspiration(CGeometry *geometry, CConfig *config)
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          direct_solver->node[iPoint]->RegisterTranspiration(VelRef);
+          direct_solver->node[iPoint]->RegisterTranspiration(Vel_Ref);
         }
       }
     //}
@@ -474,7 +474,9 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
 
   unsigned short iMarker;
   unsigned long iPoint, iVertex;
-  su2double Sensitivity, eps, VelEps;
+  su2double Sensitivity, eps;
+
+  su2double Vel_Ref = config->GetVelocity_Ref();
 
   bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
   
@@ -483,7 +485,7 @@ void CDiscAdjSolver::SetSensitivityTranspiration(CGeometry *geometry, CConfig *c
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          Sensitivity = direct_solver->node[iPoint]->GetAdjointTranspiration();
+          Sensitivity = direct_solver->node[iPoint]->GetAdjointTranspiration(Vel_Ref);
 
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 

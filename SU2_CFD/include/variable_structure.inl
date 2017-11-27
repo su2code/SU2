@@ -1137,9 +1137,9 @@ inline void CVariable::SetAdjointSolution(su2double *adj_sol) {
 }
 
 inline void CVariable::RegisterTranspiration(su2double Vel_Ref){
-	su2double TranspVel_tmp = TranspVel*Vel_Ref;
-	AD::RegisterInput(TranspVel_tmp);
-	TranspVel = TranspVel_tmp/Vel_Ref;
+	TranspVel *= Vel_Ref;
+	AD::RegisterInput(TranspVel);
+	TranspVel /= Vel_Ref;
 }
 
 inline void CVariable::GetAdjointSolution(su2double *adj_sol) {
@@ -1148,8 +1148,11 @@ inline void CVariable::GetAdjointSolution(su2double *adj_sol) {
     }
 }
 
-inline su2double CVariable::GetAdjointTranspiration() {
-    return SU2_TYPE::GetDerivative(TranspVel);
+inline su2double CVariable::GetAdjointTranspiration(su2double Vel_Ref) {
+	TranspVel *= Vel_Ref;
+	su2double der = SU2_TYPE::GetDerivative(TranspVel);
+	TranspVel /= Vel_Ref;
+    return der;
 }
 
 inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol) {
