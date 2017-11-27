@@ -707,6 +707,10 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
   su2double y0, y1, y2, y3;
   su2double eps0, eps1, eps2, eps3;
   su2double x, y;
+  su2double Pressure_ref, Density_Ref, Temperature_Ref;
+  su2double Pressure_FreeStream = config->GetPressure_FreeStream();
+  su2double Density_FreeStream  = config->GetDensity_FreeStream();
+  su2double Temperature_FreeStream  = config->GetTemperature_FreeStream();
 
   su2double s[2], a[4], b[4], aa, bb, cc;
 
