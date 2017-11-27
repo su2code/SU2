@@ -8089,12 +8089,12 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
   Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
-  RefLength, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv,
+  RefLength, Alpha, Beta, CL_Inv,
   Xcoord_LeadingEdge = 0.0, Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
   Xcoord_TrailingEdge = 0.0, Ycoord_TrailingEdge = 0.0, Zcoord_TrailingEdge = 0.0,
   Xcoord_LeadingEdge_ = 0.0, Ycoord_LeadingEdge_ = 0.0, Zcoord_LeadingEdge_ = 0.0,
   Xcoord_TrailingEdge_ = 0.0, Ycoord_TrailingEdge_ = 0.0, Zcoord_TrailingEdge_ = 0.0,
-  MaxDistance, Distance, Chord, Aux, Dihedral_Leading, Dihedral_Trailing;
+  MaxDistance, Distance, Chord, Aux, Dihedral_Trailing;
   
   su2double B, Y, C_L, C_L0, Elliptic_Spanload;
   
@@ -8241,11 +8241,9 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         }
         
         if (iSection == 0) {
-          Dihedral_Leading = atan((Zcoord_LeadingEdge_ - Zcoord_LeadingEdge) / (Ycoord_LeadingEdge_ - Ycoord_LeadingEdge))*180/PI_NUMBER;
           Dihedral_Trailing = atan((Zcoord_TrailingEdge_ - Zcoord_TrailingEdge) / (Ycoord_TrailingEdge_ - Ycoord_TrailingEdge))*180/PI_NUMBER;
         }
         else {
-          Dihedral_Leading = atan((Zcoord_LeadingEdge - Zcoord_LeadingEdge_) / (Ycoord_LeadingEdge - Ycoord_LeadingEdge_))*180/PI_NUMBER;
           Dihedral_Trailing = atan((Zcoord_TrailingEdge - Zcoord_TrailingEdge_) / (Ycoord_TrailingEdge - Ycoord_TrailingEdge_))*180/PI_NUMBER;
         }
         
@@ -8341,8 +8339,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         Chord = MaxDistance;
         
         CL_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha) )/ Chord;
-        CD_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) + ForceInviscid[2] * sin(Alpha) * cos(Beta)) / Chord;
-        CMy_Inv = MomentInviscid[1]/ Chord;
         
         /*--- Compute sectional lift at the root ---*/
         
@@ -16272,7 +16268,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
   /*--- Collective call for all ranks to write to their view simultaneously. ---*/
 
@@ -16284,7 +16280,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Reset the file view before writing the metadata. ---*/
 
-  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
   /*--- Finally, the master rank writes the metadata. ---*/
 

@@ -12293,7 +12293,6 @@ private:
   su2double *SolRest;     /*!< \brief Auxiliary vector to restart the solution */
 
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
-  su2double E, Nu, Rho, Rho_DL; /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */

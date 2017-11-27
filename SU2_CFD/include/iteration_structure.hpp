@@ -1287,7 +1287,8 @@ public:
    * \param[in] iZone - Index of the zone.
    */
   void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
-
+  using CIteration::RegisterOutput;
+  
   /*!
    * \brief Initializes the adjoints of the output variables of the FEM iteration.
    * \param[in] solver_container - Container vector with all the solutions.
