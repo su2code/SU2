@@ -5202,11 +5202,11 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 void CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
 
   unsigned long iElem;
-  unsigned short iNode, iDim, nNodes;
+  unsigned short iNode, iDim, nNodes = 0;
 
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord, val_Sol;
-  int EL_KIND;
+  int EL_KIND = 0;
 
   su2double elementVolume, dvValue, ratio;
   su2double weightedValue = 0.0;

@@ -4676,7 +4676,6 @@ private:
   
   su2double* Solution_BGS;
   su2double* Solution_BGS_k;
-  su2double* Solution_Geometry_BGS;
   su2double* Solution_Geometry_BGS_k;
   
 public:
