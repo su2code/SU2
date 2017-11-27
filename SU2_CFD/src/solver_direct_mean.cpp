@@ -3457,69 +3457,6 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 }
 
-/*void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
-    unsigned long iPoint, iPoint_Global, nTranspNodeLoc, nTranspNodeGlobal;
-    long iNode_Local;
-    string text_line;
-    string fn = config->GetTranspirationFileName();
-    ifstream Transp_file;
-    su2double TranspVel;
-    const char *filename = fn.c_str();
-
-    int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-    if(rank == MASTER_NODE)
-      cout << "Reading transpiration data from file " << filename << "." << endl;
-
-    Transp_file.open(filename, ios::in);
-    if(Transp_file.fail()){
-        cout<<"There is no file defining transpiration "<< filename << "."<<endl;
-        exit(EXIT_FAILURE);
-    }
-*/
-    /*--- In case this is a parallel simulation, we need to perform the
-       Global2Local index transformation first. ---*/
-
-/*    long *Global2Local = NULL;
-    int n = geometry->GetGlobal_nPointDomain();
-    Global2Local = new long[n];
-*/
-    /*--- First, set all indices to a negative value by default ---*/
-
-/*    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-        Global2Local[iPoint] = -1;
-    }
-*/
-    /*--- Now fill array with the transform values only for local points ---*/
-/*    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-        Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-        node[iPoint]->SetTranspiration(0.0);
-    }
-
-    nTranspNodeLoc = 0;
-    nTranspNodeGlobal = 0;
-    while (getline (Transp_file, text_line)){
-        istringstream point_line(text_line);
-        point_line >> iPoint_Global;
-        point_line >> TranspVel;
-        iNode_Local = Global2Local[iPoint_Global];
-        if(iNode_Local >= 0){
-          node[iNode_Local]->SetTranspiration(TranspVel/config->GetVelocity_Ref());
-          nTranspNodeLoc++;
-        }
-        nTranspNodeGlobal++;
-    }
-
-    SetnTranspNode(nTranspNodeLoc);
-    SetnTranspNode_Global(nTranspNodeGlobal);
-
-    Transp_file.close();
-    delete [] Global2Local;
-}*/
-
 void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
@@ -3561,6 +3498,7 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
 
           /*--- Logical coordinates ---*/
           s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
+          if(s[1] < 0.0 || s[1] > 1.0){s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);}
           s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
 
           if(s[0] >= 0. && s[0] <= 1. && s[1] >= 0.0 && s[1] <= 1.0){
