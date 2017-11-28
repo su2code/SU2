@@ -496,6 +496,7 @@ then
   build_SOL=no
   build_GEO=no
   build_PY=no
+  build_PY_WRAPPER=no
 fi
 
 if test $build_REVERSE == "yes"
