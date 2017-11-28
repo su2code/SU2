@@ -10924,7 +10924,10 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
   delete [] c_avg;
   delete [] dcjs;
 
-
+  delete [] AverageTurboMach;
+  delete [] UnitNormal;
+  delete [] turboNormal;
+  delete [] turboVelocity;
 }
 
 void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,

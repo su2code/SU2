@@ -10301,6 +10301,10 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    delete solver[iZone];
+  }
+  delete [] solver;
 }
 
 void COutput::WriteTurboPerfConvHistory(CConfig *config){
@@ -16007,6 +16011,10 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   delete [] buf;
 
+  delete [] Local_Halo;
+  delete [] npoint_procs;
+  delete [] nPoint_Linear;
+
 }
 
 void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
@@ -16407,6 +16415,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalPressure;
   delete [] Surface_Area;
   delete [] Vector;
+  delete [] Surface_VelocityIdeal;
   
 }
 
