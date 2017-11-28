@@ -2778,6 +2778,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iVar;
+  
+  nPoint = geometry->GetnPoint();
 
   /*--- Define geometry constants in the solver structure ---*/
 
@@ -2805,6 +2807,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned long iPoint;
   unsigned short iVar;
+  
+  nPoint = geometry->GetnPoint();
 
   config->fields = field_names;
 
