@@ -260,7 +260,7 @@ def main():
     turb_naca0012_sst_restart_mg           = TestCase('turb_naca0012_sst_restart_mg')
     turb_naca0012_sst_restart_mg.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
-    turb_naca0012_sst_restart_mg.test_iter = 600
+    turb_naca0012_sst_restart_mg.test_iter = 99
     turb_naca0012_sst_restart_mg.ntest_vals = 5
     turb_naca0012_sst_restart_mg.test_vals = [-6.482396, -4.653908, 1.155000, -0.006296, 0.078747] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
