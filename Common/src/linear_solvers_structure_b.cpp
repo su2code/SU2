@@ -53,20 +53,20 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   data->getData(oldValues);
 #endif
 
-  unsigned long nBlk, nVar, nBlkDomain, size, i;
+  unsigned long nBlk = 0, nVar = 0, nBlkDomain = 0, size = 0, i = 0;
 
   data->getData(size);
   data->getData(nBlk);
   data->getData(nVar);
   data->getData(nBlkDomain);
 
-  CSysMatrix* Jacobian;
+  CSysMatrix* Jacobian = NULL;
   data->getData(Jacobian);
 
-  CGeometry* geometry;
+  CGeometry* geometry  = NULL;
   data->getData(geometry);
 
-  CConfig* config;
+  CConfig* config      = NULL;
   data->getData(config);
 
   CSysVector LinSysRes_b(nBlk, nBlkDomain, nVar, 0.0);
@@ -135,8 +135,8 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
 void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
-  su2double::GradientData *LinSysRes_Indices;
-  su2double::GradientData *LinSysSol_Indices;
+  su2double::GradientData *LinSysRes_Indices = NULL;
+  su2double::GradientData *LinSysSol_Indices = NULL;
 #if CODI_PRIMAL_INDEX_TAPE
   su2double::Real *oldValues;
 #endif
