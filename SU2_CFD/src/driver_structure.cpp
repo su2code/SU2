@@ -4666,6 +4666,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
     delete [] Source_Turb;
   }
 
+  delete [] Source;
   delete [] U;
   delete [] U_old;
   delete [] Psi;
