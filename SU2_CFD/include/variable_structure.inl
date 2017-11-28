@@ -1149,10 +1149,11 @@ inline void CVariable::GetAdjointSolution(su2double *adj_sol) {
 }
 
 inline su2double CVariable::GetAdjointTranspiration(su2double Vel_Ref) {
-	//TranspVel *= Vel_Ref;
-	return SU2_TYPE::GetDerivative(TranspVel);
-	//TranspVel /= Vel_Ref;
-    //return der;
+	//return SU2_TYPE::GetDerivative(TranspVel);
+	TranspVel *= Vel_Ref;
+	der = SU2_TYPE::GetDerivative(TranspVel);
+	TranspVel /= Vel_Ref;
+    return der;
 }
 
 inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol) {
