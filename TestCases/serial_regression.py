@@ -224,7 +224,7 @@ def main():
     turb_naca0012_sa_bin.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa_bin.cfg_file  = "turb_NACA0012_sa_binary.cfg"
     turb_naca0012_sa_bin.test_iter = 10
-    turb_naca0012_sa_bin.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
+    turb_naca0012_sa_bin.test_vals = [-12.000899, -9.145363, 1.070528, 0.019417] #last 4 columns
     turb_naca0012_sa_bin.su2_exec  = "SU2_CFD"
     turb_naca0012_sa_bin.timeout   = 3200
     turb_naca0012_sa_bin.tol       = 0.00001
@@ -620,7 +620,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.341209, 0.417501, 82.840290, 0.882243] #last 4 columns
+    Jones_tc.test_vals = [-5.351599, 0.407111, 82.840290, 0.882243] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -631,7 +631,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.269293, -1.411479, 82.25364, 2.776473] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.279683, -1.421869, 82.253640, 2.776473] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -642,7 +642,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [ -1.833801, 5.789167, 73.680330, 0.888917] #last 4 columns
+    axial_stage2D.test_vals = [ -1.836926, 5.787277, 73.679940, 0.888933] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
@@ -653,7 +653,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-1.107269, 6.122699, 67.101450, 0.070037] #last 4 columns
+    transonic_stator.test_vals = [-1.109571, 6.120397, 67.101450, 0.070037] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
@@ -664,7 +664,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-0.485464, 4.462811,6.456515e+00,4.009061e-03] #last 4 columns
+    transonic_stator_rst.test_vals = [-0.487766, 4.460510, 6.456515, 0.004009] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001
@@ -1040,7 +1040,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 20
-    pywrapper_naca0012.test_vals = [-6.191618, -5.592802, 0.334809, 0.022197] #last 4 columns
+    pywrapper_naca0012.test_vals = [-4.047448, -3.538057, 0.338691, 0.023131] #last 4 columns
     pywrapper_naca0012.su2_exec  = "SU2_CFD.py -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
