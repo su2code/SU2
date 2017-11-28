@@ -10952,6 +10952,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   delete [] rank_loc;
   delete [] minAngPitch;
   delete [] maxAngPitch;
+  delete [] minIntAngPitch;
 
 }
 
@@ -11841,6 +11842,14 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     
     delete[] Buffer_Send_nVertex;
     delete[] Buffer_Receive_nVertex;
+
+    delete [] Buffer_Send_GlobalIndex;
+    delete [] Buffer_Send_Vertex;
+    delete [] Buffer_Send_Marker;
+
+    delete [] Buffer_Receive_GlobalIndex;
+    delete [] Buffer_Receive_Vertex;
+    delete [] Buffer_Receive_Marker;
     
   }
   
@@ -12032,6 +12041,14 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     
     delete[] Buffer_Send_nVertex;
     delete[] Buffer_Receive_nVertex;
+
+    delete [] Buffer_Send_GlobalIndex;
+    delete [] Buffer_Send_Vertex;
+    delete [] Buffer_Send_Marker;
+
+    delete [] Buffer_Receive_GlobalIndex;
+    delete [] Buffer_Receive_Vertex;
+    delete [] Buffer_Receive_Marker;
     
   }
   
@@ -12249,6 +12266,14 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       
       delete[] Buffer_Send_nVertex;
       delete[] Buffer_Receive_nVertex;
+
+      delete [] Buffer_Send_GlobalIndex;
+      delete [] Buffer_Send_Vertex;
+      delete [] Buffer_Send_Marker;
+
+      delete [] Buffer_Receive_GlobalIndex;
+      delete [] Buffer_Receive_Vertex;
+      delete [] Buffer_Receive_Marker;
       
     }
   }
