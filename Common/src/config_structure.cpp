@@ -508,6 +508,8 @@ void CConfig::SetPointersNull(void) {
   nBlades                      = NULL;
   FreeStreamTurboNormal        = NULL;
 
+  ConvHistFile                 = NULL;
+
   /*--- Variable initialization ---*/
   
   ExtIter    = 0;
@@ -2341,6 +2343,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Dynamic_Analysis == STATIC)
 	nExtIter = 1;
   }
+
+  /*--- Initialize the ofstream ConvHistFile. ---*/
+  ofstream ConvHistFile;
 
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   

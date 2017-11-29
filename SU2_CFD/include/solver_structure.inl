@@ -456,6 +456,8 @@ inline void CSolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
 
 inline void CSolver::SetLoad_Increment(su2double val_loadIncrement) {  }
 
+inline su2double CSolver::GetLoad_Increment() { return 0; }
+
 inline void CSolver::SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
 inline su2double CSolver::GetTotal_CWave() { return 0; }
@@ -1980,6 +1982,8 @@ inline void CFEM_ElasticitySolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn
 inline void CFEM_ElasticitySolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
 
 inline void CFEM_ElasticitySolver::SetLoad_Increment(su2double val_loadIncrement) { loadIncrement = val_loadIncrement; }
+
+inline su2double CFEM_ElasticitySolver::GetLoad_Increment(void) { return loadIncrement; }
 
 inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
 

@@ -3682,6 +3682,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] Value of the load increment for nonlinear structural analysis
+   */
+  virtual su2double GetLoad_Increment(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Output - boolean to determine whether to print output.
@@ -11846,6 +11852,12 @@ public:
    */
   void SetLoad_Increment(su2double val_loadIncrement);
   
+  /*!
+   * \brief Get the value of the load increment for nonlinear structural analysis
+   * \param[in] Value of the coefficient
+   */
+  su2double GetLoad_Increment(void);
+
   /*!
    * \brief Set a reference geometry for prestretched conditions.
    * \param[in] geometry - Geometrical definition of the problem.

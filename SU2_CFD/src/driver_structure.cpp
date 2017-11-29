@@ -400,7 +400,8 @@ CDriver::CDriver(char* confFile,
   if (rank == MASTER_NODE){
     ConvHist_file = new ofstream[nZone];
     for (iZone = 0; iZone < nZone; iZone++) {
-      output->SetConvHistory_Header(&ConvHist_file[iZone], config_container[ZONE_0], iZone);
+      output->SetConvHistory_Header(&ConvHist_file[iZone], config_container[iZone], iZone);
+      config_container[iZone]->SetHistFile(&ConvHist_file[iZone]);
     }
   }
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
