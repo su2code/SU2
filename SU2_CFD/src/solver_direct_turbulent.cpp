@@ -3960,7 +3960,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           /*--- Primitive variables, and gradient ---*/
 
           visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-          //          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
 
           /*--- Turbulent variables and its gradients  ---*/
 
@@ -3987,6 +3987,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
+  delete [] tmp_residual;
 
 }
 

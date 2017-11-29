@@ -2740,12 +2740,12 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
 }
 
 void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Local variables ---*/
   su2double deltaX[3], newCoord[3], Center[3], *Coord;
   su2double xDot[3];
@@ -2754,11 +2754,12 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
+  bool restart = (config->GetRestart());
 
-	
+
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
-  
+
   /*--- Get motion center and translation rates from config ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);
@@ -2766,14 +2767,14 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   xDot[0]   = config->GetTranslation_Rate_X(iZone);
   xDot[1]   = config->GetTranslation_Rate_Y(iZone);
   xDot[2]   = config->GetTranslation_Rate_Z(iZone);
-  
+
   if (harmonic_balance) {
-	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetHarmonicBalance_Period();
-	  period /= config->GetTime_Ref();
-	  deltaT = period/(su2double)(config->GetnTimeInstances());
+    /*--- period of oscillation & time interval using nTimeInstances ---*/
+    su2double period = config->GetHarmonicBalance_Period();
+    period /= config->GetTime_Ref();
+    deltaT = period/(su2double)(config->GetnTimeInstances());
   }
-  
+
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
     /*--- For the unsteady adjoint, we integrate backwards through
@@ -2787,24 +2788,24 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
     if (harmonic_balance) {
-    	/*--- For harmonic balance, begin movement from the zero position ---*/
-    	time_old = 0.0;
+      /*--- For harmonic balance, begin movement from the zero position ---*/
+      time_old = 0.0;
     } else {
-    	time_old = time_new;
-    	if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
+      time_old = time_new;
+      if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
     }
   }
-  
-	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
-	deltaX[0] = xDot[0]*(time_new-time_old);
-	deltaX[1] = xDot[1]*(time_new-time_old);
-	deltaX[2] = xDot[2]*(time_new-time_old);
+
+  /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+  deltaX[0] = xDot[0]*(time_new-time_old);
+  deltaX[1] = xDot[1]*(time_new-time_old);
+  deltaX[2] = xDot[2]*(time_new-time_old);
 
   if (rank == MASTER_NODE) {
     cout << " New physical time: " << time_new << " seconds." << endl;
     if (iter == 0) {
-    cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
-    cout << ", " << xDot[2] << ") m/s." << endl;
+      cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
+      cout << ", " << xDot[2] << ") m/s." << endl;
     }
   }
 
@@ -2851,37 +2852,38 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     }
 
   }
-  
-	/*--- Loop over and move each node in the volume mesh ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+
+  /*--- Loop over and move each node in the volume mesh ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
     /*--- Coordinates of the current point ---*/
     Coord = geometry->node[iPoint]->GetCoord();
-    
+
     /*--- Increment the node position using the delta values. ---*/
     for (iDim = 0; iDim < nDim; iDim++)
       newCoord[iDim] = Coord[iDim] + deltaX[iDim];
-    
+
     /*--- Store new node location & grid velocity. Do not store the grid
      velocity if this is an adjoint calculation. ---*/
-    
+
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
+      if (!restart && harmonic_balance)
+        geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
     }
   }
-  
+
   /*--- Set the mesh motion center to the new location after
    incrementing the position with the rigid translation. This
    new location will be used for subsequent pitching/rotation.---*/
-  
+
   config->SetMotion_Origin_X(iZone, Center[0]+deltaX[0]);
   config->SetMotion_Origin_Y(iZone, Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone, Center[2]+deltaX[2]);
-  
+
   /*--- Set the moment computation center to the new location after
    incrementing the position with the translation. ---*/
-  
+
   for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
     Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
@@ -2890,11 +2892,11 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     config->SetRefOriginMoment_Y(jMarker, Center[1]);
     config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
-  
-	/*--- After moving all nodes, update geometry class ---*/
-	
+
+  /*--- After moving all nodes, update geometry class ---*/
+
   UpdateDualGrid(geometry, config);
-  
+
 }
 
 
