@@ -6145,6 +6145,10 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
     myfile_res.close();
   }
 
+  /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+  config_container[ZONE_0]->SetnExtIter(1);
+  config_container[ZONE_1]->SetnExtIter(1);
+
 }
 
 CDiscAdjFSIStatDriver::~CDiscAdjFSIStatDriver(void) {
@@ -7528,6 +7532,16 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
     cout << endl;
     cout << "Convergence summary for BGS subiteration ";
     cout << IntIter << endl;
+    cout << endl;
+    /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+    cout << "   Iter[ID]" << "    [Psi_Rho]" << "      [Psi_E]" << "     [Psi_Ux]" << "     [Psi_Uy]" << endl;
+    cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+    cout.width(11); cout << IntIter*1000;
+    cout.width(13); cout << residual_flow[0];
+    cout.width(13); cout << residual_flow[nVar_Flow-1];
+    cout.width(13); cout << residual_struct[0];
+    cout.width(13); cout << residual_struct[1];
+    cout << endl;
     cout << endl;
     cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
     cout << "                      "; cout << "   Absolute" << "     Criteria" << "     Relative" << "     Criteria" << endl;
