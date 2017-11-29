@@ -935,6 +935,7 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
+  ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -7754,6 +7755,16 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Retrieve the ofstream of the history file for the current zone.
+   */
+  ofstream* GetHistFile(void);
+
+  /*!
+   * \brief Set the ofstream of the history file for the current zone.
+   */
+  void SetHistFile(ofstream *HistFile);
 };
 
 #include "config_structure.inl"
