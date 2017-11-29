@@ -4449,16 +4449,16 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
 
   DirectRun();
 
-  /*--- Print residuals in the first iteration ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
-      cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
-      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
-        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-      }
-    }
-  }
+//  /*--- Print residuals in the first iteration ---*/
+//
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == CONS_VARS)) {
+//      cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+//      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+//        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+//      }
+//    }
+//  }
 
   RecordingState = kind_recording;
 
@@ -4930,7 +4930,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
   }
 
   /*--- Source term for a turbulence model ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+  if (config_container[ZONE_0]->GetKind_Solver() == RANS || config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) {
 
     /*--- Extra variables needed if we have a turbulence model. ---*/
     unsigned short nVar_Turb = solver_container[ZONE_0][MESH_0][TURB_SOL]->GetnVar();
@@ -5374,6 +5374,17 @@ void CHBMultiZoneDriver::Run() {
   if (rank == MASTER_NODE)
       SetAvgTurboPerformance_HB(iTimeInstance);
 
+//  /*--- Print residuals ---*/
+//
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (rank == MASTER_NODE ) {
+//      cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+//      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+//        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+//      }
+//    }
+//  }
+
 }
 
 void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
@@ -5394,23 +5405,19 @@ void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short 
         transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
         geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
         config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
+        if (config_container[targetZone]->GetKind_Solver() == RANS || config_container[targetZone]->GetKind_Solver() == DISC_ADJ_RANS)
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
-        /*--- Set the volume deformation for the fluid zone ---*/
-        //grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
       }
       else {
         transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
         geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
         config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
+        if (config_container[targetZone]->GetKind_Solver() == RANS || config_container[targetZone]->GetKind_Solver() == DISC_ADJ_RANS )
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
-        /*--- Set the volume deformation for the fluid zone ---*/
-//        grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
       }
     break;
 
@@ -5419,7 +5426,7 @@ void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short 
       transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
       geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
       config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
+        if (config_container[targetZone]->GetKind_Solver() == RANS || config_container[targetZone]->GetKind_Solver() == DISC_ADJ_RANS)
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
@@ -5441,7 +5448,7 @@ void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short 
       transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
       geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
       config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
+        if (config_container[targetZone]->GetKind_Solver() == RANS || config_container[targetZone]->GetKind_Solver() == DISC_ADJ_RANS)
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][TURB_SOL],solver_container[targetZone][MESH_0][TURB_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
@@ -5955,6 +5962,7 @@ void CDiscAdjHBMultiZone::DirectRun(){
 
   if (rank == MASTER_NODE)
       SetAvgTurboPerformance_HB(iTimeInstance);
+
 
 }
 
