@@ -1294,7 +1294,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
             node[iPoint]->SetSolution_Old(&Tconjugate);
             LinSysRes.SetBlock_Zero(iPoint, 0);
-            node[iPoint]->SetVel_ResTruncError_Zero();
+            node[iPoint]->SetRes_TruncErrorZero();
 
             if (implicit) {
               for (iVar = 0; iVar < nVar; iVar++) {
