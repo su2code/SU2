@@ -433,8 +433,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   if (fsi){
 
     FSI_Residual      = 0.0;
-    RelaxCoeff        = 0.0;
-    ForceCoeff        = 0.0;
+    RelaxCoeff        = 1.0;
+    ForceCoeff        = 1.0;
 
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
@@ -449,7 +449,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     }
   }
   else{
-    ForceCoeff        = 0.0;
+    ForceCoeff        = 1.0;
   }
 
   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
@@ -2742,6 +2742,15 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
         Conv_Check[0] = 1.0;
         Conv_Check[1] = 1.0;
         Conv_Check[2] = 1.0;
+
+        /*--- If absolute, we check the norms ---*/
+        switch (config->GetResidual_Criteria_FEM()) {
+          case RESFEM_ABSOLUTE:
+            Conv_Check[0] = LinSysSol.norm();         // Norm of the delta-solution vector
+            Conv_Check[1] = LinSysRes.norm();         // Norm of the residual
+            Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
+            break;
+        }
       }
       else {
         /*--- Compute the norm of the solution vector Uk ---*/
@@ -2841,41 +2850,8 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double Transfer_Time = 0.0;
-  
-  if (Ramp_Load) {
-    if (Ramp_Time == 0.0)
-      ModAmpl = 1.0;
-    else
-      Transfer_Time = CurrentTime / Ramp_Time;
-    
-    switch (config->GetDynamic_LoadTransfer()) {
-    case INSTANTANEOUS:
-      ModAmpl = 1.0;
-      break;
-    case POL_ORDER_1:
-      ModAmpl = Transfer_Time;
-      break;
-    case POL_ORDER_3:
-      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
-      if (CurrentTime > Ramp_Time) ModAmpl = 1.0;
-      break;
-    case POL_ORDER_5:
-      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
-      if (CurrentTime > Ramp_Time) ModAmpl = 1.0;
-      break;
-    case SIGMOID_10:
-      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
-      break;
-    case SIGMOID_20:
-      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
-      break;
-    }
-    ModAmpl = max(ModAmpl,0.0);
-    ModAmpl = min(ModAmpl,1.0);
-  }
-  else {
-    ModAmpl = 1.0;
-  }
+
+  ModAmpl = Compute_LoadCoefficient(CurrentTime, 0.0, config);
 
   TotalLoad = ModAmpl * NormalLoad;
   
@@ -3178,45 +3154,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double ModAmpl = 1.0;
   
-//  bool Ramp_Load = config->GetRamp_Load();
-//  su2double Ramp_Time = config->GetRamp_Time();
-//  su2double Transfer_Time = 0.0;
-//
-//  if (Ramp_Load) {
-//    if (Ramp_Time == 0.0)
-//      ModAmpl = 1.0;
-//    else
-//      Transfer_Time = CurrentTime / Ramp_Time;
-//
-//    switch (config->GetDynamic_LoadTransfer()) {
-//    case INSTANTANEOUS:
-//      ModAmpl = 1.0;
-//      break;
-//    case POL_ORDER_1:
-//      ModAmpl = Transfer_Time;
-//      break;
-//    case POL_ORDER_3:
-//      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
-//      if (Transfer_Time > 1.0) ModAmpl = 1.0;
-//      break;
-//    case POL_ORDER_5:
-//      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
-//      if (Transfer_Time > 1.0) ModAmpl = 1.0;
-//      break;
-//    case SIGMOID_10:
-//      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
-//      break;
-//    case SIGMOID_20:
-//      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
-//      break;
-//    }
-//    ModAmpl = max(ModAmpl,0.0);
-//    ModAmpl = min(ModAmpl,1.0);
-//  }
-//  else {
-//    ModAmpl = 1.0;
-//  }
-
   ModAmpl = Compute_LoadCoefficient(CurrentTime, 0.0, config);
 
   TotalLoad = ModAmpl * LoadDirVal * LoadDirMult;
@@ -3246,8 +3183,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      //      Normal_Elem[0] =   a[1];
-      //      Normal_Elem[1] = -(a[0]);
       
     }
     
