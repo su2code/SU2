@@ -577,7 +577,6 @@ private:
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
@@ -634,6 +633,7 @@ private:
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
+  bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -5121,6 +5121,12 @@ public:
    * \return Harmonic Balance Frequency pointer.
    */
   su2double* GetOmega_HB(void);
+	
+  /*!
+   * \brief Get if harmonic balance source term is to be preconditioned
+   * \return yes or no to harmonic balance preconditioning
+   */
+  bool GetHB_Precondition(void);
   
   /*!
    * \brief Get if we should update the motion origin.
