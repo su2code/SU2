@@ -3334,6 +3334,8 @@ su2double CFEM_ElasticitySolver::Compute_LoadCoefficient(su2double CurrentTime, 
 
   su2double TransferTime = 1.0;
 
+  /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
+
   if (CurrentTime < StaticTime){
     LoadCoeff = 0.0;
   }
