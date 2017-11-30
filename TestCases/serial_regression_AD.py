@@ -142,6 +142,36 @@ def main():
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
+    
+    ###################################
+    ### Structural Adjoint          ###
+    ###################################
+   
+    # Structural model
+    discadj_fea           = TestCase('discadj_fea')
+    discadj_fea.cfg_dir   = "disc_adj_fea"
+    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.test_iter = 9
+    discadj_fea.test_vals = [-6.403771, -6.404196, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.su2_exec  = "SU2_CFD_AD"
+    discadj_fea.timeout   = 1600
+    discadj_fea.tol       = 0.00001
+    test_list.append(discadj_fea)    
+    
+    ###################################
+    ### Coupled FSI Adjoint         ###
+    ###################################
+   
+    # Structural model
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
+    discadj_fsi.su2_exec  = "SU2_CFD_AD"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)      
 
     ######################################
     ### RUN TESTS                      ###
