@@ -1184,6 +1184,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
   su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
   su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
 
+//  bool statTime = (CurrentTime < Static_Time);
   bool statTime = (CurrentTime <= Static_Time);
 
   bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied

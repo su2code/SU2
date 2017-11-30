@@ -882,6 +882,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   su2double Static_Time=fea_config->GetStatic_Time();
   su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
   
+//  bool stat_time = (CurrentTime < Static_Time);
   bool stat_time = (CurrentTime <= Static_Time);
   
   magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
