@@ -560,7 +560,6 @@ private:
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
