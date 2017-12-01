@@ -751,7 +751,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); //TDE check for variable density
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           
@@ -1094,8 +1094,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     if (nDim == 3) skipVars += 8;
   }
   if (incompressible) {
-    if (nDim == 2) skipVars += 5;
-    if (nDim == 3) skipVars += 7;
+    if (nDim == 2) skipVars += 6;
+    if (nDim == 3) skipVars += 8;
   }
 
   /*--- Load data from the restart into correct containers. ---*/
@@ -1250,7 +1250,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     
@@ -2978,7 +2978,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Define some auxiliary vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     

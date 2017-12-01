@@ -15056,7 +15056,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   unsigned short skipVar = nDim, skipMult = 1;
 
-  if (incompressible)      { skipVar += skipMult*(nDim+1); }
+  if (incompressible)      { skipVar += skipMult*(nDim+2); }
   if (compressible)        { skipVar += skipMult*(nDim+2); }
   if (sst && !frozen_visc) { skipVar += skipMult*2;}
   if (sa && !frozen_visc)  { skipVar += skipMult*1;}
