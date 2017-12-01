@@ -42,5 +42,5 @@ inline void CViscosityModel::SetDerViscosity(su2double T, su2double rho) {}
 inline su2double CConductivityModel::GetConductivity() { return Kt; }
 inline su2double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
 inline su2double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
-inline void CConductivityModel::SetConductivity(su2double T, su2double rho, su2double mu, su2double cp) {}
+inline void CConductivityModel::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {}
 inline void CConductivityModel::SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) {}

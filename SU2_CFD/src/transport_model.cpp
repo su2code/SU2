@@ -136,9 +136,9 @@ CConstantPrandtl::CConstantPrandtl(su2double pr_const) : CConductivityModel() {
 
 }
 
-void CConstantPrandtl::SetConductivity(su2double T, su2double rho, su2double mu, su2double cp) {
+void CConstantPrandtl::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
 
-  Kt = mu*cp/Pr_const;
+  Kt = mu_lam*cp/Pr_const;
 
 }
 
@@ -151,3 +151,20 @@ void CConstantPrandtl::SetDerConductivity(su2double T, su2double rho, su2double 
 
 CConstantPrandtl::~CConstantPrandtl(void) { }
 
+CConstantPrandtlRANS::CConstantPrandtlRANS(void) : CConductivityModel() { }
+
+CConstantPrandtlRANS::CConstantPrandtlRANS(su2double pr_lam, su2double pr_turb) : CConductivityModel() {
+
+  /*--- Attributes initialization ---*/
+
+  Prandtl_Lam  = pr_lam;
+  Prandtl_Turb = pr_turb;
+}
+
+void CConstantPrandtlRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+
+  Kt = cp * ((mu_lam/Prandtl_Lam) + (mu_turb/Prandtl_Turb));
+  
+}
+
+CConstantPrandtlRANS::~CConstantPrandtlRANS(void) { }
