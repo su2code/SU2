@@ -54,5 +54,8 @@ SU2_DIRECTDIFF/
 # ignore the bin/ directory
 bin/
 
+# ignore project settings from eclipse
+.project
+
 # ignore swap files
 *.swp

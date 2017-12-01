@@ -46,7 +46,7 @@
 
 using namespace std;
 
-const su2double eps = numeric_limits<su2double>::epsilon(); /*!< \brief machine epsilon */
+const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
 
 
 /*!
