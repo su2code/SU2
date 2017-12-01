@@ -103,7 +103,6 @@ public:
 
 };
 
-
 /*!
  * \class CConstantViscosity
  * \brief this class defines a constant viscosity
@@ -132,7 +131,6 @@ public:
   
   
 };
-
 
 /*!
  * \class CSutherland
@@ -176,7 +174,6 @@ public:
   
 };
 
-
 /*!
  * \class CThermalConductivityModel
  * \brief Main class for defining the Transport-Physical Model
@@ -219,19 +216,18 @@ public:
     /*!
      * \brief Set Thermal conductivity.
      */
-    virtual   void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+    virtual void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
 
     /*!
      * \brief Set Thermal conductivity derivatives.
      */
-    virtual   void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+    virtual void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
 
 };
 
-
 /*!
- * \class CConstantPrandtl
- * \brief this class defines a constant thermal conductivity using a constant Prandtl's number
+ * \class CConstantConductivity
+ * \brief this class defines a constant thermal conductivity.
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
@@ -255,7 +251,6 @@ public:
     virtual ~CConstantConductivity(void);
 
 };
-
 
 /*!
  * \class CConstantPrandtl
@@ -289,7 +284,7 @@ public:
      * \brief par1 -> Cp.
      * \brief par2 -> Mu.
      */
-    void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+    void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
 
     /*!
      * \brief Set Thermal conductivity derivatives.
@@ -298,5 +293,40 @@ public:
 
 };
 
+/*!
+ * \class CConstantPrandtlRANS
+ * \brief Defines a non-constant effective thermal conductivity for RANS problems using Prandtl numbers.
+ * \author T. Economon
+ * \version 1.0
+ */
+class CConstantPrandtlRANS : public CConductivityModel {
+
+protected:
+  su2double Prandtl_Lam;    /*!< \brief Laminar Prandtl number. */
+  su2double Prandtl_Turb;   /*!< \brief Turbulent Prandtl number. */
+
+public:
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CConstantPrandtlRANS(void);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    virtual ~CConstantPrandtlRANS(void);
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CConstantPrandtlRANS(su2double pr_lam, su2double pr_turb);
+
+    /*!
+     * \brief Set effective thermal conductivity.
+     */
+    void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+
+};
 
 #include "transport_model.inl"

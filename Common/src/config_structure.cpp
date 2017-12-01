@@ -399,6 +399,7 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_pitch   = NULL;
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
+  Inc_Velocity_Init   = NULL;
 
   RefOriginMoment     = NULL;
   CFL_AdaptParam      = NULL;            
@@ -420,6 +421,8 @@ void CConfig::SetPointersNull(void) {
   MG_PreSmooth        = NULL;
   MG_PostSmooth       = NULL;
   Int_Coeffs          = NULL;
+
+  Kind_Inc_Inlet = NULL;
 
   Kind_ObjFunc   = NULL;
 
@@ -612,7 +615,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
-
+  /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
+  addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
+  /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
+  addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
+  /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
+  addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
@@ -678,6 +686,33 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+
+  /*--- Options related to incompressible flow solver ---*/
+
+  /* DESCRIPTION: Option to choose the density model used in the incompressible flow solver. */
+  addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, CONSTANT);
+    /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
+  addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
+  /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
+  addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
+  /*!\brief INC_VELOCITY_REF \n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \ingroup Config*/
+  addDoubleOption("INC_VELOCITY_REF", Inc_Velocity_Ref, 1.0);
+  /*!\brief INC_TEMPERATURE_REF \n DESCRIPTION: Reference temperature for incompressible flows with the energy equation (1.0 by default) \ingroup Config*/
+  addDoubleOption("INC_TEMPERATURE_REF", Inc_Temperature_Ref, 1.0);
+  /*!\brief INC_DENSITY_INIT \n DESCRIPTION: Initial density for incompressible flows (1.2886 kg/m^3 by default) \ingroup Config*/
+  addDoubleOption("INC_DENSITY_INIT", Inc_Density_Init, 1.2886);
+  /*!\brief INC_VELOCITY_INIT \n DESCRIPTION: Initial velocity for incompressible flows (1.0,0,0 m/s by default) \ingroup Config*/
+  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
+  addDoubleArrayOption("INC_VELOCITY_INIT", 3, Inc_Velocity_Init, default_vel_inf);
+  /*!\brief INC_TEMPERATURE_INIT \n DESCRIPTION: Initial temperature for incompressible flows with the energy equation (288.15 K by default) \ingroup Config*/
+  addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
+  /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
+  addEnumOption("INC_NONDIM", Ref_Inc_NonDim, NonDim_Map, INITIAL_VALUES);
+ /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
+  addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
+    /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
+  addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
+
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
   default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
@@ -1082,8 +1117,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 5.0);
-  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
-  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
+  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
@@ -1374,6 +1409,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
+    /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
+  addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
@@ -2098,8 +2135,13 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
   unsigned short iZone, iCFL, iMarker;
-  bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
-  bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
+  bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
+                    (Kind_FluidModel == IDEAL_GAS) ||
+                    (Kind_FluidModel == INC_STANDARD_AIR) ||
+                    (Kind_FluidModel == INC_IDEAL_GAS) ||
+                    (Kind_FluidModel == CONSTANT_DENSITY));
+  bool standard_air = ((Kind_FluidModel == STANDARD_AIR) || 
+                      (Kind_FluidModel == INC_STANDARD_AIR));
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2347,7 +2389,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for Boundary condition available for NICF ---*/
   
-  if (ideal_gas) {
+  if (ideal_gas && (Kind_Regime != INCOMPRESSIBLE)) {
     if (SystemMeasurements == US && standard_air) {
       if (Kind_ViscosityModel != SUTHERLAND) {
         cout << "Only SUTHERLAND viscosity model can be used with US Measurement  " << endl;
@@ -3369,6 +3411,175 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Design_Variable = new unsigned short [nDV];
     Design_Variable[0] = NO_DEFORMATION;
   }
+
+  /*--- Checks for incompressible flow problems. ---*/
+    
+  if ((Kind_Solver == EULER) && (Kind_Regime == INCOMPRESSIBLE)) {
+    /*--- Force inviscid problems to use constant density and disable energy. ---*/
+    if (Kind_DensityModel != CONSTANT || Energy_Equation == true) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Inviscid incompressible problems must be constant density (no energy eqn.)." << endl;
+        cout << "Use DENSITY_MODEL= CONSTANT and ENERGY_EQUATION= NO." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+      MPI_Finalize();
+#endif
+    }
+  }
+
+  /*--- Default values should recover original incompressible behavior (for old config files). ---*/
+
+  if (Kind_Regime == INCOMPRESSIBLE) {
+    if ((Kind_DensityModel == CONSTANT) || (Kind_DensityModel == BOUSSINESQ)) 
+      Kind_FluidModel = CONSTANT_DENSITY;
+  }
+
+  /*--- Energy equation must be active for any fluid models other than constant density. ---*/
+
+  if (Kind_DensityModel != CONSTANT) Energy_Equation = true;
+
+  if (Kind_DensityModel == BOUSSINESQ) {
+    Energy_Equation = true;
+    if (Body_Force) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Body force and Boussinesq source terms are not currently compatible."  << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+      MPI_Finalize();
+#endif
+    }
+  }
+
+  if (Kind_DensityModel == VARIABLE) {
+    if (Kind_FluidModel != INC_STANDARD_AIR && Kind_FluidModel != INC_IDEAL_GAS) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Variable density incompressible solver limited to ideal gases." << endl;
+        cout << "Check the fluid model options (use INC_STANDARD_AIR or INC_IDEAL_GAS)." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+      MPI_Finalize();
+#endif
+    }
+  }
+
+  if (Kind_Regime != INCOMPRESSIBLE) {
+    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_STANDARD_AIR) || (Kind_FluidModel == INC_IDEAL_GAS)) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Fluid model not compatible with compressible flows." << endl;
+        cout << "CONSTANT_DENSITY/INC_STANDARD_AIR/INC_IDEAL_GAS are for incompressible only." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+      MPI_Finalize();
+#endif
+    }
+  }
+
+  if (Kind_Regime == INCOMPRESSIBLE) {    
+    if (Kind_ViscosityModel == SUTHERLAND) {
+      if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS)) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Sutherland's law only valid for ideal gases." << endl;
+          cout << "Must use CONSTANT_VISCOSITY, or use DENSITY_MODEL= VARIABLE " << endl;
+          cout << "with INC_STANDARD_AIR or INC_IDEAL_GAS for SUTHERLAND." << endl << endl;
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Finalize();
+#endif
+      }
+    }
+  }
+
+  /*--- Incompressible solver currently limited to SI units. ---*/
+    if ((Kind_Regime == INCOMPRESSIBLE) && (SystemMeasurements == US)) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Must use SI units for incompressible solver." <<endl << endl;
+      }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Finalize();
+#endif
+    }
+
+  /*--- Check that the non-dim type is valid. ---*/
+  if (Kind_Regime == INCOMPRESSIBLE) {    
+    if ((Ref_Inc_NonDim != INITIAL_VALUES) && (Ref_Inc_NonDim != REFERENCE_VALUES) && (Ref_Inc_NonDim != DIMENSIONAL)) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Incompressible non-dim. scheme invalid." << endl;
+        cout << "Must use INITIAL_VALUES, REFERENCE_VALUES, or DIMENSIONAL." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+      MPI_Finalize();
+#endif
+    }
+  }
+
+  /*--- Check that the incompressible inlets are correctly specified. ---*/
+  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Inlet != 0)) {
+    if (nMarker_Inlet != nInc_Inlet) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "Inlet types for incompressible problem improperly specified." << endl;
+        cout << "Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET." << endl;
+        cout << "Must list a type for each inlet marker, including duplicates, e.g.," << endl;
+        cout << "INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET" << endl << endl;
+
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD, 1);
+      MPI_Finalize();
+#endif
+    }
+    for (unsigned short iInlet = 0; iInlet < nInc_Inlet; iInlet++){
+      if ((Kind_Inc_Inlet[iInlet] != VELOCITY_INLET) && (Kind_Inc_Inlet[iInlet] != PRESSURE_INLET)) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Undefined incompressible inlet type. VELOCITY_INLET or PRESSURE_INLET only." << endl << endl;
+        }
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+    }
+  }
+
+    /*--- If Kind_Inc_Inlet has not been specified, take a default --*/
+  if (Kind_Inc_Inlet == NULL) {
+    Kind_ObjFunc = new unsigned short[1];
+    Kind_ObjFunc[0] = VELOCITY_INLET;
+  }
+
 
 }
 
@@ -5705,6 +5916,8 @@ CConfig::~CConfig(void) {
   if (Marker_ZoneInterface != NULL)        delete[] Marker_ZoneInterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
+  if (Kind_Inc_Inlet != NULL)      delete[] Kind_Inc_Inlet;
+
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
   if (IntInfo_WallFunctions != NULL) {
@@ -6505,6 +6718,13 @@ su2double CConfig::GetExhaust_Pressure_Target(string val_marker) {
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
+}
+
+unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
+    if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
+  return Kind_Inc_Inlet[iMarker_Inlet];
 }
 
 su2double CConfig::GetInlet_Ttotal(string val_marker) {

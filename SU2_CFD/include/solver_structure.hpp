@@ -3562,7 +3562,15 @@ public:
    */
   virtual void SetFreeStream_TurboSolution(CConfig *config);
 
-
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  virtual void SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
+                               CConfig *config, unsigned short iMesh);
 };
 
 /*!
@@ -6036,10 +6044,10 @@ protected:
   
   su2double
   Density_Inf,  /*!< \brief Density at the infinity. */
-  Temperature_Inf,      /*!< \brief Energy at the infinity. */
   Pressure_Inf,    /*!< \brief Pressure at the infinity. */
-  *Velocity_Inf;    /*!< \brief Flow Velocity vector at the infinity. */
-  
+  *Velocity_Inf,    /*!< \brief Flow Velocity vector at the infinity. */
+  Temperature_Inf;      /*!< \brief Temperature at infinity. */
+
   su2double
   *CD_Inv,  /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
   *CL_Inv,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
@@ -6166,7 +6174,10 @@ protected:
   *Surface_CFz,            /*!< \brief z Force coefficient for each monitoring surface. */
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
-  *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
+  *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
+  *Surface_HF_Visc,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  *Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
+
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -6289,6 +6300,12 @@ public:
    */
   su2double GetPressure_Inf(void);
   
+    /*!
+   * \brief Get the temperature value at infinity.
+   * \return Value of the temperature at infinity.
+   */
+  su2double GetTemperature_Inf(void);
+
   /*!
    * \brief Compute the density multiply by velocity at the infinity.
    * \param[in] val_dim - Index of the velocity vector.
@@ -7247,6 +7264,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief Update the artificial compressibility parameter.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
+                       CConfig *config, unsigned short iMesh);
 };
 
 /*!
@@ -7677,8 +7704,6 @@ class CIncNSSolver : public CIncEulerSolver {
 private:
   su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;  /*!< \brief Turbulent kinetic energy at the infinity. */
-  su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;         /*!< \brief Turbulent Prandtl number. */
   su2double *CD_Visc,  /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
   *CL_Visc,    /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
   *CSF_Visc,    /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
@@ -7702,7 +7727,7 @@ private:
   *CMerit_Visc,      /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
   *CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
   *CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-  *HF,    /*!< \brief Heat load (viscous contribution) for each boundary. */
+  *HF_Visc,    /*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHF_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   ***CSkinFriction;  /*!< \brief Skin friction coefficient for each boundary and vertex. */
   su2double *ForceViscous,  /*!< \brief Viscous force for each boundary. */
@@ -7926,6 +7951,17 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose an isothermal temperature condition at the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.
@@ -7934,6 +7970,20 @@ public:
    */
   void Friction_Forces(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Get the total heat flux.
+   * \param[in] val_marker - Surface marker where the heat flux is computed.
+   * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_HF_Visc(unsigned short val_marker);
+  
+  /*!
+   * \brief Get the maximum (per surface) heat flux.
+   * \param[in] val_marker - Surface marker where the heat flux is computed.
+   * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_MaxHF_Visc(unsigned short val_marker);
+
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
    * \param[in] val_marker - Surface marker where the coefficient is computed.

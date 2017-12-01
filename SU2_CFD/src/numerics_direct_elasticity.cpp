@@ -198,8 +198,8 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
    */
   su2double g_force[3] = {0.0,0.0,0.0};
 
-  if (nDim == 2) g_force[1] = -1*STANDART_GRAVITY;
-  else if (nDim == 3) g_force[2] = -1*STANDART_GRAVITY;
+  if (nDim == 2) g_force[1] = -1*STANDARD_GRAVITY;
+  else if (nDim == 3) g_force[2] = -1*STANDARD_GRAVITY;
 
   element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
   element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/

@@ -971,6 +971,9 @@ inline void CSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsign
 
 inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
 
+inline void CSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
+                                     CConfig *config, unsigned short iMesh) { }
+
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -1554,6 +1557,8 @@ inline su2double *CIncEulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; 
 
 inline su2double CIncEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
 
+inline su2double CIncEulerSolver::GetTemperature_Inf(void) { return Temperature_Inf; }
+
 inline su2double CIncEulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
 
 inline su2double CIncEulerSolver::GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex) { return CPressureTarget[val_marker][val_vertex]; }
@@ -1733,6 +1738,10 @@ inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 inline su2double CIncNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CIncNSSolver::GetTke_Inf(void) { return Tke_Inf; }
+
+inline su2double CIncNSSolver::GetSurface_HF_Visc(unsigned short val_marker) { return Surface_HF_Visc[val_marker]; }
+
+inline su2double CIncNSSolver::GetSurface_MaxHF_Visc(unsigned short val_marker) { return Surface_MaxHF_Visc[val_marker]; }
 
 inline su2double CIncNSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
 

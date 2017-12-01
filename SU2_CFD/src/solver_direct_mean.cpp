@@ -3708,7 +3708,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
-  Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
+  Froude            = ModVel_FreeStream/sqrt(STANDARD_GRAVITY*Length_Ref);         config->SetFroude(Froude);
   
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
   
@@ -9181,7 +9181,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       case TOTAL_CONDITIONS_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
-        if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_Total  = config->GetRiemann_Var1(Marker_Tag);
         T_Total  = config->GetRiemann_Var2(Marker_Tag);
         Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9217,7 +9217,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       case STATIC_SUPERSONIC_INFLOW_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
-        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_static  = config->GetRiemann_Var1(Marker_Tag);
         T_static  = config->GetRiemann_Var2(Marker_Tag);
         Mach = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9245,7 +9245,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
 
-        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_static  = config->GetRiemann_Var1(Marker_Tag);
         Rho_static  = config->GetRiemann_Var2(Marker_Tag);
         Mach = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9686,7 +9686,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           case TOTAL_CONDITIONS_PT:
 
             /*--- Retrieve the specified total conditions for this boundary. ---*/
-            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
             else P_Total  = config->GetRiemann_Var1(Marker_Tag);
             T_Total  = config->GetRiemann_Var2(Marker_Tag);
             Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
@@ -11033,7 +11033,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
-          if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+          if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
           else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
           T_Total  = config->GetInlet_Ttotal(Marker_Tag);
           Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
@@ -11315,7 +11315,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
       else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
 
       /*--- Non-dim. the inputs if necessary. ---*/

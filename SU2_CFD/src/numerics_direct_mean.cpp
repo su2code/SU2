@@ -3975,7 +3975,7 @@ void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
   if (compressible) {
     
     /*--- Evaluate the source term  ---*/
-    val_residual[nDim] = Volume * U_i[0] * STANDART_GRAVITY;
+    val_residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY;
     
   }
   if (incompressible) {

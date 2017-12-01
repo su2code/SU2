@@ -733,6 +733,15 @@ public:
   void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
   
   /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for incmopressible flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_iZone - iZone index.
+   */
+  void LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -818,6 +827,17 @@ public:
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
   
+  /*! 
+   * \brief Create and write a CSV file with a slice of data.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] FlowSolution - Flow solution.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Current zone number in the grid file.
+   * \param[in] val_direction - Controls the slice direction (0 for constant x/vertical, 1 for constant y/horizontal.
+   */
+  void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
+
 };
 
 #include "output_structure.inl"

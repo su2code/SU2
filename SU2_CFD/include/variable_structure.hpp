@@ -966,6 +966,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the specific heat at constant V
+   */
+  virtual su2double GetSpecificHeatCv(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the thermal conductivity (vibrational)
    */
   virtual su2double GetThermalConductivity_ve(void);
@@ -1174,7 +1180,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetDensity(su2double val_density);
+  virtual bool SetDensity(su2double val_density);
   
   /*!
    * \brief A virtual member.
@@ -1515,6 +1521,12 @@ public:
    */
   virtual void SetSpecificHeatCp(su2double Cp);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] Cv - Constant volume specific heat.
+   */
+  virtual void SetSpecificHeatCv(su2double Cv);
+
   /*!
    * \brief A virtual member.
    */
@@ -3124,11 +3136,12 @@ public:
    * \overload
    * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_temperature - Value of the temperature (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
+  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim,
                     unsigned short val_nvar, CConfig *config);
   
   /*!
@@ -3244,12 +3257,17 @@ public:
   /*!
    * \brief Set the value of the density for the incompressible flows.
    */
-  void SetDensity(su2double val_density);
+  bool SetDensity(su2double val_density);
   
   /*!
    * \brief Set the value of the density for the incompressible flows.
    */
   void SetVelocity(void);
+
+  /*!
+   * \brief Set the value of the temperature for incompressible flows with energy equation.
+   */
+  bool SetTemperature(su2double val_temperature);
   
   /*!
    * \brief Set the value of the beta coeffient for incompressible flows.
@@ -3280,6 +3298,12 @@ public:
    */
   su2double GetDensity(void);
   
+  /*!
+   * \brief Get the temperature of the flow.
+   * \return Value of the temperature of the flow.
+   */
+  su2double GetTemperature(void);
+
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] val_dim - Index of the dimension.
@@ -3327,7 +3351,7 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
-  bool SetPrimVar(su2double Density_Inf, CConfig *config);
+  bool SetPrimVar(CFluidModel *FluidModel);
   
 };
 
@@ -3522,11 +3546,12 @@ public:
    * \overload
    * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_temperature - Value of the temperature (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \overload
@@ -3576,6 +3601,39 @@ public:
   su2double GetEddyViscosity(void);
   
   /*!
+   * \brief Set the thermal conductivity.
+   */
+  void SetThermalConductivity(su2double thermalConductivity);
+  
+  /*!
+   * \brief Set the specific heat Cp.
+   */
+  void SetSpecificHeatCp(su2double Cp);
+  
+  /*!
+   * \brief Set the specific heat Cv.
+   */
+  void SetSpecificHeatCv(su2double Cv);
+
+  /*!
+   * \brief Get the thermal conductivity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  su2double GetThermalConductivity(void);
+  
+  /*!
+   * \brief Get the specific heat at constant P of the flow.
+   * \return Value of the specific heat at constant P of the flow.
+   */
+  su2double GetSpecificHeatCp(void);
+
+  /*!
+   * \brief Get the specific heat at constant V of the flow.
+   * \return Value of the specific heat at constant V of the flow.
+   */
+  su2double GetSpecificHeatCv(void);
+
+  /*!
    * \brief Get the value of the vorticity.
    * \param[in] val_dim - Index of the dimension.
    * \return Value of the vorticity.
@@ -3591,7 +3649,7 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
   using CVariable::SetPrimVar;
   
 };
