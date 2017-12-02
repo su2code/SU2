@@ -168,11 +168,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case LOAD_DIR_BOUNDARY:
-    solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-    break;
+        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
       case LOAD_SINE_BOUNDARY:
-    solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-    break;
+        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
     }
   }
 
@@ -279,6 +279,9 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
         case PRESSURE_BOUNDARY:
           solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
           break;
+        case DAMPER_BOUNDARY:
+          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        break;
       }
     }
 
@@ -388,8 +391,11 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-      break;
+          solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
+        case DISP_DIR_BOUNDARY:
+          solver_container[MainSolver]->BC_DispDir(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
         case DISPLACEMENT_BOUNDARY:
           solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
           break;
@@ -798,6 +804,65 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   
 #endif
   
+}
+
+void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+
+  su2double val_I, Max_Val_I;
+
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  bool Already_Converged = Convergence;
+
+  Max_Val_I = config->GetCriteria_FEM_ADJ();
+  val_I     = log10(solver->Get_val_I());
+
+  //  cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
+  //  cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
+
+  if (val_I <= Max_Val_I){
+    Convergence = true;
+  }
+
+  if (Already_Converged) Convergence = true;
+
+
+  /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+
+  sbuf_conv[0] = Convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*-- Compute global convergence criteria in the master node --*/
+
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (sbuf_conv[0] == 1) { Convergence = true; }
+  else { Convergence = false; }
+
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
+
 }
 
 

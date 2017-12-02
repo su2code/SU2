@@ -77,6 +77,9 @@ protected:
 	su2double **Kt_a;						/*!< \brief Structure for the nodal stress term for the residual computation. */
 	su2double **FDL_a;						/*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;					/*!< \brief Pressure in the element */
+	unsigned short iDe;					/*!< \brief ID of the dielectric elastomer */
+	unsigned long iDV;          /*!< \brief ID of the Design Variable (if it is element based) */
+	unsigned long iProp;        /*!< \brief ID of the Element Property */
 
 public:
 	/*!
@@ -330,7 +333,7 @@ public:
 	su2double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the current configuration.
 	 * \param[in] iNode - Index of the node.
 	 * \param[in] iNode - Index of the Gaussian Point.
 	 * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
@@ -338,7 +341,15 @@ public:
 	su2double GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration (subintegrated point).
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iNode - Index of the Gaussian Point.
+	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
+	 */
+	su2double GetGradNi_X_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim);
+
+	/*!
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the current configuration (subintegrated point).
 	 * \param[in] iNode - Index of the node.
 	 * \param[in] iNode - Index of the Gaussian Point.
 	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
@@ -368,6 +379,60 @@ public:
 	 * \param[in] val_Stress - Value of the stress added.
 	 */
 	su2double Get_NodalStress(unsigned short iNode, unsigned short iVar);
+
+  /*!
+   * \brief Store the value of the identifier for the Dielectric Elastomers.
+   * \param[in] val_iDe - identifier of the DE property.
+   */
+  void Set_ElProperties(CElementProperty *element_property);
+
+	/*!
+	 * \brief Store the value of the identifier for the Dielectric Elastomers.
+	 * \param[in] val_iDe - identifier of the DE property.
+	 */
+	void Set_iDe(unsigned short val_iDe);
+
+	/*!
+	 * \brief Return the value of the identifier for the Dielectric Elastomers.
+	 * \param[out] val_iDe - identifier of the DE property.
+	 */
+	unsigned short Get_iDe(void);
+
+  /*!
+   * \brief Return the value of the identifier for the Design Variable.
+   * \param[out] val_iDV - identifier of the DV.
+   */
+  unsigned long Get_iDV(void);
+
+  /*!
+   * \brief Return the value of the identifier for the Element Property.
+   * \param[out] val_iProp - identifier of the property.
+   */
+  unsigned long Get_iProp(void);
+
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[out] val_Area - Area of the element
+   */
+  virtual su2double ComputeArea(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  virtual su2double ComputeVolume(void);
+
+  /*!
+   * \brief Compute the value of the area of the element in current coordinates
+   * \param[out] val_Area - Area of the element
+   */
+  virtual su2double ComputeCurrentArea(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element in current coordinates
+   * \param[out] val_Volume - Volume of the element
+   */
+  virtual su2double ComputeCurrentVolume(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -436,6 +501,18 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeArea(void);
+
+  /*!
+   * \brief Compute the value of the area of the element in current coordinates
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeCurrentArea(void);
+
 };
 
 
@@ -484,6 +561,18 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeArea(void);
+
+  /*!
+   * \brief Compute the value of the area of the element in current coordinates
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeCurrentArea(void);
+
 	/*!
 	 * \brief Virtual member.
 	 */
@@ -493,13 +582,13 @@ public:
 };
 
 /*!
- * \class CQUAD4P1
- * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
+ * \class CQUAD1
+ * \brief Quadrilateral element with 1 Gauss Point
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  */
 
-class CQUAD4P1 : public CQUAD4 {
+class CQUAD1 : public CElement {
 
 protected:
 
@@ -508,7 +597,7 @@ public:
 	/*!
 	 * \brief Constructor of the class.
 	 */
-	CQUAD4P1(void);
+	CQUAD1(void);
 
 	/*!
 	 * \overload
@@ -516,17 +605,29 @@ public:
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CQUAD4P1(unsigned short val_nDim, CConfig *config);
+	CQUAD1(unsigned short val_nDim, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CQUAD4P1(void);
+	~CQUAD1(void);
 
 	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
+	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
 	 * \param[in] val_solution - Solution of the problem.
 	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	void ComputeGrad_Linear(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
+	 */
+	void ComputeGrad_NonLinear(void);
+
+	/*!
+	 * \brief Virtual member.
 	 */
 	void ComputeGrad_Pressure(void);
 
@@ -578,6 +679,18 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element in current coordinates
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeCurrentVolume(void);
+
 };
 
 /*!
@@ -625,6 +738,18 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeCurrentVolume(void);
+
 	/*!
 	 * \brief Virtual member.
 	 */
@@ -634,53 +759,13 @@ public:
 };
 
 /*!
- * \class CHEXA8P1
- * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
- * \author R. Sanchez
+ * \class CPYRAM5
+ * \brief Pyramid element with 5 Gauss Points
+ * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
  * \version 5.0.0 "Raven"
  */
 
-class CHEXA8P1 : public CHEXA8 {
-
-protected:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CHEXA8P1(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CHEXA8P1(unsigned short val_nDim, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CHEXA8P1(void);
-
-	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	 */
-	void ComputeGrad_Pressure(void);
-
-
-};
-
-/*!
- * \class CBOUND2D
- * \brief 2D line boundary element with 2 Gauss Points
- * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
- */
-
-class CBOUND2D : public CElement {
+class CPYRAM5 : public CElement {
 
 protected:
 
@@ -689,7 +774,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CBOUND2D(void);
+  CPYRAM5(void);
 
   /*!
    * \overload
@@ -697,12 +782,103 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CBOUND2D(unsigned short val_nDim, CConfig *config);
+  CPYRAM5(unsigned short val_nDim, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CBOUND2D(void);
+  virtual ~CPYRAM5(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Linear(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+};
+
+/*!
+ * \class CPRISM6
+ * \brief Prism element with 6 Gauss Points
+ * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
+ * \version 4.2.0 "Cardinal"
+ */
+
+class CPRISM6 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPRISM6(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPRISM6(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPRISM6(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Linear(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+};
+
+/*!
+ * \class CHEXA1
+ * \brief Hexahedral element with 1 Gauss Point for pressure subintegration
+ * \author R. Sanchez
+ * \version 5.0.0 "Raven"
+ */
+
+class CHEXA1 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHEXA1(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHEXA1(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHEXA1(void);
 
   /*!
    * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -717,6 +893,20 @@ public:
    * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
    */
   void ComputeGrad_NonLinear(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Pressure(void);
+
 
 };
 
