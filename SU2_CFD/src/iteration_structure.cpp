@@ -53,6 +53,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
   bool stat_mesh = true;
   bool adjoint = config_container[val_iZone]->GetContinuous_Adjoint();
   bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool discrete_adjoint = config_container[val_iZone]->GetDiscrete_Adjoint();
 
   /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
@@ -329,6 +330,29 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
     case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
       break;
 
+    case FLUID_STRUCTURE_STATIC:
+
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
+        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
+        cout << "Deforming the volume grid." << endl;
+
+        grid_movement[val_iZone]->SetVolume_Deformation_Elas(geometry_container[val_iZone][MESH_0],
+                                                             config_container[val_iZone], true, false);
+
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
+        cout << "There is no grid velocity." << endl;
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+
+      break;
+
     case NO_MOVEMENT: case GUST: default:
 
       /*--- There is no mesh motion specified for this zone. ---*/
@@ -372,9 +396,15 @@ void CIteration::Update(COutput *output,
                         unsigned short val_iZone)      { }
 void CIteration::Monitor()     { }
 void CIteration::Output()      { }
-void CIteration::Postprocess(CConfig **config_container,
+void CIteration::Postprocess(COutput *output,
+                             CIntegration ***integration_container,
                              CGeometry ***geometry_container,
                              CSolver ****solver_container,
+                             CNumerics *****numerics_container,
+                             CConfig **config_container,
+                             CSurfaceMovement **surface_movement,
+                             CVolumetricMovement **grid_movement,
+                             CFreeFormDefBox*** FFDBox,
                              unsigned short val_iZone) { }
 
 
@@ -435,7 +465,7 @@ void CFluidIteration::Iterate(COutput *output,
   
   if ( !unsteady ) IntIter = ExtIter;
   else IntIter = config_container[val_iZone]->GetIntIter();
-	
+  
   /*--- Update global parameters ---*/
   
   switch( config_container[val_iZone]->GetKind_Solver() ) {
@@ -556,9 +586,15 @@ void CFluidIteration::Update(COutput *output,
 
 void CFluidIteration::Monitor()     { }
 void CFluidIteration::Output()      { }
-void CFluidIteration::Postprocess(CConfig **config_container,
+void CFluidIteration::Postprocess(COutput *output,
+                                  CIntegration ***integration_container,
                                   CGeometry ***geometry_container,
                                   CSolver ****solver_container,
+                                  CNumerics *****numerics_container,
+                                  CConfig **config_container,
+                                  CSurfaceMovement **surface_movement,
+                                  CVolumetricMovement **grid_movement,
+                                  CFreeFormDefBox*** FFDBox,
                                   unsigned short val_iZone) { }
 
 void CFluidIteration::SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
@@ -819,9 +855,15 @@ void CTurboIteration::Preprocess(COutput *output,
 
 }
 
-void CTurboIteration::Postprocess( CConfig **config_container,
+void CTurboIteration::Postprocess( COutput *output,
+                                   CIntegration ***integration_container,
                                    CGeometry ***geometry_container,
                                    CSolver ****solver_container,
+                                   CNumerics *****numerics_container,
+                                   CConfig **config_container,
+                                   CSurfaceMovement **surface_movement,
+                                   CVolumetricMovement **grid_movement,
+                                   CFreeFormDefBox*** FFDBox,
                                    unsigned short val_iZone) {
 
   /*--- Average quantities at the inflow and outflow boundaries ---*/
@@ -926,9 +968,15 @@ void CWaveIteration::Monitor()     { }
 
 void CWaveIteration::Output()      { }
 
-void CWaveIteration::Postprocess(CConfig **config_container,
+void CWaveIteration::Postprocess(COutput *output,
+                                 CIntegration ***integration_container,
                                  CGeometry ***geometry_container,
                                  CSolver ****solver_container,
+                                 CNumerics *****numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement **grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) { }
 
 
@@ -1019,9 +1067,15 @@ void CHeatIteration::Update(COutput *output,
 }
 void CHeatIteration::Monitor()     { }
 void CHeatIteration::Output()      { }
-void CHeatIteration::Postprocess(CConfig **config_container,
+void CHeatIteration::Postprocess(COutput *output,
+                                 CIntegration ***integration_container,
                                  CGeometry ***geometry_container,
                                  CSolver ****solver_container,
+                                 CNumerics *****numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement **grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) { }
 
 
@@ -1075,9 +1129,15 @@ void CPoissonIteration::Update(COutput *output,
                                unsigned short val_iZone)      { }
 void CPoissonIteration::Monitor()     { }
 void CPoissonIteration::Output()      { }
-void CPoissonIteration::Postprocess(CConfig **config_container,
+void CPoissonIteration::Postprocess(COutput *output,
+                        CIntegration ***integration_container,
                         CGeometry ***geometry_container,
                         CSolver ****solver_container,
+                        CNumerics *****numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement **grid_movement,
+                        CFreeFormDefBox*** FFDBox,
                         unsigned short val_iZone) { }
 
 
@@ -1117,6 +1177,9 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
   bool first_iter = config_container[val_iZone]->GetIntIter() == 0;        // Checks if it is the first iteration
   bool restart = config_container[val_iZone]->GetRestart();                        // Restart analysis
   bool initial_calc_restart = (SU2_TYPE::Int(config_container[val_iZone]->GetExtIter()) == config_container[val_iZone]->GetDyn_RestartIter()); // Initial calculation for restart
+
+  bool disc_adj_fem = false;
+  if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
 
   su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
   su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
@@ -1171,6 +1234,9 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
       /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
       for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
+
+        /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
+        if (disc_adj_fem) break;
 
         /*--- Write the convergence history (only screen output) ---*/
 
@@ -1344,6 +1410,26 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
   }
 
+
+  /*--- Finally, we need to compute the objective function, in case that we are running a discrete adjoint solver... ---*/
+
+  switch (config_container[val_iZone]->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+      if ((config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config_container[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0],
+          numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      }
+      solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    case REFERENCE_NODE:
+      if ((config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config_container[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0],
+          numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      }
+       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+       break;
+  }
+
 }
 
 void CFEM_StructuralAnalysis::Update(COutput *output,
@@ -1360,6 +1446,9 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
   su2double Physical_dt, Physical_t;
     unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);          // Dynamic problems
+  bool static_fem = (config_container[val_iZone]->GetDynamic_Analysis() == STATIC);         // Static problems
+  bool fsi = config_container[val_iZone]->GetFSI_Simulation();         // Fluid-Structure Interaction problems
+
 
   /*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
@@ -1377,14 +1466,29 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
     Physical_t  = (ExtIter+1)*Physical_dt;
     if (Physical_t >=  config_container[val_iZone]->GetTotal_DynTime())
       integration_container[val_iZone][FEA_SOL]->SetConvergence(true);
+    } else if ( static_fem && fsi) {
+
+    /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart purposes) ---*/
+    switch (config_container[val_iZone]->GetKind_TimeIntScheme_FEA()) {
+    case (NEWMARK_IMPLICIT):
+        solver_container[val_iZone][MESH_0][FEA_SOL]->ImplicitNewmark_Relaxation(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+    break;
+
+    }
   }
 
 }
 void CFEM_StructuralAnalysis::Monitor()     { }
 void CFEM_StructuralAnalysis::Output()      { }
-void CFEM_StructuralAnalysis::Postprocess(CConfig **config_container,
+void CFEM_StructuralAnalysis::Postprocess(COutput *output,
+                                          CIntegration ***integration_container,
                                           CGeometry ***geometry_container,
                                           CSolver ****solver_container,
+                                          CNumerics *****numerics_container,
+                                          CConfig **config_container,
+                                          CSurfaceMovement **surface_movement,
+                                          CVolumetricMovement **grid_movement,
+                                          CFreeFormDefBox*** FFDBox,
                                           unsigned short val_iZone) { }
 
 
@@ -1597,9 +1701,15 @@ void CAdjFluidIteration::Update(COutput *output,
 
 void CAdjFluidIteration::Monitor()     { }
 void CAdjFluidIteration::Output()      { }
-void CAdjFluidIteration::Postprocess(CConfig **config_container,
+void CAdjFluidIteration::Postprocess(COutput *output,
+                                     CIntegration ***integration_container,
                                      CGeometry ***geometry_container,
                                      CSolver ****solver_container,
+                                     CNumerics *****numerics_container,
+                                     CConfig **config_container,
+                                     CSurfaceMovement **surface_movement,
+                                     CVolumetricMovement **grid_movement,
+                                     CFreeFormDefBox*** FFDBox,
                                      unsigned short val_iZone) { }
 
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
@@ -1865,6 +1975,10 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGe
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
 
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+  
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
@@ -1885,7 +1999,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
 
-  if (kind_recording == CONS_VARS || kind_recording == COMBINED){
+  if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
     
     /*--- Register flow and turbulent variables as input ---*/
     
@@ -1901,6 +2015,25 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
     }
   }
   if (kind_recording == MESH_COORDS){
+    
+    /*--- Register node coordinates as input ---*/
+    
+    geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
+    
+  }
+
+  if (kind_recording == FLOW_CROSS_TERM){
+
+    /*--- Register flow and turbulent variables as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+    if (turbulent){
+      solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+  }
+
+  if (kind_recording == GEOMETRY_CROSS_TERM){
 
     /*--- Register node coordinates as input ---*/
 
@@ -1912,9 +2045,11 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
 
 void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
+
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
+      (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
@@ -1952,6 +2087,30 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   }
 }
 
+void CDiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
+  bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  /*--- Initialize the adjoints the conservative variables ---*/
+
+ if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
+
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                  config_container[iZone]);
+}
+
+  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+    solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                    config_container[iZone]);
+  }
+}
+
+
 void CDiscAdjFluidIteration::Update(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
@@ -1977,10 +2136,697 @@ void CDiscAdjFluidIteration::Update(COutput *output,
 }
 void CDiscAdjFluidIteration::Monitor()     { }
 void CDiscAdjFluidIteration::Output()      { }
-void CDiscAdjFluidIteration::Postprocess(CConfig **config_container,
+void CDiscAdjFluidIteration::Postprocess(COutput *output,
+                                         CIntegration ***integration_container,
                                          CGeometry ***geometry_container,
                                          CSolver ****solver_container,
+                                         CNumerics *****numerics_container,
+                                         CConfig **config_container,
+                                         CSurfaceMovement **surface_movement,
+                                         CVolumetricMovement **grid_movement,
+                                         CFreeFormDefBox*** FFDBox,
                                          unsigned short val_iZone) { }
+
+
+CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
+
+  fem_iteration = new CFEM_StructuralAnalysis(config);
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  // TEMPORARY output only for standalone structural problems
+  if ((!config->GetFSI_Simulation()) && (rank == MASTER_NODE)){
+
+    bool de_effects = config->GetDE_Effects();
+    unsigned short iVar;
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    myfile_res.open ("Results_Reverse_Adjoint.txt");
+
+    myfile_res << "Obj_Func" << " ";
+    for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
+        myfile_res << "Sens_E_" << iVar << "\t";
+
+    for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
+      myfile_res << "Sens_Nu_" << iVar << "\t";
+
+    if (config->GetDynamic_Analysis() == DYNAMIC){
+        for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++)
+          myfile_res << "Sens_Rho_" << iVar << "\t";
+    }
+
+    if (de_effects){
+        for (iVar = 0; iVar < config->GetnElectric_Field(); iVar++)
+          myfile_res << "Sens_EField_" << iVar << "\t";
+    }
+
+    myfile_res << endl;
+
+    myfile_res.close();
+  }
+
+}
+
+CDiscAdjFEAIteration::~CDiscAdjFEAIteration(void) { }
+void CDiscAdjFEAIteration::Preprocess(COutput *output,
+                                           CIntegration ***integration_container,
+                                           CGeometry ***geometry_container,
+                                           CSolver ****solver_container,
+                                           CNumerics *****numerics_container,
+                                           CConfig **config_container,
+                                           CSurfaceMovement **surface_movement,
+                                           CVolumetricMovement **grid_movement,
+                                           CFreeFormDefBox*** FFDBox,
+                                           unsigned short val_iZone) {
+
+  unsigned long IntIter = 0, iPoint;
+  config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool nonlinear_analysis = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
+
+  int Direct_Iter;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- For the dynamic adjoint, load direct solutions from restart files. ---*/
+
+  if (dynamic) {
+
+    Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
+
+    /*--- We want to load the already converged solution at timesteps n and n-1 ---*/
+
+    /*--- Load solution at timestep n-1 ---*/
+
+    LoadDynamic_Solution(geometry_container, solver_container,config_container, val_iZone, Direct_Iter-1);
+
+    /*--- Push solution back to correct array ---*/
+
+    for(iPoint=0; iPoint<geometry_container[val_iZone][MESH_0]->GetnPoint();iPoint++){
+      solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_time_n();
+    }
+
+    /*--- Push solution back to correct array ---*/
+
+    for(iPoint=0; iPoint<geometry_container[val_iZone][MESH_0]->GetnPoint();iPoint++){
+      solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
+    }
+
+    /*--- Push solution back to correct array ---*/
+
+    for(iPoint=0; iPoint<geometry_container[val_iZone][MESH_0]->GetnPoint();iPoint++){
+      solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
+    }
+
+    /*--- Load solution timestep n ---*/
+
+    LoadDynamic_Solution(geometry_container, solver_container,config_container, val_iZone, Direct_Iter);
+
+    /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
+
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+      solver_container[val_iZone][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution());
+    }
+
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+      solver_container[val_iZone][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Accel_Direct(solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Accel());
+    }
+
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+      solver_container[val_iZone][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Vel_Direct(solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel());
+    }
+
+  }
+  else{
+    /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
+
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+      solver_container[val_iZone][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution());
+    }
+
+  }
+
+  solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
+
+  if (CurrentRecording != FEA_DISP_VARS || dynamic){
+
+    if (rank == MASTER_NODE){
+      cout << "Direct iteration to store computational graph." << endl;
+      cout << "Compute residuals to check the convergence of the direct problem." << endl;
+    }
+
+    /*--- Record one FEM iteration with structural variables as input ---*/
+
+    SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
+                 config_container, surface_movement, grid_movement, FFDBox, val_iZone, FEA_DISP_VARS);
+
+    /*--- Print residuals in the first iteration ---*/
+
+    if (rank == MASTER_NODE && ((ExtIter == 0) || dynamic )){
+
+      if (nonlinear_analysis){
+        cout << "UTOL-A: "   << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(0))
+             << ", RTOL-A: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(1))
+             << ", ETOL-A: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(2)) << "." << endl;
+      }
+      else{
+        if (geometry_container[val_iZone][MESH_0]->GetnDim() == 2){
+          cout << "log10[RMS Ux]: "   << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(0))
+               << ", log10[RMS Uy]: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(1)) << "." << endl;
+
+        }
+        else{
+          cout << "log10[RMS Ux]: "   << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(0))
+               << ", log10[RMS Uy]: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(1))
+               << ", log10[RMS Uz]: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(2))<< "." << endl;
+        }
+
+      }
+
+    }
+
+  }
+
+}
+
+
+
+void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ***geometry_container,
+                                               CSolver ****solver_container,
+                                               CConfig **config_container,
+                                               unsigned short val_iZone, int val_DirectIter) {
+  unsigned short iVar;
+  unsigned long iPoint;
+  bool update_geo = false;  //TODO: check
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (val_DirectIter >= 0){
+    if (rank == MASTER_NODE && val_iZone == ZONE_0)
+      cout << " Loading FEA solution from direct iteration " << val_DirectIter  << "." << endl;
+      solver_container[val_iZone][MESH_0][FEA_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, update_geo);
+  } else {
+    /*--- If there is no solution file we set the freestream condition ---*/
+    if (rank == MASTER_NODE && val_iZone == ZONE_0)
+      cout << " Setting static conditions at direct iteration " << val_DirectIter << "." << endl;
+    /*--- Push solution back to correct array ---*/
+    for(iPoint=0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint();iPoint++){
+      for (iVar = 0; iVar < solver_container[val_iZone][MESH_0][FEA_SOL]->GetnVar(); iVar++){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution(iVar, 0.0);
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Accel(iVar, 0.0);
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Vel(iVar, 0.0);
+      }
+    }
+  }
+}
+
+
+void CDiscAdjFEAIteration::Iterate(COutput *output,
+                                        CIntegration ***integration_container,
+                                        CGeometry ***geometry_container,
+                                        CSolver ****solver_container,
+                                        CNumerics *****numerics_container,
+                                        CConfig **config_container,
+                                        CSurfaceMovement **surface_movement,
+                                        CVolumetricMovement **volume_grid_movement,
+                                        CFreeFormDefBox*** FFDBox,
+                                        unsigned short val_iZone) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  unsigned long IntIter = 0, nIntIter = 1;
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+
+  config_container[val_iZone]->SetIntIter(IntIter);
+
+  nIntIter = config_container[val_iZone]->GetDyn_nIntIter();
+
+  for(IntIter = 0; IntIter < nIntIter; IntIter++){
+
+    /*--- Set the internal iteration ---*/
+
+    config_container[val_iZone]->SetIntIter(IntIter);
+
+    /*--- Set the adjoint values of the flow and objective function ---*/
+
+    InitializeAdjoint(solver_container, geometry_container, config_container, val_iZone);
+
+    /*--- Run the adjoint computation ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+
+    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
+                                                                              config_container[val_iZone]);
+
+    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][MESH_0],
+                                                                               config_container[val_iZone]);
+
+    /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Set the convergence criteria (only residual possible) ---*/
+
+    integration_container[val_iZone][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
+                                                                          IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+
+    if(integration_container[val_iZone][ADJFEA_SOL]->GetConvergence()){
+      break;
+    }
+
+    /*--- Write the convergence history (only screen output) ---*/
+
+   if(IntIter != nIntIter-1)
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+
+  }
+
+
+  if (dynamic){
+    integration_container[val_iZone][ADJFEA_SOL]->SetConvergence(false);
+  }
+
+  /*--- Global sensitivities ---*/
+  solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
+
+  // TEMPORARY output only for standalone structural problems
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
+
+    unsigned short iVar;
+
+    bool de_effects = config_container[val_iZone]->GetDE_Effects();
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    myfile_res.open ("Results_Reverse_Adjoint.txt", ios::app);
+
+    myfile_res.precision(15);
+
+    myfile_res << config_container[val_iZone]->GetExtIter() << "\t";
+
+    switch (config_container[val_iZone]->GetKind_ObjFunc()){
+    case REFERENCE_GEOMETRY:
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
+      break;
+    case REFERENCE_NODE:
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
+      break;
+    }
+
+    for (iVar = 0; iVar < config_container[val_iZone]->GetnElasticityMod(); iVar++)
+        myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
+    for (iVar = 0; iVar < config_container[val_iZone]->GetnPoissonRatio(); iVar++)
+        myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Nu(iVar) << "\t";
+    if (dynamic){
+        for (iVar = 0; iVar < config_container[val_iZone]->GetnMaterialDensity(); iVar++)
+            myfile_res << scientific << solver_container[ZONE_0][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
+    }
+
+    if (de_effects){
+        for (iVar = 0; iVar < config_container[val_iZone]->GetnElectric_Field(); iVar++)
+          myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetTotal_Sens_EField(iVar) << "\t";
+    }
+
+    for (iVar = 0; iVar < solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA(); iVar++){
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
+    }
+
+    myfile_res << endl;
+
+    myfile_res.close();
+  }
+
+  // TEST: for implementation of python framework in standalone structural problems
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    bool outputDVFEA = false;
+
+    switch (config_container[val_iZone]->GetDV_FEA()) {
+      case YOUNG_MODULUS:
+        myfile_res.open("grad_young.opt");
+        outputDVFEA = true;
+        break;
+      case POISSON_RATIO:
+        myfile_res.open("grad_poisson.opt");
+        outputDVFEA = true;
+        break;
+      case DENSITY_VAL:
+      case DEAD_WEIGHT:
+        myfile_res.open("grad_density.opt");
+        outputDVFEA = true;
+        break;
+      case ELECTRIC_FIELD:
+        myfile_res.open("grad_efield.opt");
+        outputDVFEA = true;
+        break;
+      default:
+        outputDVFEA = false;
+        break;
+    }
+
+    if (outputDVFEA){
+
+      unsigned short iDV;
+      unsigned short nDV = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+
+      myfile_res << "INDEX" << "\t" << "GRAD" << endl;
+
+      myfile_res.precision(15);
+
+      for (iDV = 0; iDV < nDV; iDV++){
+        myfile_res << iDV;
+        myfile_res << "\t";
+        myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iDV);
+        myfile_res << endl;
+      }
+
+      myfile_res.close();
+
+    }
+
+  }
+
+}
+
+void CDiscAdjFEAIteration::SetRecording(COutput *output,
+                                             CIntegration ***integration_container,
+                                             CGeometry ***geometry_container,
+                                             CSolver ****solver_container,
+                                             CNumerics *****numerics_container,
+                                             CConfig **config_container,
+                                             CSurfaceMovement **surface_movement,
+                                             CVolumetricMovement **grid_movement,
+                                             CFreeFormDefBox*** FFDBox,
+                                             unsigned short val_iZone,
+                                             unsigned short kind_recording)      {
+
+  unsigned long IntIter = config_container[ZONE_0]->GetIntIter();
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter(), DirectExtIter;
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+
+  DirectExtIter = 0;
+  if (dynamic){
+    DirectExtIter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
+  }
+
+  /*--- Reset the tape ---*/
+
+  AD::Reset();
+
+  /*--- We only need to reset the indices if the current recording is different from the recording we want to have ---*/
+
+  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
+
+    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+
+    /*--- Clear indices of coupling variables ---*/
+
+    SetDependencies(solver_container, geometry_container, numerics_container, config_container, val_iZone, ALL_VARIABLES);
+
+    /*--- Run one iteration while tape is passive - this clears all indices ---*/
+
+    fem_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
+                                config_container,surface_movement,grid_movement,FFDBox,val_iZone);
+
+  }
+
+  /*--- Prepare for recording ---*/
+
+  solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+
+  /*--- Start the recording of all operations ---*/
+
+  AD::StartRecording();
+
+  /*--- Register FEA variables ---*/
+
+  RegisterInput(solver_container, geometry_container, config_container, val_iZone, kind_recording);
+
+  /*--- Compute coupling or update the geometry ---*/
+
+  SetDependencies(solver_container, geometry_container, numerics_container, config_container, val_iZone, kind_recording);
+
+  /*--- Set the correct direct iteration number ---*/
+
+  if (dynamic){
+    config_container[val_iZone]->SetExtIter(DirectExtIter);
+  }
+
+  /*--- Run the direct iteration ---*/
+
+  fem_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
+                              config_container,surface_movement,grid_movement,FFDBox, val_iZone);
+
+  config_container[val_iZone]->SetExtIter(ExtIter);
+
+  /*--- Register structural variables and objective function as output ---*/
+
+  RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
+
+  /*--- Stop the recording ---*/
+
+  AD::StopRecording();
+
+  /*--- Set the recording status ---*/
+
+  CurrentRecording = kind_recording;
+
+  /* --- Reset the number of the internal iterations---*/
+
+  config_container[ZONE_0]->SetIntIter(IntIter);
+
+}
+
+
+void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+
+
+  if (kind_recording == FEA_DISP_VARS){
+
+    /*--- Register structural displacements as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+    /*--- Register variables as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  }
+
+  if (kind_recording == FEM_CROSS_TERM_GEOMETRY){
+
+    /*--- Register only structural displacements as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  }
+
+}
+
+void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+
+  unsigned short iVar;
+  unsigned short iMPROP = config_container[iZone]->GetnElasticityMod();
+
+  for (iVar = 0; iVar < iMPROP; iVar++){
+
+      /*--- Add dependencies for E and Nu ---*/
+
+      numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(iVar,
+                                                                                   solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                   solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+
+      /*--- Add dependencies for Rho and Rho_DL ---*/
+
+      numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(iVar,
+                                                                                solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+      /*--- Add dependencies for element-based simulations. ---*/
+
+      if (solver_container[iZone][MESH_0][FEA_SOL]->IsElementBased()){
+
+          /*--- Neo Hookean Compressible ---*/
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Density(iVar,
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+          /*--- Ideal DE ---*/
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Properties(iVar,
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Density(iVar,
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+          /*--- Knowles ---*/
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Properties(iVar,
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                       solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
+          numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Density(iVar,
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                    solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
+
+      }
+
+
+
+  }
+
+  if (config_container[iZone]->GetDE_Effects()){
+
+      unsigned short nEField = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnEField();
+
+      for (unsigned short iEField = 0; iEField < nEField; iEField++){
+
+          numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_ElectricField(iEField,
+                                                                                 solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+
+          numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField,
+                                                                                 solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+
+      }
+
+
+  }
+
+  /*--- Add dependencies for element-based simulations. ---*/
+
+  switch (config_container[iZone]->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+    case POISSON_RATIO:
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+    case ELECTRIC_FIELD:
+
+      unsigned short nDV = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+
+      for (unsigned short iDV = 0; iDV < nDV; iDV++){
+
+          numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
+                                                                           solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+
+          if (config_container[iZone]->GetDE_Effects()){
+            numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+          }
+
+      }
+
+      if (solver_container[iZone][MESH_0][FEA_SOL]->IsElementBased()){
+
+        for (unsigned short iDV = 0; iDV < nDV; iDV++){
+            numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+            numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+            numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+        }
+
+      }
+
+    break;
+
+  }
+
+}
+
+void CDiscAdjFEAIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  /*--- Register objective function as output of the iteration ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterObj_Func(config_container[iZone]);
+
+  /*--- Register conservative variables as output of the iteration ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
+
+}
+
+void CDiscAdjFEAIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  /*--- Initialize the adjoints the conservative variables ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                  config_container[iZone]);
+
+}
+
+
+void CDiscAdjFEAIteration::InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  /*--- Initialize the adjoints the conservative variables ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                  config_container[iZone]);
+
+}
+
+void CDiscAdjFEAIteration::Update(COutput *output,
+                                       CIntegration ***integration_container,
+                                       CGeometry ***geometry_container,
+                                       CSolver ****solver_container,
+                                       CNumerics *****numerics_container,
+                                       CConfig **config_container,
+                                       CSurfaceMovement **surface_movement,
+                                       CVolumetricMovement **grid_movement,
+                                       CFreeFormDefBox*** FFDBox,
+                                       unsigned short val_iZone)      { }
+void CDiscAdjFEAIteration::Monitor()     { }
+void CDiscAdjFEAIteration::Output()      { }
+void CDiscAdjFEAIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) {
+
+  unsigned short iMarker;
+
+  /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
+  for (iMarker = 0; iMarker < config_container[val_iZone]->GetnMarker_All(); iMarker++)
+  switch (config_container[val_iZone]->GetMarker_All_KindBC(iMarker)) {
+    case CLAMPED_BOUNDARY:
+    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[val_iZone][MESH_0],
+        solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[val_iZone], iMarker);
+    break;
+  }
+}
 
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
