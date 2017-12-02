@@ -1044,6 +1044,12 @@ public:
   void RegisterCoordinates(CConfig *config);
 
   /*!
+   * \brief Register the coordinates of the mesh nodes as output.
+   * \param[in] config
+   */
+  void RegisterOutput_Coordinates(CConfig *config);
+
+  /*!
    * \brief Update the multi-grid structure and the wall-distance.
    * \param geometry_container - Geometrical definition.
    * \param config - Config
