@@ -914,7 +914,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat,
   fem,
-  template_solver, disc_adj, disc_adj_fem;
+  template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
   int val_iter = 0;
 
   int rank = MASTER_NODE;
@@ -929,7 +929,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
   poisson          = false;
   wave             = false;  disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
-  heat             = false;
+  heat             = false;  disc_adj_turb    = false;
   template_solver  = false;
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
@@ -974,7 +974,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1011,7 +1011,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
-    if (adj_turb && !disc_adj) {
+    if (adj_turb) {
       no_restart = true;
     }
     if (disc_adj) {
