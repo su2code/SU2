@@ -1102,6 +1102,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             if (Point_Target_Check < 0 && fsi) {
               SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
             }
+            else if (fsi){
+              for (iVar = 0; iVar < nVar; iVar++)
+                Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+            }
             else{
                 for (iVar = 0; iVar < nVar; iVar++)
                     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
