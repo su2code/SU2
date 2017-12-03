@@ -447,7 +447,7 @@ def configure(argument_dict,
     # Create the commands for the different configurations and run configure
     for key in modes:
         if modes[key]:
-            print('\nRunning configure in folder ' + key)
+            print('\nRunning configure in folder ' + key + ' ', end = '')
             if modes[key] == 'CODI':
                 if key == 'SU2_DIRECTDIFF':
                     configure_mode = '--enable-codi-forward'
