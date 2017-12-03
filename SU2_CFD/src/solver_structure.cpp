@@ -43,11 +43,15 @@ CSolver::CSolver(void) {
   OutputHeadingNames = NULL;
   Residual_RMS       = NULL;
   Residual_Max       = NULL;
+  Residual_BGS       = NULL;
+  Residual_Max_BGS   = NULL;
   Residual           = NULL;
   Residual_i         = NULL;
   Residual_j         = NULL;
   Point_Max          = NULL;
   Point_Max_Coord    = NULL;
+  Point_Max_BGS      = NULL;
+  Point_Max_Coord_BGS = NULL;
   Solution           = NULL;
   Solution_i         = NULL;
   Solution_j         = NULL;
@@ -103,11 +107,22 @@ CSolver::~CSolver(void) {
   if (Residual_j != NULL) delete [] Residual_j;
   if (Point_Max != NULL) delete [] Point_Max;
 
+  if (Residual_BGS != NULL) delete [] Residual_BGS;
+  if (Residual_Max_BGS != NULL) delete [] Residual_Max_BGS;
+  if (Point_Max_BGS != NULL) delete [] Point_Max_BGS;
+
   if (Point_Max_Coord != NULL) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord[iVar];
     }
     delete [] Point_Max_Coord;
+  }
+
+  if (Point_Max_Coord_BGS != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord_BGS[iVar];
+    }
+    delete [] Point_Max_Coord_BGS;
   }
 
   if (Solution != NULL) delete [] Solution;
@@ -264,6 +279,100 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #endif
   
+}
+
+void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar;
+
+#ifndef HAVE_MPI
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+
+    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
+      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+    }
+
+    SetRes_BGS(iVar, max(EPS*EPS, sqrt(GetRes_BGS(iVar)/geometry->GetnPoint())));
+
+  }
+
+#else
+
+  int nProcessor = size, iProcessor, rank;
+
+  su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
+  unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  unsigned short iDim;
+
+  /*--- Set the L2 Norm residual in all the processors ---*/
+
+  sbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_BGS(iVar);
+  Local_nPointDomain = geometry->GetnPointDomain();
+
+
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+
+    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+
+      if (rank == MASTER_NODE)
+        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+
+      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+
+    }
+
+    SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+
+  }
+
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+
+  /*--- Set the Maximum residual in all the processors ---*/
+  sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+
+  rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+  rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    sbuf_residual[iVar] = GetRes_Max_BGS(iVar);
+    sbuf_point[iVar] = GetPoint_Max_BGS(iVar);
+    Coord = GetPoint_Max_Coord_BGS(iVar);
+    for (iDim = 0; iDim < nDim; iDim++)
+      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
+  }
+
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      AddRes_Max_BGS(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+    }
+  }
+
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+
+  delete [] sbuf_point;
+  delete [] rbuf_point;
+
+  delete [] sbuf_coord;
+  delete [] rbuf_coord;
+
+#endif
+
 }
 
 void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
@@ -1956,6 +2065,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   FILE *fhw;
   fhw = fopen(fname,"rb");
+  size_t ret;
 
   /*--- Error check for opening the file. ---*/
 
@@ -1965,7 +2075,10 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-  fread(&magic_number, sizeof(int), 1, fhw);
+  ret = fread(&magic_number, sizeof(int), 1, fhw);
+  if (ret != 1) {
+    SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  }
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -1985,7 +2098,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   MPI_File fhw;
   int ierr;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
   /*--- All ranks open the file using MPI. ---*/
 
@@ -2096,6 +2208,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   FILE *fhw;
   fhw = fopen(fname,"rb");
+  size_t ret;
 
   /*--- Error check for opening the file. ---*/
 
@@ -2105,7 +2218,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- First, read the number of variables and points. ---*/
 
-  fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  if (ret != (unsigned long)nRestart_Vars) {
+    SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  }
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2128,7 +2244,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   config->fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
-    fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    if (ret != (unsigned long)CGNS_STRING_SIZE) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
     config->fields.push_back(str_buf);
   }
 
@@ -2138,7 +2257,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
+  ret = fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
+  if (ret != (unsigned long)nFields*geometry->GetnPointDomain()) {
+    SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  }
 
   /*--- Close the file. ---*/
 
@@ -2155,8 +2277,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   unsigned long iPoint_Global, index, iChar;
   string field_buf;
 
-  int rank = MASTER_NODE, ierr;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  int ierr;
 
   /*--- All ranks open the file using MPI. ---*/
 
@@ -2258,7 +2379,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -2292,7 +2413,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
  su2double dCMx_dCL_ = config->GetdCMx_dCL();
  su2double dCMy_dCL_ = config->GetdCMy_dCL();
  su2double dCMz_dCL_ = config->GetdCMz_dCL();
-  su2double dCD_dCMy_ = config->GetdCD_dCMy();
   string::size_type position;
 	unsigned long ExtIter_ = 0;
 	ifstream restart_file;
@@ -2314,6 +2434,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		FILE *fhw;
 		fhw = fopen(fname,"rb");
+    size_t ret;
 
 		/*--- Error check for opening the file. ---*/
 
@@ -2323,7 +2444,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- First, read the number of variables and points. ---*/
 
-		fread(var_buf, sizeof(int), nVar_Buf, fhw);
+		ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2341,11 +2465,20 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Read the external iteration. ---*/
 
-		fread(&Restart_Iter, 1, sizeof(int), fhw);
+		ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
 		/*--- Read the metadata. ---*/
 
-		fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
+		ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    if (ret != 8) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
+
+    for (unsigned short iVar = 0; iVar < 8; iVar++)
+      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
 		/*--- Close the file. ---*/
 
@@ -2451,6 +2584,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -2460,7 +2594,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2480,7 +2617,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     MPI_File fhw;
     int ierr;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
@@ -2603,12 +2739,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
        if (position != string::npos) {
          text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
        }
-       /*--- dCD_dCMy coefficient ---*/
-       
-       position = text_line.find ("DCD_DCMY_VALUE=",0);
-       if (position != string::npos) {
-							text_line.erase (0,15); dCD_dCMy_ = atof(text_line.c_str());
-						}
        
 					}
 
@@ -2634,7 +2764,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-				cout.precision(6);
 				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
 				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
 			}
@@ -2649,7 +2778,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-				cout.precision(6);
 				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
 				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
 			}
@@ -2886,6 +3014,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -2895,7 +3024,10 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     
     /*--- First, read the number of variables and points. ---*/
 
-    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2916,9 +3048,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    int rank = MASTER_NODE, ierr;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-
+    int ierr;
+    
     /*--- All ranks open the file using MPI. ---*/
 
     ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
@@ -2976,6 +3107,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -2985,7 +3117,10 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3005,7 +3140,6 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     MPI_File fhw;
     int ierr;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
