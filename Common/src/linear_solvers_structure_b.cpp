@@ -135,7 +135,7 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   delete solver;
 }
 
-void CSysSolve_b::Solve_g(AD::CheckpointHandler* data){
+void CSysSolve_b::Solve_g(AD::Tape* tape, AD::CheckpointHandler* data){
   /*--- Extract data from the checkpoint handler ---*/
 
   su2double::GradientData *LinSysRes_Indices;
