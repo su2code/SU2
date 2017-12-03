@@ -600,7 +600,6 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
-  int rank = MASTER_NODE;
   su2double **Coord_Variation = NULL;
   
 #ifdef HAVE_MPI
@@ -608,7 +607,6 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   int nProcessor, iProcessor;
   
   su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   Xcoord_Airfoil.clear();
@@ -1207,6 +1205,17 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   }
 }
 
+void CGeometry::RegisterOutput_Coordinates(CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+    }
+  }
+}
+
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
   
   unsigned short iMesh;
@@ -1241,13 +1250,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long>::iterator it;
   su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
-  int rank;
-  
-#ifndef HAVE_MPI
-  rank = MASTER_NODE;
-#else
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -10717,7 +10719,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       SetnVertexSpanMax(marker_flag,nVert);
     }
     /*--- for all the processor should be known the amount of total turbovertex per span  ---*/
-    nTotVertex_gb[iSpan]= nVert;
+    nTotVertex_gb[iSpan]= (int)nVert;
 
     for (iMarker = 0; iMarker < nMarker; iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -14855,6 +14857,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -14864,7 +14867,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- First, read the number of variables and points. ---*/
 
-    fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+    ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+    if (ret != (unsigned long)nRestart_Vars) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -14887,7 +14894,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
-      fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      if (ret != (unsigned long)CGNS_STRING_SIZE) {
+        cout << endl << "Error reading restart file." << endl;
+        exit(EXIT_FAILURE);
+      }
       config->fields.push_back(str_buf);
     }
 
@@ -14897,7 +14908,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
+    ret = fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
+    if (ret != (unsigned long)nFields*GetnPointDomain()) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
@@ -14905,12 +14920,20 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the external iteration. ---*/
 
-    fread(&Restart_Iter, 1, sizeof(int), fhw);
+    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
-    
+    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    if (ret != 8) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
+
     /*--- Close the file. ---*/
 
     fclose(fhw);
@@ -15030,7 +15053,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Set the view for the MPI file write, i.e., describe the location in
      the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-    MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+    MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -15046,7 +15069,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Reset the file view before writing the metadata. ---*/
 
-    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
     /*--- Access the metadata. ---*/
 
@@ -15127,6 +15150,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -15136,7 +15160,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -15156,7 +15184,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     MPI_File fhw;
     int ierr;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 

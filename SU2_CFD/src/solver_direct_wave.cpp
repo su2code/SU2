@@ -39,10 +39,6 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
                              CConfig *config) : CSolver() {
   unsigned short iDim, iVar, nLineLets;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();

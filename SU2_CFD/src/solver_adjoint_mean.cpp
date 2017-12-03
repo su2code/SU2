@@ -1078,15 +1078,8 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
-  
-  /*--- MPI initialization ---*/
-  
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
   
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
@@ -1394,16 +1387,9 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
-  
-  /*--- MPI initialization ---*/
-  
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   SU2_MPI::Status status, status_;
@@ -1717,16 +1703,9 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
-  
-  /*--- MPI initialization ---*/
-  
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   SU2_MPI::Status status, status_;
@@ -2647,7 +2626,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Initialize the convective residual vector ---*/
     
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
@@ -2661,14 +2640,14 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Limiter computation ---*/
     
-    if (limiter) SetSolution_Limiter(geometry, config);
+    if (limiter && !Output) SetSolution_Limiter(geometry, config);
     
   }
   
   /*--- Artificial dissipation for centered schemes ---*/
   
   if (center) {
-    if ((center_jst) && (iMesh == MESH_0)) {
+    if ((center_jst) && (iMesh == MESH_0) && !Output) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -6179,7 +6158,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Initialize the convective residual vector ---*/
     
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
@@ -6190,7 +6169,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Limiter computation (upwind reconstruction) ---*/
   
-  if (limiter) SetSolution_Limiter(geometry, config);
+  if (limiter && !Output) SetSolution_Limiter(geometry, config);
 
   /*--- Compute gradients adj for viscous term coupling ---*/
 
@@ -6201,7 +6180,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Artificial dissipation for centered schemes ---*/
   
-  if (center_jst && (iMesh == MESH_0)) {
+  if (center_jst && (iMesh == MESH_0) &&!Output) {
     SetDissipation_Switch(geometry, config);
     SetUndivided_Laplacian(geometry, config);
   }
