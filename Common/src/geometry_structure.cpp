@@ -1205,6 +1205,17 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   }
 }
 
+void CGeometry::RegisterOutput_Coordinates(CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+    }
+  }
+}
+
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
   
   unsigned short iMesh;
@@ -10948,7 +10959,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       SetnVertexSpanMax(marker_flag,nVert);
     }
     /*--- for all the processor should be known the amount of total turbovertex per span  ---*/
-    nTotVertex_gb[iSpan]= nVert;
+    nTotVertex_gb[iSpan]= (int)nVert;
 
     for (iMarker = 0; iMarker < nMarker; iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -11548,11 +11559,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  unsigned short i, n1, n2, n1t, n2t;
-#endif
-
   su2double tangGridVelIn, tangGridVelOut;
   su2double areaIn, areaOut, pitchIn, Pitch;
   su2double radiusIn, radiusOut, *turboNormal;
@@ -11585,7 +11591,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
 #ifdef HAVE_MPI
     unsigned short i, n1, n2, n1t,n2t;
-    int size;
+    int size = SINGLE_NODE;
     su2double *TurbGeoIn= NULL,*TurbGeoOut= NULL;
     su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
     int *TotMarkerTP;
@@ -15137,6 +15143,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -15147,7 +15154,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- First, read the number of variables and points. ---*/
 
-    fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+    ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+    if (ret != (unsigned long)nRestart_Vars) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -15171,7 +15182,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
-      fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      if (ret != (unsigned long)CGNS_STRING_SIZE) {
+        cout << endl << "Error reading restart file." << endl;
+        exit(EXIT_FAILURE);
+      }
       config->fields.push_back(str_buf);
     }
 
@@ -15181,7 +15196,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
+    ret = fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
+    if (ret != (unsigned long)nFields*GetnPointDomain()) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
@@ -15189,12 +15208,20 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the external iteration. ---*/
 
-    fread(&Restart_Iter, 1, sizeof(int), fhw);
+    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
-    
+    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    if (ret != 8) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
+
     /*--- Close the file. ---*/
 
     fclose(fhw);
@@ -15323,7 +15350,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Set the view for the MPI file write, i.e., describe the location in
      the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-    MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+    MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -15339,7 +15366,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Reset the file view before writing the metadata. ---*/
 
-    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
     /*--- Access the metadata. ---*/
 
@@ -15420,6 +15447,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -15430,7 +15458,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
