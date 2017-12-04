@@ -5278,7 +5278,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
-  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE && !(config->GetKind_SU2() == SU2_DEF);
   bool actuator_disk  = (((config->GetnMarker_ActDiskInlet() != 0) ||
                           (config->GetnMarker_ActDiskOutlet() != 0)) &&
                          ((config->GetKind_SU2() == SU2_CFD) ||
