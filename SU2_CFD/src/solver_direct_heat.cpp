@@ -157,8 +157,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   AvgTemperature = new su2double[nMarker];
   Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
-  Set_Heatflux_Areas(geometry, config);
-
   for(iMarker = 0; iMarker < nMarker; iMarker++) {
     Heat_Flux[iMarker] = 0.0;
     AvgTemperature[iMarker] = 0.0;
@@ -166,6 +164,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
     Surface_Areas[iMarker] = 0.0;
   }
+
+  Set_Heatflux_Areas(geometry, config);
 
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
    used for IO with a donor cell ---*/
