@@ -340,8 +340,8 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
       if ((rank == MASTER_NODE) && (!discrete_adjoint))
         cout << "Deforming the volume grid." << endl;
 
-        grid_movement[val_iZone]->SetVolume_Deformation_Elas(geometry_container[val_iZone][MESH_0],
-                                                             config_container[val_iZone], true, false);
+      grid_movement[val_iZone]->SetVolume_Deformation_Elas(geometry_container[val_iZone][MESH_0],
+                                                           config_container[val_iZone], true, false);
 
       if ((rank == MASTER_NODE) && (!discrete_adjoint))
         cout << "There is no grid velocity." << endl;
@@ -2419,7 +2419,7 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ***geometry_container,
   if (val_DirectIter >= 0){
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading FEA solution from direct iteration " << val_DirectIter  << "." << endl;
-      solver_container[val_iZone][MESH_0][FEA_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, update_geo);
+    solver_container[val_iZone][MESH_0][FEA_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, update_geo);
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
