@@ -1114,6 +1114,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                 cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
                 exit(EXIT_FAILURE);
             }
+            else if (fsi){
+              for (iVar = 0; iVar < nVar; iVar++)
+                Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+            }
             else{
                 for (iVar = 0; iVar < nVar; iVar++)
                     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
@@ -1448,18 +1452,18 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
   unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
-  unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
+  unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag = 0, Target_Flag = 0;
   int Marker_Donor = -1, Marker_Target = -1;
 
   su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
 
+#ifdef HAVE_MPI
   int rank = MASTER_NODE;
   int size = SINGLE_NODE, iSize;
+  int *BuffMarkerDonor, *BuffDonorFlag;
 
-#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  int *BuffMarkerDonor, *BuffDonorFlag;
 #endif
 
 
@@ -1597,9 +1601,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
   su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL,
       *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL, *avgOmegaTarget = NULL, *avgKineTarget = NULL;
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE, iSize;
 
 #ifdef HAVE_MPI
+  int size, iSize;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
