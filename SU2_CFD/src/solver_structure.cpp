@@ -40,11 +40,15 @@ CSolver::CSolver(void) {
   OutputHeadingNames = NULL;
   Residual_RMS       = NULL;
   Residual_Max       = NULL;
+  Residual_BGS       = NULL;
+  Residual_Max_BGS   = NULL;
   Residual           = NULL;
   Residual_i         = NULL;
   Residual_j         = NULL;
   Point_Max          = NULL;
   Point_Max_Coord    = NULL;
+  Point_Max_BGS      = NULL;
+  Point_Max_Coord_BGS = NULL;
   Solution           = NULL;
   Solution_i         = NULL;
   Solution_j         = NULL;
@@ -100,11 +104,22 @@ CSolver::~CSolver(void) {
   if (Residual_j != NULL) delete [] Residual_j;
   if (Point_Max != NULL) delete [] Point_Max;
 
+  if (Residual_BGS != NULL) delete [] Residual_BGS;
+  if (Residual_Max_BGS != NULL) delete [] Residual_Max_BGS;
+  if (Point_Max_BGS != NULL) delete [] Point_Max_BGS;
+
   if (Point_Max_Coord != NULL) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord[iVar];
     }
     delete [] Point_Max_Coord;
+  }
+
+  if (Point_Max_Coord_BGS != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord_BGS[iVar];
+    }
+    delete [] Point_Max_Coord_BGS;
   }
 
   if (Solution != NULL) delete [] Solution;
@@ -271,6 +286,103 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #endif
   
+}
+
+void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar;
+
+#ifndef HAVE_MPI
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+
+    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    SetRes_BGS(iVar, max(EPS*EPS, sqrt(GetRes_BGS(iVar)/geometry->GetnPoint())));
+
+  }
+
+#else
+
+  int nProcessor, iProcessor, rank;
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
+  unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  unsigned short iDim;
+
+  /*--- Set the L2 Norm residual in all the processors ---*/
+
+  sbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_BGS(iVar);
+  Local_nPointDomain = geometry->GetnPointDomain();
+
+
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+
+    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+
+      if (rank == MASTER_NODE)
+        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+
+      MPI_Abort(MPI_COMM_WORLD,1);
+
+    }
+
+    SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+
+  }
+
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+
+  /*--- Set the Maximum residual in all the processors ---*/
+  sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+
+  rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+  rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    sbuf_residual[iVar] = GetRes_Max_BGS(iVar);
+    sbuf_point[iVar] = GetPoint_Max_BGS(iVar);
+    Coord = GetPoint_Max_Coord_BGS(iVar);
+    for (iDim = 0; iDim < nDim; iDim++)
+      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
+  }
+
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      AddRes_Max_BGS(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+    }
+  }
+
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+
+  delete [] sbuf_point;
+  delete [] rbuf_point;
+
+  delete [] sbuf_coord;
+  delete [] rbuf_coord;
+
+#endif
+
 }
 
 void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
@@ -966,62 +1078,67 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
-  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Solution_i, *Solution_j,
-  dave, LimK, eps1, eps2, dm, dp, du, ds, limiter, SharpEdge_Distance;
+  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
+  *Solution, *Solution_i, *Solution_j, *LocalMinSolution, *LocalMaxSolution,
+  *GlobalMinSolution, *GlobalMaxSolution,
+  dave, LimK, eps1, eps2, dm, dp, du, ds, y, limiter, SharpEdge_Distance;
   
-  /*--- Initialize solution max and solution min in the entire domain --*/
+  dave = config->GetRefElemLength();
+  LimK = config->GetVenkat_LimiterCoeff();
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->SetSolution_Max(iVar, -EPS);
-      node[iPoint]->SetSolution_Min(iVar, EPS);
-    }
-  }
-  
-  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  if (config->GetKind_SlopeLimit() == NO_LIMITER) {
     
-    /*--- Point identification, Normal vector and area ---*/
-    
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
-    
-    /*--- Get the conserved variables ---*/
-    
-    Solution_i = node[iPoint]->GetSolution();
-    Solution_j = node[jPoint]->GetSolution();
-    
-    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      du = (Solution_j[iVar] - Solution_i[iVar]);
-      node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
-      node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
-      node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
-      node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->SetLimiter(iVar, 1.0);
+      }
     }
     
   }
   
-  /*--- Initialize the limiter --*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      node[iPoint]->SetLimiter(iVar, 2.0);
+  else {
+    
+    /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->SetSolution_Max(iVar, -EPS);
+        node[iPoint]->SetSolution_Min(iVar, EPS);
+        node[iPoint]->SetLimiter(iVar, 2.0);
+      }
     }
+    
+    /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      /*--- Point identification, Normal vector and area ---*/
+      
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      
+      /*--- Get the conserved variables ---*/
+      
+      Solution_i = node[iPoint]->GetSolution();
+      Solution_j = node[jPoint]->GetSolution();
+      
+      /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        du = (Solution_j[iVar] - Solution_i[iVar]);
+        node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+        node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+        node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+        node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+      }
+      
+    }
+    
   }
   
-  /*--- Venkatakrishnan limiter ---*/
+  /*--- Barth-Jespersen limiter with Venkatakrishnan modification ---*/
   
-  if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
-    
-    /*-- Get limiter parameters from the configuration file ---*/
-    
-    dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
+  if (config->GetKind_SlopeLimit_Flow() == BARTH_JESPERSEN) {
     
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
@@ -1032,8 +1149,141 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nVar, nDim);
+      AD::SetPreaccIn(Gradient_j, nVar, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
       for (iVar = 0; iVar < nVar; iVar++) {
         
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
+        /*--- Calculate the interface left gradient, delta- (dm) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+        
+        if (dm == 0.0) { limiter = 2.0; }
+        else {
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          limiter = dp/dm;
+        }
+        
+        if (limiter < node[iPoint]->GetLimiter(iVar)) {
+          node[iPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
+        }
+        
+        /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+        
+        if (dm == 0.0) { limiter = 2.0; }
+        else {
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          limiter = dp/dm;
+        }
+        
+        if (limiter < node[jPoint]->GetLimiter(iVar)) {
+          node[jPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
+        }
+
+      }
+      
+      AD::EndPreacc();
+      
+    }
+
+
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        y =  node[iPoint]->GetLimiter(iVar);
+        limiter = (y*y + 2.0*y) / (y*y + y + 2.0);
+        node[iPoint]->SetLimiter(iVar, limiter);
+      }
+    }
+    
+  }
+
+  /*--- Venkatakrishnan limiter ---*/
+  
+  if ((config->GetKind_SlopeLimit() == VENKATAKRISHNAN) || (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
+    
+    /*--- Allocate memory for the max and min solution value --*/
+    
+    LocalMinSolution = new su2double [nVar]; GlobalMinSolution = new su2double [nVar];
+    LocalMaxSolution = new su2double [nVar]; GlobalMaxSolution = new su2double [nVar];
+    
+    /*--- Compute the max value and min value of the solution ---*/
+    
+    Solution = node[iPoint]->GetSolution();
+    for (iVar = 0; iVar < nVar; iVar++) {
+      LocalMinSolution[iVar] = Solution[iVar];
+      LocalMaxSolution[iVar] = Solution[iVar];
+    }
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Get the solution variables ---*/
+      
+      Solution = node[iPoint]->GetSolution();
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LocalMinSolution[iVar] = min (LocalMinSolution[iVar], Solution[iVar]);
+        LocalMaxSolution[iVar] = max (LocalMaxSolution[iVar], Solution[iVar]);
+      }
+      
+    }
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    for (iVar = 0; iVar < nVar; iVar++) {
+      GlobalMinSolution[iVar] = LocalMinSolution[iVar];
+      GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
+    }
+#endif
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      iPoint     = geometry->edge[iEdge]->GetNode(0);
+      jPoint     = geometry->edge[iEdge]->GetNode(1);
+      Gradient_i = node[iPoint]->GetGradient();
+      Gradient_j = node[jPoint]->GetGradient();
+      Coord_i    = geometry->node[iPoint]->GetCoord();
+      Coord_j    = geometry->node[jPoint]->GetCoord();
+      
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nVar, nDim);
+      AD::SetPreaccIn(Gradient_j, nVar, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          eps1 = LimK * (GlobalMaxSolution[iVar] - GlobalMinSolution[iVar]);
+          eps2 = eps1*eps1;
+        }
+        else {
+          eps1 = LimK*dave;
+          eps2 = eps1*eps1*eps1;
+        }
+        
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
         dm = 0.0;
@@ -1047,8 +1297,10 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[iPoint]->GetLimiter(iVar))
+        if (limiter < node[iPoint]->GetLimiter(iVar)) {
           node[iPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter()[iVar]);
+        }
         
         /*-- Repeat for point j on the edge ---*/
         
@@ -1061,10 +1313,19 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[jPoint]->GetLimiter(iVar))
+        if (limiter < node[jPoint]->GetLimiter(iVar)) {
           node[jPoint]->SetLimiter(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter()[iVar]);
+        }
       }
+      
+      AD::EndPreacc();
+
     }
+    
+    delete [] LocalMinSolution; delete [] GlobalMinSolution;
+    delete [] LocalMaxSolution; delete [] GlobalMaxSolution;
+
   }
   
   /*--- Sharp edges limiter ---*/
@@ -1074,7 +1335,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     /*-- Get limiter parameters from the configuration file ---*/
     
     dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
+    LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
     
@@ -1102,7 +1363,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1124,7 +1385,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[jPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1146,7 +1407,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     /*-- Get limiter parameters from the configuration file ---*/
     
     dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
+    LimK = config->GetVenkat_LimiterCoeff();
     eps1 = LimK*dave;
     eps2 = eps1*eps1*eps1;
     
@@ -1174,7 +1435,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[iPoint]->GetWall_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1196,7 +1457,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         /*--- Compute the distance to a sharp edge ---*/
         
-        SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetSharpEdgesCoeff()*eps1);
+        SharpEdge_Distance = (geometry->node[jPoint]->GetWall_Distance() - config->GetAdjSharp_LimiterCoeff()*eps1);
         ds = 0.0;
         if (SharpEdge_Distance < -eps1) ds = 0.0;
         if (fabs(SharpEdge_Distance) <= eps1) ds = 0.5*(1.0+(SharpEdge_Distance/eps1)+(1.0/PI_NUMBER)*sin(PI_NUMBER*SharpEdge_Distance/eps1));
@@ -1845,6 +2106,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   FILE *fhw;
   fhw = fopen(fname,"rb");
+  size_t ret;
 
   /*--- Error check for opening the file. ---*/
 
@@ -1855,7 +2117,11 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-  fread(&magic_number, sizeof(int), 1, fhw);
+  ret = fread(&magic_number, sizeof(int), 1, fhw);
+  if (ret != 1) {
+    cout << endl << "Error reading restart file." << endl;
+    exit(EXIT_FAILURE);
+  }
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2004,6 +2270,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   FILE *fhw;
   fhw = fopen(fname,"rb");
+  size_t ret;
 
   /*--- Error check for opening the file. ---*/
 
@@ -2014,7 +2281,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- First, read the number of variables and points. ---*/
 
-  fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  if (ret != (unsigned long)nRestart_Vars) {
+    cout << endl << "Error reading restart file." << endl;
+    exit(EXIT_FAILURE);
+  }
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2038,7 +2309,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   config->fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
-    fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    if (ret != (unsigned long)CGNS_STRING_SIZE) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
     config->fields.push_back(str_buf);
   }
 
@@ -2048,7 +2323,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
+  ret = fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
+  if (ret != (unsigned long)nFields*geometry->GetnPointDomain()) {
+    cout << endl << "Error reading restart file." << endl;
+    exit(EXIT_FAILURE);
+  }
 
   /*--- Close the file. ---*/
 
@@ -2177,7 +2456,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -2211,7 +2490,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
  su2double dCMx_dCL_ = config->GetdCMx_dCL();
  su2double dCMy_dCL_ = config->GetdCMy_dCL();
  su2double dCMz_dCL_ = config->GetdCMz_dCL();
-	su2double dCD_dCMy_ = config->GetdCD_dCMy();
 	string::size_type position;
 	unsigned long ExtIter_ = 0;
 	ifstream restart_file;
@@ -2238,6 +2516,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		FILE *fhw;
 		fhw = fopen(fname,"rb");
+    size_t ret;
 
 		/*--- Error check for opening the file. ---*/
 
@@ -2248,7 +2527,11 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- First, read the number of variables and points. ---*/
 
-		fread(var_buf, sizeof(int), nVar_Buf, fhw);
+		ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2267,11 +2550,22 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Read the external iteration. ---*/
 
-		fread(&Restart_Iter, 1, sizeof(int), fhw);
+		ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
 		/*--- Read the metadata. ---*/
 
-		fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
+		ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    if (ret != 8) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    for (unsigned short iVar = 0; iVar < 8; iVar++)
+      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
 		/*--- Close the file. ---*/
 
@@ -2387,6 +2681,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -2397,7 +2692,11 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2550,12 +2849,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
        if (position != string::npos) {
          text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
        }
-       /*--- dCD_dCMy coefficient ---*/
-       
-       position = text_line.find ("DCD_DCMY_VALUE=",0);
-       if (position != string::npos) {
-							text_line.erase (0,15); dCD_dCMy_ = atof(text_line.c_str());
-						}
        
 					}
 
@@ -2581,7 +2874,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-				cout.precision(6);
 				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
 				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
 			}
@@ -2596,7 +2888,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-				cout.precision(6);
 				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
 				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
 			}
@@ -2713,9 +3004,9 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 	/*--- External iteration ---*/
 
-	if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
-			(adjoint && config->GetRestart()))
-		config->SetExtIter_OffSet(ExtIter_);
+  if ((config->GetDiscard_InFiles() == false) &&
+      (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) || (adjoint && config->GetRestart()))
+    config->SetExtIter_OffSet(ExtIter_);
 
 }
 
@@ -2834,6 +3125,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -2844,7 +3136,11 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     
     /*--- First, read the number of variables and points. ---*/
 
-    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -2935,6 +3231,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -2945,7 +3242,11 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      cout << endl << "Error reading restart file." << endl;
+      exit(EXIT_FAILURE);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/

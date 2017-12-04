@@ -65,7 +65,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751947, 0.485758, 0.181440, -0.000017] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751962, 0.485775, 0.182122, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -76,7 +76,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.658566, -0.487694, 0.087556, 0.000023] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.654903, -0.491416, 0.109157, 0.000011] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -121,7 +121,7 @@ def main():
     discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
     discadj_incomp_turb_NACA0012.test_iter = 100
-    discadj_incomp_turb_NACA0012.test_vals = [-3.627758, -1.624321, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.test_vals = [-3.627673, -1.624120, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_turb_NACA0012.timeout   = 1600
     discadj_incomp_turb_NACA0012.tol       = 0.00001
@@ -136,12 +136,42 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.746900, -1.544893, -0.008345, 0.000014] #last 4 columns
+    discadj_cylinder.test_vals = [3.746904, -1.544886, -0.008345, 0.000014] #last 4 columns
     discadj_cylinder.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
+    
+    ###################################
+    ### Structural Adjoint          ###
+    ###################################
+   
+    # Structural model
+    discadj_fea           = TestCase('discadj_fea')
+    discadj_fea.cfg_dir   = "disc_adj_fea"
+    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.test_iter = 9
+    discadj_fea.test_vals = [-6.403771, -6.404196, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.su2_exec  = "SU2_CFD_AD"
+    discadj_fea.timeout   = 1600
+    discadj_fea.tol       = 0.00001
+    test_list.append(discadj_fea)    
+    
+    ###################################
+    ### Coupled FSI Adjoint         ###
+    ###################################
+   
+    # Structural model
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
+    discadj_fsi.su2_exec  = "SU2_CFD_AD"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)      
 
     ######################################
     ### RUN TESTS                      ###
