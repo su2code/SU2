@@ -65,6 +65,9 @@ CElement::CElement(void) {
   
   FDL_a = NULL;
   
+  iDe = 0;
+  iDV = 0;
+  iProp = 0;
 }
 
 
@@ -101,6 +104,10 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
   
   FDL_a = NULL;
   
+  iDe = 0;
+  iDV = 0;
+  iProp = 0;
+
 }
 
 CElement::~CElement(void) {
@@ -247,9 +254,11 @@ void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned s
   
   unsigned short iDim, jDim;
   
+  /*--- TODO: The incompressible implementation needs further work ---*/
+
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      Kk_ab[nodeA][nodeB][iDim*nDim+jDim] += val_Kk_ab[iDim][jDim];
+      Kk_ab[nodeA][nodeB][iDim*nDim+jDim] = val_Kk_ab[iDim][jDim];
     }
   }
 }
@@ -309,5 +318,15 @@ void CElement::clearStress(void) {
     }
   }
   
+}
+
+void CElement::Set_ElProperties(CElementProperty *input_element) {
+
+  /*--- Set the properties local to the element ---*/
+
+  iDV = input_element->GetDV();
+  iProp = input_element->GetMat_Prop();
+  iDe = input_element->GetElectric_Prop();
+
 }
 
