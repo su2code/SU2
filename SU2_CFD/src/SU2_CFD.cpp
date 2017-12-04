@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
    and perform all the preprocessing. ---*/
 
   if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+        config->GetKind_Solver() == DISC_ADJ_FEM ||
         config->GetKind_Solver() == POISSON_EQUATION ||
         config->GetKind_Solver() == WAVE_EQUATION ||
         config->GetKind_Solver() == HEAT_EQUATION) ) {
@@ -101,9 +102,23 @@ int main(int argc, char *argv[]) {
 
   } else if ((nZone == 2) && fsi) {
 
-    /*--- FSI problem: instantiate the FSI driver class. ---*/
+    bool stat_fsi = ((config->GetDynamic_Analysis() == STATIC) && (config->GetUnsteady_Simulation() == STEADY));
+    bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
 
-    driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+    /*--- If the problem is a discrete adjoint FSI problem ---*/
+    if (disc_adj_fsi) {
+      if (stat_fsi) {
+        driver = new CDiscAdjFSIStatDriver(config_file_name, nZone, nDim, MPICommunicator);
+      }
+      else {
+        cout << "WARNING: There is no discrete adjoint implementation for dynamic FSI. " << endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+    /*--- If the problem is a direct FSI problem ---*/
+    else{
+      driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+    }
 
   } else {
 
