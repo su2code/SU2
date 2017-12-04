@@ -157,6 +157,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   AvgTemperature = new su2double[nMarker];
   Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
+  Set_Heatflux_Areas(geometry, config);
+
   for(iMarker = 0; iMarker < nMarker; iMarker++) {
     Heat_Flux[iMarker] = 0.0;
     AvgTemperature[iMarker] = 0.0;
@@ -196,56 +198,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       InterfaceVar[iMarker][iVertex][0] = 1.0;
     }
   }
-
-  /*--- Compute heat flux surface areas ---*/
-
-  unsigned short iMarker_HeatFlux;
-  string HeatFlux_Tag, Marker_Tag;
-
-  su2double *Local_Surface_Areas, Area, *Normal;
-  Local_Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    for ( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-
-      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-
-      if (Marker_Tag == HeatFlux_Tag) {
-
-        Local_Surface_Areas[iMarker_HeatFlux] = 0.0;
-
-        for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          if(geometry->node[iPoint]->GetDomain()) {
-
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-            Local_Surface_Areas[iMarker_HeatFlux] += Area;
-          }
-        }
-      }
-    }
-  }
-
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-      Surface_Areas[iMarker_HeatFlux] = Local_Surface_Areas[iMarker_HeatFlux];
-    }
-#endif
-
-  Total_HeatFlux_Areas = 0.0;
-  for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
-    Total_HeatFlux_Areas += Surface_Areas[iMarker_HeatFlux];
-  }
-
-  delete[] Local_Surface_Areas;
 
   FluidInterfaceFileName.assign("interface_data_fluid.dat");
   SolidInterfaceFileName.assign("interface_data_solid.dat");
@@ -842,6 +794,58 @@ void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_containe
 
     LinSysRes.AddBlock(iPoint, Residual);
   }
+}
+
+void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iMarker, iMarker_HeatFlux, iDim;
+  unsigned long iPoint, iVertex;
+  string HeatFlux_Tag, Marker_Tag;
+
+  su2double *Local_Surface_Areas, Area, *Normal;
+  Local_Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    for ( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+
+      HeatFlux_Tag = config->GetMarker_HeatFlux_TagBound(iMarker_HeatFlux);
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+      if (Marker_Tag == HeatFlux_Tag) {
+
+        Local_Surface_Areas[iMarker_HeatFlux] = 0.0;
+
+        for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if(geometry->node[iPoint]->GetDomain()) {
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+            Local_Surface_Areas[iMarker_HeatFlux] += Area;
+          }
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+      Surface_Areas[iMarker_HeatFlux] = Local_Surface_Areas[iMarker_HeatFlux];
+    }
+#endif
+
+  Total_HeatFlux_Areas = 0.0;
+  for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+    Total_HeatFlux_Areas += Surface_Areas[iMarker_HeatFlux];
+  }
+
+  delete[] Local_Surface_Areas;
 }
 
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,

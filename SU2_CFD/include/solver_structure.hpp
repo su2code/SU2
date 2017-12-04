@@ -710,7 +710,8 @@ public:
    */
   virtual void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
   
-  
+  virtual void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config);
+
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
@@ -11218,6 +11219,7 @@ public:
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
 
+  void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config);
 
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                          unsigned short val_marker);
