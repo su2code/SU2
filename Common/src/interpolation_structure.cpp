@@ -2280,7 +2280,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     jPoint = ptr[jNode];
     for( kNode = 0; kNode < nOuterNodes; kNode++ ){
       if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-        OuterNodesNeighbour[iNode][count] = kNode;
+        OuterNodesNeighbour[iNode][count] = (int)kNode;
         count++;
         break;
       }
@@ -2289,7 +2289,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
 
   // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
   if( count == 1 ) 
-    StartIndex = iNode;
+    StartIndex = (int)iNode;
   }
 
   /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
@@ -2339,7 +2339,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     delete [] OuterNodesNeighbour[ iNode ];
   delete [] OuterNodesNeighbour;
 
-  return iElementNode;
+  return (int)iElementNode;
   
 }
 
