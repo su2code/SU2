@@ -16472,6 +16472,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
       Surface_Density_Total[iMarker_Analyze]          /= Weight;
       Surface_Enthalpy_Total[iMarker_Analyze]         /= Weight;
       Surface_NormalVelocity_Total[iMarker_Analyze]   /= Weight;
+      Surface_Pressure_Total[iMarker_Analyze]         /= Weight;
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
     }
