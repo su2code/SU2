@@ -227,7 +227,7 @@ inline AMPI_Datatype CMediMPIWrapper::convertDatatype(MPI_Datatype datatype){
     return AMPI_UNSIGNED_SHORT;
   }
   else if (datatype == MPI_LONG){
-    return AMPI_SHORT;
+    return AMPI_LONG;
   }
   else if (datatype == MPI_UNSIGNED_LONG){
     return AMPI_UNSIGNED_LONG;

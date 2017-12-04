@@ -839,6 +839,7 @@ void CSysSolve::SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSys
       break;
     default:
       SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      break;
   }
 
   /*--- Push the external function to the AD tape ---*/
