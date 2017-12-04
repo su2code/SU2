@@ -298,7 +298,7 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 #else
 
-  int nProcessor = size, iProcessor, rank;
+  int nProcessor = size, iProcessor;
 
   su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
