@@ -3796,6 +3796,20 @@ public:
   ~CTurbSSTVariable(void);
   
   /*!
+   * \brief Set the harmonic balance source term.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
+   */
+  void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
+
+  /*!
+   * \brief Get the harmonic balance source term.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
+   */
+  su2double GetHarmonicBalance_Source(unsigned short val_var);
+
+  /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.
    * \param[in] val_dist - Value of the distance to the wall.
