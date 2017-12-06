@@ -1101,6 +1101,10 @@ inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
+inline void CTurbSSTVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
+
+inline su2double CTurbSSTVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {
     EddyViscSens[iVar] = val_EddyViscSens[iVar];}

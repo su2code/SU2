@@ -3220,6 +3220,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
   
   unsigned long iPoint;
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -3271,6 +3272,33 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
+  }
+
+  if (harmonic_balance) {
+
+    su2double Volume, Source;
+    unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
+
+    /*--- Loop over points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Get control volume ---*/
+
+      Volume = geometry->node[iPoint]->GetVolume();
+
+      /*--- Access stored harmonic balance source term ---*/
+
+      for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
+        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
+        Residual[iVar] = Source*Volume;
+      }
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+    }
   }
   
 }
