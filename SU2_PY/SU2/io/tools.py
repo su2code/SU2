@@ -251,7 +251,7 @@ def get_headerMap(nZones = 1):
 
     return history_header_map
 
-def getTurboPerfIndex(
+def getTurboPerfIndex(nZones = 1):
   #TODO to remove, for test only
   nZones = nZones/3
 
