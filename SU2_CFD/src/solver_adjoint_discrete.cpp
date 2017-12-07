@@ -49,18 +49,14 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   ifstream restart_file;
   string filename, AdjExt;
 
+  bool fsi = config->GetFSI_Simulation();
+
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
   /*--- Initialize arrays to NULL ---*/
 
   CSensitivity = NULL;
-
-  Sens_Geo   = NULL;
-  Sens_Mach  = NULL;
-  Sens_AoA   = NULL;
-  Sens_Press = NULL;
-  Sens_Temp  = NULL;
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
@@ -80,6 +76,28 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
   Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
   Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
+
+  /*--- Define some auxiliary vectors related to the geometry adjoint (nDim) ---*/
+  Solution_Geometry = new su2double[nDim];     for (iDim = 0; iDim < nDim; iDim++) Solution_Geometry[iDim] = 1.0;
+
+  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
+
+  if (fsi){
+
+    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar] = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+
+  }
+
 
   /*--- Define some structures for locating max residuals ---*/
 
@@ -104,18 +122,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
   }
 
-  Sens_Geo  = new su2double[nMarker];
-  Sens_Mach = new su2double[nMarker];
-  Sens_AoA  = new su2double[nMarker];
-  Sens_Press = new su2double[nMarker];
-  Sens_Temp  = new su2double[nMarker];
-
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Sens_Geo[iMarker]  = 0.0;
-      Sens_Mach[iMarker] = 0.0;
-      Sens_AoA[iMarker]  = 0.0;
-      Sens_Press[iMarker] = 0.0;
-      Sens_Temp[iMarker]  = 0.0;
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           CSensitivity[iMarker][iVertex] = 0.0;
       }
@@ -138,12 +145,6 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
     }
     delete [] CSensitivity;
   }
-
-  if (Sens_Geo   != NULL) delete [] Sens_Geo;
-  if (Sens_Mach  != NULL) delete [] Sens_Mach;
-  if (Sens_AoA   != NULL) delete [] Sens_AoA;
-  if (Sens_Press != NULL) delete [] Sens_Press;
-  if (Sens_Temp  != NULL) delete [] Sens_Temp;
 
 }
 
@@ -186,6 +187,58 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Set indices to zero ---*/
 
   RegisterVariables(geometry, config, true);
+
+}
+
+void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement *grid_movement, CConfig *config) {
+
+
+//  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+//      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+//  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+
+//  unsigned long ExtIter = config->GetExtIter();
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  /*--- Reset the solution to the initial (converged) position ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      geometry[MESH_0]->node[iPoint]->SetCoord(iDim,node[iPoint]->GetGeometry_Direct(iDim));
+    }
+  }
+
+  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
+   dual mesh control volumes in the domain and on the boundaries. ---*/
+
+  grid_movement->UpdateDualGrid(geometry[MESH_0], config);
+
+  /*--- After updating the dual mesh, compute the grid velocities (only dynamic problems). ---*/
+//  if (time_n_needed){
+//    geometry[MESH_0]->SetGridVelocity(config, ExtIter);
+//  }
+
+  /*--- Update the multigrid structure after moving the finest grid,
+   including computing the grid velocities on the coarser levels. ---*/
+
+  grid_movement->UpdateMultiGrid(geometry, config);
+
+//  if (time_n_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
+//      }
+//    }
+//  }
+//  if (time_n1_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n1()[iVar]);
+//      }
+//    }
+//  }
 
 }
 
@@ -290,6 +343,91 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->node[iPoint]->RegisterSolution(input);
+  }
+}
+
+void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Here we can add new (scalar) objective functions ---*/
+  if (config->GetnObj()==1) {
+    switch (config->GetKind_ObjFunc()) {
+    case DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CD();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCMy() * direct_solver->GetTotal_CMy();
+      break;
+    case LIFT_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CL();
+      break;
+    case SIDEFORCE_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CSF();
+      break;
+    case EFFICIENCY:
+      ObjFunc_Value = direct_solver->GetTotal_CEff();
+      break;
+    case MOMENT_X_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CMx();
+      break;
+    case MOMENT_Y_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CMy();
+      break;
+    case MOMENT_Z_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CMz();
+      break;
+    case EQUIVALENT_AREA:
+      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
+      break;
+    }
+
+    /*--- Template for new objective functions where TemplateObjFunction()
+     *  is the routine that returns the obj. function value. The computation
+     * must be done while the tape is active, i.e. between AD::StartRecording() and
+     * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
+     * inside MeanFlowIteration::Iterate().
+     *
+     * case TEMPLATE_OBJECTIVE:
+     *    ObjFunc_Value = TemplateObjFunction();
+     *    break;
+     * ---*/
+  }
+  else{
+    ObjFunc_Value = direct_solver->GetTotal_ComboObj();
+  }
+  if (rank == MASTER_NODE) {
+    AD::RegisterOutput(ObjFunc_Value);
+  }
+}
+
+void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
+  int rank = MASTER_NODE;
+
+  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
+  unsigned long ExtIter = config->GetExtIter();
+  su2double seeding = 1.0;
+
+  if (time_stepping) {
+    if (ExtIter < IterAvg_Obj) {
+      seeding = 1.0/((su2double)IterAvg_Obj);
+    }
+    else {
+      seeding = 0.0;
+    }
+  }
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE) {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
   }
 }
 
@@ -411,10 +549,140 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 }
 
+
+void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
+
+//  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+//      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+//  bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+
+//  unsigned short iVar;
+  unsigned long iPoint;
+
+  /*--- Set Residuals to zero ---*/
+
+//  for (iVar = 0; iVar < nVar; iVar++){
+//      SetRes_RMS(iVar,0.0);
+//      SetRes_Max(iVar,0.0,0);
+//  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Set the old solution ---*/
+
+    node[iPoint]->Set_OldSolution_Geometry();
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    /*--- Store the adjoint solution ---*/
+
+    node[iPoint]->SetSolution_Geometry(Solution_Geometry);
+
+  }
+
+//  if (time_n_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//      /*--- Extract the adjoint solution at time n ---*/
+//
+//      direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
+//
+//      /*--- Store the adjoint solution at time n ---*/
+//
+//      node[iPoint]->Set_Solution_time_n(Solution);
+//    }
+//  }
+//  if (time_n1_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//      /*--- Extract the adjoint solution at time n-1 ---*/
+//
+//      direct_solver->node[iPoint]->GetAdjointSolution_time_n1(Solution);
+//
+//      /*--- Store the adjoint solution at time n-1 ---*/
+//
+//      node[iPoint]->Set_Solution_time_n1(Solution);
+//    }
+//  }
+
+  /*--- Set the residuals ---*/
+
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//          residual = node[iPoint]->GetSolution_Geometry(iVar) - node[iPoint]->Get_OldSolution_Geometry(iVar);
+//
+//          AddRes_RMS(iVar,residual*residual);
+//          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+//      }
+//  }
+//
+//  SetResidual_RMS(geometry, config);
+}
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
+
+  }
+
+//  Set_MPI_CrossTerm(geometry, config);
+
+}
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iDim, Solution_Geometry[iDim]);
+
+  }
+
+}
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config){
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative_Flow(iDim, Solution_Geometry[iDim]);
+
+  }
+
+}
+
+
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
       config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -423,6 +691,11 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
+    if (fsi) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
+      }
+    }
     if (dual_time) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
@@ -430,6 +703,39 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
+
+}
+
+void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
+
+//  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+//      config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+  bool fsi = config->GetFSI_Simulation();
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      Solution_Geometry[iDim] = 0.0;
+    }
+    if (fsi){
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
+      }
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative_Flow(iDim);
+      }
+    }
+//    if (dual_time){
+//      for (iDim = 0; iDim < nVar; iDim++){
+//        Solution_Geometry[iDim] += node[iPoint]->GetDual_Time_Derivative_Geometry(iDim);
+//      }
+//    }
+    geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
+  }
+
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
@@ -471,12 +777,17 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex, *Sens_Geo;
   Total_Sens_Geo = 0.0;
   string Monitoring_Tag, Marker_Tag;
 
+  Sens_Geo = new su2double[config->GetnMarker_Monitoring()];
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Sens_Geo[iMarker_Monitoring] = 0.0;
+  }
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Sens_Geo[iMarker] = 0.0;
+
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
@@ -542,6 +853,9 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
     Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
     Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
   }
+  
+  delete [] Sens_Geo;
+
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -686,5 +1000,54 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
+
+}
+
+void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual, bgs_sol;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Compute the BGS solution (adding the cross term) ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      bgs_sol = node[iPoint]->GetSolution(iVar) + node[iPoint]->GetCross_Term_Derivative(iVar);
+      node[iPoint]->Set_BGSSolution(iVar, bgs_sol);
+    }
+  }
+
+  /*--- Set the residuals ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->Get_BGSSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
+
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
+}
+
+void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    node[iPoint]->Set_BGSSolution_k();
+
+  }
 
 }
