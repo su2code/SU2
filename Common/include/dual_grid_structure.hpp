@@ -740,35 +740,48 @@ public:
 	 */
 	void AddNormal(su2double *val_face_normal);
 
-        su2double* GetImposedVelocity(void);
+    su2double* GetImposedVelocity(void);
 
-        void SetImposedVelocity(su2double* val_imposedvelocity);
+    void SetImposedVelocity(su2double* val_imposedvelocity);
 
-        void SetImposedVelocity(su2double val_vx, su2double val_vy, su2double val_vz);
+    void SetImposedVelocity(su2double val_vx, su2double val_vy, su2double val_vz);
 
-        /*! 
+    /*! 
 	 * \brief Get the value of the imposed temperature at the point.
 	 * \return Imposed temperature at the point.
 	 */	
-        su2double GetImposedTemperature(void);
+    su2double GetImposedTemperature(void);
 
-        /*! 
+    /*! 
 	 * \brief Set the value of the imposed temperature at the point.
 	 * \param[in] val_Temp - Value of the temperature.
 	 */
-        void SetImposedTemperature(su2double val_Temp);
+    void SetImposedTemperature(su2double val_Temp);
 
-        /*! 
+    /*! 
 	 * \brief Get the value of the imposed normal heat flux at the point.
 	 * \return Imposed normal heat flux at the point.
 	 */
-        su2double GetImposedHeatFlux(void);
+    su2double GetImposedHeatFlux(void);
 
-        /*! 
+    /*! 
 	 * \brief Set the value of the imposed normal heat flux at the point.
 	 * \param[in] val_HeatFlux - Value of the normal heat flux.
 	 */
-        void SetImposedHeatFlux(su2double val_HeatFlux);
+    void SetImposedHeatFlux(su2double val_HeatFlux);
+
+  /*!
+   * \brief Set the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void SetAdjointCoord(su2double *adj_coor);
+
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void GetAdjointCoord(su2double *adj_coor);
+
 };
 
 /*! 
