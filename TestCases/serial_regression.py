@@ -31,6 +31,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function, division, absolute_import
 import sys
 from TestCase import TestCase
 
@@ -1098,13 +1099,14 @@ def main():
     pass_list.append(pywrapper_fsi2d.run_test())
     
     # Tests summary
-    print '=================================================================='
-    print 'Summary of the serial tests'
+    print('==================================================================')
+    print('Summary of the serial tests')
+    print('python version:', sys.version)
     for i, test in enumerate(test_list):
         if (pass_list[i]):
-            print '  passed - %s'%test.tag
+            print('  passed - %s'%test.tag)
         else:
-            print '* FAILED - %s'%test.tag
+            print('* FAILED - %s'%test.tag)
     
     if all(pass_list):
         sys.exit(0)
