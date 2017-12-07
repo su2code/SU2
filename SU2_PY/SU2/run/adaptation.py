@@ -31,9 +31,10 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil, copy
+import copy
 
 from .. import io   as su2io
+from ..io.data import append_nestdict
 from .. import mesh as su2mesh
 
 def adaptation ( config , kind='' ):

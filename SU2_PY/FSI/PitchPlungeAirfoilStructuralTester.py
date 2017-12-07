@@ -307,19 +307,19 @@ class Solver:
 		if not int(nodes[1]) in self.markers[markerTag]:
 		   self.markers[markerTag].append(int(nodes[1]))
 	      else:
-		print "Element type {} is not recognized !!".format(elemType)
+		print("Element type {} is not recognized !!".format(elemType))
 	    continue
 	  else:
 	    continue
 
-    print ("Number of dimensions: {}".format(self.nDim))
-    print ("Number of elements: {}".format(self.nElem))
-    print ("Number of point: {}".format(self.nPoint))
-    print ("Number of markers: {}".format(self.nMarker))
+    print("Number of dimensions: {}".format(self.nDim))
+    print("Number of elements: {}".format(self.nElem))
+    print("Number of point: {}".format(self.nPoint))
+    print("Number of markers: {}".format(self.nMarker))
     if len(self.markers) > 0:
-      print ("Moving marker(s):")
+      print("Moving marker(s):")
       for mark in self.markers.keys():
-        print mark
+        print(mark)
 
   def __setStructuralMatrices(self):
     """ Descriptions. """

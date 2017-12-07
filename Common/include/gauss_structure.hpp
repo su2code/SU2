@@ -116,4 +116,48 @@ public:
 };
 
 
+/*!
+ * \class CElementProperty
+ * \brief Main class for defining the element properties.
+ * \author R. Sanchez
+ * \version 4.3.0 "Cardinal"
+ */
+class CElementProperty {
+protected:
+
+  unsigned long iMat_Mod;               /*!< \brief Index of the material model used. */
+  unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
+  unsigned long iElectric_Prop;         /*!< \brief Index of the electric properties (Em) for the structural model used. */
+  unsigned long iDV;                    /*!< \brief Index of the group of design variables to which the element belongs. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CElementProperty(void);
+
+   /*!
+    * \overload
+    * \param[in] val_iGauss - ID of the Gaussian Point
+    * \param[in] val_nDim - Number of dimensions of the problem.
+    * \param[in] config - Definition of the particular problem.
+  */
+  CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CElementProperty(void);
+
+  unsigned long GetMat_Mod(void);
+
+  unsigned long GetMat_Prop(void);
+
+  unsigned long GetElectric_Prop(void);
+
+  unsigned long GetDV(void);
+};
+
+
 #include "gauss_structure.inl"
