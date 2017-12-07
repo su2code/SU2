@@ -2077,7 +2077,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
    Since there may be more than one objective per marker, first we have to set all Force projection vectors to 0 ---*/
   
   for (iMarker = 0; iMarker<nMarker; iMarker++) {
-    if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
            (config->GetMarker_All_Monitoring(iMarker) == YES))
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         for (iDim=0; iDim<nDim; iDim++)
