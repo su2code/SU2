@@ -2099,7 +2099,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
     }
 
     
-    if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+    if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES)) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
