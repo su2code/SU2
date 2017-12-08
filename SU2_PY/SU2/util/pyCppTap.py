@@ -11,7 +11,7 @@ def convert_c2c(source_routine):
     target_location = target_directory + '/' + target_routine + '_debug.c'
 
     if os.path.isfile(target_location):
-        print target_routine + ' exists!'
+        print(target_routine + ' exists!')
 
     else:
 
@@ -69,7 +69,7 @@ def convert_c2cpp(source_routine, overwrite=False):
     target_location = target_directory + '/' + target_routine + '.cpp'
 
     if os.path.isfile(target_location) and overwrite==False:
-        print target_routine + ' exists!'
+        print(target_routine + ' exists!')
 
     else:
 
@@ -173,7 +173,7 @@ def convert_c2cpp(source_routine, overwrite=False):
         target_file = open(target_location, 'w')
 
         target_file.writelines(new_data)
-        print 'Wrote file: ' + target_location
+        print('Wrote file: ' + target_location)
 
 def convert_cpp2c(source_routine, source_location, overwrite=False):
     '''Convert a C++ code from within the SU2 source tree into a C code for automatic differentiation. The output will be located in $SU2_HOME/c_routines'''
@@ -188,7 +188,7 @@ def convert_cpp2c(source_routine, source_location, overwrite=False):
 
     # Do not process if file exists and overwrite is not set True
     if os.path.isfile(target_location) and overwrite==False:
-        print target_routine + ' exists!'
+        print(target_routine + ' exists!')
 
     else:
 
@@ -478,8 +478,8 @@ def diff_routine(routine_name, invars, outvars, file_list):
     # Send command
     tapenade_call = tapenade + mode + root + independents + dependents + \
         output_directory + files
-    print 'Differentiating ' + routine_name
-    print 'Command: $ ' + tapenade_call
+    print('Differentiating ' + routine_name)
+    print('Command: $ ' + tapenade_call)
     os.system(tapenade_call)
 
 
