@@ -31,9 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function, division, absolute_import
 from optparse import OptionParser, BadOptionError
 import sys,time, os, subprocess, os.path, glob, re, shutil, fileinput
-import commands
 from subprocess import call
 
 # "Pass-through" option parsing -- an OptionParser that ignores
@@ -44,13 +44,13 @@ class PassThroughOptionParser(OptionParser):
     def _process_long_opt(self, rargs, values):
         try:
             OptionParser._process_long_opt(self, rargs, values)
-        except BadOptionError, err:
+        except BadOptionError as err:
             self.largs.append(err.opt_str)
 
     def _process_short_opts(self, rargs, values):
         try:
             OptionParser._process_short_opts(self, rargs, values)
-        except BadOptionError, err:
+        except BadOptionError as err:
             self.largs.append(err.opt_str)
 
 def main():
@@ -123,7 +123,7 @@ def main():
         configure(argument_dict,
                   conf_environ,
                   options.mpi_enabled,
-		  options.py_wrapper_enabled,
+                  options.py_wrapper_enabled,
                   modes,
                   made_adolc,
                   made_codi)
@@ -134,7 +134,7 @@ def main():
 def prepare_source(replace = False, remove = False, revert = False):
 
     # Directories containing the source code
-    print 'Preparing source code ...'
+    print('Preparing source code ...')
     dir_list = [ "Common",
                  "SU2_CFD",
                  "SU2_DEF",
@@ -168,7 +168,7 @@ def prepare_source(replace = False, remove = False, revert = False):
 #                else:
 #                    exclude_dic_files[exclude_line[0].rstrip()] = [-1]
 #    else:
-#        print 'Exclude file \'' + exclude_file_name + '\' not found. Checking all files.'
+#        print('Exclude file \'' + exclude_file_name + '\' not found. Checking all files.')
 
 
     # Hardcoded files that will be skipped
@@ -217,7 +217,7 @@ def prepare_source(replace = False, remove = False, revert = False):
     logfile = open ('preconf.log','w')
 
     backup_ext = '.orig'
-    print 'Checking for problems...'
+    print('Checking for problems...')
     # Test each source file for the occurrence of missing replacements
     # and print the respective lines.
     for dir in dir_list:
@@ -231,12 +231,12 @@ def prepare_source(replace = False, remove = False, revert = False):
                         os.remove(file);
                         shutil.copy(file + backup_ext, file)
                     else:
-                        print 'Cannot find backup file ' + file + backup_ext
+                        print('Cannot find backup file ' + file + backup_ext)
 
                 # Remove backup files if requested
                 if all([not replace, remove]):
                     if os.path.isfile(file + backup_ext):
-                        print 'Removing' + file + backup_ext
+                        print('Removing' + file + backup_ext)
                         os.remove(file + backup_ext)
 
                 if all([not remove, not revert]):
@@ -258,23 +258,23 @@ def prepare_source(replace = False, remove = False, revert = False):
                                 num_found = num_found + 1
                             else:
                                 ignore_line = ignore_line + 'Ignoring line ' + str(fileinput.lineno()) + ' in ' + file + ' (' + line.rstrip() + ')\n'
-                        print new_line
+                        print(new_line)
                     if num_found > 0:
                         if replace:
-                            print 'Solved ' + str(num_found) + ' potential problem(s) in ' + file + '.'
+                            print('Solved ' + str(num_found) + ' potential problem(s) in ' + file + '.')
                             logfile.write('Solved ' + str(num_found) + ' potential problem(s) in ' + file + ':\n')
                         else:
-                            print 'Found ' + str(num_found) + ' potential problem(s) in ' + file + '.'
+                            print('Found ' + str(num_found) + ' potential problem(s) in ' + file + '.')
                             logfile.write('Found ' + str(num_found) + ' potential problem(s) in ' + file + ':\n')
                         logfile.write( found_line )
                     else:
                         os.remove(file + backup_ext)
 
                     if not ignore_line == "":
-                        print ignore_line.rstrip();
+                        print(ignore_line.rstrip())
             else:
-                print 'Ignoring file ' + file
-    print '\nPlease check preconf.log to get more information about potential problems.'
+                print('Ignoring file ' + file)
+    print('\nPlease check preconf.log to get more information about potential problems.')
 
 def replace_all(text, dic):
     for i, j in dic.iteritems():
@@ -312,15 +312,15 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     codi_status = False
     ampi_status = False
 
-    print "Checking the status of submodules"
-    print '====================================================================='
+    print("Checking the status of submodules")
+    print('=====================================================================')
     # Remove modules if update is requested
     if update:
         if os.path.exists('externals/'+alt_name_codi):
-            print 'Removing' + ' externals/' + alt_name_codi
+            print('Removing' + ' externals/' + alt_name_codi)
             shutil.rmtree('externals/'+alt_name_codi)
         if os.path.exists('externals/'+alt_name_medi):
-            print 'Removing' + ' externals/' + alt_name_medi
+            print('Removing' + ' externals/' + alt_name_medi)
             shutil.rmtree('externals/'+alt_name_medi)
 
     os.chdir('externals')
@@ -339,24 +339,24 @@ def submodule_check(name, alt_name, github_rep, sha_tag, log, err, update = Fals
     try:
         status = submodule_status(alt_name, update)
         if status:
-            print 'Found correct version of ' + name + ' in externals/' + alt_name + '.'
+            print('Found correct version of ' + name + ' in externals/' + alt_name + '.')
 
     except RuntimeError:
         if all([os.path.exists(alt_name), not os.path.exists(alt_name + '/' + sha_tag)]):
-          print 'Found an old or unspecified version of ' + name + ' in externals/' + alt_name + '.\nUse -u to reset module.'
+          print('Found an old or unspecified version of ' + name + ' in externals/' + alt_name + '.\nUse -u to reset module.')
           sys.exit()
         if not os.path.exists(alt_name):
-          print '\ngit command failed (either git is not installed or this is not a git repository).'
-          print '\nUsing fall-back method to initialize submodule ' + name
+          print('\ngit command failed (either git is not installed or this is not a git repository).')
+          print('\nUsing fall-back method to initialize submodule ' + name)
           download_module(name, alt_name, github_rep, sha_tag, log, err)
         else:
-          print 'Found correct version of ' + name + ' in externals/' + alt_name + '.'
+          print('Found correct version of ' + name + ' in externals/' + alt_name + '.')
 
 
 def submodule_status(path, update):
 
     try:
-        status = check_output('git submodule status ' + path)
+        status = check_output('git submodule status ' + path).decode()
     except RuntimeError:
         raise RuntimeError
 
@@ -367,42 +367,42 @@ def submodule_status(path, update):
         sys.stderr.write('Use \'git submodule update --init '+ path + '\' to reset the module if necessary.\n')
         return False
     elif any([status_indicator == '-', update]):
-        print 'Initialize submodule ' + path + ' using git ... '
+        print('Initialize submodule ' + path + ' using git ... ')
         subprocess.check_call('git submodule update --init ' + path, shell = True)
 
     return True
 
 def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
 
-    print '\nInitializing ' + name + ' \'' + commit_sha + '\''
-    print '====================================================================='
+    print('\nInitializing ' + name + ' \'' + commit_sha + '\'')
+    print('=====================================================================')
     # Download package
     try:
-        print 'Downloading module from ' + git_repo
+        print('Downloading module from ' + git_repo)
         subprocess.check_call('wget -N ' + git_repo + '/archive/' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell = True )
     except subprocess.CalledProcessError:
-        print 'Download of module ' + name + ' failed. See preconf.err for more information.'
-        print 'To download it manually, perform the following steps:'
-        print '\t - Download the zip at \"' + git_repo + '/archive/' + commit_sha + '.zip\"'
-        print '\t - Extract the archive to externals/' + alt_name
-        print '\t - Execute command \'touch externals/'+ alt_name + '/' + commit_sha + '\''
-        print '\t - Run preconfigure.py again'
+        print('Download of module ' + name + ' failed. See preconf.err for more information.')
+        print('To download it manually, perform the following steps:')
+        print('\t - Download the zip at \"' + git_repo + '/archive/' + commit_sha + '.zip\"')
+        print('\t - Extract the archive to externals/' + alt_name)
+        print('\t - Execute command \'touch externals/'+ alt_name + '/' + commit_sha + '\'')
+        print('\t - Run preconfigure.py again')
         sys.exit()
     
     # Extract zip archive
     try:
-        print 'Extracting archive ...'
+        print('Extracting archive ...')
         subprocess.check_call('unzip -u ' + commit_sha + '.zip', stdout = logfile, stderr = errorfile, shell=True)
     except subprocess.CalledProcessError:
-        print 'Extraction of module ' + name + ' failed. See preconf.err for more information.'
+        print('Extraction of module ' + name + ' failed. See preconf.err for more information.')
         sys.exit()
 
     # Rename folder and create a file to identify the version
     try:
-        print 'Creating identifier ...'
+        print('Creating identifier ...')
         subprocess.check_call('mv '+ name + '-' + commit_sha + ' ' + alt_name + ' && touch ' + alt_name + '/' + commit_sha, stdout = logfile, stderr = errorfile, shell = True)
     except subprocess.CalledProcessError:
-        print 'Renaming of module ' + name + ' failed. See preconf.err for more information.'
+        print('Renaming of module ' + name + ' failed. See preconf.err for more information.')
         sys.exit()
 
     # Remove archive
@@ -411,7 +411,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
 def configure(argument_dict,
               conf_environ,
               mpi_support,
-	      py_wrapper,
+              py_wrapper,
               modes,
               made_adolc,
               made_codi):
@@ -427,34 +427,34 @@ def configure(argument_dict,
     if mpi_support:
         configure_base = configure_base + ' --enable-mpi'
     if py_wrapper:
-	configure_base = configure_base + ' --enable-PY_WRAPPER'
+        configure_base = configure_base + ' --enable-PY_WRAPPER'
 
     build_dirs = ''
 
     # Create the commands for the different configurations and run configure
     for key in modes:
         if modes[key]:
-            print '\nRunning configure in folder ' + key,
+            print('\nRunning configure in folder ' + key + ' ', end = '')
             if modes[key] == 'CODI':
                 if key == 'SU2_DIRECTDIFF':
                     configure_mode = '--enable-codi-forward'
                 if key == 'SU2_AD':
                     configure_mode = '--enable-codi-reverse'
-                print 'using ' + modes[key]
+                print('using ' + modes[key])
             elif modes[key] == 'ADOLC':
                 if key == 'SU2_DIRECTDIFF':
                     configure_mode = '--enable-adolc-forward'
                 if key == 'SU2_AD':
                     configure_mode = '--enable-adolc-reverse'
-                print 'using ' + modes[key]
+                print('using ' + modes[key])
             elif modes[key] == 'COMPLEX':
                 configure_mode = '--enable-complex'
-                print 'using ' + modes[key]
+                print('using ' + modes[key])
             else:
                 configure_mode = ''
-                print ''
+                print('')
 
-            print '====================================================================='
+            print('=====================================================================')
             log = os.getcwd().rstrip() + '/conf_'+ key+'.log'
             err = os.getcwd().rstrip() + '/conf_'+ key+'.err'
 
@@ -468,26 +468,26 @@ def configure(argument_dict,
 
     write_makefile(build_dirs)
 
-    print '\nPre-configuration Summary:\n' \
+    print('\nPre-configuration Summary:\n' \
            '=====================================================================\n'\
-          '\tConfiguration sets: '+ build_dirs + '\n'
+          '\tConfiguration sets: '+ build_dirs + '\n')
 
-    print '\tUse "make <install>" to compile (and install) all configured binaries:\n'
+    print('\tUse "make <install>" to compile (and install) all configured binaries:\n')
     if modes['SU2_BASE']:
-        print '\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
+        print('\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
               '\tSU2_DOT            -> Gradient Projection Code.\n' \
               '\tSU2_DEF            -> Mesh Deformation Code.\n'  \
               '\tSU2_MSH            -> Mesh Adaption Code.\n' \
               '\tSU2_SOL            -> Solution Export Code.\n' \
-              '\tSU2_GEO            -> Geometry Definition Code.\n'
+              '\tSU2_GEO            -> Geometry Definition Code.\n')
     if modes['SU2_AD']:
-        print '\tSU2_CFD_AD         -> Discrete Adjoint Solver and general AD support.'
-        print '\tSU2_DOT_AD         -> Mesh sensitivity computation and general AD support.'
+        print('\tSU2_CFD_AD         -> Discrete Adjoint Solver and general AD support.')
+        print('\tSU2_DOT_AD         -> Mesh sensitivity computation and general AD support.')
     if modes['SU2_DIRECTDIFF']:
-        print '\tSU2_CFD_DIRECTDIFF -> Direct Differentation Mode.'
+        print('\tSU2_CFD_DIRECTDIFF -> Direct Differentation Mode.')
 
-    print '\n'
-    print  '\tPlease be sure to add the $SU2_HOME and $SU2_RUN environment variables,\n' \
+    print('\n')
+    print('\tPlease be sure to add the $SU2_HOME and $SU2_RUN environment variables,\n' \
            '\tand update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN.\n' \
            '\n' \
            '\tBased on the input to this configuration, add these lines to your .bashrc file: \n' \
@@ -495,23 +495,23 @@ def configure(argument_dict,
            '\texport SU2_RUN="'+argument_dict['--prefix']+'/bin"\n' \
            '\texport SU2_HOME="'+os.getcwd().rstrip()+'"\n' \
            '\texport PATH=$PATH:$SU2_RUN\n' \
-           '\texport PYTHONPATH=$PYTHONPATH:$SU2_RUN\n'
+           '\texport PYTHONPATH=$PYTHONPATH:$SU2_RUN\n')
 
 def run_command(command, log, err, env):
 
     try:
         logfile = open(log, 'w')
         errfile = open(err, 'w')
-        print 'Command: ' + command
+        print('Command: ' + command)
         subprocess.check_call(command, env = env, stdout = logfile, stderr = errfile, shell=True)
-        print 'Logfile written to ' + log
+        print('Logfile written to ' + log)
         logfile.close()
         errfile.close()
     except subprocess.CalledProcessError:
         errfile = open(err, 'r')
-        print '\nThere was an error while running command \'' + command + '\'.'
-        print '=== Error Log ==='
-        print errfile.read()
+        print('\nThere was an error while running command \'' + command + '\'.')
+        print('=== Error Log ===')
+        print(errfile.read())
         errfile.close()
         sys.exit(1)
 
@@ -522,7 +522,7 @@ def check_output(cmd):
         raise RuntimeError(err)
     return std
 def write_makefile(build_dirs):
-    print '\nCreating Makefile ...\n'
+    print('\nCreating Makefile ...\n')
     makefile = open('Makefile', 'w')
 
     makefile.writelines(['# This file is auto-generated by preconfigure.py\n',
@@ -552,7 +552,7 @@ def write_makefile(build_dirs):
 
 def header():
 
-    print '-------------------------------------------------------------------------\n'\
+    print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
           '|   / __| | | |_  )   Release 5.0.0 \'Raven\'                             | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
@@ -585,7 +585,7 @@ def header():
           '|                                                                       | \n'\
           '| You should have received a copy of the GNU Lesser General Public      | \n'\
           '| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   | \n'\
-          '------------------------------------------------------------------------- \n'
+          '------------------------------------------------------------------------- \n')
 
 
 
