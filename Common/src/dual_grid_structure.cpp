@@ -99,10 +99,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     Coord_Sum = new su2double[nDim];
   }
 
-  ImposedVelocity = new su2double[nDim];
-  for(iDim=0; iDim < nDim; iDim++)
-    ImposedVelocity[iDim] = 0.0;
-
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
   if ( config->GetGrid_Movement() ) {
@@ -197,10 +193,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
     Coord_Old = new su2double[nDim];
     Coord_Sum = new su2double[nDim];
   }
-
-  ImposedVelocity = new su2double[nDim];
-  for(iDim=0; iDim < nDim; iDim++)
-    ImposedVelocity[iDim] = 0.0;
 
   /*--- Storage of grid velocities for dynamic meshes ---*/
   if ( config->GetGrid_Movement() ) {
@@ -300,10 +292,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
     Coord_Sum = new su2double[nDim];
   }
 
-  ImposedVelocity = new su2double[nDim];
-  for(iDim=0; iDim < nDim; iDim++)
-    ImposedVelocity[iDim] = 0.0;
-
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
   if (config->GetGrid_Movement()) {
@@ -357,7 +345,6 @@ CPoint::~CPoint() {
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  if (ImposedVelocity != NULL) delete[] ImposedVelocity;
   
 }
 
@@ -396,24 +383,6 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
       Vertex[imarker] = -1;
   }
   Boundary = true;
-
-}
-
-su2double* CPoint::GetImposedVelocity(void){
-  return ImposedVelocity;
-}
-
-void CPoint::SetImposedVelocity(su2double* val_imposedvelocity){
-  unsigned short iDim;
-
-  for(iDim=0; iDim < nDim; iDim++) ImposedVelocity[iDim] = val_imposedvelocity[iDim];
-}
-
-void CPoint::SetImposedVelocity(su2double val_vx, su2double val_vy, su2double val_vz){
-
-  ImposedVelocity[0] = val_vx;
-  ImposedVelocity[1] = val_vy;
-  if(nDim == 3) ImposedVelocity[2] = val_vz;
 
 }
 

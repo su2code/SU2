@@ -615,7 +615,6 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
-  *Marker_All_BCCustom,
   *Marker_All_CHT,                 /*!< \brief Global index for heat transfer surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -2956,8 +2955,6 @@ public:
    */
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
-  void SetMarker_All_BCCustom(unsigned short val_marker, unsigned short val_custom);
-
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to exchange thermal quantities <i>val_CHT</i>
    *        (read from the config file).
@@ -3080,8 +3077,6 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
-
-  unsigned short GetMarker_All_BCCustom(unsigned short val_marker);
 
   /*!
    * \brief Get the heat transfer information for a marker <i>val_marker</i>.

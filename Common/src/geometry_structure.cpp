@@ -1639,15 +1639,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
 }
 
-void CGeometry::SetImposedVelocity(unsigned short val_marker, unsigned long iVertex, su2double val_vx, su2double val_vy, su2double val_vz){
-
-  unsigned long iPoint;
-
-  iPoint = vertex[val_marker][iVertex]->GetNode();
-  node[iPoint]->SetImposedVelocity(val_vx, val_vy, val_vz);
-
-}
-
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 
   Local_to_Global_Point  = NULL;
