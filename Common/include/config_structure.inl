@@ -1194,8 +1194,6 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
-inline void CConfig::SetMarker_All_BCCustom(unsigned short val_marker, unsigned short val_custom) { Marker_All_BCCustom[val_marker] = val_custom; }
-
 inline void CConfig::SetMarker_All_CHT(unsigned short val_marker, unsigned short val_CHT) { Marker_All_CHT[val_marker] = val_CHT; }
 
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
@@ -1229,8 +1227,6 @@ inline unsigned short CConfig::GetMarker_All_MixingPlaneInterface(unsigned short
 inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { return Marker_All_DV[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
-
-inline unsigned short CConfig::GetMarker_All_BCCustom(unsigned short val_marker) { return Marker_All_BCCustom[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_CHT(unsigned short val_marker) { return Marker_All_CHT[val_marker];}
 
