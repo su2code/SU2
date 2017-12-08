@@ -8006,10 +8006,10 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
   Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
-  RefLength, Alpha, Beta, CL_Inv,
+  RefLength, Alpha, CL_Inv,
   Xcoord_LeadingEdge = 0.0, Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
   Xcoord_TrailingEdge = 0.0, Ycoord_TrailingEdge = 0.0, Zcoord_TrailingEdge = 0.0,
-  Xcoord_LeadingEdge_ = 0.0, Ycoord_LeadingEdge_ = 0.0, Zcoord_LeadingEdge_ = 0.0,
+  Xcoord_LeadingEdge_ = 0.0, 
   Xcoord_TrailingEdge_ = 0.0, Ycoord_TrailingEdge_ = 0.0, Zcoord_TrailingEdge_ = 0.0,
   MaxDistance, Distance, Chord, Aux, Dihedral_Trailing;
   
@@ -8040,7 +8040,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Origin = config->GetRefOriginMoment(0);
   RefLength = config->GetRefLength();
   Alpha = config->GetAoA() * PI_NUMBER / 180.0;
-  Beta = config->GetAoS() * PI_NUMBER / 180.0;
   
   if (grid_movement) {
     Gas_Constant = config->GetGas_ConstantND();
@@ -8141,8 +8140,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
           if (Xcoord_Airfoil_[iVertex] < Xcoord_LeadingEdge_) {
             Xcoord_LeadingEdge_ = Xcoord_Airfoil_[iVertex];
-            Ycoord_LeadingEdge_ = Ycoord_Airfoil_[iVertex];
-            Zcoord_LeadingEdge_ = Zcoord_Airfoil_[iVertex];
           }
           if (Xcoord_Airfoil_[iVertex] > Xcoord_TrailingEdge_) {
             Xcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
