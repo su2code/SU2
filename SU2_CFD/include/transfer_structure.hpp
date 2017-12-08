@@ -390,13 +390,13 @@ public:
 };
 
 /*!
- * \class CTransfer_StructuralDisplacements_Original
- * \brief Transfer structural displacements from a structural zone into a fluid zone (legacy method, kept for V&V)
+ * \class CTransfer_FlowTraction_DiscAdj
+ * \brief Transfer flow tractions from a fluid zone into a structural zone in a discrete adjoint simulation
  * \author R. Sanchez
  * \version 4.0.1 "Cardinal"
  */
 
-class CTransfer_StructuralDisplacements_Original : public CTransfer {
+class CTransfer_FlowTraction_DiscAdj : public CTransfer {
 
 protected:
 
@@ -405,19 +405,88 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTransfer_StructuralDisplacements_Original(void);
+  CTransfer_FlowTraction_DiscAdj(void);
 
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] config - Definition of the particular problem.
    */
-  CTransfer_StructuralDisplacements_Original(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CTransfer_FlowTraction_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CTransfer_StructuralDisplacements_Original(void);
+  virtual ~CTransfer_FlowTraction_DiscAdj(void);
+
+  /*!
+   * \brief Retrieve some constants needed for the calculations.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+                 CGeometry *donor_geometry, CGeometry *target_geometry,
+                 CConfig *donor_config, CConfig *target_config);
+
+  /*!
+   * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] Marker_Donor - Index of the donor marker.
+   * \param[in] Vertex_Donor - Index of the donor vertex.
+   */
+  void GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
+               unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Flow);
+
+  /*!
+   * \brief Set the variable that has been received from the target mesh into the target mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] Point_Target - Index of the target point.
+   */
+  void SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
+              CConfig *fea_config, unsigned long Marker_Struct,
+              unsigned long Vertex_Struct, unsigned long Point_Struct);
+
+};
+
+/*!
+ * \class CTransfer_StructuralDisplacements_DiscAdj
+ * \brief Transfer structural displacements from a structural zone into a fluid zone in a discrete adjoint simulation
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
+ */
+
+class CTransfer_StructuralDisplacements_DiscAdj : public CTransfer {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTransfer_StructuralDisplacements_DiscAdj(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nVar - Number of variables that need to be transferred.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTransfer_StructuralDisplacements_DiscAdj(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CTransfer_StructuralDisplacements_DiscAdj(void);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

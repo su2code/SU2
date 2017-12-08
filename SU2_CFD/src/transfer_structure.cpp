@@ -1114,6 +1114,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                 cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
                 exit(EXIT_FAILURE);
             }
+            else if (fsi){
+              for (iVar = 0; iVar < nVar; iVar++)
+                Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+            }
             else{
                 for (iVar = 0; iVar < nVar; iVar++)
                     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
