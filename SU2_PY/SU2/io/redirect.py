@@ -114,17 +114,17 @@ class folder(object):
         
         # original path
         import os
-        print os.getcwd()
+        print(os.getcwd())
         
         # enter folder
         with SU2.io.redirect_folder(folder,pull,link,force) as push:
-            print os.getcwd()
+            print(os.getcwd())
             # code
             push.append('file4.txt')
         #: with folder redirection
         
         # returned to original path
-        print os.getcwd()
+        print(os.getcwd())
         
         Inputs:
             folder - working folder, relative or absolute
