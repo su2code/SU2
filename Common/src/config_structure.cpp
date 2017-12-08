@@ -301,8 +301,7 @@ void CConfig::SetPointersNull(void) {
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
-  Marker_Analyze              = NULL;   Marker_All_BCCustom      = NULL;    Marker_CHT        = NULL;
-  Marker_WallFunctions        = NULL;
+  Marker_Analyze              = NULL;   Marker_CHT               = NULL;    Marker_WallFunctions        = NULL;
   Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
 
   Kind_WallFunctions       = NULL;
@@ -3566,7 +3565,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
-  Marker_All_BCCustom       = new unsigned short[nMarker_All];
 
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
@@ -3585,7 +3583,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_Turbomachinery[iMarker_All]       = 0;
     Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
     Marker_All_MixingPlaneInterface[iMarker_All] = 0;
-    Marker_All_BCCustom[iMarker_All]             = 0;
     Marker_All_CHT[iMarker_All]                  = 0;
   }
 
@@ -5930,7 +5927,6 @@ CConfig::~CConfig(void) {
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
 
   if (Marker_CfgFile_CHT    != NULL) delete[] Marker_CfgFile_CHT;
-  if (Marker_All_BCCustom   != NULL) delete[] Marker_All_BCCustom;
 
   if (Marker_All_CHT != NULL) delete[] Marker_All_CHT;
   
