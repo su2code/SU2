@@ -1716,6 +1716,8 @@ inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
 inline bool CConfig::GetCHT_Simulation(void) { return CHT_Problem; }
 
+inline unsigned short CConfig::GetKindCHT_Method(void) { return Kind_Method_CHT; }
+
 inline unsigned short CConfig::GetnID_DV(void) { return nID_DV; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }

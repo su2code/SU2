@@ -408,7 +408,7 @@ const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution i
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
-const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array.
+const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
 
 const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -795,6 +795,17 @@ static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<
 ("SCATTER_DATA", SCATTER_DATA)
 ("ALLGATHER_DATA", ALLGATHER_DATA)
 ("LEGACY_METHOD", LEGACY_METHOD);
+
+/*!
+* \brief types of CHT coupling methods
+*/
+enum ENUM_CHT_METHOD {
+  FLUID_BASED = 0,        /*!< \brief Obtain the heat flux data from fluid zones. */
+  SOLID_BASED = 1         /*!< \brief Obtain the heat flux data from solid zones. */
+};
+static const map<string, ENUM_CHT_METHOD> CHTMethod_Map = CCreateMap<string, ENUM_CHT_METHOD>
+("FLUID_BASED", FLUID_BASED)
+("SOLID_BASED", SOLID_BASED);
 
 /*!
  * \brief types of schemes to compute the flow gradient

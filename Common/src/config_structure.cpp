@@ -1838,6 +1838,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  Options: NONE (default), HEAT_EQUATION
    *  \ingroup Config*/
   addEnumOption("CHT_STRUCTURAL_PROBLEM", Kind_Solver_Struc_CHT, CHT_Struc_Solver_Map, NO_SOLVER_SCHT);
+  addEnumOption("CHT_METHOD", Kind_Method_CHT, CHTMethod_Map, FLUID_BASED);
+
 
   /* DESCRIPTION: ID of the region we want to compute the sensitivities using direct differentiation */
   addUnsignedShortOption("FEA_ID_DIRECTDIFF", nID_DV, 0);

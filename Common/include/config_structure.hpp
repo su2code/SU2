@@ -488,6 +488,7 @@ private:
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_Solver_Fluid_CHT,    /*!< \brief Kind of solver for the fluid in CHT applications. */
   Kind_Solver_Struc_CHT,     /*!< \brief Kind of solver for the structure in CHT applications. */
+  Kind_Method_CHT,           /*!< \brief Kind of method for CHT coupling. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
@@ -7886,6 +7887,12 @@ public:
    * \return Value of the physical time in an unsteady simulation.
    */
   bool GetCHT_Simulation(void);
+
+  /*!
+   * \brief Get the kind of CHT coupling method.
+   * \return Value of CHT coupling method.
+   */
+  unsigned short GetKindCHT_Method(void);
 
   /*!
    * \brief Check if we want to apply an incremental load to the nonlinear structural simulation

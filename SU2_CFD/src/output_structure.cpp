@@ -4573,33 +4573,40 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
-      
-      /*--- For specific applications, evaluate and plot the surface. ---*/
-      
-      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-        SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-      }
-      
-      /*--- For specific applications, evaluate and plot the surface. ---*/
-      
-      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-        SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
+
+      switch (config[val_iZone]->GetKind_Solver()) {
+
+        case EULER:                   case NAVIER_STOKES:                   case RANS:
+
+        /*--- For specific applications, evaluate and plot the surface. ---*/
+
+        if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+          SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                       geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+        }
+
+        /*--- For specific applications, evaluate and plot the surface. ---*/
+
+        if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+          SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                   geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+        }
+
+        /*--- For specific applications, evaluate and plot the equivalent area. ---*/
+
+        if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
+          SpecialOutput_SonicBoom(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                  geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+        }
+
+        /*--- Compute the forces at different sections. ---*/
+
+        if (config[val_iZone]->GetPlot_Section_Forces()) {
+          SpecialOutput_SpanLoad(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                  geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-      }
-      
-      /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-      
-      if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
-        SpecialOutput_SonicBoom(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-      }
-      
-      /*--- Compute the forces at different sections. ---*/
-      
-      if (config[val_iZone]->GetPlot_Section_Forces()) {
-        SpecialOutput_SpanLoad(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                               geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+        }
+
+        break;
       }
       
       /*--- Output a file with the forces breakdown. ---*/
@@ -4617,6 +4624,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Output a file with the forces breakdown. ---*/
       
       SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
+
+      if (rank == MASTER_NODE) cout << endl;
       
       if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
       
