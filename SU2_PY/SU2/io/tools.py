@@ -35,7 +35,7 @@
 #  Imports
 # -------------------------------------------------------------------
 
-import os, time, sys, pickle, errno, copy
+import os
 import shutil, glob
 from SU2.util import ordered_bunch
 
@@ -128,7 +128,7 @@ def read_plot( filename ):
 
     # check for number of zones
     if len(zones) > 1:
-        raise IOError , 'multiple zones not supported'
+        raise IOError('multiple zones not supported')
     
     # done
     plot_file.close()              
@@ -160,7 +160,7 @@ def read_history( History_filename, nZones = 1):
     
     # map header names
     for key in plot_data.keys():
-        if map_dict.has_key(key):
+        if key in map_dict:
             var = map_dict[key]
         else:
             var = key
@@ -244,7 +244,7 @@ def get_headerMap(nZones = 1):
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
  
-    return history_header_map   	 
+    return history_header_map        
 
 def getTurboPerfIndex(nZones = 1):
 
@@ -368,66 +368,66 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  
 PerStation = []
 for i in range(20):
-	PerStation.append("STATION" + str(i) + "_AREA")
-	PerStation.append("STATION" + str(i) + "_LENGTH")
-    	PerStation.append("STATION" + str(i) + "_WIDTH")
-    	PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
-    	PerStation.append("STATION" + str(i) + "_HEIGHT")
-    	PerStation.append("STATION" + str(i) + "_THICKNESS")
-    	PerStation.append("STATION" + str(i) + "_CHORD")
-    	PerStation.append("STATION" + str(i) + "_LE_RADIUS")
-    	PerStation.append("STATION" + str(i) + "_TOC")
-    	PerStation.append("STATION" + str(i) + "_TWIST")
+    PerStation.append("STATION" + str(i) + "_AREA")
+    PerStation.append("STATION" + str(i) + "_LENGTH")
+    PerStation.append("STATION" + str(i) + "_WIDTH")
+    PerStation.append("STATION" + str(i) + "_WATERLINE_WIDTH")
+    PerStation.append("STATION" + str(i) + "_HEIGHT")
+    PerStation.append("STATION" + str(i) + "_THICKNESS")
+    PerStation.append("STATION" + str(i) + "_CHORD")
+    PerStation.append("STATION" + str(i) + "_LE_RADIUS")
+    PerStation.append("STATION" + str(i) + "_TOC")
+    PerStation.append("STATION" + str(i) + "_TWIST")
 
 optnames_geo.extend(PerStation)
                  
 #: optnames_geo
 
-grad_names_directdiff = ["D_LIFT"                  ,
-                         "D_DRAG"                  ,
-                         "D_SIDEFORCE"             ,
-                         "D_MOMENT_X"              ,
-                         "D_MOMENT_Y"              ,
-                         "D_MOMENT_Z"              ,
-                         "D_FORCE_X"               ,
-                         "D_FORCE_Y"               ,
-                         "D_FORCE_Z"               ,
-                         "D_EFFICIENCY"            ,
-                         "D_TOTAL_PRESSURE_LOSS"    ,
-                         "D_TOTAL_EFFICIENCY"       ,
-                         "D_TOTAL_PRESSURE_LOSS"    ,
-                         "D_KINETIC_ENERGY_LOSS"    ,
+grad_names_directdiff = ["D_LIFT",
+                         "D_DRAG",
+                         "D_SIDEFORCE",
+                         "D_MOMENT_X",
+                         "D_MOMENT_Y",
+                         "D_MOMENT_Z",
+                         "D_FORCE_X",
+                         "D_FORCE_Y",
+                         "D_FORCE_Z",
+                         "D_EFFICIENCY",
+                         "D_TOTAL_PRESSURE_LOSS",
+                         "D_TOTAL_EFFICIENCY",
+                         "D_TOTAL_PRESSURE_LOSS",
+                         "D_KINETIC_ENERGY_LOSS",
                          "D_TOTAL_STATIC_EFFICIENCY",
-                         "D_FLOW_ANGLE_OUT"         ,
-                         "D_FLOW_ANGLE_IN"          ,
-                         "D_MASS_FLOW_IN"           ,
-                         "D_MASS_FLOW_OUT"          ,
-                         "D_PRESSURE_RATIO"         ,
-                         "D_ENTHALPY_OUT"           ,
-                         "D_TOTAL_ENTHALPY_OUT"     ]
+                         "D_FLOW_ANGLE_OUT",
+                         "D_FLOW_ANGLE_IN",
+                         "D_MASS_FLOW_IN",
+                         "D_MASS_FLOW_OUT",
+                         "D_PRESSURE_RATIO",
+                         "D_ENTHALPY_OUT",
+                         "D_TOTAL_ENTHALPY_OUT"]
 
-grad_names_map = { "LIFT"      : "D_LIFT"           ,
-                   "DRAG"      : "D_DRAG"           ,
-                   "SIDEFORCE" : "D_SIDEFORCE" ,
-                   "MOMENT_X"  : "D_MOMENT_X"   ,
-                   "MOMENT_Y"  : "D_MOMENT_Y"   ,
-                   "MOMENT_Z"  : "D_MOMENT_Z"   ,
-                   "FORCE_X"   : "D_FORCE_X"     ,
-                   "FORCE_Y"   : "D_FORCE_Y"     ,
-                   "FORCE_Z"   : "D_FORCE_Z"     ,
-                   "EFFICIENCY" : "D_EFFICIENCY" , 
-                   "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                   "TOTAL_EFFICIENCY"        : "D_TOTAL_EFFICIENCY"       ,
-                   "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                   "KINETIC_ENERGY_LOSS"     : "D_KINETIC_ENERGY_LOSS"    ,
-                   "TOTAL_STATIC_EFFICIENCY" : "D_TOTAL_STATIC_EFFICIENCY",
-                   "FLOW_ANGLE_OUT"          : "D_FLOW_ANGLE_OUT"         ,
-                   "FLOW_ANGLE_IN"           : "D_FLOW_ANGLE_IN"          ,
-                   "MASS_FLOW_IN"            : "D_MASS_FLOW_IN"           ,
-                   "MASS_FLOW_OUT"           : "D_MASS_FLOW_OUT"          ,
-                   "PRESSURE_RATIO"          : "D_PRESSURE_RATIO"         ,
-                   "ENTHALPY_OUT"            : "D_ENTHALPY_OUT"           ,
-                   "TOTAL_ENTHALPY_OUT"      : "D_TOTAL_ENTHALPY_OUT"}
+grad_names_map = ordered_bunch()
+grad_names_map.MASS_FLOW_IN = "D_MASS_FLOW_IN"
+grad_names_map.MOMENT_Z = "D_MOMENT_Z"
+grad_names_map.FLOW_ANGLE_OUT = "D_FLOW_ANGLE_OUT"
+grad_names_map.MASS_FLOW_OUT = "D_MASS_FLOW_OUT"
+grad_names_map.FLOW_ANGLE_IN = "D_FLOW_ANGLE_IN"
+grad_names_map.FORCE_Z = "D_FORCE_Z"
+grad_names_map.FORCE_Y = "D_FORCE_Y"
+grad_names_map.FORCE_X = "D_FORCE_X"
+grad_names_map.TOTAL_EFFICIENCY = "D_TOTAL_EFFICIENCY"
+grad_names_map.TOTAL_STATIC_EFFICIENCY = "D_TOTAL_STATIC_EFFICIENCY"
+grad_names_map.PRESSURE_RATIO = "D_PRESSURE_RATIO"
+grad_names_map.EFFICIENCY = "D_EFFICIENCY"
+grad_names_map.DRAG = "D_DRAG"
+grad_names_map.LIFT = "D_LIFT"
+grad_names_map.TOTAL_ENTHALPY_OUT = "D_TOTAL_ENTHALPY_OUT"
+grad_names_map.TOTAL_PRESSURE_LOSS = "D_TOTAL_PRESSURE_LOSS"
+grad_names_map.MOMENT_Y = "D_MOMENT_Y"
+grad_names_map.MOMENT_X="D_MOMENT_X"
+grad_names_map.SIDEFORCE = "D_SIDEFORCE"
+grad_names_map.ENTHALPY_OUT = "D_ENTHALPY_OUT"
+grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
 
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
@@ -450,14 +450,14 @@ def update_persurface(config, state):
     for base in per_surface_map:
         base2 = per_surface_map[base]
         for marker in config['MARKER_MONITORING']:
-            if not header_map.has_key(base2+'_'+marker):
+            if not (base2+'_'+marker) in header_map:
                 header_map[base2+'_'+marker] = base2+'_'+marker
     # Update the function values in state to include the per-surface quantities
-    if state['HISTORY'].has_key('DIRECT'):
+    if 'DIRECT' in state['HISTORY']:
         for base in per_surface_map:
             base2 = per_surface_map[base]
             for marker in config['MARKER_MONITORING']:
-                if state['HISTORY']['DIRECT'].has_key(base2+'_'+marker):
+                if (base2+'_'+marker) in state['HISTORY']['DIRECT']:
                     state['FUNCTIONS'][base2+'_'+marker] = state['HISTORY']['DIRECT'][base2+'_'+marker][-1]
                     
 # -------------------------------------------------------------------
@@ -483,12 +483,12 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     # pull only these functions
     Func_Values = ordered_bunch()
     for this_objfun in func_names:
-        if history_data.has_key(this_objfun):
+        if this_objfun in history_data:
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
     if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
-        for key,value in Func_Values.iteritems():
+        for key,value in Func_Values.items():
             Func_Values[key] = sum(value)/len(value)
          
     # average the final iterations   
@@ -618,7 +618,7 @@ def get_adjointSuffix(objective_function=None):
         nObj = len(objective)
         if (nObj>1):
             return "combo"
-        if name_map.has_key(objective[0]):
+        if objective[0] in name_map:
             return name_map[objective[0]]
     
         # otherwise...
@@ -702,7 +702,7 @@ def get_dvKind( kindID ):
 def get_dvID( kindName ):
     """ get design variable kind id number from name """
     dv_map = get_dvMap()
-    id_map = dict((v,k) for (k,v) in dv_map.iteritems())
+    id_map = dict((v,k) for (k,v) in dv_map.items())
     try: 
         return id_map[ kindName ]
     except KeyError: 
@@ -887,7 +887,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     header_vars = []
     map_dict = get_headerMap(nZones)
     for variable in header_list:
-        assert map_dict.has_key(variable) , 'unrecognized header variable'
+        assert variable in map_dict, 'unrecognized header variable'
         header_vars.append(map_dict[variable])
     
     # done
@@ -933,9 +933,9 @@ def get_specialCases(config):
     
     special_cases = []
     for key in all_special_cases:
-        if config.has_key(key) and config[key] == 'YES':
+        if key in config and config[key] == 'YES':
             special_cases.append(key)
-        if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
+        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
             
     if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
@@ -950,11 +950,11 @@ def get_specialCases(config):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for harmonic balance
-    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
+    if 'UNSTEADY_SIMULATION' in config and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
         special_cases.append('HARMONIC_BALANCE')
 
     # Special case for rotating frame
-    if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
+    if 'GRID_MOVEMENT_KIND' in config and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
         
     return special_cases
@@ -973,7 +973,7 @@ def get_multizone(config):
     
     multizone = []
     for key in all_multizone_problems:
-        if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
+        if 'PHYSICAL_PROBLEM' in config and config['PHYSICAL_PROBLEM'] == key:
             multizone.append(key)
             
     return multizone
@@ -1146,5 +1146,5 @@ def restart2solution(config,state={}):
         if state: state.FILES[ADJ_NAME] = solution
         
     else:
-        raise Exception, 'unknown math problem'
+        raise Exception('unknown math problem')
 
