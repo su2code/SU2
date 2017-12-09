@@ -394,17 +394,18 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
 bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
                                                            su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
+  su2double epsilon = 1E-6; // An epsilon is added to eliminate, as much as possible, the posibility of a line that intersects a point
   unsigned short iDim;
   
   for (iDim = 0; iDim < 3; iDim++) {
     u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
-    v[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
+    v[iDim] = (Plane_P0[iDim]+epsilon) - Segment_P0[iDim];
   }
   
   ModU = sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
   
-  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
-  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+  Numerator = (Plane_Normal[0]+epsilon)*v[0] + (Plane_Normal[1]+epsilon)*v[1] + (Plane_Normal[2]+epsilon)*v[2];
+  Denominator = (Plane_Normal[0]+epsilon)*u[0] + (Plane_Normal[1]+epsilon)*u[1] + (Plane_Normal[2]+epsilon)*u[2];
   
   if (fabs(Denominator) <= 0.0) return (false); // No intersection.
   
@@ -425,8 +426,8 @@ bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment
   
   Variable_Interp = Variable_P0 + (Variable_P1 - Variable_P0)*sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2])/ModU;
   
-  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
-  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
+  Denominator = (Plane_Normal[0]+epsilon)*u[0] + (Plane_Normal[1]+epsilon)*u[1] + (Plane_Normal[2]+epsilon)*u[2];
+  Numerator = (Plane_Normal[0]+epsilon)*v[0] + (Plane_Normal[1]+epsilon)*v[1] + (Plane_Normal[2]+epsilon)*v[2];
   
   Aux = Numerator * Denominator;
   
@@ -9626,16 +9627,19 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   /*--- Set a reference area if no value is provided ---*/
   
   if (config->GetRefArea() == 0.0) {
+    
     if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
     else config->SetRefArea(TotalPositiveYArea);
     
-    if (nDim == 3) {
-      cout << "Reference area = "<< TotalPositiveZArea;
-      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
-    }
-    else {
-      cout << "Reference length = "<< TotalPositiveYArea;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+    if (rank == MASTER_NODE) {
+      if (nDim == 3) {
+        cout << "Reference area = "<< TotalPositiveZArea;
+        if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
+      }
+      else {
+        cout << "Reference length = "<< TotalPositiveYArea;
+        if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+      }
     }
     
   }
@@ -9647,10 +9651,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (nDim == 3) config->SetSemiSpan(fabs(TotalMaxCoordY));
     else config->SetSemiSpan(1.0);
     
-    if (nDim == 3) {
+    if ((nDim == 3) && (rank == MASTER_NODE)) {
       cout << "Semi-span length = "<< TotalMaxCoordY;
       if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
-      
     }
     
   }
