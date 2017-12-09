@@ -41,7 +41,7 @@ from .. import io   as su2io
 from .. import util as su2util
 from .functions import function, update_mesh
 from ..io import redirect_folder, redirect_output
-import functions
+from SU2.eval import functions
 
 # ----------------------------------------------------------------------
 #  Main Gradient Interface
@@ -79,7 +79,7 @@ def gradient( func_name, method, config, state=None ):
     grads = {}
     state = su2io.State(state)
     if func_name == 'ALL':
-        raise Exception , "func_name = 'ALL' not yet supported"
+        raise Exception("func_name = 'ALL' not yet supported")
     func_output = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
@@ -89,8 +89,9 @@ def gradient( func_name, method, config, state=None ):
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_WEIGHT = "1.0"
+
     # redundancy check
-    if not state['GRADIENTS'].has_key(func_output):
+    if not func_output in state['GRADIENTS']:
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
@@ -115,7 +116,7 @@ def gradient( func_name, method, config, state=None ):
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception, 'unknown function name: %s' % func_output
+                raise Exception('unknown function name: %s' % func_name)
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -125,7 +126,7 @@ def gradient( func_name, method, config, state=None ):
             grad = directdiff (config , state )
 
         else:
-            raise Exception , 'unrecognized gradient method'
+            raise Exception('unrecognized gradient method')
         
         # store
         state['GRADIENTS'].update(grads)
@@ -201,7 +202,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------    
 
     # master redundancy check
-    if state['GRADIENTS'].has_key(func_output):
+    if func_output in state['GRADIENTS']:
         grads = state['GRADIENTS']
         return copy.deepcopy(grads)
 
@@ -240,7 +241,7 @@ def adjoint( func_name, config, state=None ):
     link.extend(name)
 
     # files: adjoint solution
-    if files.has_key( ADJ_NAME ):
+    if ADJ_NAME in files:
         name = files[ADJ_NAME]
         name = su2io.expand_zones(name,config)
         name = su2io.expand_time(name,config)
@@ -311,13 +312,14 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
 
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception, 'could not find stability function name'
+    if not len(matches) == 1:
+        raise Exception('could not find stability function name')
     base_name = matches[0]    
 
     ADJ_NAME = 'ADJOINT_'+base_name
@@ -360,7 +362,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
     ## DO NOT PULL DIRECT SOLUTION, use the one in STABILITY/ 
 
     # files: adjoint solution
-    if files.has_key( ADJ_NAME ):
+    if ADJ_NAME in files:
         name = files[ADJ_NAME]
         name = su2io.expand_time(name,config)
         link.extend(name)       
@@ -387,12 +389,6 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
             # the gradient
             grads_1 = gradient(base_name,'CONTINUOUS_ADJOINT',konfig,ztate)
-
-            ## direct files to store
-            #name = ztate.FILES[ADJ_NAME]
-            #if not state.FILES.has_key('STABILITY'):
-                #state.FILES.STABILITY = su2io.ordered_bunch()
-            #state.FILES.STABILITY[ADJ_NAME] = name
 
 
     # ----------------------------------------------------    
@@ -439,13 +435,14 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
       state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception, 'could not find multipoint function name'
+    if not len(matches) == 1:
+        raise Exception('could not find multipoint function name')
     base_name = matches[0]
     
     ADJ_NAME = 'ADJOINT_' + base_name
@@ -500,7 +497,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     ## DO NOT PULL DIRECT SOLUTION, use the one in MULTIPOINT/
     
     # files: adjoint solution
-    if files.has_key( ADJ_NAME ):
+    if ADJ_NAME in files:
       name = files[ADJ_NAME]
       name = su2io.expand_time(name,config)
       link.extend(name)
@@ -616,7 +613,7 @@ def findiff( config, state=None ):
         log_findiff = None
 
     # evaluate step length or set default value
-    if config.has_key('FIN_DIFF_STEP'):
+    if 'FIN_DIFF_STEP' in config:
         step = float(config.FIN_DIFF_STEP)
     else:
         step = 0.001 
@@ -627,7 +624,7 @@ def findiff( config, state=None ):
 
     # master redundancy check
     opt_names = su2io.optnames_aero + su2io.optnames_geo 
-    findiff_todo = all( [ state.GRADIENTS.has_key(key) for key in opt_names ] )
+    findiff_todo = all([key in state.GRADIENTS for key in opt_names])
     if findiff_todo:
         grads = state['GRADIENTS']
         return copy.deepcopy(grads)
@@ -666,7 +663,7 @@ def findiff( config, state=None ):
         dvs_base = konfig['DV_VALUE_NEW']
 
     # initialize gradients
-    func_keys = func_base.keys()
+    func_keys = list(func_base.keys())
     func_keys = ['VARIABLE'] + func_keys + ['FINDIFF_STEP']
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
@@ -685,7 +682,7 @@ def findiff( config, state=None ):
     name = su2io.expand_part(name,konfig)
     link.extend(name)
     # files: direct solution
-    if files.has_key('DIRECT'):
+    if 'DIRECT' in files:
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend(name)
@@ -798,7 +795,7 @@ def geometry( func_name, config, state=None ):
 
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
 
@@ -821,8 +818,8 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------    
 
     # redundancy check
-    geometry_done = state.GRADIENTS.has_key(func_name)
-    #geometry_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_geo ] )
+    geometry_done = func_name in state.GRADIENTS
+    #geometry_done = all([key in state.FUNCTIONS for key in su2io.optnames_geo])
     if not geometry_done:    
 
         # files to pull
@@ -859,7 +856,7 @@ def geometry( func_name, config, state=None ):
     # return output 
     grads = su2util.ordered_bunch()
     for key in su2io.optnames_geo:
-        if state['GRADIENTS'].has_key(key):
+        if key in state['GRADIENTS']:
             grads[key] = state['GRADIENTS'][key]
     return grads    
 
@@ -921,7 +918,7 @@ def directdiff( config, state=None ):
 
     # master redundancy check
     opt_names = su2io.optnames_aero + su2io.optnames_geo
-    directdiff_todo = all( [ state.GRADIENTS.has_key(key) for key in opt_names ] )
+    directdiff_todo = all([key in state.GRADIENTS for key in opt_names])
     if directdiff_todo:
         grads = state['GRADIENTS']
         return copy.deepcopy(grads)
@@ -946,7 +943,7 @@ def directdiff( config, state=None ):
     n_dv = sum(Definition_DV['SIZE'])
 
     # initialize gradients
-    func_keys = su2io.grad_names_map.keys()
+    func_keys = list(su2io.grad_names_map.keys())
     func_keys = ['VARIABLE'] + func_keys
     grads = su2util.ordered_bunch.fromkeys(func_keys)
     for key in grads.keys(): grads[key] = []
@@ -959,7 +956,7 @@ def directdiff( config, state=None ):
     name = su2io.expand_part(name,konfig)
     link.extend(name)
     # files: direct solution
-    if files.has_key('DIRECT'):
+    if 'DIRECT' in files:
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend(name)

@@ -51,6 +51,7 @@ CVariable::CVariable(void) {
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
+  Solution_Adj_Old = NULL;
   
 }
 
@@ -70,7 +71,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
-  
+  Solution_Adj_Old = NULL;
+
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
@@ -103,6 +105,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
+  Solution_Adj_Old = NULL;
   
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
@@ -131,6 +134,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution_time_n1 = new su2double [nVar];
   }
   
+	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
+	  Solution_Adj_Old = new su2double [nVar];
+	}
+  
 }
 
 CVariable::~CVariable(void) {
@@ -148,6 +155,7 @@ CVariable::~CVariable(void) {
   if (Res_TruncError      != NULL) delete [] Res_TruncError;
   if (Residual_Old        != NULL) delete [] Residual_Old;
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
+  if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
   
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
@@ -197,6 +205,14 @@ void CVariable::Set_OldSolution(void) {
     Solution_Old[iVar] = Solution[iVar];
   
 }
+
+void CVariable::Set_OldSolution_Adj(void) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_Adj_Old[iVar] = Solution[iVar];
+
+}
+
 
 void CVariable::AddSolution(unsigned short val_var, su2double val_solution) {
   
