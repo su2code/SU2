@@ -124,6 +124,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/SU2_CFD.hpp \
 	../include/transport_model.hpp ../include/transport_model.inl \
@@ -274,6 +275,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/transport_model.hpp \
 	../include/transport_model.inl \
@@ -415,6 +417,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/transport_model.hpp \
 	../include/transport_model.inl \
@@ -667,6 +670,14 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
 PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PYTHON = @PYTHON@
+PYTHON_CONFIG = @PYTHON_CONFIG@
+PYTHON_EXEC_PREFIX = @PYTHON_EXEC_PREFIX@
+PYTHON_INCLUDE = @PYTHON_INCLUDE@
+PYTHON_LIB = @PYTHON_LIB@
+PYTHON_PLATFORM = @PYTHON_PLATFORM@
+PYTHON_PREFIX = @PYTHON_PREFIX@
+PYTHON_VERSION = @PYTHON_VERSION@
 RANLIB = @RANLIB@
 REVERSE_CXX = @REVERSE_CXX@
 REVERSE_LIBS = @REVERSE_LIBS@
@@ -723,9 +734,14 @@ mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
+pkgpyexecdir = @pkgpyexecdir@
+pkgpythondir = @pkgpythondir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+pyexecdir = @pyexecdir@
+pythondir = @pythondir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -754,6 +770,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
