@@ -1,6 +1,6 @@
 /*!
  * \file codi_forward_structure.inl
- * \brief Inline subroutines for <i>codi_forward_structure.hpp<i>.
+ * \brief Inline subroutines for <i>codi_forward_structure.hpp</i>.
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
