@@ -31,6 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 import sys
 from TestCase import TestCase    
 
@@ -277,7 +280,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-3.544713,-3.135163,0.968231,0.010161] #last 4 columns
+    inc_euler_naca0012.test_vals = [-3.544713, -3.135163, 0.968232, 0.010161] #last 4 columns
     inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_euler_naca0012.timeout   = 1600
     inc_euler_naca0012.tol       = 0.00001
@@ -292,7 +295,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-3.583742, -2.838702, -0.003114, 17.162325] #last 4 columns
+    inc_lam_cylinder.test_vals = [-3.755682, -3.318630, -0.005906, 6.254292] #last 4 columns
     inc_lam_cylinder.su2_exec  = "parallel_computation.py -f"
     inc_lam_cylinder.timeout   = 1600
     inc_lam_cylinder.tol       = 0.00001
@@ -307,7 +310,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.710048, -11.007498, 0.000002, 0.210441] #last 4 columns
+    inc_turb_naca0012.test_vals = [-4.708166, -11.010137, 0.000002, 0.207683] #last 4 columns
     inc_turb_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
@@ -362,8 +365,8 @@ def main():
     schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
-    schubauer_klebanoff_transition.test_iter    = 50
-    schubauer_klebanoff_transition.test_vals    = [ -8.706566, -15.066785, 0.000358, 0.002447] #last 4 columns
+    schubauer_klebanoff_transition.test_iter    = 10
+    schubauer_klebanoff_transition.test_vals    = [-8.280255, -14.505575, 0.000068, 0.005669] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -515,7 +518,7 @@ def main():
     contadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     contadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder.cfg"
     contadj_incomp_cylinder.test_iter = 25
-    contadj_incomp_cylinder.test_vals = [-5.718840, -7.012324, 2.932100, 0.000000] #last 4 columns
+    contadj_incomp_cylinder.test_vals = [-5.721205, -6.989432, 2.932100, 0.000000] #last 4 columns
     contadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     contadj_incomp_cylinder.timeout   = 1600
     contadj_incomp_cylinder.tol       = 0.00001
@@ -1053,13 +1056,14 @@ def main():
 
 
     # Tests summary
-    print '=================================================================='
-    print 'Summary of the parallel tests'
+    print('==================================================================')
+    print('Summary of the parallel tests')
+    print('python version:', sys.version)
     for i, test in enumerate(test_list):
         if (pass_list[i]):
-            print '  passed - %s'%test.tag
+            print('  passed - %s'%test.tag)
         else:
-            print '* FAILED - %s'%test.tag
+            print('* FAILED - %s'%test.tag)
 
     if all(pass_list):
         sys.exit(0)
