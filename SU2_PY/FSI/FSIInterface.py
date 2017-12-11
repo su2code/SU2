@@ -1570,7 +1570,6 @@ class Interface:
               localIndex += 1
             # Prepares the mesh deformation in the fluid solver
 	    nodalVarCoordNorm = FluidSolver.SetVertexVarCoord(self.fluidInterfaceIdentifier, iVertex)
-            #print nodalVarCoordNorm		
 
 	    
     def setSolidInterfaceLoads(self, SolidSolver, FSI_config, time):
@@ -1689,9 +1688,9 @@ class Interface:
         #print("DEBUG MESSAGE FROM PROC {} : NormInterfaceResidual_Y = {}".format(myid, normInterfaceResidual_Y))
         #print("DEBUG MESSAGE FROM PROC {} : NormInterfaceResidual_Z = {}".format(myid, normInterfaceResidual_Z))
         #if myid == 0:
-        #  print predPos_array_DispX.getArray()
-        #  print "*************"
-        #  print self.solidInterface_array_DispX.getArray()
+        #  print(predPos_array_DispX.getArray())
+        #  print("*************")
+        #  print(self.solidInterface_array_DispX.getArray())
 
         normInterfaceResidualSquare = normInterfaceResidual_X**2 + normInterfaceResidual_Y**2 + normInterfaceResidual_Z**2
 
