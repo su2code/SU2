@@ -32,7 +32,6 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import SU2
-import os, time, sys, shutil
 from optparse import OptionParser
 
 # -------------------------------------------------------------------
