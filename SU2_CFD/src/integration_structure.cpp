@@ -1011,21 +1011,17 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     /*--- Store the Relaxation coefficient residual ---*/
     fea_solver->SetRelaxCoeff(WAitken);
 
-    cout << endl;
-    cout.setf(ios::fixed, ios::floatfield);
-    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
     cout.precision(6);
-    cout << endl <<"---------------------- FSI Convergence Summary -------------------------- ";
     if (stat_time) {
       cout << endl <<" The structure is being held static. No convergence is checked.";
     }
     else {
-      if (iFSIIter == 0) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" <<  endl;
-      else if (iFSIIter == 1) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
-      else cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
+      if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
+      else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+      else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
       
       cout.width(8); cout << iFSIIter;
-      cout.width(8); cout << iExtIter;
+      cout.width(15); cout << iExtIter;
       cout.width(15); cout << WAitken;
       cout.width(15);
       if (iFSIIter == 0) cout << " ";
@@ -1035,7 +1031,10 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       if (iFSIIter < 2) cout << " ";
       else cout << magResidualFSI;
     }
-    
+    cout.setf(ios::fixed, ios::floatfield);
+    cout << endl;
+    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
+    cout << endl;
     cout << endl << "------------------------------------------------------------------------- ";
     cout << endl;
   }

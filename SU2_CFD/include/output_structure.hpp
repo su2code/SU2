@@ -299,6 +299,13 @@ public:
   void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration,
                          unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
 
+  /*!
+   * \brief Create and write the file with the FSI convergence history.
+   * \param[in] iIter - Current iteration.
+   * \param[in] iFreq - Frequency of output printing.
+   */
+  bool PrintOutput(unsigned long iIter, unsigned long iFreq);
+
   /*! 
    * \brief Create and write the file with the flow coefficient on the surface.
    * \param[in] config - Definition of the particular problem.
