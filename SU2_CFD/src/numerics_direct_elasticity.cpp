@@ -34,7 +34,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar,
+CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
@@ -47,7 +47,6 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
   Mu = 0.0; Lambda = 0.0; Kappa = 0.0;
 
   /*--- Initialize vector structures for multiple material definition ---*/
-  /*--- TODO: This needs to be changed, to adapt for cases in which the numbers in the config are not the same ---*/
   E_i         = new su2double[config->GetnElasticityMod()];
   for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
     E_i[iVar]        = config->GetElasticyMod(iVar);
@@ -160,7 +159,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
   }
 }
 
-CFEM_Elasticity::~CFEM_Elasticity(void) {
+CFEAElasticity::~CFEAElasticity(void) {
 
   unsigned short iVar;
 
@@ -204,7 +203,7 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 }
 
-void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -255,7 +254,7 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
 }
 
-void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -306,7 +305,7 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
 }
 
-void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) {
+void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
 
   E   = E_i[element->Get_iProp()];
   Nu  = Nu_i[element->Get_iProp()];
@@ -332,11 +331,9 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
   Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
   Kappa  = Lambda + (2/3)*Mu;
 
-//  cout << "YOUNG: " << E << " and Mu " << Mu << endl;
-
 }
 
-void CFEM_Elasticity::ReadDV(CConfig *config) {
+void CFEAElasticity::ReadDV(CConfig *config) {
 
   unsigned long index;
 

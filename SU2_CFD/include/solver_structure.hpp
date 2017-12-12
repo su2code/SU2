@@ -3130,26 +3130,6 @@ public:
    * \param[out] val_FSI_residual - Value of the residual.
    */
   virtual su2double GetFSI_Residual();
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
-   */
-  virtual void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
-                           CGeometry **flow_geometry, CConfig *fea_config,
-                           CConfig *flow_config, CNumerics *fea_numerics);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
-   */
-  virtual void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry,
-                               CGeometry **flow_geometry, CConfig *fea_config,
-                               CConfig *flow_config, CNumerics *fea_numerics);
   
   /*!
    * \brief A virtual member.
@@ -11197,13 +11177,13 @@ public:
   
 };
 
-/*! \class CFEM_ElasticitySolver
+/*! \class CFEASolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.
  *  \author R. Sanchez.
  *  \version 5.0.0 "Raven"
  *  \date July 10, 2015.
  */
-class CFEM_ElasticitySolver : public CSolver {
+class CFEASolver : public CSolver {
 private:
   
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
@@ -11291,19 +11271,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEM_ElasticitySolver(void);
+  CFEASolver(void);
   
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config);
+  CFEASolver(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_ElasticitySolver(void);
+  virtual ~CFEASolver(void);
   
   /*!
    * \brief Impose the send-receive boundary condition.
@@ -11725,22 +11705,6 @@ public:
    * \param[out] val_FSI_residual - Value of the residual.
    */
   su2double GetFSI_Residual(void);
-
-  /*!
-   * \brief Set the the tractions in the in the FEA solver (matching mesh).
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
-   */
-  void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
-  
-  /*!
-   * \brief Set the the tractions in the in the FEA solver (non-matching mesh).
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
-   */
-  void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
   
   /*!
    * \brief Predictor for structural displacements based on previous iterations
