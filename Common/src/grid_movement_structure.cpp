@@ -2754,7 +2754,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
-  bool restart = (config->GetRestart());
+  bool restart = (config->GetRestart() || config->GetDiscrete_Adjoint());
 
 
   /*--- Retrieve values from the config file ---*/
