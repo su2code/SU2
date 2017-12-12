@@ -5409,6 +5409,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                   ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                   ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
+                  if(cht) cout << "CFL in solids: " << config[ZONE_1]->GetCFL(FinestMesh) << endl;
+
 
                 cout << "-------------------------------------------------------------------------" << endl;
 
