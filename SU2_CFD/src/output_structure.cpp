@@ -4692,10 +4692,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
-            (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
+                (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
     bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
     bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
+    bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
     
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
 
@@ -4719,6 +4720,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0;
 
     su2double Total_ForceCoeff = 0.0, Total_VMStress = 0.0, Total_IncLoad = 0.0;
+    su2double Total_SensE = 0.0, Total_SensNu = 0.0;
 
     unsigned short iSpan;
 
@@ -5121,8 +5123,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool write_heads_FEM;
     if (nonlinear_analysis) write_heads_FEM = (iIntIter == 0);
     else write_heads_FEM = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
-    
-    
+
     if (  (!fem && ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3))) ||
         (fem  && ( (In_NoDynamic || In_Dynamic_0 || In_Dynamic_1) && (In_NoDynamic || In_Dynamic_2 || In_Dynamic_3)))
         ) {
@@ -5714,6 +5715,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               break;
 
+            case DISC_ADJ_FEM :
+              cout << endl << " IntIter" << " ExtIter";
+
+              if (nDim == 2) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
+              if (nDim == 3) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "    Res[Uz_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
+
+           break;
+
           }
 
         }
@@ -5744,6 +5753,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(8); cout << iIntIter;
               cout.width(8); cout << iExtIter;
             }
+          }
+          else if (discadj_fem){
+              cout.width(8); cout << iIntIter;
+              cout.width(8); cout << iExtIter;
           }
         }
       }
@@ -5986,11 +5999,25 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
 
-          cout.precision(4);
-          cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+
+          if (config[val_iZone]->GetnElasticityMod() == 1){
+            cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+            cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+          }
+          else{
+            Total_SensE = 0.0; Total_SensNu = 0.0;
+            for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
+                Total_SensE += solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+                    *solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+                Total_SensNu += solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+                    *solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+            }
+            Total_SensE = sqrt(Total_SensE);
+            Total_SensNu = sqrt(Total_SensNu);
+            cout.width(14); cout << Total_SensE;
+            cout.width(14); cout << Total_SensNu;
+          }
 
           cout << endl;
           break;
@@ -10727,7 +10754,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
           residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_BGS(iVar);
 
         /*--- FEA Residuals ---*/
-        for (iVar = 0; iVar < nVar_Flow; iVar++)
+        for (iVar = 0; iVar < nVar_FEM; iVar++)
           residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_BGS(iVar);
 
         residual_fsi[0] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetFSI_Residual();
@@ -10740,7 +10767,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
           for (iVar = 0; iVar < nVar_Flow; iVar++)
             residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iVar);
           /*--- FEA Residuals ---*/
-          for (iVar = 0; iVar < nVar_Flow; iVar++)
+          for (iVar = 0; iVar < nVar_FEM; iVar++)
             residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_BGS(iVar);
       }
 
@@ -10774,8 +10801,13 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
       if (!first_iter){
           if (!print_of) FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << end;
           else FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << objective_function << end;
-          FSIHist_file[0].flush();
+            FSIHist_file[0].flush();
       }
+
+      delete [] residual_flow;
+      delete [] residual_fem;
+      delete [] residual_fsi;
+      delete [] coeffs_fsi;
 
 
   }

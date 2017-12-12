@@ -2851,7 +2851,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   su2double Ramp_Time = config->GetRamp_Time();
   su2double Transfer_Time = 0.0;
 
-  ModAmpl = Compute_LoadCoefficient(CurrentTime, 0.0, config);
+  ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
   TotalLoad = ModAmpl * NormalLoad;
   
@@ -3152,9 +3152,11 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   su2double TotalLoad;
   
   su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double Ramp_Time = config->GetRamp_Time();
+
   su2double ModAmpl = 1.0;
   
-  ModAmpl = Compute_LoadCoefficient(CurrentTime, 0.0, config);
+  ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
   TotalLoad = ModAmpl * LoadDirVal * LoadDirMult;
   
