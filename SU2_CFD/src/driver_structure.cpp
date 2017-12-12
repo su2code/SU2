@@ -5550,7 +5550,7 @@ void CFSIDriver::Run() {
 
     /*--- Write the convergence history for the structure (only screen output) ---*/
 
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_STRUCT);
 
     /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
@@ -5885,39 +5885,18 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
 
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << endl;
-    cout << "Convergence summary for BGS subiteration ";
+    cout << "Convergence summary for BGS iteration ";
     cout << IntIter << endl;
     cout << endl;
+    /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+    cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
     cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout << "                      "; cout << "   Absolute" << "     Criteria" << "     Relative" << "     Criteria" << endl;
-    cout << "Flow       [Psi_Rho]: ";
-    cout.width(11); cout << residual_flow[0];
-    cout.width(13); cout << flow_criteria;
-    cout.width(13); cout << residual_flow_rel[0];
-    cout.width(13); cout << flow_criteria_rel << endl;
-    cout << "             [Psi_E]: ";
-    cout.width(11); cout << residual_flow[nVar_Flow-1];
-    cout.width(13); cout << flow_criteria;
-    cout.width(13); cout << residual_flow_rel[nVar_Flow-1];
-    cout.width(13); cout << flow_criteria_rel << endl;
-    cout << "Structure   [Psi_Ux]: ";
-    cout.width(11); cout << residual_struct[0];
-    cout.width(13); cout << structure_criteria;
-    cout.width(13); cout << residual_struct_rel[0];
-    cout.width(13); cout << structure_criteria_rel << endl;
-    cout << "            [Psi_Uy]: ";
-    cout.width(11); cout << residual_struct[1];
-    cout.width(13); cout << structure_criteria;
-    cout.width(13); cout << residual_struct_rel[1];
-    cout.width(13); cout << structure_criteria_rel << endl;
-    if (geometry_container[ZONE_FLOW][MESH_0]->GetnDim() == 3 ){
-      cout << "            [Psi_Uz]: ";
-      cout.width(11); cout << residual_struct[2];
-      cout.width(13); cout << structure_criteria;
-      cout.width(13); cout << residual_struct_rel[2];
-      cout.width(13); cout << structure_criteria_rel << endl;        }
+    cout.width(8); cout << IntIter*1000;
+    cout.width(15); cout << residual_flow[0];
+    cout.width(15); cout << residual_flow[nVar_Flow-1];
+    cout.width(15); cout << residual_struct[0];
+    cout.width(15); cout << residual_struct[1];
     cout << endl;
-    cout << "-------------------------------------------------------------------------" << endl;
 
   }
 
@@ -7494,13 +7473,13 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(unsigned long IntIter,
     if (rank == MASTER_NODE){
       if (IntIter == 0){
         cout << endl;
-        cout << " Iter" << "    BGSIter" << "   Res[Psi_Rho]" << "     Res[Psi_E]" << endl;
+        cout << " IntIter" << "    BGSIter" << "   Res[Psi_Rho]" << "     Res[Psi_E]" << endl;
       }
 
       if (IntIter % config_container[ZONE_FLOW]->GetWrt_Con_Freq() == 0){
         /*--- Output the flow convergence ---*/
         /*--- This is temporary as it requires several changes in the output structure ---*/
-        cout.width(5);     cout << IntIter;
+        cout.width(8);     cout << IntIter;
         cout.width(11);    cout << BGS_Iter + 1;
         cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
         cout.width(15);    cout << log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
@@ -7513,25 +7492,8 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(unsigned long IntIter,
 
   if (kind_recording == FEA_DISP_VARS) {
 
-    if (rank == MASTER_NODE){
-      if (IntIter == 0){
-        cout << endl;
-        cout << " Iter" << "    BGSIter" << "    Res[Ux_bar]" << "     Res[Uy_bar]";
-        cout << "       Sens_E" << "       Sens_Nu" << endl;
-      }
-    }
-
     /*--- Set the convergence criteria (only residual possible) ---*/
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
-
-
-    /*--- Output the structural convergence ---*/
-    /*--- This is temporary as it requires several changes in the output structure ---*/
-//    cout.width(5);  cout << IntIter;
-//    cout.width(11); cout << BGS_Iter;
-//    cout.width(15); cout.precision(4); cout.setf(ios::scientific, ios::floatfield);
-//    cout << solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(0);
-//    cout << solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(1);
 
   }
 
@@ -7742,47 +7704,18 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
 
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << endl;
-    cout << "Convergence summary for BGS subiteration ";
+    cout << "Convergence summary for BGS iteration ";
     cout << IntIter << endl;
     cout << endl;
     /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-    cout << "   Iter[ID]" << "    [Psi_Rho]" << "      [Psi_E]" << "     [Psi_Ux]" << "     [Psi_Uy]" << endl;
+    cout << "Iter[ID]" << "  BGSRes[Psi_Rho]" << "  BGSRes[Psi_E]" << "  BGSRes[Psi_Ux]" << "  BGSRes[Psi_Uy]" << endl;
     cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout.width(11); cout << IntIter*1000;
-    cout.width(13); cout << residual_flow[0];
-    cout.width(13); cout << residual_flow[nVar_Flow-1];
-    cout.width(13); cout << residual_struct[0];
-    cout.width(13); cout << residual_struct[1];
+    cout.width(8); cout << IntIter*1000;
+    cout.width(17); cout << residual_flow[0];
+    cout.width(15); cout << residual_flow[nVar_Flow-1];
+    cout.width(16); cout << residual_struct[0];
+    cout.width(16); cout << residual_struct[1];
     cout << endl;
-    cout << endl;
-    cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout << "                      "; cout << "   Absolute" << "     Criteria" << "     Relative" << "     Criteria" << endl;
-    cout << "Flow       [Psi_Rho]: ";
-    cout.width(11); cout << residual_flow[0];
-    cout.width(13); cout << flow_criteria;
-    cout.width(13); cout << residual_flow_rel[0];
-    cout.width(13); cout << flow_criteria_rel << endl;
-    cout << "             [Psi_E]: ";
-    cout.width(11); cout << residual_flow[nVar_Flow-1];
-    cout.width(13); cout << flow_criteria;
-    cout.width(13); cout << residual_flow_rel[nVar_Flow-1];
-    cout.width(13); cout << flow_criteria_rel << endl;
-    cout << "Structure   [Psi_Ux]: ";
-    cout.width(11); cout << residual_struct[0];
-    cout.width(13); cout << structure_criteria;
-    cout.width(13); cout << residual_struct_rel[0];
-    cout.width(13); cout << structure_criteria_rel << endl;
-    cout << "            [Psi_Uy]: ";
-    cout.width(11); cout << residual_struct[1];
-    cout.width(13); cout << structure_criteria;
-    cout.width(13); cout << residual_struct_rel[1];
-    cout.width(13); cout << structure_criteria_rel << endl;
-    if (geometry_container[ZONE_FLOW][MESH_0]->GetnDim() == 3 ){
-      cout << "            [Psi_Uz]: ";
-      cout.width(11); cout << residual_struct[2];
-      cout.width(13); cout << structure_criteria;
-      cout.width(13); cout << residual_struct_rel[2];
-      cout.width(13); cout << structure_criteria_rel << endl;        }
     cout << endl;
     cout << "-------------------------------------------------------------------------" << endl;
 

@@ -1184,6 +1184,8 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
   su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
   su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
 
+  bool write_output = true;
+
 //  bool statTime = (CurrentTime < Static_Time);
   bool statTime = (CurrentTime <= Static_Time);
 
@@ -1224,13 +1226,13 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
       IntIter = 0;
 
-      /*--- Write the convergence history headers ---*/
-
-      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-
       /*--- FEA equations ---*/
 
       config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+      /*--- Write the convergence history headers ---*/
+
+      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
       /*--- Run the iteration ---*/
 
@@ -1247,7 +1249,8 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
         /*--- Write the convergence history (first, compute Von Mises stress) ---*/
         solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
-        output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
+        write_output = output->PrintOutput(IntIter-1, config_container[val_iZone]->GetWrt_Con_Freq_DualTime());
+        if (write_output) output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
         config_container[val_iZone]->SetIntIter(IntIter);
 
@@ -1275,13 +1278,13 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
       IntIter = 0;
 
-      /*--- Write the convergence history headers ---*/
-
-      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-
       /*--- FEA equations ---*/
 
       config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+      /*--- Write the convergence history headers ---*/
+
+      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
       /*--- Run the first iteration ---*/
 
