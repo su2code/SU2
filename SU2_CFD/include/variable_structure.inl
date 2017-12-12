@@ -491,6 +491,8 @@ inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
+inline void CVariable::SetHBSource_Direct(su2double *val_HBsource_direct) { }
+
 inline void CVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { }
 
 inline su2double CVariable::GetHarmonicBalance_Source(unsigned short val_var) { return 0; }
@@ -1082,6 +1084,8 @@ inline su2double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
 inline void CWaveVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
+inline void CWaveVariable::SetHBSource_Direct(su2double *val_HBsource_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) HBSource_Direct[iVar] += val_HBsource_direct[iVar];}
+
 inline su2double* CPotentialVariable::GetChargeDensity() { return Charge_Density;}
 
 inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2double negative_charge) {Charge_Density[0] = positive_charge; Charge_Density[1] = negative_charge;}
@@ -1089,6 +1093,8 @@ inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2d
 inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
 
 inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
+
+inline void CHeatVariable::SetHBSource_Direct(su2double *val_HBsource_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) HBSource_Direct[iVar] += val_HBsource_direct[iVar];}
 
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
@@ -1200,5 +1206,11 @@ inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direc
 inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Direct[iVar] = val_solution_direct[iVar];
+  }
+}
+
+inline void CDiscAdjVariable::SetHBSource_Direct(su2double *val_HBsource_direct) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    HBSource_Direct[iVar] = val_HBsource_direct[iVar];
   }
 }

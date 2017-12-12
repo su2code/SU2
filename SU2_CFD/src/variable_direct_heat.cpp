@@ -37,6 +37,7 @@ CHeatVariable::CHeatVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
+  HBSource_Direct = NULL;
   
 }
 
@@ -46,12 +47,14 @@ CHeatVariable::CHeatVariable(su2double *val_heat, unsigned short val_nDim, unsig
   
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
+  HBSource_Direct = NULL;
   
   /*--- Allocate residual structures ---*/
   Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
   
   /*--- Allocate direct solution container for adjoint problem ---*/
   Solution_Direct = new su2double[nVar];
+  HBSource_Direct = new su2double[nVar];
   
   /*--- Allocate aux gradient vector ---*/
   Grad_AuxVar = new su2double [nDim];
@@ -61,6 +64,7 @@ CHeatVariable::CHeatVariable(su2double *val_heat, unsigned short val_nDim, unsig
     Solution[iVar] = val_heat[iVar];
     Solution_Old[iVar] = val_heat[iVar];
     Solution_Direct[iVar] = 0.0;
+    HBSource_Direct[iVar] = 0.0;
   }
   
 }
@@ -68,5 +72,6 @@ CHeatVariable::CHeatVariable(su2double *val_heat, unsigned short val_nDim, unsig
 CHeatVariable::~CHeatVariable(void) {
   
   if (Solution_Direct != NULL) delete [] Solution_Direct;
+  if (HBSource_Direct != NULL) delete [] HBSource_Direct;
   
 }

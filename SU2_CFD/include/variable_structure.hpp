@@ -1741,6 +1741,12 @@ public:
    * \param[in] val_solution_direct - Value of the direct solution.
    */
   virtual void SetSolution_Direct(su2double *val_solution_direct);
+
+  /*!
+   * \brief A virtual member. Set the HB source for the adjoint solver.
+   * \param[in] val_HBsource_direct - Value of the direct solution.
+   */
+  virtual void SetHBSource_Direct(su2double *val_HBsource_direct);
   
   /*!
    * \brief A virtual member. Get the direct solution for the adjoint solver.
@@ -2126,6 +2132,7 @@ public:
 class CWaveVariable : public CVariable {
 protected:
   su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint wave solver. */
+  su2double *HBSource_Direct;  /*!< \brief Direct HB source container for use in the adjoint wave solver. */
   
 public:
   
@@ -2155,6 +2162,12 @@ public:
   void SetSolution_Direct(su2double *val_solution_direct);
   
   /*!
+   * \brief Set the direct HB source for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct solution.
+   */
+  void SetHBSource_Direct(su2double *val_HBSource_direct);
+
+  /*!
    * \brief Get the direct solution for the adjoint solver.
    * \return Pointer to the direct solution vector.
    */
@@ -2172,6 +2185,7 @@ public:
 class CHeatVariable : public CVariable {
 protected:
   su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
+  su2double *HBSource_Direct;  /*!< \brief Direct HB source container for use in the adjoint Heat solver. */
   
 public:
   
@@ -2199,6 +2213,12 @@ public:
    * \param[in] val_solution_direct - Value of the direct solution.
    */
   void SetSolution_Direct(su2double *val_solution_direct);
+
+  /*!
+   * \brief Set the direct HB source for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct solution.
+   */
+  void SetHBSource_Direct(su2double *val_HBSource_direct);
   
   /*!
    * \brief Get the direct solution for the adjoint solver.
@@ -4291,6 +4311,7 @@ class CDiscAdjVariable : public CVariable {
 private:
   su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
   su2double* Solution_Direct;
+  su2double* HBSource_Direct;
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;
   
@@ -4337,6 +4358,8 @@ public:
   su2double GetDual_Time_Derivative_n(unsigned short iVar);
   
   void SetSolution_Direct(su2double *sol);
+
+  void SetHBSource_Direct(su2double *sol_HBsource);
   
   su2double* GetSolution_Direct();
 };
