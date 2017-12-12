@@ -5102,6 +5102,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
         /*--- Get current source terms (not yet preconditioned) and zero source array to prepare preconditioning ---*/
         for (iZone = 0; iZone < nZone; iZone++) {
           Source_old[iZone] = solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetHarmonicBalance_Source(iVar);
+          Source_old[iZone] = solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetHB_Source()[iVar];
           Source[iZone] = 0;
         }
 

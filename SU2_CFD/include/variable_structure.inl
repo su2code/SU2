@@ -494,6 +494,7 @@ inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 inline void CVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { }
 
 inline su2double CVariable::GetHarmonicBalance_Source(unsigned short val_var) { return 0; }
+inline su2double *CVariable::GetHB_Source(void) { return NULL; }
 
 inline void CVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) { }
 
@@ -707,6 +708,7 @@ inline su2double *CEulerVariable::GetLimiter_Secondary(void) { return Limiter_Se
 inline void CEulerVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
 inline su2double CEulerVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+inline su2double *CEulerVariable::GetHB_Source(void) { return HB_Source; }
 
 inline su2double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
@@ -793,6 +795,7 @@ inline void CAdjEulerVariable::SetPhi_Old(su2double *val_phi) { for (unsigned sh
 inline void CAdjEulerVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
 inline su2double CAdjEulerVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+inline su2double *CAdjEulerVariable::GetHarmonicBalance_Source(void) { return HB_Source; }
 
 inline su2double *CAdjNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -1090,6 +1093,7 @@ inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { 
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
 inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+inline su2double *CTurbSAVariable::GetHB_Source(void) { return HB_Source; }
 
 inline su2double CTurbSAVariable::GetGammaBC(void) { return gamma_BC; }
 
@@ -1104,6 +1108,7 @@ inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 inline void CTurbSSTVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
 inline su2double CTurbSSTVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
+inline su2double *CTurbSSTVariable::GetHB_Source(void){ return HB_Source; }
 
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {

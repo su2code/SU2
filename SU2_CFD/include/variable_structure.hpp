@@ -1721,6 +1721,7 @@ public:
    * \brief A virtual member.
    */
   virtual su2double GetHarmonicBalance_Source(unsigned short val_var);
+  virtual su2double *GetHB_Source(void);
   
   /*!
    * \brief Set the Eddy Viscosity Sensitivity of the problem.
@@ -3055,6 +3056,7 @@ public:
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   su2double GetHarmonicBalance_Source(unsigned short val_var);
+  su2double* GetHB_Source();
   
   /*!
    * \brief Get the value of the preconditioner Beta.
@@ -3687,6 +3689,7 @@ public:
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   su2double GetHarmonicBalance_Source(unsigned short val_var);
+  su2double* GetHB_Source();
 
   /*!
    * \brief Get the intermittency of the BC transition model.
@@ -3808,6 +3811,7 @@ public:
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   su2double GetHarmonicBalance_Source(unsigned short val_var);
+  su2double* GetHB_Source();
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
@@ -3941,6 +3945,7 @@ public:
    * \return Value of the harmonic balance source term for the index <i>val_var</i>.
    */
   su2double GetHarmonicBalance_Source(unsigned short val_var);
+  su2double* GetHarmonicBalance_Source();
 };
 
 /*!

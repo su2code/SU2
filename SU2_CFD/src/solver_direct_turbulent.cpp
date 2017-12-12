@@ -1561,6 +1561,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
         Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
+        Source = node[iPoint]->GetHB_Source()[iVar];
         Residual[iVar] = Source*Volume;
       }
       
@@ -3291,6 +3292,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
         Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
+        Source = node[iPoint]->GetHB_Source()[iVar];
         Residual[iVar] = Source*Volume;
       }
 
