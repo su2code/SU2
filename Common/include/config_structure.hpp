@@ -859,8 +859,8 @@ private:
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
-  su2double Newmark_alpha,		/*!< \brief Parameter alpha for Newmark method. */
-  Newmark_delta;				      /*!< \brief Parameter delta for Newmark method. */
+  su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		  /*!< \brief Time integration coefficients for structural method. */
   unsigned short nElasticityMod,  /*!< \brief Number of different values for the elasticity modulus. */
@@ -7581,13 +7581,13 @@ public:
    * \brief Get Newmark alpha parameter.
    * \return Value of the Newmark alpha parameter.
    */
-  su2double GetNewmark_alpha(void);
+  su2double GetNewmark_beta(void);
   
   /*!
    * \brief Get Newmark delta parameter.
    * \return Value of the Newmark delta parameter.
    */
-  su2double GetNewmark_delta(void);
+  su2double GetNewmark_gamma(void);
   
   /*!
    * \brief Get the number of integration coefficients provided by the user.

@@ -1729,9 +1729,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
   addDoubleOption("DYN_TIME", Total_DynTime, 1.0);
   /* DESCRIPTION: Parameter alpha for Newmark scheme (s) */
-  addDoubleOption("NEWMARK_BETA", Newmark_alpha, 0.25);
+  addDoubleOption("NEWMARK_BETA", Newmark_beta, 0.25);
   /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
-  addDoubleOption("NEWMARK_GAMMA", Newmark_delta, 0.5);
+  addDoubleOption("NEWMARK_GAMMA", Newmark_gamma, 0.5);
   /* DESCRIPTION: Apply the load as a ramp */
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
