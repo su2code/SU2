@@ -33,7 +33,7 @@
 
 #include "../include/variable_structure.hpp"
 
-CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
+CFEAVariable::CFEAVariable(void) : CVariable() {
   
   dynamic_analysis     = false;
   fsi_analysis       = false;
@@ -68,7 +68,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
 }
 
-CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   
   unsigned short iVar;
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -175,7 +175,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   
 }
 
-CFEM_ElasVariable::~CFEM_ElasVariable(void) {
+CFEAVariable::~CFEAVariable(void) {
   
   if (Stress           != NULL) delete [] Stress;
   if (FlowTraction       != NULL) delete [] FlowTraction;

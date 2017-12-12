@@ -876,7 +876,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
     }
     if (fem) {
-      solver_container[iMGlevel][FEA_SOL] = new CFEM_ElasticitySolver(geometry[iMGlevel], config);
+      solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
     }
     
     /*--- Allocate solution for adjoint problem ---*/
@@ -1954,7 +1954,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   switch (config->GetGeometricConditions()) {
       case SMALL_DEFORMATIONS :
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+          case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEALinearElasticity(nDim, nVar_FEM, config); break;
           case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
           default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
         }
@@ -2450,7 +2450,7 @@ void CDriver::Iteration_Preprocessing() {
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM iteration." << endl;
-      iteration_container[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
+      iteration_container[iZone] = new CFEAIteration(config_container[iZone]);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -5692,18 +5692,6 @@ void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short
       //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
     }
     break;
-  case LEGACY_METHOD:
-    if (MatchingMesh) {
-        solver_container[targetZone][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[targetZone], grid_movement[targetZone],
-          config_container[targetZone], config_container[donorZone],
-          geometry_container[donorZone], solver_container[donorZone]);
-      }
-      else {
-        solver_container[targetZone][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[targetZone], grid_movement[targetZone],
-          config_container[targetZone], config_container[donorZone],
-          geometry_container[donorZone], solver_container[donorZone]);
-    }
-    break;
   }
 
 }
@@ -5760,16 +5748,6 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
                                                                            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
                                                                            config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-  case LEGACY_METHOD:
-    if (MatchingMesh) {
-        solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-                                                                   config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
-      }
-      else {
-        solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-                                                                       config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
     }
     break;
   }
@@ -6230,7 +6208,7 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
          flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
          break;
        case DISC_ADJ_FEM:
-         direct_iteration[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
+         direct_iteration[iZone] = new CFEAIteration(config_container[iZone]);
          nVar_Struct = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnVar();
          structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
          structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();

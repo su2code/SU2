@@ -1634,9 +1634,9 @@ inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
 
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
-inline su2double CConfig::GetNewmark_alpha(void) { return Newmark_alpha; }
+inline su2double CConfig::GetNewmark_beta(void) { return Newmark_beta; }
 
-inline su2double CConfig::GetNewmark_delta(void) { return Newmark_delta; }
+inline su2double CConfig::GetNewmark_gamma(void) { return Newmark_gamma; }
 
 inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
 
