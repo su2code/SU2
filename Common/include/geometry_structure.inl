@@ -105,6 +105,8 @@ inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
 
+inline void CGeometry::SetCustomBoundary(CConfig *config){ }
+
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
 inline void CGeometry::SetBoundaries(CConfig *config) { }
