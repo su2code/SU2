@@ -1241,6 +1241,24 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   
 }
 
+void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
+
+  unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
+
+  nMGlevel = config->GetnMGLevels();
+  for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
+    iMGfine = iMGlevel-1;
+    for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
+      if (config->GetMarker_All_CHT(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
+        geometry_container[iMGlevel]->SetWallHeatFlux(geometry_container[iMGfine], iMarker);
+      }
+      else if (config->GetMarker_All_CHT(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+        geometry_container[iMGlevel]->SetWallTemperature(geometry_container[iMGfine], iMarker);
+      }
+    }
+  }
+}
+
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
@@ -14748,6 +14766,27 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   
 }
 
+void CPhysicalGeometry::SetCustomBoundary(CConfig *config){
+
+  unsigned short iMarker;
+  unsigned long iPoint, iVertex;
+  string Marker_Tag;
+
+  for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    if(config->GetMarker_All_CHT(iMarker)){
+      for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+        iPoint =  vertex[iMarker][iVertex]->GetNode();
+        if(node[iPoint]->GetDomain()){
+          if(config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) node[iPoint]->SetCustomBCHeatFlux(config->GetWall_HeatFlux(Marker_Tag));
+          else if(config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) node[iPoint]->SetCustomBCTemperature(config->GetIsothermal_Temperature(Marker_Tag));
+        }
+      }
+    }
+  }
+
+}
+
 void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
@@ -17987,12 +18026,12 @@ void CMultiGridGeometry::SetWallHeatFlux(CGeometry *geometry, unsigned short val
         isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
         if(isVertex){
           Area_Children = geometry->node[Point_Fine]->GetVolume();
-          WallHeatFlux_Fine = geometry->node[Point_Fine]->GetImposedHeatFlux();
+          WallHeatFlux_Fine = geometry->node[Point_Fine]->GetCustomBCHeatFlux();
           WallHeatFlux_Coarse += WallHeatFlux_Fine*Area_Children/Area_Parent;
         }
 
       }
-      node[Point_Coarse]->SetImposedHeatFlux(WallHeatFlux_Coarse);
+      node[Point_Coarse]->SetCustomBCHeatFlux(WallHeatFlux_Coarse);
     }
   }
 
@@ -18028,12 +18067,12 @@ void CMultiGridGeometry::SetWallTemperature(CGeometry *geometry, unsigned short 
         isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
         if(isVertex){
           Area_Children = geometry->node[Point_Fine]->GetVolume();
-          WallTemperature_Fine = geometry->node[Point_Fine]->GetImposedTemperature();
+          WallTemperature_Fine = geometry->node[Point_Fine]->GetCustomBCTemperature();
           WallTemperature_Coarse += WallTemperature_Fine*Area_Children/Area_Parent;
         }
 
       }
-      node[Point_Coarse]->SetImposedTemperature(WallTemperature_Coarse);
+      node[Point_Coarse]->SetCustomBCTemperature(WallTemperature_Coarse);
     }
   }
 
