@@ -283,6 +283,11 @@ public:
   virtual void SetInitialMesh() { };
 
   /*!
+   * \brief Set HB method for each time instance.
+   */
+  virtual void SetHarmonicBalance(unsigned short iTimeInstance) { };
+
+  /*!
    * \brief Get the total drag.
    * \return Total drag.
    */

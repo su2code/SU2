@@ -42,6 +42,7 @@ CVariable::CVariable(void) {
   Solution_Old = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
+  HB_Source = NULL;
   Gradient = NULL;
   Limiter = NULL;
   Solution_Max = NULL;
@@ -61,6 +62,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Solution_Old = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
+  HB_Source = NULL;
   Gradient = NULL;
   Limiter = NULL;
   Solution_Max = NULL;
@@ -80,9 +82,15 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
    to allocate some extra flow variables that do not participate
    in the simulation ---*/
   Solution = new su2double [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    HB_Source = new su2double [nVar];
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
     Solution[iVar] = 0.0;
-  
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+      HB_Source[iVar] = 0.0;
+  }
+
 }
 
 CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
@@ -94,6 +102,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Solution_Old = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
+  HB_Source = NULL;
   Gradient = NULL;
   Limiter = NULL;
   Solution_Max = NULL;
@@ -131,6 +140,13 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution_time_n1 = new su2double [nVar];
   }
   
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    HB_Source = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      HB_Source[iVar] = 0.0;
+  }
+
+
 }
 
 CVariable::~CVariable(void) {
@@ -140,6 +156,7 @@ CVariable::~CVariable(void) {
   if (Solution_Old        != NULL) delete [] Solution_Old;
   if (Solution_time_n     != NULL) delete [] Solution_time_n;
   if (Solution_time_n1    != NULL) delete [] Solution_time_n1;
+  if (HB_Source           != NULL) delete [] HB_Source;
   if (Limiter             != NULL) delete [] Limiter;
   if (Solution_Max        != NULL) delete [] Solution_Max;
   if (Solution_Min        != NULL) delete [] Solution_Min;

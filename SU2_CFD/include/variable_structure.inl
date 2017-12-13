@@ -1132,6 +1132,15 @@ inline void CVariable::RegisterSolution(bool input) {
       AD::RegisterOutput(Solution[iVar]);}
 }
 
+inline void CVariable::RegisterHBSource(bool input) {
+  if (input) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(HB_Source[iVar]);
+  }
+  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterOutput(HB_Source[iVar]);}
+}
+
 inline void CVariable::RegisterSolution_time_n() {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     AD::RegisterInput(Solution_time_n[iVar]);
@@ -1212,5 +1221,33 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
 inline void CDiscAdjVariable::SetHBSource_Direct(su2double *val_HBsource_direct) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     HBSource_Direct[iVar] = val_HBsource_direct[iVar];
+  }
+}
+
+inline void CVariable::SetAdjoint_HB_Source(su2double* adj_hb){}
+
+inline void CVariable::GetAdjoint_HB_Source(su2double* adj_hb){}
+
+inline void CEulerVariable::SetAdjoint_HB_Source(su2double* adj_hb){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    SU2_TYPE::SetDerivative(HB_Source[iVar], SU2_TYPE::GetValue(adj_hb[iVar]));
+  }
+}
+
+inline void CEulerVariable::GetAdjoint_HB_Source(su2double* adj_hb){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    adj_hb[iVar] = SU2_TYPE::GetDerivative(HB_Source[iVar]);
+  }
+}
+
+inline void CDiscAdjVariable::SetAdjoint_HB_Source(su2double* adj_hb){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    Adjoint_HB_Source[iVar] = adj_hb[iVar];
+  }
+}
+
+inline void CDiscAdjVariable::GetAdjoint_HB_Source(su2double* adj_hb){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    adj_hb[iVar] = Adjoint_HB_Source[iVar];
   }
 }

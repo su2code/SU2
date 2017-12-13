@@ -58,6 +58,7 @@ protected:
   
   su2double *Solution,    /*!< \brief Solution of the problem. */
   *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  su2double *HB_Source;    /*!< \brief Harmonic balance source term. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -1775,7 +1776,18 @@ public:
    */
   virtual void SetSolution_time_n(su2double *val_solution_time_n);
   
+  /*!
+   * \brief Set the value of the hb source.
+   * \param[in] adj_hb - Pointer to the residual vector.
+   */
+  virtual void SetAdjoint_HB_Source(su2double *adj_hb);
+
+  /*!
+   * \brief Get the value of the hb source.
+   */
+  virtual void GetAdjoint_HB_Source(su2double* adj_hb);
   
+
   /*!
    * \brief Set the value of the velocity (Structural Analysis).
    * \param[in] val_solution - Solution of the problem (velocity).
@@ -1979,6 +1991,12 @@ public:
    * \param[in] input - input or output variables.
    */
   void RegisterSolution(bool input);
+
+  /*!
+   * \brief Register the HB source variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterHBSource(bool input);
   
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -3113,6 +3131,17 @@ public:
    * \param[in] Value of the derivatives of the wind gust
    */
   void SetWindGustDer(su2double* val_WindGust);
+
+  /*!
+   * \brief Set the value of the hb source.
+   * \param[in] adj_hb - Pointer to the residual vector.
+   */
+  void SetAdjoint_HB_Source(su2double *adj_hb);
+
+  /*!
+   * \brief Get the value of the hb source.
+   */
+  void GetAdjoint_HB_Source(su2double* adj_hb);
 };
 
 /*!
@@ -4314,6 +4343,7 @@ private:
   su2double* HBSource_Direct;
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;
+  su2double* Adjoint_HB_Source;
   
 public:
   /*!
@@ -4362,6 +4392,17 @@ public:
   void SetHBSource_Direct(su2double *sol_HBsource);
   
   su2double* GetSolution_Direct();
+
+  /*!
+   * \brief Set the value of the hb source.
+   * \param[in] adj_hb - Pointer to the residual vector.
+   */
+  void SetAdjoint_HB_Source(su2double *adj_hb);
+
+  /*!
+   * \brief Get the value of the hb source.
+   */
+  void GetAdjoint_HB_Source(su2double* adj_hb);
 };
 
 

@@ -172,7 +172,8 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
   time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
-  input = true;
+  input = true,
+  harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
@@ -189,6 +190,13 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
       direct_solver->node[iPoint]->RegisterSolution_time_n1();
     }
   }
+
+  if (harmonic_balance){
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      direct_solver->node[iPoint]->RegisterHBSource(input);
+    }
+  }
+
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -258,6 +266,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint, nPoint = geometry->GetnPoint();
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
 
   /*--- Register variables as output of the solver iteration ---*/
 
@@ -268,6 +277,12 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->node[iPoint]->RegisterSolution(input);
   }
+
+  if (harmonic_balance){
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      direct_solver->node[iPoint]->RegisterHBSource(input);
+    }
+  }
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
@@ -276,6 +291,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
   bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -325,6 +341,18 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       /*--- Store the adjoint solution at time n-1 ---*/
 
       node[iPoint]->Set_Solution_time_n1(Solution);
+    }
+  }
+
+  if (harmonic_balance){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Extract the adjoint solution ---*/
+      direct_solver->node[iPoint]->GetAdjoint_HB_Source(Solution);
+
+      /*--- Store the adjoint solution ---*/
+      node[iPoint]->SetAdjoint_HB_Source(Solution);
+
     }
   }
 
@@ -407,6 +435,15 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
+
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      node[iPoint]->GetAdjoint_HB_Source(Solution);
+
+      direct_solver->node[iPoint]->SetAdjoint_HB_Source(Solution);
+    }
+  }
+
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {

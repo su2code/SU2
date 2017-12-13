@@ -43,6 +43,9 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
   DualTime_Derivative   = NULL;
   DualTime_Derivative_n = NULL; 
 
+  HBSource_Direct = NULL;
+  Adjoint_HB_Source = NULL;
+
 }
 
 CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
@@ -50,6 +53,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
 
   /*--- Initialize arrays to NULL ---*/
 
@@ -59,6 +63,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
 
   DualTime_Derivative   = NULL;
   DualTime_Derivative_n = NULL;
+  Adjoint_HB_Source = NULL;
 
   if (dual_time) {
     DualTime_Derivative = new su2double[nVar];
@@ -66,7 +71,6 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
 
   Solution_Direct = new su2double[nVar];
-  HBSource_Direct = new su2double[nVar];
 
   Sensitivity = new su2double[nDim];
 
@@ -89,6 +93,15 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
       DualTime_Derivative_n[iVar] = 0.0;
     }
   }
+
+  if (harmonic_balance) {
+  HBSource_Direct = new su2double[nVar];
+  Adjoint_HB_Source = new su2double[nVar];
+  for (iDim = 0; iDim < nDim; iDim++)
+    HBSource_Direct[iDim] = 0.0;
+    Adjoint_HB_Source[iDim] = 0.0;
+  }
+
 }
 
 CDiscAdjVariable::~CDiscAdjVariable() {
@@ -99,5 +112,6 @@ CDiscAdjVariable::~CDiscAdjVariable() {
 
   if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;
   if (DualTime_Derivative_n != NULL) delete [] DualTime_Derivative_n;
+  if (Adjoint_HB_Source     != NULL) delete [] Adjoint_HB_Source;
 
 }

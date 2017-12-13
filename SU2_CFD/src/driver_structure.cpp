@@ -318,6 +318,11 @@ CDriver::CDriver(char* confFile,
         iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
         geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, INFLOW);
         geometry_container[iZone][MESH_0]->UpdateTurboVertex(config_container[iZone], iZone, OUTFLOW);
+        SetHarmonicBalance(iZone);
+        if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+          for (unsigned long iPoint = 0; iPoint < geometry_container[iZone][MESH_0]->GetnPoint(); iPoint++)
+            solver_container[iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetHB_Source());
+        }
       }
     }
 
@@ -5354,12 +5359,17 @@ void CHBMultiZoneDriver::Run() {
       }
     }
   }
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+    /*--- Update the harmonic balance terms across all zones ---*/
+    SetHarmonicBalance(iTimeInstance);
+  }
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
   }
+
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     iteration_container[iTimeInstance]->Postprocess(config_container, geometry_container,
@@ -5464,16 +5474,10 @@ void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short 
 
 void CHBMultiZoneDriver::Update() {
 
-
-  for (unsigned short iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
-    /*--- Update the harmonic balance terms across all zones ---*/
-    SetHarmonicBalance(iTimeInstance);
-
+  for (unsigned short iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
-  }
-
 
 }
 
@@ -5950,6 +5954,11 @@ void CDiscAdjHBMultiZone::DirectRun(){
     direct_iteration[iTimeInstance]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
+  }
+
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+    /*--- Update the harmonic balance terms across all zones ---*/
+    SetHarmonicBalance(iTimeInstance);
   }
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
