@@ -1751,9 +1751,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
   addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
 
-  /* DESCRIPTION: Time while the structure is static */
-  addDoubleOption("STATIC_TIME", Static_Time, 0.0);
-
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
