@@ -97,9 +97,10 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   if (harmonic_balance) {
   HBSource_Direct = new su2double[nVar];
   Adjoint_HB_Source = new su2double[nVar];
-  for (iDim = 0; iDim < nDim; iDim++)
-    HBSource_Direct[iDim] = 0.0;
-    Adjoint_HB_Source[iDim] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++){
+    HBSource_Direct[iVar] = 0.0;
+    Adjoint_HB_Source[iVar] = 0.0;
+  }
   }
 
 }
