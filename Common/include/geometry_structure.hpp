@@ -677,18 +677,24 @@ public:
 	 */
 	virtual void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetCustomBoundary(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
-	 */
-	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+   */
+  virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-   virtual void SetShroudVelocity(CConfig *config);
+  virtual void SetShroudVelocity(CConfig *config);
 
    /*!
     * \brief A virtual member.
@@ -1069,6 +1075,13 @@ public:
    * \param config - Config
    */
   void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \param geometry_container - Geometrical definition.
+   * \param config - Definition of the particular problem.
+   */
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1595,6 +1608,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetPeriodicBoundary(CConfig *config);
+
+  /*!
+   * \brief Set the customized boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCustomBoundary(CConfig *config);
 
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.

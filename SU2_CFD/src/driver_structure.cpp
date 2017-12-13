@@ -351,6 +351,10 @@ CDriver::CDriver(char* confFile,
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
 
+    if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
+    geometry_container[iZone][MESH_0]->SetCustomBoundary(config_container[iZone]);
+    geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+
     if (config_container[iZone]->GetKind_GridMovement(iZone) == FLUID_STRUCTURE_STATIC){
       if (rank == MASTER_NODE)
         cout << "Setting moving mesh structure for static FSI problems." << endl;
@@ -3629,7 +3633,7 @@ void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned short iVerte
   iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if( geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
-    geometry_container[ZONE_0][MESH_0]->node[iPoint]->SetImposedTemperature(val_WallTemp);
+    geometry_container[ZONE_0][MESH_0]->node[iPoint]->SetCustomBCTemperature(val_WallTemp);
   }
 }
 
@@ -3737,7 +3741,7 @@ void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVe
   iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
   if( geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain() && compressible){
-    geometry_container[ZONE_0][MESH_0]->node[iPoint]->SetImposedHeatFlux(val_WallHeatFlux);
+    geometry_container[ZONE_0][MESH_0]->node[iPoint]->SetCustomBCHeatFlux(val_WallHeatFlux);
   }
 }
 
@@ -4028,6 +4032,21 @@ void CGeneralDriver::SetInitialMesh() {
 
 }
 
+void CGeneralDriver::BoundaryConditionsUpdate(){
+
+  int rank = MASTER_NODE;
+  unsigned short iZone;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if(rank == MASTER_NODE) cout << "Updating boundary conditions." << endl;
+  for(iZone = 0; iZone < nZone; iZone++){
+    geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+  }
+}
+
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
@@ -4266,6 +4285,20 @@ void CFluidDriver::SetInitialMesh() {
   //}
 }
 
+void CFluidDriver::BoundaryConditionsUpdate(){
+
+  int rank = MASTER_NODE;
+  unsigned short iZone;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if(rank == MASTER_NODE) cout << "Updating boundary conditions." << endl;
+  for(iZone = 0; iZone < nZone; iZone++){
+    geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+  }
+}
 
 void CFluidDriver::MGUpdateBoundaryConditions_HeatFlux(unsigned short val_marker){
 

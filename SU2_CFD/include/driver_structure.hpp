@@ -292,6 +292,11 @@ public:
   virtual void SetInitialMesh() { };
 
   /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  virtual void BoundaryConditionsUpdate() { };
+
+  /*!
    * \brief Get the total drag.
    * \return Total drag.
    */
@@ -666,6 +671,11 @@ public:
    * \brief Perform a mesh deformation as initial condition (single zone).
    */
   void SetInitialMesh();
+
+  /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
 };
 
 
@@ -724,6 +734,11 @@ public:
    * \brief Perform a mesh deformation as initial condition (multiple zone).
    */
   void SetInitialMesh();
+
+  /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
 
   /*!
    * \brief Update the multigrid structure for the heat fluxes imposed on the specified marker.
