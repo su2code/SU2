@@ -16613,7 +16613,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
     if (geometry->node[iPoint]->GetDomain()) {
 
       /* If it is a CHT patch, retrieve the specified wall heat flux. */
-      if (config->GetMarker_All_CHT(val_marker)) Wall_HeatFlux = geometry->node[iPoint]->GetImposedHeatFlux();
+      if (config->GetMarker_All_CHT(val_marker)) Wall_HeatFlux = geometry->node[iPoint]->GetCustomBCHeatFlux();
       
       /*--- Compute dual-grid area and boundary normal ---*/
       
@@ -16868,9 +16868,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
     if (geometry->node[iPoint]->GetDomain()) {
 
       /* If it is a CHT patch, retrieve the specified wall temperature. */
-      if (config->GetMarker_All_CHT(val_marker)){
-        Twall = geometry->node[iPoint]->GetImposedTemperature();
-      }
+      if (config->GetMarker_All_CHT(val_marker)) Twall = geometry->node[iPoint]->GetCustomBCTemperature();
       
       /*--- Compute dual-grid area and boundary normal ---*/
       

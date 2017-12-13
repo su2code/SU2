@@ -171,8 +171,8 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
-  su2double ImposedTemperature,       /*!< \brief Imposed temperature. */
-            ImposedHeatFlux;          /*!< \brief Imposed normal heat flux. */
+  su2double CustomBCTemperature,      /*!< \brief Temperature from customized boundary conditions. */
+            CustomBCHeatFlux;         /*!< \brief Normal heat flux from customized boundary conditions. */
 
 public:
 	
@@ -740,28 +740,28 @@ public:
 	void AddNormal(su2double *val_face_normal);
 
   /*!
-   * \brief Get the value of the imposed temperature at the point.
+   * \brief Get the value of the BC customized temperature at the point.
    * \return Imposed temperature at the point.
    */
-  su2double GetImposedTemperature(void);
+  su2double GetCustomBCTemperature(void);
 
   /*!
-   * \brief Set the value of the imposed temperature at the point.
+   * \brief Set the value of the BC customized temperature at the point.
    * \param[in] val_Temp - Value of the temperature.
    */
-  void SetImposedTemperature(su2double val_Temp);
+  void SetCustomBCTemperature(su2double val_Temp);
 
   /*!
-   * \brief Get the value of the imposed normal heat flux at the point.
+   * \brief Get the value of the BC customized normal heat flux at the point.
    * \return Imposed normal heat flux at the point.
    */
-  su2double GetImposedHeatFlux(void);
+  su2double GetCustomBCHeatFlux(void);
 
   /*!
-   * \brief Set the value of the imposed normal heat flux at the point.
+   * \brief Set the value of the BC customized normal heat flux at the point.
    * \param[in] val_HeatFlux - Value of the normal heat flux.
    */
-  void SetImposedHeatFlux(su2double val_HeatFlux);
+  void SetCustomBCHeatFlux(su2double val_HeatFlux);
 
   /*!
    * \brief Set the adjoint values of the coordinates.
