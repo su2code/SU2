@@ -1182,12 +1182,8 @@ void CFEAIteration::Iterate(COutput *output,
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
 
   su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
-  su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
 
   bool write_output = true;
-
-//  bool statTime = (CurrentTime < Static_Time);
-  bool statTime = (CurrentTime <= Static_Time);
 
   bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
 
@@ -1216,7 +1212,7 @@ void CFEAIteration::Iterate(COutput *output,
 
   }
   /*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
-  else if ((nonlinear) && ((!statTime) || (!fsi))) {
+  else if (nonlinear) {
 
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
@@ -1422,16 +1418,6 @@ void CFEAIteration::Iterate(COutput *output,
 
     }
 
-
-  }
-  else if (
-      (nonlinear && statTime) &&
-      ((first_iter && initial_calc) || (restart && initial_calc_restart))
-  ) {
-
-    /*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
-    solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
-        config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
 
   }
 

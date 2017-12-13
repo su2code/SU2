@@ -879,11 +879,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   unsigned long nPointDomain, nDim;
   su2double *dispPred, *dispPred_Old;
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
-  su2double Static_Time=fea_config->GetStatic_Time();
   su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
-  
-//  bool stat_time = (CurrentTime < Static_Time);
-  bool stat_time = (CurrentTime <= Static_Time);
   
   magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
   logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
@@ -893,13 +889,13 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
   /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
   
-  if ((CurrentTime > Static_Time) && (iFSIIter == 0)) {
+  if (iFSIIter == 0) {
     /*--- Set the convergence values to 0.0 --*/
     fea_solver->SetFSI_ConvValue(0,0.0);
     fea_solver->SetFSI_ConvValue(1,0.0);
     
   }
-  else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
+  else if (iFSIIter > 0) {
     
     // We loop only over the points that belong to the processor
     nPointDomain = fea_geometry->GetnPointDomain();
@@ -1012,25 +1008,20 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     fea_solver->SetRelaxCoeff(WAitken);
 
     cout.precision(6);
-    if (stat_time) {
-      cout << endl <<" The structure is being held static. No convergence is checked.";
-    }
-    else {
-      if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
-      else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
-      else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
+    if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
+    else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+    else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
       
-      cout.width(8); cout << iFSIIter;
-      cout.width(15); cout << iExtIter;
-      cout.width(15); cout << WAitken;
-      cout.width(15);
-      if (iFSIIter == 0) cout << " ";
-      else if (iFSIIter == 1) cout << logResidualFSI_initial;
-      else cout << logResidualFSI;
-      cout.width(15);
-      if (iFSIIter < 2) cout << " ";
-      else cout << magResidualFSI;
-    }
+    cout.width(8); cout << iFSIIter;
+    cout.width(15); cout << iExtIter;
+    cout.width(15); cout << WAitken;
+    cout.width(15);
+    if (iFSIIter == 0) cout << " ";
+    else if (iFSIIter == 1) cout << logResidualFSI_initial;
+    else cout << logResidualFSI;
+    cout.width(15);
+    if (iFSIIter < 2) cout << " ";
+    else cout << magResidualFSI;
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl;
     cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";

@@ -3330,20 +3330,27 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   bool Sine_Load = config->GetSine_Load();
   bool Ramp_And_Release = config->GetRampAndRelease_Load();
 
-  su2double StaticTime = config->GetStatic_Time();
-
   su2double SineAmp = 0.0, SineFreq = 0.0, SinePhase = 0.0;
 
   su2double TransferTime = 1.0;
 
+  bool restart = config->GetRestart(); // Restart analysis
+  bool fsi = config->GetFSI_Simulation();  // FSI simulation.
+  bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
+
+  /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
+  bool offset = (restart && fsi && (!stat_fsi));
+  su2double DeltaT = config->GetDelta_DynTime();
+  su2double OffsetTime = 0.0;
+  OffsetTime = DeltaT * (config->GetDyn_RestartIter()-1);
+
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
 
-  if (CurrentTime < StaticTime){
-    LoadCoeff = 0.0;
-  }
-  else if ((Ramp_Load) && (RampTime > 0.0)){
+  if ((Ramp_Load) && (RampTime > 0.0)){
 
-    TransferTime = (CurrentTime - StaticTime) / RampTime;
+    TransferTime = CurrentTime / RampTime;
+
+    if (offset) TransferTime = (CurrentTime - OffsetTime) / RampTime;
 
     switch (config->GetDynamic_LoadTransfer()) {
     case INSTANTANEOUS:
@@ -3383,7 +3390,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   }
 
   /*--- Add possibility to release the load after the ramp---*/
-  if ((Ramp_And_Release) && (CurrentTime > (StaticTime + RampTime))){
+  if ((Ramp_And_Release) && (CurrentTime >  RampTime)){
     LoadCoeff = 0.0;
   }
 
@@ -4109,7 +4116,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   su2double deltaU[3] = {0.0, 0.0, 0.0}, deltaU_p1[3] = {0.0, 0.0, 0.0};
   su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
-  su2double Static_Time=fea_config->GetStatic_Time();
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
   
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
@@ -4131,7 +4137,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
   
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
   
-  if (CurrentTime > Static_Time) {
     
     if (RelaxMethod_FSI == NO_RELAXATION) {
       
@@ -4238,8 +4243,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
     else {
       if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
     }
-    
-  }
   
   if (writeHistFSI && (rank == MASTER_NODE)) {historyFile_FSI.close();}
   
@@ -4253,13 +4256,10 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
   su2double *dispPred, *dispCalc;
   su2double WAitken;
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
-  su2double Static_Time=fea_config->GetStatic_Time();
   
   RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
   
   /*--- Only when there is movement it makes sense to update the solutions... ---*/
-  
-  if (CurrentTime > Static_Time) {
     
     if (RelaxMethod_FSI == NO_RELAXATION) {
       WAitken = 1.0;
@@ -4294,7 +4294,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
       
     }
     
-  }
   
 }
 

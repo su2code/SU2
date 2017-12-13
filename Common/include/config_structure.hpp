@@ -881,7 +881,6 @@ private:
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
-  su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
@@ -7703,12 +7702,6 @@ public:
     * \return  Penalty weight value for the reference geometry objective function.
     */
    su2double GetTotalDV_Penalty(void);
-  
-  /*!
-   * \brief Get the maximum time of the ramp.
-   * \return 	Value of the max time while the load is linearly increased
-   */
-  su2double GetStatic_Time(void);
   
   /*!
    * \brief Get the order of the predictor for FSI applications.
