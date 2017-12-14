@@ -388,7 +388,7 @@ int rank = 0;
     
     /*---  System is already solved ---*/
     
-    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    //if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     return 0;
   }
   

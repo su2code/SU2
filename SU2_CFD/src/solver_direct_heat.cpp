@@ -280,7 +280,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   ifstream restart_file;
 
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[iZone]->GetnZone();
+  unsigned short nZone = config->GetnZone();
 
   string restart_filename = config->GetSolution_FlowFileName();
 

@@ -969,9 +969,9 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
 
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; break;
+    case EULER : euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc(); break;
+    case RANS : ns = true; turbulent = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1014,9 +1014,6 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     }
     if (wave) {
       no_restart = true;
-    }
-    if (heat) {
-      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
