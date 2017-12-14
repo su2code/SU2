@@ -4300,32 +4300,6 @@ void CFluidDriver::BoundaryConditionsUpdate(){
   }
 }
 
-void CFluidDriver::MGUpdateBoundaryConditions_HeatFlux(unsigned short val_marker){
-
-  unsigned short iMGfine, iMGlevel, nMGlevel;
-
-  for(iZone = 0; iZone < nZone; iZone++){
-    nMGlevel = config_container[iZone]->GetnMGLevels();
-    for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
-      iMGfine = iMGlevel-1;
-      geometry_container[iZone][iMGlevel]->SetWallHeatFlux(geometry_container[iZone][iMGfine], val_marker);
-    }
-  }
-}
-
-void CFluidDriver::MGUpdateBoundaryConditions_Temperature(unsigned short val_marker){
-
-  unsigned short iMGfine, iMGlevel, nMGlevel;
-
-  for(iZone = 0; iZone < nZone; iZone++){
-    nMGlevel = config_container[iZone]->GetnMGLevels();
-    for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
-      iMGfine = iMGlevel-1;
-      geometry_container[iZone][iMGlevel]->SetWallTemperature(geometry_container[iZone][iMGfine], val_marker);
-    }
-  }
-}
-
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
     unsigned short val_nZone,
     unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
