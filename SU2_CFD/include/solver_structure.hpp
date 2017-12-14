@@ -827,17 +827,6 @@ public:
    */
   virtual void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] solver - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  virtual void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                           unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -3106,23 +3095,41 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_forcecoeff_history - Value of the force coefficient.
    */
-  virtual void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
-                           CGeometry **flow_geometry, CConfig *fea_config,
-                           CConfig *flow_config, CNumerics *fea_numerics);
-  
+  virtual void SetForceCoeff(su2double val_forcecoeff_history);
+
   /*!
    * \brief A virtual member.
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
+   * \param[in] val_relaxcoeff_history - Value of the force coefficient.
    */
-  virtual void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry,
-                               CGeometry **flow_geometry, CConfig *fea_config,
-                               CConfig *flow_config, CNumerics *fea_numerics);
+  virtual void SetRelaxCoeff(su2double val_relaxcoeff_history);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_FSI_residual - Value of the residual.
+   */
+  virtual void SetFSI_Residual(su2double val_FSI_residual);
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_forcecoeff_history - Value of the force coefficient.
+   */
+  virtual su2double GetForceCoeff();
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_relaxcoeff_history - Value of the relax coefficient.
+   */
+  virtual su2double GetRelaxCoeff();
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_FSI_residual - Value of the residual.
+   */
+  virtual su2double GetFSI_Residual();
   
   /*!
    * \brief A virtual member.
@@ -3527,6 +3534,14 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] CurrentTime - Current time step.
+   * \param[in] RampTime - Time for application of the ramp.*
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
@@ -3645,6 +3660,12 @@ public:
    */
   virtual void SetLoad_Increment(su2double val_loadIncrement);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] Value of the load increment for nonlinear structural analysis
+   */
+  virtual su2double GetLoad_Increment(void);
+
   /*!
    * \brief A virtual member.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -6062,6 +6083,18 @@ public:
                                 CGeometry **fea_geometry, CSolver ***fea_solution);
   
   /*!
+   * \brief Set the value of the max residual and RMS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -7660,6 +7693,18 @@ public:
   void SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                                 CGeometry **fea_geometry, CSolver ***fea_solution);
   
+  /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11143,13 +11188,13 @@ public:
   
 };
 
-/*! \class CFEM_ElasticitySolver
+/*! \class CFEASolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.
  *  \author R. Sanchez.
  *  \version 5.0.0 "Raven"
  *  \date July 10, 2015.
  */
-class CFEM_ElasticitySolver : public CSolver {
+class CFEASolver : public CSolver {
 private:
   
   su2double  Total_CFEA;        /*!< \brief Total FEA coefficient for all the boundaries. */
@@ -11215,6 +11260,10 @@ private:
 
   su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
   
+  su2double ForceCoeff;             /*!< \brief Load transfer coefficient . */
+  su2double RelaxCoeff;             /*!< \brief Relaxation coefficient . */
+  su2double FSI_Residual;           /*!< \brief FSI residual. */
+
 public:
   
   CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
@@ -11233,19 +11282,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEM_ElasticitySolver(void);
+  CFEASolver(void);
   
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config);
+  CFEASolver(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_ElasticitySolver(void);
+  virtual ~CFEASolver(void);
   
   /*!
    * \brief Impose the send-receive boundary condition.
@@ -11499,17 +11548,6 @@ public:
 
   
   /*!
-   * \brief Impose a load boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                   unsigned short val_marker);
-  
-  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -11641,20 +11679,43 @@ public:
   void SetTotal_OFRefNode(su2double val_ofrefnode);
 
   /*!
-   * \brief Set the the tractions in the in the FEA solver (matching mesh).
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
+   * \brief Set the value of the force coefficient history for the history file.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_forcecoeff_history - Value of the force coefficient.
    */
-  void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
-  
+  void SetForceCoeff(su2double val_forcecoeff_history);
+
   /*!
-   * \brief Set the the tractions in the in the FEA solver (non-matching mesh).
-   * \param[in] fea_geometry - Geometrical definition of the problem.
-   * \param[in] flow_solution - Container vector with all the solutions.
-   * \param[in] fea_config - Definition of the particular problem.
+   * \brief Set the value of the FSI residual for the history file.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_FSI_residual - Value of the residual.
    */
-  void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
+  void SetFSI_Residual(su2double val_FSI_residual);
+
+  /*!
+   * \brief Set the value of the FSI residual for the history file.
+   * \param[in] iBGS - Number of BGS iteration.
+   * \param[in] val_FSI_residual - Value of the residual.
+   */
+  void SetRelaxCoeff(su2double val_relaxcoeff_history);
+
+  /*!
+   * \brief Get the value of the force coefficient history for the history file.
+   * \param[out] val_forcecoeff_history - Value of the force coefficient.
+   */
+  su2double GetForceCoeff(void);
+
+  /*!
+   * \brief Get the value of the relaxation coefficient history for the history file.
+   * \param[out] val_relaxcoeff_history - Value of the relaxation coefficient.
+   */
+  su2double GetRelaxCoeff(void);
+
+  /*!
+   * \brief Get the value of the FSI residual for the history file.
+   * \param[out] val_FSI_residual - Value of the residual.
+   */
+  su2double GetFSI_Residual(void);
   
   /*!
    * \brief Predictor for structural displacements based on previous iterations
@@ -11767,6 +11828,12 @@ public:
   void SetLoad_Increment(su2double val_loadIncrement);
   
   /*!
+   * \brief Get the value of the load increment for nonlinear structural analysis
+   * \param[in] Value of the coefficient
+   */
+  su2double GetLoad_Increment(void);
+
+  /*!
    * \brief Set a reference geometry for prestretched conditions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -11790,6 +11857,18 @@ public:
   su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
   
   /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -11805,6 +11884,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Get multiplier for loads.
+   * \param[in] CurrentTime - Current time step.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
 
 };
 

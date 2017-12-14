@@ -1141,10 +1141,10 @@ void CPoissonIteration::Postprocess(COutput *output,
                         unsigned short val_iZone) { }
 
 
-CFEM_StructuralAnalysis::CFEM_StructuralAnalysis(CConfig *config) : CIteration(config) { }
-CFEM_StructuralAnalysis::~CFEM_StructuralAnalysis(void) { }
-void CFEM_StructuralAnalysis::Preprocess() { }
-void CFEM_StructuralAnalysis::Iterate(COutput *output,
+CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
+CFEAIteration::~CFEAIteration(void) { }
+void CFEAIteration::Preprocess() { }
+void CFEAIteration::Iterate(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
                                 CSolver ****solver_container,
@@ -1182,11 +1182,12 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
 
   su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
-  su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
 
-  bool statTime = (CurrentTime <= Static_Time);
+  bool write_output = true;
 
   bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
+
+  ofstream ConvHist_file;
 
   /*--- This is to prevent problems when running a linear solver ---*/
   if (!nonlinear) incremental_load = false;
@@ -1211,7 +1212,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
   }
   /*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
-  else if ((nonlinear) && ((!statTime) || (!fsi))) {
+  else if (nonlinear) {
 
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
@@ -1224,6 +1225,10 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
       /*--- FEA equations ---*/
 
       config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+      /*--- Write the convergence history headers ---*/
+
+      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
       /*--- Run the iteration ---*/
 
@@ -1238,9 +1243,10 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
         /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
         if (disc_adj_fem) break;
 
-        /*--- Write the convergence history (only screen output) ---*/
-
-        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+        /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+        solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+        write_output = output->PrintOutput(IntIter-1, config_container[val_iZone]->GetWrt_Con_Freq_DualTime());
+        if (write_output) output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
         config_container[val_iZone]->SetIntIter(IntIter);
 
@@ -1262,6 +1268,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
       /*--- The load increment is 1.0 ---*/
       loadIncrement = 1.0;
       solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+      solver_container[val_iZone][MESH_0][FEA_SOL]->SetForceCoeff(loadIncrement);
 
       /*--- Set the value of the internal iteration ---*/
 
@@ -1271,15 +1278,19 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
       config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
+      /*--- Write the convergence history headers ---*/
+
+      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
+
       /*--- Run the first iteration ---*/
 
       integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
           config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
 
-      /*--- Write the convergence history (only screen output) ---*/
-
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+      /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+      solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
       /*--- Run the second iteration ---*/
 
@@ -1289,6 +1300,10 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
       integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
           config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+
+      /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+      solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
 
       bool meetCriteria;
@@ -1312,9 +1327,9 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
         for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
-          /*--- Write the convergence history (only screen output) ---*/
-
-          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+          solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+          output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
           config_container[val_iZone]->SetIntIter(IntIter);
 
@@ -1346,7 +1361,6 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
           /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
           integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
-          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
           /*--- FEA equations ---*/
 
@@ -1357,7 +1371,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
           if (rank == MASTER_NODE) {
             cout << endl;
-            cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
+            cout << "-- Incremental load: increment " << iIncrement + 1 << " ----------------------------------------" << endl;
           }
 
           /*--- Set the value of the internal iteration ---*/
@@ -1378,9 +1392,9 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
           for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
-            /*--- Write the convergence history (only screen output) ---*/
-
-            output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+            /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+            solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+            output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
             config_container[val_iZone]->SetIntIter(IntIter);
 
@@ -1391,22 +1405,19 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
           }
 
+          /*--- Write history for intermediate steps ---*/
+          if (iIncrement < nIncrements - 1){
+            /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+            solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+            output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
+          }
+
         }
 
       }
 
     }
 
-
-  }
-  else if (
-      (nonlinear && statTime) &&
-      ((first_iter && initial_calc) || (restart && initial_calc_restart))
-  ) {
-
-    /*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
-    solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
-        config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
 
   }
 
@@ -1432,7 +1443,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 }
 
-void CFEM_StructuralAnalysis::Update(COutput *output,
+void CFEAIteration::Update(COutput *output,
        CIntegration ***integration_container,
        CGeometry ***geometry_container,
        CSolver ****solver_container,
@@ -1478,9 +1489,9 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
   }
 
 }
-void CFEM_StructuralAnalysis::Monitor()     { }
-void CFEM_StructuralAnalysis::Output()      { }
-void CFEM_StructuralAnalysis::Postprocess(COutput *output,
+void CFEAIteration::Monitor()     { }
+void CFEAIteration::Output()      { }
+void CFEAIteration::Postprocess(COutput *output,
                                           CIntegration ***integration_container,
                                           CGeometry ***geometry_container,
                                           CSolver ****solver_container,
@@ -2150,7 +2161,7 @@ void CDiscAdjFluidIteration::Postprocess(COutput *output,
 
 CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
 
-  fem_iteration = new CFEM_StructuralAnalysis(config);
+  fem_iteration = new CFEAIteration(config);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2826,278 +2837,4 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
         config_container[val_iZone], iMarker);
     break;
   }
-}
-
-void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                                 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                                 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-
-  su2double Physical_dt, Physical_t;
-  su2double loadIncrement;
-  unsigned short iZone;
-  unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-    unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-
-    unsigned long iIncrement;
-    unsigned long nIncrements = config_container[ZONE_0]->GetNumberIncrements();
-
-  bool dynamic = (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC);          // Dynamic problems
-  bool nonlinear = (config_container[ZONE_0]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
-
-  bool incremental_load = config_container[ZONE_0]->GetIncrementalLoad();              // If an incremental load is applied
-
-  /*--- This is to prevent problems when running a linear solver ---*/
-  if (!nonlinear) incremental_load = false;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-
-  /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
-
-  if (!incremental_load) {
-
-    /*--- Set the initial condition ---*/
-
-//    for (iZone = 0; iZone < nZone; iZone++)
-//      solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      /*--- Set the value of the internal iteration ---*/
-
-      IntIter = ExtIter;
-      if (nonlinear) IntIter = 0;
-
-      /*--- FEA equations ---*/
-
-      config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-      /*--- Run the iteration ---*/
-
-      integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                                                      config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-
-
-    }
-
-    /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
-
-    if (nonlinear) {
-      for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
-
-        for (iZone = 0; iZone < nZone; iZone++) {
-
-          /*--- Write the convergence history (only screen output) ---*/
-
-          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
-
-          config_container[iZone]->SetIntIter(IntIter);
-
-          integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                                                          config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-        }
-
-        if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
-
-      }
-
-    }
-
-  }
-  /*--- The incremental load is only used in nonlinear cases ---*/
-  else if (incremental_load) {
-
-    /*--- Set the initial condition: store the current solution as Solution_Old ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++)
-      solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-        /*--- The load increment is 1.0 ---*/
-        loadIncrement = 1.0;
-        solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-
-        /*--- Set the value of the internal iteration ---*/
-
-        IntIter = 0;
-
-        /*--- FEA equations ---*/
-
-        config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-        /*--- Run the first iteration ---*/
-
-        integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                                                        config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-
-        /*--- Write the convergence history (only screen output) ---*/
-
-        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
-
-        /*--- Run the second iteration ---*/
-
-        IntIter = 1;
-
-        config_container[iZone]->SetIntIter(IntIter);
-
-        integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                                                        config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-    }
-
-    bool meetCriteria;
-    su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-    su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
-
-    Criteria_UTOL = config_container[ZONE_0]->GetIncLoad_Criteria(0);
-    Criteria_RTOL = config_container[ZONE_0]->GetIncLoad_Criteria(1);
-    Criteria_ETOL = config_container[ZONE_0]->GetIncLoad_Criteria(2);
-
-    Residual_UTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(0));
-    Residual_RTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(1));
-    Residual_ETOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(2));
-
-    meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-               ( Residual_RTOL <  Criteria_RTOL ) &&
-             ( Residual_ETOL <  Criteria_ETOL ) );
-
-    /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-    if (meetCriteria) {
-
-      for (IntIter = 2; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
-
-        for (iZone = 0; iZone < nZone; iZone++) {
-
-        /*--- Write the convergence history (only screen output) ---*/
-
-        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
-
-        config_container[iZone]->SetIntIter(IntIter);
-
-        integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                        config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-        }
-
-        if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
-
-      }
-
-    }
-
-    /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
-
-    else {
-
-      /*--- Here we have to restart the solution to the original one of the iteration ---*/
-      /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
-
-      for (iZone = 0; iZone < nZone; iZone++)
-        solver_container[iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-
-      /*--- For the number of increments ---*/
-      for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
-
-        loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
-
-        /*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
-
-        for (iZone = 0; iZone < nZone; iZone++) {
-
-          /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
-          integration_container[iZone][FEA_SOL]->SetConvergence(false);
-
-          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
-
-          /*--- FEA equations ---*/
-
-          config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-
-          solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-        }
-
-        if (rank == MASTER_NODE) {
-          cout << endl;
-          cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
-        }
-
-        for (iZone = 0; iZone < nZone; iZone++) {
-
-          /*--- Set the value of the internal iteration ---*/
-          IntIter = 0;
-          config_container[iZone]->SetIntIter(IntIter);
-
-          /*--- FEA equations ---*/
-
-          config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-          /*--- Run the iteration ---*/
-
-          integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                                                          config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-
-
-        }
-
-        /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
-
-        for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
-
-          for (iZone = 0; iZone < nZone; iZone++) {
-
-            /*--- Write the convergence history (only screen output) ---*/
-
-            output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
-
-            config_container[iZone]->SetIntIter(IntIter);
-
-            integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-                                                                              config_container, RUNTIME_FEA_SYS, IntIter, iZone);
-
-          }
-
-          if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
-
-        }
-
-      }
-
-    }
-
-  }
-
-
-
-  /*----------------- Compute averaged nodal stress and reactions ------------------------*/
-
-  for (iZone = 0; iZone < nZone; iZone++)
-    solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL], config_container[iZone]);
-
-  /*----------------- Update structural solver ----------------------*/
-
-  if (dynamic) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
-      integration_container[iZone][FEA_SOL]->SetConvergence(false);
-    }
-
-      /*--- Verify convergence criteria (based on total time) ---*/
-
-    Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
-    Physical_t  = (ExtIter+1)*Physical_dt;
-    if (Physical_t >=  config_container[ZONE_0]->GetTotal_DynTime())
-      integration_container[ZONE_0][FEA_SOL]->SetConvergence(true);
-  }
-
-
 }
