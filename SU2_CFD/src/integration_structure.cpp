@@ -161,9 +161,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case LOAD_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case PRESSURE_BOUNDARY:
-        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
@@ -275,9 +272,6 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case LOAD_BOUNDARY:
           solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-          break;
-        case PRESSURE_BOUNDARY:
-          solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
           break;
         case DAMPER_BOUNDARY:
           solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
@@ -885,39 +879,23 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   unsigned long nPointDomain, nDim;
   su2double *dispPred, *dispPred_Old;
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
-  su2double Static_Time=fea_config->GetStatic_Time();
   su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
-  
-  bool stat_time = (CurrentTime <= Static_Time);
   
   magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
   logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
   
   deltaURes = 0.0;
   
-  ofstream historyFile_FSI;
-  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-  if (writeHistFSI && (rank == MASTER_NODE)) {
-    char cstrFSI[200];
-    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
-    strcpy (cstrFSI, filenameHistFSI.data());
-    historyFile_FSI.open (cstrFSI, std::ios_base::app);
-  }
-  
   /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
   /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
   
-  if ((CurrentTime > Static_Time) && (iFSIIter == 0)) {
+  if (iFSIIter == 0) {
     /*--- Set the convergence values to 0.0 --*/
     fea_solver->SetFSI_ConvValue(0,0.0);
     fea_solver->SetFSI_ConvValue(1,0.0);
     
-    if (writeHistFSI && (rank == MASTER_NODE)) {
-      historyFile_FSI << endl;
-    }
-    
   }
-  else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
+  else if (iFSIIter > 0) {
     
     // We loop only over the points that belong to the processor
     nPointDomain = fea_geometry->GetnPointDomain();
@@ -952,17 +930,16 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 #else
     deltaURes_recv         = deltaURes;
 #endif
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
-    
+
+    /*--- Store the FSI residual ---*/
+    fea_solver->SetFSI_Residual(deltaURes_recv);
+
     if (iFSIIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
       logResidualFSI_initial = log10(deltaURes_recv);
       
       if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
-      
-      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
-      
+
     }
     else {
       fea_solver->SetFSI_ConvValue(1,deltaURes_recv);
@@ -972,20 +949,11 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       magResidualFSI=logResidualFSI-logResidualFSI_initial;
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
-      }
-      
       if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
     }
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl;}
-    
+
   }
-  
-  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close();}
-  
+    
   /*--- Apply the same convergence criteria to all the processors ---*/
   
 #ifdef HAVE_MPI
@@ -1036,31 +1004,28 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       cout << "No relaxation parameter used. " << endl;
     }
     
-    cout << endl;
-    cout.setf(ios::fixed, ios::floatfield);
-    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
+    /*--- Store the Relaxation coefficient residual ---*/
+    fea_solver->SetRelaxCoeff(WAitken);
+
     cout.precision(6);
-    cout << endl <<"---------------------- FSI Convergence Summary -------------------------- ";
-    if (stat_time) {
-      cout << endl <<" The structure is being held static. No convergence is checked.";
-    }
-    else {
-      if (iFSIIter == 0) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" <<  endl;
-      else if (iFSIIter == 1) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
-      else cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
+    if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
+    else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+    else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
       
-      cout.width(8); cout << iFSIIter;
-      cout.width(8); cout << iExtIter;
-      cout.width(15); cout << WAitken;
-      cout.width(15);
-      if (iFSIIter == 0) cout << " ";
-      else if (iFSIIter == 1) cout << logResidualFSI_initial;
-      else cout << logResidualFSI;
-      cout.width(15);
-      if (iFSIIter < 2) cout << " ";
-      else cout << magResidualFSI;
-    }
-    
+    cout.width(8); cout << iFSIIter;
+    cout.width(15); cout << iExtIter;
+    cout.width(15); cout << WAitken;
+    cout.width(15);
+    if (iFSIIter == 0) cout << " ";
+    else if (iFSIIter == 1) cout << logResidualFSI_initial;
+    else cout << logResidualFSI;
+    cout.width(15);
+    if (iFSIIter < 2) cout << " ";
+    else cout << magResidualFSI;
+    cout.setf(ios::fixed, ios::floatfield);
+    cout << endl;
+    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
+    cout << endl;
     cout << endl << "------------------------------------------------------------------------- ";
     cout << endl;
   }

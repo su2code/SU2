@@ -74,12 +74,6 @@ inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned lo
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
                                      unsigned short iMesh, unsigned short RunTime_EqSystem) { }
                                      
-inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
-
-inline void CSolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
-
-//inline void CSolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
 inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
@@ -103,6 +97,18 @@ inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fe
 inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+inline void CSolver::SetForceCoeff(su2double val_forcecoeff_history) { }
+
+inline void CSolver::SetFSI_Residual(su2double val_FSI_residual) { }
+
+inline void CSolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { }
+
+inline su2double CSolver::GetRelaxCoeff(void) { return 0.0; }
+
+inline su2double CSolver::GetForceCoeff(void) { return 0.0; }
+
+inline su2double CSolver::GetFSI_Residual(void) { return 0.0; }
 
 inline void CSolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config) { }
 
@@ -444,6 +450,8 @@ inline void CSolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
 
 inline void CSolver::SetLoad_Increment(su2double val_loadIncrement) {  }
 
+inline su2double CSolver::GetLoad_Increment() { return 0; }
+
 inline void CSolver::SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
 inline su2double CSolver::GetTotal_CWave() { return 0; }
@@ -674,9 +682,6 @@ inline void CSolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_containe
                    
 inline void CSolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
                                      unsigned short val_marker) { }             									 							 
-                   
-inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                   unsigned short val_marker) { }
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
@@ -934,6 +939,8 @@ inline void CSolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config)
 inline void CSolver::Set_Prestretch(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
+
+inline su2double CSolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config) { return 0.0; }
                       
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
@@ -1945,40 +1952,54 @@ inline su2double CAdjIncEulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
 
 inline su2double CAdjIncEulerSolver::GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
 
-inline su2double CFEM_ElasticitySolver::Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ 
+inline su2double CFEASolver::Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ 
   return MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar); }
 
-inline unsigned short CFEM_ElasticitySolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
+inline unsigned short CFEASolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
 
-inline su2double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
+inline su2double CFEASolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
-inline su2double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }
+inline su2double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
 
-inline void CFEM_ElasticitySolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
+inline void CFEASolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
 
-inline void CFEM_ElasticitySolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { Total_OFRefGeom = val_ofrefgeom; }
+inline void CFEASolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { Total_OFRefGeom = val_ofrefgeom; }
 
-inline void CFEM_ElasticitySolver::SetTotal_OFRefNode(su2double val_ofrefnode) { Total_OFRefNode = val_ofrefnode; }
+inline void CFEASolver::SetTotal_OFRefNode(su2double val_ofrefnode) { Total_OFRefNode = val_ofrefnode; }
 
-inline su2double CFEM_ElasticitySolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
+inline su2double CFEASolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
 
-inline su2double CFEM_ElasticitySolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
+inline su2double CFEASolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
 
-inline void CFEM_ElasticitySolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
+inline void CFEASolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
 
-inline void CFEM_ElasticitySolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
+inline void CFEASolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
 
-inline void CFEM_ElasticitySolver::SetLoad_Increment(su2double val_loadIncrement) { loadIncrement = val_loadIncrement; }
+inline void CFEASolver::SetLoad_Increment(su2double val_loadIncrement) { loadIncrement = val_loadIncrement; }
 
-inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
+inline su2double CFEASolver::GetLoad_Increment(void) { return loadIncrement; }
 
-inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
 
-inline su2double CFEM_ElasticitySolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
+inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
 
-inline su2double CFEM_ElasticitySolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
+inline su2double CFEASolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
 
-inline bool CFEM_ElasticitySolver::IsElementBased(void){ return element_based; }
+inline su2double CFEASolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
+
+inline bool CFEASolver::IsElementBased(void){ return element_based; }
+
+inline void CFEASolver::SetForceCoeff(su2double val_forcecoeff_history) { ForceCoeff = val_forcecoeff_history; }
+
+inline void CFEASolver::SetRelaxCoeff(su2double val_relaxecoeff_history) { RelaxCoeff = val_relaxecoeff_history; }
+
+inline void CFEASolver::SetFSI_Residual(su2double val_FSI_residual) { FSI_Residual = val_FSI_residual; }
+
+inline su2double CFEASolver::GetForceCoeff(void) { return ForceCoeff; }
+
+inline su2double CFEASolver::GetRelaxCoeff(void) { return RelaxCoeff; }
+
+inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
 
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 

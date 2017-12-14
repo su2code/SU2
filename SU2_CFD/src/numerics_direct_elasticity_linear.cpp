@@ -34,8 +34,8 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_Elasticity(val_nDim, val_nVar, config) {
+CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
+                                   CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
   unsigned short iVar;
 
@@ -61,11 +61,11 @@ CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned s
 
 }
 
-CFEM_LinearElasticity::~CFEM_LinearElasticity(void) {
+CFEALinearElasticity::~CFEALinearElasticity(void) {
 
 }
 
-void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
+void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -187,7 +187,7 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 }
 
 
-void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void) {
+void CFEALinearElasticity::Compute_Constitutive_Matrix(void) {
 
      /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
@@ -223,7 +223,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void) {
 
 }
 
-void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
+void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;

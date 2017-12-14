@@ -4334,6 +4334,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
+  bool incload = config->GetIncrementalLoad();
+
   bool thermal = false; /* Flag for whether to print heat flux values */
 
   if (config->GetKind_Solver() == RANS or config->GetKind_Solver()  == NAVIER_STOKES) {
@@ -4379,7 +4381,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char engine_coeff[]= ",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char wave_coeff[]= ",\"CWave\"";
-  char fem_coeff[]= ",\"VM_Stress\"";
+  char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
+  char fem_incload[]= ",\"IncLoad\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   char adj_turbo_coeff[]=",\"Sens_Geo\",\"Sens_PressOut\",\"Sens_TotTempIn\"";
   char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Avg_TotalTemp\",\"Avg_TotalPress\"";
@@ -4452,6 +4455,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   /*--- End of the header ---*/
   
   char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
+  char endfea[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
   
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
       (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
@@ -4512,9 +4516,15 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       
     case FEM_ELASTICITY:
       ConvHist_file[0] << begin << fem_coeff;
-      ConvHist_file[0] << fem_resid << end;
+      if (incload) ConvHist_file[0] << fem_incload;
+      ConvHist_file[0] << fem_resid << endfea;
       break;
       
+    case DISC_ADJ_FEM:
+      ConvHist_file[0] << begin << fem_coeff;
+      ConvHist_file[0] << fem_resid << endfea;
+      break;
+
   }
   
   if (config->GetOutput_FileFormat() == TECPLOT ||
@@ -4538,13 +4548,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
-  bool fluid_structure = (config[val_iZone]->GetFSI_Simulation());
+  bool fluid_structure      = (config[val_iZone]->GetFSI_Simulation());
+  bool fea                  = ((config[val_iZone]->GetKind_Solver()== FEM_ELASTICITY)||(config[val_iZone]->GetKind_Solver()== DISC_ADJ_FEM));
   unsigned long iIntIter    = config[val_iZone]->GetIntIter();
   unsigned long iExtIter    = config[val_iZone]->GetExtIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone      = config[val_iZone]->GetnZone();
   bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
+  bool incload              = config[val_iZone]->GetIncrementalLoad();
   bool output_files         = true;
   int rank;
   
@@ -4562,6 +4574,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       output_files = false;
     }
     
+    if (fea || fluid_structure) output_files = false;
+
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
     if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
@@ -4645,8 +4659,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000],
-    fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
+    begin_fem[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
+    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker_Monitoring;
@@ -4678,10 +4692,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
-            (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
+                (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
     bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
     bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
+    bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
     
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
 
@@ -4703,6 +4718,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0;
+
+    su2double Total_ForceCoeff = 0.0, Total_VMStress = 0.0, Total_IncLoad = 0.0;
+    su2double Total_SensE = 0.0, Total_SensNu = 0.0;
 
     unsigned short iSpan;
 
@@ -5030,8 +5048,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
         
-        Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_VMStress = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
         
+        Total_ForceCoeff = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetForceCoeff();
+
+        Total_IncLoad = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetLoad_Increment();
+
+        LinSolvIter = (unsigned long) solver_container[val_iZone][FinestMesh][FEA_SOL]->GetIterLinSolver();
+
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
         /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
@@ -5099,8 +5123,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool write_heads_FEM;
     if (nonlinear_analysis) write_heads_FEM = (iIntIter == 0);
     else write_heads_FEM = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
-    
-    
+
     if (  (!fem && ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3))) ||
         (fem  && ( (In_NoDynamic || In_Dynamic_0 || In_Dynamic_1) && (In_NoDynamic || In_Dynamic_2 || In_Dynamic_3)))
         ) {
@@ -5321,21 +5344,25 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
           case FEM_ELASTICITY:
             
-            SPRINTF (direct_coeff, ", %12.10f", Total_CFEM);
+            SPRINTF (begin_fem, ", %14.8e", 0.0);
+
+            if (incload) SPRINTF (fem_coeff, ", %14.8e, %14.8e, %14.8e", Total_VMStress, Total_ForceCoeff, Total_IncLoad);
+            else SPRINTF (fem_coeff, ", %14.8e, %14.8e", Total_VMStress, Total_ForceCoeff);
             /*--- FEM residual ---*/
             if (nDim == 2) {
-              if (linear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy, dummy, dummy);
-              if (nonlinear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]), dummy, dummy);
+              if (linear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
+              if (nonlinear_analysis) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
             }
             else {
-              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]), dummy, dummy);
+              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
             }
-            
+            SPRINTF (end_fem, ", %lu, %12.10f\n", LinSolvIter, timeused/60.0);
+
             break;
 
           case DISC_ADJ_FEM:
 
-            SPRINTF (direct_coeff, ", %12.10f", Total_CFEM);
+            SPRINTF (direct_coeff, ", %12.10f", Total_VMStress);
             if (nDim == 2) {
               SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy, dummy, dummy);
             }
@@ -5588,19 +5615,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << endl << " IntIter" << " ExtIter";
 
               if (linear_analysis) {
-                if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "   CFEM(Total)"<<  endl;
-                if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
+                if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "      VMS(Max)"<<  endl;
+                if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "      VMS(Max)"<<  endl;
               }
               else if (nonlinear_analysis) {
                 switch (config[val_iZone]->GetResidual_Criteria_FEM()) {
                   case RESFEM_RELATIVE:
-                    cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                    cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
                     break;
                   case RESFEM_ABSOLUTE:
-                    cout << "    Res[UTOL-A]" << "    Res[RTOL-A]" << "    Res[ETOL-A]"  << "   CFEM(Total)"<<  endl;
+                    cout << "   Res[UTOL-A]" << "   Res[RTOL-A]" << "   Res[ETOL-A]"  << "      VMS(Max)"<<  endl;
                     break;
                   default:
-                    cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                    cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
                     break;
                 }
             }
@@ -5688,6 +5715,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               break;
 
+            case DISC_ADJ_FEM :
+              cout << endl << " IntIter" << " ExtIter";
+
+              if (nDim == 2) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
+              if (nDim == 3) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "    Res[Uz_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
+
+           break;
+
           }
 
         }
@@ -5709,13 +5744,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
         }
         else if (fem) {
-          if (!nonlinear_analysis) {
-            cout.width(5); cout << iExtIter;
-            cout.width(11); cout << timeiter;
+          if (!DualTime_Iteration) {
+            if (!nonlinear_analysis) {
+              cout.width(5); cout << iExtIter;
+              cout.width(11); cout << timeiter;
 
-          } else {
-            cout.width(8); cout << iIntIter;
-            cout.width(8); cout << iExtIter;
+            } else {
+              cout.width(8); cout << iIntIter;
+              cout.width(8); cout << iExtIter;
+            }
+          }
+          else if (discadj_fem){
+              cout.width(8); cout << iIntIter;
+              cout.width(8); cout << iExtIter;
           }
         }
       }
@@ -5924,27 +5965,27 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case FEM_ELASTICITY:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << fem_coeff << fem_resid << end;
-            ConvHist_file[0].flush();
-          }
+            config[val_iZone]->GetHistFile()[0] << begin << fem_coeff << fem_resid << end_fem;
+            config[val_iZone]->GetHistFile()[0].flush();
           
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
           if (linear_analysis) {
-            cout.width(15); cout << log10(residual_fem[0]);
-            cout.width(15); cout << log10(residual_fem[1]);
-            if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
+            cout.width(14); cout << log10(residual_fem[0]);
+            cout.width(14); cout << log10(residual_fem[1]);
+            if (nDim == 3) { cout.width(14); cout << log10(residual_fem[2]); }
           }
           else if (nonlinear_analysis) {
-            cout.width(15); cout << log10(residual_fem[0]);
-            cout.width(15); cout << log10(residual_fem[1]);
-            cout.width(15); cout << log10(residual_fem[2]);
+            cout.width(14); cout << log10(residual_fem[0]);
+            cout.width(14); cout << log10(residual_fem[1]);
+            cout.width(14); cout << log10(residual_fem[2]);
           }
           
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << Total_CFEM;
+          cout.width(14); cout << Total_VMStress;
           cout << endl;
+          }
           break;
           
         case DISC_ADJ_FEM:
@@ -5958,11 +5999,25 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
 
-          cout.precision(4);
-          cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+
+          if (config[val_iZone]->GetnElasticityMod() == 1){
+            cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+            cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+          }
+          else{
+            Total_SensE = 0.0; Total_SensNu = 0.0;
+            for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
+                Total_SensE += solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+                    *solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+                Total_SensNu += solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+                    *solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+            }
+            Total_SensE = sqrt(Total_SensE);
+            Total_SensNu = sqrt(Total_SensNu);
+            cout.width(14); cout << Total_SensE;
+            cout.width(14); cout << Total_SensNu;
+          }
 
           cout << endl;
           break;
@@ -10442,6 +10497,322 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   
   if (output) {
     SurfFlow_file.close();
+  }
+
+}
+
+void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container,
+                                CConfig **config, CIntegration ***integration, unsigned long iExtIter,
+                                unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Output only using the Master Node ---*/
+
+  if ((rank == MASTER_NODE) && (header)){
+
+    char cstr[200], buffer[50], turb_resid[1000];
+    unsigned short iMarker_Monitoring;
+    string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
+
+    bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
+                       (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
+    bool disc_adj = config[ZONE_FLOW]->GetDiscrete_Adjoint();
+
+    unsigned short direct_diff = config[ZONE_FLOW]->GetDirectDiff();
+
+    /*--- Write file name with extension ---*/
+    string filename = config[ZONE_FLOW]->GetConv_FileName_FSI();
+    strcpy (cstr, filename.data());
+
+    if (config[ZONE_FLOW]->GetWrt_Unsteady() && config[ZONE_FLOW]->GetRestart()) {
+      long iExtIter = config[ZONE_FLOW]->GetUnst_RestartIter();
+      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+      strcat(cstr, buffer);
+    }
+
+    if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+    else if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+             (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+    else if (config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".vtk");
+    strcat(cstr, buffer);
+
+    FSIHist_file->open(cstr, ios::out);
+    FSIHist_file->precision(15);
+
+    /*--- Begin of the header ---*/
+
+    char begin[]= "\"ExtIter\",\"BGSIter\"";
+
+    /*--- Header for the coefficients ---*/
+
+    char flow_coeff[]= ",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CL/CD\"";
+    char fem_coeff[]= ",\"VM_Stress\"";
+    char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
+    bool struct_of=false;
+    char of_1[] = ",\"TgtGeom\"";
+    char of_2[] = ",\"TgtNode\"";
+
+    char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
+
+     /*--- Header for the residuals ---*/
+
+    char fsi_resid[]= ",\"Res_FSI\",\"RelaxCoeff\",\"ForceCoeff\"";
+
+    char flow_resid[]= ",\"Res_BGS[F0]\",\"Res_BGS[F1]\",\"Res_BGS[F2]\",\"Res_BGS[F3]\",\"Res_BGS[F4]\"";
+    char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
+    char fem_resid[]= ",\"Res_BGS[S0]\",\"Res_BGS[S1]\",\"Res_BGS[S2]\"";
+
+    /*--- End of the header ---*/
+
+    char end[]= ",\"Time(min)\"\n";
+
+    if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW) ||
+        (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
+        FSIHist_file[0] << "TITLE = \"SU2 FSI Simulation\"" << endl;
+        FSIHist_file[0] << "VARIABLES = ";
+    }
+
+    /*--- Write the header, case depending ---*/
+
+    FSIHist_file[0] << begin;
+
+    FSIHist_file[0] << fsi_resid;
+
+    switch (config[ZONE_FLOW]->GetKind_Solver()) {
+
+      /*--- Flow residual output ---*/
+
+      case EULER : case NAVIER_STOKES: case RANS :
+        FSIHist_file[0] << flow_resid;
+        if (turbulent) FSIHist_file[0] << turb_resid;
+      break;
+
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        FSIHist_file[0] << adj_flow_resid;
+        break;
+
+     }
+
+    /*--- FEA residual output ---*/
+
+     switch (config[ZONE_STRUCT]->GetKind_Solver()) {
+
+       case FEM_ELASTICITY:
+         FSIHist_file[0] << fem_resid;
+         break;
+
+       case DISC_ADJ_FEM:
+         FSIHist_file[0] << fem_resid ;
+         break;
+
+     }
+
+     /*--- Flow coefficients output ---*/
+     switch (config[ZONE_FLOW]->GetKind_Solver()) {
+
+     case EULER : case NAVIER_STOKES: case RANS :
+       FSIHist_file[0] << flow_coeff;
+       if (turbulent) FSIHist_file[0] << turb_resid;
+       if (direct_diff != NO_DERIVATIVE) {
+         FSIHist_file[0] << d_flow_coeff;
+       }
+       break;
+
+       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+         FSIHist_file[0] << adj_flow_resid;
+         break;
+
+      }
+
+      switch (config[ZONE_STRUCT]->GetKind_Solver()) {
+
+        case FEM_ELASTICITY:
+          FSIHist_file[0] << fem_coeff;
+          break;
+
+        case DISC_ADJ_FEM:
+          FSIHist_file[0] << fem_coeff;
+          break;
+
+      }
+
+      switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
+        case REFERENCE_GEOMETRY:
+          FSIHist_file[0] << of_1;
+          break;
+        case REFERENCE_NODE:
+          FSIHist_file[0] << of_2;
+          break;
+        default:
+          break;
+      }
+
+     FSIHist_file[0] << end;
+
+
+  }
+
+  if ((rank == MASTER_NODE) && (!header)){
+
+      unsigned short nDim = geometry[ZONE_STRUCT][MESH_0]->GetnDim();
+
+      unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
+      unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
+      unsigned long iFSIIter = config[ZONE_STRUCT]->GetFSIIter();
+      su2double dummy = 0.0;
+
+      bool first_iter = ((iExtIter==0) && (iFSIIter == 0));
+
+      bool flow = (config[ZONE_FLOW]->GetKind_Solver() == EULER) || (config[ZONE_FLOW]->GetKind_Solver() == NAVIER_STOKES) ||
+      (config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_EULER) ||
+      (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+      bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
+      bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
+      bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
+                        (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
+
+      bool fem = ((config[ZONE_STRUCT]->GetKind_Solver() == FEM_ELASTICITY) ||
+              (config[ZONE_STRUCT]->GetKind_Solver() == DISC_ADJ_FEM));
+      bool linear_analysis = (config[ZONE_STRUCT]->GetGeometricConditions() == SMALL_DEFORMATIONS);
+      bool nonlinear_analysis = (config[ZONE_STRUCT]->GetGeometricConditions() == LARGE_DEFORMATIONS);
+
+      bool disc_adj_flow = config[ZONE_FLOW]->GetDiscrete_Adjoint();
+      bool disc_adj_fem = config[ZONE_STRUCT]->GetDiscrete_Adjoint();
+
+
+      /*--- WARNING: These buffers have hard-coded lengths. Note that you
+       may have to adjust them to be larger if adding more entries. ---*/
+
+      char begin[1000], direct_coeff[1000],
+      fsi_resid[1000], fsi_coeffs[1000],
+      flow_resid[1000], adj_flow_resid[1000],
+      adj_fem_resid[1000], fem_resid[1000],
+      objective_function[1000], end[1000];
+
+      su2double *residual_flow         = NULL;
+      su2double *residual_fem          = NULL;
+      su2double *residual_fsi          = NULL;
+      su2double *coeffs_fsi            = NULL;
+
+      /*--- Initialize number of variables ---*/
+      unsigned short nVar_FSI = 1, nCoeff_FSI = 2, nVar_Flow = 0, nVar_FEM = 0;
+
+      unsigned short iVar;
+
+      /*--- Direct problem variables ---*/
+      if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
+
+      if (fem) {
+        if (linear_analysis) nVar_FEM = nDim;
+        if (nonlinear_analysis) nVar_FEM = 3;
+        if (disc_adj_fem) nVar_FEM = nDim;
+      }
+
+      residual_flow       = new su2double[nVar_Flow];
+      residual_fem        = new su2double[nVar_FEM];
+      residual_fsi        = new su2double[nVar_FSI];
+      coeffs_fsi          = new su2double[nCoeff_FSI];
+
+      /*--- Initialize variables to store information from all domains (direct solution) ---*/
+
+      su2double Total_CL = 0.0, Total_CD = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
+                Total_CFEM = 0.0, Total_OF = 0.0;
+
+      Total_CL       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL();
+      Total_CD       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD();
+      Total_CEff     = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CEff();
+      Total_CMx      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMx();
+      Total_CMy      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMy();
+      Total_CMz      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMz();
+
+      bool print_of = false;
+
+      switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
+        case REFERENCE_GEOMETRY:
+          Total_OF = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
+          print_of = true;
+          break;
+        case REFERENCE_NODE:
+          Total_OF = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
+          print_of = true;
+          break;
+        default:
+          break;
+      }
+
+      if ((!disc_adj_flow) && (!disc_adj_fem)){
+        /*--- Flow Residuals ---*/
+        for (iVar = 0; iVar < nVar_Flow; iVar++)
+          residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_BGS(iVar);
+
+        /*--- FEA Residuals ---*/
+        for (iVar = 0; iVar < nVar_FEM; iVar++)
+          residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_BGS(iVar);
+
+        residual_fsi[0] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetFSI_Residual();
+        coeffs_fsi[0]  = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRelaxCoeff();
+        coeffs_fsi[1]  = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetForceCoeff();
+
+      }
+      else{
+          /*--- Flow Residuals ---*/
+          for (iVar = 0; iVar < nVar_Flow; iVar++)
+            residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iVar);
+          /*--- FEA Residuals ---*/
+          for (iVar = 0; iVar < nVar_FEM; iVar++)
+            residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_BGS(iVar);
+      }
+
+      /*--- Write the begining of the history file ---*/
+      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iFSIIter));
+      /*--- Write the end of the history file ---*/
+      SPRINTF (end, "\n");
+
+      SPRINTF (fsi_resid, ", %14.8e", log10 (residual_fsi[0]));
+      SPRINTF (fsi_coeffs, ", %14.8e,  %14.8e", coeffs_fsi[0], coeffs_fsi[1]);
+
+      /*--- Flow residual ---*/
+      if (nDim == 2) {
+        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
+      }
+      else {
+        if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
+        if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+      }
+
+      /*--- FEM residual ---*/
+      if (nDim == 2) SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy);
+      else SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[1]));
+
+      /*--- Direct coefficients ---*/
+      SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",Total_CL, Total_CD, Total_CMx, Total_CMy, Total_CMz, Total_CEff);
+
+      if (print_of) SPRINTF (objective_function, ", %14.8e", Total_OF);
+
+      if (!first_iter){
+          if (!print_of) FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << end;
+          else FSIHist_file[0] << begin << fsi_resid << fsi_coeffs << flow_resid << fem_resid << direct_coeff << objective_function << end;
+            FSIHist_file[0].flush();
+      }
+
+      delete [] residual_flow;
+      delete [] residual_fem;
+      delete [] residual_fsi;
+      delete [] coeffs_fsi;
+
+
   }
 
 }

@@ -310,7 +310,7 @@ void CConfig::SetPointersNull(void) {
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
-  Marker_SymWall              = NULL;    Marker_Pressure         = NULL;    Marker_PerBound       = NULL;
+  Marker_SymWall              = NULL;    Marker_PerBound       = NULL;
   Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
   Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
@@ -473,6 +473,7 @@ void CConfig::SetPointersNull(void) {
   default_inc_crit           = NULL;
   default_htp_axis           = NULL;
   default_body_force         = NULL;
+  default_sineload_coeff     = NULL;
 
   Riemann_FlowDir       = NULL;
   Giles_FlowDir         = NULL;
@@ -496,6 +497,7 @@ void CConfig::SetPointersNull(void) {
   RampRotatingFrame_Coeff  = NULL;
   RampOutletPressure_Coeff = NULL;
   Kind_TurboMachinery      = NULL;
+  SineLoad_Coeff           = NULL;
 
   Marker_MixingPlaneInterface  = NULL;
   Marker_TurboBoundIn          = NULL;
@@ -505,6 +507,8 @@ void CConfig::SetPointersNull(void) {
 
   nBlades                      = NULL;
   FreeStreamTurboNormal        = NULL;
+
+  ConvHistFile                 = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -561,6 +565,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit           = new su2double[3];
   default_htp_axis           = new su2double[2];
   default_body_force         = new su2double[3];
+  default_sineload_coeff     = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -783,8 +788,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
   /*!\brief MARKER_SYM\n DESCRIPTION: Symmetry boundary condition \ingroup Config*/
   addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
-  /*!\brief MARKER_PRESSURE\n DESCRIPTION: Symmetry boundary condition \ingroup Config*/
-  addStringListOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
   /*!\brief MARKER_NEARFIELD\n DESCRIPTION: Near-Field boundary condition \ingroup Config*/
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /*!\brief MARKER_FLUID_INTERFACE\n DESCRIPTION: Fluid interface boundary marker(s) \ingroup Config*/
@@ -940,8 +943,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_CLAMPED", nMarker_Clamped, Marker_Clamped);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
-  /* DESCRIPTION: Load boundary marker(s) */
-  addStringDoubleListOption("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
+  /* DESCRIPTION: Load boundary marker(s) - uniform pressure in Pa */
+  addStringDoubleListOption("MARKER_PRESSURE", nMarker_Load, Marker_Load, Load_Value);
   /* DESCRIPTION: Load boundary marker(s) */
   addStringDoubleListOption("MARKER_DAMPER", nMarker_Damper, Marker_Damper, Damper_Constant);
   /* DESCRIPTION: Load boundary marker(s)
@@ -953,6 +956,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Sine load boundary marker(s)
    Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
   addInletOption("MARKER_SINE_LOAD", nMarker_Load_Sine, Marker_Load_Sine, Load_Sine_Amplitude, Load_Sine_Frequency, Load_Sine_Dir);
+  /*!\brief SINE_LOAD\n DESCRIPTION: option to apply the load as a sine*/
+  addBoolOption("SINE_LOAD", Sine_Load, false);
+  default_sineload_coeff[0] = 0.0; default_sineload_coeff[1] = 0.0; default_sineload_coeff[2] = 0.0;
+  /*!\brief SINE_LOAD_COEFF \n DESCRIPTION: the 1st coeff is the amplitude, the 2nd is the frequency, 3rd is the phase in radians */
+  addDoubleArrayOption("SINE_LOAD_COEFF", 3, SineLoad_Coeff, default_sineload_coeff);
+  /*!\brief RAMP_AND_RELEASE\n DESCRIPTION: release the load after applying the ramp*/
+  addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
   /* DESCRIPTION: Flow load boundary marker(s) */
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
@@ -1719,9 +1729,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
   addDoubleOption("DYN_TIME", Total_DynTime, 1.0);
   /* DESCRIPTION: Parameter alpha for Newmark scheme (s) */
-  addDoubleOption("NEWMARK_ALPHA", Newmark_alpha, 0.25);
+  addDoubleOption("NEWMARK_BETA", Newmark_beta, 0.25);
   /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
-  addDoubleOption("NEWMARK_DELTA", Newmark_delta, 0.5);
+  addDoubleOption("NEWMARK_GAMMA", Newmark_gamma, 0.5);
   /* DESCRIPTION: Apply the load as a ramp */
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
@@ -1740,9 +1750,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit[0] = 0.0; default_inc_crit[1] = 0.0; default_inc_crit[2] = 0.0;
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
   addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
-
-  /* DESCRIPTION: Time while the structure is static */
-  addDoubleOption("STATIC_TIME", Static_Time, 0.0);
 
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
@@ -2333,6 +2340,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Dynamic_Analysis == STATIC)
 	nExtIter = 1;
   }
+
+  /*--- Initialize the ofstream ConvHistFile. ---*/
+  ofstream ConvHistFile;
 
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
@@ -3505,7 +3515,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
-  iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
+  iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
@@ -3526,7 +3536,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Compute the total number of markers in the config file ---*/
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
@@ -3663,12 +3673,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_SymWall[iMarker_SymWall];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = SYMMETRY_PLANE;
-    iMarker_CfgFile++;
-  }
-
-  for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Pressure[iMarker_Pressure];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = PRESSURE_BOUNDARY;
     iMarker_CfgFile++;
   }
 
@@ -4063,7 +4067,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
-  iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
+  iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
@@ -4073,6 +4077,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
   
+  bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
    the two lines below that use the dt variable. ---*/
@@ -4230,53 +4235,56 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
     else {
-      cout << "No restart solution, use the values at infinity (freestream)." << endl;
+        if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
+        else cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
 
     if (ContinuousAdjoint)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
-    
-    if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
-    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    
-    if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
-    else { cout << "The reference area is " << RefArea;
-      if (SystemMeasurements == US) cout << " in^2." << endl; else cout << " m^2." << endl;
-    }
-    
-    if (SemiSpan == 0.0) cout << "The semi-span will be computed using the max y(3D) value." << endl;
-    else { cout << "The semi-span length area is " << SemiSpan;
+    if (!fea){
+      if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
+      else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+      else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
+      else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
+      
+      if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
+      else { cout << "The reference area is " << RefArea;
+        if (SystemMeasurements == US) cout << " in^2." << endl; else cout << " m^2." << endl;
+      }
+      
+      if (SemiSpan == 0.0) cout << "The semi-span will be computed using the max y(3D) value." << endl;
+      else { cout << "The semi-span length area is " << SemiSpan;
+        if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
+      }
+      
+      cout << "The reference length is " << RefLength;
       if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
-    }
-    
-    cout << "The reference length is " << RefLength;
-    if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
 
-    if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
-      cout << "Surface(s) where the force coefficients are evaluated and \n";
-      cout << "their reference origin for moment computation: \n";
+      if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
+        cout << "Surface(s) where the force coefficients are evaluated and \n";
+        cout << "their reference origin for moment computation: \n";
 
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
-        else {
-        	if (SystemMeasurements == US) cout <<" ft."<< endl;
-        	else cout <<" m."<< endl;
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+          cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
+          if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
+          else {
+          if (SystemMeasurements == US) cout <<" ft."<< endl;
+          else cout <<" m."<< endl;
+          }
+
         }
       }
-    }
-    else {
-      cout << "Reference origin for moment evaluation is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
-      cout << "Surface(s) where the force coefficients are evaluated: ";
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
-        cout << Marker_Monitoring[iMarker_Monitoring];
-        if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
-        else cout <<"."<< endl;
+      else {
+        cout << "Reference origin for moment evaluation is (" << RefOriginMoment_X[0] << ", " << RefOriginMoment_Y[0] << ", " << RefOriginMoment_Z[0] << ")." << endl;
+        cout << "Surface(s) where the force coefficients are evaluated: ";
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+          cout << Marker_Monitoring[iMarker_Monitoring];
+          if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ", ";
+          else cout <<"."<< endl;
+        }
+        cout<< endl;
       }
-      cout<< endl;
     }
     
     if (nMarker_Designing != 0) {
@@ -4575,6 +4583,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case SURFACE_MASSFLOW:             cout << "Mass flow rate objective function." << endl; break;
         case SURFACE_MACH:             cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
+        case REFERENCE_GEOMETRY:        cout << "Target geometry objective function." << endl; break;
+        case REFERENCE_NODE:            cout << "Target node displacement objective function." << endl; break;
       }
 		}
 		else {
@@ -4797,18 +4807,23 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
 
-    switch (Kind_Gradient_Method) {
-      case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
-      case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
-    }
+    if (!fea){
+      switch (Kind_Gradient_Method) {
+        case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
+        case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+      }
 
-    if (Kind_Regime == INCOMPRESSIBLE) {
-      cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
+      if (Kind_Regime == INCOMPRESSIBLE) {
+        cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
+      }
+    }
+    else{
+      cout << "Spatial discretization using the Finite Element Method." << endl;
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
-    if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != DISC_ADJ_FEM)) {
+    if (!fea) {
 		switch (Unsteady_Simulation) {
 		  case NO:
 			cout << "Local time stepping (steady state simulation)." << endl; break;
@@ -4825,7 +4840,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
 			break;
 		}
-    }
+  }
 	else {
 		switch (Dynamic_Analysis) {
 		  case NO:
@@ -4901,7 +4916,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM)) {
+    if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
         case CD_EXPLICIT:
           cout << "Explicit time integration (NOT IMPLEMENTED YET)." << endl;
@@ -4910,7 +4925,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Generalized-alpha method." << endl;
           break;
         case NEWMARK_IMPLICIT:
-          cout << "Euler implicit method for the flow equations." << endl;
+          if (Dynamic_Analysis) cout << "Newmark implicit method for the structural time integration." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
@@ -5022,41 +5037,66 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
-    if (ConvCriteria == CAUCHY) {
-      if (!ContinuousAdjoint && !DiscreteAdjoint)
-        switch (Cauchy_Func_Flow) {
-          case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
-            << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-          case DRAG_COEFFICIENT: cout << "Cauchy criteria for Drag using "
-            << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-        }
+    if (!fea){
 
-      if (ContinuousAdjoint || DiscreteAdjoint)
-        switch (Cauchy_Func_AdjFlow) {
-          case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
-            << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-          case SENS_MACH: cout << "Cauchy criteria for Mach number sensitivity using "
-            << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-        }
+      if (ConvCriteria == CAUCHY) {
+        if (!ContinuousAdjoint && !DiscreteAdjoint)
+          switch (Cauchy_Func_Flow) {
+            case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
+              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+            case DRAG_COEFFICIENT: cout << "Cauchy criteria for Drag using "
+              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+          }
 
-      cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
-      
-    }
+        if (ContinuousAdjoint || DiscreteAdjoint)
+          switch (Cauchy_Func_AdjFlow) {
+            case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
+              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+            case SENS_MACH: cout << "Cauchy criteria for Mach number sensitivity using "
+              << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
+          }
 
-
-    if (ConvCriteria == RESIDUAL) {
-      if (!ContinuousAdjoint && !DiscreteAdjoint) {
-        cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
-        cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
+      
       }
 
-      if (ContinuousAdjoint || DiscreteAdjoint) {
-        cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
-        cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
+
+      if (ConvCriteria == RESIDUAL) {
+        if (!ContinuousAdjoint && !DiscreteAdjoint) {
+          cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
+          cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
+          cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
+        }
+
+        if (ContinuousAdjoint || DiscreteAdjoint) {
+          cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
+          cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
+        }
+
       }
 
     }
+    else{
+        if (Kind_Struct_Solver == SMALL_DEFORMATIONS) {cout << "Convergence criteria determined by the linear solver." << endl;}
+        else if (Kind_Solver == DISC_ADJ_FEM){
+
+        }
+        else{
+          if (Res_FEM_CRIT == RESFEM_ABSOLUTE){
+              cout << "Absolute convergence criteria" << endl;
+              cout << "Log10 of displacements (UTOL-A): " << Res_FEM_UTOL << "."<< endl;
+              cout << "Log10 of residual (RTOL-A): " << Res_FEM_RTOL << "."<< endl;
+              cout << "Log10 of energy (ETOL-A): " << Res_FEM_ETOL << "."<< endl;
+          }
+          else{
+              cout << "Relative convergence criteria" << endl;
+              cout << "Displacements tolerance (UTOL): Reduce " << -Res_FEM_UTOL << " orders of magnitude."<< endl;
+              cout << "Residual tolerance (RTOL): Reduce " << -Res_FEM_RTOL << " orders of magnitude."<< endl;
+              cout << "Energy tolerance (ETOL): Reduce " << -Res_FEM_ETOL << " orders of magnitude."<< endl;
+          }
+        }
+    }
+
 
   }
 
@@ -5096,7 +5136,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_CFD) {
 
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
-    cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<< endl;
+    cout << "Writing a solution file every " << Wrt_Sol_Freq <<" iterations."<< endl;
     cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<< endl;
     if ((Unsteady_Simulation == DT_STEPPING_1ST) || (Unsteady_Simulation == DT_STEPPING_2ND)) {
       cout << "Writing the dual time flow solution every " << Wrt_Sol_Freq_DualTime <<" iterations."<< endl;
@@ -5116,7 +5156,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((!fea) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       if (!ContinuousAdjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -5130,17 +5170,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Surface adjoint coefficients file name: " << SurfAdjCoeff_FileName << "." << endl;
       }
     }
-    else {
+    else if (fea){
       if (!ContinuousAdjoint && !DiscreteAdjoint) {
-        cout << "Surface structure coefficients file name: " << SurfStructure_FileName << "." << endl;
+        Wrt_Srf_Sol = false;
         cout << "Structure variables file name: " << Structure_FileName << "." << endl;
         cout << "Restart structure file name: " << Restart_FEMFileName << "." << endl;
       }
       if (ContinuousAdjoint || DiscreteAdjoint) {
-        cout << "Surface structure coefficients file name: " << AdjSurfStructure_FileName << "." << endl;
+        Wrt_Srf_Sol = false;
         cout << "Structure variables file name: " << AdjStructure_FileName << "." << endl;
         cout << "Restart structure file name: " << Restart_AdjFEMFileName << "." << endl;
       }
+    }
+    else{
+      cout << "Surface coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
+      cout << "Variables file name: " << Flow_FileName << "." << endl;
+      cout << "Restart file name: " << Restart_FlowFileName << "." << endl;
     }
 
   }
@@ -5224,15 +5269,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
       cout << Marker_SymWall[iMarker_SymWall];
       if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
-      else cout <<"."<< endl;
-    }
-  }
-
-  if (nMarker_Pressure != 0) {
-    cout << "Pressure boundary marker(s): ";
-    for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
-      cout << Marker_Pressure[iMarker_Pressure];
-      if (iMarker_Pressure < nMarker_Pressure-1) cout << ", ";
       else cout <<"."<< endl;
     }
   }
@@ -6116,7 +6152,6 @@ CConfig::~CConfig(void) {
   if (Marker_FarField != NULL )           delete[] Marker_FarField;
   if (Marker_Custom != NULL )             delete[] Marker_Custom;
   if (Marker_SymWall != NULL )            delete[] Marker_SymWall;
-  if (Marker_Pressure != NULL )           delete[] Marker_Pressure;
   if (Marker_PerBound != NULL )           delete[] Marker_PerBound;
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
@@ -6173,6 +6208,7 @@ CConfig::~CConfig(void) {
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
   if (default_htp_axis      != NULL) delete [] default_htp_axis;
   if (default_body_force    != NULL) delete [] default_body_force;
+  if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;

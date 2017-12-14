@@ -34,8 +34,8 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_Elasticity(val_nDim, val_nVar, config) {
+CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
+                                   CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
   incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
@@ -188,7 +188,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 }
 
-CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
+CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
 
   unsigned short iVar, jVar, kVar;
 
@@ -255,7 +255,7 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 }
 
 
-void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -493,7 +493,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 }
 
-void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
@@ -596,7 +596,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 }
 
 
-void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -713,7 +713,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
 }
 
-void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
+void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
 
 //  Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
 
@@ -744,7 +744,7 @@ void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *con
 
 }
 
-void CFEM_NonlinearElasticity::SetElectric_Properties(CElement *element, CConfig *config){
+void CFEANonlinearElasticity::SetElectric_Properties(CElement *element, CConfig *config){
 
   // Set the modulus of the electric field in the current element
 
@@ -759,7 +759,7 @@ void CFEM_NonlinearElasticity::SetElectric_Properties(CElement *element, CConfig
 
 }
 
-void CFEM_NonlinearElasticity::Compute_FmT_Mat(void) {
+void CFEANonlinearElasticity::Compute_FmT_Mat(void) {
 
   FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
   FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
@@ -775,7 +775,7 @@ void CFEM_NonlinearElasticity::Compute_FmT_Mat(void) {
 
 }
 
-void CFEM_NonlinearElasticity::Compute_Isochoric_F_b(void) {
+void CFEANonlinearElasticity::Compute_Isochoric_F_b(void) {
 
   unsigned short iVar, jVar, kVar;
 
@@ -801,7 +801,7 @@ void CFEM_NonlinearElasticity::Compute_Isochoric_F_b(void) {
 
 }
 
-void CFEM_NonlinearElasticity::Assign_cijkl_D_Mat(void) {
+void CFEANonlinearElasticity::Assign_cijkl_D_Mat(void) {
 
   unsigned short iVar, jVar;
 
@@ -859,7 +859,7 @@ void CFEM_NonlinearElasticity::Assign_cijkl_D_Mat(void) {
 }
 
 
-void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
+void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -991,7 +991,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
 
 CFEM_NeoHookean_Comp::CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
+                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
 
 }
@@ -1085,7 +1085,7 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, CConfig *con
 }
 
 CFEM_NeoHookean_Incomp::CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
+                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
 
 }
@@ -1226,7 +1226,7 @@ void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *c
 
 
 CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
+                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
 
   /* -- The formulation adopted for this material model has been described by:
@@ -1324,7 +1324,7 @@ void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, CConfig *con
 
 
 CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
+                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
   /* -- The formulation adopted for this material model has been described by:
    * --
@@ -1411,7 +1411,7 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 }
 
 CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar,
-                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
+                                   CConfig *config) : CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 
 
 }

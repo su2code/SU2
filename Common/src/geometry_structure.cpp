@@ -1251,6 +1251,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   bool *Check_Edge;
   int rank;
   
+  bool fea = ((config->GetKind_Solver()==FEM_ELASTICITY) || (config->GetKind_Solver()==DISC_ADJ_FEM));
+
 #ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
@@ -1524,7 +1526,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
   
-  if (rank == MASTER_NODE)
+  if ((rank == MASTER_NODE) && (!fea))
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
   
   Point_Critical.clear();
@@ -9537,6 +9539,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
+  bool fea = ((config->GetKind_Solver() == FEM_ELASTICITY) || (config->GetKind_Solver() == DISC_ADJ_FEM));
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -9552,11 +9555,12 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+    if ((((Boundary == EULER_WALL)              ||
+          (Boundary == HEAT_FLUX)               ||
+          (Boundary == ISOTHERMAL)              ||
+          (Boundary == LOAD_BOUNDARY)           ||
+          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+        || (fea))
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -9590,6 +9594,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           
         }
       }
+
   }
   
 #ifdef HAVE_MPI
@@ -9656,7 +9661,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   
   if (rank == MASTER_NODE) {
 
-    cout << "Wetted area = "<< TotalWettedArea;
+    if (fea) cout << "Surface area = "<< TotalWettedArea;
+    else cout << "Wetted area = "<< TotalWettedArea;
+
     if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
@@ -9687,7 +9694,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
     
     if (nDim == 3) {
     	cout << ", z-direction = "<< TotalMinCoordZ;
