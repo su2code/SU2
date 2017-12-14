@@ -741,18 +741,6 @@ public:
   void BoundaryConditionsUpdate();
 
   /*!
-   * \brief Update the multigrid structure for the heat fluxes imposed on the specified marker.
-   * \param[in] val_marker - Marker identifier.
-   */
-  void MGUpdateBoundaryConditions_HeatFlux(unsigned short val_marker);
-
-  /*!
-   * \brief Update the multigrid structure for the temperatures imposed on the specified marker.
-   * \param[in] val_marker - Marker identifier.
-   */
-  void MGUpdateBoundaryConditions_Temperature(unsigned short val_marker);
-
-  /*!
    * \brief Transfer data among different zones (multiple zone).
    */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
