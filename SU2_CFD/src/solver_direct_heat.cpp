@@ -798,14 +798,21 @@ void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_containe
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iMarker, iMarker_HeatFlux, iDim;
+  unsigned short iMarker, iMarker_HeatFlux, Monitoring, iDim;
   unsigned long iPoint, iVertex;
   string HeatFlux_Tag, Marker_Tag;
 
-  su2double *Local_Surface_Areas, Area, *Normal;
+  su2double *Local_Surface_Areas, Local_HeatFlux_Areas_Monitor, Area, *Normal;
   Local_Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
+  for ( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
+    Local_Surface_Areas[iMarker_HeatFlux] = 0.0;
+  }
+  Local_HeatFlux_Areas_Monitor = 0.0;
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
     for ( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
 
@@ -825,19 +832,25 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
             Local_Surface_Areas[iMarker_HeatFlux] += Area;
+
+            if(Monitoring == YES) {
+              Local_HeatFlux_Areas_Monitor += Area;
+            }
           }
         }
       }
     }
   }
-
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
     for( iMarker_HeatFlux = 0; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
       Surface_Areas[iMarker_HeatFlux] = Local_Surface_Areas[iMarker_HeatFlux];
     }
+    Total_HeatFlux_Areas_Monitor = Local_HeatFlux_Areas_Monitor;
 #endif
 
   Total_HeatFlux_Areas = 0.0;
@@ -1481,12 +1494,13 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
 #endif
 
-  if (Total_HeatFlux_Areas != 0.0) {
-    Total_AvgTemperature = AllBound_AvgTemperature/Total_HeatFlux_Areas;
+  if (Total_HeatFlux_Areas_Monitor != 0.0) {
+    Total_AvgTemperature = AllBound_AvgTemperature/Total_HeatFlux_Areas_Monitor;
   }
   else {
     Total_AvgTemperature = 0.0;
   }
+
 
   Total_HeatFlux = AllBound_HeatFlux;
 }
