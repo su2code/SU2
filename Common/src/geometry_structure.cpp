@@ -592,7 +592,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
-  long Next_Edge;
+  long Next_Edge = 0;
   unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, iEdge, PointIndex, jEdge;
   su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
   *VarCoord = NULL, Variable_Interp, v1[3] = {0.0, 0.0, 0.0}, v3[3] = {0.0, 0.0, 0.0}, CrossProduct = 1.0;
@@ -16160,7 +16160,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double Angle, MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
