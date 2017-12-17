@@ -104,7 +104,7 @@ class COutput {
   nParallel_Hexa,
   nParallel_Pris,
   nParallel_Pyra;
-  int *Conn_Line_Par;
+  int *Conn_BoundLine_Par;
   int *Conn_BoundTria_Par;
   int *Conn_BoundQuad_Par;
   int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]

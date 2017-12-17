@@ -81,7 +81,7 @@ COutput::COutput(CConfig *config) {
   
   /*--- Initialize pointers to NULL ---*/
   
-  Conn_Line_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
+  Conn_BoundLine_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
   Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
   Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
@@ -8084,7 +8084,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
-  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *Plane_Normal_, *CPressure, Angle,
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *Plane_Normal_, *CPressure,
   Force[3], ForceInviscid[3], MomentInviscid[3] =
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
@@ -14037,7 +14037,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
         count++;
       }
     }
-  }  
+  }
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -14045,7 +14045,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nElem_Total;
-      if (nParallel_Line > 0) Conn_Line_Par = Conn_Elem;
+      if (nParallel_Line > 0) Conn_BoundLine_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_BoundTria = nElem_Total;
@@ -14623,7 +14623,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -14761,7 +14761,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -15495,7 +15495,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     for ( int jj = 0; jj < N_POINTS_LINE; jj++ ) {
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -15847,15 +15847,14 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (iElem = 0; iElem < nParallel_Line; iElem++) {
     iNode = (int)iElem*N_POINTS_LINE;
-    Conn_Line_Par[iNode+0] = (int)Global2Renumber[Conn_Line_Par[iNode+0]-1];
-    Conn_Line_Par[iNode+1] = (int)Global2Renumber[Conn_Line_Par[iNode+1]-1];
+    Conn_BoundLine_Par[iNode+0] = (int)Global2Renumber[Conn_BoundLine_Par[iNode+0]-1];
+    Conn_BoundLine_Par[iNode+1] = (int)Global2Renumber[Conn_BoundLine_Par[iNode+1]-1];
   }
   
   for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
     iNode = (int)iElem*N_POINTS_TRIANGLE;
     Conn_BoundTria_Par[iNode+0] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+0]-1];
     Conn_BoundTria_Par[iNode+1] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+1]-1];
-    Conn_BoundTria_Par[iNode+2] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+2]-1];
     Conn_BoundTria_Par[iNode+2] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+2]-1];
   }
   
@@ -16352,8 +16351,8 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_Line_Par      != NULL)
-      delete [] Conn_Line_Par;
+    if (nParallel_Line > 0      && Conn_BoundLine_Par      != NULL)
+      delete [] Conn_BoundLine_Par;
     if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL)
       delete [] Conn_BoundTria_Par;
     if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL)

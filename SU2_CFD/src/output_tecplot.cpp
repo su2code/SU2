@@ -972,8 +972,8 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
         
         for (iElem = 0; iElem < nParallel_Line; iElem++) {
           iNode = iElem*N_POINTS_LINE;
-          Tecplot_File << Conn_Line_Par[iNode+0] << "\t";
-          Tecplot_File << Conn_Line_Par[iNode+1] << "\n";
+          Tecplot_File << Conn_BoundLine_Par[iNode+0] << "\t";
+          Tecplot_File << Conn_BoundLine_Par[iNode+1] << "\n";
         }
         
         for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
