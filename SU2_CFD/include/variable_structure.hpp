@@ -1744,6 +1744,12 @@ public:
   virtual void SetSolution_Direct(su2double *val_solution_direct);
 
   /*!
+   * \brief A virtual member. Set the direct solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct solution.
+   */
+  virtual void SetSolution_Direct_Old(su2double *val_solution_direct_old);
+
+  /*!
    * \brief A virtual member. Set the HB source for the adjoint solver.
    * \param[in] val_HBsource_direct - Value of the direct solution.
    */
@@ -1755,6 +1761,18 @@ public:
    */
   virtual su2double *GetSolution_Direct(void);
   
+  /*!
+   * \brief A virtual member. Get the direct solution for the adjoint solver.
+   * \return Pointer to the direct solution vector.
+   */
+  virtual su2double *GetSolution_Direct_Old(void);
+
+  /*!
+   * \brief A virtual member. Get the direct solution for the adjoint solver.
+   * \return Pointer to the direct solution vector.
+   */
+  virtual su2double *GetHBSource_Direct(void);
+
   /*!
    * STRUCTURAL ANALYSIS: NEW VARIABLES
    */
@@ -2150,6 +2168,7 @@ public:
 class CWaveVariable : public CVariable {
 protected:
   su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint wave solver. */
+  su2double *Solution_Direct_Old;  /*!< \brief Direct solution container for use in the adjoint wave solver. */
   su2double *HBSource_Direct;  /*!< \brief Direct HB source container for use in the adjoint wave solver. */
   
 public:
@@ -2178,6 +2197,12 @@ public:
    * \param[in] val_solution_direct - Value of the direct solution.
    */
   void SetSolution_Direct(su2double *val_solution_direct);
+
+  /*!
+   * \brief Set the direct solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct solution.
+   */
+  void SetSolution_Direct_Old(su2double *val_solution_direct_old);
   
   /*!
    * \brief Set the direct HB source for the adjoint solver.
@@ -2190,6 +2215,14 @@ public:
    * \return Pointer to the direct solution vector.
    */
   su2double *GetSolution_Direct(void);
+
+  /*!
+   * \brief Get the direct solution for the adjoint solver.
+   * \return Pointer to the direct solution vector.
+   */
+  su2double *GetSolution_Direct_Old(void);
+
+  su2double *GetHBSource_Direct(void);
   
 };
 
@@ -2203,6 +2236,7 @@ public:
 class CHeatVariable : public CVariable {
 protected:
   su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
+  su2double *Solution_Direct_Old;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
   su2double *HBSource_Direct;  /*!< \brief Direct HB source container for use in the adjoint Heat solver. */
   
 public:
@@ -2233,6 +2267,12 @@ public:
   void SetSolution_Direct(su2double *val_solution_direct);
 
   /*!
+   * \brief Set the direct solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct solution.
+   */
+  void SetSolution_Direct_Old(su2double *val_solution_direct_old);
+
+  /*!
    * \brief Set the direct HB source for the adjoint solver.
    * \param[in] val_solution_direct - Value of the direct solution.
    */
@@ -2243,6 +2283,14 @@ public:
    * \return Pointer to the direct solution vector.
    */
   su2double *GetSolution_Direct(void);
+
+  /*!
+   * \brief Get the direct solution for the adjoint solver.
+   * \return Pointer to the direct solution vector.
+   */
+  su2double *GetSolution_Direct_Old(void);
+
+  su2double *GetHBSource_Direct(void);
   
 };
 
@@ -2709,7 +2757,7 @@ public:
 class CEulerVariable : public CVariable {
 protected:
   su2double  Velocity2;      /*!< \brief Square of the velocity vector. */
-  su2double *HB_Source;     /*!< \brief harmonic balance source term. */
+//  su2double *HB_Source;     /*!< \brief harmonic balance source term. */
   su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
   su2double *WindGust;      /*! < \brief Wind gust value */
   su2double *WindGustDer;   /*! < \brief Wind gust derivatives value */
@@ -3657,7 +3705,7 @@ public:
 class CTurbVariable : public CVariable {
 protected:
   su2double muT;                /*!< \brief Eddy viscosity. */
-  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
+//  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
   
 public:
   /*!
@@ -3900,7 +3948,7 @@ protected:
   su2double *ForceProj_Vector;  /*!< \brief Vector d. */
   su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
   su2double *IntBoundary_Jump;  /*!< \brief Interior boundary jump vector. */
-  su2double *HB_Source;    /*!< \brief Harmonic balance source term. */
+//  su2double *HB_Source;    /*!< \brief Harmonic balance source term. */
   bool incompressible;
 public:
   
@@ -4340,6 +4388,7 @@ class CDiscAdjVariable : public CVariable {
 private:
   su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
   su2double* Solution_Direct;
+  su2double* Solution_Direct_Old;
   su2double* HBSource_Direct;
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;
@@ -4389,10 +4438,15 @@ public:
   
   void SetSolution_Direct(su2double *sol);
 
+  void SetSolution_Direct_Old(su2double *sol_old);
+
   void SetHBSource_Direct(su2double *sol_HBsource);
   
   su2double* GetSolution_Direct();
 
+  su2double* GetSolution_Direct_Old();
+
+  su2double* GetHBSource_Direct();
   /*!
    * \brief Set the value of the hb source.
    * \param[in] adj_hb - Pointer to the residual vector.

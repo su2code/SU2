@@ -2869,7 +2869,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     for (iDim = 0; iDim < nDim; iDim++) {
       if (!restart && harmonic_balance)
         geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
-      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
+      if (!adjoint || !config->GetDiscrete_Adjoint()) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
     }
   }
 

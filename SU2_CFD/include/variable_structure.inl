@@ -489,7 +489,13 @@ inline void CVariable::SetmuT(su2double val_muT) { }
 
 inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
+inline su2double* CVariable::GetSolution_Direct_Old() { return NULL; }
+
+inline su2double* CVariable::GetHBSource_Direct() { return NULL; }
+
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
+
+inline void CVariable::SetSolution_Direct_Old(su2double *val_solution_direct_old) { }
 
 inline void CVariable::SetHBSource_Direct(su2double *val_HBsource_direct) { }
 
@@ -1082,7 +1088,13 @@ inline su2double **CFEABoundVariable::GetTraction(void) { return Traction; }
 
 inline su2double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
+inline su2double* CWaveVariable::GetSolution_Direct_Old() { return Solution_Direct_Old;}
+
+inline su2double* CWaveVariable::GetHBSource_Direct() { return HBSource_Direct;}
+
 inline void CWaveVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
+
+inline void CWaveVariable::SetSolution_Direct_Old(su2double *val_solution_direct_old) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct_Old[iVar] += val_solution_direct_old[iVar];}
 
 inline void CWaveVariable::SetHBSource_Direct(su2double *val_HBsource_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) HBSource_Direct[iVar] += val_HBsource_direct[iVar];}
 
@@ -1092,7 +1104,13 @@ inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2d
 
 inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
 
+inline su2double* CHeatVariable::GetSolution_Direct_Old() { return Solution_Direct_Old;}
+
+inline su2double* CHeatVariable::GetHBSource_Direct() { return HBSource_Direct;}
+
 inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
+
+inline void CHeatVariable::SetSolution_Direct_Old(su2double *val_solution_direct_old) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct_Old[iVar] += val_solution_direct_old[iVar];}
 
 inline void CHeatVariable::SetHBSource_Direct(su2double *val_HBsource_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) HBSource_Direct[iVar] += val_HBsource_direct[iVar];}
 
@@ -1160,7 +1178,22 @@ inline void CVariable::SetAdjointSolution(su2double *adj_sol) {
 inline void CVariable::GetAdjointSolution(su2double *adj_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution[iVar]);
+//        cout << "DEV1: " << adj_sol[iVar] << endl;
     }
+}
+
+inline void CVariable::SetAdjoint_HB_Source(su2double* adj_hb){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    SU2_TYPE::SetDerivative(HB_Source[iVar], SU2_TYPE::GetValue(adj_hb[iVar]));
+  }
+}
+
+inline void CVariable::GetAdjoint_HB_Source(su2double* adj_hb){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    adj_hb[iVar] = SU2_TYPE::GetDerivative(HB_Source[iVar]);
+//    cout << "AAAAAAAAA:" << adj_hb [iVar] << endl;
+//    cout << "BBBBBBBBB:" << HB_Source [iVar] << endl;
+  }
 }
 
 inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol) {
@@ -1212,9 +1245,19 @@ inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim) { return 
 
 inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direct; }
 
+inline su2double* CDiscAdjVariable::GetSolution_Direct_Old() { return Solution_Direct_Old; }
+
+inline su2double* CDiscAdjVariable::GetHBSource_Direct() { return HBSource_Direct; }
+
 inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Direct[iVar] = val_solution_direct[iVar];
+  }
+}
+
+inline void CDiscAdjVariable::SetSolution_Direct_Old(su2double *val_solution_direct_old) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Solution_Direct_Old[iVar] = val_solution_direct_old[iVar];
   }
 }
 
@@ -1224,9 +1267,6 @@ inline void CDiscAdjVariable::SetHBSource_Direct(su2double *val_HBsource_direct)
   }
 }
 
-inline void CVariable::SetAdjoint_HB_Source(su2double* adj_hb){}
-
-inline void CVariable::GetAdjoint_HB_Source(su2double* adj_hb){}
 
 inline void CEulerVariable::SetAdjoint_HB_Source(su2double* adj_hb){
   for (unsigned short iVar = 0; iVar < nVar; iVar++){
@@ -1237,6 +1277,8 @@ inline void CEulerVariable::SetAdjoint_HB_Source(su2double* adj_hb){
 inline void CEulerVariable::GetAdjoint_HB_Source(su2double* adj_hb){
   for (unsigned short iVar = 0; iVar < nVar; iVar++){
     adj_hb[iVar] = SU2_TYPE::GetDerivative(HB_Source[iVar]);
+//    cout << "AAAAAAAAA:" << adj_hb [iVar] << endl;
+//    cout << "BBBBBBBBB:" << HB_Source [iVar] << endl;
   }
 }
 

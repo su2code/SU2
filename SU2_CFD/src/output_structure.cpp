@@ -5120,7 +5120,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
+//                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
+                SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB[4]);
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
@@ -11439,6 +11440,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool transition     = (config->GetKind_Trans_Model() == BC);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+//  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE && !config->GetDiscrete_Adjoint();
   
   int *Local_Halo = NULL;
   
