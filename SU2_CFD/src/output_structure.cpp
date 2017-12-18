@@ -8310,9 +8310,11 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
             if (config->GetGeo_Description() == NACELLE) {
               su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
               su2double Angle = theta_deg*PI_NUMBER/180 - 0.5*PI_NUMBER;
-              XCoord = Xcoord_Airfoil[iVertex];
-              YCoord = Ycoord_Airfoil[iVertex]*cos(Angle) - Zcoord_Airfoil[iVertex]*sin(Angle);
-              ZCoord = Zcoord_Airfoil[iVertex]*cos(Angle) + Ycoord_Airfoil[iVertex]*sin(Angle);
+              
+              XCoord = Xcoord_Airfoil[iVertex] + config->GetNacelleLocation(0);
+              YCoord = (Ycoord_Airfoil[iVertex]*cos(Angle) - Zcoord_Airfoil[iVertex]*sin(Angle)) + config->GetNacelleLocation(1);
+              ZCoord = (Zcoord_Airfoil[iVertex]*cos(Angle) + Ycoord_Airfoil[iVertex]*sin(Angle)) + config->GetNacelleLocation(2);
+              
             }
             
             if (config->GetSystemMeasurements() == US) {

@@ -963,14 +963,25 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
         su2double Angle = 0.5*PI_NUMBER - theta_deg*PI_NUMBER/180;
         for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
-          su2double XCoord = Xcoord_Index0[iEdge];
-          su2double YCoord = Ycoord_Index0[iEdge]*cos(Angle) - Zcoord_Index0[iEdge]*sin(Angle);
-          su2double ZCoord = Zcoord_Index0[iEdge]*cos(Angle) + Ycoord_Index0[iEdge]*sin(Angle);
+          
+          su2double XCoord_Translate = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
+          su2double YCoord_Translate = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
+          su2double ZCoord_Translate = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
+          
+          su2double XCoord = XCoord_Translate;
+          su2double YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
+          su2double ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
           Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
-          XCoord = Xcoord_Index1[iEdge];
-          YCoord = Ycoord_Index1[iEdge]*cos(Angle) - Zcoord_Index1[iEdge]*sin(Angle);
-          ZCoord = Zcoord_Index1[iEdge]*cos(Angle) + Ycoord_Index1[iEdge]*sin(Angle);
+          
+          XCoord_Translate = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Translate = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Translate = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          
+          XCoord = XCoord_Translate;
+          YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
+          ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
           Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
+          
         }
       }
       
@@ -16947,9 +16958,9 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
           su2double XValue = (XValue_*ValCos - ZValue_*ValSin) / Chord[iPlane];
           su2double ZValue = (ZValue_*ValCos + XValue_*ValSin) / Chord[iPlane];
           
-          su2double XCoord = Xcoord_Airfoil[iPlane][iVertex];
-          su2double YCoord = Ycoord_Airfoil[iPlane][iVertex]*cos(Angle) - Zcoord_Airfoil[iPlane][iVertex]*sin(Angle);
-          su2double ZCoord = Zcoord_Airfoil[iPlane][iVertex]*cos(Angle) + Ycoord_Airfoil[iPlane][iVertex]*sin(Angle);
+          su2double XCoord = Xcoord_Airfoil[iPlane][iVertex] + config->GetNacelleLocation(0);
+          su2double YCoord = (Ycoord_Airfoil[iPlane][iVertex]*cos(Angle) - Zcoord_Airfoil[iPlane][iVertex]*sin(Angle)) + config->GetNacelleLocation(1);
+          su2double ZCoord = (Zcoord_Airfoil[iPlane][iVertex]*cos(Angle) + Ycoord_Airfoil[iPlane][iVertex]*sin(Angle)) + config->GetNacelleLocation(2);
 
           /*--- Write the file ---*/
           
