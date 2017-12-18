@@ -38,6 +38,7 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
+  Solution_Direct_Old = NULL;
   Sensitivity    = NULL;
 
   DualTime_Derivative   = NULL;
@@ -58,6 +59,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
+  Solution_Direct_Old = NULL;
   HBSource_Direct = NULL;
   Sensitivity    = NULL;
 
@@ -97,9 +99,11 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   if (harmonic_balance) {
   HBSource_Direct = new su2double[nVar];
   Adjoint_HB_Source = new su2double[nVar];
+  Solution_Direct_Old = new su2double[nVar];
   for (iVar = 0; iVar < nVar; iVar++){
     HBSource_Direct[iVar] = 0.0;
     Adjoint_HB_Source[iVar] = 0.0;
+    Solution_Direct_Old[iVar] = 0.0;
   }
   }
 
@@ -109,6 +113,7 @@ CDiscAdjVariable::~CDiscAdjVariable() {
 
   if (Solution_Direct != NULL) delete [] Solution_Direct;
   if (HBSource_Direct != NULL) delete [] HBSource_Direct;
+  if (Solution_Direct_Old != NULL) delete [] Solution_Direct_Old;
   if (Sensitivity     != NULL) delete [] Sensitivity;
 
   if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;

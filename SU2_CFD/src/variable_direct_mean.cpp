@@ -37,7 +37,7 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-  HB_Source = NULL;
+//  HB_Source = NULL;
   Primitive = NULL;
   Secondary = NULL;
   
@@ -74,7 +74,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 
   /*--- Array initialization ---*/
   
-  HB_Source = NULL;
+//  HB_Source = NULL;
   Primitive = NULL;
   Secondary = NULL;
   
@@ -187,10 +187,10 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Allocate space for the harmonic balance source terms ---*/
   
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
-  }
+//  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+//    HB_Source = new su2double[nVar];
+//    for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
+//  }
 
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
   
@@ -386,7 +386,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 CEulerVariable::~CEulerVariable(void) {
     unsigned short iVar;
 
-  if (HB_Source         != NULL) delete [] HB_Source;
+//  if (HB_Source         != NULL) delete [] HB_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Secondary         != NULL) delete [] Secondary;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;

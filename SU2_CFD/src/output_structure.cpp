@@ -11537,6 +11537,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
   }
 
+
+  if (harmonic_balance){
+    nVar_Par += nVar_Consv_Par;
+    Variable_Names.push_back("Density_Old");
+    Variable_Names.push_back("X-Momentum_Old");
+    Variable_Names.push_back("Y-Momentum_Old");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum_Old");
+    Variable_Names.push_back("Energy_Old");
+  }
+
+
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -11809,6 +11821,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
           iVar++;
         }
+      }
+
+      if (harmonic_balance){
+        for (jVar = 0; jVar < nVar_First; jVar++) {
+             Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution_Old(jVar);
+             iVar++;
+           }
       }
 
       /*--- If limiters and/or residuals are requested. ---*/

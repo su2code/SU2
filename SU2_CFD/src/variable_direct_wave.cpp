@@ -37,6 +37,7 @@ CWaveVariable::CWaveVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
+  Solution_Direct_Old = NULL;
   HBSource_Direct = NULL;
   
 }
@@ -47,6 +48,7 @@ CWaveVariable::CWaveVariable(su2double *val_wave, unsigned short val_nDim, unsig
   
   /*--- Array initialization ---*/
   Solution_Direct = NULL;
+  Solution_Direct_Old = NULL;
   HBSource_Direct = NULL;
   
   /*--- Allocate residual structures ---*/
@@ -54,6 +56,7 @@ CWaveVariable::CWaveVariable(su2double *val_wave, unsigned short val_nDim, unsig
   
   /*--- Allocate direct solution container for adjoint problem ---*/
   Solution_Direct = new su2double[nVar];
+  Solution_Direct_Old = new su2double[nVar];
   HBSource_Direct = new su2double[nVar];
   
   /*--- Allocate aux gradient vector ---*/
@@ -64,6 +67,7 @@ CWaveVariable::CWaveVariable(su2double *val_wave, unsigned short val_nDim, unsig
     Solution[iVar] = val_wave[iVar];
     Solution_Old[iVar] = val_wave[iVar];
     Solution_Direct[iVar] = 0.0;
+    Solution_Direct_Old[iVar] = 0.0;
     HBSource_Direct[iVar] = 0.0;
   }
   
@@ -72,6 +76,7 @@ CWaveVariable::CWaveVariable(su2double *val_wave, unsigned short val_nDim, unsig
 CWaveVariable::~CWaveVariable(void) {
   
   if (Solution_Direct != NULL) delete [] Solution_Direct;
+  if (Solution_Direct_Old != NULL) delete [] Solution_Direct_Old;
   if (HBSource_Direct != NULL) delete [] HBSource_Direct;
   
 }

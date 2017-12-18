@@ -139,6 +139,15 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
   }
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    direct_solver->node[iPoint]->SetSolution_Old(node[iPoint]->GetSolution_Direct_Old());
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      direct_solver->node[iPoint]->SetHarmonicBalance_Source(iVar, node[iPoint]->GetHBSource_Direct()[iVar]);
+    }
+  }
 
   if (time_n_needed) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) {

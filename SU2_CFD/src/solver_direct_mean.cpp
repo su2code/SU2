@@ -13678,6 +13678,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+//  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE && !config->GetDiscrete_Adjoint();
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -13741,6 +13743,15 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
+      if (harmonic_balance){
+        index = counter*Restart_Vars[1] + skipVars + nVar;
+        for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+        node[iPoint_Local]->SetSolution_Old(Solution);
+      }
+//      cout << "==============" << endl;
+//      cout << "New: " << node[iPoint_Local]->GetSolution()[0] << endl;
+//      cout << "Old: " << node[iPoint_Local]->GetSolution_Old()[0] << endl;
+
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the

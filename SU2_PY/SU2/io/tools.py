@@ -253,7 +253,7 @@ def get_headerMap(nZones = 1):
 
 def getTurboPerfIndex(nZones = 1):
   #TODO to remove, for test only
-  nZones = nZones/3
+  nZones = nZones/5
 
   if int(nZones) > 1:
     index = int(nZones) + int(int(nZones)/2.0) + 1
