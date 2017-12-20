@@ -601,4 +601,11 @@ CPyramid::~CPyramid() {
   
 }
 
-void CPyramid::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+void CPyramid::Change_Orientation(void) {
+       unsigned long Point_0, Point_2;
+       Point_0 = Nodes[0];
+       Point_2 = Nodes[2];
+       
+       Nodes[0] = Point_2;
+       Nodes[2] = Point_0;
+}
