@@ -13745,12 +13745,23 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       node[iPoint_Local]->SetSolution(Solution);
       if (harmonic_balance){
         index = counter*Restart_Vars[1] + skipVars + nVar;
+        if (turb_model == SA || turb_model == SA_NEG) {
+          index++;
+        } else if (turb_model == SST) {
+          index+=2;
+        }
         for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
         node[iPoint_Local]->SetSolution_Old(Solution);
       }
 //      cout << "==============" << endl;
-//      cout << "New: " << node[iPoint_Local]->GetSolution()[0] << endl;
-//      cout << "Old: " << node[iPoint_Local]->GetSolution_Old()[0] << endl;
+//      cout << "New0: " << node[iPoint_Local]->GetSolution()[0] << endl;
+//      cout << "Old0: " << node[iPoint_Local]->GetSolution_Old()[0] << endl;
+//      cout << "New1: " << node[iPoint_Local]->GetSolution()[1] << endl;
+//      cout << "Old1: " << node[iPoint_Local]->GetSolution_Old()[1] << endl;
+//      cout << "New2: " << node[iPoint_Local]->GetSolution()[2] << endl;
+//      cout << "Old2: " << node[iPoint_Local]->GetSolution_Old()[2] << endl;
+//      cout << "New3: " << node[iPoint_Local]->GetSolution()[3] << endl;
+//      cout << "Old3: " << node[iPoint_Local]->GetSolution_Old()[3] << endl;
 
       iPoint_Global_Local++;
 
@@ -13761,11 +13772,12 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-
-        if (turb_model == SA || turb_model == SA_NEG) {
-          index++;
-        } else if (turb_model == SST) {
-          index+=2;
+        if (!harmonic_balance){
+          if (turb_model == SA || turb_model == SA_NEG) {
+            index++;
+          } else if (turb_model == SST) {
+            index+=2;
+          }
         }
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
@@ -13778,11 +13790,19 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
           /*--- Rewind the index to retrieve the Coords. ---*/
           index = counter*Restart_Vars[1];
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
-
-          /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar;
-          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
+          if (harmonic_balance){
+            index = counter*Restart_Vars[1] + skipVars + 2*nVar;
+            if (turb_model == SA || turb_model == SA_NEG) {
+              index++;
+            } else if (turb_model == SST) {
+              index+=2;
+            }
+          } else {
+            /*--- Move the index forward to get the grid velocities. ---*/
+            index = counter*Restart_Vars[1] + skipVars + nVar;
+          }
         }
+        for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
 
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);

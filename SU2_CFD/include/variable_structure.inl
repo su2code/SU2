@@ -1293,3 +1293,5 @@ inline void CDiscAdjVariable::GetAdjoint_HB_Source(su2double* adj_hb){
     adj_hb[iVar] = Adjoint_HB_Source[iVar];
   }
 }
+
+

@@ -36,7 +36,7 @@
 CTurbVariable::CTurbVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-  HB_Source = NULL;
+//  HB_Source = NULL;
   
 }
 
@@ -47,16 +47,16 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 
   /*--- Array initialization ---*/
   
-  HB_Source = NULL;
+ // HB_Source = NULL;
   
   /*--- Allocate space for the harmonic balance source terms ---*/
   
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      HB_Source[iVar] = 0.0;
-  }
-  
+//  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+//    HB_Source = new su2double[nVar];
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      HB_Source[iVar] = 0.0;
+//  }
+//
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
@@ -103,7 +103,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
 
 CTurbSAVariable::~CTurbSAVariable(void) {
   
-  if (HB_Source != NULL) delete [] HB_Source;
+//  if (HB_Source != NULL) delete [] HB_Source;
   
 }
 
@@ -143,7 +143,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
 
 CTurbSSTVariable::~CTurbSSTVariable(void) {
 
-  if (HB_Source != NULL) delete [] HB_Source;
+//  if (HB_Source != NULL) delete [] HB_Source;
   
 }
 

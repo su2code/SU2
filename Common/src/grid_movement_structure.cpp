@@ -2894,7 +2894,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   }
 
   /*--- After moving all nodes, update geometry class ---*/
-
+//if (!config->GetDiscrete_Adjoint())
   UpdateDualGrid(geometry, config);
 
 }

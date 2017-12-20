@@ -4958,6 +4958,8 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
           U_Turb[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
           Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
+//            if (jTimeInstance == 0 && iVar == 0 && iPoint == 0)
+//              cout << "SOL_TURB: " << solver_container[jTimeInstance+iGeomZone*nTimeInstances][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar) << endl;
         }
       }
 
@@ -5692,16 +5694,19 @@ CDiscAdjHBMultiZone::CDiscAdjHBMultiZone(char* confFile,
     //      cout << "SOURCE:"<< solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetHB_Source()[1] << endl;
     for (unsigned long iPoint = 0; iPoint < geometry_container[iZone][MESH_0]->GetnPoint(); iPoint++){
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetHB_Source());
+      if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc())
+        solver_container[iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->GetHB_Source());
 
-      //        if (iZone == 0  && iPoint == 0){
-      //          cout << "###SOL_NEW: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution()[0] << endl;
-      //          cout << "###SOL_OLD: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution_Old()[0] << endl;
-      //        }
-      //            solver_container[iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->GetHB_Source());
-      //      }
-      //      }
+      if (iZone == 0  && iPoint == 0){
+        cout << "###SOL_NEW: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution()[0] << endl;
+        cout << "###SOL_OLD: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution_Old()[0] << endl;
+        if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc())
+        cout << "###SOL_TURB: " << solver_container[0][MESH_0][ADJTURB_SOL]->node[3]->GetSolution()[0] << endl;
+      }
+        //      }
+        //      }
+      }
     }
-  }
 
 }
 
@@ -5987,8 +5992,8 @@ void CDiscAdjHBMultiZone::DirectRun(){
 //      }
 //    }
 //  }
-    for (iZone = 0; iZone < nZone; iZone++)
-        geometry_container[iZone][MESH_0]->SetTranslationalVelocity(config_container[iZone], iZone/nTimeInstances, false);
+//    for (iZone = 0; iZone < nZone; iZone++)
+//        geometry_container[iZone][MESH_0]->SetTranslationalVelocity(config_container[iZone], iZone/nTimeInstances, false);
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     direct_iteration[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
