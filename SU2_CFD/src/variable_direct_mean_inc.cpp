@@ -113,7 +113,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
-  
+
   Limiter_Primitive = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
@@ -163,7 +163,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho)
-   * We need P, and rho for running the adjoint problem ---*/
+        We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -224,6 +224,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  
   Limiter_Primitive = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
@@ -240,12 +241,14 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   }
   
   /*--- Solution initialization ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = val_solution[iVar];
     Solution_Old[iVar] = val_solution[iVar];
   }
   
   /*--- Allocate and initializate solution for dual time strategy ---*/
+  
   if (dual_time) {
     Solution_time_n = new su2double [nVar];
     Solution_time_n1 = new su2double [nVar];
@@ -258,17 +261,20 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+  
   if (windgust) {
     WindGust = new su2double [nDim];
     WindGustDer = new su2double [nDim+1];
   }
   
   /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
+  
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
         We need P, and rho for running the adjoint problem ---*/
+  
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new su2double [nDim];
