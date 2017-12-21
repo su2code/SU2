@@ -35,10 +35,10 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import copy
 
 from .. import io  as su2io
-from interface import DEF as SU2_DEF
+from .interface import DEF as SU2_DEF
 
 
 # ----------------------------------------------------------------------
@@ -74,7 +74,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     if dv_old is None: dv_old = []
     
     # error check
-    if dv_old and not dv_new: raise Exception, 'must provide dv_old with dv_new'
+    if dv_old and not dv_new: raise Exception('must provide dv_old with dv_new')
     
     # local copy
     konfig = copy.deepcopy(config)

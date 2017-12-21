@@ -171,6 +171,16 @@ public:
    */
   void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
 
+  /*!
+   * \brief Do the convergence analysis to determine if the adjoint FEM analysis has converged.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Solution of the problem
+   * \param[in] Iteration - Current iteration.
+   * \param[in] monitor - Objective function that is use to study its convergence.
+   */
+  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
+
 
   /*!
    * \brief Do the convergence analysis to determine if the FSI problem has converged on the structural side.
