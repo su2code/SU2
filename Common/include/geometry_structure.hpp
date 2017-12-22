@@ -893,11 +893,14 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-                                      su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
-                                      vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
-                                      vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
-                                      bool original_surface, CConfig *config);
+  void ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
+                              su2double MinXCoord, su2double MaxXCoord,
+                              su2double MinYCoord, su2double MaxYCoord,
+                              su2double MinZCoord, su2double MaxZCoord,
+                              su2double *FlowVariable,
+                              vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                              vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
+                              bool original_surface, CConfig *config);
 
   /*!
 	 * \brief A virtual member.
@@ -982,7 +985,7 @@ public:
                             su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
                             su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                             su2double &Wing_MaxDihedral);
-  
+
   /*!
    * \brief A virtual member.
    */
@@ -992,6 +995,16 @@ public:
   		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
   		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
   		su2double &Fuselage_MaxCurvature);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Nacelle(CConfig *config, bool original_surface,
+                               su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                               su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                               su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                               su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                               su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist);
 
 	/*!
 	 * \brief A virtual member.
@@ -2096,10 +2109,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Evaluate geometrical parameters of a wing.
    */
   void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness,
+                    su2double &Wing_MinChord, su2double &Wing_MaxChord,
                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
-                    su2double &Wing_MaxDihedral);
+                    su2double &Wing_MinToC, su2double &Wing_MaxToC,
+                    su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist,
+                    su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
 
   /*!
    * \brief Evaluate geometrical parameters of a wing.
@@ -2110,6 +2125,16 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
   		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
   		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
   		su2double &Fuselage_MaxCurvature);
+  
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Nacelle(CConfig *config, bool original_surface,
+                       su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                       su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                       su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                       su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                       su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.
