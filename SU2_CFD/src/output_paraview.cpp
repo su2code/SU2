@@ -1996,8 +1996,8 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Paraview_File << N_POINTS_LINE << "\t";
-      Paraview_File << Conn_Line_Par[iNode+0]-1 << "\t";
-      Paraview_File << Conn_Line_Par[iNode+1]-1 << "\t";
+      Paraview_File << Conn_BoundLine_Par[iNode+0]-1 << "\t";
+      Paraview_File << Conn_BoundLine_Par[iNode+1]-1 << "\t";
     }
 
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
