@@ -84,7 +84,7 @@ COutput::COutput(CConfig *config) {
   
   /*--- Initialize pointers to NULL ---*/
   
-  Conn_Line_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
+  Conn_BoundLine_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
   Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
   Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
@@ -4495,8 +4495,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool output_files         = true;
-  
-  if (!disc_adj && !DualTime_Iteration) {
+
+  if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
     if ((config[val_iZone]->GetFixed_CL_Mode()) &&
         (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
@@ -8001,7 +8001,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
-  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure,
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *Plane_Normal_, *CPressure,
   Force[3], ForceInviscid[3], MomentInviscid[3] =
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
@@ -8028,6 +8028,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Plane_P0 = new su2double[3];
   Plane_P0_ = new su2double[3];
   Plane_Normal = new su2double[3];
+  Plane_Normal_ = new su2double[3];
   CPressure = new su2double[geometry->GetnPoint()];
   
   /*--- Compute some reference quantities and necessary values ---*/
@@ -8074,42 +8075,64 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
       
       if (config->GetGeo_Description() == FUSELAGE) {
-		      Plane_Normal[0] = 1.0;
-		      Plane_P0[0] = config->GetLocationStations(iSection);
+        Plane_Normal[0] = 1.0;
+        Plane_P0[0] = config->GetLocationStations(iSection);
       }
-      
-      if (config->GetGeo_Description() == WING) {
+      else if (config->GetGeo_Description() == NACELLE) {
+        Plane_Normal[0] = 0.0;
+        Plane_Normal[1] = -sin(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+        Plane_Normal[2] = cos(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+      }
+      else {
         Plane_Normal[1] = 1.0;
         Plane_P0[1] = config->GetLocationStations(iSection);
       }
-      
+
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
-      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
-                                       1E6, CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+                                       CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
                                        CPressure_Airfoil, true, config);
       
       if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-        cout << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+        if ((config->GetGeo_Description() == FUSELAGE) || (config->GetGeo_Description() == WING))
+          cout << endl << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+        if (config->GetGeo_Description() == NACELLE)
+          cout << endl << "Please check the config file, the section (" << Plane_Normal[0] <<", " << Plane_Normal[1] <<", " << Plane_Normal[2] << ") has not been detected." << endl;
       }
       
       
       /*--- Compute dihedral using a step in the station value ---*/
       
-      Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
-      
+      Plane_P0_[0] = 0.0; Plane_Normal_[0] = 0.0;
+      Plane_P0_[1] = 0.0; Plane_Normal_[1] = 0.0;
+      Plane_P0_[2] = 0.0; Plane_Normal_[2] = 0.0;
+
       if (config->GetGeo_Description() == FUSELAGE) {
-		      if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+        Plane_Normal_[0] = 1.0;
+        if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
         else Plane_P0_[0] = config->GetLocationStations(iSection) - 0.01;
       }
-      
-      if (config->GetGeo_Description() == WING) {
+      else if (config->GetGeo_Description() == NACELLE) {
+        if (iSection == 0) {
+          Plane_Normal_[0] = 0.0;
+          Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+          Plane_Normal_[2] = cos((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+        }
+        else {
+          Plane_Normal_[0] = 0.0;
+          Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+          Plane_Normal_[2] = cos((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+        }
+      }
+      else {
+        Plane_Normal_[1] = 1.0;
         if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
         else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
       }
-      
-      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6,
-                                       1E6, CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+   
+      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal_, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+                                       CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
                                        CPressure_Airfoil_, true, config);
       
       /*--- Output the pressure on each section (tecplot format) ---*/
@@ -8168,16 +8191,11 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           } else
             Cp_File.open("cp_sections.dat", ios::app);
           
-          
-          if (config->GetGeo_Description() == FUSELAGE) {
-            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-            
-            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          if (config->GetGeo_Description() == NACELLE) {
+            su2double theta_deg = atan2(Plane_Normal[1], -Plane_Normal[2])/PI_NUMBER*180 + 180;
+            Cp_File << "ZONE T=\"Theta = " << theta_deg << " deg\", I= " << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           }
-          
-          if (config->GetGeo_Description() == WING) {
+          else {
             if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
               << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
             
@@ -8185,21 +8203,39 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
               << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           }
           
+
+          
           /*--- Coordinates and pressure value ---*/
           
-          if (config->GetSystemMeasurements() == SI) {
-            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
-              << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
-              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            su2double XCoord = Xcoord_Airfoil[iVertex];
+            su2double YCoord = Ycoord_Airfoil[iVertex];
+            su2double ZCoord = Zcoord_Airfoil[iVertex];
+            
+            /*--- Undo the transformation based on the Theta angle ---*/
+            
+            if (config->GetGeo_Description() == NACELLE) {
+              su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+              su2double Angle = theta_deg*PI_NUMBER/180 - 0.5*PI_NUMBER;
+              
+              XCoord = Xcoord_Airfoil[iVertex] + config->GetNacelleLocation(0);
+              YCoord = (Ycoord_Airfoil[iVertex]*cos(Angle) - Zcoord_Airfoil[iVertex]*sin(Angle)) + config->GetNacelleLocation(1);
+              ZCoord = (Zcoord_Airfoil[iVertex]*cos(Angle) + Ycoord_Airfoil[iVertex]*sin(Angle)) + config->GetNacelleLocation(2);
+              
             }
-          }
-          if (config->GetSystemMeasurements() == US) {
-            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            if (config->GetSystemMeasurements() == US) {
               Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
-              << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
-              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+              << " " << XCoord * 12.0 << " " << YCoord * 12.0 << " " << ZCoord * 12.0
+              << " " << (Ycoord_Airfoil[iVertex] - Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
             }
+            else {
+              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
+              << " " << XCoord << " " << YCoord << " " << ZCoord
+              << " " << (Ycoord_Airfoil[iVertex] - Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+            }
+            
           }
           
           Cp_File.close();
@@ -8304,6 +8340,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   delete[] Plane_P0;
   delete[] Plane_P0_;
   delete[] Plane_Normal;
+  delete[] Plane_Normal_;
   delete[] CPressure;
   
 }
@@ -9270,6 +9307,11 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
   int iProcessor, nProcessor;
   nProcessor = size;
+
+
+  if (rank == MASTER_NODE && !config->GetDiscrete_Adjoint()) cout << endl << "Writing Surface Analysis file (surface_analysis.dat).";
+
+  /*--- Open and rrite file name with extension if unsteady ---*/
 
   ofstream SurfFlow_file;
 
@@ -10334,8 +10376,6 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   if (output) {
     SurfFlow_file.close();
   }
-    
-  if (rank == MASTER_NODE) cout << "Writing surface analysis files (surface_analysis.dat)." << endl;
 
 }
 
@@ -13869,7 +13909,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
         count++;
       }
     }
-  }  
+  }
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -13877,7 +13917,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nElem_Total;
-      if (nParallel_Line > 0) Conn_Line_Par = Conn_Elem;
+      if (nParallel_Line > 0) Conn_BoundLine_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_BoundTria = nElem_Total;
@@ -14447,7 +14487,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -14585,7 +14625,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -15319,7 +15359,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     for ( int jj = 0; jj < N_POINTS_LINE; jj++ ) {
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -15671,15 +15711,14 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (iElem = 0; iElem < nParallel_Line; iElem++) {
     iNode = (int)iElem*N_POINTS_LINE;
-    Conn_Line_Par[iNode+0] = (int)Global2Renumber[Conn_Line_Par[iNode+0]-1];
-    Conn_Line_Par[iNode+1] = (int)Global2Renumber[Conn_Line_Par[iNode+1]-1];
+    Conn_BoundLine_Par[iNode+0] = (int)Global2Renumber[Conn_BoundLine_Par[iNode+0]-1];
+    Conn_BoundLine_Par[iNode+1] = (int)Global2Renumber[Conn_BoundLine_Par[iNode+1]-1];
   }
   
   for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
     iNode = (int)iElem*N_POINTS_TRIANGLE;
     Conn_BoundTria_Par[iNode+0] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+0]-1];
     Conn_BoundTria_Par[iNode+1] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+1]-1];
-    Conn_BoundTria_Par[iNode+2] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+2]-1];
     Conn_BoundTria_Par[iNode+2] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+2]-1];
   }
   
@@ -16162,8 +16201,8 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_Line_Par      != NULL)
-      delete [] Conn_Line_Par;
+    if (nParallel_Line > 0      && Conn_BoundLine_Par      != NULL)
+      delete [] Conn_BoundLine_Par;
     if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL)
       delete [] Conn_BoundTria_Par;
     if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL)
@@ -16216,7 +16255,10 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short nDim         = geometry->GetnDim();
   unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
-  
+
+  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
   
@@ -16232,6 +16274,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   su2double  *Surface_TotalPressure    = new su2double[nMarker];
   su2double  *Surface_VelocityIdeal    = new su2double[nMarker];
   su2double  *Surface_Area             = new su2double[nMarker];
+  su2double  *Surface_MassFlow_Abs     = new su2double[nMarker];
   
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
   
@@ -16248,7 +16291,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalPressure[iMarker]    = 0.0;
     Surface_VelocityIdeal[iMarker]    = 0.0;
     Surface_Area[iMarker]             = 0.0;
-    
+    Surface_MassFlow_Abs[iMarker]     = 0.0;
+
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -16266,29 +16310,39 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->node[iPoint]->GetSolution(iDim+1) / Density;
+            Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim];
-            MassFlow += Vector[iDim] * AxiFactor * solver->node[iPoint]->GetSolution(iDim+1);
+            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
           }
           
           Area              = sqrt (Area);
           Vn                = Vn / Area;
-          Energy            = solver->node[iPoint]->GetSolution(nVar-1)/Density;
-          Pressure          = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-          SoundSpeed        = sqrt(Gamma*Pressure/Density);
-          Mach              = sqrt(Velocity2)/SoundSpeed;
-          Temperature       = Pressure / (Gas_Constant * Density);
-          TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-          TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-          
+          Energy            = solver->node[iPoint]->GetEnergy();
+          Pressure          = solver->node[iPoint]->GetPressure();
+          SoundSpeed        = solver->node[iPoint]->GetSoundSpeed();
+
+          if (compressible){
+            Mach              = sqrt(Velocity2)/SoundSpeed;
+            TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
+            Temperature       = Pressure / (Gas_Constant * Density);
+            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+          }
+          if (incompressible){
+            Mach              = 0.0;
+            TotalPressure     = Pressure + 0.5 * Density * Velocity2;
+            Temperature       = 0.0;
+            TotalTemperature  = 0.0;
+          }
+
           /*--- Compute the mass Surface_MassFlow ---*/
 
           Surface_Area[iMarker]             += Area;
           Surface_MassFlow[iMarker]         += MassFlow;
+          Surface_MassFlow_Abs[iMarker]     += abs(MassFlow);
 
-          if (Kind_Average == AVERAGE_MASSFLUX) Weight = MassFlow;
-          else if (Kind_Average == AVERAGE_AREA) Weight = Area;
+          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
           else Weight = 1.0;
           
           Surface_Mach[iMarker]             += Mach*Weight;
@@ -16319,6 +16373,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   su2double *Surface_TotalTemperature_Local = new su2double [nMarker_Analyze];
   su2double *Surface_TotalPressure_Local    = new su2double [nMarker_Analyze];
   su2double *Surface_Area_Local             = new su2double [nMarker_Analyze];
+  su2double *Surface_MassFlow_Abs_Local     = new su2double [nMarker_Analyze];
   
   su2double *Surface_MassFlow_Total         = new su2double [nMarker_Analyze];
   su2double *Surface_Mach_Total             = new su2double [nMarker_Analyze];
@@ -16330,7 +16385,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   su2double *Surface_TotalTemperature_Total = new su2double [nMarker_Analyze];
   su2double *Surface_TotalPressure_Total    = new su2double [nMarker_Analyze];
   su2double *Surface_Area_Total             = new su2double [nMarker_Analyze];
-  
+  su2double *Surface_MassFlow_Abs_Total     = new su2double [nMarker_Analyze];
+
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     Surface_MassFlow_Local[iMarker_Analyze]         = 0.0;
     Surface_Mach_Local[iMarker_Analyze]             = 0.0;
@@ -16342,6 +16398,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalTemperature_Local[iMarker_Analyze] = 0.0;
     Surface_TotalPressure_Local[iMarker_Analyze]    = 0.0;
     Surface_Area_Local[iMarker_Analyze]             = 0.0;
+    Surface_MassFlow_Abs_Local[iMarker_Analyze]     = 0.0;
     
     Surface_MassFlow_Total[iMarker_Analyze]         = 0.0;
     Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -16353,6 +16410,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
     Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
     Surface_Area_Total[iMarker_Analyze]             = 0.0;
+    Surface_MassFlow_Abs_Total[iMarker_Analyze]     = 0.0;
+
   }
   
   /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
@@ -16369,13 +16428,14 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Surface_MassFlow_Local[iMarker_Analyze]         += Surface_MassFlow[iMarker];
           Surface_Mach_Local[iMarker_Analyze]             += Surface_Mach[iMarker];
           Surface_Temperature_Local[iMarker_Analyze]      += Surface_Temperature[iMarker];
-          Surface_Density_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_Temperature[iMarker];
+          Surface_Density_Local[iMarker_Analyze]          += Surface_Density[iMarker];
+          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Enthalpy[iMarker];
+          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_NormalVelocity[iMarker];
           Surface_Pressure_Local[iMarker_Analyze]         += Surface_Pressure[iMarker];
           Surface_TotalTemperature_Local[iMarker_Analyze] += Surface_TotalTemperature[iMarker];
           Surface_TotalPressure_Local[iMarker_Analyze]    += Surface_TotalPressure[iMarker];
           Surface_Area_Local[iMarker_Analyze]             += Surface_Area[iMarker];
+          Surface_MassFlow_Abs_Local[iMarker_Analyze]     += Surface_MassFlow_Abs[iMarker];
         }
         
       }
@@ -16396,7 +16456,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_Area_Local, Surface_Area_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  
+  SU2_MPI::Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
 #else
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
@@ -16410,6 +16471,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalTemperature_Total[iMarker_Analyze] = Surface_TotalTemperature_Local[iMarker_Analyze];
     Surface_TotalPressure_Total[iMarker_Analyze]    = Surface_TotalPressure_Local[iMarker_Analyze];
     Surface_Area_Total[iMarker_Analyze]        = Surface_Area_Local[iMarker_Analyze];
+    Surface_MassFlow_Abs_Total[iMarker_Analyze] = Surface_MassFlow_Abs_Local[iMarker_Analyze];
   }
   
 #endif
@@ -16419,8 +16481,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     
-    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Total[iMarker_Analyze];
-    else if (Kind_Average == AVERAGE_AREA) Weight = Surface_Area_Total[iMarker_Analyze];
+    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
     else Weight = 1.0;
 
     if (Weight != 0.0) {
@@ -16429,6 +16491,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
       Surface_Density_Total[iMarker_Analyze]          /= Weight;
       Surface_Enthalpy_Total[iMarker_Analyze]         /= Weight;
       Surface_NormalVelocity_Total[iMarker_Analyze]   /= Weight;
+      Surface_Pressure_Total[iMarker_Analyze]         /= Weight;
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
     }
@@ -16479,46 +16542,54 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
-    cout.precision(4);
-    cout.setf(ios::fixed, ios::floatfield);
-    
+    cout.precision(4);    
     cout << endl << "Computing surface mean values." << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-      cout << "Surface ("<< config->GetMarker_Analyze_TagBound(iMarker_Analyze);
+      cout << "Surface "<< config->GetMarker_Analyze_TagBound(iMarker_Analyze) << ":" << endl;
       
       su2double MassFlow = config->GetSurface_MassFlow(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): " << MassFlow;
-      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
-      
-      su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
-      cout << ", Mach: " << Mach;
-      
-      su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature << "," << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature << "," << endl;
-      
-      su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "     P (Pa): " << Pressure;
-      else if (config->GetSystemMeasurements() == US) cout << "     P (psf): " << Pressure;
-      
-      su2double Density = config->GetSurface_Density(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Rho (kg/m^3): " << Density;
-      else if (config->GetSystemMeasurements() == US) cout << ", Rho (lb/ft^3): " << Density;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Mf (kg/s): " << setw(10) << MassFlow;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Mf (lbs/s): " << setw(10) << MassFlow;
       
       su2double NormalVelocity = config->GetSurface_NormalVelocity(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity << "," << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity << "," << endl;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Vn (m/s): " << setw(10) << NormalVelocity;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Vn (ft/s): " << setw(10) << NormalVelocity;
       
-      su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "     TT (K): " << TotalTemperature;
-      else if (config->GetSystemMeasurements() == US) cout << "     TT (R): " << TotalTemperature;
+      cout << endl;
+      
+      su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "P (Pa): " << setw(10) << Pressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "P (psf): " << setw(10) << Pressure;
       
       su2double TotalPressure = config->GetSurface_TotalPressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", PT (Pa): " << TotalPressure << "." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", PT (psf): " << TotalPressure << "." << endl;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "PT (Pa): " << setw(10) <<TotalPressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "PT (psf): " << setw(10) <<TotalPressure;
+
+      if (compressible){
+        cout << endl;
+
+        su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
+        cout << setw(18) << "Mach: " << setw(10) << Mach;
+
+        su2double Density = config->GetSurface_Density(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Rho (kg/m^3): " << setw(10) << Density;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Rho (lb/ft^3): " << setw(10) << Density;
+
+        cout << endl;
+
+        su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "T (K): " << setw(10) << Temperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "T (R): " << setw(10) << Temperature;
+
+        su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "TT (K): " << setw(10) << TotalTemperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "TT (R): " << setw(10) << TotalTemperature;
+      }
       
+      cout << endl;
     }
+    cout.unsetf(ios_base::floatfield);
     
   }
   
@@ -16532,6 +16603,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalTemperature_Local;
   delete [] Surface_TotalPressure_Local;
   delete [] Surface_Area_Local;
+  delete [] Surface_MassFlow_Abs_Local;
   
   delete [] Surface_MassFlow_Total;
   delete [] Surface_Mach_Total;
@@ -16543,6 +16615,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalTemperature_Total;
   delete [] Surface_TotalPressure_Total;
   delete [] Surface_Area_Total;
+  delete [] Surface_MassFlow_Abs_Total;
   
   delete [] Surface_MassFlow;
   delete [] Surface_Mach;
@@ -16556,6 +16629,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_Area;
   delete [] Vector;
   delete [] Surface_VelocityIdeal;
+  delete [] Surface_MassFlow_Abs;
   
 }
 
