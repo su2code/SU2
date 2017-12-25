@@ -294,7 +294,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-3.588066,-2.859933,-0.007759,16.983075] #last 4 columns
+    inc_lam_cylinder.test_vals = [-3.778049,-3.380095,-0.004749,6.215563] #last 4 columns
     inc_lam_cylinder.su2_exec  = "SU2_CFD"
     inc_lam_cylinder.timeout   = 1600
     inc_lam_cylinder.tol       = 0.00001
@@ -309,7 +309,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.710052, -11.007500, -0.000001, 0.210445] #last 4 columns
+    inc_turb_naca0012.test_vals = [-4.708169, -11.010140, -0.000002, 0.207687] #last 4 columns
     inc_turb_naca0012.su2_exec  = "SU2_CFD"
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
@@ -323,8 +323,8 @@ def main():
     schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
-    schubauer_klebanoff_transition.test_iter    = 100
-    schubauer_klebanoff_transition.test_vals    = [-9.045282, -15.296966, 0.000433, 0.001704] #last 4 columns
+    schubauer_klebanoff_transition.test_iter    = 10
+    schubauer_klebanoff_transition.test_vals    = [-8.295514, -14.505574, 0.000073, 0.005669] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -476,7 +476,7 @@ def main():
     contadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     contadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder.cfg"
     contadj_incomp_cylinder.test_iter = 25
-    contadj_incomp_cylinder.test_vals = [-5.718622, -7.027366, 2.932100, 0.000000] #last 4 columns
+    contadj_incomp_cylinder.test_vals = [-5.720871, -6.995398, 2.932100, 0.000000] #last 4 columns
     contadj_incomp_cylinder.su2_exec  = "SU2_CFD"
     contadj_incomp_cylinder.timeout   = 1600
     contadj_incomp_cylinder.tol       = 0.00001
