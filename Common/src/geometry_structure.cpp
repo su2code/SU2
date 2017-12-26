@@ -16469,11 +16469,6 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Nacelle_File, Section_File;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   
   /*--- Make a large number of section cuts for approximating volume ---*/
   
