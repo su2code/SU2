@@ -37,12 +37,12 @@
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
-    std::cout << std::endl << "-------------------------------- Error ---------------------------------" << std::endl;
-    std::cout << "In \"" << FunctionName << "\": " << std::endl;
-    std::cout <<  "------------------------------------------------------------------------" << std::endl;
+    std::cout << std::endl << std::endl;
+    std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
+    std::cout <<  "-------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
-    std::cout <<  "------------------------------------------------------------------------" << std::endl;    
-    std::cout << "Exiting now ..." << std::endl;
+    std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
+    std::cout << std::endl << std::endl;    
   }
   Abort(currentComm, 0);
 }
@@ -388,12 +388,14 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
-    std::cout << std::endl << "-------------------------------- Error ---------------------------------" << std::endl;
-    std::cout << "In \"" << FunctionName << "\": " << std::endl;
+    std::cout << std::endl << std::endl;
+    std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
+    std::cout <<  "-------------------------------------------------------------------------" << std::endl;
     std::cout << ErrorMsg << std::endl;
-    std::cout << "Exiting now ..." << std::endl;
+    std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
+    std::cout << std::endl << std::endl;    
   }
-  exit(EXIT_FAILURE);
+  Abort(currentComm, 0);
 }
 
 inline int CBaseMPIWrapper::GetRank(){
