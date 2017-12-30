@@ -229,8 +229,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
     /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
     if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file.") +
-                     string("Now exiting..."),
+      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file."),
                      CURRENT_FUNCTION);
     }
 
@@ -250,8 +249,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
        only handle one database. ---*/
 
     if ( nbases > 1 ) {
-      SU2_MPI::Error(string("CGNS reader currently incapable of handling more than 1 database.") +
-                     string("Now exiting..."),
+      SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
                      CURRENT_FUNCTION);
     }
 
