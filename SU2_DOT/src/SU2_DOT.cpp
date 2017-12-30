@@ -369,10 +369,8 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         surface_movement->ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName());
         
         /*--- If the FFDBox was not defined in the input file ---*/
-        if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
-          cout << "The input grid doesn't have the entire FFD information!" << endl;
-          cout << "Press any key to exit..." << endl;
-          cin.get();
+        if (!surface_movement->GetFFDBoxDefinition()) {
+          SU2_MPI::Error("The input grid doesn't have the entire FFD information!", CURRENT_FUNCTION);
         }
         
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {

@@ -321,10 +321,7 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
 
-      if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-
-      SU2_MPI::Abort(MPI_COMM_WORLD,1);
+      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
 
     }
 
