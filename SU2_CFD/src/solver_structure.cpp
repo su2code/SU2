@@ -3001,11 +3001,9 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 	}
 
-
 	/*--- External iteration ---*/
 
-  if ((config->GetDiscard_InFiles() == false) &&
-      (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) || (adjoint && config->GetRestart()))
+  if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
     config->SetExtIter_OffSet(ExtIter_);
 
 }
