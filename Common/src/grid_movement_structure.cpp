@@ -9771,9 +9771,7 @@ void CElasticityMovement::Set_Element_Stiffness(su2double ElemVolume, CConfig *c
       Nu = config->GetDeform_Coeff(); // Nu is normally a very large number, for rigid-body rotations, see Dwight (2009)
       break;
     case SOLID_WALL_DISTANCE:
-      if (rank == MASTER_NODE)
-        cout << "SOLID_WALL DISTANCE METHOD NOT YET IMPLEMENTED FOR THIS APPROACH!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("SOLID_WALL DISTANCE METHOD NOT YET IMPLEMENTED FOR THIS APPROACH!!", CURRENT_FUNCTION);
       break;
     case CONSTANT_STIFFNESS:
       E      = config->GetDeform_ElasticityMod();

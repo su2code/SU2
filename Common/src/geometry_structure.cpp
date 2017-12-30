@@ -14884,8 +14884,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
     if (ret != (unsigned long)nRestart_Vars) {
-      cout << endl << "Error reading restart file." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
@@ -14911,8 +14910,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (iVar = 0; iVar < nFields; iVar++) {
       ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
       if (ret != (unsigned long)CGNS_STRING_SIZE) {
-        cout << endl << "Error reading restart file." << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
       }
       config->fields.push_back(str_buf);
     }
@@ -14925,8 +14923,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     ret = fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
     if (ret != (unsigned long)nFields*GetnPointDomain()) {
-      cout << endl << "Error reading restart file." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
@@ -14937,16 +14934,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
     if (ret != 1) {
-      cout << endl << "Error reading restart file." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
     /*--- Read the metadata. ---*/
 
     ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
     if (ret != 8) {
-      cout << endl << "Error reading restart file." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
     /*--- Close the file. ---*/
@@ -15177,8 +15172,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     ret = fread(&magic_number, sizeof(int), 1, fhw);
     if (ret != 1) {
-      cout << endl << "Error reading restart file." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
