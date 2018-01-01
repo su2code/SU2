@@ -67,11 +67,6 @@
 
 using namespace std;
 
-inline namespace ctc {
-    const int nDim = 3;
-    const int nVar = 5;
-};
-
 /*!
  * \class CSolver
  * \brief Main class for defining the PDE solution, it requires
