@@ -78,7 +78,10 @@ public:
    */
   CReorderElementClass(const unsigned long  val_GlobalElemID,
                        const unsigned short val_TimeLevel,
-                       const bool           val_CommSolution);
+                       const bool           val_CommSolution,
+                       const unsigned short val_VTK_Type,
+                       const unsigned short val_nPolySol,
+                       const bool           val_JacConstant);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
@@ -107,6 +110,13 @@ public:
   bool GetCommSolution(void);
 
   /*!
+   * \brief Function to make available the element type of the element.
+   * \return The value of elemType, which stores the VTK type, polynomial degree
+             and whether or not the Jacobian is constant.
+   */
+  unsigned short GetElemType(void);
+
+  /*!
    * \brief Function to make available the global element ID.
    * \return The global element ID of the element.
    */
@@ -118,12 +128,22 @@ public:
    */
   unsigned short GetTimeLevel(void);
 
+  /*!
+   * \brief Function, which sets the value of commSolution.
+   * \param[in] val_CommSolution  - value to which commSolution must be set.
+   */
+  void SetCommSolution(const bool val_CommSolution);
+
 private:
   unsigned long  globalElemID; /*!< \brief Global element ID of the element. */
   unsigned short timeLevel;    /*!< \brief Time level of the element. Only relevant
                                            for time accurate local time stepping. */
   bool           commSolution; /*!< \brief Whether or not the solution must be
                                            communicated to other ranks. */
+  unsigned short elemType;     /*!< \brief Short hand for the element type, Which
+                                           stored info of the VTK_Type, polynomial
+                                           degree of the solution and whether or
+                                           not the Jacobian is constant. */
 
   /*!
    * \brief Copy function. Needed for the copy constructor and assignment operator.

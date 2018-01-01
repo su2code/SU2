@@ -538,7 +538,7 @@ private:
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
-  
+
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
   unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
@@ -626,7 +626,7 @@ private:
   *Marker_All_ZoneInterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
   *Marker_All_Turbomachinery,        /*!< \brief Global index for Turbomachinery markers using the grid information. */
   *Marker_All_TurbomachineryFlag,        /*!< \brief Global index for Turbomachinery markers flag using the grid information. */
-  *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
+  *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
@@ -956,6 +956,8 @@ private:
   su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
   su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
+  unsigned short byteAlignmentMatMul;        /*!< \brief Number of bytes in the vectorization direction for the matrix multiplication. Multipe of 64. */
+  unsigned short sizeMatMulPadding;          /*!< \brief The matrix size in the vectorization direction padded to a multiple of 8. Computed from byteAlignmentMatMul. */
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
@@ -1180,7 +1182,7 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
+
   template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                         su2double* & var1, su2double* & var2, su2double** & FlowDir) {
@@ -1189,7 +1191,7 @@ private:
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
+
   template <class Tenum>
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
@@ -1215,7 +1217,7 @@ private:
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
- 
+
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
                     string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) {
     assert(option_map.find(name) == option_map.end());
@@ -1244,7 +1246,7 @@ private:
                                                val_IntInfo_WF, val_DoubleInfo_WF);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
+
   void addPythonOption(const string name) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -1270,24 +1272,24 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
   SU2_Comm GetMPICommunicator();
-  
+
   /*!
    * \brief Set the MPI communicator for SU2.
    * \param[in] Communicator - MPI communicator for SU2.
    */
   void SetMPICommunicator(SU2_Comm Communicator);
-  
+
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -1438,7 +1440,7 @@ public:
    * \brief Get Description of the geometry to be analyzed
    */
   unsigned short GetGeo_Description(void);
-  
+
   /*!
    * \brief Creates a tecplot file to visualize the partition made by the DDC software.
    * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
@@ -1480,7 +1482,7 @@ public:
    * \return Value of the limits for the sections.
    */
   su2double GetStations_Bounds(unsigned short val_var);
-  
+
   /*!
    * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
    * \return Coordinate of the Axis.
@@ -1815,7 +1817,7 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void);
-  
+
   /*!
    * \brief Get the wave speed.
    * \return Value of the wave speed.
@@ -1833,21 +1835,21 @@ public:
    * \return Value of the Young's modulus of elasticity.
    */
   su2double GetElasticyMod(unsigned short id_val);
-  
+
   /*!
     * \brief Decide whether to apply DE effects to the model.
     * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
     */
-  
+
   bool GetDE_Effects(void);
-  
+
   /*!
     * \brief Decide whether to predict the DE effects for the next time step.
     * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
     */
-  
+
   bool GetDE_Predicted(void);
-  
+
   /*!
    * \brief Get the number of different electric constants.
    * \return Value of the DE modulus.
@@ -1932,13 +1934,13 @@ public:
     * \brief Decide whether it's necessary to add the cross term for adjoint FSI.
     * \return <code>TRUE</code> if it's necessary to add the cross term, <code>FALSE</code> otherwise.
     */
-  
+
   bool Add_CrossTerm(void);
-  
+
   /*!
     * \brief Set the boolean addCrossTerm to true or false.
     */
-  
+
   void Set_CrossTerm(bool needCrossTerm);
 
   /*!
@@ -1958,13 +1960,13 @@ public:
    * \return Value of the Poisson's ratio.
    */
   su2double GetPoissonRatio(unsigned short id_val);
-  
+
   /*!
    * \brief Get the Material Density.
    * \return Value of the Material Density.
    */
   su2double GetMaterialDensity(unsigned short id_val);
-  
+
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
    * \return Compressible or incompressible.
@@ -1988,7 +1990,7 @@ public:
    * \return Reference length for moment computation.
    */
   su2double GetRefLength(void);
-  
+
   /*!
    * \brief Get the reference element length for computing the slope limiting epsilon.
    * \return Reference element length for slope limiting epsilon.
@@ -2014,14 +2016,14 @@ public:
    * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
    */
   void SetRefArea(su2double val_area);
-  
+
   /*!
    * \brief In case the <i>SemiSpan</i> is equal to 0 then, it is necessary to compute the max y distance,
    *        with this function we set the value of the semi span.
    * \param[in] val_semispan - Value of the semispan.
    */
   void SetSemiSpan(su2double val_semispan);
-  
+
   /*!
    * \brief Set the value of the domain volume computed on the finest grid.
    * \note This volume do not include the volume of the body that is being simulated.
@@ -2058,13 +2060,13 @@ public:
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
                              unsigned short val_kind_upwind,        unsigned short val_kind_slopelimit,
                              bool val_muscl,                        unsigned short val_kind_fem);
-  
+
   /*!
    * \brief Get the value of limiter coefficient.
    * \return Value of the limiter coefficient.
    */
   su2double GetVenkat_LimiterCoeff(void);
-  
+
   /*!
    * \brief Freeze the value of the limiter after a number of iterations.
    * \return Number of iterations.
@@ -2076,7 +2078,7 @@ public:
    * \return Value of the sharp edge limiter coefficient.
    */
   su2double GetAdjSharp_LimiterCoeff(void);
-  
+
   /*!
    * \brief Get the Reynolds number. Dimensionless number that gives a measure of the ratio of inertial forces
    *        to viscous forces and consequently quantifies the relative importance of these two types of forces
@@ -2497,13 +2499,13 @@ public:
    * \return Coordinate system (cartesian, spherical, etc).
    */
   unsigned short GetFFD_CoordSystem(void);
-  
+
   /*!
    * \brief Get the kind of FFD Blending function.
    * \return Kind of FFD Blending function.
    */
   unsigned short GetFFD_Blending(void);
-  
+
   /*!
    * \brief Get the kind BSpline Order in i,j,k direction.
    * \return The kind BSpline Order in i,j,k direction.
@@ -2835,7 +2837,7 @@ public:
    * \return <code>TRUE</code> means that the solution at each surface will be written.
    */
   bool GetWrt_Surface(void);
-  
+
   /*!
    * \brief Get information about writing residuals to volume solution file.
    * \return <code>TRUE</code> means that residuals will be written to the solution file.
@@ -2990,7 +2992,7 @@ public:
    * \param[in] val_plotting - 0 or 1 depending if the the marker is part of the FSI interface.
    */
   void SetMarker_All_ZoneInterface(unsigned short val_marker, unsigned short val_fsiinterface);
- 
+
   /*!
    * \brief Set if a marker <i>val_marker</i> is part of the Turbomachinery (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3011,7 +3013,7 @@ public:
    * \param[in] val_turboperf - 0 if not part of the MixingPlane interface or greater than 1 if it is part.
    */
   void SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixplan_interface);
-   
+
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
    *        (read from the config file).
@@ -3149,7 +3151,7 @@ public:
    * \return Coordinate of the airfoil to slice.
    */
   su2double GetLocationStations(unsigned short val_section);
-  
+
   /*!
    * \brief Get the defintion of the nacelle location.
    * \param[in] val_index - Index of the section.
@@ -3316,7 +3318,7 @@ public:
    * \return Thermal conductivity.
    */
   su2double GetKt_Constant(void);
-  
+
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
@@ -3395,14 +3397,14 @@ public:
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Linear_Solver(void);
-  
-  
+
+
   /*!
    * \brief Get the kind of preconditioner for the implicit solver.
    * \return Numerical preconditioner for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Linear_Solver_Prec(void);
-  
+
   /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
@@ -3432,7 +3434,7 @@ public:
    * \return Min error of the linear solver for the implicit formulation.
    */
   su2double GetDeform_Linear_Solver_Error(void);
-  
+
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
@@ -3444,7 +3446,7 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetDeform_Linear_Solver_Iter(void);
-  
+
   /*!
    * \brief Get the ILU fill-in level for the linear solver.
    * \return Fill in level of the ILU preconditioner for the linear solver.
@@ -3486,7 +3488,7 @@ public:
    * \return value of the wing semi span.
    */
   su2double GetSemiSpan(void);
-  
+
   /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
@@ -3582,7 +3584,7 @@ public:
    * \return Distance to the surface to be deformed.
    */
   su2double GetDeform_Limit(void);
-  
+
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
    */
@@ -3704,7 +3706,7 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL(void);
-  
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -3713,7 +3715,7 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Flow(void);
-  
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -3722,7 +3724,7 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Turb(void);
-  
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -3731,7 +3733,7 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjFlow(void);
-  
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -4069,7 +4071,7 @@ public:
    * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
    */
   bool GetFrozen_Visc_Cont(void);
-  
+
   /*!
    * \brief Provides information about the way in which the turbulence will be treated by the
    *        disc. adjoint method.
@@ -4083,7 +4085,7 @@ public:
    * \return <code>FALSE</code> means that the limiter computation is included.
    */
   bool GetFrozen_Limiter_Disc(void);
-  
+
   /*!
    * \brief Write convergence file for FSI problems
    * \return <code>FALSE</code> means no file is written.
@@ -4203,7 +4205,7 @@ public:
    * \return Kind of turbomachinery architecture.
    */
   unsigned short GetKind_SpanWise(void);
-  
+
   /*!
    * \brief Verify if there is mixing plane interface specified from config file.
    * \return boolean.
@@ -4227,13 +4229,13 @@ public:
    * \return number of bound.
    */
   unsigned short GetnMarker_MixingPlaneInterface(void);
-  
+
   /*!
    * \brief Verify if there is Turbomachinery performance option specified from config file.
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void);
-  
+
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
    * \return nBlades.
@@ -4251,7 +4253,7 @@ public:
    * \return boolean.
    */
   bool GetBoolGiles(void);
-  
+
   /*!
    * \brief Verify if there is any Riemann Boundary Condition option specified from config file.
    * \return boolean.
@@ -4304,7 +4306,7 @@ public:
    * \return number of max span-wise sections.
    */
   unsigned short GetnSpanMaxAllZones(void);
-	
+
   /*!
    * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
    */
@@ -4343,7 +4345,7 @@ public:
    * \return name of the bound.
    */
   string GetMarker_PerBound(unsigned short val_marker);
-  
+
   /*!
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
    * \return Kind of inlet boundary condition.
@@ -4373,7 +4375,7 @@ public:
    * \return Z location of the waterline.
    */
   su2double GetGeo_Waterline_Location(void);
-  
+
   /*!
    * \brief Provides information about the the nodes that are going to be moved on a deformation
    *        volumetric grid deformation.
@@ -4689,7 +4691,7 @@ public:
    * \return Name of the file with the solution of the structural problem.
    */
   string GetSolution_AdjFEMFileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the residual of the problem.
    * \return Name of the file with the residual of the problem.
@@ -4755,13 +4757,13 @@ public:
    * \return Name of the file with the adjoint structure variables.
    */
   string GetAdjStructure_FileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the adjoint structure variables.
    * \return Name of the file with the adjoint structure variables.
    */
   string GetAdjSurfStructure_FileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the structure variables.
    * \return Name of the file with the structure variables.
@@ -4815,7 +4817,7 @@ public:
    * \return Name of the restart file for the flow variables.
    */
   string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
-  
+
   /*!
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
@@ -4839,7 +4841,7 @@ public:
    * \return Name of the restart file for the structural adjoint variables.
    */
   string GetRestart_AdjFEMFileName(void);
-  
+
   /*!
    * \brief Get the name of the file with the adjoint variables.
    * \return Name of the file with the adjoint variables.
@@ -4902,7 +4904,7 @@ public:
    * \return Relative/Absolute criteria for structural convergence.
    */
   unsigned short GetResidual_Criteria_FEM(void);
-  
+
   /*!
    * \brief Get functional that is going to be used to evaluate the residual flow convergence.
    * \return Functional that is going to be used to evaluate the residual flow convergence.
@@ -5254,13 +5256,13 @@ public:
    * \return Harmonic Balance Frequency pointer.
    */
   su2double* GetOmega_HB(void);
-	
+
   /*!
    * \brief Get if harmonic balance source term is to be preconditioned
    * \return yes or no to harmonic balance preconditioning
    */
   bool GetHB_Precondition(void);
-  
+
   /*!
    * \brief Get if we should update the motion origin.
    * \param[in] val_marker - Value of the marker in which we are interested.
@@ -5456,7 +5458,7 @@ public:
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
-  
+
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
    * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
@@ -5529,25 +5531,25 @@ public:
    * \return Value of the order of magnitude reduction of the residual.
    */
   su2double GetOrderMagResidual_BGS_F(void);
-  
+
   /*!
    * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual_BGS_F(void);
-  
+
   /*!
    * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
    * \return Value of the order of magnitude reduction of the residual.
    */
   su2double GetOrderMagResidual_BGS_S(void);
-  
+
   /*!
    * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual_BGS_S(void);
-  
+
   /*!
    * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
    * \return Value of Res_FEM_UTOL (log10 scale).
@@ -5571,7 +5573,7 @@ public:
    * \return Value of Res_FEM_ADJ (log10 scale).
    */
   su2double GetCriteria_FEM_ADJ(void);
-  
+
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
    * \return Value of the damping factor.
@@ -5625,7 +5627,7 @@ public:
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   su2double GetdCD_dCMy(void);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
@@ -5649,37 +5651,37 @@ public:
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   su2double GetdCMx_dCL(void);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCMx_dCL(su2double val_dcmx_dcl);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   su2double GetdCMy_dCL(void);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCMy_dCL(su2double val_dcmy_dcl);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   su2double GetdCMz_dCL(void);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCMz_dCL(su2double val_dcmz_dcl);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
@@ -5697,7 +5699,7 @@ public:
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCD_dCMy(su2double val_dcd_dcmy);
-  
+
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
@@ -5995,28 +5997,28 @@ public:
    * \return The var1
    */
   su2double GetGiles_Var1(string val_marker);
-  
+
   /*!
    * \brief Get the var 2 for the Giles boundary.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The var2
    */
   su2double GetGiles_Var2(string val_marker);
-  
+
   /*!
    * \brief Get the Flowdir for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The Flowdir
    */
   su2double* GetGiles_FlowDir(string val_marker);
-  
+
   /*!
    * \brief Get Kind Data for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return Kind data
    */
   unsigned short GetKind_Data_Giles(string val_marker);
-  
+
   /*!
    * \brief Set the var 1 for Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
@@ -6109,7 +6111,7 @@ public:
    * \return Pointer to the double info for the given marker.
    */
   su2double* GetWallFunction_DoubleInfo(string val_marker);
-  
+
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
@@ -6782,7 +6784,7 @@ public:
    * \param[in] val_surface_totalpressure - Value of the total pressure.
    */
   void SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure);
-  
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -7012,7 +7014,7 @@ public:
    * \return The total pressure.
    */
   su2double GetSurface_TotalPressure(unsigned short val_imarker);
-   
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -7124,7 +7126,7 @@ public:
    * \return The damper constant.
    */
   su2double GetDamper_Constant(string val_index);
-  
+
   /*!
    * \brief Get the force value at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
@@ -7145,14 +7147,14 @@ public:
    * \return The load value.
    */
   su2double GetDisp_Dir_Value(string val_index);
-  
+
   /*!
    * \brief Get the force multiplier at a load boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
    * \return The load multiplier.
    */
   su2double GetDisp_Dir_Multiplier(string val_index);
-  
+
   /*!
    * \brief Get the force direction at a loaded boundary in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
@@ -7166,7 +7168,7 @@ public:
    * \return The load direction.
    */
   su2double* GetDisp_Dir(string val_index);
-  
+
   /*!
    * \brief Get the amplitude of the sine-wave at a load boundary defined in cartesian coordinates.
    * \param[in] val_index - Index corresponding to the load boundary.
@@ -7413,13 +7415,13 @@ public:
    * \return Bound for the line search.
    */
   su2double GetOpt_LineSearch_Bound(void);
-  
+
   /*!
    * \brief Set the scale factor for the line search.
    * \param[in] val_scale - scale of the deformation.
    */
   void SetOpt_RelaxFactor(su2double val_scale);
-  
+
   /*!
    * \brief Get the node number of the CV to visualize.
    * \return Node number of the CV to visualize.
@@ -7443,7 +7445,7 @@ public:
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
    */
   bool GetEval_dOF_dCX(void);
-  
+
   /*!
    * \brief Get information about whether to use fixed CL mode.
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
@@ -7473,7 +7475,7 @@ public:
    * \return Number of iterations.
    */
   unsigned long GetIter_dCL_dAlpha(void);
-  
+
   /*!
    * \brief Get the value of the damping coefficient for fixed CL mode.
    * \return Damping coefficient for fixed CL mode.
@@ -7664,7 +7666,7 @@ public:
    * \return Number of FSI subiters.
    */
   unsigned short GetnIterFSI_Ramp(void);
-  
+
   /*!
    * \brief Get Aitken's relaxation parameter for static relaxation cases.
    * \return Aitken's relaxation parameters.
@@ -7695,14 +7697,14 @@ public:
    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
    * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
    */
-  
+
   bool GetPseudoStatic(void);
-  
+
   /*!
     * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
     * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
     */
-  
+
   bool GetMatchingMesh(void);
 
   /*!
@@ -7770,19 +7772,19 @@ public:
    * \return Number of different values for the elasticity modulus.
    */
   unsigned short GetnElasticityMod(void);
-  
+
   /*!
    * \brief Get the number of different values for the Poisson ratio.
    * \return Number of different values for the Poisson ratio.
    */
   unsigned short GetnPoissonRatio(void);
-  
+
   /*!
    * \brief Get the number of different values for the Material density.
    * \return Number of different values for the Material density.
    */
   unsigned short GetnMaterialDensity(void);
-  
+
   /*!
    * \brief Get the integration coefficients for the Generalized Alpha - Newmark integration integration scheme.
    * \param[in] val_coeff - Index of the coefficient.
@@ -7795,35 +7797,35 @@ public:
    * \return Number of different values for the modulus of the electric field.
    */
   unsigned short GetnElectric_Field(void);
-  
+
   /*!
    * \brief Get the dimensionality of the electric field.
    * \return Number of integration coefficients.
    */
   unsigned short GetnDim_Electric_Field(void);
-  
+
   /*!
    * \brief Get the values for the electric field modulus.
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
   su2double Get_Electric_Field_Mod(unsigned short val_coeff);
-  
+
   /*!
    * \brief Set the values for the electric field modulus.
    * \param[in] val_coeff - Index of the electric field.
    * \param[in] val_el_field - Value of the electric field.
    */
   void Set_Electric_Field_Mod(unsigned short val_coeff, su2double val_el_field);
-  
+
   /*!
    * \brief Get the direction of the electric field in reference configuration.
    * \param[in] val_coeff - Index of the coefficient.
    * \return Alpha coefficient for the Runge-Kutta integration scheme.
    */
   su2double* Get_Electric_Field_Dir(void);
-  
-  
+
+
   /*!
    * \brief Check if the user wants to apply the load as a ramp.
    * \return 	<code>TRUE</code> means that the load is to be applied as a ramp.
@@ -7835,7 +7837,7 @@ public:
    * \return 	Value of the max time while the load is linearly increased
    */
   su2double GetRamp_Time(void);
-  
+
    /*!
     * \brief Get the kind of load transfer method we want to use for dynamic problems
     * \note This value is obtained from the config file, and it is constant
@@ -7843,19 +7845,19 @@ public:
     * \return Kind of transfer method for multiphysics problems
     */
    unsigned short GetDynamic_LoadTransfer(void);
-  
+
    /*!
     * \brief Get the penalty weight value for the objective function.
     * \return  Penalty weight value for the reference geometry objective function.
     */
    su2double GetRefGeom_Penalty(void);
-  
+
    /*!
     * \brief Get the penalty weight value for the objective function.
     * \return  Penalty weight value for the reference geometry objective function.
     */
    su2double GetTotalDV_Penalty(void);
-  
+
   /*!
    * \brief Get the maximum time of the ramp.
    * \return 	Value of the max time while the load is linearly increased
@@ -7885,13 +7887,13 @@ public:
    * \return Value of the physical time in an unsteady simulation.
    */
   bool GetFSI_Simulation(void);
-  
+
    /*!
     * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
     * \return ID
     */
    unsigned short GetnID_DV(void);
-  
+
   /*!
    * \brief Check if we want to apply an incremental load to the nonlinear structural simulation
    * \return <code>TRUE</code> means that the load is to be applied in increments.
@@ -7948,6 +7950,13 @@ public:
    * \return The specified factor for the DG discretization.
    */
   su2double GetTheta_Interior_Penalty_DGFEM(void);
+
+  /*!
+   * \brief Function to make available the matrix size in vectorization in
+            order to optimize the gemm performance.
+   * \return The matrix size in this direction.
+   */
+  unsigned short GetSizeMatMulPadding(void);
 
   /*!
    * \brief Function to make available whether or not the entropy must be computed.

@@ -53,6 +53,28 @@ void long3T::Copy(const long3T &other) {
   long2 = other.long2;
 }
 
+CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID,
+                                           const unsigned short val_TimeLevel,
+                                           const bool           val_CommSolution,
+                                           const unsigned short val_VTK_Type,
+                                           const unsigned short val_nPolySol,
+                                           const bool           val_JacConstant) {
+
+  /* Copy the global elment ID, time level and whether or not this element
+     must be communicated. */
+  globalElemID = val_GlobalElemID;
+  timeLevel    = val_TimeLevel;
+  commSolution = val_CommSolution;
+
+  /* Create the element type used in this class, which stores information of
+     the VTK type, the polynomial degree of the solution and whether or not the
+     Jacobian of the transformation is constant. As it is possible that the
+     polynomial degree of the solution is zero, this convention is different
+     from the convention used in the SU2 grid file. */
+  elemType = val_VTK_Type + 100*val_nPolySol;
+  if( !val_JacConstant ) elemType += 50;
+}
+
 bool CReorderElementClass::operator< (const CReorderElementClass &other) const {
 
   /* Elements with the lowest time level are stored first. */
@@ -63,6 +85,11 @@ bool CReorderElementClass::operator< (const CReorderElementClass &other) const {
      are stored first. */
   if(commSolution != other.commSolution) return other.commSolution;
 
+  /* Elements of the same element type must be stored as contiguously as
+     possible to allow for the simultaneous treatment of elements in the
+     matrix multiplications. */
+  if(elemType != other.elemType) return elemType < other.elemType;
+
   /* The final comparison is based on the global element ID. */
   return globalElemID < other.globalElemID;
 }
@@ -71,6 +98,7 @@ void CReorderElementClass::Copy(const CReorderElementClass &other) {
   globalElemID = other.globalElemID;
   timeLevel    = other.timeLevel;
   commSolution = other.commSolution;
+  elemType     = other.elemType;
 }
 
 bool SortFacesClass::operator()(const FaceOfElementClass &f0,
@@ -251,6 +279,17 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Copy the number of dimensions. ---*/
   nDim = geometry->GetnDim();
+
+  /*--- Determine the number of variables stored per DOF.              ---*/
+  /*--- This is specifically taylored towards perfect gas computations ---*/
+  /*--- and must be generalized later. As this number is also needed   ---*/
+  /*--- in the solver, it is worthwhile to create a separate function  ---*/
+  /*--- for this purpose.                                              ---*/
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+  unsigned short nVar;
+  if( compressible ) nVar = nDim + 2;
+  else               nVar = nDim + 1;
 
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
@@ -569,11 +608,26 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
-      unsigned long  globalID  = longRecvBuf[i][indL];
-      unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
-      unsigned short nFaces    = shortRecvBuf[i][indS+5];
-      unsigned short timeLevel = shortRecvBuf[i][indS+6];
-      bool           commSol   = false;
+      unsigned long  globalID    = longRecvBuf[i][indL];
+      unsigned short VTK_Type    = shortRecvBuf[i][indS];
+      unsigned short nPolySol    = shortRecvBuf[i][indS+2];
+      unsigned short nDOFsGrid   = shortRecvBuf[i][indS+3];
+      unsigned short nFaces      = shortRecvBuf[i][indS+5];
+      unsigned short timeLevel   = shortRecvBuf[i][indS+6];
+      bool           JacConstant = (bool) shortRecvBuf[i][indS+7];
+      bool           commSol     = false;
+
+      /* If the integration rule for constant and non-constant Jacobian
+         elements is the same, simply set JacConstant to false, such that
+         the elements with constant and non-constant Jacobians are
+         considered the same. */
+      if( JacConstant ) {
+        const unsigned short orderExactStraight =
+          (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
+        const unsigned short orderExactCurved =
+          (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+        if(orderExactStraight == orderExactCurved) JacConstant = false;
+      }
 
       /* Update the local value of the maximum time level. */
       maxTimeLevelLoc = max(maxTimeLevelLoc, timeLevel);
@@ -618,7 +672,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       }
 
       /* Store the required data for this element in ownedElements. */
-      ownedElements.push_back(CReorderElementClass(globalID, timeLevel, commSol));
+      ownedElements.push_back(CReorderElementClass(globalID, timeLevel, commSol,
+                                                   VTK_Type, nPolySol, JacConstant));
     }
   }
 
@@ -655,9 +710,121 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*---           a halo element. However, the residual of these internal    ---*/
   /*---           elements do not receive a contribution computed on a       ---*/
   /*---           different rank.                                            ---*/
+  /*---         - Some of the elements that do not need to send their data   ---*/
+  /*---           to other ranks may still be put in that part to increase   ---*/
+  /*---           the efficiency when treating element simultaneously, see   ---*/
+  /*---           next point.                                                ---*/
+  /*---         - Elements of the same type are put contiguously in memory   ---*/
+  /*---           as much as possible to facilitate the simultaneous         ---*/
+  /*---           treatment in the matrix multiplications to increase        ---*/
+  /*---           performance.                                               ---*/
   /*---         - A reverse Cuthill McKee renumbering takes place to obtain  ---*/
   /*---           better cache performance for the face residuals.           ---*/
   /*----------------------------------------------------------------------------*/
+
+  /* Determine the number of elements/faces that are treated simultaneously */
+  /* in the matrix products to obtain good gemm performance.                */
+  const unsigned short nElemSimul = config->GetSizeMatMulPadding()/nVar;
+
+  /* Determine the number of different element types present. */
+  map<unsigned short, unsigned short> mapElemTypeToInd;
+  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
+                                             OEI!=ownedElements.end(); ++OEI) {
+    const unsigned short elType = OEI->GetElemType();
+
+    if(mapElemTypeToInd.find(elType) == mapElemTypeToInd.end()) {
+      const unsigned short ind = mapElemTypeToInd.size();
+      mapElemTypeToInd[elType] = ind;
+    }
+  }
+
+  /* Determine the number of elements per element type per time level.
+     Make a distinction between internal elements (elements that are not
+     communicated) and elements that are communicated. */
+  vector<vector<unsigned long> > nInternalElem(nTimeLevels,
+                                               vector<unsigned long>(mapElemTypeToInd.size()));
+  vector<vector<unsigned long> > nCommElem(nTimeLevels,
+                                           vector<unsigned long>(mapElemTypeToInd.size()));
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+  {
+    for(unsigned long j=0; j<mapElemTypeToInd.size(); ++j) {
+      nInternalElem[i][j] = 0;
+      nCommElem[i][j] = 0;
+    }
+  }
+
+  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
+                                             OEI!=ownedElements.end(); ++OEI) {
+    const unsigned short elType = OEI->GetElemType();
+    map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
+    unsigned short ind = MI->second;
+
+    if( OEI->GetCommSolution() )
+      ++nCommElem[OEI->GetTimeLevel()][ind];
+    else
+      ++nInternalElem[OEI->GetTimeLevel()][ind];
+  }
+
+  /* Loop again over the owned elements and check if elements, which do not
+     have to send their solution, are flagged as such in order to improve
+     the gemm performance. */
+  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
+                                             OEI!=ownedElements.end(); ++OEI) {
+
+    /* Check for an internal element, i.e. an element for which the solution
+       does not need to be communicated. */
+    if( !OEI->GetCommSolution() ) {
+
+      /* Determine the time level and the index of the element type. */
+      const unsigned short tLev = OEI->GetTimeLevel();
+
+      const unsigned short elType = OEI->GetElemType();
+      map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
+      const unsigned short ind = MI->second;
+
+      /* Determine whether or not this element must be moved from internal to
+         comm elements to improve performance. Change the appropriate data
+         when this must happen. */
+      if(nInternalElem[tLev][ind]%nElemSimul && nCommElem[tLev][ind]%nElemSimul) {
+        OEI->SetCommSolution(true);
+        --nInternalElem[tLev][ind];
+        ++nCommElem[tLev][ind];
+      }
+    }
+  }
+
+  /* Check whether there are enough elements in every partition for every
+     time level to guarantee a good gemm performance. */
+  unsigned long nFullChunks = 0, nPartialChunks = 0;
+  for(unsigned short tLev=0; tLev<nTimeLevels; ++tLev) {
+    for(unsigned long j=0; j<nInternalElem[tLev].size(); ++j) {
+      nFullChunks += nInternalElem[tLev][j]/nElemSimul;
+      if(nInternalElem[tLev][j]%nElemSimul) ++nPartialChunks;
+    }
+
+    for(unsigned long j=0; j<nCommElem[tLev].size(); ++j) {
+      nFullChunks += nCommElem[tLev][j]/nElemSimul;
+      if(nCommElem[tLev][j]%nElemSimul) ++nPartialChunks;
+    }
+  }
+
+  unsigned long tooManyPartChunksLoc = 0;
+  if(5*nPartialChunks >= (nPartialChunks+nFullChunks)) tooManyPartChunksLoc = 1;
+
+  /* Determine the number of ranks which contain too many partial chunks.
+     The result only needs to be known on the master node. */
+  unsigned long nRanksTooManyPartChunks = tooManyPartChunksLoc;
+#ifdef HAVE_MPI
+  SU2_MPI::Reduce(&tooManyPartChunksLoc, &nRanksTooManyPartChunks, 1,
+                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+  if((rank == MASTER_NODE) && (nRanksTooManyPartChunks != 0) && (nRank > 1)) {
+    cout << endl << "                 WARNING" << endl;
+    cout << "There are " << nRanksTooManyPartChunks << " partitions for which "
+         << " the simultaneous treatment of volume elements is not optimal." << endl;
+    cout << "This could lead to a significant load imbalance." << endl;
+  }
 
   /* Sort the elements of owned elements in increasing order. */
   sort(ownedElements.begin(), ownedElements.end());

@@ -41,11 +41,6 @@ inline long3T::long3T(const long3T &other){Copy(other);}
 
 inline long3T& long3T::operator=(const long3T &other){Copy(other); return (*this);}
 
-inline CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID,
-                                                  const unsigned short val_TimeLevel,
-                                                  const bool           val_CommSolution)
- {globalElemID = val_GlobalElemID; timeLevel = val_TimeLevel; commSolution = val_CommSolution;}
-
 inline CReorderElementClass::~CReorderElementClass(void) { }
 
 inline CReorderElementClass::CReorderElementClass(const CReorderElementClass &other) { Copy(other); }
@@ -54,9 +49,13 @@ inline CReorderElementClass& CReorderElementClass::operator=(const CReorderEleme
 
 inline bool CReorderElementClass::GetCommSolution(void) { return commSolution; }
 
+inline unsigned short CReorderElementClass::GetElemType(void) { return elemType; }
+
 inline unsigned long CReorderElementClass::GetGlobalElemID(void) { return globalElemID; }
 
 inline unsigned short CReorderElementClass::GetTimeLevel(void) { return timeLevel; }
+
+inline void CReorderElementClass::SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
 
 inline SortFacesClass::SortFacesClass(unsigned long            val_nVolElemOwned,
                                       unsigned long            val_nVolElemTot,
