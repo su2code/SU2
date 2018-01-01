@@ -1748,6 +1748,8 @@ inline su2double CConfig::GetQuadrature_Factor_Time_ADER_DG(void) {return Quadra
 
 inline su2double CConfig::GetTheta_Interior_Penalty_DGFEM(void) {return Theta_Interior_Penalty_DGFEM;}
 
+inline unsigned short CConfig::GetSizeMatMulPadding(void) {return sizeMatMulPadding;}
+
 inline bool CConfig::GetCompute_Entropy(void) {return Compute_Entropy;}
 
 inline bool CConfig::GetUse_Lumped_MassMatrix_DGFEM(void) {return Use_Lumped_MassMatrix_DGFEM;}

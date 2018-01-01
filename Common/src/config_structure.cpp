@@ -385,7 +385,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 }
 
 void CConfig::SetPointersNull(void) {
-  
+
   Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;
   Marker_CfgFile_Monitoring   = NULL;   Marker_All_Monitoring    = NULL;
   Marker_CfgFile_Designing    = NULL;   Marker_All_Designing     = NULL;
@@ -404,13 +404,13 @@ void CConfig::SetPointersNull(void) {
   Kind_WallFunctions       = NULL;
   IntInfo_WallFunctions    = NULL;
   DoubleInfo_WallFunctions = NULL;
-  
+
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
   Marker_SymWall              = NULL;    Marker_Pressure         = NULL;    Marker_PerBound       = NULL;
   Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
-  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
+  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;
   Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
   Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;    Marker_Disp_Dir       = NULL;
@@ -428,7 +428,7 @@ void CConfig::SetPointersNull(void) {
   Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
   Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
   FlowLoad_Value  = NULL;    Damper_Constant        = NULL;
-  
+
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
   Inlet_Ttotal    = NULL;    Inlet_Ptotal      = NULL;
@@ -511,8 +511,8 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow          = NULL;
   Kappa_AdjFlow       = NULL;
   Stations_Bounds     = NULL;
-  ParamDV             = NULL;     
-  DV_Value            = NULL;    
+  ParamDV             = NULL;
+  DV_Value            = NULL;
   Design_Variable     = NULL;
 
   Hold_GridFixed_Coord      = NULL;
@@ -1204,7 +1204,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FSI_DISCADJ_LIN_SOLVER_STRUC", Kind_DiscAdj_Linear_Solver_FSI_Struc, Linear_Solver_Map, CONJUGATE_GRADIENT);
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("FSI_DISCADJ_LIN_PREC_STRUC", Kind_DiscAdj_Linear_Prec_FSI_Struc, Linear_Solver_Prec_Map, JACOBI);
-  
+
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
@@ -1327,7 +1327,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_TURB
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
-  
+
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
   /*!\brief SLOPE_LIMITER_ADJTURB
@@ -1643,9 +1643,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RADIUS_GYRATION_SQUARED", RadiusGyrationSquared, 3.48);
   /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
   addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
-  
+
   /*!\par CONFIG_CATEGORY: Optimization Problem*/
-  
+
   /* DESCRIPTION: Scale the line search in the optimizer */
   addDoubleOption("OPT_RELAX_FACTOR", Opt_RelaxFactor, 1.0);
 
@@ -1780,6 +1780,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("USE_LUMPED_MASSMATRIX_DGFEM", Use_Lumped_MassMatrix_DGFEM, false);
   /* DESCRIPTION: Only compute the exact Jacobian of the spatial discretization (NO, YES) */
   addBoolOption("JACOBIAN_SPATIAL_DISCRETIZATION_ONLY", Jacobian_Spatial_Discretization_Only, false);
+
+  /* DESCRIPTION: Number of aligned bytes for the matrix multiplications. Multiple of 64. (128 by default) */
+  addUnsignedShortOption("ALIGNED_BYTES_MATMUL", byteAlignmentMatMul, 128);
 
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
@@ -2088,10 +2091,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Optimization gradient factor */
   addPythonOption("OPT_GRADIENT_FACTOR");
-  
+
   /* DESCRIPTION: Upper bound for the optimizer */
   addPythonOption("OPT_BOUND_UPPER");
-  
+
   /* DESCRIPTION: Lower bound for the optimizer */
   addPythonOption("OPT_BOUND_LOWER");
 
@@ -2364,7 +2367,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
 
   /*--- Set limiter for no MUSCL reconstructions ---*/
-  
+
   if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
   if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
   if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
@@ -2387,7 +2390,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObj=1;
     nObjW=1;
   }
-  
+
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
 
   if (nObjW<nObj) {
@@ -2458,7 +2461,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
   }
-  
+
   /*--- Initialize non-physical points/reconstructions to zero ---*/
 
   Nonphys_Points   = 0;
@@ -3232,12 +3235,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Solver == NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
-    
+
   Kappa_2nd_Flow    = Kappa_Flow[0];
   Kappa_4th_Flow    = Kappa_Flow[1];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
-  
+
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
 
@@ -3398,6 +3401,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
 
+  /* Check if the byte alignment of the matrix multiplications is a
+     multiple of 64. */
+  if( byteAlignmentMatMul%64 ) {
+    if(rank == MASTER_NODE)
+      cout << "ALIGNED_BYTES_MATMUL must be a multiple of 64." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /* Determine the value of sizeMatMulPadding, which is the matrix size in
+     the vectorization direction when padding is applied to have optimal
+     performance in the matrix multiplications. */
+  sizeMatMulPadding = byteAlignmentMatMul/sizeof(passivedouble);
+
   /* Correct the number of time levels for time accurate local time
      stepping, if needed.  */
   if (nLevels_TimeAccurateLTS == 0)  nLevels_TimeAccurateLTS =  1;
@@ -3465,7 +3481,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nIntCoeffs = 2;
     Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
   }
-  
+
   if (nElasticityMod == 0) {
   nElasticityMod = 1;
   ElasticityMod = new su2double[1]; ElasticityMod[0] = 2E11;
@@ -3528,7 +3544,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Length based parameter for slope limiters uses a default value of
    0.1m ---*/
-  
+
   RefElemLength = 1.0;
   if (SystemMeasurements == US) RefElemLength /= 0.3048;
 
@@ -3560,7 +3576,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
-    
+
     if (Geo_Description != NACELLE) {
       for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
         LocationStations[iSections] = LocationStations[iSections]/12.0;
@@ -3694,7 +3710,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RampOutletPressure = false;
     RampRotatingFrame = false;
   }
-  
+
   delete [] tmp_smooth;
 
   /*--- Make sure that implicit time integration is disabled
@@ -3766,7 +3782,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet;
-  
+
   /*--- Add the possible send/receive domains ---*/
 
   nMarker_Max = nMarker_CfgFile + OVERHEAD*size;
@@ -4491,17 +4507,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    
+
     if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
     else { cout << "The reference area is " << RefArea;
       if (SystemMeasurements == US) cout << " in^2." << endl; else cout << " m^2." << endl;
     }
-    
+
     if (SemiSpan == 0.0) cout << "The semi-span will be computed using the max y(3D) value." << endl;
     else { cout << "The semi-span length area is " << SemiSpan;
       if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
     }
-    
+
     cout << "The reference length is " << RefLength;
     if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
 
@@ -4867,7 +4883,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SW)  cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
-        
+
         if (MUSCL_Flow) {
           cout << "Second order integration in space, with slope limiter." << endl;
             switch (Kind_SlopeLimit_Flow) {
@@ -4892,7 +4908,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         else {
           cout << "First order integration in space." << endl;
         }
-        
+
       }
 
     }
@@ -4980,7 +4996,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "First order integration." << endl;
         }
       }
-      
+
       cout << "The reference sharp edge distance is: " << AdjSharp_LimiterCoeff*RefElemLength*Venkat_LimiterCoeff <<". "<< endl;
 
     }
@@ -5074,12 +5090,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
 
         if(Kind_Solver != FEM_EULER) {
-          cout << "Theta symmetrizing terms interior penalty: " << Theta_Interior_Penalty_DGFEM << endl;
+          cout << "Theta symmetrizing terms interior penalty:  " << Theta_Interior_Penalty_DGFEM << endl;
         }
       }
 
-      cout << "Quadrature factor for straight elements:   " << Quadrature_Factor_Straight << endl;
-      cout << "Quadrature factor for curved elements:     "   << Quadrature_Factor_Curved << endl;
+      cout << "Quadrature factor for straight elements:    " << Quadrature_Factor_Straight << endl;
+      cout << "Quadrature factor for curved elements:      " << Quadrature_Factor_Curved << endl;
+
+      cout << "Byte alignment matrix multiplications:      " << byteAlignmentMatMul << endl;
+      cout << "Padded matrix size for optimal performance: " << sizeMatMulPadding << endl;
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
@@ -6204,7 +6223,7 @@ CConfig::~CConfig(void) {
   if (Omega_HB != NULL) delete [] Omega_HB;
 
   /*--- Marker pointers ---*/
-  
+
   if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
   if (Marker_All_GeoEval     != NULL) delete[] Marker_All_GeoEval;
 
@@ -6261,7 +6280,7 @@ CConfig::~CConfig(void) {
 
   if (DoubleInfo_WallFunctions != NULL) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
-      if (DoubleInfo_WallFunctions[iMarker] != NULL) 
+      if (DoubleInfo_WallFunctions[iMarker] != NULL)
         delete[] DoubleInfo_WallFunctions[iMarker];
     }
     delete[] DoubleInfo_WallFunctions;
@@ -6483,7 +6502,7 @@ CConfig::~CConfig(void) {
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
-  
+
   if (ElasticityMod        != NULL) delete [] ElasticityMod;
   if (PoissonRatio         != NULL) delete [] PoissonRatio;
   if (MaterialDensity      != NULL) delete [] MaterialDensity;
@@ -6701,12 +6720,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                              unsigned long val_extiter) {
 
   /*--- Set the simulation global time ---*/
-  
+
   Current_UnstTime = static_cast<su2double>(val_extiter)*Delta_UnstTime;
   Current_UnstTimeND = static_cast<su2double>(val_extiter)*Delta_UnstTimeND;
 
   /*--- Set the solver methods ---*/
-  
+
   switch (val_solver) {
     case EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
@@ -7388,8 +7407,8 @@ su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
     if(Marker_WallFunctions[iMarker] == val_marker) {
       doubleInfo = DoubleInfo_WallFunctions[iMarker];
       break;
-    } 
-  } 
+    }
+  }
 
   return doubleInfo;
 }
