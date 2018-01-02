@@ -682,6 +682,8 @@ inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_
 
 inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
 
+inline su2double CConfig::GetNacelleLocation(unsigned short val_index) { return NacelleLocation[val_index]; }
+
 inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }
 
 inline unsigned short CConfig::GetnFFD_Fix_JDir(void) { return nFFD_Fix_JDir; }
