@@ -6206,6 +6206,7 @@ protected:
   unsigned long AoA_Counter;
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
+  su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
 public:
   
@@ -7274,6 +7275,14 @@ public:
    */
   void SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                        CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] iPoint - Index of the grid point
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPreconditioner(CConfig *config, unsigned long iPoint);
+
 };
 
 /*!

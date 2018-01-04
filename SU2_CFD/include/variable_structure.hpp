@@ -3352,6 +3352,28 @@ public:
    * \brief Set all the primitive variables for incompressible flows.
    */
   bool SetPrimVar(CFluidModel *FluidModel);
+
+  /*!
+   * \brief Set the specific heat Cp.
+   */
+  void SetSpecificHeatCp(su2double Cp);
+
+  /*!
+   * \brief Set the specific heat Cv.
+   */
+  void SetSpecificHeatCv(su2double Cv);
+
+  /*!
+   * \brief Get the specific heat at constant P of the flow.
+   * \return Value of the specific heat at constant P of the flow.
+   */
+  su2double GetSpecificHeatCp(void);
+
+  /*!
+   * \brief Get the specific heat at constant V of the flow.
+   * \return Value of the specific heat at constant V of the flow.
+   */
+  su2double GetSpecificHeatCv(void);
   
 };
 
@@ -3604,34 +3626,12 @@ public:
    * \brief Set the thermal conductivity.
    */
   void SetThermalConductivity(su2double thermalConductivity);
-  
-  /*!
-   * \brief Set the specific heat Cp.
-   */
-  void SetSpecificHeatCp(su2double Cp);
-  
-  /*!
-   * \brief Set the specific heat Cv.
-   */
-  void SetSpecificHeatCv(su2double Cv);
 
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
   su2double GetThermalConductivity(void);
-  
-  /*!
-   * \brief Get the specific heat at constant P of the flow.
-   * \return Value of the specific heat at constant P of the flow.
-   */
-  su2double GetSpecificHeatCp(void);
-
-  /*!
-   * \brief Get the specific heat at constant V of the flow.
-   * \return Value of the specific heat at constant V of the flow.
-   */
-  su2double GetSpecificHeatCv(void);
 
   /*!
    * \brief Get the value of the vorticity.

@@ -106,8 +106,8 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (su2double *val_residual_i, su2doub
   
   /*--- Jacobians of the inviscid flux, scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
   
-  GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
-  GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
+  //GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
+  //GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual_i[iVar] = 0.0; val_residual_j[iVar] = 0.0;
@@ -235,8 +235,8 @@ void CCentJSTArtComp_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2doub
   }
   
   /*--- Jacobians of the inviscid flux, scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
-  GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
+  //GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
+  //GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
   
   for (iVar = 0; iVar < nDim; iVar++) {
     val_resconv_i[iVar] = 0.0; val_resconv_j[iVar] = 0.0;
@@ -350,8 +350,8 @@ void CCentLaxArtComp_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2doub
   }
   
   /*--- Jacobians of the inviscid flux, scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
-  GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
+  //GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
+  //GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     val_resconv_i[iVar]  = 0.0; val_resconv_j[iVar]  = 0.0;
@@ -472,8 +472,10 @@ void CAvgGradArtComp_AdjFlow::ComputeResidual(su2double *val_residual_i, su2doub
       Mean_GradPsiVar[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] + PsiVar_Grad_j[iVar][iDim]);
   
   /*--- Get projected flux tensor ---*/
-  
-  GetViscousArtCompProjFlux(Mean_GradPsiVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+
+  su2double Mean_Thermal_Conductivity = 0.0;
+
+  GetViscousArtCompProjFlux(Mean_GradPsiVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity);
   
   /*--- Update viscous residual ---*/
   
@@ -594,9 +596,10 @@ void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(su2double *val_residual_i
   }
   
   /*--- Get projected flux tensor ---*/
-  
-  GetViscousArtCompProjFlux(Mean_GradPsiVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  
+
+  su2double Mean_Thermal_Conductivity = 0.0;
+  GetViscousArtCompProjFlux(Mean_GradPsiVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity);
+
   /*--- Update viscous residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
