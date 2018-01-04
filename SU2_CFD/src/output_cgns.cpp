@@ -497,9 +497,9 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
         break;
         
       default:
-        cout << "Error: Unrecognized equation type \n"; 
-        exit(EXIT_FAILURE); break;
-    }
+        SU2_MPI::Error("Unrecognized equation type", CURRENT_FUNCTION);
+        break;
+      }
   }  
   
   /*--- Close CGNS file ---*/
