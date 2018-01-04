@@ -1,7 +1,7 @@
 Turbulent ONERA M6
 ======
 
-![Turb ONERA Pressure](turb_onera_pressure.png)
+![Turb ONERA Pressure](images/turb_onera_pressure.png)
 
 ## Goals
 
@@ -42,10 +42,10 @@ These transonic flow conditions will cause the typical "lambda" shock along the 
 
 The computational domain is a large C-type mesh with the wing half-span on one boundary in the x-z plane. The mesh consists of 43,008 interior elements and 46,417 nodes. Three boundary conditions are employed: the Navier-Stokes adiabatic wall condition on the wing surface, the far-field characteristic-based condition on the far-field markers, and a symmetry boundary condition for the marker where the wing half-span is attached. The symmetry condition acts to mirror the flow about the x-z plane, reducing the size of the mesh and the computational cost. Images of the entire domain and the structured, rectangular elements on the wing surface are shown below.
 
-![Turb ONERA Mesh](turb_onera_mesh_bcs.png)
+![Turb ONERA Mesh](images/turb_onera_mesh_bcs.png)
 Figure (1): Far-field view of the computational mesh.
 
-![Turb ONERA Surface Mesh](turb_onera_surface_mesh.png)
+![Turb ONERA Surface Mesh](images/turb_onera_surface_mesh.png)
 Figure (2): Close-up view of the structured surface mesh on the upper wing surface.
 
 ### Configuration File Options
@@ -161,9 +161,9 @@ If SU2 has been built with parallel support, the recommended method for running 
 
 Results for the turbulent flow over the ONERA M6 wing are shown below. As part of this tutorial a coarse mesh has been provided, but for comparison the results obtained by using a refined mesh (9,252,922 nodes) as well as experimental results are shown.
 
-![Turb ONERA Cp A](turb_onera_cp_a.png)
-![Turb ONERA Cp B](turb_onera_cp_b.png)
-![Turb ONERA Cp C](turb_onera_cp_c.png)
-![Turb ONERA Cp D](turb_onera_cp_d.png)
+![Turb ONERA Cp A](images/turb_onera_cp_a.png)
+![Turb ONERA Cp B](images/turb_onera_cp_b.png)
+![Turb ONERA Cp C](images/turb_onera_cp_c.png)
+![Turb ONERA Cp D](images/turb_onera_cp_d.png)
 
 Figure (3): Comparison of Cp profiles of the experimental results of Schmitt and Carpin (red squares) against SU2 computational results (blue line) at different sections along the span of the wing. (a) y/b = 0.2, (b) y/b = 0.65, (c) y/b = 0.8, (d) y/b = 0.95.

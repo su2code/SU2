@@ -2,7 +2,7 @@ Turbulent Flat Plate
 =====
 
 
-![Turb Plate Uplus v Yplus](turb_plate_uplus_vs_yplus.png)
+![Turb Plate Uplus v Yplus](images/turb_plate_uplus_vs_yplus.png)
 
 ## Goals
 
@@ -40,7 +40,7 @@ The length of the flat plate is 2 meters, and it is represented by an adiabatic 
 
 The mesh used for this tutorial, which consists of 13,056 rectangular elements, is shown below.
 
-![Turb Plate Mesh](turb_plate_mesh_bcs.png)
+![Turb Plate Mesh](images/turb_plate_mesh_bcs.png)
 Figure (1): Mesh with boundary conditions (inlet, outlet, symmetry, wall).
 
 ### Configuration File Options
@@ -70,11 +70,11 @@ To run this test case, follow these steps at a terminal command line:
 
 The figures below show results obtained from SU2 and compared to several results from NASA codes. Note that the SU2 results for the skin friction correspond to the coarser mesh (mesh_flatplate_turb_137x97.su2) while the NASA results are based on the finer mesh (mesh_flatplate_turb_545x385.su2). SU2 still matches very closely.
 
-![Turb Plate Nu Tilde](turb_plate_nu_tilde.png)
+![Turb Plate Nu Tilde](images/turb_plate_nu_tilde.png)
 Figure (2): Contour of turbulence variable (nu-hat).
 
-![Turb Plate Cf](turb_plate_skin_friction.png)
+![Turb Plate Cf](images/turb_plate_skin_friction.png)
 Figure (3): Profile for the skin friction coefficient. 
 
-![Turb Plate Uplus v Yplus](turb_plate_uplus_vs_yplus.png)
+![Turb Plate Uplus v Yplus](images/turb_plate_uplus_vs_yplus.png)
 Figure (4): Velocity profile comparison against law of the wall.
