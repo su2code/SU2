@@ -754,6 +754,7 @@ public:
    */
   void GetInviscidArtCompProjFlux(su2double *val_density, su2double *val_velocity,
                                   su2double *val_pressure, su2double *val_betainc2,
+                                  su2double *val_enthalpy,
                                   su2double *val_normal, su2double *val_Proj_Flux);
   
   /*!
@@ -798,12 +799,14 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_thermal_conductivity - Thermal conductivity.
    */
   
   void GetViscousArtCompProjFlux(su2double **val_gradprimvar,
                                  su2double *val_normal,
                                  su2double val_laminar_viscosity,
-                                 su2double val_eddy_viscosity);
+                                 su2double val_eddy_viscosity,
+                                 su2double val_thermal_conductivity);
   
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -830,7 +833,61 @@ public:
                                  su2double *val_betainc2, su2double *val_normal,
                                  su2double val_scale,
                                  su2double **val_Proj_Jac_tensor);
-  
+
+  /*!
+   * \brief Compute the projection of the inviscid Jacobian matrices (overload for low speed preconditioner version).
+   * \param[in] val_density - Value of the density.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+   * \param[in] val_cp - Value of the specific heat at constant pressure.
+   * \param[in] val_temperature - Value of the temperature.
+   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_scale - Scale of the projection.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetInviscidArtCompProjJac(su2double *val_density,
+                                 su2double *val_velocity,
+                                 su2double *val_betainc2,
+                                 su2double *val_cp,
+                                 su2double *val_temperature,
+                                 su2double *val_dRhodT,
+                                 su2double *val_normal,
+                                 su2double val_scale,
+                                 su2double **val_Proj_Jac_Tensor);
+
+  /*!
+   * \brief Compute the low speed preconditioning matrix.
+   * \param[in] val_density - Value of the density.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+   * \param[in] val_cp - Value of the specific heat at constant pressure.
+   * \param[in] val_temperature - Value of the temperature.
+   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[out] val_Precon - Pointer to the preconditioning matrix.
+   */
+  void GetPreconditioner(su2double *val_density,
+                         su2double *val_velocity,
+                         su2double *val_betainc2,
+                         su2double *val_cp,
+                         su2double *val_temperature,
+                         su2double *val_drhodt,
+                         su2double **val_Precon);
+
+  /*!
+   * \brief Compute the projection of the preconditioned inviscid Jacobian matrices.
+   * \param[in] val_density - Value of the density.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetPreconditionedProjJac(su2double *val_density,
+                                su2double *val_velocity,
+                                su2double *val_betainc2,
+                                su2double *val_normal,
+                                su2double **val_Proj_Jac_Tensor);
+
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices for general fluid model.
    * \param[in] val_velocity Pointer to the velocity.
@@ -1686,17 +1743,18 @@ class CUpwArtComp_Flow : public CNumerics {
 private:
   bool implicit, /*!< \brief Implicit calculation. */
   grid_movement, /*!< \brief Modification for grid movement. */
+  variable_density, /*!< \brief Variable density incompressible flows. */
   energy; /*!< \brief computation with the energy equation. */
-  su2double *Diff_U;
+  su2double *Diff_V;
   su2double *Velocity_i, *Velocity_j, *MeanVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
+  su2double **Precon, **invPrecon_A;
   su2double Proj_ModJac_Tensor_ij, Pressure_i,
-  Pressure_j, ProjVelocity, ProjVelocity_i, ProjVelocity_j,
+  Pressure_j, ProjVelocity,
+  MeandRhodT, dRhodT_i, dRhodT_j, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  a0, a1, a2, a3, /*!< \brief Coefficients for non-conservative scalar upwinding. */
-  MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2; /*!< \brief Mean values of primitive variables. */
+  MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature; /*!< \brief Mean values of primitive variables. */
   unsigned short iDim, iVar, jVar, kVar;
   
 public:
@@ -1716,15 +1774,13 @@ public:
   
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+   * \param[out] val_residual - Pointer to the residual array.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config);
 };
 
 /*!
@@ -2397,7 +2453,7 @@ public:
 /*!
  * \class CCentJSTArtComp_Flow
  * \brief Class for centered scheme - JST (artificial compressibility).
- * \ingroup ConvDiscr, T. Economon
+ * \ingroup ConvDiscr
  * \author F. Palacios
  * \version 5.0.0 "Raven"
  */
@@ -2405,21 +2461,24 @@ class CCentJSTArtComp_Flow : public CNumerics {
   
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
+  su2double *Diff_V, *Diff_Lapl, /*!< \brief Diference of primitive variables and undivided laplacians. */
   *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
   *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
   sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
+  MeanDensity, MeanPressure, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature, /*!< \brief Mean values of primitive variables. */
+  MeandRhodT, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
   Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
   Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
   *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
-  Epsilon_2, Epsilon_4, cte_0, cte_1; /*!< \brief Artificial dissipation values. */
+  Epsilon_2, Epsilon_4; /*!< \brief Artificial dissipation values. */
+  su2double **Precon;
   bool implicit, /*!< \brief Implicit calculation. */
   grid_movement, /*!< \brief Modification for grid movement. */
+  variable_density, /*!< \brief Variable density incompressible flows. */
   energy; /*!< \brief computation with the energy equation. */
-  
+
 public:
   
   /*!
@@ -2437,15 +2496,12 @@ public:
   
   /*!
    * \brief Compute the flow residual using a JST method.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+   * \param[out] val_residual - Pointer to the residual array.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2610,19 +2666,22 @@ public:
 class CCentLaxArtComp_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_U, /*!< \brief Difference of conservative variables. */
+  su2double *Diff_V, /*!< \brief Difference of primitive variables. */
   *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
   *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
   *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
   sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
+  MeanDensity, MeanPressure, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature, /*!< \brief Mean values of primitive variables. */
+  MeandRhodT, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
   Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
   Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
   Epsilon_0; /*!< \brief Artificial dissipation values. */
+  su2double **Precon;
   bool implicit, /*!< \brief Implicit calculation. */
   grid_movement, /*!< \brief Modification for grid movement. */
+  variable_density, /*!< \brief Variable density incompressible flows. */
   energy; /*!< \brief computation with the energy equation. */
   
 public:
@@ -2642,15 +2701,12 @@ public:
   
   /*!
    * \brief Compute the flow residual using a Lax method.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+   * \param[out] val_residual - Pointer to the residual array.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -2857,7 +2913,7 @@ private:
   unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
   su2double **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-  Mean_Thermal_Conductivity, Mean_Cp, /*!< \brief Mean value of the effective thermal conductivity and specific heat at constant pressure. */
+  Mean_Thermal_Conductivity, /*!< \brief Mean value of the effective thermal conductivity. */
   dist_ij;              /*!< \brief Length of the edge and face. */
   bool implicit;        /*!< \brief Implicit calculus. */
   bool energy; /*!< \brief computation with the energy equation. */
@@ -2878,15 +2934,12 @@ public:
   ~CAvgGradArtComp_Flow(void);
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -3309,15 +3362,12 @@ public:
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!
