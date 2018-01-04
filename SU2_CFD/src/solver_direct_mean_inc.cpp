@@ -73,7 +73,8 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   Smatrix = NULL; Cvector = NULL;
- 
+  Preconditioner = NULL;
+
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
   Cauchy_Value = 0;
@@ -180,6 +181,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   Smatrix = NULL; Cvector = NULL;
+  Preconditioner = NULL;
 
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
 
@@ -234,14 +236,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Residual      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
   Residual_RMS  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
   Residual_Max  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
-  Residual_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]   = 0.0;
-  Residual_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]   = 0.0;
   Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]     = 0.0;
   Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]     = 0.0;
-  Res_Conv_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]   = 0.0;
-  Res_Visc_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_i[iVar]   = 0.0;
-  Res_Conv_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_j[iVar]   = 0.0;
-  Res_Visc_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_j[iVar]   = 0.0;
   Res_Sour      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]     = 0.0;
   
   /*--- Define some structures for locating max residuals ---*/
@@ -279,7 +275,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
-  
+
+  Preconditioner = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar ++)
+    Preconditioner[iVar] = new su2double[nVar];
+
   /*--- Initialize the solution and right-hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
@@ -291,15 +291,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
     
-    Jacobian_ii = new su2double* [nVar];
-    Jacobian_ij = new su2double* [nVar];
-    Jacobian_ji = new su2double* [nVar];
-    Jacobian_jj = new su2double* [nVar];
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_ii[iVar] = new su2double [nVar];
-      Jacobian_ij[iVar] = new su2double [nVar];
-      Jacobian_ji[iVar] = new su2double [nVar];
-      Jacobian_jj[iVar] = new su2double [nVar];
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
     }
     
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
@@ -506,7 +502,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 CIncEulerSolver::~CIncEulerSolver(void) {
 
-  unsigned short iMarker;
+  unsigned short iMarker, iVar;
   unsigned long iVertex;
 
   /*--- Array deallocation ---*/
@@ -585,6 +581,12 @@ CIncEulerSolver::~CIncEulerSolver(void) {
   if (Primitive   != NULL) delete [] Primitive;
   if (Primitive_i != NULL) delete [] Primitive_i;
   if (Primitive_j != NULL) delete [] Primitive_j;
+
+  if (Preconditioner != NULL) {
+    for (iVar = 0; iVar < nVar; iVar ++)
+      delete [] Preconditioner[iVar];
+    delete [] Preconditioner;
+  }
 
   if (CPressure != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -2476,8 +2478,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
     Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2()      + node[jPoint]->GetBetaInc2());
     Mean_Density    = 0.5 * (node[iPoint]->GetDensity()       + node[jPoint]->GetDensity());
-    Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_Density)*Area*Area);
-    
+    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
+
     /*--- Adjustment for grid movement ---*/
     
     if (grid_movement) {
@@ -2518,7 +2520,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
       Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
       Mean_Density    = node[iPoint]->GetDensity();
-      Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_Density)*Area*Area);
+      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
       /*--- Adjustment for grid movement ---*/
       
@@ -2674,20 +2676,20 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     
     /*--- Compute residuals, and Jacobians ---*/
 
-    numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
     /*--- Update convective and artificial dissipation residuals ---*/
 
-    LinSysRes.AddBlock(iPoint, Res_Conv_i);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
+    LinSysRes.AddBlock(iPoint, Res_Conv);
+    LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
     /*--- Store implicit contributions from the residual calculation. ---*/
     
     if (implicit) {
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
-      Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   
@@ -2766,6 +2768,11 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         }
       }
 
+      for (iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
+        Primitive_i[iVar] = V_i[iVar];
+        Primitive_j[iVar] = V_j[iVar];
+      }
+
       numerics->SetPrimitive(Primitive_i, Primitive_j);
       
     } else {
@@ -2779,20 +2786,20 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Compute the residual ---*/
     
-    numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
     /*--- Update residual value ---*/
     
-    LinSysRes.AddBlock(iPoint, Res_Conv_i);
-    LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
+    LinSysRes.AddBlock(iPoint, Res_Conv);
+    LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
     /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
-      Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   
@@ -2903,7 +2910,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Compute the rotating frame source residual ---*/
       
-      numerics->ComputeResidual(Residual, Jacobian_ii, config);
+      numerics->ComputeResidual(Residual, Jacobian_i, config);
       
       /*--- Add the source residual to the total ---*/
       
@@ -2911,7 +2918,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Add the implicit Jacobian contribution ---*/
       
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -2922,7 +2929,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar ++)
         for (unsigned short jVar = 0; jVar < nVar; jVar ++)
-          Jacobian_ii[iVar][jVar] = 0.0;
+          Jacobian_i[iVar][jVar] = 0.0;
     }
     
     /*--- loop over points ---*/
@@ -2950,7 +2957,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Compute Source term Residual ---*/
       
-      numerics->ComputeResidual(Residual, Jacobian_ii, config);
+      numerics->ComputeResidual(Residual, Jacobian_i, config);
       
       /*--- Add Residual ---*/
       
@@ -2958,7 +2965,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Implicit part ---*/
       
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -3014,7 +3021,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
     Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2()      + node[jPoint]->GetBetaInc2());
     Mean_Density    = 0.5 * (node[iPoint]->GetDensity()       + node[jPoint]->GetDensity());
-    Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_Density)*Area*Area);
+    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
     /*--- Adjustment for grid movement ---*/
     
@@ -3055,7 +3062,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
       Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
       Mean_Density    = node[iPoint]->GetDensity();
-      Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_Density)*Area*Area);
+      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
       
       /*--- Adjustment for grid movement ---*/
       
@@ -3905,7 +3912,7 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
                                         CConfig *config, unsigned short iRKStep) {
   
   su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
+  unsigned short iVar, jVar;
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
@@ -3921,19 +3928,21 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
-    
+
     Res_TruncError = node[iPoint]->GetResTruncError();
     Residual = LinSysRes.GetBlock(iPoint);
-    
+
     if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res = Residual[iVar] + Res_TruncError[iVar];
+      SetPreconditioner(config, iPoint);
+      for (iVar = 0; iVar < nVar; iVar ++ ) {
+        Res = 0.0;
+        for (jVar = 0; jVar < nVar; jVar ++ )
+          Res += Preconditioner[iVar][jVar]*(Residual[jVar] + Res_TruncError[jVar]);
         node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
-    
   }
   
   /*--- MPI solution ---*/
@@ -3949,7 +3958,7 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
+  unsigned short iVar, jVar;
   unsigned long iPoint;
   
   bool adjoint = config->GetContinuous_Adjoint();
@@ -3968,15 +3977,18 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
 
+
     if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+      SetPreconditioner(config, iPoint);
+      for (iVar = 0; iVar < nVar; iVar ++ ) {
+        Res = 0.0;
+        for (jVar = 0; jVar < nVar; jVar ++ )
+          Res += Preconditioner[iVar][jVar]*(local_Residual[jVar] + local_Res_TruncError[jVar]);
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
-    
   }
   
   /*--- MPI solution ---*/
@@ -3991,7 +4003,7 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-  unsigned short iVar;
+  unsigned short iVar, jVar;
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
   
@@ -4016,11 +4028,17 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     Vol = geometry->node[iPoint]->GetVolume();
     
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+    /*--- Apply the preconditioner and add to the diagonal. ---*/
     
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      SetPreconditioner(config, iPoint);
+      for (iVar = 0; iVar < nVar; iVar ++ ) {
+        for (jVar = 0; jVar < nVar; jVar ++ ) {
+          Preconditioner[iVar][jVar] = Delta*Preconditioner[iVar][jVar];
+        }
+      }
+      Jacobian.AddBlock(iPoint, iPoint, Preconditioner);
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -4029,7 +4047,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
         local_Res_TruncError[iVar] = 0.0;
       }
     }
-    
+
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -4797,25 +4815,30 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   
   su2double ArtComp_Factor = config->GetArtComp_Factor();
   su2double maxVel2 = 0.0, maxVisc = 0.0, epsilon = 1e-10, minEdgeLen = 1e10, *Coord_i, *Coord_j;
-  su2double Edge_Vector[3] = {0.0,0.0,0.0}, dist_ij = 0.0, total_viscosity = 0.0, Beta = 1.0;
+  su2double Edge_Vector[3] = {0.0,0.0,0.0}, dist_ij = 0.0, Beta = 1.0, localVelocity;
+  su2double dRhodT = 0.0;
+  //su2double total_viscosity = 0.0;
 
   unsigned long iPoint, jPoint, iEdge;
   unsigned short iDim;
 
-  bool viscous = config->GetViscous();
+  //bool viscous          = config->GetViscous();
+  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
  
     /*--- Store the local maximum of the squared velocity in the field. ---*/
 
-    if (node[iPoint]->GetVelocity2() > maxVel2) maxVel2 = node[iPoint]->GetVelocity2();
+    if (node[iPoint]->GetVelocity2() > maxVel2)
+      maxVel2 = node[iPoint]->GetVelocity2();
     
     /*--- Store the maximum total velocity in the field. ---*/
 
-    if (viscous) {
-      total_viscosity = (node[iPoint]->GetLaminarViscosity()+node[iPoint]->GetEddyViscosity())/node[iPoint]->GetDensity();
-      if (total_viscosity > maxVisc) maxVisc = total_viscosity;
-    }
+//    if (viscous) {
+//      total_viscosity = (node[iPoint]->GetLaminarViscosity() +
+//                         node[iPoint]->GetEddyViscosity())/node[iPoint]->GetDensity();
+//      if (total_viscosity > maxVisc) maxVisc = total_viscosity;
+//    }
 
   }
 
@@ -4866,17 +4889,141 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   if (iMesh == MESH_0) {
     Beta = max(max(epsilon,maxVel2),(maxVisc/minEdgeLen)*(maxVisc/minEdgeLen));
     config->SetMax_Beta(Beta);
-    //cout << Beta << endl;
   }
 
   /*--- Compute and store variable value for beta to help convergence. ---*/
 
-  Beta = ArtComp_Factor*ArtComp_Factor*config->GetMax_Beta();
+  su2double Beta_min = 1e-5*sqrt(config->GetMax_Beta());
+  su2double Beta_max = sqrt(config->GetMax_Beta());
+
+  /*--- Allow an over-ride if user supplies large art. comp. factor. ---*/
+
+  ArtComp_Factor = max(4.1,ArtComp_Factor);
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (node[iPoint]->GetBetaInc2() < Beta)
-      node[iPoint]->SetBetaInc2(Beta);
+
+    /*--- Variable density component ---*/
+
+    if (variable_density) {
+//      dRhodT = -(config->GetPressure_ThermodynamicND()/
+//                 (config->GetGas_ConstantND()*node[iPoint]->GetTemperature()*node[iPoint]->GetTemperature()));
+      dRhodT = -1.0/(node[iPoint]->GetTemperature()*node[iPoint]->GetSpecificHeatCp());
+
+    } else {
+      dRhodT = 0.0;
+    }
+
+    /*--- Variables to calculate the preconditioner parameter Beta ---*/
+
+    localVelocity = sqrt(node[iPoint]->GetVelocity2());
+    Beta          = max(Beta_min, min(localVelocity, sqrt(Beta_max)));
+
+//    cout << ArtComp_Factor*Beta_max*Beta_max << "  " << dRhodT << endl;
+//    Beta = 1.0/(ArtComp_Factor*Beta_max*Beta_max) - dRhodT;
+//    node[iPoint]->SetBetaInc2(1.0/Beta);
+
+    node[iPoint]->SetBetaInc2(ArtComp_Factor*Beta_max*Beta_max);
+    
   }
 
+}
+
+void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
+
+  unsigned short iDim, jDim;
+
+  su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+  su2double  Velocity[3] = {0.0,0.0,0.0};
+
+  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool energy           = config->GetEnergy_Equation();
+
+  /*--- Access the primitive variables at this node. ---*/
+
+  Density     = node[iPoint]->GetDensity();
+  BetaInc2    = node[iPoint]->GetBetaInc2();
+  Cp          = node[iPoint]->GetSpecificHeatCp();
+  oneOverCp   = 1.0/Cp;
+  Temperature = node[iPoint]->GetTemperature();
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+
+  /*--- We need the derivative of the equation of state to build the
+   preconditioning matrix. For now, the only option is the ideal gas
+   law, but in the future, dRhodT should be in the fluid model. ---*/
+
+  if (variable_density) {
+    dRhodT = -Density/Temperature;
+  } else {
+    dRhodT = 0.0;
+  }
+
+  /*--- Calculating the inverse of the preconditioning matrix
+   that multiplies the time derivative during time integration. ---*/
+
+  if (implicit) {
+
+    /*--- For implicit calculations, we multiply the preconditioner
+     by the cell volume over the time step and add to the Jac diagonal. ---*/
+
+    Preconditioner[0][0] = 1.0/BetaInc2;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
+
+    if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
+    else        Preconditioner[nDim+1][0] = 0.0;
+
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Preconditioner[0][jDim+1] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        if (iDim == jDim) Preconditioner[iDim+1][jDim+1] = Density;
+        else Preconditioner[iDim+1][jDim+1] = 0.0;
+      }
+      Preconditioner[nDim+1][jDim+1] = 0.0;
+    }
+
+    Preconditioner[0][nDim+1] = dRhodT;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+
+    if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+    else        Preconditioner[nDim+1][nDim+1] = 1.0;
+
+  } else {
+
+    /*--- For explicit calculations, we move the residual to the
+     right-hand side and pre-multiply by the preconditioner inverse.
+     Therefore, we build inv(Precon) here and multiply by the residual
+     later in the R-K and Euler Explicit time integration schemes. ---*/
+
+    Preconditioner[0][0] = Temperature*BetaInc2*dRhodT/Density + BetaInc2;
+    for (iDim = 0; iDim < nDim; iDim ++)
+      Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
+
+    if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
+    else        Preconditioner[nDim+1][0] = 0.0;
+
+
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Preconditioner[0][jDim+1] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        if (iDim == jDim) Preconditioner[iDim+1][jDim+1] = 1.0/Density;
+        else Preconditioner[iDim+1][jDim+1] = 0.0;
+      }
+      Preconditioner[nDim+1][jDim+1] = 0.0;
+    }
+
+    Preconditioner[0][nDim+1] = -1.0*BetaInc2*dRhodT*oneOverCp/Density;
+    for (iDim = 0; iDim < nDim; iDim ++)
+      Preconditioner[iDim+1][nDim+1] = 0.0;
+
+    if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
+    else        Preconditioner[nDim+1][nDim+1] = 0.0;
+    
+  }
+  
 }
 
 void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
@@ -4946,12 +5093,12 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
         
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = 0.0;
+            Jacobian_i[iVar][jVar] = 0.0;
         }
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_ii[iDim+1][0] = -Normal[iDim];
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+          Jacobian_i[iDim+1][0] = -Normal[iDim];
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
       }
     }
@@ -5027,9 +5174,9 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Recompute and store the velocity in the primitive variable vector. ---*/
 
       for (iDim = 0; iDim < nDim; iDim++)
-              V_infty[iDim+1] = (GetVelocity_Inf(iDim));
+        V_infty[iDim+1] = GetVelocity_Inf(iDim);
+      //V_infty[iDim+1] = Vel_Mag*(GetVelocity_Inf(iDim)/Vel_Mag_Inf);
 
-//        V_infty[iDim+1] = Vel_Mag*(GetVelocity_Inf(iDim)/Vel_Mag_Inf);
 
       /*--- Far-field pressure set to static pressure (0.0). ---*/
 
@@ -5047,6 +5194,10 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       V_infty[nDim+3] = node[iPoint]->GetBetaInc2();
 
+      /*--- Cp is needed for Temperature equation. ---*/
+
+      V_infty[nDim+7] = node[iPoint]->GetSpecificHeatCp();
+
       /*--- Set various quantities in the numerics class ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_infty);
@@ -5057,16 +5208,16 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Compute the convective residual using an upwind scheme ---*/
       
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
       /*--- Update residual value ---*/
 
-      LinSysRes.AddBlock(iPoint, Residual_i);
+      LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Convective Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous residual contribution ---*/
       
@@ -5077,7 +5228,6 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         V_infty[nDim+4] = node[iPoint]->GetLaminarViscosity();
         V_infty[nDim+5] = node[iPoint]->GetEddyViscosity();
         V_infty[nDim+6] = node[iPoint]->GetThermalConductivity();
-        V_infty[nDim+7] = node[iPoint]->GetSpecificHeatCp();
 
         /*--- Set the normal vector and the coordinates ---*/
         
@@ -5099,13 +5249,13 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Compute and update viscous residual ---*/
 
-        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-        LinSysRes.SubtractBlock(iPoint, Residual_i);
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Residual);
         
         /*--- Viscous Jacobian contribution for implicit integration ---*/
         
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
       
@@ -5250,6 +5400,10 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       V_inlet[nDim+3] = node[iPoint]->GetBetaInc2();
 
+      /*--- Cp is needed for Temperature equation. ---*/
+
+      V_inlet[nDim+7] = node[iPoint]->GetSpecificHeatCp();
+
       /*--- Set various quantities in the solver class ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -5260,16 +5414,16 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Compute the residual using an upwind scheme ---*/
       
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
       /*--- Update residual value ---*/
       
-      LinSysRes.AddBlock(iPoint, Residual_i);
+      LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
       
@@ -5280,7 +5434,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         V_inlet[nDim+4] = node[iPoint]->GetLaminarViscosity();
         V_inlet[nDim+5] = node[iPoint]->GetEddyViscosity();
         V_inlet[nDim+6] = node[iPoint]->GetThermalConductivity();
-        V_inlet[nDim+7] = node[iPoint]->GetSpecificHeatCp();
 
         /*--- Set the normal vector and the coordinates ---*/
         
@@ -5302,14 +5455,14 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Compute and update residual ---*/
         
-        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         
-        LinSysRes.SubtractBlock(iPoint, Residual_i);
+        LinSysRes.SubtractBlock(iPoint, Residual);
         
         /*--- Jacobian contribution for implicit integration ---*/
         
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
     }
@@ -5378,7 +5531,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Neumann condition for the velocity ---*/
       
       for (iDim = 0; iDim < nDim; iDim++) {
-        V_outlet[iDim+1] = node[Point_Normal]->GetPrimitive(iDim+1); //TDE check
+        V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
       }
 
       /*--- Neumann condition for the temperature. ---*/
@@ -5394,7 +5547,11 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Beta coefficient from the config file ---*/
       
       V_outlet[nDim+3] = node[iPoint]->GetBetaInc2();
-      
+
+      /*--- Cp is needed for Temperature equation. ---*/
+
+      V_outlet[nDim+7] = node[iPoint]->GetSpecificHeatCp();
+
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -5405,16 +5562,16 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Compute the residual using an upwind scheme ---*/
       
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
       /*--- Update residual value ---*/
       
-      LinSysRes.AddBlock(iPoint, Residual_i);
+      LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
       /*--- Viscous contribution ---*/
@@ -5426,7 +5583,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         V_outlet[nDim+4] = node[iPoint]->GetLaminarViscosity();
         V_outlet[nDim+5] = node[iPoint]->GetEddyViscosity();
         V_outlet[nDim+6] = node[iPoint]->GetThermalConductivity();
-        V_outlet[nDim+7] = node[iPoint]->GetSpecificHeatCp();
 
         /*--- Set the normal vector and the coordinates ---*/
         
@@ -5448,13 +5604,13 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Compute and update residual ---*/
         
-        visc_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         
-        LinSysRes.SubtractBlock(iPoint, Residual_i);
+        LinSysRes.SubtractBlock(iPoint, Residual);
         
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
     }
@@ -5509,7 +5665,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Residual[iVar] = 0.0;
         if (implicit) {
         for (jVar = 0; jVar < nVar; jVar++)
-          Jacobian_ii[iVar][jVar] = 0.0;
+          Jacobian_i[iVar][jVar] = 0.0;
         }
       }
       
@@ -5547,11 +5703,11 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       if (implicit) {
         for (iVar = 1; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_ii[iVar][iVar] = Volume_nP1 / TimeStep;
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_ii[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
     
@@ -5653,7 +5809,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Residual[iVar] = 0.0;
         if (implicit) {
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = 0.0;
+            Jacobian_i[iVar][jVar] = 0.0;
         }
       }
       
@@ -5691,11 +5847,11 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       if (implicit) {
         for (iVar = 1; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_ii[iVar][iVar] = Volume_nP1/TimeStep;
+            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_ii[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
+            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
   }
@@ -6334,7 +6490,7 @@ void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->SetSolution(0, Pressure_Inf);
     for (iDim = 0; iDim < nDim; iDim++){
-      node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      node[iPoint]->SetSolution(iDim+1, Velocity_Inf[iDim]);
     }
     node[iPoint]->SetSolution(nDim+1, Temperature_Inf);
   }
@@ -6476,14 +6632,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Residual      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
   Residual_RMS  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
   Residual_Max  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Residual_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-  Residual_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
   Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
   Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
-  Res_Conv_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
-  Res_Visc_i    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_i[iVar]    = 0.0;
-  Res_Conv_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_j[iVar]    = 0.0;
-  Res_Visc_j    = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_j[iVar]    = 0.0;
   Res_Sour      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
   
   /*--- Define some structures for locating max residuals ---*/
@@ -6519,7 +6669,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     iPoint_UndLapl = new su2double [nPoint];
     jPoint_UndLapl = new su2double [nPoint];
   }
-  
+
+  Preconditioner = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar ++)
+    Preconditioner[iVar] = new su2double[nVar];
+
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
@@ -6531,15 +6685,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
     
-    Jacobian_ii = new su2double* [nVar];
-    Jacobian_ij = new su2double* [nVar];
-    Jacobian_ji = new su2double* [nVar];
-    Jacobian_jj = new su2double* [nVar];
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_ii[iVar] = new su2double [nVar];
-      Jacobian_ij[iVar] = new su2double [nVar];
-      Jacobian_ji[iVar] = new su2double [nVar];
-      Jacobian_jj[iVar] = new su2double [nVar];
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
     }
     
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
@@ -7050,7 +7200,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
     Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2()      + node[jPoint]->GetBetaInc2());
     Mean_Density    = 0.5 * (node[iPoint]->GetDensity()       + node[jPoint]->GetDensity());
-    Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_Density)*Area*Area);
+    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
     
     /*--- Adjustment for grid movement ---*/
     
@@ -7080,7 +7230,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Mean_Cv                   = 0.5*(node[iPoint]->GetSpecificHeatCv()      + node[jPoint]->GetSpecificHeatCv());
 
     Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-    Lambda_2 = (1.0+(config->GetPrandtl_Lam()/config->GetPrandtl_Turb())*(Mean_EddyVisc/Mean_LaminarVisc))*(1.4*Mean_LaminarVisc/config->GetPrandtl_Lam()); //TDE fix time step
+    Lambda_2 = 0.0;
     if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
     Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
     
@@ -7105,8 +7255,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
       Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
       Mean_Density    = node[iPoint]->GetDensity();
-      Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_Density)*Area*Area);
-      
+      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
+
       /*--- Adjustment for grid movement ---*/
       
       if (grid_movement) {
@@ -7133,7 +7283,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       Mean_Cv                   = node[iPoint]->GetSpecificHeatCv();
 
       Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
-      Lambda_2 = (1.0+(config->GetPrandtl_Lam()/config->GetPrandtl_Turb())*(Mean_EddyVisc/Mean_LaminarVisc))*(1.4*Mean_LaminarVisc/config->GetPrandtl_Lam()); //TDE fix time step
+      Lambda_2 = 0.0;
       if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
       Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
       
@@ -7257,18 +7407,18 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Compute and update residual ---*/
     
-    numerics->ComputeResidual(Res_Visc_i, Res_Visc_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
 
-    LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
-    LinSysRes.AddBlock(jPoint, Res_Visc_j);
+    LinSysRes.SubtractBlock(iPoint, Res_Visc);
+    LinSysRes.AddBlock(jPoint, Res_Visc);
     
     /*--- Implicit part ---*/
     
     if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     }
     
   }
@@ -7695,7 +7845,6 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned long iVertex, iPoint, total_index;
   
   su2double *GridVel, *Normal, Area, Wall_HeatFlux;
-  su2double heat_flux_factor = 0.0;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -7748,7 +7897,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         Res_Visc[iVar] = 0.0;
         if (implicit) {
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = 0.0;
+            Jacobian_i[iVar][jVar] = 0.0;
         }
       }
 
@@ -7777,9 +7926,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
 
-        heat_flux_factor = 1.0/(node[iPoint]->GetDensity()*node[iPoint]->GetSpecificHeatCp());
-
-        Res_Visc[nDim+1] = Wall_HeatFlux*Area*heat_flux_factor; //TDE Jacobian?
+        Res_Visc[nDim+1] = Wall_HeatFlux*Area; //TDE Jacobian?
 
         /*--- Viscous contribution to the residual at the wall ---*/
 
@@ -7809,7 +7956,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double *GridVel;
   su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij;
   su2double Twall, dTdn;
-  su2double thermal_conductivity, thermal_diffusivity, specific_heat_cp;
+  su2double thermal_conductivity;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -7840,6 +7987,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -7853,7 +8001,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         Res_Visc[iVar] = 0.0;
         if (implicit) {
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = 0.0;
+            Jacobian_i[iVar][jVar] = 0.0;
         }
       }
 
@@ -7905,16 +8053,14 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         
         dTdn = -(node[Point_Normal]->GetTemperature() - Twall)/dist_ij;
         
-        /*--- Get transport coefficients ---*/
+        /*--- Get thermal conductivity ---*/
 
-        specific_heat_cp     = node[iPoint]->GetSpecificHeatCp();
         thermal_conductivity = node[iPoint]->GetThermalConductivity();
-        thermal_diffusivity  = thermal_conductivity/(node[iPoint]->GetDensity()*specific_heat_cp);
 
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
 
-        Res_Visc[nDim+1] = thermal_diffusivity*dTdn*Area; 
+        Res_Visc[nDim+1] = thermal_conductivity*dTdn*Area;
 
         /*--- Jacobian contribution for temperature equation. ---*/
     
@@ -7929,9 +8075,9 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
           if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
           else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
-          Jacobian_ii[nDim+1][nDim+1] = -thermal_diffusivity*proj_vector_ij;
+          Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*proj_vector_ij;
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
 
         /*--- Viscous contribution to the residual at the wall ---*/

@@ -837,7 +837,7 @@ inline bool CIncEulerVariable::SetTemperature(su2double val_temperature) {
 inline void CIncEulerVariable::SetVelocity(void) {
   Velocity2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Primitive[iDim+1] = Solution[iDim+1] / Primitive[nDim+2];
+    Primitive[iDim+1] = Solution[iDim+1];
     Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
   }
 }
@@ -857,7 +857,7 @@ inline su2double *CIncEulerVariable::GetPrimitive(void) { return Primitive; }
 
 inline void CIncEulerVariable::SetVelocity_Old(su2double *val_velocity) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[nDim+2];
+    Solution_Old[iDim+1] = val_velocity[iDim];
 }
 
 inline void CIncEulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
@@ -888,15 +888,23 @@ inline void CIncEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
 
 inline su2double* CIncEulerVariable::GetWindGustDer() { return WindGustDer;}
 
+inline void CIncEulerVariable::SetSpecificHeatCp(su2double val_Cp) {
+  Primitive[nDim+7] = val_Cp;
+}
+
+inline void CIncEulerVariable::SetSpecificHeatCv(su2double val_Cv) {
+  Primitive[nDim+8] = val_Cv;
+}
+
+inline su2double CIncEulerVariable::GetSpecificHeatCp(void) { return Primitive[nDim+7]; }
+
+inline su2double CIncEulerVariable::GetSpecificHeatCv(void) { return Primitive[nDim+8]; }
+
 inline su2double CIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+5]; }
 
 inline su2double CIncNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+4]; }
 
 inline su2double CIncNSVariable::GetThermalConductivity(void) { return Primitive[nDim+6]; }
-
-inline su2double CIncNSVariable::GetSpecificHeatCp(void) { return Primitive[nDim+7]; }
-
-inline su2double CIncNSVariable::GetSpecificHeatCv(void) { return Primitive[nDim+8]; }
 
 inline su2double* CIncNSVariable::GetVorticity(void) { return Vorticity; }
 
@@ -908,14 +916,6 @@ inline void CIncNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nD
 
 inline void CIncNSVariable::SetThermalConductivity(su2double val_thermal_conductivity) {
   Primitive[nDim+6] = val_thermal_conductivity;
-}
-
-inline void CIncNSVariable::SetSpecificHeatCp(su2double val_Cp) {
-  Primitive[nDim+7] = val_Cp;
-}
-
-inline void CIncNSVariable::SetSpecificHeatCv(su2double val_Cv) {
-  Primitive[nDim+8] = val_Cv;
 }
 
 inline su2double *CAdjIncEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }

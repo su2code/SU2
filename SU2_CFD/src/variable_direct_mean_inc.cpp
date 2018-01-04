@@ -134,8 +134,8 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   Solution[0] = val_pressure;
   Solution_Old[0] = val_pressure;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Solution[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-    Solution_Old[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+    Solution[iDim+1] = val_velocity[iDim];
+    Solution_Old[iDim+1] = val_velocity[iDim];
   }
   Solution[nDim+1] = val_temperature;
   Solution_Old[nDim+1] = val_temperature;
@@ -146,8 +146,8 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
     Solution_time_n[0]  =  val_pressure;
     Solution_time_n1[0] =  val_pressure;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-      Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+      Solution_time_n[iDim+1] = val_velocity[iDim];
+      Solution_time_n1[iDim+1] = val_velocity[iDim];
     }
     Solution[nDim+1] = val_temperature;
     Solution_Old[nDim+1] = val_temperature;
@@ -379,6 +379,11 @@ bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
   
   SetVelocity();
+
+  /*--- Set specific heats (only necessary for consistency with preconditioning). ---*/
+
+  SetSpecificHeatCp(FluidModel->GetCp());
+  SetSpecificHeatCv(FluidModel->GetCv());
 
   return physical;
   
