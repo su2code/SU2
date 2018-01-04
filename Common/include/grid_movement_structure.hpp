@@ -61,6 +61,11 @@ using namespace std;
  * \version 5.0.0 "Raven"
  */
 class CGridMovement {
+  
+protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
+  
 public:
 
 	/*! 
