@@ -1,4 +1,7 @@
-![Channel Mach](https://su2code.github.io/github_wiki/channel_mach.png)
+Inviscid Bump in a channel
+=====
+
+![Channel Mach](channel_mach.png)
 
 ## Goals
 
@@ -37,7 +40,7 @@ There is also a set of inlet/outlet conditions for transonic flow available in t
 
 The channel is of length 3L, height L, with a circular bump centered along the lower wall with height 0.1L. For the SU2 mesh, L = 1.0 was chosen, as seen in the figure of the mesh below. The mesh is made up of quadrilaterals with 256 nodes along the length of the channel and 128 nodes along the height. The following figure contains a view of the mesh (coarser mesh shown for clarity).
 
-![Channel Mesh](https://su2code.github.io/github_wiki/channel_mesh_bcs.png)
+![Channel Mesh](channel_mesh_bcs.png)
 Figure (1): The computational mesh with boundary conditions highlighted.
 
 The boundary conditions for the channel are also highlighted in the figure. Inlet, outlet, and Euler wall boundary conditions are used. The Euler wall boundary condition enforces flow tangency at the upper and lower walls. It is important to note that the subsonic inlet and outlet boundary conditions are based on characteristic information, meaning that only certain flow quantities can be specified at the inlet and outlet. In SU2, the stagnation temperature, stagnation pressure, and a unit vector describing the incoming flow direction must all be specified (the density and velocity, or mass flow, can also be specified). At a subsonic exit boundary, only the static pressure is required. These options are explained in further detail below under configuration file options. If there are multiple inlet or outlet boundaries for a problem, this information can be specified for each additional boundary by continuing the lists under the MARKER_INLET or MARKER_OUTLET specifications.
@@ -116,8 +119,8 @@ The channel simulation for the 256x128 node mesh will execute on a single workst
 
 The following images show some SU2 results for the inviscid channel problem.
 
-![Channel Mach](https://su2code.github.io/github_wiki/channel_mach.png)
+![Channel Mach](channel_mach.png)
 Figure (2): Mach number contours for the 2-D channel.
 
-![Channel Pressure](https://su2code.github.io/github_wiki/channel_pressure.png)
+![Channel Pressure](channel_pressure.png)
 Figure (3): Pressure contours for the 2-D channel.
