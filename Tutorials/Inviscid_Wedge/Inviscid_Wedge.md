@@ -1,7 +1,7 @@
 Inviscid Supersonic Wedge
 =====
 
-![Wedge Mach](wedge_mach.png)
+![Wedge Mach](images/wedge_mach.png)
 
 ## Goals
 
@@ -38,7 +38,7 @@ This problem will solve for the flow over the wedge with these conditions:
 
 The wedge mesh is a structured mesh (75x50) of rectangular elements with a total of 3,750 nodes. The upper and lower wall of the geometry are solid (MARKER_EULER), and the lower wall has a 10 degree wedge starting at x = 0.5. Figure (1) shows the mesh with the boundary markers and flow conditions highlighted.
 
-![Wedge Mach](https://su2code.github.io/github_wiki/wedge_mesh_bcs.png)
+![Wedge Mach](images/wedge_mesh_bcs.png)
 Figure (1): The computational mesh with boundary conditions highlighted.
 
 For this test case, the inlet marker will be set to a MARKER_SUPERSONIC_INLET boundary condition, while the outlet marker will be set to the MARKER_OUTLET condition. In supersonic flow, all characteristics point into the domain at the entrance (inlet marker), and therefore, all flow quantities can be specified, i.e., no information travels upstream. At the exit, however, all characteristics are outgoing, meaning that no information about the exit conditions is required. Therefore, the outlet marker is set to the outlet boundary condition which, in supersonic flow, simply extrapolates the flow variables from the interior domain to the exit. In practice, a low back pressure is supplied to the MARKER_OUTLET boundary condition in the configuration file, but the propagation of information in this supersonic flow make it unnecessary information.
@@ -149,8 +149,8 @@ The wedge simulation is small and will execute quickly on a single workstation o
 
 The following images show some SU2 results for the supersonic wedge problem.
 
-![Wedge Mach](wedge_mach.png)
+![Wedge Mach](images/wedge_mach.png)
 Figure (2): Mach contours showing the oblique shock for supersonic flow over a wedge.
 
-![Wedge Pressure](wedge_pressure.png)
+![Wedge Pressure](images/wedge_pressure.png)
 Figure (3): Pressure contours (N/m2) for supersonic flow over a wedge.
