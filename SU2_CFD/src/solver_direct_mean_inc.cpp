@@ -104,10 +104,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -637,7 +633,7 @@ void CIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -757,7 +753,7 @@ void CIncEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -873,7 +869,7 @@ void CIncEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -989,7 +985,7 @@ void CIncEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1068,7 +1064,7 @@ void CIncEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1143,7 +1139,7 @@ void CIncEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1264,7 +1260,7 @@ void CIncEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1387,7 +1383,7 @@ void CIncEulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *c
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1508,7 +1504,7 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1631,11 +1627,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
   
   unsigned short iDim;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Local variables ---*/
   
@@ -2040,12 +2031,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long ErrorCounter = 0;
-  
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
+
   unsigned long ExtIter = config->GetExtIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
@@ -4234,11 +4220,6 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
   su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   bool Update_AoA             = false;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   if (ExtIter == 0) AoA_Counter = 0;
   
   /*--- Only the fine mesh level should check the convergence criteria ---*/
@@ -5182,14 +5163,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
     }
 
   #else
-
-    int rank = MASTER_NODE;
-    int size = SINGLE_NODE;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
+  unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
 
   unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;    // Number of markers on FSI problem, FEA and Flow side
   unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;    // Variables for iteration over markers
@@ -5476,8 +5450,7 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
           Point_Flow_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
 
           if (Point_Flow_Check < 0) {
-            cout << "WARNING: A nonphysical point is being considered for mesh deformation." << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("A nonphysical point is being considered for mesh deformation.", CURRENT_FUNCTION);
           }
 
           Coord = flow_geometry[MESH_0]->node[Point_Flow]->GetCoord();
@@ -5585,11 +5558,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
@@ -5703,17 +5671,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
   
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -5860,11 +5819,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -6345,11 +6299,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
-  
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   unsigned long ExtIter     = config->GetExtIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
@@ -7138,14 +7087,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
   Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
   if(Wall_Function != NO_WALL_FUNCTION) {
-
-    cout << endl << "Wall function treament not implemented yet" << endl << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
   }
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
