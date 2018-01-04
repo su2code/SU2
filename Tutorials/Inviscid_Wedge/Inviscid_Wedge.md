@@ -16,7 +16,7 @@ The intent of this tutorial is to introduce a simple, inviscid flow problem that
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/euler/wedge/ directory. You will need the configuration file (inv_wedge_HLLC.cfg) and the mesh file (mesh_wedge_inv.cgns).
+The resources for this tutorial can be found in the Tutorials/Inviscid_Wdge directory. You will need the configuration file (inv_wedge_HLLC.cfg) and the mesh file (mesh_wedge_inv.cgns).
 
 ## Tutorial
 
