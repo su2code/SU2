@@ -42,10 +42,7 @@
  * definition. Each file uses a typedef from the specific datatype to su2double and implements
  * the routines defined in the namespace SU2_TYPE below. ---*/
 
-#if defined COMPLEX_TYPE
-#include "datatypes/complex_structure.hpp"
-#define SPRINTF sprintfOver
-#elif defined CODI_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE
 #define SPRINTF sprintfOver
 #include "datatypes/codi_reverse_structure.hpp"
 #elif defined CODI_FORWARD_TYPE
