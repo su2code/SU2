@@ -1,7 +1,7 @@
 Transitional Flat Plate
 =====
 
-![lam_to_turb](lam_to_turb.png)
+![lam_to_turb](images/lam_to_turb.png)
 
 ## Goals
 
@@ -36,7 +36,7 @@ The length of the flat plate is 1.5 meters, and it is represented by an adiabati
 
 The mesh used for this tutorial, which consists of 41,412 quadrilaterals, is shown below.
 
-![Flat Plate](FlatPMesh.png)
+![Flat Plate](images/FlatPMesh.png)
 
 Figure (1): Mesh with boundary conditions (red: inlet, blue:outlet, orange:symmetry, green:wall)
 
@@ -99,7 +99,7 @@ To run this test case, follow these steps at a terminal command line:
 
 The figure below compares the skin friction results obtained by the B-C transition model to the experimental data. 
 
-![SK_Cf_Rex](Cf_Rex_SK.png)
+![SK_Cf_Rex](images/Cf_Rex_SK.png)
 
 Figure (2): Comparison of the skin friction coefficients for Schubauer&Klebanoff case
 
@@ -107,7 +107,7 @@ Figure (2): Comparison of the skin friction coefficients for Schubauer&Klebanoff
 
 By changing the freestream velocity and turbulence intensity options in the config file with the values given in the table below, you may also simulate other very popular zero pressure gradient transitional flat plate test cases. You may use the same grid file for these test cases.
 
-![other_cases_table](other_transition_cases.png)
+![other_cases_table](images/other_transition_cases.png)
 
 ## References
 

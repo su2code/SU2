@@ -1,7 +1,7 @@
 Constrained Optimal Shape Design of a Fixed Wing
 ====
 
-![Opt. ONERA Orig](onera_opt_history.png)
+![Opt. ONERA Orig](images/onera_opt_history.png)
 
 ## Goals
 
@@ -12,7 +12,7 @@ Upon completing this tutorial, the user will be familiar with performing an opti
 - **SU2_GEO** - evaluates the thickness of the specified wing sections and their gradients.
 - **shape_optimization.py** - automates the entire shape design process by executing the SU2 tools and optimizer.
 
-## Resourcesonera
+## Resources
 
 The resources for this tutorial can be found in the TestCases/optimization_euler/steady_oneram6/ directory. You will need the configuration file (inv_ONERAM6_adv.cfg) and the mesh file (mesh_ONERAM6_inv_FFD.su2). Note that the mesh file already contains information about the definition of the Free Form Deformation (FFD) used for the definition of 3D design variables, but we will discuss how this is created below. **The files for this tutorial have been updated since SU2 v4.1, so it is recommended that you check out the current master version of the source and test case repositories.**
 
@@ -24,14 +24,14 @@ The following tutorial will walk you through the steps required when performing 
 
 The goal of this wing design problem is to minimize the coefficient of drag by changing the shape while imposing lift and wing section thickness constraints. As design variables, we will use a free-form deformation approach. In this approach, a lattice of control points making up a bounding box are placed around the geometry, and the movement of these control points smoothly deforms the surface shape of the geometry inside. We begin with a 3D fixed-wing geometry (initially the ONERA M6) at transonic speed in air (inviscid). The flow conditions are the same as for the previous [[Inviscid ONERA M6]] tutorial.
 
-![Opt. ONERA Grid](onera_grid.png)
+![Opt. ONERA Grid](images/onera_grid.png)
 Figure (1): View of the initial surface computational mesh.
 
 ### Mesh Description
 
 The mesh consists of a far-field boundary divided in three surfaces (XNORMAL_FACES, ZNORMAL_FACES, YNORMAL_FACES), an Euler wall (flow tangency) divided into three surfaces (UPPER_SIDE, LOWER_SIDE, TIP), and a symmetry plane (SYMMETRY_FACE). The baseline mesh is the same as for the previous [[Inviscid ONERA M6]] tutorial. The surface mesh can be seen in Figure (1).
 
-![Opt. ONERA FFD](onera_ffd.png)
+![Opt. ONERA FFD](images/onera_ffd.png)
 Figure (2): View of the initial FFD box around the ONERA M6 wing, including the control points (spheres).
 
 ### Setting up a Free-Form Deformation Box
@@ -147,14 +147,14 @@ With each design iteration, the direct and adjoint solutions are used to compute
 
 The following are representative results for this transonic shape design example with the ONERA M6 geometry as a baseline. We successfully reduce the drag while satisfying the constraints.
 
-![Opt. ONERA Pressure](onera_pressure_original.png)
+![Opt. ONERA Pressure](images/onera_pressure_original.png)
 Figure (4): Pressure contours showing the typical "lambda" shock on the upper surface of the initial geometry.
 
-![Opt. ONERA Pressure](onera_pressure_final.png)
+![Opt. ONERA Pressure](images/onera_pressure_final.png)
 Figure (5): Pressure contours on the surface of the final wing design (reduced shocks).
 
-![Opt. ONERA Pressure](onera_ffd_final.png)
+![Opt. ONERA Pressure](images/onera_ffd_final.png)
 Figure (6): View of the initial (black) and final (blue) FFD control point positions.
 
-![Opt. ONERA History](onera_opt_history.png)
+![Opt. ONERA History](images/onera_opt_history.png)
 Figure (7): Optimization history. The drag is reduced and the lift constraint is easily met.
