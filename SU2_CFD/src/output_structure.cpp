@@ -11841,9 +11841,10 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
 
-  bool transition      = (config->GetKind_Trans_Model() == BC);
-  bool grid_movement   = (config->GetGrid_Movement());
-  bool Wrt_Halo        = config->GetWrt_Halo(), isPeriodic;
+  bool transition       = (config->GetKind_Trans_Model() == BC);
+  bool grid_movement    = (config->GetGrid_Movement());
+  bool Wrt_Halo         = config->GetWrt_Halo(), isPeriodic;
+  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
 
   int *Local_Halo = NULL;
 
@@ -11911,15 +11912,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
   nVar_Par += nVar_Consv_Par;
 
-  /*--- For now, leave the names as "Conservative_", etc., in order
-   to avoid confusion with the serial version, which still prints these
-   names. Names can be set alternatively by using the commented code
-   below. ---*/
+  /*--- The incompressible solver uses primitives as the working variables. ---*/
 
   Variable_Names.push_back("Pressure");
-  Variable_Names.push_back("X-Momentum");
-  Variable_Names.push_back("Y-Momentum");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  Variable_Names.push_back("X-Velocity");
+  Variable_Names.push_back("Y-Velocity");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Velocity");
   Variable_Names.push_back("Temperature");
 
   if (SecondIndex != NONE) {
@@ -11943,9 +11941,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
 
       Variable_Names.push_back("Limiter_Pressure");
-      Variable_Names.push_back("Limiter_X-Momentum");
-      Variable_Names.push_back("Limiter_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      Variable_Names.push_back("Limiter_X-Velocity");
+      Variable_Names.push_back("Limiter_Y-Velocity");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Velocity");
       Variable_Names.push_back("Limiter_Temperature");
 
       if (SecondIndex != NONE) {
@@ -11965,9 +11963,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
 
       Variable_Names.push_back("Residual_Pressure");
-      Variable_Names.push_back("Residual_X-Momentum");
-      Variable_Names.push_back("Residual_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      Variable_Names.push_back("Residual_X-Velocity");
+      Variable_Names.push_back("Residual_Y-Velocity");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Velocity");
       Variable_Names.push_back("Residual_Temperature");
 
       if (SecondIndex != NONE) {
@@ -12063,12 +12061,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     nVar_Par += 1;
     Variable_Names.push_back("Density");
-    nVar_Par += 2;
-    Variable_Names.push_back("Velocity_X");
-    Variable_Names.push_back("Velocity_Y");
-    if (geometry->GetnDim() == 3) {
-      nVar_Par += 1; Variable_Names.push_back("Velocity_Z");
-    }
 
   }
 
@@ -12240,11 +12232,20 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         }
 
         /*--- Load data for Cp and Mach variables. ---*/
-        // TDE make sure Mach is computed with correct gas info
 
         Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
-        Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-        sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity())); iVar++;
+
+        /*--- Mach depends on whether we have variable density or not. ---*/
+
+        if (variable_density) {
+          Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+        sqrt(solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCp()*config->GetPressure_ThermodynamicND()/(solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCv()*solver[FLOW_SOL]->node[iPoint]->GetDensity())); 
+          iVar++;
+        } else {
+          Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+        sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity())); 
+          iVar++;
+        }
 
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 
@@ -12287,11 +12288,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
          assuming they were registered above correctly. ---*/
 
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVelocity(0); iVar++;
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVelocity(1); iVar++;
-        if (geometry->GetnDim() == 3) {
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVelocity(2); iVar++;
-        }
 
       }
 
@@ -12383,9 +12379,10 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 
   if (incompressible) {
     Variable_Names.push_back("Adjoint_Pressure");
-    Variable_Names.push_back("Adjoint_X-Momentum");
-    Variable_Names.push_back("Adjoint_Y-Momentum");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Momentum");
+    Variable_Names.push_back("Adjoint_X-Velocity");
+    Variable_Names.push_back("Adjoint_Y-Velocity");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Velocity");
+    Variable_Names.push_back("Adjoint_Temperature");
   } else {
     Variable_Names.push_back("Adjoint_Density");
     Variable_Names.push_back("Adjoint_X-Momentum");
@@ -12403,7 +12400,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Adjoint_Nu_Tilde");
     }
   }
-
 
   /*--- For the discrete adjoint, we have the full field of sensitivity
    in each coordinate direction. ---*/
@@ -12429,9 +12425,10 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Limiter_Adjoint_Pressure");
-        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+        Variable_Names.push_back("Limiter_Adjoint_X-Velocity");
+        Variable_Names.push_back("Limiter_Adjoint_Y-Velocity");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Velocity");
+        Variable_Names.push_back("Limiter_Adjoint_Temperature");
       } else {
         Variable_Names.push_back("Limiter_Adjoint_Density");
         Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
@@ -12457,9 +12454,10 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Residual_Adjoint_Pressure");
-        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+        Variable_Names.push_back("Residual_Adjoint_X-Velocity");
+        Variable_Names.push_back("Residual_Adjoint_Y-Velocity");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Velocity");
+        Variable_Names.push_back("Residual_Adjoint_Temperature");
       } else {
         Variable_Names.push_back("Residual_Adjoint_Density");
         Variable_Names.push_back("Residual_Adjoint_X-Momentum");
@@ -12641,7 +12639,14 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
               Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
               iVar++;
             }
+            if (SecondIndex != NONE) {
+              for (jVar = 0; jVar < nVar_Second; jVar++) {
+                Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter(jVar);
+                iVar++;
+              }
+            }
           }
+
           if (config->GetWrt_Residuals()) {
             for (jVar = 0; jVar < nVar_First; jVar++) {
               if (!config->GetDiscrete_Adjoint()) {
@@ -12652,16 +12657,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
               }
               iVar++;
             }
-          }
-
-          if (SecondIndex != NONE) {
-            if (config->GetWrt_Limiters()) {
-              for (jVar = 0; jVar < nVar_Second; jVar++) {
-                Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter(jVar);
-                iVar++;
-              }
-            }
-            if (config->GetWrt_Residuals()) {
+            if (SecondIndex != NONE) {
               for (jVar = 0; jVar < nVar_Second; jVar++) {
                 if (!config->GetDiscrete_Adjoint()) {
                   Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
