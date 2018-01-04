@@ -854,7 +854,7 @@ def main():
     tutorial_inv_bump.cfg_dir   = "../Tutorials/Inviscid_Bump"
     tutorial_inv_bump.cfg_file  = "inv_channel.cfg"
     tutorial_inv_bump.test_iter = 0
-    tutorial_inv_bump.test_vals = [-1.437425, 4.075857, -0.093916, 0.204233] #last 4 columns
+    tutorial_inv_bump.test_vals = [-1.437425, 4.075857, -0.259666, 0.060645] #last 4 columns
     tutorial_inv_bump.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_inv_bump.timeout   = 1600
     tutorial_inv_bump.tol       = 0.00001
@@ -865,7 +865,7 @@ def main():
     tutorial_inv_wedge.cfg_dir   = "../Tutorials/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter = 0
-    tutorial_inv_wedge.test_vals = [-0.481460, 5.253008, -0.073466, 0.012889] #last 4 columns
+    tutorial_inv_wedge.test_vals = [-0.481460, 5.253008, -0.243564, 0.042806] #last 4 columns
     tutorial_inv_wedge.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_inv_wedge.timeout   = 1600
     tutorial_inv_wedge.tol       = 0.00001
@@ -876,7 +876,7 @@ def main():
     tutorial_inv_onera.cfg_dir   = "../Tutorials/Inviscid_OneraM6"
     tutorial_inv_onera.cfg_file  = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter = 0
-    tutorial_inv_onera.test_vals = [-4.618556, -4.011390, 0.197406, 0.088216] #last 4 columns
+    tutorial_inv_onera.test_vals = [-4.618556, -4.011390, 0.211942, 0.077567] #last 4 columns
     tutorial_inv_onera.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_inv_onera.timeout   = 1600
     tutorial_inv_onera.tol       = 0.00001
@@ -887,7 +887,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir   = "../Tutorials/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file  = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter = 0
-    tutorial_lam_cylinder.test_vals = [-6.162141, -0.699617, 0.000093, 56.947256] #last 4 columns
+    tutorial_lam_cylinder.test_vals = [-6.162141, -0.699617, 0.144328, 71.277264] #last 4 columns
     tutorial_lam_cylinder.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_lam_cylinder.timeout   = 1600
     tutorial_lam_cylinder.tol       = 0.00001
@@ -898,7 +898,7 @@ def main():
     tutorial_lam_flatplate.cfg_dir   = "../Tutorials/Laminar_Flat_Plate"
     tutorial_lam_flatplate.cfg_file  = "lam_flatplate.cfg"
     tutorial_lam_flatplate.test_iter = 0
-    tutorial_lam_flatplate.test_vals = [-2.821818, 2.657591, -0.711374, 0.02906] #last 4 columns
+    tutorial_lam_flatplate.test_vals = [-2.821818, 2.657591, -0.658842, 0.025723] #last 4 columns
     tutorial_lam_flatplate.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_lam_flatplate.timeout   = 1600
     tutorial_lam_flatplate.tol       = 0.00001
@@ -909,7 +909,7 @@ def main():
     tutorial_turb_flatplate.cfg_dir   = "../Tutorials/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter = 0
-    tutorial_turb_flatplate.test_vals = [ -2.258584, -4.899305, -0.548600, 0.199035] #last 4 columns
+    tutorial_turb_flatplate.test_vals = [-2.258584, -4.899476, -0.786721, 0.200332] #last 4 columns
     tutorial_turb_flatplate.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_turb_flatplate.timeout   = 1600
     tutorial_turb_flatplate.tol       = 0.00001
@@ -931,7 +931,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir   = "../Tutorials/Turbulent_OneraM6"
     tutorial_turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter = 0
-    tutorial_turb_oneram6.test_vals = [-1.906922, -6.575857, 0.235584, 0.138480] #last 4 columns
+    tutorial_turb_oneram6.test_vals = [ -1.984184, -6.644689, 0.402420, 0.328288] #last 4 columns
     tutorial_turb_oneram6.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout   = 1600
     tutorial_turb_oneram6.tol       = 0.00001
