@@ -18,7 +18,7 @@ The intent of this tutorial is to introduce a common viscous test case which is 
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/navierstokes/flatplate directory. You will need the configuration file (lam_flatplate.cfg) and the mesh file (mesh_flatplate_65x65.su2). The [mesh file](https://github.com/su2code/TestCases/tree/master/navierstokes/flatplate) can be downloaded from the su2code/TestCases repository. 
+The resources for this tutorial can be found in the Tutorials/Laminar_Flat_Plate directory. You will need the configuration file (lam_flatplate.cfg) and the mesh file (mesh_flatplate_65x65.su2). The [mesh file](https://github.com/su2code/TestCases/tree/master/navierstokes/flatplate) can be downloaded from the su2code/Tutorials repository. 
 
 
 ## Tutorial
@@ -98,9 +98,10 @@ For this problem, we are choosing a typical set of numerical methods. However, i
 %                              TURKEL_PREC, MSW)
 CONV_NUM_METHOD_FLOW= ROE
 %
-% Spatial numerical order integration (1ST_ORDER, 2ND_ORDER, 2ND_ORDER_LIMITER)
-%
-SPATIAL_ORDER_FLOW= 2ND_ORDER
+% Monotonic Upwind Scheme for Conservation Laws (TVD) in the flow equations.
+%           Required for 2nd order upwind schemes (NO, YES)
+MUSCL_FLOW= YES
+
 ```
 The 2nd-order Roe upwind method is used for computing convective fluxes, and the viscous terms are computed with the corrected average of gradients method (by default).
 

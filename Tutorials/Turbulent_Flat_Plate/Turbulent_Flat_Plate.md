@@ -9,7 +9,6 @@ Turbulent Flat Plate
 Upon completing this tutorial, the user will be familiar with performing a simulation of external, turbulent flow over a flat plate. Consequently, the following capabilities of SU2 will be verified against other codes and validated against theoretical results in this tutorial:
 - Steady, 2D RANS Navier-Stokes equations 
 - Spalart-Allmaras turbulence model
-- Multigrid
 - Roe 2nd-order numerical scheme in space
 - Euler implicit time integration
 - Inlet, Outlet, and Navier-Stokes Wall boundary conditions
@@ -18,13 +17,13 @@ In this tutorial, we perform our first RANS simulation with the Spalart-Allmaras
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/rans/flatplate directory. You will need the configuration file (turb_SA_flatplate.cfg) and either of the two available mesh files (mesh_flatplate_turb_137x97.su2 or mesh_flatplate_turb_545x385.su2). The configuration file can be found in the SU2 repository whereas the mesh files can be found in the TestCases repository.
+The resources for this tutorial can be found in the Tutorials/Turbulent_Flat_Plate directory. You will need the configuration file (turb_SA_flatplate.cfg) and either of the two available mesh files (mesh_flatplate_turb_137x97.su2 or mesh_flatplate_turb_545x385.su2). The configuration file can be found in the SU2 repository whereas the mesh files can be found in the Tutorials repository.
 
 Additionally, skin friction and velocity profiles corresponding to this testcase (obtained from the Langley Research Center Turbulence Modeling Resource website shown below) are used for later comparison with SU2 results. These files can be found on the following website: http://turbmodels.larc.nasa.gov/flatplate.html.
 
 ## Tutorial
 
-The following tutorial will walk you through the steps required when solving for the turbulent flow over a flat plate using SU2. It is assumed you have already obtained and compiled the SU2_CFD code for a serial computation or both the SU2_CFD and SU2_PRT codes for a parallel computation. If you have yet to complete these requirements, please see the Download and Installation pages.
+The following tutorial will walk you through the steps required when solving for the turbulent flow over a flat plate using SU2. It is assumed you have already obtained and compiled the SU2_CFD code for a serial computation or both the SU2_CFD and SU2_SOL codes for a parallel computation. If you have yet to complete these requirements, please see the Download and Installation pages.
 
 ### Background
 
@@ -48,7 +47,6 @@ Figure (1): Mesh with boundary conditions (inlet, outlet, symmetry, wall).
 Several of the key configuration file options for this simulation are highlighted here. For the first time in the tutorials, we will use a turbulence model:
 ```
 % Physical governing equations (EULER, NAVIER_STOKES,
-%                               TNE2_EULER, TNE2_NAVIER_STOKES,
 %                               WAVE_EQUATION, HEAT_EQUATION, LINEAR_ELASTICITY,
 %                               POISSON_EQUATION)
 PHYSICAL_PROBLEM= NAVIER_STOKES

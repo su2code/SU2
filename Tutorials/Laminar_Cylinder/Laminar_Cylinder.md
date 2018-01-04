@@ -15,7 +15,7 @@ In this tutorial, we discuss some numerical method options, including how to act
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/navierstokes/cylinder directory. You will need the configuration file (lam_cylinder.cfg) and the mesh file (mesh_cylinder_lam.su2).
+The resources for this tutorial can be found in the Tutorials/Laminar_Cylinder directory. You will need the configuration file (lam_cylinder.cfg) and the mesh file (mesh_cylinder_lam.su2).
 
 Experimental results for drag over a cylinder at low Reynolds numbers are reported in the following article:
 D. J. Tritton, "Experiments on the flow past a circular cylinder at low Reynolds numbers," Journal of Fluid Mechanics, Vol. 6, No. 4, pp. 547-567, 1959. 
@@ -49,21 +49,22 @@ The outer boundary in red is the far-field, and the small circle in the center i
 
 Several of the key configuration file options for this simulation are highlighted here. We again highlight some options concerning numerics for a viscous flow of this nature:
 ```
+%
 % Convective numerical method (JST, LAX-FRIEDRICH, CUSP, ROE, AUSM, HLLC,
 %                              TURKEL_PREC, MSW)
 CONV_NUM_METHOD_FLOW= ROE
 %
-% Spatial numerical order integration (1ST_ORDER, 2ND_ORDER, 2ND_ORDER_LIMITER)
-%
-SPATIAL_ORDER_FLOW= 2ND_ORDER_LIMITER
+% Monotonic Upwind Scheme for Conservation Laws (TVD) in the flow equations.
+%           Required for 2nd order upwind schemes (NO, YES)
+MUSCL_FLOW= YES
 %
 % Slope limiter (VENKATAKRISHNAN, MINMOD)
 SLOPE_LIMITER_FLOW= VENKATAKRISHNAN
 %
 % Coefficient for the limiter (smooth regions)
-LIMITER_COEFF= 100.0
+VENKAT_LIMITER_COEFF= 10.0
 ```
-For laminar flow around the cylinder, the 2nd-order Roe upwinding method showed good performance when the Venkatakrishnan limiter was used. Without the limiter, the computation is much less stable and may not converge. Note that, in order to activate the limiter for the upwind methods, 2ND_ORDER_LIMITER must be selected for the SPATIAL_ORDER_FLOW option. If 2ND_ORDER is chosen, no limiting will be applied to the convective flux during the higher-order reconstruction. Limiting is not applicable for 1ST_ORDER, as there is no higher-order reconstruction and thus no need to limit the gradients. The viscous terms are computed with the corrected average of gradients method (by default). As in the flat plate tutorial, it is recommended that users experiment with the LIMITER_COEFF value for their own applications.
+For laminar flow around the cylinder, the 2nd-order Roe upwinding method showed good performance when the Venkatakrishnan limiter was used. Without the limiter, the computation is much less stable and may not converge. Note that, in order to activate the limiter for the upwind methods, SLOPE_LIMITER_FLOW must be set to something else than NONE. Otherwise no limiting will be applied to the convective flux during the higher-order reconstruction. Limiting is not applicable if MUSCL_FLOW=NO, as there is no higher-order reconstruction and thus no need to limit the gradients. The viscous terms are computed with the corrected average of gradients method (by default). As in the flat plate tutorial, it is recommended that users experiment with the VENKAT_LIMITER_COEFF value for their own applications.
 
 ### Running SU2
 

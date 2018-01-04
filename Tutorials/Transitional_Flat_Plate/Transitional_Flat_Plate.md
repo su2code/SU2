@@ -15,7 +15,7 @@ Upon completing this tutorial, the user will be familiar with performing an exte
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/transition/Schubauer_Klebanoff directory. You will need the configuration file (transitional_BC_model_ConfigFile.cfg) and the mesh file (grid.su2). The configuration file can be found in the SU2 repository whereas the mesh file can be found in the TestCases repository.
+The resources for this tutorial can be found in the Tutorials/Transitional_Flat_Plate directory. You will need the configuration file (transitional_BC_model_ConfigFile.cfg) and the mesh file (grid.su2). The configuration file can be found in the SU2 repository whereas the mesh file can be found in the Tutorials repository.
 Additionally, experimental skin friction data corresponding to this test case is provided in the TestCases repository (All_ZeroPresGrad_FlatPlateExperiments.dat).
 
 ## Tutorial

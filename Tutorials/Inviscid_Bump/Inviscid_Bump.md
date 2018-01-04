@@ -16,7 +16,7 @@ The intent of this tutorial is to introduce a simple, inviscid flow problem and 
 
 ## Resources
 
-The mesh (mesh_channel_256x128.su2) for this tutorial can be found in the "su2code/TestCases" repository under euler/channel/ and the configuration file (inv_channel.cfg) can be found in the "su2code/SU2" repository under TestCases/euler/channel/. All tutorials in this series except for the Quickstart tutorial follow this pattern of storing the mesh and other large files in the "su2code/TestCases" repository. 
+The mesh (mesh_channel_256x128.su2) for this tutorial can be found in the "su2code/Tutorials" repository under Tutorials/Inviscid_Bump and the configuration file (inv_channel.cfg) can be found in the "su2code/SU2" repository under Tutorials/Inviscid_Bump. All tutorials in this series except for the Quickstart tutorial follow this pattern of storing the mesh and other large files in the "su2code/Tutorials" repository. 
 
 ## Tutorial
 
@@ -82,13 +82,13 @@ Some options related to integration:
 TIME_DISCRE_FLOW= EULER_IMPLICIT
 % 
 % Courant-Friedrichs-Lewy condition of the finest grid
-CFL_NUMBER= 6.0
+CFL_NUMBER= 50.0
 %
 % Multi-Grid Levels (0 = no multi-grid)
 MGLEVEL= 3    
 ```
 
-For this problem, Euler Implicit time integration with a CFL number of 6 is chosen. Convergence is also accelerated with three levels of multigrid. We will discuss some of these options in later tutorials.
+For this problem, Euler Implicit time integration with a CFL number of 50 is chosen. Convergence is also accelerated with three levels of multigrid. We will discuss some of these options in later tutorials.
 
 Setting the convergence criteria:
 ```
