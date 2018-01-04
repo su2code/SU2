@@ -17,7 +17,7 @@ This tutorial also provides an explanation for properly setting up viscous, 3D f
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/rans/oneram6 directory. You will need the configuration file (turb_ONERAM6.cfg) and the mesh file (mesh_ONERAM6_turb_hexa_43008.su2).
+The resources for this tutorial can be found in the Tutorials/Turbulent_OneraM6 directory. You will need the configuration file (turb_ONERAM6.cfg) and the mesh file (mesh_ONERAM6_turb_hexa_43008.su2).
 
 ## Tutorial
 

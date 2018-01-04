@@ -17,7 +17,7 @@ We will also discuss the details for setting up 3D flow conditions and some of t
 
 ## Resources
 
-The resources for this tutorial can be found in the TestCases/euler/oneram6/ directory. You will need the configuration file (inv_ONERAM6.cfg) and the mesh file (mesh_ONERAM6_inv_ffd.su2).
+The resources for this tutorial can be found in the Tutorials/Inviscid_OneraM6 directory. You will need the configuration file (inv_ONERAM6.cfg) and the mesh file (mesh_ONERAM6_inv_ffd.su2).
 
 ## Tutorial
 
@@ -38,7 +38,7 @@ These transonic flow conditions will cause the typical "lambda" shock along the 
 
 ### Mesh Description
 
-The computational domain is a large parallelepiped with the wing half-span on one boundary in the x-z plane. The mesh provided in the tutorial resources directory listed above is a relatively coarse mesh provided that will complete in less time, but provide less accurate results. Users interested in obtaining more accurate results should use the finer mesh (mesh_ONERAM6_inv_FFD.su2) and associated config file (inv_oneram6_adv.cfg) provided in Testcases/optimization_euler/steady_oneram6/. The results shown in this tutorial use the finer mesh. 
+The computational domain is a large parallelepiped with the wing half-span on one boundary in the x-z plane. The mesh provided in the tutorial resources directory listed above is a relatively coarse mesh provided that will complete in less time, but provide less accurate results. Users interested in obtaining more accurate results should use the finer mesh (mesh_ONERAM6_inv_FFD.su2) and associated config file (inv_oneram6_adv.cfg) provided in Tutorials/Constrained_Optimal_Shape_Design. The results shown in this tutorial use the finer mesh. 
 
 The finer mesh consists of 582,752 tetrahedral elements and 108,396 nodes. Three boundary conditions are employed: Euler wall on the wing surface, a far-field characteristic-based condition on the far-field markers, and a symmetry boundary condition for the marker where the wing half-span is attached. The symmetry condition acts to mirror the flow about the x-z plane, reducing the complexity of the mesh and the computational cost. Images of the entire domain and the triangular elements on the wing surface are shown below.
 
