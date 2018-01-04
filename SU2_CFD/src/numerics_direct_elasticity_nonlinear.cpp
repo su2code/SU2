@@ -135,8 +135,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
     ref_Efield_mod = sqrt(ref_Efield_mod);
 
     if (ref_Efield_mod == 0){
-      cout << "The electric field has not been defined!!!!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The electric field has not been defined!!!!!", CURRENT_FUNCTION);
     }
 
     /*--- Initialize pointer for the electric field ---*/
@@ -502,8 +501,8 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
   unsigned short iDim ;
 
   su2double GradNi_Mat_Term;
-  su2double Vol_current, Vol_reference;
-  su2double Avg_kappa;
+  su2double Vol_current = 0.0, Vol_reference;
+  su2double Avg_kappa = 0.0;
   su2double el_Pressure;
 
   /*--- TODO: Initialize values for the material model considered ---*/
@@ -572,8 +571,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 
   }
   else {
-    cout << "Warning: Negative volume computed during FE structural analysis. Exiting..." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(" Negative volume computed during FE structural analysis.", CURRENT_FUNCTION);
   }
 
   for (iNode = 0; iNode < nNode; iNode++) {

@@ -60,19 +60,19 @@ int main(int argc, char *argv[]) {
  	char *cstr;
   bool Local_MoveSurface, MoveSurface = false;
   ofstream Gradient_file, ObjFunc_file;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+  int rank, size;
   
   /*--- MPI initialization ---*/
   
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
@@ -619,10 +619,8 @@ int main(int argc, char *argv[]) {
           
           /*--- If the FFDBox was not defined in the input file ---*/
           
-          if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
-            cout << "The input grid doesn't have the entire FFD information!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
+          if (!surface_movement->GetFFDBoxDefinition()) {
+            SU2_MPI::Error("The input grid doesn't have the entire FFD information!", CURRENT_FUNCTION);
           }
           
           for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
@@ -819,16 +817,7 @@ int main(int argc, char *argv[]) {
         delta_eps = config_container[ZONE_0]->GetDV_Value(iDV);
         
         if (delta_eps == 0) {
-          cout << "The finite difference steps is zero!!" << endl;
-          cout << "Press any key to exit..." << endl;
-          cin.get();
-#ifdef HAVE_MPI
-          MPI_Barrier(MPI_COMM_WORLD);
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#else
-          exit(EXIT_FAILURE);
-#endif
+          SU2_MPI::Error("The finite difference steps is zero!!", CURRENT_FUNCTION);
         }
         
         if (MoveSurface) {
@@ -1241,7 +1230,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

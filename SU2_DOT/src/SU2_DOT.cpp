@@ -39,22 +39,22 @@ int main(int argc, char *argv[]) {
   
   char config_file_name[MAX_STRING_SIZE], *cstr;
   ofstream Gradient_file;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
+  int rank, size;
 
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;
@@ -312,10 +312,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   bool *UpdatePoint, MoveSurface, Local_MoveSurface;
   CFreeFormDefBox **FFDBox;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#endif
+  int rank = SU2_MPI::GetRank();
   
   nDV = config->GetnDV();
   
@@ -331,8 +328,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
     if (nDV_Value != 1){
-      cout << "The projection using finite differences currently only supports a fixed direction of movement for FFD points." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The projection using finite differences currently only supports a fixed direction of movement for FFD points.", CURRENT_FUNCTION);
     }
   }
 
@@ -373,10 +369,8 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         surface_movement->ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName());
         
         /*--- If the FFDBox was not defined in the input file ---*/
-        if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
-          cout << "The input grid doesn't have the entire FFD information!" << endl;
-          cout << "Press any key to exit..." << endl;
-          cin.get();
+        if (!surface_movement->GetFFDBoxDefinition()) {
+          SU2_MPI::Error("The input grid doesn't have the entire FFD information!", CURRENT_FUNCTION);
         }
         
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
@@ -561,11 +555,8 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#endif
-  
+  int rank = SU2_MPI::GetRank();
+
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
@@ -674,10 +665,7 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
   
   unsigned short nDV, iDV, iDV_Value, nDV_Value;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#endif
+  int rank = SU2_MPI::GetRank();
   
   nDV = config->GetnDV();
   
