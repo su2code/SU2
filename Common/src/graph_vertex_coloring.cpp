@@ -76,8 +76,8 @@ void GraphVertexColoring(CConfig                              *config,
         for(int rank=1; rank<nRank; ++rank) {
 
           /* Determine the size of the message to be received. */
-          MPI_Status status;
-          MPI_Probe(rank, rank, MPI_COMM_WORLD, &status);
+          SU2_MPI::Status status;
+          SU2_MPI::Probe(rank, rank, MPI_COMM_WORLD, &status);
 
           int sizeMess;
           MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
@@ -215,7 +215,7 @@ void GraphVertexColoring(CConfig                              *config,
         unsigned long nLocalVert = entriesVertices.size();
         colorLocalVertices.resize(nLocalVert);
 
-        MPI_Status status;
+        SU2_MPI::Status status;
         SU2_MPI::Recv(colorLocalVertices.data(), nLocalVert, MPI_INT, 0, myRank+1,
                       MPI_COMM_WORLD, &status);
       }
