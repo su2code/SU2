@@ -104,7 +104,7 @@ class COutput {
   nParallel_Hexa,
   nParallel_Pris,
   nParallel_Pyra;
-  int *Conn_Line_Par;
+  int *Conn_BoundLine_Par;
   int *Conn_BoundTria_Par;
   int *Conn_BoundQuad_Par;
   int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
@@ -116,8 +116,9 @@ class COutput {
   
   unsigned short nVar_Par;
   su2double **Local_Data;
-  su2double **Parallel_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
-  su2double **Parallel_Surf_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
+  su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
 
   su2double **Data;
@@ -126,6 +127,7 @@ class COutput {
   unsigned short wrote_base_file;
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
+  
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
   unsigned short   nSpanWiseSections,
@@ -183,6 +185,9 @@ class COutput {
 
 protected:
 
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
+
 public:
 
   /*! 
@@ -229,13 +234,12 @@ public:
 
   /*!
    * \brief Writes equivalent area.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] output - Create output files.
    */
-  void SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, 
-      unsigned long iExtIter);
+  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
   /*!
    * \brief Writes inverse design.
@@ -254,7 +258,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iExtIter - Current external (time) iteration.
    */
-  void SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
+  void SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                         unsigned long iExtIter);
   
   /*!
@@ -262,10 +266,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] output - Create output files.
    */
-  void SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                         unsigned long iExtIter);
+  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
   /*!
    * \brief Writes one dimensional output.
@@ -273,9 +276,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] output - Create output files.
    */
-  void OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
   
   /*!
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -284,17 +287,9 @@ public:
    * \param[in] FlowSolution - Flow solution.
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
+   * \param[in] output - Create output files.
    */
-  void WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver);
-
-  /*!
-   * \brief Writes mass flow rate output at monitored marker.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   */
-  void SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
 
   /*! 
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -447,12 +442,6 @@ public:
 
   /*!
    * \brief Write a Tecplot ASCII solution file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol);
-
-  /*!
-   * \brief Write a Tecplot ASCII solution file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - Current zone.
@@ -461,7 +450,30 @@ public:
   void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
@@ -611,17 +623,12 @@ public:
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
+   * \param[in] output - Create output files.
    */
-  void SetForces_Breakdown(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                           CIntegration ***integration, unsigned short val_iZone);
+  void SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -666,8 +673,9 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - iZone index.
+   * \param[in] output - Create output files.
    */
-  void WriteSpanWiseValuesFiles(CGeometry ***geometry, CConfig **config, unsigned short val_iZone);
+  void SpecialOutput_Turbo(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
@@ -696,8 +704,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Number of Zones.
    * \param[in] val_iZone - Zone index.
+   * \param[in] output - Create output files.
    */
-  void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
+  void SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
@@ -807,3 +816,5 @@ public:
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
   
 };
+
+#include "output_structure.inl"

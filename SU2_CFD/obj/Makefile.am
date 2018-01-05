@@ -67,6 +67,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
@@ -111,6 +112,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
+  ../src/solver_adjoint_elasticity.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
@@ -128,6 +130,7 @@ libSU2Core_sources = \
   ../src/variable_adjoint_mean_inc.cpp \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
+  ../src/variable_adjoint_elasticity.cpp \
   ../src/variable_direct_poisson.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \

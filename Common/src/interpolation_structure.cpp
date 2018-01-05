@@ -34,6 +34,9 @@
 #include "../include/interpolation_structure.hpp"
 
 CInterpolator::CInterpolator(void) {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
 
   nZone = 0;
   Geometry = NULL;
@@ -79,6 +82,9 @@ CInterpolator::~CInterpolator(void) {
 
 
 CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone) {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
 
   /* Store pointers*/
   Geometry = geometry_container;
@@ -110,13 +116,6 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
   unsigned short iDonor;
   unsigned int nFaces=0, iFace, nNodes=0;
   bool face_on_marker = true;
-
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
 
   for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
     iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
@@ -206,14 +205,6 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
   /* Only needed if face data is also collected */
   su2double  *Normal;
 
-#ifdef HAVE_MPI
-  int rank;
-  int nProcessor = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
-
-
   for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) {
     Buffer_Send_GlobalPoint[iVertex] = 0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -287,14 +278,12 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
   CGeometry *geom = Geometry[val_zone][MESH_0];
     
-  int nProcessor, rank, iRank;
   unsigned long iVertex, jVertex, kVertex;
     
-  unsigned long count, iTmp, iTmp2, *uptr, tmp_index, tmp_index_2, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+  unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
    
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
-    
-    
+  
   nDim = geom->GetnDim();
   
   if( val_marker != -1 )
@@ -311,15 +300,8 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
 
 #ifdef HAVE_MPI
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-
-#else
-
-  nProcessor = SINGLE_NODE;
-  rank = MASTER_NODE;
-
+  int nProcessor = size, iRank;
+  unsigned long iTmp2, tmp_index, tmp_index_2;
 #endif
         
   /*--- Copy coordinates and point to the auxiliar vector ---*/
@@ -532,10 +514,7 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget){
   #ifdef HAVE_MPI
     
   int *Buffer_Recv_mark = NULL;
-  int iRank,  rank, nProcessor;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  int iRank, nProcessor = size;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[nProcessor];
@@ -610,7 +589,7 @@ CNearestNeighbor::~CNearestNeighbor() {}
 
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
-  int iProcessor, pProcessor, nProcessor;
+  int iProcessor, pProcessor, nProcessor = size;
   int markDonor, markTarget;
 
   unsigned short nDim, iMarkerInt, nMarkerInt, iDonor;    
@@ -619,12 +598,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
   su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
-
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-#endif
 
   /*--- Initialize variables --- */
   
@@ -784,17 +757,9 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   unsigned long storeGlobal[10];
   int storeProc[10];
 
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
+  int nProcessor = size;
   Coord = new su2double[nDim];
   Normal = new su2double[nDim];
-
-#ifdef HAVE_MPI  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-#endif
 
   nMarkerInt = (config[donorZone]->GetMarker_n_ZoneInterface())/2;
 
@@ -1319,15 +1284,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
   unsigned long faceindex;
 
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-#endif
+  int nProcessor = size;
 
   su2double *Buffer_Send_Coeff, *Buffer_Receive_Coeff;
   su2double coeff;
@@ -1550,7 +1507,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   /* --- General variables --- */
 
   bool check;
-  int rank, nProcessor;
   
   unsigned short iDim, nDim;
   
@@ -1576,7 +1532,7 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
 
   unsigned short iMarkerInt, nMarkerInt; 
 
-  unsigned long iVertex, nVertexDonor, nVertexTarget;
+  unsigned long iVertex, nVertexTarget;
 
   int markDonor, markTarget;
 
@@ -1604,14 +1560,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   su2double **donor_element, *DonorPoint_Coord;
     
   /*  1 - Variable pre-processing - */
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-  rank = MASTER_NODE;
-#endif
 
   nDim = donor_geometry->GetnDim();
 
@@ -1646,11 +1594,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if( !CheckInterfaceBoundary(markDonor, markTarget) )
       continue;
-
-    if(markDonor != -1)
-      nVertexDonor  = donor_geometry->GetnVertex(  markDonor  );
-    else
-      nVertexDonor  = 0;
 
     if(markTarget != -1)
       nVertexTarget = target_geometry->GetnVertex( markTarget );
@@ -2289,7 +2232,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     jPoint = ptr[jNode];
     for( kNode = 0; kNode < nOuterNodes; kNode++ ){
       if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-        OuterNodesNeighbour[ iNode ][count] = kNode;
+        OuterNodesNeighbour[iNode][count] = (int)kNode;
         count++;
         break;
       }
@@ -2298,7 +2241,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
 
   // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
   if( count == 1 ) 
-    StartIndex = iNode;
+    StartIndex = (int)iNode;
   }
 
   /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
@@ -2348,7 +2291,8 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     delete [] OuterNodesNeighbour[ iNode ];
   delete [] OuterNodesNeighbour;
 
-  return iElementNode;
+  return (int)iElementNode;
+  
 }
 
 su2double CSlidingMesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){

@@ -39,7 +39,8 @@
 class CSysSolve_b{
 
 public:
-  static void Solve_b(AD::CheckpointHandler *data);
-  static void Delete_b(AD::CheckpointHandler *data);
+  static void Solve_b(AD::Tape* tape, AD::CheckpointHandler *data);
+  static void Solve_g(AD::Tape* tape, AD::CheckpointHandler *data);
+  static void Delete_b(AD::Tape* tape, AD::CheckpointHandler *data);
 };
 #endif
