@@ -16459,7 +16459,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, SemiSpan;
+  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Nacelle_File, Section_File;
   
@@ -16467,7 +16467,6 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   /*--- Make a large number of section cuts for approximating volume ---*/
   
   nPlane = config->GetnWingStations();
-  SemiSpan = config->GetSemiSpan();
   
   /*--- Allocate memory for the section cutting ---*/
   
