@@ -128,9 +128,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
 
-  CustomBCTemperature = 0.0;
-  CustomBCHeatFlux = 0.0;
-
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
@@ -224,9 +221,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
-
-  CustomBCTemperature = 0.0;
-  CustomBCHeatFlux = 0.0;
 
 }
 
@@ -323,9 +317,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
   /*--- Intialize the value of the curvature ---*/
   Curvature = 0.0;
-
-  CustomBCTemperature = 0.0;
-  CustomBCHeatFlux = 0.0;
 
 }
 

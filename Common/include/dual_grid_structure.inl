@@ -241,14 +241,6 @@ inline void CPoint::SetZeroValues(void) { }
 
 inline void CPoint::AddNormal(su2double *val_face_normal) { }
 
-inline su2double CPoint::GetCustomBCTemperature(void) { return CustomBCTemperature; }
-
-inline void CPoint::SetCustomBCTemperature(su2double val_Temp) { CustomBCTemperature = val_Temp; }
-
-inline su2double CPoint::GetCustomBCHeatFlux(void){ return CustomBCHeatFlux; }
-
-inline void CPoint::SetCustomBCHeatFlux(su2double val_HeatFlux){ CustomBCHeatFlux = val_HeatFlux; }
-
 inline void CPoint::SetAdjointCoord(su2double *adj_coor){
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
         SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
