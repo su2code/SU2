@@ -107,6 +107,10 @@ protected:
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
+  /* --- Custom boundary variables --- */
+  su2double **CustomBoundaryTemperature;
+  su2double **CustomBoundaryHeatFlux;
+
 public:
 	unsigned long *nElem_Bound;			/*!< \brief Number of elements of the boundary. */
 	string *Tag_to_Marker;	/*!< \brief If you know the index of the boundary (depend of the 
@@ -604,14 +608,14 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
          * \param[in] val_marker - Index of the boundary marker.
 	 */
-        virtual void SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+        virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
 
         /*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
          * \param[in] val_marker - Index of the boundary marker.
 	 */
-        virtual void SetWallTemperature(CGeometry *geometry, unsigned short val_marker);
+        virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
 
 	/*! 
 	 * \brief A virtual member.
@@ -678,10 +682,11 @@ public:
 	virtual void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief A virtual member.
+   * \brief Set the data containers for customized boundary conditions.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetCustomBoundary(CConfig *config);
+
 
   /*!
    * \brief A virtual member.
@@ -1268,6 +1273,36 @@ public:
    * \param config - Config
    */
   virtual void Check_Periodicity(CConfig *config);
+
+  /*!
+   * \brief Get the value of the customized temperature at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  su2double GetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the value of the customized temperature at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   * \param[in] val_customBoundaryTemperature - Value of the temperature.
+   */
+  void SetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryTemperature);
+
+  /*!
+   * \brief Get the value of the customized normal heat flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  su2double GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the value of the customized normal heat flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   * \param[in] val_customBoundaryHeatFlux - Value of the normal heat flux.
+   */
+  void SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux);
   
 };
 
@@ -1608,12 +1643,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetPeriodicBoundary(CConfig *config);
-
-  /*!
-   * \brief Set the customized boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCustomBoundary(CConfig *config);
 
 	/*! 
 	 * \brief Do an implicit smoothing of the grid coordinates.
@@ -2207,14 +2236,14 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
          * \param[in] val_marker - Index of the boundary marker.
 	 */
-        void SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+        void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
 
         /*! 
 	 * \brief Set a representative wall temperature of the agglomerated control volume on a particular boundary marker.
 	 * \param[in] geometry - Geometrical definition of the problem.
          * \param[in] val_marker - Index of the boundary marker.
 	 */
-        void SetWallTemperature(CGeometry *geometry, unsigned short val_marker);
+        void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
 
 	/*!
 	 * \brief Set the rotational velocity at each grid point on a coarse mesh.

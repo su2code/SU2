@@ -105,7 +105,7 @@ inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
 
-inline void CGeometry::SetCustomBoundary(CConfig *config){ }
+//inline void CGeometry::SetCustomBoundary(CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
 
@@ -123,9 +123,9 @@ inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
 
-inline void CGeometry::SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker){ }
+inline void CGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){ }
 
-inline void CGeometry::SetWallTemperature(CGeometry *geometry, unsigned short val_marker){ }
+inline void CGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){ }
 
 inline void CGeometry::SetPoint_Connectivity(CGeometry *fine_grid) { }
 
@@ -325,6 +325,14 @@ inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
+
+inline su2double CGeometry::GetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryTemperature[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryTemperature){ CustomBoundaryTemperature[val_marker][val_vertex] = val_customBoundaryTemperature; }
+
+inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
