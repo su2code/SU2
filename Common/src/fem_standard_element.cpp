@@ -77,15 +77,10 @@ unsigned short FEMStandardElementBaseClass::GetNDOFsStatic(unsigned short VTK_Ty
       break;
 
     default:
-      cout << "In function FEMStandardElementBaseClass::GetNDOFsStatic" << endl;
-      cout << "Unknown FEM element type, " << typeErrorMessage
-           << ", encountered." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      ostringstream message;
+      message << "Unknown FEM element type, " << typeErrorMessage
+              << ", encountered.";
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   return nDOFs;
@@ -97,15 +92,8 @@ void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
 
  /*--- Check the dimensions of A. ---*/
  unsigned long nEntities = n*n;
- if(A.size() != nEntities) {
-   cout << "Wrong size of the A matrix in InverseMatrix" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+ if(A.size() != nEntities)
+   SU2_MPI::Error("Wrong size of the A matrix in InverseMatrix", CURRENT_FUNCTION);
 
   /*--- Create a local matrix to carry out the actual inversion. ---*/
   vector<vector<su2double> > augmentedmatrix(n, vector<su2double>(2*n));
@@ -219,16 +207,8 @@ void FEMStandardElementBaseClass::CheckSumDerivativesLagrangianBasisFunctions(
     for(unsigned short i=0; i<nDOFs; ++i)
       val += dLagBasisPoints[jj+i];
 
-    if(fabs(val) > 1.e-6) {
-      cout << "In FEMStandardElementBaseClass::CheckSumDerivativesLagrangianBasisFunctions." << endl;
-      cout << "Difference is too large to be caused by roundoff" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+    if(fabs(val) > 1.e-6)
+      SU2_MPI::Error("Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
   }
 }
 
@@ -246,16 +226,8 @@ void FEMStandardElementBaseClass::CheckSumLagrangianBasisFunctions(
     for(unsigned short i=0; i<nDOFs; ++i)
       val += lagBasisPoints[jj+i];
 
-    if(fabs(val-1.0) > 1.e-6){
-      cout << "In FEMStandardElementBaseClass::CheckSumLagrangianBasisFunctions." << endl;
-      cout << "Difference is too large to be caused by roundoff" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+    if(fabs(val-1.0) > 1.e-6)
+      SU2_MPI::Error("Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
 
     val = 1.0/val;
     for(unsigned short i=0; i<nDOFs; ++i)
@@ -1141,15 +1113,8 @@ void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
   const unsigned int dimA = nDOFs*nPoints;
   const unsigned int dimB = nDOFs*nDOFs;
 
-  if(A.size() != dimA || B.size() != dimB || C.size() != dimA) {
-    cout << "Unexpected size of the matrices in FEMStandardElementBaseClass::MatMulRowMajor" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(A.size() != dimA || B.size() != dimB || C.size() != dimA)
+    SU2_MPI::Error("Unexpected size of the matrices", CURRENT_FUNCTION);
 
   /*--- Carry out the actual matrix matrix multiplication and store the result
         in row major order (the matrices A and B are in column major order).  ---*/
@@ -1243,15 +1208,8 @@ void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde1D" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- Compute the Vandermonde matrix. ---*/
   unsigned int ii = 0;
@@ -1270,15 +1228,8 @@ void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOF
         and check if the dimension of VDr is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities) {
-    cout << "Wrong size of the VDr matrix in GradVandermonde1D" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr matrix", CURRENT_FUNCTION);
 
   /*--- Compute the gradient of the Vandermonde matrix. ---*/
   unsigned int ii = 0;
@@ -1299,15 +1250,8 @@ void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short         
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde2D_Triangle" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- For a triangle the orthogonal basis for the reference element is obtained
         by a combination of a Jacobi polynomial and a Legendre polynomial. This
@@ -1344,15 +1288,8 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Triangle(unsigned short     
         and check if the dimensions of VDr and VDs are correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities || VDs.size() != nEntities) {
-    cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Triangle" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities || VDs.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr and/or VDs matrices", CURRENT_FUNCTION);
 
   /*--- For a triangle the orthogonal basis for the reference element is obtained
         by a combination of a Jacobi polynomial and a Legendre polynomial. This
@@ -1409,15 +1346,8 @@ void FEMStandardElementBaseClass::Vandermonde2D_Quadrilateral(unsigned short    
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde2D_Quadrilateral" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- For a quadrilateral the basis functions are the product of the 1D
         basis functions, which are the normalized Legendre polynomials.
@@ -1443,15 +1373,8 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Quadrilateral(unsigned short
         and check if the dimensions of VDr and VDs are correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities || VDs.size() != nEntities) {
-    cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Quadrilateral" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities || VDs.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr and/or VDs matrices", CURRENT_FUNCTION);
 
   /*--- For a quadrilateral the basis functions are the product of the 1D
         basis functions, which are the normalized Legendre polynomials.
@@ -1479,15 +1402,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Tetrahedron(unsigned short      
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Tetrahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
         combination of Jacobi polynomials (of which the Legendre polynomials is a special
@@ -1538,15 +1454,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Tetrahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr, VDs and VDt matrices", CURRENT_FUNCTION);
 
   /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
         combination of Jacobi polynomials (of which the Legendre polynomials is a special
@@ -1654,15 +1563,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Pyramid(unsigned short          
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Pyramid" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- For a pyramid the orthogonal basis for the reference element is
         obtained by a combination of Jacobi polynomials (of which the Legendre
@@ -1711,15 +1613,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short      
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Pyramid" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr, VDs and VDt matrices", CURRENT_FUNCTION);
 
   /*--- For a pyramid the orthogonal basis for the reference element is
         obtained by a combination of Jacobi polynomials (of which the Legendre
@@ -1809,15 +1704,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Prism(unsigned short          nP
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Prism" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- For a prism the orthogonal basis for the reference element is a tensor
         product of the 1D basis functions in the structured direction of the prism
@@ -1863,15 +1751,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Prism(unsigned short        
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Prism" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr, VDs and VDt matrices", CURRENT_FUNCTION);
 
   /*--- For a prism the orthogonal basis for the reference element is a tensor
         product of the 1D basis functions in the structured direction of the prism
@@ -1944,15 +1825,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Hexahedron(unsigned short       
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Hexahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
 
   /*--- For a hexahedron the basis functions are the tensor product of the 1D
         basis functions, which are the normalized Legendre polynomials. Note
@@ -1983,15 +1857,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short   
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
   unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Hexahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr, VDs and VDt matrices", CURRENT_FUNCTION);
 
   /*--- For a hexahedron the basis functions are the tensor product of the 1D
         basis functions, which are the normalized Legendre polynomials.
@@ -3140,16 +3007,12 @@ unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VT
     case TETRAHEDRON:   nDOFsSubElem = 4; break;
     case PYRAMID:       nDOFsSubElem = 5; break;
     case PRISM:         nDOFsSubElem = 6; break;
-    case HEXAHEDRON:    nDOFsSubElem = 8; break;    default:
-      cout << "In FEMStandardElementClass::GetNDOFsPerSubElem." << endl;
-      cout << "Impossible FEM sub element type, " << val_VTK_Type
-      << ", encountered." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+    case HEXAHEDRON:    nDOFsSubElem = 8; break;
+    default:
+      ostringstream message;
+      message << "Impossible FEM sub element type, " << val_VTK_Type
+              << ", encountered.";
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
   
   /* Return the number of DOFs for a subface. */
@@ -3293,16 +3156,9 @@ void FEMStandardElementClass::ChangeDirectionQuadConn(vector<unsigned short> &co
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function FEMStandardElementClass::ChangeDirectionQuadConn." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.",
+                   CURRENT_FUNCTION);
 
   /*--- Copy the connectivity, such that things works out correctly when carrying
         out the renumbering.      ---*/
@@ -3422,16 +3278,9 @@ void FEMStandardElementClass::ChangeDirectionTriangleConn(vector<unsigned short>
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function FEMStandardElementClass::ChangeDirectionTriangleConn." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.",
+                   CURRENT_FUNCTION);
 
   /*--- Copy the connectivity, such that things works out correctly when carrying
         out the renumbering.  ---*/
@@ -3903,15 +3752,10 @@ unsigned short FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace(void) const {
     case TRIANGLE:      nDOFsSubface = 3; break;
     case QUADRILATERAL: nDOFsSubface = 4; break;
     default:
-      cout << "In FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace." << endl;
-      cout << "Impossible FEM surface element type, " << VTK_Type
-           << ", encountered." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      ostringstream message;
+      message << "Impossible FEM surface element type, " << VTK_Type
+              << ", encountered.";
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /* Return the number of DOFs for a subface. */
