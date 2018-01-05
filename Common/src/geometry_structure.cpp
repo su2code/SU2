@@ -93,6 +93,10 @@ CGeometry::CGeometry(void) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
+
+  /*--- Containers for customized boundary conditions ---*/
+  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
+  CustomBoundaryTemperature = NULL;   //Customized temperature wall
   
 }
 
@@ -165,6 +169,20 @@ CGeometry::~CGeometry(void) {
   if (starting_node != NULL) delete [] starting_node;
   if (ending_node   != NULL) delete [] ending_node;
   if (npoint_procs  != NULL) delete [] npoint_procs;
+
+  if(CustomBoundaryHeatFlux != NULL){
+    for(iMarker=0; iMarker < nMarker; iMarker++){
+      if (CustomBoundaryHeatFlux[iMarker] != NULL) delete [] CustomBoundaryHeatFlux[iMarker];
+    }
+    delete [] CustomBoundaryHeatFlux;
+  }
+
+  if(CustomBoundaryTemperature != NULL){
+    for(iMarker=0; iMarker < nMarker; iMarker++){
+      if(CustomBoundaryTemperature[iMarker] != NULL) delete [] CustomBoundaryTemperature[iMarker];
+    }
+    delete [] CustomBoundaryTemperature;
+  }
   
 }
 
@@ -1241,6 +1259,44 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   
 }
 
+void CGeometry::SetCustomBoundary(CConfig *config) {
+
+  unsigned short iMarker;
+  unsigned long iVertex;
+  string Marker_Tag;
+
+  /* --- Initialize quantities for customized boundary conditions.
+   * Custom values are initialized with the default values specified in the config (avoiding non physical values) --- */
+  CustomBoundaryTemperature = new su2double*[nMarker];
+  CustomBoundaryHeatFlux = new su2double*[nMarker];
+
+  for(iMarker=0; iMarker < nMarker; iMarker++){
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    CustomBoundaryHeatFlux[iMarker] = NULL;
+    CustomBoundaryTemperature[iMarker] = NULL;
+    if(config->GetMarker_All_PyCustom(iMarker)){
+      switch(config->GetMarker_All_KindBC(iMarker)){
+        case HEAT_FLUX:
+          CustomBoundaryHeatFlux[iMarker] = new su2double[nVertex[iMarker]];
+          for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+            CustomBoundaryHeatFlux[iMarker][iVertex] = config->GetWall_HeatFlux(Marker_Tag);
+          }
+          break;
+        case ISOTHERMAL:
+          CustomBoundaryTemperature[iMarker] = new su2double[nVertex[iMarker]];
+          for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+            CustomBoundaryTemperature[iMarker][iVertex] = config->GetIsothermal_Temperature(Marker_Tag);
+          }
+          break;
+        default:
+          cout << "WARNING: Marker " << Marker_Tag << " is not customizable. Using default behavior." << endl;
+          break;
+      }
+    }
+  }
+
+}
+
 void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
 
   unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
@@ -1249,11 +1305,11 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
     iMGfine = iMGlevel-1;
     for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
-      if (config->GetMarker_All_CHT(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
-        geometry_container[iMGlevel]->SetWallHeatFlux(geometry_container[iMGfine], iMarker);
+      if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
+        geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
       }
-      else if (config->GetMarker_All_CHT(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        geometry_container[iMGlevel]->SetWallTemperature(geometry_container[iMGfine], iMarker);
+      else if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+        geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
       }
     }
   }
@@ -5244,7 +5300,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-      config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
+      config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
 	  config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
@@ -5264,7 +5320,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   	  config->SetMarker_All_ZoneInterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
-      config->SetMarker_All_CHT(iMarker, NO);
+      config->SetMarker_All_PyCustom(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
@@ -7189,7 +7245,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-            config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
+            config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
@@ -7208,7 +7264,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               config->SetMarker_All_ZoneInterface(iMarker+1, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag_Duplicate));
               config->SetMarker_All_DV(iMarker+1, config->GetMarker_CfgFile_DV(Marker_Tag_Duplicate));
               config->SetMarker_All_Moving(iMarker+1, config->GetMarker_CfgFile_Moving(Marker_Tag_Duplicate));
-              config->SetMarker_All_CHT(iMarker+1, config->GetMarker_CfgFile_CHT(Marker_Tag_Duplicate));
+              config->SetMarker_All_PyCustom(iMarker+1, config->GetMarker_CfgFile_PyCustom(Marker_Tag_Duplicate));
               config->SetMarker_All_PerBound(iMarker+1, config->GetMarker_CfgFile_PerBound(Marker_Tag_Duplicate));
               config->SetMarker_All_SendRecv(iMarker+1, NONE);
 
@@ -8929,7 +8985,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-            config->SetMarker_All_CHT(iMarker, config->GetMarker_CfgFile_CHT(Marker_Tag));
+            config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
@@ -14766,27 +14822,6 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::SetCustomBoundary(CConfig *config){
-
-  unsigned short iMarker;
-  unsigned long iPoint, iVertex;
-  string Marker_Tag;
-
-  for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    if(config->GetMarker_All_CHT(iMarker)){
-      for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
-        iPoint =  vertex[iMarker][iVertex]->GetNode();
-        if(node[iPoint]->GetDomain()){
-          if(config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) node[iPoint]->SetCustomBCHeatFlux(config->GetWall_HeatFlux(Marker_Tag));
-          else if(config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) node[iPoint]->SetCustomBCTemperature(config->GetIsothermal_Temperature(Marker_Tag));
-        }
-      }
-    }
-  }
-
-}
-
 void CPhysicalGeometry::FindNormal_Neighbor(CConfig *config) {
   su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
@@ -17996,10 +18031,11 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
   delete[] Coordinates;
 }
 
-void CMultiGridGeometry::SetWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
+void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
 
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iChildren;
+  long Vertex_Fine;
   su2double Area_Parent, Area_Children;
   su2double WallHeatFlux_Fine, WallHeatFlux_Coarse;
   bool isVertex;
@@ -18021,26 +18057,31 @@ void CMultiGridGeometry::SetWallHeatFlux(CGeometry *geometry, unsigned short val
         }
       }
 
+      /*--- Loop again and propagate values to the coarser level ---*/
       for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
         Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
-        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        Vertex_Fine = geometry->node[Point_Fine]->GetVertex(val_marker);
+        isVertex = (node[Point_Fine]->GetDomain() && Vertex_Fine != -1);
         if(isVertex){
           Area_Children = geometry->node[Point_Fine]->GetVolume();
-          WallHeatFlux_Fine = geometry->node[Point_Fine]->GetCustomBCHeatFlux();
+          //Get the customized BC values on fine level and compute the values at coarse level
+          WallHeatFlux_Fine = geometry->GetCustomBoundaryHeatFlux(val_marker, Vertex_Fine);
           WallHeatFlux_Coarse += WallHeatFlux_Fine*Area_Children/Area_Parent;
         }
 
       }
-      node[Point_Coarse]->SetCustomBCHeatFlux(WallHeatFlux_Coarse);
+      //Set the customized BC values at coarse level
+      CustomBoundaryHeatFlux[val_marker][iVertex] = WallHeatFlux_Coarse;
     }
   }
 
 }
 
-void CMultiGridGeometry::SetWallTemperature(CGeometry *geometry, unsigned short val_marker){
+void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){
 
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iChildren;
+  long Vertex_Fine;
   su2double Area_Parent, Area_Children;
   su2double WallTemperature_Fine, WallTemperature_Coarse;
   bool isVertex;
@@ -18062,17 +18103,21 @@ void CMultiGridGeometry::SetWallTemperature(CGeometry *geometry, unsigned short 
         }
       }
 
+      /*--- Loop again and propagate values to the coarser level ---*/
       for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
         Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
-        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        Vertex_Fine = geometry->node[Point_Fine]->GetVertex(val_marker);
+        isVertex = (node[Point_Fine]->GetDomain() && Vertex_Fine != -1);
         if(isVertex){
           Area_Children = geometry->node[Point_Fine]->GetVolume();
-          WallTemperature_Fine = geometry->node[Point_Fine]->GetCustomBCTemperature();
+          //Get the customized BC values on fine level and compute the values at coarse level
+          WallTemperature_Fine = geometry->GetCustomBoundaryTemperature(val_marker, Vertex_Fine);
           WallTemperature_Coarse += WallTemperature_Fine*Area_Children/Area_Parent;
         }
 
       }
-      node[Point_Coarse]->SetCustomBCTemperature(WallTemperature_Coarse);
+      //Set the customized BC values at coarse level
+      CustomBoundaryTemperature[val_marker][iVertex] = WallTemperature_Coarse;
     }
   }
 
