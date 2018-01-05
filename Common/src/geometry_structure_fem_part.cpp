@@ -1260,7 +1260,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for a buffer to receive this message and also
        for the buffer to return to coordinates. */
@@ -1466,7 +1466,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for the receive buffer and receive the
        message using a non-blocking receive. */
@@ -1780,7 +1780,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       int source = status.MPI_SOURCE;
 
       int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
       /* Allocate the memory for the receive buffer and receive the message
          using a blocking send. */
@@ -1808,11 +1808,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         /* Check if the face is actually present. If not, print an error message
            and exit. */
         thisFace.CreateUniqueNumbering();
-        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-          cout << "Boundary element not found in list of faces. This is a bug." << endl;
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-        }
+        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
+          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
+                         CURRENT_FUNCTION);
 
         /* Carry out the search again, but now with lower_bound to find the
            actual entry to determine the domain element and the rank where
@@ -1876,7 +1874,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       int source = status.MPI_SOURCE;
 
       int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
       /* Allocate the memory for the receive buffer and receive the message
          using a blocking send. */
@@ -2227,7 +2225,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     rankRecv[i] = status.MPI_SOURCE;
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -2321,7 +2319,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     SU2_MPI::Status status;
     SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -3503,7 +3501,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
       sendRank[i] = status.MPI_SOURCE;
 
       int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
       sendElem[i].resize(sizeMess);
 
       SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG,

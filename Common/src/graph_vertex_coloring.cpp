@@ -80,7 +80,7 @@ void GraphVertexColoring(CConfig                              *config,
           SU2_MPI::Probe(rank, rank, MPI_COMM_WORLD, &status);
 
           int sizeMess;
-          MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+          SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
           /* Allocate the memory for the receive buffer and receive the message. */
           vector<unsigned long> recvBuf(sizeMess);

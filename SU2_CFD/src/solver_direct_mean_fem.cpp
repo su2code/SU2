@@ -1408,7 +1408,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for the receive buffer, receive the message
        and determine the actual index of this rank in ranksRecv. */
@@ -1564,7 +1564,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for the receive buffer, receive the message
        and determine the actual index of this rank in ranksSend. */
@@ -1761,7 +1761,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for the receive buffer as well as for the
        return send buffer. Receive the message afterwards. */
@@ -2790,8 +2790,8 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
     }
     else {
       int flag;
-      MPI_Testall(commRequests[timeLevel].size(),
-                  commRequests[timeLevel].data(), &flag, MPI_STATUSES_IGNORE);
+      SU2_MPI::Testall(commRequests[timeLevel].size(),
+                       commRequests[timeLevel].data(), &flag, MPI_STATUSES_IGNORE);
       if( !flag ) return false;
     }
 
@@ -3028,8 +3028,8 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
     }
     else {
       int flag;
-      MPI_Testall(commRequests[timeLevel].size(),
-                  commRequests[timeLevel].data(), &flag, MPI_STATUSES_IGNORE);
+      SU2_MPI::Testall(commRequests[timeLevel].size(),
+                       commRequests[timeLevel].data(), &flag, MPI_STATUSES_IGNORE);
       if( !flag ) return false;
     }
 
@@ -4016,8 +4016,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
             case CTaskDefinition::COMPLETE_MPI_COMMUNICATION: {
 
               /* Attempt to complete the MPI communication of the solution data.
-                 For j==0, MPI_Testall will be used, which returns false if not
-                 all requests can be completed. In that case the next task on
+                 For j==0, SU2_MPI::Testall will be used, which returns false if
+                 not all requests can be completed. In that case the next task on
                  the list is carried out. If j==1, this means that the next
                  tasks are waiting for this communication to be completed and
                  hence MPI_Waitall is used. */
@@ -4039,8 +4039,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
             case CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION: {
 
               /* Attempt to complete the MPI communication of the residual data.
-                 For j==0, MPI_Testall will be used, which returns false if not
-                 all requests can be completed. In that case the next task on
+                 For j==0, SU2_MPI::Testall will be used, which returns false if
+                 not all requests can be completed. In that case the next task on
                  the list is carried out. If j==1, this means that the next
                  tasks are waiting for this communication to be completed and
                  hence MPI_Waitall is used. */
