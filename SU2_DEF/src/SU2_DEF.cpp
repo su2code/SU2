@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE, iMarker;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
-  int rank = MASTER_NODE, size = SINGLE_NODE;
+  int rank, size;
   string str;
   bool allmoving=true;
 
@@ -47,12 +47,13 @@ int main(int argc, char *argv[]) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   /*--- Pointer to different structures that will be used throughout 
    the entire code ---*/
@@ -84,7 +85,6 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
-  output   = new COutput(config_container[ZONE_0]);
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -165,105 +165,111 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
     geometry_container[iZone]->SetEdges(); geometry_container[iZone]->SetVertex(config_container[iZone]);
 
-    /*--- Compute center of gravity ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry_container[iZone]->SetCoord_CG();
-
-    /*--- Create the dual control volume structures ---*/
-
-    if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-    geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
-  
+    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+      
+      /*--- Compute center of gravity ---*/
+      
+      if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+      geometry_container[iZone]->SetCoord_CG();
+      
+      /*--- Create the dual control volume structures ---*/
+      
+      if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+      geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+      
+    }
+    
   }
-
+  
   /*--- initialization of output structure  ---*/
-
+  
   output  = new COutput(config_container[ZONE_0]);
-
+  
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
   if (config_container[ZONE_0]->GetVisualize_Deformation()) {
-
+    
     output->SetMesh_Files(geometry_container, config_container, nZone, true, false);
-
-//    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
-//    if (size > 1) SPRINTF (buffer_char, "_%d.stl", rank+1); else SPRINTF (buffer_char, ".stl");
-//    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, true, config[ZONE_0]);
     
   }
   
   /*--- Surface grid deformation using design variables ---*/
   
   for (iZone = 0; iZone < nZone; iZone++){
-
-    if (rank == MASTER_NODE) cout << endl << "--------------------- Surface grid deformation (ZONE " << iZone <<") -----------------" << endl;
-
-    /*--- Definition and initialization of the surface deformation class ---*/
-
-    surface_movement[iZone] = new CSurfaceMovement();
-
-    /*--- Copy coordinates to the surface structure ---*/
-
-    surface_movement[iZone]->CopyBoundary(geometry_container[iZone], config_container[iZone]);
-
-    /*--- Surface grid deformation ---*/
-
-    if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
-    surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
-
-    if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
-
-      if (rank == MASTER_NODE)
-        cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;
-
-      /*--- Definition of the Class for grid movement ---*/
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
-
+    
+    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+      
+      if (rank == MASTER_NODE) cout << endl << "--------------------- Surface grid deformation (ZONE " << iZone <<") -----------------" << endl;
+      
+      /*--- Definition and initialization of the surface deformation class ---*/
+      
+      surface_movement[iZone] = new CSurfaceMovement();
+      
+      /*--- Copy coordinates to the surface structure ---*/
+      
+      surface_movement[iZone]->CopyBoundary(geometry_container[iZone], config_container[iZone]);
+      
+      /*--- Surface grid deformation ---*/
+      
+      if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
+      surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
+      
+      if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
+        
+        if (rank == MASTER_NODE)
+          cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;
+        
+        /*--- Definition of the Class for grid movement ---*/
+        grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
+        
+      }
+      
+      /*--- For scale, translation and rotation if all boundaries are moving they are set via volume method
+       * Otherwise, the surface deformation has been set already in SetSurface_Deformation.  --- */
+      allmoving = true;
+      /*--- Loop over markers, set flag to false if any are not moving ---*/
+      for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++){
+        if (config_container[iZone]->GetMarker_All_DV(iMarker) == NO)
+          allmoving = false;
+      }
+      
+      
+      /*--- Volumetric grid deformation/transformations ---*/
+      
+      if (config_container[iZone]->GetDesign_Variable(0) == SCALE && allmoving) {
+        
+        if (rank == MASTER_NODE)
+          cout << "Performing a scaling of the volumetric grid." << endl;
+        
+        grid_movement[iZone]->SetVolume_Scaling(geometry_container[iZone], config_container[iZone], false);
+        
+      } else if (config_container[iZone]->GetDesign_Variable(0) == TRANSLATION && allmoving) {
+        
+        if (rank == MASTER_NODE)
+          cout << "Performing a translation of the volumetric grid." << endl;
+        
+        grid_movement[iZone]->SetVolume_Translation(geometry_container[iZone], config_container[iZone], false);
+        
+      } else if (config_container[iZone]->GetDesign_Variable(0) == ROTATION && allmoving) {
+        
+        if (rank == MASTER_NODE)
+          cout << "Performing a rotation of the volumetric grid." << endl;
+        
+        grid_movement[iZone]->SetVolume_Rotation(geometry_container[iZone], config_container[iZone], false);
+        
+      } else if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
+        
+        if (rank == MASTER_NODE)
+          cout << "Performing the deformation of the volumetric grid." << endl;
+        
+        grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false);
+        
+      }
+      
     }
-
-    /*--- For scale, translation and rotation if all boundaries are moving they are set via volume method
-   * Otherwise, the surface deformation has been set already in SetSurface_Deformation.  --- */
-    allmoving = true;
-    /*--- Loop over markers, set flag to false if any are not moving ---*/
-    for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++){
-      if (config_container[iZone]->GetMarker_All_DV(iMarker) == NO)
-        allmoving = false;
-    }
-
-
-    /*--- Volumetric grid deformation/transformations ---*/
-
-    if (config_container[iZone]->GetDesign_Variable(0) == SCALE && allmoving) {
-
-      if (rank == MASTER_NODE)
-        cout << "Performing a scaling of the volumetric grid." << endl;
-
-      grid_movement[iZone]->SetVolume_Scaling(geometry_container[iZone], config_container[iZone], false);
-
-    } else if (config_container[iZone]->GetDesign_Variable(0) == TRANSLATION && allmoving) {
-
-      if (rank == MASTER_NODE)
-        cout << "Performing a translation of the volumetric grid." << endl;
-
-      grid_movement[iZone]->SetVolume_Translation(geometry_container[iZone], config_container[iZone], false);
-
-    } else if (config_container[iZone]->GetDesign_Variable(0) == ROTATION && allmoving) {
-
-      if (rank == MASTER_NODE)
-        cout << "Performing a rotation of the volumetric grid." << endl;
-
-      grid_movement[iZone]->SetVolume_Rotation(geometry_container[iZone], config_container[iZone], false);
-
-    } else if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
-
-      if (rank == MASTER_NODE)
-        cout << "Performing the deformation of the volumetric grid." << endl;
-
-      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false);
-
-    }
+    
   }
+  
   /*--- Computational grid preprocesing ---*/
   
   if (rank == MASTER_NODE) cout << endl << "----------------------- Write deformed grid files -----------------------" << endl;
@@ -311,7 +317,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

@@ -36,6 +36,9 @@
 
 CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
 	unsigned long iPoint;
 	
 	nDim = geometry->GetnDim();
@@ -124,17 +127,12 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	ifstream restart_file;
 
 	char *cstr = new char [mesh_filename.size()+1];
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+    SU2_MPI::Error("There is no flow restart file!!", CURRENT_FUNCTION);
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -166,17 +164,12 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	ifstream restart_file;
 	
 	char *cstr = new char [mesh_filename.size()+1];
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+    SU2_MPI::Error(string("There is no flow restart file ") + mesh_filename, CURRENT_FUNCTION );
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -207,10 +200,6 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	string copy, mesh_filename;
 	ifstream restart_file;
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Get the adjoint solution file name ---*/
 	mesh_filename = config->GetSolution_AdjFileName();
@@ -218,9 +207,8 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no adjoint restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+    SU2_MPI::Error(string("There is no adjoint restart file ") + mesh_filename, CURRENT_FUNCTION );
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -249,10 +237,6 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
 
 	string mesh_filename, copy;
 	ifstream restart_file;
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	char buffer[50], cstr[MAX_STRING_SIZE];
 	mesh_filename = config->GetSolution_AdjFileName();
@@ -278,9 +262,10 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
     if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
     if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
     if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
-    if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)     SPRINTF (buffer, "_pe.dat");
-    if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)  SPRINTF (buffer, "_pt.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_STATIC_PRESSURE) SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MASSFLOW)        SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MACH)            SPRINTF (buffer, "_mach.dat");
     if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC)          SPRINTF (buffer, "_custom.dat");
 	}
 
@@ -290,8 +275,8 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
 	
 	if (restart_file.fail()) {
 	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+      SU2_MPI::Error(string("There is no flow restart file ") + mesh_filename, CURRENT_FUNCTION );
+  }
 	
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		getline(restart_file, text_line);
@@ -3550,9 +3535,10 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
     if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
     if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
     if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
-    if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)     SPRINTF (buffer, "_pe.dat");
-    if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)  SPRINTF (buffer, "_pt.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_STATIC_PRESSURE) SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MASSFLOW)        SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == SURFACE_MACH)            SPRINTF (buffer, "_mach.dat");
     if (config->GetKind_ObjFunc() == CUSTOM_OBJFUNC)          SPRINTF (buffer, "_custom.dat");
   }
   

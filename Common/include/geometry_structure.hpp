@@ -71,6 +71,8 @@ using namespace std;
  */
 class CGeometry {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
 	unsigned long nPoint,	/*!< \brief Number of points of the mesh. */
 	nPointDomain,						/*!< \brief Number of real points of the mesh. */
 	nPointGhost,					/*!< \brief Number of ghost points of the mesh. */
@@ -540,15 +542,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
-  /*!
-	 * \brief A virtual member.
-   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
-   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
   
 	/*! 
 	 * \brief A virtual member.
@@ -733,41 +726,75 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-                                      su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
-                                      vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
-                                      vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
-                                      bool original_surface, CConfig *config);
-  
+  void ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
+                              su2double MinXCoord, su2double MaxXCoord,
+                              su2double MinYCoord, su2double MaxYCoord,
+                              su2double MinZCoord, su2double MaxZCoord,
+                              su2double *FlowVariable,
+                              vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                              vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
+                              bool original_surface, CConfig *config);
+
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
  
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  virtual su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc);
 	
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+	virtual su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
   /*!
    * \brief A virtual member.
    */
-  virtual void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double>
+  virtual void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double>
+	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double>
 	                                       &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
@@ -787,9 +814,31 @@ public:
    * \brief A virtual member.
    */
   virtual void Compute_Wing(CConfig *config, bool original_surface,
-                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                            su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
-  
+                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                            su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                            su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                            su2double &Wing_MaxDihedral);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Nacelle(CConfig *config, bool original_surface,
+                               su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                               su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                               su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                               su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                               su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1008,6 +1057,12 @@ public:
    * \param[in] config
    */
   void RegisterCoordinates(CConfig *config);
+
+  /*!
+   * \brief Register the coordinates of the mesh nodes as output.
+   * \param[in] config
+   */
+  void RegisterOutput_Coordinates(CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
@@ -1470,15 +1525,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
 	/*! 
-	 * \brief Set the output file for boundaries in STL CAD format
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the STL 
-	 *            information is going to be stored.
-   * \param[in] new_file - Create a new file.
-	 */
-	void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) ;
-
-	/*! 
 	 * \brief Check the volume element orientation.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
@@ -1732,36 +1778,72 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Compute the maximum thickness of an airfoil.
    * \returns Maximum thickness at a particular seccion.
    */
-  su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
   
   /*!
    * \brief Compute the twist of an airfoil.
    * \returns Twist at a particular seccion.
    */
-  su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Twist(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the leading/trailing edge location of an airfoil.
    */
-  void Compute_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil,
+  void Compute_Wing_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil,
                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+    * \brief Compute the leading/trailing edge location of a fuselage.
+    */
+   void Compute_Fuselage_LeadingTrailing(su2double *LeadingEdge, su2double *TrailingEdge, su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil,
+                                vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the chord of an airfoil.
    * \returns Chord of an airfoil.
    */
-  su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Width(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_WaterLineWidth(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_Height(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the thickness of an airfoil.
    */
-  su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, su2double &ZLoc);
 
   /*!
    * \brief Compute the area of an airfoil.
    * \returns Area of an airfoil.
    */
-  su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+  su2double Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
+   * \brief Compute the length of an airfoil.
+   * \returns Area of an airfoil.
+   */
+  su2double Compute_Length(su2double *Plane_P0, su2double *Plane_Normal, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
    * \brief Compute the dihedral of a wing.
@@ -1781,8 +1863,32 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Evaluate geometrical parameters of a wing.
    */
   void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness,
+                    su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                    su2double &Wing_MinToC, su2double &Wing_MaxToC,
+                    su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist,
+                    su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Fuselage(CConfig *config, bool original_surface,
+  		su2double &Fuselage_Volume, su2double &Fuselage_WettedArea,
+  		su2double &Fuselage_MinWidth, su2double &Fuselage_MaxWidth,
+  		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
+  		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
+  		su2double &Fuselage_MaxCurvature);
+  
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Nacelle(CConfig *config, bool original_surface,
+                       su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                       su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                       su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                       su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                       su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.

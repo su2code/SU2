@@ -54,6 +54,8 @@ using namespace std;
  */
 class CGridAdaptation {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
 	unsigned long nPoint_new,	/*!< \brief Number of new points. */
 	nElem_new;					/*!< \brief Number of new elements. */
 	unsigned short nDim,	/*!< \brief Number of dimensions of the problem. */
