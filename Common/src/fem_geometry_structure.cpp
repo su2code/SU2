@@ -454,7 +454,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_SHORT, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_SHORT, &sizeMess);
 
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
@@ -464,7 +464,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
     SU2_MPI::Probe(source, rank+1, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
@@ -472,7 +472,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Idem for the message with doubles. */
     SU2_MPI::Probe(source, rank+2, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_DOUBLE, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
@@ -1065,7 +1065,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
 
     longRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
@@ -1161,7 +1161,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
 
     /* Allocate the memory for the long receive buffer and receive the message. */
     longRecvBuf[i].resize(sizeMess);
@@ -1290,7 +1290,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
 
     longRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
@@ -1462,7 +1462,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_SHORT, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_SHORT, &sizeMess);
 
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
@@ -1472,7 +1472,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
     SU2_MPI::Probe(sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
@@ -1480,7 +1480,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Idem for the message with doubles. */
     SU2_MPI::Probe(sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_DOUBLE, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
@@ -3232,7 +3232,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
     /* Determine the size of the message, allocate the memory for the
        receive buffer and receive the message. */
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     entitiesSend[i].resize(sizeMess);
     SU2_MPI::Recv(entitiesSend[i].data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -3244,11 +3244,8 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalElemIDToLocalInd.find(entitiesSend[i][j]);
 
-      if(LMI == globalElemIDToLocalInd.end()) {
-        cout << "This should not happen in CMeshFEM_DG::SetSendReceive" << endl;
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-      }
+      if(LMI == globalElemIDToLocalInd.end())
+        SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
 
       entitiesSend[i][j] = LMI->second;
     }
