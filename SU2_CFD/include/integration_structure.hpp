@@ -56,6 +56,8 @@ using namespace std;
  */
 class CIntegration {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
   Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */

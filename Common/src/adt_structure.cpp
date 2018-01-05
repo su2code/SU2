@@ -289,8 +289,8 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
     int rank, iProcessor, nProcessor;
     unsigned long  iVertex, nBuffer;
     unsigned short iDim;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
     unsigned long nLocalVertex = nPoints, nGlobalVertex = 0, MaxLocalVertex = 0;
   
@@ -371,7 +371,7 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
     /*--- A local tree must be built. Copy the coordinates and point IDs and
           set the ranks to the rank of this processor. ---*/
     int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
 
     coorPoints.assign(coor, coor + nDim*nPoints);
     localPointIDs.assign(pointID, pointID + nPoints);
@@ -535,12 +535,12 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
 }
 
-su2_adtElemClass::su2_adtElemClass(unsigned short               val_nDim,
-                                   const vector<su2double>      &val_coor,
-                                         vector<unsigned long>  &val_connElem,
-                                   const vector<unsigned short> &val_VTKElem,
-                                   const vector<unsigned short> &val_markerID,
-                                   const vector<unsigned long>  &val_elemID) {
+su2_adtElemClass::su2_adtElemClass(unsigned short         val_nDim,
+                                   vector<su2double>      &val_coor,
+                                   vector<unsigned long>  &val_connElem,
+                                   vector<unsigned short> &val_VTKElem,
+                                   vector<unsigned short> &val_markerID,
+                                   vector<unsigned long>  &val_elemID) {
 
   /* Copy the dimension of the problem into nDim. */
   nDim = val_nDim;
@@ -563,8 +563,8 @@ su2_adtElemClass::su2_adtElemClass(unsigned short               val_nDim,
   /*--- First determine the number of points per rank and make them
         available to all ranks. ---*/
   int rank, size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 
   vector<int> recvCounts(size), displs(size);
   int sizeLocal = (int) val_coor.size();
@@ -585,8 +585,8 @@ su2_adtElemClass::su2_adtElemClass(unsigned short               val_nDim,
   int sizeGlobal = displs.back() + recvCounts.back();
 
   coorPoints.resize(sizeGlobal);
-  MPI_Allgatherv(val_coor.data(), sizeLocal, MPI_DOUBLE, coorPoints.data(),
-                 recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgatherv(val_coor.data(), sizeLocal, MPI_DOUBLE, coorPoints.data(),
+                      recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
 
   /*--- Determine the number of elements per rank and make them
         available to all ranks. ---*/
@@ -605,14 +605,14 @@ su2_adtElemClass::su2_adtElemClass(unsigned short               val_nDim,
   localMarkers.resize(sizeGlobal);
   localElemIDs.resize(sizeGlobal);
 
-  MPI_Allgatherv(val_VTKElem.data(), sizeLocal, MPI_UNSIGNED_SHORT, elemVTK_Type.data(),
-                 recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+  SU2_MPI::Allgatherv(val_VTKElem.data(), sizeLocal, MPI_UNSIGNED_SHORT, elemVTK_Type.data(),
+                      recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
 
-  MPI_Allgatherv(val_markerID.data(), sizeLocal, MPI_UNSIGNED_SHORT, localMarkers.data(),
-                 recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+  SU2_MPI::Allgatherv(val_markerID.data(), sizeLocal, MPI_UNSIGNED_SHORT, localMarkers.data(),
+                      recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
 
-  MPI_Allgatherv(val_elemID.data(), sizeLocal, MPI_UNSIGNED_LONG, localElemIDs.data(),
-                 recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgatherv(val_elemID.data(), sizeLocal, MPI_UNSIGNED_LONG, localElemIDs.data(),
+                      recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
   /*--- Create the content of ranksOfElems, which stores the original ranks
         where the elements come from. ---*/
@@ -637,8 +637,8 @@ su2_adtElemClass::su2_adtElemClass(unsigned short               val_nDim,
 
   elemConns.resize(sizeGlobal);
 
-  MPI_Allgatherv(val_connElem.data(), sizeLocal, MPI_UNSIGNED_LONG, elemConns.data(),
-                 recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgatherv(val_connElem.data(), sizeLocal, MPI_UNSIGNED_LONG, elemConns.data(),
+                      recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 #else
 
   /*--- Sequential mode. Copy the data from the arguments into the member
@@ -1025,15 +1025,7 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
     case PYRAMID:
     case PRISM:
     case HEXAHEDRON: {
-
-      cout << "In su2_adtElemClass::Dist2ToElement" << endl;
-      cout << "3D elements not implemented yet" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("3D elements not implemented yet", CURRENT_FUNCTION);
     }
   }
 }
@@ -1222,28 +1214,13 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   }
 
   /*--- Terminate if the optimization process did not converge. ---*/
-  if(itCount == maxIt) {
-    cout << "su2_adtElemClass::Dist2ToQuadrilateral: Newton did not converge" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(itCount == maxIt)
+    SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
   /*--- Check if the projection is inside the quadrilateral. If not, terminate. ---*/
   if(r < paramLowerBound || r > paramUpperBound ||
-     s < paramLowerBound || s > paramUpperBound) {
-    cout << "su2_adtElemClass::Dist2ToQuadrilateral: " << endl
-         << "Projection not inside the quadrilateral." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+     s < paramLowerBound || s > paramUpperBound)
+    SU2_MPI::Error("Projection not inside the quadrilateral.", CURRENT_FUNCTION);
 
   /*--- Determine the minimum distance squared. ---*/
   dist2Quad = 0.0;

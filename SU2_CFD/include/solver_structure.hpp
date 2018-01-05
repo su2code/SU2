@@ -81,6 +81,8 @@ inline namespace ctc {
  */
 class CSolver {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   unsigned short nVar,          /*!< \brief Number of variables of the problem. */
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
@@ -13002,8 +13004,8 @@ protected:
 private:
 
 #ifdef HAVE_MPI
-  vector<vector<MPI_Request> > commRequests;  /*!< \brief Communication requests in the communication of the solution for all
-                                                          time levels. These are both sending and receiving requests. */
+  vector<vector<SU2_MPI::Request> > commRequests;  /*!< \brief Communication requests in the communication of the solution for all
+                                                               time levels. These are both sending and receiving requests. */
 
   vector<vector<vector<unsigned long> > > elementsRecvMPIComm;  /*!< \brief Triple vector, which contains the halo elements
                                                                             for MPI communication for all time levels. */

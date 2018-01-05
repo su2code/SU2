@@ -1374,7 +1374,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
   vector<vector<unsigned long> > sendBuf;
   sendBuf.resize(ranksSend.size());
 
-  vector<MPI_Request> sendReqs(ranksSend.size());
+  vector<SU2_MPI::Request> sendReqs(ranksSend.size());
 
   for(unsigned i=0; i<ranksSend.size(); ++i) {
 
@@ -1403,8 +1403,8 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
     /* Block until a message arrives and determine the source and size
        of the message. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1436,7 +1436,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
 
@@ -1525,7 +1525,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
   vector<vector<unsigned long> > invSendBuf;
   invSendBuf.resize(ranksRecv.size());
 
-  vector<MPI_Request> invSendReqs(ranksRecv.size());
+  vector<SU2_MPI::Request> invSendReqs(ranksRecv.size());
 
   for(unsigned i=0; i<ranksRecv.size(); ++i) {
 
@@ -1559,8 +1559,8 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
     /* Block until a message arrives and determine the source and size
        of the message. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1597,7 +1597,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
   /*--- Sequential implementation. Just add the data of the halo DOFs
@@ -1737,7 +1737,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 
   /*--- Loop over the ranks to which this rank has to send data.
         Use non-blocking sends to avoid deadlock. ---*/
-  vector<MPI_Request> sendReqs(rankCommToInd.size());
+  vector<SU2_MPI::Request> sendReqs(rankCommToInd.size());
 
   map<int,int>::const_iterator MI = rankCommToInd.begin();
   for(unsigned long i=0; i<rankCommToInd.size(); ++i, ++MI) {
@@ -1750,14 +1750,14 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 
   /* Loop over the ranks from which I receive data to be processed. The number
      of ranks is equal to the number of ranks to which I just sent data. */
-  vector<MPI_Request> sendReturnReqs(rankCommToInd.size());
+  vector<SU2_MPI::Request> sendReturnReqs(rankCommToInd.size());
   vector<vector<int> > sendReturnBuf(rankCommToInd.size(), vector<int>(0));
   for(unsigned long i=0; i<rankCommToInd.size(); ++i) {
 
     /* Block until a message arrives and determine the source and size
        of the message. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+2, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1796,8 +1796,8 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 
     /* Block until a message arrives and determine the source of the message
        and its index in the original send buffers. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+3, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+3, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     MI = rankCommToInd.find(source);
@@ -1820,8 +1820,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
-
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #endif
 
@@ -2406,7 +2405,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       }
 
 #ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     } */
 
@@ -3384,18 +3383,9 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
         /* Rigid body motion described. At the moment this is only
            possible for the Classical Runge Kutta scheme. */
-        if(config->GetKind_TimeIntScheme() != CLASSICAL_RK4_EXPLICIT) {
-          if(rank == MASTER_NODE)
-            cout << "Rigid body motion only possible for CLASSICAL_RK4_EXPLICIT." << endl;
-
-#ifdef HAVE_MPI
-          MPI_Barrier(MPI_COMM_WORLD);
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#else
-          exit(EXIT_FAILURE);
-#endif
-        }
+        if(config->GetKind_TimeIntScheme() != CLASSICAL_RK4_EXPLICIT)
+          SU2_MPI::Error("Rigid body motion only possible for CLASSICAL_RK4_EXPLICIT.",
+                         CURRENT_FUNCTION);
 
         /* Determine whether or not it is needed to compute the motion data. */
         const unsigned long ExtIter = config->GetExtIter();
@@ -3567,15 +3557,8 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
       }
 
       default: {
-        if(rank == MASTER_NODE)
-          cout << "Only rigid body motion possible for DG-FEM solver at the moment." << endl;
-#ifdef HAVE_MPI
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#else
-        exit(EXIT_FAILURE);
-#endif
+        SU2_MPI::Error("Only rigid body motion possible for DG-FEM solver at the moment.",
+                       CURRENT_FUNCTION);
       }
     }
   }
@@ -3883,25 +3866,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
 
       /*--- Incompressible solver. ---*/
 
-      int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-      if(rank == MASTER_NODE) {
-        cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
-        cout << "Incompressible solver not implemented yet" << endl;
-      }
-
-#ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#else
-      exit(EXIT_FAILURE);
-#endif
-
+      SU2_MPI::Error("Incompressible solver not implemented yet", CURRENT_FUNCTION);
     }
 
     /*--- Compute the max and the min dt (in parallel). Note that we only
@@ -5567,13 +5532,7 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
         case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
           break;
         default:
-          cout << "BC not implemented." << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+          SU2_MPI::Error("BC not implemented.", CURRENT_FUNCTION);
       }
     }
   }
@@ -6386,11 +6345,8 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
 
-      if (rbuf[iVar] != rbuf[iVar]) {
-        if (rank == MASTER_NODE)
-          cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-        MPI_Abort(MPI_COMM_WORLD,1);
-      }
+      if (rbuf[iVar] != rbuf[iVar])
+        SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
       SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
@@ -6401,10 +6357,8 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
         the L2-norm of the residuals. ---*/
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
 
-    if(GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      exit(EXIT_FAILURE);
-    }
+    if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
+      SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
   }
@@ -6483,11 +6437,8 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
 
-      if (rbuf[iVar] != rbuf[iVar]) {
-        if (rank == MASTER_NODE)
-          cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-        MPI_Abort(MPI_COMM_WORLD,1);
-      }
+      if (rbuf[iVar] != rbuf[iVar])
+        SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
       SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
@@ -6498,10 +6449,8 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
    the L2-norm of the residuals. ---*/
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
 
-    if(GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      exit(EXIT_FAILURE);
-    }
+    if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
+      SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
   }
@@ -7001,8 +6950,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
     }
 
     default: {
-      cout << "Warning! Invalid Riemann input!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Invalid Riemann input!", CURRENT_FUNCTION);
     }
   }
 
@@ -7460,25 +7408,9 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
 
 #else
       /* No compiler directive specified. Write an error message and exit. */
-      int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
-      if (rank == MASTER_NODE) {
-        cout << endl;
-        cout << "In function CFEM_DG_EulerSolver::BC_Custom. " << endl;
-        cout << "No or wrong compiler directive specified. This is necessary "
-                "for customized boundary conditions." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-
+      SU2_MPI::Error("No or wrong compiler directive specified. This is necessary for customized boundary conditions.",
+                     CURRENT_FUNCTION);
 #endif
 
     }
@@ -8250,19 +8182,11 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-  if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if (rbuf_NotMatching != 0)
+    SU2_MPI::Error(string("The solution file ") + restart_filename.data() +
+                   string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   unsigned long nBadDOFs = 0;
@@ -8424,15 +8348,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
         break;
 
       default:
-        cout << "Unknown SGS model encountered" << endl;
-
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+        SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
     }
   }
   else {
@@ -9190,25 +9106,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Incompressible solver. ---*/
 
-      int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-      if(rank == MASTER_NODE) {
-        cout << "In function CFEM_DG_NSSolver::SetTime_Step" << endl;
-        cout << "Incompressible solver not implemented yet" << endl;
-      }
-
-#ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#else
-      exit(EXIT_FAILURE);
-#endif
-
+      SU2_MPI::Error("Incompressible solver not implemented yet", CURRENT_FUNCTION);
     }
 
     /*--- Compute the max and the min dt (in parallel). Note that we only
@@ -13258,24 +13156,9 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 #else
 
       /* No compiler directive specified. Write an error message and exit. */
-      int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
-      if (rank == MASTER_NODE) {
-        cout << endl;
-        cout << "In function CFEM_DG_NSSolver::BC_Custom. " << endl;
-        cout << "No or wrong compiler directive specified. This is necessary "
-                "for customized boundary conditions." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("No or wrong compiler directive specified. This is necessary for customized boundary conditions.",
+                     CURRENT_FUNCTION);
 
 #endif
     }

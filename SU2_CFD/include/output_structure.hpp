@@ -198,6 +198,9 @@ class COutput {
 
 protected:
 
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
+
 public:
 
   /*! 
