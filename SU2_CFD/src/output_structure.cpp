@@ -4330,7 +4330,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   
   bool output_surface = (config->GetnMarker_Analyze() != 0);
   bool output_comboObj = (config->GetnObj() > 1);
-  bool output_per_surface = config->GetWrt_Surface();
+  bool output_per_surface = (config->GetnMarker_Monitoring() > 1);
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -4688,7 +4688,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
 
     
-    bool output_per_surface = config[val_iZone]->GetWrt_Surface();
+    bool output_per_surface = (config[val_iZone]->GetnMarker_Monitoring() > 1);
     
 
     unsigned short direct_diff = config[val_iZone]->GetDirectDiff();
