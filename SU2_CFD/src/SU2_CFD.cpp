@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi;
+  bool fsi, turbo;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   int  buffsize;
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
-  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
@@ -72,13 +72,15 @@ int main(int argc, char *argv[]) {
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  fsi = config->GetFSI_Simulation();
+  fsi   = config->GetFSI_Simulation();
+  turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
   if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+        config->GetKind_Solver() == DISC_ADJ_FEM ||
         config->GetKind_Solver() == POISSON_EQUATION ||
         config->GetKind_Solver() == WAVE_EQUATION ||
         config->GetKind_Solver() == HEAT_EQUATION) ) {
@@ -86,48 +88,65 @@ int main(int argc, char *argv[]) {
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
     if (nZone > 1 ) {
-      cout << "The required solver doesn't support multizone simulations" << endl; 
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-    /*--- Use the Harmonic Balance driver. ---*/
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
     driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
-    /*--- FSI problem: instantiate the FSI driver class. ---*/
+    bool stat_fsi = ((config->GetDynamic_Analysis() == STATIC) && (config->GetUnsteady_Simulation() == STEADY));
+    bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
 
-    driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+    /*--- If the problem is a discrete adjoint FSI problem ---*/
+    if (disc_adj_fsi) {
+      if (stat_fsi) {
+        driver = new CDiscAdjFSIStatDriver(config_file_name, nZone, nDim, MPICommunicator);
+      }
+      else {
+        SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
+      }
+    }
+    /*--- If the problem is a direct FSI problem ---*/
+    else{
+      driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+    }
 
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    if (config->GetDiscrete_Adjoint()){
+    if (config->GetDiscrete_Adjoint()) {
 
-      if (config->GetBoolTurbomachinery()){
+      if (turbo) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
       } else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+        
       }
 
-    } else if (config->GetBoolTurbomachinery()){
+    } else if (turbo) {
 
       driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
     } else {
 
+      /*--- Instantiate the class for external aerodynamics ---*/
+
       driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      
     }
+    
   }
 
   delete config;
@@ -147,9 +166,9 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Buffer_detach(&buffptr, &buffsize);
+  SU2_MPI::Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

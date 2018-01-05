@@ -73,6 +73,69 @@ inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_contain
 
 inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
+inline su2double CFEM_NonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
+	if (iVar == jVar) return 1.0; else return 0.0;
+}
+
+inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
+
+inline void CNumerics::ReadDV(CConfig *config){ }
+
+inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
+
+inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
+
+inline void CFEM_Elasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
+
+inline su2double CFEM_Elasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+
+inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CNumerics::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CFEM_Elasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+
+inline void CFEM_Elasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+
+inline void CFEM_NonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
+  EField_Ref_Mod[i_DV] = val_EField; }
+
+inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
+
+inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ }
+
+inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
+
+inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
+  E_i[0] = val_Young; 
+}
+
+inline void CFEM_NonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+  E_i[0] = val_Young; 
+}
+
+inline void CFEM_Elasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
+}
+
+inline void CFEM_NonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
+}
+
+inline void CFEM_Elasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
+
+inline void CFEM_NonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
+
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
@@ -230,6 +293,8 @@ inline su2double CNumerics::GetDestruction(void) { return 0; }
 
 inline su2double CNumerics::GetCrossProduction(void) { return 0; }
 
+inline su2double CNumerics::GetGammaBC(void) { return 0.0; }
+
 inline void CNumerics::SetTurbKineticEnergy(su2double val_turb_ke_i, su2double val_turb_ke_j) {
   turb_ke_i = val_turb_ke_i;
   turb_ke_j = val_turb_ke_j;
@@ -248,11 +313,6 @@ inline void CNumerics::SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j)
 inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j) {
   PsiVar_Grad_i = val_psivar_grad_i;
   PsiVar_Grad_j = val_psivar_grad_j;
-}
-
-inline void CNumerics::SetAdjointVarLimiter(su2double *val_psivar_lim_i, su2double *val_psivar_lim_j) {
-  PsiVar_Lim_i = val_psivar_lim_i;
-  PsiVar_Lim_j = val_psivar_lim_j;
 }
 
 inline void CNumerics::SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
@@ -280,10 +340,6 @@ inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2dou
   PrimVar_Grad_j = val_primvar_grad_j;
 }
 
-inline void CNumerics::SetPrimVarLimiter(su2double *val_primvar_lim_i, su2double *val_primvar_lim_j) {
-  PrimVar_Lim_i = val_primvar_lim_i;
-  PrimVar_Lim_j = val_primvar_lim_j;
-}
 
 inline void CNumerics::SetConsVarGradient(su2double **val_consvar_grad_i, su2double **val_consvar_grad_j) {
   ConsVar_Grad_i = val_consvar_grad_i;
@@ -425,6 +481,8 @@ inline void CSourcePieceWise_TurbSA::SetDestruction(su2double val_destruction) {
 inline void CSourcePieceWise_TurbSA::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
 
 inline su2double CSourcePieceWise_TurbSA::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
 
 inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
 
