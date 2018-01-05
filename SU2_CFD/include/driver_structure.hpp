@@ -188,6 +188,11 @@ public:
   void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
+   * \brief Initialize Python interface functionalities
+   */
+  void PythonInterface_Preprocessing();
+
+  /*!
    * \brief Deallocation routine
    */
   void Postprocessing();
