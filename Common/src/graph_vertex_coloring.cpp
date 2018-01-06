@@ -42,8 +42,8 @@ void GraphVertexColoring(CConfig                              *config,
   int myRank = 0;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nRank);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &myRank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nRank);
 #endif
 
   /*--- Determine the algorithm to use for the graph coloring. ---*/

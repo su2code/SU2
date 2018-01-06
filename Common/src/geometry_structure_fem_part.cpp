@@ -401,7 +401,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string text_line, Marker_Tag;
   ifstream mesh_file;
   string::size_type position;
-  int rank = MASTER_NODE, size = SINGLE_NODE;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
   bool time_spectral = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
@@ -409,10 +408,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   nZone = val_nZone;
 
   /*--- Initialize counters for local/global points & elements ---*/
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -858,25 +853,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
                                                       string         val_mesh_filename,
                                                       unsigned short val_iZone,
                                                       unsigned short val_nZone) {
-  /* Determine my rank. */
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 #ifdef HAVE_CGNS
 
   /*--- For proper support of the high order elements, at least version 3.3
         of CGNS must be used. Check this. ---*/
 #if CGNS_VERSION >= 3300
-
-  /* Determine the total number of MPI ranks. */
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   int file_type;
@@ -2000,15 +1981,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
-  /*--- Determine my rank and the number of ranks. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Initialize the color vector of the elements. ---*/
   for(unsigned long i=0; i<nElem; ++i)
     elem[i]->SetColor(0);
@@ -2772,11 +2744,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
 #ifdef HAVE_MPI
 
-      /*--- Determine the number of ranks and check if this is indeed
-            a parallel simulation.                       ---*/
-      int size;
-      MPI_Comm_size(MPI_COMM_WORLD, &size);
-
+      /*--- Check if this is indeed a parallel simulation. ---*/
       if(size > 1) {
 
         /*--- Allocate the memory for the size arrays in Allgatherv. ---*/
@@ -3289,15 +3257,6 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                           const vector<FaceOfElementClass>   &localFaces,
                           map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel) {
 
-  /*--- Determine my rank and the number of ranks. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Initialize the time level of external elements to zero. ---*/
   for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
                                                  FI!=localFaces.end(); ++FI) {
@@ -3708,12 +3667,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
               const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
                     vector<su2double>                  &vwgt,
                     vector<su2double>                  &adjwgt){
-  /*--- Determine my rank. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Determine the maximum time level that occurs in the grid. ---*/
   unsigned short maxTimeLevel = 0;
