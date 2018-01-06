@@ -3409,12 +3409,10 @@ void CUpwL2Roe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
   Mach_j = sqrt(Mach_j)/SoundSpeed_j;
   
-  /*--- Modification according to Thornber et al. 2016-01-22 ----*/
-  /*--- An improved reconstruction method for compressible flows with low Mach number features. JCP V227 I10 2008 ---*/
   /*--- L2Roe: a low dissipation version of Roe's approximate Riemann solver for low Mach numbers. IJNMF 2015 ---*/
   
   zeta = min(1.0,max(Mach_i,Mach_j));
-  //zeta = max(zeta,0.05);
+  zeta = max(zeta,0.05);
   
   /*--- Recompute conservative variables ---*/
   
@@ -3504,9 +3502,6 @@ void CUpwL2Roe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
   }
 
-  /*--- L2Roe: Scalling all velocities jumps when computing the wave amplitudes (zeta)----*/
-  /*--- L2Roe: a low dissipation version of Roe's approximate Riemann solver for low Mach numbers. IJNMF 2015 ---*/
-  
   /*--- Compute wave amplitudes (characteristics) ---*/
   
   proj_delta_vel = 0.0;
