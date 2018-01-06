@@ -122,12 +122,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   if( compressible ) nVar = nDim + 2;
   else               nVar = nDim + 1;
 
-  /*--- Determine the rank of this processor and the total number of ranks. */
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
         geometrical information for the FEM DG solver. ---*/
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
@@ -762,11 +756,6 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
   unsigned short iDim;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Local variables ---*/
 
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
@@ -1328,13 +1317,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
   /*********************************************************************/
 
   /*--- Gather the number of DOFs from all ranks. */
-  int rank = MASTER_NODE, nRanks = 1;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
-#endif
-
-  nDOFsPerRank.resize(nRanks+1);
+  nDOFsPerRank.resize(size+1);
   nDOFsPerRank[0] = 0;
 
 #ifdef HAVE_MPI
@@ -1345,7 +1328,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 #endif
 
   /*--- Put nDOFsPerRank in cumulative storage format. ---*/
-  for(int i=0; i<nRanks; ++i)
+  for(int i=0; i<size; ++i)
     nDOFsPerRank[i+1] += nDOFsPerRank[i];
 
   /*-------------------------------------------------------------------*/
@@ -1666,12 +1649,6 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
   /*---         all the matrix entities of the local DOFs. Hence, this     ---*/
   /*---         must be reconstructed via communication.                   ---*/
   /*--------------------------------------------------------------------------*/
-
-  /* Determine my rank. */
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /* Get the send and receive ranks for FEMGeometry. */
   const vector<int> &ranksSend = FEMGeometry->GetRanksSend();
@@ -2354,13 +2331,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
 
     // EXTRA FOR DEBUGGING
-/*  int rank = MASTER_NODE, nProc = 1;
-#ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProc);
-#endif
-
-    for(int i=0; i<nProc; ++i) {
+/*  for(int i=0; i<size; ++i) {
       if(i == rank) {
         cout << endl;
         cout << "Task list for rank " << rank << endl;
@@ -2492,12 +2463,6 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   /*---         elementsRecvSelfComm for all time levels. This can only be ---*/
   /*---         the case when periodic boundaries are present in the grid. ---*/
   /*--------------------------------------------------------------------------*/
-
-  /* Determine the rank inside MPI_COMM_WORLD. */
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /* Allocate the first index of elementsSendSelfComm and elementsRecvSelfComm. */
   elementsSendSelfComm.resize(nTimeLevels);
@@ -2687,10 +2652,6 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
 
   /* Check if there is anything to communicate. */
   if( commRequests[timeLevel].size() ) {
-
-    /* Determine my own rank. */
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* Set the pointer to the memory, whose data must be communicated.
        This depends on the time integration scheme used. For ADER the data of
@@ -2954,10 +2915,6 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
   /* Check if there is anything to communicate. */
   if( commRequests[timeLevel].size() ) {
 
-    /* Determine my own rank. */
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     /* Loop over the number of ranks from which this rank receives data in
        the original communication pattern. In the reverse pattern, data
        has to be sent. */
@@ -3100,11 +3057,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 #ifdef INVISCID_VORTEX
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /* Write a message that the solution is initialized for the inviscid vortex
      test case. */
   if(rank == MASTER_NODE) {
@@ -3185,11 +3137,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
      final solution, shocks develop, which may destabilize the solution and it
      is impossible to obtain a converged solution. */
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /* Write a message that the solution is initialized for the Ringleb test case. */
   if(rank == MASTER_NODE) {
     cout << endl;
@@ -3218,11 +3165,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
   }
 
 #elif TAYLOR_GREEN
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /* Write a message that the solution is initialized for the Taylor-Green vortex
      test case. */
@@ -3289,11 +3231,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   unsigned long ErrorCounter = 0;
 
@@ -3570,12 +3507,6 @@ void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_c
 void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                                                  CNumerics **numerics, CConfig *config,
                                                  unsigned short iMesh, unsigned short RunTime_EqSystem) {
-
-  /* Determine the current rank. */
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /* Write a message that the Jacobian is being computed. */
   if(rank == MASTER_NODE) {
@@ -3907,11 +3838,6 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
   /*--- Check for a (too) small a value for the synchronization time and
         print a warning if this happens. ---*/
   if(firstTime && timeEvolved >= 1.5*TimeSync) {
-
-    int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
     if(rank == MASTER_NODE) {
       cout << endl << "              WARNING" << endl;
@@ -6333,10 +6259,6 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 #ifdef HAVE_MPI
   /*--- Parallel mode. The local L2 norms must be added to obtain the
         global value. Also check for divergence. ---*/
-  int nProc, rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProc);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
   vector<su2double> rbuf(nVar);
 
   /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
@@ -6425,10 +6347,6 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 #ifdef HAVE_MPI
   /*--- Parallel mode. The local L2 norms must be added to obtain the
    global value. Also check for divergence. ---*/
-  int nProc, rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProc);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
   vector<su2double> rbuf(nVar);
 
   /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
@@ -8123,11 +8041,6 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   string restart_filename = config->GetSolution_FlowFileName();
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;

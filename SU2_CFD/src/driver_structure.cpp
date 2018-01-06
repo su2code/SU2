@@ -826,12 +826,6 @@ void CDriver::Geometrical_Preprocessing() {
 
 void CDriver::Geometrical_Preprocessing_DGFEM() {
 
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Loop over the number of zones of the fine grid. ---*/
 
   for(unsigned short iZone = 0; iZone < nZone; iZone++) {

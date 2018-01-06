@@ -6652,13 +6652,6 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
  
 #ifdef HAVE_GELITE
 
-  int rank;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
-#endif
-  
   /*--- Local variables ---*/
   
   unsigned short nDim;

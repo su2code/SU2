@@ -7690,8 +7690,8 @@ void CConfig::SetProfilingCSV(void) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   /*--- Each rank has the same stack trace, so the they have the same
@@ -7884,8 +7884,8 @@ void CConfig::GEMMProfilingCSV(void) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   /*--- Each rank has the same stack trace, so the they have the same
