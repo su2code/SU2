@@ -34,8 +34,10 @@
 #pragma once
 
 inline void CSysMatrix::SetValZero(void) { 
-	for (unsigned long index = 0; index < nnz*nVar*nEqn; index++) 
+  if(NULL != matrix) {
+	  for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
 		matrix[index] = 0.0;
+  }
 }
 
 inline CSysMatrixVectorProduct::CSysMatrixVectorProduct(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {

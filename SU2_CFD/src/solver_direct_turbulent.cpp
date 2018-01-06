@@ -73,7 +73,7 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -160,7 +160,7 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -239,7 +239,7 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -358,7 +358,7 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1058,11 +1058,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Modify file name for multizone problems ---*/
   if (nZone >1)
     restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
@@ -1135,17 +1130,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- MPI solution and compute the eddy viscosity ---*/
@@ -1193,11 +1179,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
@@ -3161,11 +3142,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Array initialization ---*/
   
@@ -4228,6 +4204,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
   /*--- Free locally allocated memory ---*/
 
+  delete [] tmp_residual;
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
