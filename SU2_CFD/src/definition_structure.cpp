@@ -163,8 +163,8 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary

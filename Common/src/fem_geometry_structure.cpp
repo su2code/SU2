@@ -240,15 +240,6 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
-  /*--- Determine the number of ranks and the current rank. ---*/
-  int nRank = SINGLE_NODE;
-  int rank  = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nRank);
-#endif
-
   /*--- Copy the number of dimensions. ---*/
   nDim = geometry->GetnDim();
 
@@ -264,14 +255,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*----------------------------------------------------------------------------*/
 
   /*--- Determine the ranks to which I have to send my elements. ---*/
-  vector<int> sendToRank(nRank, 0);
+  vector<int> sendToRank(size, 0);
 
   for(unsigned long i=0; i<geometry->GetnElem(); ++i) {
     sendToRank[geometry->elem[i]->GetColor()] = 1;
   }
 
   map<int,int> rankToIndCommBuf;
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
       int ind = rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
@@ -293,7 +284,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   int nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
-  vector<int> sizeRecv(nRank, 1);
+  vector<int> sizeRecv(size, 1);
 
   MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
                      MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -969,14 +960,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Determine the number of elements per rank of the originally partitioned grid
      stored in cumulative storage format. */
-  vector<unsigned long> nElemPerRankOr(nRank+1);
+  vector<unsigned long> nElemPerRankOr(size+1);
 
-  for(int i=0; i<nRank; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
-  nElemPerRankOr[nRank] = geometry->ending_node[nRank-1];
+  for(int i=0; i<size; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
+  nElemPerRankOr[size] = geometry->ending_node[size-1];
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
-  sendToRank.assign(nRank, 0);
+  sendToRank.assign(size, 0);
 
   for(unsigned long i=0; i<haloElements.size(); ++i) {
 
@@ -991,7 +982,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   }
 
   rankToIndCommBuf.clear();
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
       int ind = rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
@@ -1212,23 +1203,23 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
      The first element of this vector is nVolElemOwned, such that this vector
      contains the starting position in the vector volElem. Also determine the
      number of ranks to which I have to send requests for data. */
-  vector<unsigned long> nHaloElemPerRank(nRank+1, 0);
+  vector<unsigned long> nHaloElemPerRank(size+1, 0);
   for(unsigned long i=0; i<haloData.size(); ++i)
     ++nHaloElemPerRank[haloData[i].long0+1];
 
   nHaloElemPerRank[0] = nVolElemOwned;
-  for(int i=0; i<nRank; ++i)
+  for(int i=0; i<size; ++i)
     nHaloElemPerRank[i+1] += nHaloElemPerRank[i];
 
-  if(nHaloElemPerRank[nRank] != nVolElemTot)
+  if(nHaloElemPerRank[size] != nVolElemTot)
     SU2_MPI::Error("Inconsistency in total number of volume elements",
                    CURRENT_FUNCTION);
 
   /* Determine the number of ranks to which I have to send data and the number
      of ranks from which I receive data in this cycle. */
-  sendToRank.assign(nRank, 0);
+  sendToRank.assign(size, 0);
   rankToIndCommBuf.clear();
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
       sendToRank[i] = 1;
       int ind = rankToIndCommBuf.size();
@@ -2119,8 +2110,6 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
 
 void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 
-  int rank = MASTER_NODE;
-
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Determine the local contribution to the positive z area.    ---*/
   /*---------------------------------------------------------------------------*/
@@ -2175,8 +2164,6 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 #ifdef HAVE_MPI
   su2double locArea = PositiveZArea;
   SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*---------------------------------------------------------------------------*/
@@ -3137,15 +3124,6 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
 void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
-  /*--- Determine the number of ranks and the current rank. ---*/
-  int nRank = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nRank);
-#endif
-
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Determine the ranks from which this rank has to receive data ---*/
   /*---         during the actual communication of halo data, as well as the ---*/
@@ -3161,12 +3139,12 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
                                   + volElem[i-1].nDOFsSol;
 
   /* Determine the ranks from which this rank will receive halo data. */
-  vector<int> recvFromRank(nRank, 0);
+  vector<int> recvFromRank(size, 0);
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i)
     recvFromRank[volElem[i].rankOriginal] = 1;
 
   map<int,int> rankToIndRecvBuf;
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if( recvFromRank[i] ) {
       int ind = rankToIndRecvBuf.size();
       rankToIndRecvBuf[i] = ind;
@@ -3201,7 +3179,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   /*--- Parallel mode. First determine the number of ranks to which this
         rank has to send halo data during the actual exchange. ---*/
   int nRankSend;
-  vector<int> sizeReduce(nRank, 1);
+  vector<int> sizeReduce(size, 1);
 
   MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
                      MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -4850,11 +4828,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
   /*---         elements to the ranks where the original is stored. ---*/
   /*-------------------------------------------------------------------*/
 
-  /* Determine the rank inside MPI_COMM_WORLD. */
-  int rank = MASTER_NODE;
-
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   /*--- Define the buffers needed for the communication. ---*/
   vector<SU2_MPI::Request> sendRequests(ranksSend.size());

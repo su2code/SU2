@@ -1253,14 +1253,6 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 
 void COutput::MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   /*--- Flags identifying the types of files to be written. ---*/
   
   bool Wrt_Vol = config->GetWrt_Vol_Sol();
@@ -1702,11 +1694,8 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
 #else
   
   /*--- MPI preprocessing ---*/
-  int iProcessor, nProcessor, rank;
+  int iProcessor, nProcessor = size;
   unsigned long jPoint;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   /*--- Local variables needed for merging the geometry with MPI. ---*/
   
@@ -1878,15 +1867,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   unsigned short kind_SU2 = config->GetKind_SU2();
   
   int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -2254,14 +2234,6 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
   bool *Write_Elem = NULL;
   
   int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -2905,14 +2877,6 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   bool *Write_Elem = NULL;
   
   int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -4691,13 +4655,6 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Prepare send buffers for the conservative variables. Need to
    find the total number of conservative variables and also the
@@ -5099,13 +5056,6 @@ void COutput::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CS
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
 
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- We know the number of fields from reading the restart. ---*/
 
@@ -9211,14 +9161,6 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
 void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -9371,12 +9313,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 
 void COutput::SetBaselineResult_Files_FEM(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   unsigned short iZone;
 
@@ -14558,11 +14494,6 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 }
 
 void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
-
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   unsigned long iPoint;
 
