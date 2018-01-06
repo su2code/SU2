@@ -1720,8 +1720,4 @@ inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss;
 
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 
-inline su2double CConfig::GetZonal_Dist(void) {return Zonal_Dist;}
-
-inline bool CConfig::GetZonal_DES(void) {return Zonal_DES;}
-
 inline bool CConfig::GetQCR(void) {return QCR;}

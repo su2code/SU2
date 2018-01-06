@@ -547,10 +547,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     
     Omega= sqrt(max(Sbar,0.0));
     
-    /*--- Evaluate Omega ---*/
-    
-    //Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
-    
     /*--- Rotational correction term ---*/
     
     if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
@@ -578,14 +574,10 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         /*--- Production term ---*/;
         
-        //    Original SA model
-        //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-        
         Production = cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
-        //r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r=tanh(r)/tanh(1.0);
         
@@ -593,9 +585,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         g_6 =	pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
-        
-        //    Original SA model
-        //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
         Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
@@ -613,8 +602,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
         dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
-        //if ( Shat <= 1.0e-10 ) dShat = 0.0;
-        //else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
         
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
@@ -622,8 +609,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         /*--- Implicit part, destruction term ---*/
         
-        //dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-        //if (r == 10.0) dr = 0.0;
         dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
         dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
@@ -716,9 +701,6 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         
         /*--- Production term ---*/;
         
-        //    Original SA model
-        //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-        
         Production = cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
@@ -728,9 +710,6 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         g_6 =	pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
-        
-        //    Original SA model
-        //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
         Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
@@ -830,7 +809,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
     CrossProduction = 0.0;
     val_Jacobian_i[0][0] = 0.0;
     
-    
     /*
      From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
      This form was developed primarily to improve the near-wall numerical behavior of the model (i.e., the goal was to improve the convergence behavior). The reference is:
@@ -848,11 +826,7 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
     
     Omega= sqrt(max(Sbar,0.0));
-    
-    /*--- Evaluate Omega ---*/
-    
-    //Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
-    
+
     /*--- Rotational correction term ---*/
     
     if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
@@ -872,7 +846,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         S = Omega;
         inv_k2_d2 = 1.0/(k2*dist_i_2);
         
-        //Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
         Shat = max(S*((1.0/max(Ji,1.0e-16))+fv1),1.0e-16);
         
         Shat = max(Shat, 1.0e-10);
@@ -880,14 +853,10 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         /*--- Production term ---*/;
         
-        //    Original SA model
-        //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-        
         Production = cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
-        //r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r=tanh(r)/tanh(1.0);
         
@@ -895,9 +864,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         g_6 =	pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
-        
-        //    Original SA model
-        //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
         Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
@@ -926,8 +892,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
         dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
-        //if ( Shat <= 1.0e-10 ) dShat = 0.0;
-        //else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
         
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
@@ -935,8 +899,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         /*--- Implicit part, destruction term ---*/
         
-        //dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-        //if (r == 10.0) dr = 0.0;
         dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
         dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
@@ -1047,10 +1009,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
       g_6 =  pow(g,6.0);
       glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
       fw = g*glim;
-      
-      //    Original SA model
-      //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
-      
+        
       Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
       
       /*--- Diffusion term ---*/
