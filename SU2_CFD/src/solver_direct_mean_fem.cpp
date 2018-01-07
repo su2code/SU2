@@ -10426,6 +10426,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
     /*--- Step 1: Calculate the number of DOFs up to polynomial degree p-1.    ---*/
     /*----------------------------------------------------------------------------*/
 
+    nDOFsPm1 = 0;
     switch( VTK_TypeElem ) {
       case TRIANGLE:
         nDOFsPm1 = nPoly*(nPoly+1)/2;
@@ -10474,6 +10475,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
       const su2double *gridVel = volElem[l].gridVelocitiesSolDOFs.data() + iInd*nDim;
       DensityInv = 1.0/sol[0];
       Velocity2 = 0.0;
+      Velocity2Rel = 0.0;
       for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
         const su2double vel    = sol[iDim]*DensityInv;
         const su2double velRel = vel - gridVel[iDim-1];
