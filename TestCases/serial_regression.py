@@ -1030,6 +1030,18 @@ def main():
     contadj_multi_py.test_file  = "of_grad_combo.dat"
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
+    
+    # test optimization, with multiple objectives
+    opt_multiobj_py            = TestCase('opt_multiobj_py')
+    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    opt_multiobj_py.test_iter  = 1
+    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+    opt_multiobj_py.su2_exec   = "shape_optimization.py -f"
+    opt_multiobj_py.timeout    = 1600
+    opt_multiobj_py.tol       = 0.00001
+    pass_list.append(opt_multiobj_py.run_opt())
+    test_list.append(opt_multiobj_py)
 
 
     ##########################
