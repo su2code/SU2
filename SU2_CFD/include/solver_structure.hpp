@@ -14219,6 +14219,54 @@ private:
                                     su2double                *fluxes,
                                     su2double                *resFaces,
                                     unsigned long            &indResFaces);
+
+protected:
+  /*!
+   * \brief Template function, which determines some meta data for the chunk of
+            elements/faces that must be treated simulaneously.
+   * \param[in]  elem       - Const pointer the volume or face elements for which
+                              the meta data must be computed.
+   * \param[in]  l          - Start index for the current chunk of elements/faces.
+   * \param[in]  elemEnd    - End index (index not included) of the elements to be
+                              treated in the residual computation from which this
+                              function is called.
+   * \param[in]  nElemSimul - Desired number of elements/faces that must be treated
+                              simultaneously for optimal performance.
+   * \param[in]  nPadMin    - Minimum number of the padding value in the gemm calls.
+   * \param[out] lEnd       - Actual end index (not included) for this chunk of
+                              elements.
+   * \param[out] ind        - Index in the standard elements to which this chunk of
+                              elements can be mapped.
+   * \param[out] llEnd      - Actual number of elements/faces that are treated
+                              simultaneously, llEnd = lEnd - l.
+   * \param[out] NPad       - Actual padded N value in the gemm computations for
+                              this chunk of elements.
+   */
+  template <class TElemType>
+  void MetaDataChunkOfElem(const TElemType      *elem,
+                           const unsigned long  l,
+                           const unsigned long  elemEnd,
+                           const unsigned short nElemSimul,
+                           const unsigned short nPadMin,
+                           unsigned long        &lEnd,
+                           unsigned short       &ind,
+                           unsigned short       &llEnd,
+                           unsigned short       &NPad) {
+
+    /* Determine the end index for this chunk of elements that must be
+       treated simulaneously. The elements of this chunk must have the
+       same standard element in order to make this work. */
+    ind = elem[l].indStandardElement;
+    lEnd = min(l+nElemSimul, elemEnd);
+
+    while(elem[lEnd-1].indStandardElement != ind) --lEnd;
+
+    /* Store the number of elements that are treated simultaneously in this chunk
+       in llEnd and determine the padded N value in the gemm computations. */
+    llEnd = lEnd - l;
+    NPad  = llEnd*nVar;
+    if( NPad%nPadMin ) NPad += nPadMin - (NPad%nPadMin);
+  }
 };
 
 /*!
