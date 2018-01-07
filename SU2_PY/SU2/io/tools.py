@@ -594,7 +594,6 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_STATIC_PRESSURE" : "pe"        ,
                  "SURFACE_MASSFLOW"        : "mfr"       ,
                  "SURFACE_MACH"            : "mach"      ,
-                 "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "CUSTOM_OBJFUNC"          : "custom"    ,
                  "KINETIC_ENERGY_LOSS"     : "ke"        ,
                  "TOTAL_PRESSURE_LOSS"     : "pl"        ,
