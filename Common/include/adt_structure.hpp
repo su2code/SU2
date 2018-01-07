@@ -288,11 +288,11 @@ public:
    * \param[in] globalTree Whether or not a global tree must be built. If false
                            a local ADT is built.
    */
-  su2_adtPointsOnlyClass(unsigned short      nDim,
-                         unsigned long       nPoints,
-                         const su2double     *coor,
-                         const unsigned long *pointID,
-                         const bool          globalTree);
+  su2_adtPointsOnlyClass(unsigned short nDim,
+                         unsigned long  nPoints,
+                         su2double      *coor,
+                         unsigned long  *pointID,
+                         const bool     globalTree);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
