@@ -197,29 +197,25 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     nDOFsMax = max(nDOFsMax, nDOFs);
   }
 
-  /*--- Make sure that nIntegrationMax and nDOFsMax are such that the allocations
-        of temporary memory is 64 byte aligned.    ---*/
-  if( nIntegrationMax%8 ) nIntegrationMax += 8 - nIntegrationMax%8;
-  if( nDOFsMax%8 )        nDOFsMax        += 8 - nDOFsMax%8;
-
-  /*--- Determine the size of the vector VecTmpMemory and allocate its memory. ---*/
+  /*--- Determine the size of the vector VecTmpMemory. ---*/
+  const unsigned short nPadGemm = config->GetSizeMatMulPadding();
   unsigned int sizeVecTmp;
   if( config->GetViscous() ) {
 
     /* Viscous simulation. */
     unsigned int sizeFluxes = nIntegrationMax*nDim;
-    sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
+    sizeFluxes = nPadGemm*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-    const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+    const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nPadGemm,nDOFsMax);
 
-    sizeVecTmp = nIntegrationMax*(4 + 3*nVar) + sizeFluxes + sizeGradSolInt
-               + max(nIntegrationMax,nDOFsMax)*nVar;
+    sizeVecTmp = nIntegrationMax*(4 + 3*nPadGemm) + sizeFluxes + sizeGradSolInt
+               + max(nIntegrationMax,nDOFsMax)*nPadGemm + nPadGemm*nDOFsMax;
   }
   else {
 
     /* Inviscid simulation. */
-    unsigned int sizeVol = nVar*nIntegrationMax*(nDim+2);
-    unsigned int sizeSur = nVar*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
+    unsigned int sizeVol = nPadGemm*nIntegrationMax*(nDim+2) + nPadGemm*nDOFsMax;
+    unsigned int sizeSur = nPadGemm*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
 
     sizeVecTmp = max(sizeVol, sizeSur);
   }
@@ -232,19 +228,21 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
           that the size estimates are for viscous computations. ---*/
     const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
 
-    unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
-                                   +   nVar*nDOFsMax;
+    unsigned int sizePredictorADER = 4*nPadGemm*nDOFsMax*nTimeDOFs
+                                   +   nPadGemm*nDOFsMax;
 
     if(config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR)
-      sizePredictorADER += nDim*nVar*nDOFsMax + nDim*nDim*nVar*nIntegrationMax;
+      sizePredictorADER += nDim*nPadGemm*nDOFsMax + nDim*nDim*nPadGemm*nIntegrationMax;
     else
-      sizePredictorADER += (nDim+1)*nVar*max(nIntegrationMax, nDOFsMax)
-                         + nDim*nDim*nVar*max(nIntegrationMax,nDOFsMax);
+      sizePredictorADER += (nDim+1)*nPadGemm*max(nIntegrationMax, nDOFsMax)
+                         + nDim*nDim*nPadGemm*max(nIntegrationMax,nDOFsMax);
 
     sizeVecTmp = max(sizeVecTmp, sizePredictorADER);
   }
 
-  VecTmpMemory.resize(sizeVecTmp);
+  /* Allocate the memory for VecTmpMemory and initialize it to zero to avoid
+     warnings in debug mode  about uninitialized memory when padding is applied. */
+  VecTmpMemory.assign(sizeVecTmp, 0.0);
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
@@ -5247,22 +5245,38 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
   bool body_force = config->GetBody_Force();
   const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
 
-  /*--- Set the pointers for the local arrays. ---*/
-  su2double *sources = VecTmpMemory.data();
-  su2double *solInt  = sources + nIntegrationMax*nVar;
-  su2double *fluxes  = solInt  + nIntegrationMax*nVar;
+  /* Determine the number of elements that are treated simultaneously
+     in the matrix products to obtain good gemm performance. */
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
+  const unsigned short nElemSimul = nPadInput/nVar;
+
+  /* Determine the minimum padded size in the matrix multiplications, which
+     is at least 64 byte aligned. */
+  const unsigned short nPadMin = 64/sizeof(passivedouble);
+
+  /* Initialization for the timing routines and set the number of bytes
+     that must be copied in the memcpy calls. */
   double tick = 0.0;
+  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
 
   /*--- Loop over the given element range to compute the contribution of the
-        volume integral in the DG FEM formulation to the residual.  ---*/
-  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
+        volume integral in the DG FEM formulation to the residual. Multiple
+        elements are treated simultaneously to improve the performance
+        of the matrix multiplications. ---*/
+  for(unsigned long l=elemBeg; l<elemEnd;) {
 
-    /* Get the data from the corresponding standard element. */
-    const unsigned short ind             = volElem[l].indStandardElement;
+    /* Determine the end index for this chunk of elements and the padded
+       N value in the gemm computations. */
+    unsigned long lEnd;
+    unsigned short ind, llEnd, NPad;
+
+    MetaDataChunkOfElem(volElem, l, elemEnd, nElemSimul, nPadMin, lEnd, ind, llEnd, NPad);
+
+    /* Get the other data from the corresponding standard element. */
     const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
@@ -5270,20 +5284,43 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
+    /*--- Set the pointers for the local arrays. ---*/
+    su2double *solDOFs = VecTmpMemory.data();
+    su2double *sources = solDOFs + nDOFs*NPad;
+    su2double *solInt  = sources + nInt *NPad;
+    su2double *fluxes  = solInt  + nInt *NPad;
+
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Interpolate the solution to the integration points of    ---*/
     /*---         the element.                                             ---*/
     /*------------------------------------------------------------------------*/
 
-    /* Easier storage of the solution variables for this element. */
-    const unsigned short timeLevel = volElem[l].timeLevel;
-    const su2double *solDOFs = VecWorkSolDOFs[timeLevel].data()
-                             + nVar*volElem[l].offsetDOFsSolThisTimeLevel;
+    /* Copy the solution of the DOFs into solDOFs for this chunk of elements. */
+    for(unsigned short ll=0; ll<llEnd; ++ll) {
+
+      /* Easier storage of the solution variables for this element. */
+      const unsigned long lInd = l + ll;
+      const unsigned short timeLevel = volElem[lInd].timeLevel;
+      const su2double *solDOFsElem = VecWorkSolDOFs[timeLevel].data()
+                                   + nVar*volElem[lInd].offsetDOFsSolThisTimeLevel;
+
+      /* Loop over the DOFs and copy the data. */
+      for(unsigned short i=0; i<nDOFs; ++i)
+        memcpy(solDOFs+i*NPad+ll*nVar, solDOFsElem+i*nVar, nBytes);
+    }
 
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
-    DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
+    DenseMatrixProduct(nInt, NPad, nDOFs, matBasisInt, solDOFs, solInt);
     config->GEMM_Tock(tick, "Volume_Residual1", nInt, nVar, nDOFs);
+
+
+
+
+
+
+
+
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
@@ -5501,6 +5538,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       for(unsigned short i=0; i<(nDOFs*nVar); ++i)
         res[i] += solInt[i];
     }
+
+    /* Update the value of the counter l to the end index of the
+       current chunk. */
+    l = lEnd;
   }
 }
 

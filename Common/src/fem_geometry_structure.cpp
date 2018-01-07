@@ -740,14 +740,16 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Determine the number of elements per element type per time level.
      Make a distinction between internal elements (elements that are not
-     communicated) and elements that are communicated. */
+     communicated) and elements that are communicated. Later on these vectors
+     will be put in cumulative storage format, which explains the +1 for
+     the second index. */
   vector<vector<unsigned long> > nInternalElem(nTimeLevels,
-                                               vector<unsigned long>(mapElemTypeToInd.size()));
+                                               vector<unsigned long>(mapElemTypeToInd.size()+1));
   vector<vector<unsigned long> > nCommElem(nTimeLevels,
-                                           vector<unsigned long>(mapElemTypeToInd.size()));
+                                           vector<unsigned long>(mapElemTypeToInd.size()+1));
   for(unsigned short i=0; i<nTimeLevels; ++i)
   {
-    for(unsigned long j=0; j<mapElemTypeToInd.size(); ++j) {
+    for(unsigned long j=0; j<=mapElemTypeToInd.size(); ++j) {
       nInternalElem[i][j] = 0;
       nCommElem[i][j] = 0;
     }
@@ -757,7 +759,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
                                              OEI!=ownedElements.end(); ++OEI) {
     const unsigned short elType = OEI->GetElemType();
     map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
-    unsigned short ind = MI->second;
+    unsigned short ind = MI->second +1;
 
     if( OEI->GetCommSolution() )
       ++nCommElem[OEI->GetTimeLevel()][ind];
@@ -766,7 +768,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   }
 
   /* Loop again over the owned elements and check if elements, which do not
-     have to send their solution, are flagged as such in order to improve
+     have to send their solution, should be flagged as such in order to improve
      the gemm performance. */
   for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
                                              OEI!=ownedElements.end(); ++OEI) {
@@ -780,7 +782,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       const unsigned short elType = OEI->GetElemType();
       map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
-      const unsigned short ind = MI->second;
+      const unsigned short ind = MI->second +1;
 
       /* Determine whether or not this element must be moved from internal to
          comm elements to improve performance. Change the appropriate data
@@ -797,12 +799,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
      time level to guarantee a good gemm performance. */
   unsigned long nFullChunks = 0, nPartialChunks = 0;
   for(unsigned short tLev=0; tLev<nTimeLevels; ++tLev) {
-    for(unsigned long j=0; j<nInternalElem[tLev].size(); ++j) {
+    for(unsigned long j=1; j<=nInternalElem[tLev].size(); ++j) {
       nFullChunks += nInternalElem[tLev][j]/nElemSimul;
       if(nInternalElem[tLev][j]%nElemSimul) ++nPartialChunks;
     }
 
-    for(unsigned long j=0; j<nCommElem[tLev].size(); ++j) {
+    for(unsigned long j=1; j<=nCommElem[tLev].size(); ++j) {
       nFullChunks += nCommElem[tLev][j]/nElemSimul;
       if(nCommElem[tLev][j]%nElemSimul) ++nPartialChunks;
     }
@@ -826,30 +828,46 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     cout << "This could lead to a significant load imbalance." << endl;
   }
 
-  /* Sort the elements of owned elements in increasing order. */
-  sort(ownedElements.begin(), ownedElements.end());
+  /* Put nInternalElem and nCommElem in cumulative storage format. */
+  for(unsigned short tLev=0; tLev<nTimeLevels; ++tLev) {
+    if( tLev ) nInternalElem[tLev][0] = nCommElem[tLev-1].back();
+    for(unsigned long j=1; j<=nInternalElem[tLev].size(); ++j)
+      nInternalElem[tLev][j] += nInternalElem[tLev][j-1];
 
-  /* Loop over the owned elements to determine the number of elements per time
-     level, as well as the number of internal elements per time level. The
-     former vector will be in cumulative storage format, hence its size is
-     maxTimeLevelGlob+1. */
-  nVolElemOwnedPerTimeLevel.assign(nTimeLevels+1, 0);
-  nVolElemInternalPerTimeLevel.assign(nTimeLevels, 0);
-
-  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
-                                             OEI!=ownedElements.end(); ++OEI) {
-    ++nVolElemOwnedPerTimeLevel[OEI->GetTimeLevel()+1];
-    if( !OEI->GetCommSolution() ) ++nVolElemInternalPerTimeLevel[OEI->GetTimeLevel()];
+    nCommElem[tLev][0] = nInternalElem[tLev].back();
+    for(unsigned long j=1; j<=nCommElem[tLev].size(); ++j)
+      nCommElem[tLev][j] += nCommElem[tLev][j-1];
   }
 
-  /* Put nVolElemOwnedPerTimeLevel in cumulative storage format. */
-  for(unsigned short i=0; i<nTimeLevels; ++i)
-    nVolElemOwnedPerTimeLevel[i+1] += nVolElemOwnedPerTimeLevel[i];
+  /* In the solver only the number of elements per time level is needed.
+     The number of owned elements, nVolElemOwnedPerTimeLevel, is stored in
+     cumulative storage format and can be retrieved easily from nCommElem.
+     The number of internal elements per time level is stored normally and
+     can be retrieved from nInternalElem. */
+  nVolElemOwnedPerTimeLevel.resize(nTimeLevels+1);
+  nVolElemInternalPerTimeLevel.resize(nTimeLevels);
+
+  nVolElemOwnedPerTimeLevel[0] = 0;
+  for(unsigned short tLev=0; tLev<nTimeLevels; ++tLev) {
+    nVolElemOwnedPerTimeLevel[tLev+1]  = nCommElem[tLev].back();
+    nVolElemInternalPerTimeLevel[tLev] = nInternalElem[tLev].back()
+                                       - nInternalElem[tLev][0];
+  }
 
   /* Determine the number of owned elements and the total number of
      elements stored on this rank. */
   nVolElemOwned = globalElemID.size();
   nVolElemTot   = nVolElemOwned + haloElements.size();
+
+  /* Sort the elements of ownedElements in increasing order. */
+  sort(ownedElements.begin(), ownedElements.end());
+
+  /* At the moment the elements are sorted per time level and element type.  */
+  /* This is in principle enough to make to code work with the simultaneous  */
+  /* treatment for volume elements. Below follows a renumbering within the   */
+  /* time level and element type (Reverse Cuthill-McKee), such that a better */
+  /* cache performance is obtained for the surface elements. For high order  */
+  /* elements this effect is probably marginal.                              */
 
   /* Determine the map from the global element ID to the current storage
      sequence of ownedElements. */
@@ -892,18 +910,6 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
      to indicate that no new number has been assigned yet. */
   vector<long> oldElemToNewElem(nVolElemOwned, -1);
 
-  /* Initialize the counter vectors to keep track of the new numbering
-     of the elements. Note that a counter is needed for internal and
-     communication elements for every time level. */
-  vector<unsigned long> counterInternalElem(nTimeLevels);
-  vector<unsigned long> counterCommElem(nTimeLevels);
-
-  for(unsigned short i=0; i<nTimeLevels; ++i) {
-    counterInternalElem[i] = nVolElemOwnedPerTimeLevel[i];
-    counterCommElem[i]     = nVolElemOwnedPerTimeLevel[i]
-                           + nVolElemInternalPerTimeLevel[i];
-  }
-
   /*--- While loop to carry out the renumbering. A while loop is present,
         because the local partition may not be contiguous. ---*/
   unsigned long nElemRenumbered = 0;
@@ -914,15 +920,20 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     for(indBeg=0; indBeg<nVolElemOwned; ++indBeg)
       if(oldElemToNewElem[indBeg] == -1) break;
 
-    /* Determine the time level of the element indBeg and determine the element
-       range in which the starting element for the renumbering must be sought. */
-    const unsigned short timeLevelStart = ownedElements[indBeg].GetTimeLevel();
+    /* Determine the time level and element type of the element indBeg and
+       determine the element range in which the starting element for the
+       renumbering must be sought. */
+    unsigned short timeLevel = ownedElements[indBeg].GetTimeLevel();
+    unsigned short elType    = ownedElements[indBeg].GetElemType();
+
+    map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
+    unsigned short ind = MI->second;
+
     unsigned long indEnd;
     if( ownedElements[indBeg].GetCommSolution() )
-      indEnd = nVolElemOwnedPerTimeLevel[timeLevelStart+1];
+      indEnd = nCommElem[timeLevel][ind+1];
     else
-      indEnd = nVolElemOwnedPerTimeLevel[timeLevelStart]
-             + nVolElemInternalPerTimeLevel[timeLevelStart];
+      indEnd = nInternalElem[timeLevel][ind+1];
 
     /* Determine the element in the range [indBeg,indEnd) with the least number
        of neighbors that has not been renumbered yet. This is the starting
@@ -943,20 +954,25 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       for(unsigned long i=0; i<frontElements.size(); ++i) {
 
         /* Carry out the renumbering for this element. */
-        const unsigned long  ind       = frontElements[i];
-        const unsigned short timeLevel = ownedElements[ind].GetTimeLevel();
-        if( ownedElements[ind].GetCommSolution() )
-          oldElemToNewElem[ind] = counterCommElem[timeLevel]++;
+        const unsigned long iFront = frontElements[i];
+
+        timeLevel = ownedElements[iFront].GetTimeLevel();
+        elType    = ownedElements[iFront].GetElemType();
+        MI  = mapElemTypeToInd.find(elType);
+        ind = MI->second;
+
+        if( ownedElements[iFront].GetCommSolution() )
+          oldElemToNewElem[iFront] = nCommElem[timeLevel][ind]++;
         else
-          oldElemToNewElem[ind] = counterInternalElem[timeLevel]++;
+          oldElemToNewElem[iFront] = nInternalElem[timeLevel][ind]++;
 
         /* Store the neighbors that have not been renumbered yet in the front
-           for the next round. Set its index to -2 to indicate that is on the
-           new front. */
-        for(unsigned long j=0; j<neighElem[ind].size(); ++j) {
-          if(oldElemToNewElem[neighElem[ind][j]] == -1) {
-            frontElementsNew.push_back(neighElem[ind][j]);
-            oldElemToNewElem[neighElem[ind][j]] = -2;
+           for the next round. Set its index to -2 to indicate that the element
+           is already on the new front. */
+        for(unsigned long j=0; j<neighElem[iFront].size(); ++j) {
+          if(oldElemToNewElem[neighElem[iFront][j]] == -1) {
+            frontElementsNew.push_back(neighElem[iFront][j]);
+            oldElemToNewElem[neighElem[iFront][j]] = -2;
           }
         }
       }
@@ -999,10 +1015,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         efficient. ---*/
 #ifdef HAVE_MPI
   unsigned long thisPartitionEmpty = nVolElemOwned ? 0 : 1;
-  unsigned long nEmptyPartitions;
+  unsigned long nEmptyPartitions = 0;
 
-  SU2_MPI::Allreduce(&thisPartitionEmpty, &nEmptyPartitions, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&thisPartitionEmpty, &nEmptyPartitions, 1,
+                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 
   if(rank == MASTER_NODE && nEmptyPartitions) {
     cout << endl << "         WARNING" << endl;
@@ -1184,7 +1200,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nRankSend = rankToIndCommBuf.size();
   longSendBuf.resize(nRankSend);
 
-  /*--- Determine the number of ranks, from which this rank will receive elements. ---*/
+  /* Determine the number of ranks, from which this rank will receive elements. */
   nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
@@ -1192,7 +1208,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
                      MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  /*--- Loop over the local halo elements to fill the communication buffers. ---*/
+  /* Loop over the local halo elements to fill the communication buffers. */
   for(unsigned long i=0; i<haloElements.size(); ++i) {
 
     /* Determine the rank where this halo element was originally stored. */
@@ -1429,7 +1445,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   nRankSend = rankToIndCommBuf.size();
 
-  /*--- Determine the number of ranks, from which this rank will receive elements. ---*/
+  /* Determine the number of ranks, from which this rank will receive elements. */
   nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
@@ -1437,7 +1453,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
                      MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
-  /*--- Copy the data to be sent to the send buffers. ---*/
+  /* Copy the data to be sent to the send buffers. */
   longSendBuf.resize(nRankSend);
   MI = rankToIndCommBuf.begin();
 
@@ -1450,12 +1466,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  /*--- Resize the first index of the long receive buffer. ---*/
+  /* Resize the first index of the long receive buffer. */
   longRecvBuf.resize(nRankRecv);
 
   /*--- Communicate the data to the correct ranks. Make a distinction
         between parallel and sequential mode.    ---*/
-
 #ifdef HAVE_MPI
 
   /* Parallel mode. Send all the data using non-blocking sends. */
