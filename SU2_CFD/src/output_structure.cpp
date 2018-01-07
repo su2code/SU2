@@ -1847,7 +1847,7 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
 void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   int iProcessor;
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   unsigned long iPoint, iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
@@ -2218,7 +2218,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
 void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   int iProcessor;
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   unsigned long iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
@@ -2859,7 +2859,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
 
 void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   
   unsigned long iNode, jNode;
   unsigned long iElem = 0;
@@ -14750,7 +14750,7 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
 void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   unsigned long iProcessor;
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   unsigned long iPoint, jPoint, kPoint, nLocalPoint, nTotalPoint;
   unsigned long nElem_Total = 0, Global_Index;
   
@@ -18574,6 +18574,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Vn                = Vn / Area;
           Pressure          = solver->node[iPoint]->GetPressure();
           SoundSpeed        = solver->node[iPoint]->GetSoundSpeed();
+
+          Mach = TotalPressure = Temperature = TotalTemperature = 0.0;
 
           if (compressible){
             Mach              = sqrt(Velocity2)/SoundSpeed;
