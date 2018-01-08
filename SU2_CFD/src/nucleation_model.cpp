@@ -98,6 +98,7 @@ su2double CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2doub
 			J = J0 + J1 + J2 + J3;
 
 			J = exp(J);
+
 	}
 
 	if (J < 0 || J != J) {
@@ -131,7 +132,7 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 	su2double Delta, Alpha;
 
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc, R, rho_m, (G)
-    if (Fluid == WATER) {
+    if (Fluid == WATER ) {
 
 			G = k * (V_l[4] - T);
 
@@ -173,6 +174,8 @@ su2double CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double r
 
 			//if (h - V_l[2] > 0)
 			G = G /(h - V_l[2]);
+
+			if (Fluid == CO2) {G/=1;}
 
 /*			else {
 				cout << "Warning: fluidprop error on liquid enthalpy" << endl;

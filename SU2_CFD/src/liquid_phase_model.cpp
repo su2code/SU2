@@ -85,9 +85,6 @@ void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2do
 		SetTLiquid(T, Rcritical, Rdroplet);
 		SetLiquidDensity();
 
-		if (Fluid == R22)
-		SetLiquidEnthalpy(h_v);
-		else
 		SetLiquidEnthalpy(h_v);
 
 		if (Fluid == WATER && Model != FLUIDPROP)
@@ -369,10 +366,7 @@ CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
 
     Ptriple = 5.12e5;
     Ttriple = 216.57;
-/*
-//    if (config->GetFluidSubLib() !=  "xxxxxxxx") {
-	// Copy fluid data to CFluidProp object
-		ThermoLib = config->GetFluidSubLib();
+/*ThermoLib = config->GetFluidSubLib();
 		nComp = config->GetnComp();
 		Comp= config->GetCompNames();
 		Conc = config->GetMoleFracs();
@@ -390,11 +384,11 @@ CCO2::CCO2(CConfig *config) : CLiquidModel(config) {
 
 		fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
 		fluidprop_setunits( "SI", " ", " ", " ");
-*/
+
 		// Set reference state for non-dimensionalization
 
-//    }
-
+    }
+*/
 }
 
 
@@ -493,6 +487,13 @@ void CCO2::SetRCritical(su2double P, su2double T, su2double T_l) {
 
 	} else 	Rc = 0.0;
 
+/*
+	if (Psat < P) {
+		dGibbs = T * Gas_Constant * log(P/Psat);
+		Rc = sigma / (rho_l * dGibbs)*2;// * 0.5* (1 + sqrt(1+ 2*3.28e-10 * dGibbs * rho_l/sigma) ) -2*3.28e-10;;
+	} else
+		Rc = 0;
+*/
 
 
 //    su2double a = 204.3918, b = 6.06e-4;
@@ -626,6 +627,7 @@ void CCO2::SetLiquidEnthalpy(su2double h_v) {
 
     h_l = h_v - (hv_sat - hl_sat)*Href;
 
+
 }
 
 CR22::CR22(CConfig *config) : CLiquidModel(config) {
@@ -694,14 +696,17 @@ void CR22::SetSurfaceTension(su2double T, su2double Rdroplet) {
 
     sigma = 1.0 - 1.0 * T_limited/Tstar;
     sigma = 69.93 * (1.0 - 0.154 *pow(sigma, 0.87)) * pow(sigma, 1.285);
-    sigma = sigma * 1.0e-3;
+    sigma = sigma * 5.0e-4;
 
 }
 
 void CR22::SetTLiquid(su2double T, su2double Rcritical, su2double Rdroplet) {
 
-		if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		//if (Rdroplet!=0.0) T_l   = max(T, Tsat  - (Tsat - T)*Rcritical/Rdroplet);
+		if (Rdroplet!=0.0) T_l   = Tsat  - (Tsat - T)*Rcritical/Rdroplet;
 		else      T_l = T;
+
+		if (T_l > Tsat) T_l = Tsat;
 }
 
 void CR22::SetLiquidDensity() {

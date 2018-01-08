@@ -11622,19 +11622,29 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
           Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(10)); iVar++;
           Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction()); iVar++;
+
+          if (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4) >0) {
           Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetEntropy_Loss()); iVar++;
+          } else {Local_Data[jPoint][iVar] = 0; iVar++;}
+
           Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim+3) -
         		                      solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(2)); iVar++;
+
+          if (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4) >0) {
           Local_Data[jPoint][iVar] = (1/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4) -
         		                      1/solver[FLOW_SOL]->node[iPoint]->GetPrimitive(0)); iVar++;
+          } else {Local_Data[jPoint][iVar] = 0; iVar++;}
 
         	if (liquid_props == true) {
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
 
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetMassSource());
+
+        		if (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8) >0) {
         		Local_Data[jPoint][iVar]/= 3 * solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8);
-        		iVar++;
+        		iVar++;} else {Local_Data[jPoint][iVar] = 0; iVar++;}
+
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(7)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
