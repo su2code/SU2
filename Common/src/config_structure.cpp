@@ -336,6 +336,10 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
 
+  Marker_CfgFile_Turbomachinery       = NULL; Marker_All_Turbomachinery       = NULL;
+  Marker_CfgFile_TurbomachineryFlag   = NULL; Marker_All_TurbomachineryFlag   = NULL;
+  Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
+
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
   Marker_Analyze              = NULL;   Marker_WallFunctions     = NULL;
@@ -6099,6 +6103,15 @@ CConfig::~CConfig(void) {
 
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
+
+  if (Marker_CfgFile_Turbomachinery != NULL) delete[] Marker_CfgFile_Turbomachinery;
+  if (Marker_All_Turbomachinery     != NULL) delete[] Marker_All_Turbomachinery;
+
+  if (Marker_CfgFile_TurbomachineryFlag != NULL) delete[] Marker_CfgFile_TurbomachineryFlag;
+  if (Marker_All_TurbomachineryFlag     != NULL) delete[] Marker_All_TurbomachineryFlag;
+
+  if (Marker_CfgFile_MixingPlaneInterface != NULL) delete[] Marker_CfgFile_MixingPlaneInterface;
+  if (Marker_All_MixingPlaneInterface     != NULL) delete[] Marker_All_MixingPlaneInterface;
 
   if (Marker_DV!= NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;

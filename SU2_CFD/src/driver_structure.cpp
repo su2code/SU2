@@ -66,6 +66,7 @@ CDriver::CDriver(char* confFile,
    hierarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
 
+  ConvHist_file                  = NULL;
   iteration_container            = NULL;
   output                         = NULL;
   integration_container          = NULL;
@@ -538,6 +539,9 @@ void CDriver::Postprocessing() {
     }
 
   }
+
+  /*--- Delete the memory of the convergence history files. */
+  if(ConvHist_file != NULL) delete[] ConvHist_file;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
