@@ -178,13 +178,7 @@ void FEMStandardElementBaseClass::IntegrationPointsTriangle(void) {
     case 27: nIntegration = 145; break;
     case 28: nIntegration = 225; break;
     default:
-      cout << "FEMStandardElementBaseClass::IntegrationPointsTriangle: Polynomial order not supported" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+      SU2_MPI::Error("Polynomial order not supported", CURRENT_FUNCTION);
   }
 
   /*--- Allocate the memory for the integration points and their weights. ---*/
@@ -2061,13 +2055,7 @@ void FEMStandardElementBaseClass::IntegrationPointsTetrahedron(void) {
     case 14: nIntegration = 214; break;
     case 15: nIntegration = 264; break;
     default:
-      cout << "FEMStandardElementBaseClass::IntegrationPointsTetrahedron: Polynomial order not supported" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+      SU2_MPI::Error("Polynomial order not supported", CURRENT_FUNCTION);
   }
 
   /*--- Allocate the memory for the integration points and their weights. ---*/

@@ -39,15 +39,8 @@ void CGaussJacobiQuadrature::GetQuadraturePoints(const su2double   alpha,     co
 
   /*--- Determine the number of integration points. Check if the number makes sense. ---*/
   unsigned int nIntPoints = GJPoints.size();
-  if(nIntPoints < 1 || nIntPoints > 100) {
-    cout << "Invalid number of Gauss Jacobi integration points" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(nIntPoints < 1 || nIntPoints > 100)
+    SU2_MPI::Error("Invalid number of Gauss Jacobi integration points", CURRENT_FUNCTION);
 
   /*--- Call the function cgqf to do the actual work. ---*/
   int kind = 4;

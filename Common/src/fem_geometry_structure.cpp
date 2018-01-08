@@ -268,15 +268,6 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
-  /*--- Determine the number of ranks and the current rank. ---*/
-  int nRank = SINGLE_NODE;
-  int rank  = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nRank);
-#endif
-
   /*--- Copy the number of dimensions. ---*/
   nDim = geometry->GetnDim();
 
@@ -303,14 +294,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*----------------------------------------------------------------------------*/
 
   /*--- Determine the ranks to which I have to send my elements. ---*/
-  vector<int> sendToRank(nRank, 0);
+  vector<int> sendToRank(size, 0);
 
   for(unsigned long i=0; i<geometry->GetnElem(); ++i) {
     sendToRank[geometry->elem[i]->GetColor()] = 1;
   }
 
   map<int,int> rankToIndCommBuf;
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
       int ind = rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
@@ -332,10 +323,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   int nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
-  vector<int> sizeRecv(nRank, 1);
+  vector<int> sizeRecv(size, 1);
 
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
@@ -406,15 +397,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalPointIDToLocalInd.find(nodeIDs[j]);
 
-      if(LMI == globalPointIDToLocalInd.end()) {
-        cout << "Entry not found in map in function CMeshFEM::CMeshFEM" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
+      if(LMI == globalPointIDToLocalInd.end())
+        SU2_MPI::Error("Entry not found in map", CURRENT_FUNCTION);
 
       unsigned long ind = LMI->second;
       for(unsigned short l=0; l<nDim; ++l)
@@ -476,7 +460,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
 
   /*--- Parallel mode. Send all the data using non-blocking sends. ---*/
-  vector<MPI_Request> commReqs(3*nRankSend);
+  vector<SU2_MPI::Request> commReqs(3*nRankSend);
   MI = rankToIndCommBuf.begin();
 
   for(int i=0; i<nRankSend; ++i, ++MI) {
@@ -495,12 +479,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until a message with shorts arrives from any processor.
        Determine the source and the size of the message.   */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_SHORT, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_SHORT, &sizeMess);
 
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
@@ -509,16 +493,16 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    MPI_Probe(source, rank+1, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Probe(source, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
                   source, rank+1, MPI_COMM_WORLD, &status);
 
     /* Idem for the message with doubles. */
-    MPI_Probe(source, rank+2, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_DOUBLE, &sizeMess);
+    SU2_MPI::Probe(source, rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
@@ -530,7 +514,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
 
@@ -821,7 +805,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
                   MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-  if((rank == MASTER_NODE) && (nRanksTooManyPartChunks != 0) && (nRank > 1)) {
+  if((rank == MASTER_NODE) && (nRanksTooManyPartChunks != 0) && (size > 1)) {
     cout << endl << "                 WARNING" << endl;
     cout << "There are " << nRanksTooManyPartChunks << " partitions for which "
          << " the simultaneous treatment of volume elements is not optimal." << endl;
@@ -988,15 +972,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  if(nElemRenumbered != nVolElemOwned) {
-    cout << "Something went wrong in the renumbering" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(nElemRenumbered != nVolElemOwned)
+    SU2_MPI::Error("Something went wrong in the renumbering", CURRENT_FUNCTION);
 
   /* Determine the final mapping from the global element number to the local
      entry for the owned elements. First clear mapGlobalElemIDToInd before
@@ -1166,14 +1143,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Determine the number of elements per rank of the originally partitioned grid
      stored in cumulative storage format. */
-  vector<unsigned long> nElemPerRankOr(nRank+1);
+  vector<unsigned long> nElemPerRankOr(size+1);
 
-  for(int i=0; i<nRank; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
-  nElemPerRankOr[nRank] = geometry->ending_node[nRank-1];
+  for(int i=0; i<size; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
+  nElemPerRankOr[size] = geometry->ending_node[size-1];
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
-  sendToRank.assign(nRank, 0);
+  sendToRank.assign(size, 0);
 
   for(unsigned long i=0; i<haloElements.size(); ++i) {
 
@@ -1188,7 +1165,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   }
 
   rankToIndCommBuf.clear();
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
       int ind = rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
@@ -1204,8 +1181,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /* Loop over the local halo elements to fill the communication buffers. */
@@ -1257,12 +1234,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message and receive it. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
 
     longRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
@@ -1314,14 +1291,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
          Check if the index is valid. */
       const long localID = globalID - geometry->starting_node[rank];
       if(localID < 0 || localID >= (long) geometry->npoint_procs[rank]) {
-        cout << localID << " " << geometry->npoint_procs[rank] << endl;
-        cout << "Invalid local element ID in function CMeshFEM::CMeshFEM" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+        ostringstream message;
+        message << localID << " " << geometry->npoint_procs[rank] << endl;
+        message << "Invalid local element ID";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
       /* Determine which rank owns this element and store everything in the
@@ -1357,12 +1330,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message.   */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
 
     /* Allocate the memory for the long receive buffer and receive the message. */
     longRecvBuf[i].resize(sizeMess);
@@ -1375,7 +1348,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
 
@@ -1413,29 +1386,23 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
      The first element of this vector is nVolElemOwned, such that this vector
      contains the starting position in the vector volElem. Also determine the
      number of ranks to which I have to send requests for data. */
-  vector<unsigned long> nHaloElemPerRank(nRank+1, 0);
+  vector<unsigned long> nHaloElemPerRank(size+1, 0);
   for(unsigned long i=0; i<haloData.size(); ++i)
     ++nHaloElemPerRank[haloData[i].long0+1];
 
   nHaloElemPerRank[0] = nVolElemOwned;
-  for(int i=0; i<nRank; ++i)
+  for(int i=0; i<size; ++i)
     nHaloElemPerRank[i+1] += nHaloElemPerRank[i];
 
-  if(nHaloElemPerRank[nRank] != nVolElemTot) {
-    cout << "Inconsistency in function CMeshFEM::CMeshFEM" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(nHaloElemPerRank[size] != nVolElemTot)
+    SU2_MPI::Error("Inconsistency in total number of volume elements",
+                   CURRENT_FUNCTION);
 
   /* Determine the number of ranks to which I have to send data and the number
      of ranks from which I receive data in this cycle. */
-  sendToRank.assign(nRank, 0);
+  sendToRank.assign(size, 0);
   rankToIndCommBuf.clear();
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
       sendToRank[i] = 1;
       int ind = rankToIndCommBuf.size();
@@ -1449,8 +1416,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /* Copy the data to be sent to the send buffers. */
@@ -1491,12 +1458,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message and receive it. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
 
     longRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
@@ -1547,15 +1514,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       const unsigned long elemID = longRecvBuf[i][j2];
       map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
-      if(MMI == mapGlobalElemIDToInd.end()) {
-        cout << "Entry not found in mapGlobalElemIDToInd in function CMeshFEM::CMeshFEM" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
+      if(MMI == mapGlobalElemIDToInd.end())
+        SU2_MPI::Error("Entry not found in mapGlobalElemIDToInd", CURRENT_FUNCTION);
 
       elemBuf[j].long0 = MMI->second;
       elemBuf[j].long1 = longRecvBuf[i][j2+1] + 1;
@@ -1630,15 +1590,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalPointIDToLocalInd.find(nodeIDs[j].long0);
 
-      if(LMI == globalPointIDToLocalInd.end()) {
-        cout << "Entry not found in map in function CMeshFEM::CMeshFEM" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
+      if(LMI == globalPointIDToLocalInd.end())
+        SU2_MPI::Error("Entry not found in map", CURRENT_FUNCTION);
 
       unsigned long ind = LMI->second;
       for(unsigned short l=0; l<nDim; ++l)
@@ -1677,12 +1630,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until a message with shorts arrives from any processor.
        Determine the source and the size of the message.   */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_SHORT, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_SHORT, &sizeMess);
 
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
@@ -1691,16 +1644,16 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    MPI_Probe(sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+    SU2_MPI::Probe(sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
                   sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
 
     /* Idem for the message with doubles. */
-    MPI_Probe(sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_DOUBLE, &sizeMess);
+    SU2_MPI::Probe(sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
+    SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
@@ -1712,7 +1665,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
 
@@ -2361,8 +2314,6 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
 
 void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 
-  int rank = MASTER_NODE;
-
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Determine the local contribution to the positive z area.    ---*/
   /*---------------------------------------------------------------------------*/
@@ -2417,8 +2368,6 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 #ifdef HAVE_MPI
   su2double locArea = PositiveZArea;
   SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
   /*---------------------------------------------------------------------------*/
@@ -2715,27 +2664,14 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
           unsigned short nPoly = side0IsBoundary ? low->nPolyGrid0 : low->nPolyGrid1;
 
           if(elemID != boundaries[iMarker].surfElem[k].volElemID ||
-             nPoly  != boundaries[iMarker].surfElem[k].nPolyGrid) {
-            cout << "Element ID and/or polynomial degree do not match "
-                 << "for this boundary element. This should not happen." << endl;
-#ifndef HAVE_MPI
-            exit(EXIT_FAILURE);
-#else
-            MPI_Abort(MPI_COMM_WORLD,1);
-            MPI_Finalize();
-#endif
-          }
+             nPoly  != boundaries[iMarker].surfElem[k].nPolyGrid)
+            SU2_MPI::Error(string("Element ID and/or polynomial degree do not match ") +
+                           string("for this boundary element. This should not happen."),
+                           CURRENT_FUNCTION);
         }
-        else {
-          cout << "Boundary face not found in localFaces. "
-               << "This should not happen." << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
-        }
+        else
+          SU2_MPI::Error("Boundary face not found in localFaces. This should not happen.",
+                         CURRENT_FUNCTION);
       }
     }
   }
@@ -2945,15 +2881,10 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   }
 
   if( nNonMatchingFaces ) {
-    cout << "CMeshFEM_DG::CreateFaces: "
-         << nNonMatchingFaces << " non-matching internal faces found. "
-         << "This is not supported yet." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    ostringstream message;
+    message << nNonMatchingFaces << " non-matching internal faces found.\n"
+            << "This is not supported yet." << endl;
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /* Put nMatchingFacesInternal and nMatchingFacesWithHaloElem in
@@ -3397,15 +3328,6 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
 void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
-  /*--- Determine the number of ranks and the current rank. ---*/
-  int nRank = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nRank);
-#endif
-
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Determine the ranks from which this rank has to receive data ---*/
   /*---         during the actual communication of halo data, as well as the ---*/
@@ -3421,12 +3343,12 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
                                   + volElem[i-1].nDOFsSol;
 
   /* Determine the ranks from which this rank will receive halo data. */
-  vector<int> recvFromRank(nRank, 0);
+  vector<int> recvFromRank(size, 0);
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i)
     recvFromRank[volElem[i].rankOriginal] = 1;
 
   map<int,int> rankToIndRecvBuf;
-  for(int i=0; i<nRank; ++i) {
+  for(int i=0; i<size; ++i) {
     if( recvFromRank[i] ) {
       int ind = rankToIndRecvBuf.size();
       rankToIndRecvBuf[i] = ind;
@@ -3461,10 +3383,10 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   /*--- Parallel mode. First determine the number of ranks to which this
         rank has to send halo data during the actual exchange. ---*/
   int nRankSend;
-  vector<int> sizeReduce(nRank, 1);
+  vector<int> sizeReduce(size, 1);
 
-  MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   /* Resize ranksSend and the first index of entitiesSend to the number of
      ranks to which this rank has to send data. */
@@ -3472,7 +3394,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   entitiesSend.resize(nRankSend);
 
   /*--- Send all the data using non-blocking sends. ---*/
-  vector<MPI_Request> commReqs(ranksRecv.size());
+  vector<SU2_MPI::Request> commReqs(ranksRecv.size());
 
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
     int dest = ranksRecv[i];
@@ -3485,14 +3407,14 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   for(int i=0; i<nRankSend; ++i) {
 
     /* Block until a message arrivesi and determine the source. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     ranksSend[i] = status.MPI_SOURCE;
 
     /* Determine the size of the message, allocate the memory for the
        receive buffer and receive the message. */
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     entitiesSend[i].resize(sizeMess);
     SU2_MPI::Recv(entitiesSend[i].data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -3504,11 +3426,8 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalElemIDToLocalInd.find(entitiesSend[i][j]);
 
-      if(LMI == globalElemIDToLocalInd.end()) {
-        cout << "This should not happen in CMeshFEM_DG::SetSendReceive" << endl;
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-      }
+      if(LMI == globalElemIDToLocalInd.end())
+        SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
 
       entitiesSend[i][j] = LMI->second;
     }
@@ -3517,7 +3436,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   /* Complete the non-blocking sends and synchronize the rank, because
      wild cards have been used. */
   SU2_MPI::Waitall(ranksRecv.size(), commReqs.data(), MPI_STATUSES_IGNORE);
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
   /* Sequential mode. Resize ranksSend and the first index of entitiesSend to
@@ -3537,10 +3456,8 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalElemIDToLocalInd.find(longBuf[0][i]);
 
-      if(LMI == globalElemIDToLocalInd.end()) {
-        cout << "This should not happen in CMeshFEM_DG::SetSendReceive" << endl;
-        exit(EXIT_FAILURE);
-      }
+      if(LMI == globalElemIDToLocalInd.end())
+        SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
 
       entitiesSend[0][i] = LMI->second;
     }
@@ -3787,16 +3704,8 @@ void CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original quad to create the connectivity
         of the quad that corresponds to the new numbering. ---*/
@@ -3908,16 +3817,8 @@ void CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original triangle to create the connectivity
         of the triangle that corresponds to the new numbering. ---*/
@@ -4187,16 +4088,8 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original hexahedron to create the connectivity
         of the hexahedron that corresponds to the new numbering. ---*/
@@ -4372,16 +4265,8 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original prism to create the connectivity
         of the prism that corresponds to the new numbering. ---*/
@@ -4512,16 +4397,8 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original pyramid to create the connectivity
         of the pyramid that corresponds to the new numbering. Note that the
@@ -4658,16 +4535,8 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION); 
 
   /*--- Loop over the DOFs of the original prism to create the connectivity
         of the prism that corresponds to the new numbering. ---*/
@@ -4718,17 +4587,9 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid(
      corner point 2 of the triangle. Set swapFaceInElement accordingly. */
   if(     cornerPointsTria[1] == pyraNodeIDsGrid[ind4]) swapFaceInElement = true;
   else if(cornerPointsTria[2] == pyraNodeIDsGrid[ind4]) swapFaceInElement = false;
-  else {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid." << endl;
-    cout << "Top of the pyramid does not coincide with either corner point 1 or 2." << endl;
-    cout << "This should not happen" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  else
+    SU2_MPI::Error(string("Top of the pyramid does not coincide with either corner point 1 or 2.\n") +
+                   string("This should not happen"), CURRENT_FUNCTION);
 
   /* Easier storage of the two other corner points of the triangle in the new numbering.
      vert0 always corresponds to cornerPointsTria[0], while vert1 contains the other
@@ -4782,17 +4643,8 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    d = nPolyConn; c = 1; e = -1;
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original pyramid to create the connectivity
         of the pyramid that corresponds to the new numbering. Note that the
@@ -5004,16 +4856,8 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
   }
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
-  if( verticesDontMatch ) {
-    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron." << endl;
-    cout << "Corner vertices do not match. This should not happen." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Some constants to convert the (ii,jj,kk) indices to a 1D index. ---*/
   const unsigned short abv1 = (11 + 12*nPolyConn + 3*nPolyConn*nPolyConn);
@@ -5188,15 +5032,11 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
   /*---         elements to the ranks where the original is stored. ---*/
   /*-------------------------------------------------------------------*/
 
-  /* Determine the rank inside MPI_COMM_WORLD. */
-  int rank = MASTER_NODE;
-
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   /*--- Define the buffers needed for the communication. ---*/
-  vector<MPI_Request> sendRequests(ranksSend.size());
-  vector<MPI_Request> recvRequests(ranksRecv.size());
+  vector<SU2_MPI::Request> sendRequests(ranksSend.size());
+  vector<SU2_MPI::Request> recvRequests(ranksRecv.size());
 
   vector<vector<su2double> > sendBuf(ranksSend.size());
   vector<vector<su2double> > recvBuf(ranksRecv.size());
@@ -5523,15 +5363,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       if(volElem[i].metricTermsSolDOFs[nMetricPerPoint*j] <= 0.0) negJacobian = true;
     }
 
-    if( negJacobian ) {
-      cout << "Negative Jacobian found" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+    if( negJacobian )
+      SU2_MPI::Error("Negative Jacobian found.", CURRENT_FUNCTION);
   }
 
   /*--------------------------------------------------------------------------*/
@@ -5820,17 +5653,10 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
                                    volElem[i].ADERIterationMatrix.data(),
                                    sizeMat, ipiv.data());
         if(errorCode != 0) {
-          cout << endl;
-          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
-          cout << "Something wrong when calling LAPACKE_dgetrf. Error code: "
-               << errorCode << endl;
-          cout << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+          ostringstream message;
+          message << "Something wrong when calling LAPACKE_dgetrf. Error code: "
+                  << errorCode;
+          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
         }
 
         /* LAPACKE_dgetri to compute the actual inverse. Check if everything
@@ -5839,17 +5665,10 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
                                    volElem[i].ADERIterationMatrix.data(),
                                    sizeMat, ipiv.data());
         if(errorCode != 0) {
-          cout << endl;
-          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
-          cout << "Something wrong when calling LAPACKE_dgetri. Error code: "
-               << errorCode << endl;
-          cout << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+          ostringstream message;
+          message << "Something wrong when calling LAPACKE_dgetri. Error code: "
+                  << errorCode;
+          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
         }
 #else
         /* No support for Lapack. Hence an internal routine is used.
@@ -5874,49 +5693,37 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
                                    massMat.data(), nDOFs);
         if(errorCode != 0) {
-          cout << endl;
-          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
+          ostringstream message;
           if(errorCode < 0)  {
-            cout << "Something wrong when calling LAPACKE_dpotrf. Error code: "
-                 << errorCode << endl;
+            message << "Something wrong when calling LAPACKE_dpotrf. Error code: "
+                    << errorCode;
           }
           else {
-            cout << "Mass matrix not positive definite. " << endl;
-            cout << "This is most likely caused by a too low accuracy of the quadrature rule," << endl;
-            cout << "possibly combined with a low quality element." << endl;
-            cout << "Increase the accuracy of the quadrature rule." << endl;
+            message << "Mass matrix not positive definite. " << endl;
+            message << "This is most likely caused by a too low accuracy of the quadrature rule," << endl;
+            message << "possibly combined with a low quality element." << endl;
+            message << "Increase the accuracy of the quadrature rule.";
           }
-          cout << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+
+          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
         }
 
         errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
                                    massMat.data(), nDOFs);
         if(errorCode != 0) {
-          cout << endl;
-          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
+          ostringstream message;
           if(errorCode < 0) {
-            cout << "Something wrong when calling LAPACKE_dpotri. Error code: "
-                 << errorCode << endl;
+            message << "Something wrong when calling LAPACKE_dpotri. Error code: "
+                    << errorCode;
           }
           else {
-            cout << "Mass matrix is singular. " << endl;
-            cout << "The is most likely caused by a too low accuracy of the quadrature rule, " << endl;
-            cout << "possibly combined with a low quality element." << endl;
-            cout << "Increase the accuracy of the quadrature rule." << endl;
+            message << "Mass matrix is singular. " << endl;
+            message << "The is most likely caused by a too low accuracy of the quadrature rule, " << endl;
+            message << "possibly combined with a low quality element." << endl;
+            message << "Increase the accuracy of the quadrature rule.";
           }
-          cout << endl;
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+
+          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
         }
 
         /* The Lapack routines for a Cholesky decomposition only store the upper
@@ -6009,16 +5816,8 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
   su2double val = 0.0;
   for(unsigned short j=0; j<nTimeDOFs; ++j) val += lEnd[j];
 
-  if(fabs(val-1.0) > 1.e-6){
-    cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
-    cout << "Difference is too large to be caused by roundoff" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(fabs(val-1.0) > 1.e-6)
+    SU2_MPI::Error( "Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
 
   val = 1.0/val;
   for(unsigned short j=0; j<nTimeDOFs; ++j) lEnd[j] *= val;
@@ -6040,16 +5839,8 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
   val = 0.0;
   for(unsigned short j=0; j<nTimeDOFs; ++j) val += LagrangianBeginTimeIntervalADER_DG[j];
 
-  if(fabs(val-1.0) > 1.e-6){
-    cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
-    cout << "Difference is too large to be caused by roundoff" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(fabs(val-1.0) > 1.e-6)
+    SU2_MPI::Error( "Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
 
   val = 1.0/val;
   for(unsigned short j=0; j<nTimeDOFs; ++j) LagrangianBeginTimeIntervalADER_DG[j] *= val;
@@ -6152,16 +5943,8 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
     for(unsigned short i=0; i<nTimeDOFs; ++i)
       val += timeInterpolDOFToIntegrationADER_DG[jj+i];
 
-    if(fabs(val-1.0) > 1.e-6){
-      cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
-      cout << "Difference is too large to be caused by roundoff" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+    if(fabs(val-1.0) > 1.e-6)
+      SU2_MPI::Error( "Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
 
     val = 1.0/val;
     for(unsigned short i=0; i<nTimeDOFs; ++i)
@@ -6226,16 +6009,8 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
     for(unsigned short i=0; i<nTimeDOFs; ++i)
       val += timeInterpolAdjDOFToIntegrationADER_DG[jj+i];
 
-    if(fabs(val-1.0) > 1.e-6){
-      cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
-      cout << "Difference is too large to be caused by roundoff" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+    if(fabs(val-1.0) > 1.e-6)
+      SU2_MPI::Error( "Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
 
     val = 1.0/val;
     for(unsigned short i=0; i<nTimeDOFs; ++i)

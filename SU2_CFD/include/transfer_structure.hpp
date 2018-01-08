@@ -62,6 +62,9 @@ using namespace std;
 class CTransfer {
 protected:
 
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
+
   su2double *Physical_Constants;
   su2double *Donor_Variable;
   su2double *Target_Variable;
