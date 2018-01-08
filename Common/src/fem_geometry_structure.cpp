@@ -286,8 +286,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
   vector<int> sizeRecv(size, 1);
 
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
@@ -998,8 +998,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /*--- Loop over the local halo elements to fill the communication buffers. ---*/
@@ -1233,8 +1233,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
 
   /*--- Copy the data to be sent to the send buffers. ---*/
@@ -3181,8 +3181,8 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   int nRankSend;
   vector<int> sizeReduce(size, 1);
 
-  MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   /* Resize ranksSend and the first index of entitiesSend to the number of
      ranks to which this rank has to send data. */
