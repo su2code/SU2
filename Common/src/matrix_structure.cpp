@@ -68,8 +68,11 @@ CSysMatrix::CSysMatrix(void) {
   LFBlock         = NULL;
   LyVector        = NULL;
   FzVector        = NULL;
-  max_nElem       = 0;
-  
+
+  /*--- Initialization of member variables, which are used in the destructor.
+        When CSysMatrix is not used, these variables should be 0. ---*/
+  max_nElem   = 0;
+  ilu_fill_in = 0;
 }
 
 CSysMatrix::~CSysMatrix(void) {
