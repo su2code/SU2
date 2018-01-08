@@ -7010,9 +7010,6 @@ fi
 
 build_PY=yes
 
-# Complex type
-COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
-
 # direct differentation type
 build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
@@ -7021,7 +7018,6 @@ DIRECTDIFF_LIBS=
 build_REVERSE=no
 REVERSE_CXX=
 FORWARD_CXX=
-#CONFIGURE_ADOLC
 
     # Check whether --enable-codi-reverse was given.
 if test "${enable_codi_reverse+set}" = set; then :
@@ -7039,8 +7035,7 @@ fi
 
 
         CODIheader=${srcdir}/externals/codi/include/codi.hpp
-        AMPIlib=${srcdir}/externals/adjointmpi/libAMPI.a
-        AMPIheader=${srcdir}/externals/adjointmpi/include/ampi.h
+        AMPIheader=${srcdir}/externals/medi/include/medi/medi.hpp
 
         if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
         then
@@ -7077,36 +7072,8 @@ fi
         then
            DIRECTDIFF_CXX="-std=c++0x -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
            build_DIRECTDIFF=yes
-           build_REVERSE=no
-           build_NORMAL=no
-        elif test "$build_CODI_REVERSE" == "yes"
-        then
-           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
-              as_ac_File=`$as_echo "ac_cv_file_$AMPIlib" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $AMPIlib" >&5
-$as_echo_n "checking for $AMPIlib... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$AMPIlib"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  have_AMPIlib='yes'
-else
-  have_AMPIlib='no'
-fi
-
               as_ac_File=`$as_echo "ac_cv_file_$AMPIheader" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $AMPIheader" >&5
 $as_echo_n "checking for $AMPIheader... " >&6; }
@@ -7130,30 +7097,53 @@ else
   have_AMPIheader='no'
 fi
 
-              if test "$have_AMPIlib" == "no"
-              then
-                as_fn_error $? "AMPI library not found in externals/adjointmpi. Use 'preconfigure.py --autodiff --enable-mpi' to download it." "$LINENO" 5
-              fi
               if test "$have_AMPIheader" == "no"
               then
-                as_fn_error $? "AMPI header not found in externals/adjointmpi/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it." "$LINENO" 5
+                as_fn_error $? "MediPack header not found in externals/medi/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it." "$LINENO" 5
               fi
-              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/adjointmpi/include"
-              REVERSE_LIBS="\$(top_srcdir)/externals/adjointmpi/libAMPI.a"
+              DIRECTDIFF_CXX=$DIRECTDIFF_CXX" -I\$(top_srcdir)/externals/medi/include -I\$(top_srcdir)/externals/medi/src"
+           fi
+           build_REVERSE=no
+           build_NORMAL=no
+        elif test "$build_CODI_REVERSE" == "yes"
+        then
+           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
+           if test "$enablempi" == "yes"
+           then
+              as_ac_File=`$as_echo "ac_cv_file_$AMPIheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $AMPIheader" >&5
+$as_echo_n "checking for $AMPIheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$AMPIheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_AMPIheader='yes'
+else
+  have_AMPIheader='no'
+fi
+
+              if test "$have_AMPIheader" == "no"
+              then
+                as_fn_error $? "MediPack header not found in externals/medi/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it." "$LINENO" 5
+              fi
+              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/medi/include -I\$(top_srcdir)/externals/medi/src"
            fi
            build_REVERSE=yes
            build_DIRECTDIFF=no
            build_NORMAL=no
         fi
 
-
-if test $build_COMPLEX != "no"
-then
-   DIRECTDIFF_CXX=$COMPLEX_CXX
-   build_DIRECTDIFF=yes
-   build_REVERSE=no
-   build_NORMAL=no
-fi
 
 
 
