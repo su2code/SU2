@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   int  buffsize;
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
-  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
@@ -88,8 +88,7 @@ int main(int argc, char *argv[]) {
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
     if (nZone > 1 ) {
-      cout << "The required solver doesn't support multizone simulations" << endl; 
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
@@ -111,8 +110,7 @@ int main(int argc, char *argv[]) {
         driver = new CDiscAdjFSIStatDriver(config_file_name, nZone, nDim, MPICommunicator);
       }
       else {
-        cout << "WARNING: There is no discrete adjoint implementation for dynamic FSI. " << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
       }
     }
     /*--- If the problem is a direct FSI problem ---*/
@@ -168,9 +166,9 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Buffer_detach(&buffptr, &buffsize);
+  SU2_MPI::Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

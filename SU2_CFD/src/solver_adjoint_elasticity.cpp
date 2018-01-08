@@ -91,10 +91,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
@@ -241,9 +237,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("There is no adjoint restart file ") + filename, CURRENT_FUNCTION);
     }
 
     /*--- In case this is a parallel simulation, we need to perform the
@@ -357,8 +351,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
                    (config->GetnMaterialDensity() == config->GetnPoissonRatio()));
 
   if (!checkDef){
-      if (rank == MASTER_NODE) cout << "WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions." << endl;
-      exit(EXIT_FAILURE);
+    SU2_MPI::Error("WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions.", CURRENT_FUNCTION);
   }
 
   E_i           = new su2double[nMPROP];
@@ -667,11 +660,6 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Here we can add new (scalar) objective functions ---*/
 
   switch (config->GetKind_ObjFunc()){
@@ -702,8 +690,7 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
 
 
 void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
-  int rank = MASTER_NODE;
-
+  
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long ExtIter = config->GetExtIter();
@@ -717,10 +704,6 @@ void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
       seeding = 0.0;
     }
   }
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   if (rank == MASTER_NODE){
     SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
@@ -1143,11 +1126,6 @@ void CDiscAdjFEASolver::ReadDV(CConfig *config) {
   string filename;
   ifstream properties_file;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Choose the filename of the design variable ---*/
 
   string input_name;
@@ -1254,11 +1232,6 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Read and store the restart metadata. ---*/
 
   Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
@@ -1324,17 +1297,8 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer

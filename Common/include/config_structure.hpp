@@ -67,8 +67,8 @@ using namespace std;
 
 class CConfig {
 private:
-  SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
-  int rank;
+  SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
+  int rank, size;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_AverageProcess; /*!< \brief Kind of mixing process.*/
@@ -487,6 +487,7 @@ private:
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver,		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -1253,14 +1254,14 @@ public:
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
-  SU2_Comm GetMPICommunicator();
-  
+  SU2_MPI::Comm GetMPICommunicator();
+
   /*!
    * \brief Set the MPI communicator for SU2.
    * \param[in] Communicator - MPI communicator for SU2.
    */
-  void SetMPICommunicator(SU2_Comm Communicator);
-  
+  void SetMPICommunicator(SU2_MPI::Comm Communicator);
+
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -7788,6 +7789,11 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Get if AD preaccumulation should be performed.
+   */
+  bool GetAD_Preaccumulation(void);
 };
 
 #include "config_structure.inl"

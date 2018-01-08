@@ -57,6 +57,8 @@ using namespace std;
  */
 class CIteration {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   unsigned short nZone;  /*!< \brief Total number of zones in the problem. */
   
 public:
