@@ -7016,6 +7016,10 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
     
   }
 
+  /*--- Limiter MPI ---*/
+  
+  Set_MPI_Primitive_Limiter(geometry, config);
+
 }
 
 void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
