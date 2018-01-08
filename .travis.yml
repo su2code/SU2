@@ -27,7 +27,7 @@ python:
 
 env:
     global:
-        CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security -fpermissive" 
+        CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
@@ -86,6 +86,9 @@ before_script:
     - git clone -b feature_hom https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
+    # Get the test cases
+    - git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
+    
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
 

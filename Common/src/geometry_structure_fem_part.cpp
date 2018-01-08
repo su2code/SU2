@@ -122,14 +122,9 @@ FaceOfElementClass::FaceOfElementClass(const unsigned short VTK_Type,
     }
 
     default: {
-      cout << "Unknown VTK surface element type, " << VTK_Type
-           << ", in FaceOfElementClass::FaceOfElementClass." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      ostringstream message;
+      message << "Unknown VTK surface element type, " << VTK_Type;
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
     }
   }
 }
@@ -270,15 +265,10 @@ void FaceOfElementClass::CreateUniqueNumberingWithOrientation(void) {
     }
 
     default: {
-      cout << "Unknown surface element type with " << nCornerPoints
-           << " corners." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-      break;
+      ostringstream message;
+      message << "Unknown surface element type with " << nCornerPoints
+              << " corners." << endl;
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
     }
   }
 
@@ -411,7 +401,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string text_line, Marker_Tag;
   ifstream mesh_file;
   string::size_type position;
-  int rank = MASTER_NODE, size = SINGLE_NODE;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
   bool time_spectral = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
@@ -419,10 +408,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   nZone = val_nZone;
 
   /*--- Initialize counters for local/global points & elements ---*/
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
@@ -445,15 +430,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Check the grid ---*/
 
-  if (mesh_file.fail()) {
-    cout << "There is no mesh file (CPhysicalGeometry)!! " << val_mesh_filename << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if (mesh_file.fail())
+    SU2_MPI::Error(string("There is no mesh file (CPhysicalGeometry)!! ") + val_mesh_filename,
+                   CURRENT_FUNCTION);
 
   /*--- If more than one, find the zone in the mesh file ---*/
 
@@ -510,23 +489,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
             sense to do this. ---*/
       unsigned long nCores = size;   // Correct for the number of cores per rank.
       if(nCores > Global_nElem) {
+        ostringstream message;
+        message << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
+        message << "The number of cores, " << nCores;
+        message << ", is larger than the number of elements, " << Global_nElem << "." << endl;
+        message << "This is not exactly an efficient use of the resources and therefore "
+                << "SU2 will terminate.";
 
-        if (rank == MASTER_NODE) {
-          cout << endl;
-          cout << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
-          cout << "The number of cores, " << nCores
-               << ", is larger than the number of elements, " << Global_nElem << "." << endl;
-          cout << "This is not exactly an efficient use of the resources and therefore "
-               << "SU2 will terminate." << endl << endl;
-        }
-
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
       /*--- Compute the number of elements that will be on each processor.
@@ -809,14 +779,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
               break;
 
             default:
-              cout << "Unknown FEM boundary element value, " << typeRead
-                   << ", in " << val_mesh_filename << endl;
-#ifndef HAVE_MPI
-              exit(EXIT_FAILURE);
-#else
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
-#endif
+              ostringstream message;
+              message << "Unknown FEM boundary element value, " << typeRead
+                      << ", in " << val_mesh_filename;
+              SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
           }
 
           vector<unsigned long> nodeIDs(nDOFsGrid);
@@ -887,42 +853,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
                                                       string         val_mesh_filename,
                                                       unsigned short val_iZone,
                                                       unsigned short val_nZone) {
-  /* Determine my rank. */
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 #ifdef HAVE_CGNS
 
   /*--- For proper support of the high order elements, at least version 3.3
         of CGNS must be used. Check this. ---*/
 #if CGNS_VERSION >= 3300
 
-  /* Determine the total number of MPI ranks. */
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   int file_type;
-  if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
-    if (rank == MASTER_NODE) {
-      cout << endl << endl << "   !!! Error !!!" << endl;
-      cout << val_mesh_filename << " is not a CGNS file that can be read." << endl;
-      cout << " Now exiting..." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK)
+    SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file that can be read."),
+                   CURRENT_FUNCTION);
 
   /*--- Initialize counters for local/global points & elements ---*/
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
@@ -956,19 +897,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   int nbases;
   if(cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
   if(nbases > 1) {
-    if(rank == MASTER_NODE) {
-      cout << endl << endl << "   !!! Error !!!" << endl;
-      cout << "CGNS file contains " << nbases << " databases." << endl;
-      cout << "CGNS reader can handle only 1 at the moment." << endl;
-      cout << " Now exiting..." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    ostringstream message;
+    message << "CGNS file contains " << nbases << " databases." << endl;
+    message << "CGNS reader can handle only 1 at the moment." << endl;
+
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /* Read the information of the base, especially the number of dimensions. */
@@ -979,20 +912,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   nDim = physDim;
 
   if(cellDim != physDim) {
-    if(rank == MASTER_NODE) {
-      cout << endl << endl << "   !!! Error !!!" << endl;
-      cout << "The element dimension, " << cellDim
-           << ", differs from the physical dimension, " << physDim << "." << endl;
-      cout << "These should be the same for the DG-FEM solver." << endl;
-      cout << " Now exiting..." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    ostringstream message;
+    message << "The element dimension, " << cellDim
+            << ", differs from the physical dimension, " << physDim << "." << endl;
+    message << "These should be the same for the DG-FEM solver." << endl;
+
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /* Write the info about the number of dimensions. */
@@ -1008,39 +933,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   int nzones;
   if(cg_nzones(fn, iBase, &nzones) != CG_OK) cg_error_exit();
   if(iZone < 1 || iZone > nzones) {
-    if(rank == MASTER_NODE) {
-      cout << endl << endl << "   !!! Error !!!" << endl;
-      cout << "Zone " << iZone << " requested for reading, but there are only "
-           << nzones << " zones present in the CGNS file." << endl;
-      cout << " Now exiting..." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    ostringstream message;
+    message << "Zone " << iZone << " requested for reading, but there are only "
+            << nzones << " zones present in the CGNS file." << endl;
+
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /* Determine the zone type for the requested zone and check if it is
      unstructured. */
   ZoneType_t zoneType;
   if(cg_zone_type(fn, iBase, iZone, &zoneType) != CG_OK) cg_error_exit();
-  if(zoneType != Unstructured) {
-    if(rank == MASTER_NODE) {
-      cout << endl << endl << "   !!! Error !!!" << endl;
-      cout << "Structured CGNS zone found while unstructured expected." << endl;
-      cout << " Now exiting..." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(zoneType != Unstructured)
+    SU2_MPI::Error("Structured CGNS zone found while unstructured expected.",
+                   CURRENT_FUNCTION);
 
   /* Determine the number of sections for the connectivities in this zone. */
   int nsections;
@@ -1069,23 +975,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         sense to do this. ---*/
   unsigned long nCores = size;   // Correct for the number of cores per rank.
   if(nCores > Global_nElem) {
+    ostringstream message;
+    message << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
+    message << "The number of cores, " << nCores;
+    message << ", is larger than the number of elements, " << Global_nElem << "." << endl;
+    message << "This is not exactly an efficient use of the resources and therefore "
+            << "SU2 will terminate.";
 
-    if(rank == MASTER_NODE) {
-      cout << endl;
-      cout << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
-      cout << "The number of cores, " << nCores
-           << ", is larger than the number of elements, " << Global_nElem << "." << endl;
-      cout << "This is not exactly an efficient use of the resources and therefore "
-           << "SU2 will terminate." << endl << endl;
-    }
-
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /*--- Compute the number of elements that will be stored on each rank.
@@ -1215,22 +1112,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     if(     coorname == "CoordinateX") indC = 0;
     else if(coorname == "CoordinateY") indC = 1;
     else if(coorname == "CoordinateZ") indC = 2;
-    else {
-      if(rank == MASTER_NODE) {
-        cout << endl << endl << "   !!! Error !!!" << endl;
-        cout << "Unknown coordinate name, " << coorname
-             << ", encountered in the CGNS file." << endl;
-        cout << " Now exiting..." << endl << endl;
-      }
-
-  #ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-  #else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-  #endif
-    }
+    else
+      SU2_MPI::Error(string("Unknown coordinate name, ") + coorname +
+                     string(", encountered in the CGNS file."), CURRENT_FUNCTION);
 
     /* Easier storage of the range in the CGNS file. */
     cgsize_t range_min = nPointsPerRank[rank] + 1;
@@ -1262,20 +1146,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       }
 
       default: {
-        if(rank == MASTER_NODE) {
-          cout << endl << endl << "   !!! Error !!!" << endl;
-          cout << "Datatype for coordinates must be RealSingle or RealDouble, "
-               << "not " << datatype << endl;
-          cout << " Now exiting..." << endl << endl;
-        }
-
-    #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-    #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-    #endif
+        ostringstream message;
+        message << "Datatype for coordinates must be RealSingle or RealDouble, "
+                << "not " << datatype << endl;
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
     }
   }
@@ -1336,12 +1210,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   int nRankRecv;
   vector<int> sizeRecv(size, 1);
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send out the messages with the global node numbers. Use nonblocking
         sends to avoid deadlock. ---*/
-  vector<MPI_Request> sendReqs(nRankSend);
+  vector<SU2_MPI::Request> sendReqs(nRankSend);
   nRankSend = 0;
   for(int i=0; i<size; ++i) {
     if( nodeBuf[i].size() ) {
@@ -1353,7 +1227,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /* Define the communication buffer for the coordinates and the vector
      for the return communication requests. */
-  vector<MPI_Request> returnReqs(nRankRecv);
+  vector<SU2_MPI::Request> returnReqs(nRankRecv);
   vector<vector<su2double> > coorReturnBuf(nRankRecv, vector<su2double>(0));
 
   /*--- Loop over the number of ranks from which this rank receives global
@@ -1362,12 +1236,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
     /* Block until a message arrives. Determine the source and size
        of the message. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for a buffer to receive this message and also
        for the buffer to return to coordinates. */
@@ -1383,10 +1257,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     for(int j=0; j<sizeMess; ++j) {
       const int jj = nDim*j;
       const long kk = nodeRecvBuf[j] - nPointsPerRank[rank];
-      if(kk < 0 || kk >= nPointsRead) {
-        cout << "Invalid point requested. This should not happen." << endl;
-        exit(EXIT_FAILURE);
-      }
+      if(kk < 0 || kk >= nPointsRead)
+        SU2_MPI::Error("Invalid point requested. This should not happen.", CURRENT_FUNCTION);
 
       for(unsigned short k=0; k<nDim; ++k)
         coorReturnBuf[i][jj+k] = coorBuf[k][kk];
@@ -1402,8 +1274,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   for(int i=0; i<nRankSend; ++i) {
 
     /* Block until a message arrives. Determine the source of the message. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     /* Allocate the memory for the coordinate receive buffer. */
@@ -1448,7 +1320,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
   /*--- Sequential mode. Create the data for the points. The global
@@ -1551,8 +1423,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     }
   }
 
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
   sendReqs.resize(nRankSend);
@@ -1570,12 +1442,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
     /* Block until a message arrives and determine the source and size
        of the message. */
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+4, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+4, MPI_COMM_WORLD, &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     /* Allocate the memory for the receive buffer and receive the
        message using a non-blocking receive. */
@@ -1612,7 +1484,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /* Complete the non-blocking sends. Afterwards, synchronize the ranks,
      because wild cards have been used. */
   SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #endif
 
@@ -1860,8 +1732,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       }
     }
 
-    MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
     sendReqs.resize(nRankSend);
@@ -1884,12 +1756,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
       /* Block until a message arrives. Determine the source and size
          of the message. */
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE, rank+5, MPI_COMM_WORLD, &status);
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank+5, MPI_COMM_WORLD, &status);
       int source = status.MPI_SOURCE;
 
       int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
       /* Allocate the memory for the receive buffer and receive the message
          using a blocking send. */
@@ -1917,11 +1789,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         /* Check if the face is actually present. If not, print an error message
            and exit. */
         thisFace.CreateUniqueNumbering();
-        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-          cout << "Boundary element not found in list of faces. This is a bug." << endl;
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-        }
+        if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
+          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
+                         CURRENT_FUNCTION);
 
         /* Carry out the search again, but now with lower_bound to find the
            actual entry to determine the domain element and the rank where
@@ -1960,8 +1830,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       }
     }
 
-    MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
     sendReqs.resize(nRankSend);
@@ -1980,12 +1850,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
       /* Block until a message arrives. Determine the source and size
          of the message. */
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE, rank+6, MPI_COMM_WORLD, &status);
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank+6, MPI_COMM_WORLD, &status);
       int source = status.MPI_SOURCE;
 
       int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
       /* Allocate the memory for the receive buffer and receive the message
          using a blocking send. */
@@ -2031,7 +1901,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
        because wild cards have been used. */
     SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #else
     /*--- Sequential mode. All boundary elements read must be stored on this
@@ -2048,10 +1918,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       /* Check if the face is actually present. If not, print an error message
          and exit. */
       thisFace.CreateUniqueNumbering();
-      if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        cout << "Boundary element not found in list of faces. This is a bug." << endl;
-        exit(EXIT_FAILURE);
-      }
+      if( !binary_search(localFaces.begin(), localFaces.end(), thisFace) )
+        SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.",
+                       CURRENT_FUNCTION);
 
       /* Carry out the search again, but now with lower_bound to find the
          actual entry to set the domain element. */
@@ -2097,47 +1966,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
 #else  /* CGNS_VERSION >= 3300 */
 
-  if(rank == MASTER_NODE)
-    cout << "CGNS version 3.3 or higher is necessary for the DG FEM solver" << endl;
-
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
-#else
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
-#endif
+  SU2_MPI::Error("CGNS version 3.3 or higher is necessary for the DG FEM solver",
+                 CURRENT_FUNCTION);
 
 #endif /* CGNS_VERSION >= 3300 */
 
 #else  /* HAVE_CGNS. */
 
-  if(rank == MASTER_NODE) {
-    cout << "SU2 built without CGNS support!!" << endl;
-    cout << "To use CGNS, build SU2 accordingly." << endl;
-  }
-
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
-#else
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
-#endif
+  SU2_MPI::Error("SU2 built without CGNS support!!\nTo use CGNS, build SU2 accordingly.",
+                 CURRENT_FUNCTION);
 
 #endif  /* HAVE_CGNS. */
 }
 
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
-
-  /*--- Determine my rank and the number of ranks. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- Initialize the color vector of the elements. ---*/
   for(unsigned long i=0; i<nElem; ++i)
@@ -2326,11 +2168,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   vector<int> sizeRecv(size, 1);
 
   unsigned long nMessRecv;
-  MPI_Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(),
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(),
+                          MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send the data using nonblocking sends. ---*/
-  vector<MPI_Request> commReqs(max(nMessSend,nMessRecv));
+  vector<SU2_MPI::Request> commReqs(max(nMessSend,nMessRecv));
 
   nMessSend = 0;
   unsigned long indSend = 0;
@@ -2351,11 +2193,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   vector<int>           rankRecv(nMessRecv);
   nFacesRecv[0] = 0;
   for(unsigned long i=0; i<nMessRecv; ++i) {
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
     rankRecv[i] = status.MPI_SOURCE;
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -2446,10 +2288,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*--- Loop over the ranks to which I originally sent my face data.
         The return data contains information about the neighboring element. ---*/
   for(unsigned long i=0; i<nMessSend; ++i) {
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
     int sizeMess;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -2479,7 +2321,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Wild cards have been used in the communication, so
         synchronize the ranks to avoid problems.          ---*/
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #endif
 
@@ -2555,17 +2397,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*--- Check if the number of faces removed is identical to the number
         of faces stored in the map mapFaceToInd. ---*/
   nFacesLocOr -= nFacesLoc;
-  if(nFacesLocOr != mapFaceToInd.size()) {
-
-    cout << "Something wrong with periodic faces for which elements are "
-         << "their own neighbors" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if(nFacesLocOr != mapFaceToInd.size())
+    SU2_MPI::Error(string("Something wrong with periodic faces for which elements are ") +
+                   string("their own neighbors"), CURRENT_FUNCTION);
 
   /*--- Remove the invalidated faces, if any present. ---*/
   if( nFacesLocOr ) {
@@ -2917,11 +2751,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
 #ifdef HAVE_MPI
 
-      /*--- Determine the number of ranks and check if this is indeed
-            a parallel simulation.                       ---*/
-      int size;
-      MPI_Comm_size(MPI_COMM_WORLD, &size);
-
+      /*--- Check if this is indeed a parallel simulation. ---*/
       if(size > 1) {
 
         /*--- Allocate the memory for the size arrays in Allgatherv. ---*/
@@ -3248,16 +3078,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     }
 
     /*--- Check for negative Jacobians. ---*/
-    if(jacMin <= 0.0) {
-
-      cout << "Negative Jacobian found" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
+    if(jacMin <= 0.0)
+      SU2_MPI::Error("Negative Jacobian found", CURRENT_FUNCTION);
 
     /*--- Determine the ratio of the maximum and minimum value of the Jacobian.
           From this ratio, determine whether or not the element is considered to
@@ -3442,15 +3264,6 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                           const vector<FaceOfElementClass>   &localFaces,
                           map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel) {
 
-  /*--- Determine my rank and the number of ranks. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Initialize the time level of external elements to zero. ---*/
   for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
                                                  FI!=localFaces.end(); ++FI) {
@@ -3594,8 +3407,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     int nRankSend;
 
     vector<int> sizeSend(size, 1);
-    MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
-                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Create the vector of vectors of the global element ID's that
           will be received from other ranks. ---*/
@@ -3627,7 +3440,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /*--- Loop over the ranks from which I receive data during the actual
           exchange and send over the global element ID's. In order to avoid
           unnecessary communication, multiple entries are filtered out. ---*/
-    vector<MPI_Request> sendReqs(nRankRecv);
+    vector<SU2_MPI::Request> sendReqs(nRankRecv);
     map<int,int>::const_iterator MRI = mapRankToIndRecv.begin();
 
     for(int i=0; i<nRankRecv; ++i, ++MRI) {
@@ -3649,12 +3462,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
     for(int i=0; i<nRankSend; ++i) {
 
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
       sendRank[i] = status.MPI_SOURCE;
 
       int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
       sendElem[i].resize(sizeMess);
 
       SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG,
@@ -3667,7 +3480,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /* Complete the non-blocking sends. Synchronize the processors afterwards,
        because wild cards have been used in the communication. */
     SU2_MPI::Waitall(nRankRecv, sendReqs.data(), MPI_STATUSES_IGNORE);
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #endif
 
@@ -3723,8 +3536,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
             element, which contains the time level, is updated accordingly. ---*/
       for(int i=0; i<nRankRecv; ++i) {
 
-        MPI_Status status;
-        MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+        SU2_MPI::Status status;
+        SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
         int source = status.MPI_SOURCE;
 
         MRI = mapRankToIndRecv.find(source);
@@ -3812,7 +3625,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
       unsigned short globalSituationChanged = localSituationChanged;
 
 #ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
       SU2_MPI::Allreduce(&localSituationChanged, &globalSituationChanged,
                          1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
 #endif
@@ -3861,12 +3674,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
               const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
                     vector<su2double>                  &vwgt,
                     vector<su2double>                  &adjwgt){
-  /*--- Determine my rank. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Determine the maximum time level that occurs in the grid. ---*/
   unsigned short maxTimeLevel = 0;
@@ -4074,15 +3881,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       /* Determine the index of this edge in localFaces. */
       unsignedLong2T elemIDs(e0, e1);
       map<unsignedLong2T, unsigned long>::const_iterator MI = mapElemIDsToFaceInd.find(elemIDs);
-      if(MI == mapElemIDsToFaceInd.end()) {
-        cout << "Entry not found in map in function CPhysicalGeometry::ComputeFEMGraphWeights" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
+      if(MI == mapElemIDsToFaceInd.end())
+        SU2_MPI::Error("Entry not found in map", CURRENT_FUNCTION);
 
       unsigned long ind = MI->second;
 

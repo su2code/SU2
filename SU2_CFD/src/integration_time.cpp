@@ -1127,12 +1127,6 @@ void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver
       config->Tock(tick,"CLASSICAL_RK4_EXPLICIT",3);
       break;
     default:
-      cout << "Time integration scheme not implemented." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("Time integration scheme not implemented.", CURRENT_FUNCTION);
   }
 }
