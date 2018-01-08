@@ -141,6 +141,9 @@ def main():
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
     print("\n------------------------------ Begin Solver -----------------------------\n")
+  if options.with_MPI == True:
+    comm.Barrier()
+
   while (TimeIter < nTimeIter):
     # Time iteration preprocessing
     SU2Driver.PreprocessExtIter(TimeIter)
