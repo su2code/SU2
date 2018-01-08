@@ -35,6 +35,9 @@
 
 CSysMatrix::CSysMatrix(void) {
   
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
   /*--- Array initialization ---*/
 
   matrix            = NULL;
@@ -908,7 +911,7 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -996,7 +999,7 @@ void CSysMatrix::SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geome
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1144,14 +1147,10 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    cerr << "CSysMatrix::MatrixVectorProductTransposed(const CSysVector&, CSysVector): "
-    << "nVar values incompatible." << endl;
-    throw(-1);
+    SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
   if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    cerr << "CSysMatrix::MatrixVectorProductTransposed(const CSysVector&, CSysVector): "
-    << "nPoint and nBlk values incompatible." << endl;
-    throw(-1);
+    SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
 
   prod = su2double(0.0); // set all entries of prod to zero
@@ -1377,23 +1376,13 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::Jacobi_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Create vectors to hold the residual and the Matrix-Vector product
@@ -1627,23 +1616,13 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   su2double *Block_ij, omega = 1.0;
   long iPoint, jPoint;
   unsigned short iVar;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::ILU_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Create vectors to hold the residual and the Matrix-Vector product
@@ -1817,23 +1796,13 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   unsigned long iPoint, iVar;
   su2double omega = 1.0;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::LU_SGS_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Create vectors to hold the residual and the Matrix-Vector product
@@ -2138,14 +2107,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   long iElemLoop;
   su2double *block;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   if (size == SINGLE_NODE) {
     
     /*--- Jacobi preconditioning if there is no linelet ---*/
@@ -2237,17 +2198,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     
   }
   else {
-    
-    if (rank == MASTER_NODE) cout << "ERROR: Linelet not implemented in parallel." << endl;
-    
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-    
+    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
   }
   
 }

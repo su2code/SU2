@@ -338,15 +338,12 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
 
 void CFEM_Elasticity::ReadDV(CConfig *config) {
 
+  int rank = SU2_MPI::GetRank();
+  
   unsigned long index;
 
   string filename;
   ifstream properties_file;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Choose the filename of the design variable ---*/
 

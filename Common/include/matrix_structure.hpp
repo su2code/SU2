@@ -58,6 +58,8 @@ const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief mach
  */
 class CSysMatrix {
 private:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   unsigned long nPoint,   /*!< \brief Number of points in the grid. */
   nPointDomain,           /*!< \brief Number of points in the grid. */
   nVar,                   /*!< \brief Number of variables. */
