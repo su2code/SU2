@@ -35,6 +35,9 @@
 
 COutput::COutput(CConfig *config) {
 
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
 	unsigned short iDim, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
@@ -52,7 +55,7 @@ COutput::COutput(CConfig *config) {
   nGlobal_Line      = 0;
   nGlobal_BoundTria = 0;
   nGlobal_BoundQuad = 0;
-  
+
   /*--- Initialize pointers to NULL ---*/
   
   Coords = NULL;
@@ -518,10 +521,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #else
   
-  int rank, iProcessor, nProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+  int iProcessor, nProcessor = size;
+
   unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
   unsigned long nVertex_Surface = 0, nLocalVertex_Surface = 0;
   unsigned long MaxLocalVertex_Surface = 0;
@@ -893,11 +894,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file.close();
   
 #else
-  int rank, iProcessor, nProcessor;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+  int iProcessor, nProcessor = size;
+
   unsigned short nDim = geometry->GetnDim(), iMarker;
   su2double *Solution, *Coord;
   unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
@@ -1185,14 +1183,6 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
 void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   /*--- Flags identifying the types of files to be written. ---*/
   
   bool Wrt_Vol = config->GetWrt_Vol_Sol();
@@ -1262,14 +1252,6 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
 }
 
 void COutput::MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Flags identifying the types of files to be written. ---*/
   
@@ -1436,12 +1418,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 #else
   
   /*--- MPI preprocessing ---*/
-  int iProcessor, nProcessor, rank;
+  int iProcessor, nProcessor = size;
   unsigned long jPoint;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
   
   /*--- Local variables needed for merging the geometry with MPI. ---*/
@@ -1715,11 +1694,8 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
 #else
   
   /*--- MPI preprocessing ---*/
-  int iProcessor, nProcessor, rank;
+  int iProcessor, nProcessor = size;
   unsigned long jPoint;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   /*--- Local variables needed for merging the geometry with MPI. ---*/
   
@@ -1871,7 +1847,7 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
 void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   int iProcessor;
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   unsigned long iPoint, iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
@@ -1891,15 +1867,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   unsigned short kind_SU2 = config->GetKind_SU2();
   
   int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -1932,8 +1899,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
   }
   
   /*--- Find the max number of this element type among all
@@ -2242,8 +2208,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+        break;
     }
   }
   
@@ -2252,7 +2218,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
 void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   int iProcessor;
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   unsigned long iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
@@ -2268,14 +2234,6 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
   bool *Write_Elem = NULL;
   
   int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -2373,8 +2331,7 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
   }
   
   /*--- Find the max number of this element type among all
@@ -2543,8 +2500,7 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
         if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
     }
   }
   
@@ -2577,14 +2533,6 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   int *Conn_Elem = NULL;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
    element type in the entire mesh. In parallel, it is the number on only
@@ -2613,8 +2561,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Find the max number of this element type among all
@@ -2901,8 +2850,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+        break;
     }
   }
   
@@ -2910,7 +2859,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
 
 void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   
   unsigned long iNode, jNode;
   unsigned long iElem = 0;
@@ -2928,14 +2877,6 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   bool *Write_Elem = NULL;
   
   int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
@@ -3016,8 +2957,7 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
   }
   
   /*--- Find the max number of this element type among all
@@ -3170,8 +3110,7 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
     }
   }
 }
@@ -3198,13 +3137,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
   
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   bool grid_movement  = (config->GetGrid_Movement());
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -4723,13 +4655,6 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   /*--- Prepare send buffers for the conservative variables. Need to
    find the total number of conservative variables and also the
@@ -4976,9 +4901,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   /*--- MPI preprocessing ---*/
   
-  int rank, nProcessor, iProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  int nProcessor = size, iProcessor;
   
   /*--- Local variables needed for merging with MPI ---*/
   
@@ -5133,13 +5056,6 @@ void COutput::MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CS
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
 
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- We know the number of fields from reading the restart. ---*/
 
@@ -5538,11 +5454,6 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- The master node alone owns all data found in this routine. ---*/
   
   if (rank == MASTER_NODE) {
@@ -5557,11 +5468,6 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
 }
 
 void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- The master node alone owns all data found in this routine. ---*/
   if (rank == MASTER_NODE) {
@@ -5586,12 +5492,7 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
 }
 
 void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
+
   /*--- The master node alone owns all data found in this routine. ---*/
   if (rank == MASTER_NODE) {
     
@@ -5840,14 +5741,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool output_files         = true;
-  int rank;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
-#endif
-  
 
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
@@ -7462,7 +7355,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   unsigned short iMarker_Monitoring;
   ofstream Breakdown_file;
   
-  int rank = MASTER_NODE;
   bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
   bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
@@ -7476,10 +7368,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
   unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
   bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
@@ -8903,12 +8791,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
 void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
                               unsigned long iExtIter, unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -8923,7 +8805,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
@@ -9106,13 +8988,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
                                   unsigned long iExtIter, unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -9286,14 +9161,6 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
 void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -9447,12 +9314,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 void COutput::SetBaselineResult_Files_FEM(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
 
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   unsigned short iZone;
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -9601,11 +9462,6 @@ void COutput::SetBaselineResult_Files_FEM(CSolver **solver, CGeometry **geometry
 }
 
 void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned short iZone;
@@ -9727,7 +9583,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   RefLength, Alpha, CL_Inv,
   Xcoord_LeadingEdge = 0.0, Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
   Xcoord_TrailingEdge = 0.0, Ycoord_TrailingEdge = 0.0, Zcoord_TrailingEdge = 0.0,
-  Xcoord_LeadingEdge_ = 0.0,
+  Xcoord_LeadingEdge_ = 0.0, 
   Xcoord_TrailingEdge_ = 0.0, Ycoord_TrailingEdge_ = 0.0, Zcoord_TrailingEdge_ = 0.0,
   MaxDistance, Distance, Chord, Aux, Dihedral_Trailing;
   
@@ -9772,12 +9628,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
   }
   factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
-  
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   if (geometry->GetnDim() == 3) {
     
@@ -10394,12 +10244,6 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
   su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
   su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
   
-  int rank = MESH_0;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   Mach  = config->GetMach();
   Gamma = config->GetGamma();
   Beta = sqrt(Mach*Mach-1.0);
@@ -10506,7 +10350,7 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
 #else
   
   int nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
@@ -11035,14 +10879,8 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   su2double Beta_ij, Beta_ip1j, Beta_im1j, Beta_ijp1, Beta_ijm1, Filtered_Beta;
   su2double a, b, c, d;
 
-  int rank, iProcessor, nProcessor;
-  rank = MASTER_NODE;
-  nProcessor = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+  int iProcessor, nProcessor;
+  nProcessor = size;
 
 
   if (rank == MASTER_NODE && !config->GetDiscrete_Adjoint()) cout << endl << "Writing Surface Analysis file (surface_analysis.dat).";
@@ -12205,6 +12043,10 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    delete solver[iZone];
+  }
+  delete [] solver;
 }
 
 void COutput::WriteTurboPerfConvHistory(CConfig *config){
@@ -12218,7 +12060,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
   unsigned short nBladesRow, nStages;
   unsigned short iStage;
   nBladesRow = config->GetnMarker_Turbomachinery();
-  nStages    = int(nBladesRow/2);
+  nStages    = SU2_TYPE::Int(nBladesRow/2);
 
   cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
   cout << endl;
@@ -12465,12 +12307,6 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
 
   unsigned long iExtIter = config[val_iZone]->GetExtIter();
   su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
-  int rank;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
-#endif
   ofstream myfile;
   string spanwise_performance_filename;
 
@@ -12716,12 +12552,6 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
 
 void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) {
   
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
   ofstream mean_HB_file;
@@ -12817,12 +12647,6 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
                                        unsigned long iExtIter,
                                        unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short iZone, iVar;
   unsigned long iPoint;
   
@@ -12853,7 +12677,6 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
      if we are running in parallel. Force the use of SU2_SOL to merge and
      write the viz. files in this case to save overhead. ---*/
 
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
@@ -14672,11 +14495,6 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
 void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   unsigned long iPoint;
 
   /*--- Bool to distinguish between the FVM and FEM solvers. ---*/
@@ -14822,15 +14640,7 @@ void COutput::PrepareOffsets(CConfig *config, CGeometry *geometry) {
 }
 
 void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
+
   /*--- Flags identifying the types of files to be written. ---*/
   
   bool Wrt_Vol = config->GetWrt_Vol_Sol();
@@ -14884,14 +14694,6 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
 }
 
 void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- Flags identifying the types of files to be written. ---*/
 
@@ -14948,7 +14750,7 @@ void COutput::SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigne
 void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   unsigned long iProcessor;
-  unsigned short NODES_PER_ELEMENT;
+  unsigned short NODES_PER_ELEMENT = 0;
   unsigned long iPoint, jPoint, kPoint, nLocalPoint, nTotalPoint;
   unsigned long nElem_Total = 0, Global_Index;
   
@@ -14960,13 +14762,9 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -14995,8 +14793,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -15244,8 +15041,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15376,8 +15173,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -15519,8 +15316,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -15561,14 +15357,10 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   
   int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -15588,8 +15380,9 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -15843,8 +15636,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15981,8 +15774,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -16112,8 +15905,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       if (nParallel_BoundQuad > 0) Conn_BoundQuad_Par = Conn_Elem;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -16151,13 +15944,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
 
   bool isPeriodic;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -16287,8 +16076,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -16406,8 +16195,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the global IDs. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -16558,13 +16347,9 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 
   int VARS_PER_POINT = nVar_Par;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
 
@@ -16640,8 +16425,8 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
 
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -16753,10 +16538,10 @@ void COutput::SortOutputData_FEM(CConfig *config, CGeometry *geometry) {
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
    and the global IDs. ---*/
-
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
-
+  
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
+  
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
     if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
@@ -16904,14 +16689,10 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   int SendRecv, RecvFrom;
   
   bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -17121,8 +16902,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many nodes it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -17289,8 +17070,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nSends];
-  recv_req = new MPI_Request[nRecvs];
+  send_req = new SU2_MPI::Request[nSends];
+  recv_req = new SU2_MPI::Request[nRecvs];
   
   /*--- Launch the non-blocking recv's for the global IDs. ---*/
   
@@ -17387,8 +17168,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nSurf_Poin_Par;
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -17675,8 +17456,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -17775,8 +17556,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the global ID. ---*/
   
@@ -18019,8 +17800,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -18099,8 +17880,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nSends];
-  recv_req = new MPI_Request[nRecvs];
+  send_req = new SU2_MPI::Request[nSends];
+  recv_req = new SU2_MPI::Request[nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -18176,8 +17957,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nRecvs];
-  recv_req = new MPI_Request[nSends];
+  send_req = new SU2_MPI::Request[nRecvs];
+  recv_req = new SU2_MPI::Request[nSends];
   
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
@@ -18319,13 +18100,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   string filename;
   
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
+
   /*--- Retrieve filename from config ---*/
   
   if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
@@ -18365,7 +18140,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- All processors open the file. ---*/
@@ -18407,7 +18182,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file.flush();
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     
   }
@@ -18449,11 +18224,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   ofstream restart_file;
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
-
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Retrieve filename from config ---*/
 
@@ -18530,8 +18300,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
-    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, write the number of variables and points. ---*/
@@ -18568,7 +18337,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Parallel binary output using MPI I/O. ---*/
 
   MPI_File fhw;
-  MPI_Status status;
+  SU2_MPI::Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
   int ierr;
@@ -18598,11 +18367,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    if (rank == MASTER_NODE)
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, write the number of variables and points (i.e., cols and rows),
@@ -18751,11 +18516,6 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   su2double  *Vector                   = new su2double[nDim];
   su2double  *Surface_MassFlow         = new su2double[nMarker];
   su2double  *Surface_Mach             = new su2double[nMarker];
@@ -18814,6 +18574,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Vn                = Vn / Area;
           Pressure          = solver->node[iPoint]->GetPressure();
           SoundSpeed        = solver->node[iPoint]->GetSoundSpeed();
+
+          Mach = TotalPressure = Temperature = TotalTemperature = 0.0;
 
           if (compressible){
             Mach              = sqrt(Velocity2)/SoundSpeed;
@@ -19121,6 +18883,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalPressure;
   delete [] Surface_Area;
   delete [] Vector;
+  delete [] Surface_VelocityIdeal;
   delete [] Surface_MassFlow_Abs;
   
 }

@@ -275,24 +275,9 @@ unsigned short CGNSElementTypeClass::DetermineElementDimension(const int fn,
       return DetermineElementDimensionMixed(fn, iBase, iZone);
 
     default:
-      int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-      if(rank == MASTER_NODE) {
-        cout << endl << endl << "   !!! Error !!!" << endl;
-        cout << "Unsupported CGNS element type, " << elemType
-             << ", encountered. " << endl;
-        cout << " Now exiting..." << endl << endl;
-      }
-
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+      ostringstream message;
+      message << "Unsupported CGNS element type, " << elemType << ", encountered.";
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 
   /* Just return a value to avoid a compiler warning. The program should
@@ -401,25 +386,10 @@ void CGNSElementTypeClass::CreateDataElementType(
     case HEXA_125: CreateDataHEXA_125(VTK_Type, nPoly, nDOFs, SU2ToCGNS); break;
 
     default:
-      /* Print an error message that this element type is not supported. */
-      int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-      if(rank == MASTER_NODE) {
-        cout << endl << endl << "   !!! Error !!!" << endl;
-        cout << "CGNS element type " << typeElem << " not supported." << endl;
-        cout << " Now exiting..." << endl << endl;
-      }
-
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      /* Print an error message that this element type is not supported and exit. */
+      ostringstream message;
+      message << "CGNS element type " << typeElem << " not supported.";
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
 }
 

@@ -288,11 +288,11 @@ public:
    * \param[in] globalTree Whether or not a global tree must be built. If false
                            a local ADT is built.
    */
-  su2_adtPointsOnlyClass(unsigned short      nDim,
-                         unsigned long       nPoints,
-                         const su2double     *coor,
-                         const unsigned long *pointID,
-                         const bool          globalTree);
+  su2_adtPointsOnlyClass(unsigned short nDim,
+                         unsigned long  nPoints,
+                         su2double      *coor,
+                         unsigned long  *pointID,
+                         const bool     globalTree);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
@@ -372,12 +372,12 @@ public:
    * \param[in]     val_markerID Markers of the local elements.
    * \param[in]     val_elemID   Local element IDs of the elements. 
    */
-  su2_adtElemClass(unsigned short               val_nDim,
-                   const vector<su2double>      &val_coor,
-                         vector<unsigned long>  &val_connElem,
-                   const vector<unsigned short> &val_VTKElem,
-                   const vector<unsigned short> &val_markerID,
-                   const vector<unsigned long>  &val_elemID);
+  su2_adtElemClass(unsigned short         val_nDim,
+                   vector<su2double>      &val_coor,
+                   vector<unsigned long>  &val_connElem,
+                   vector<unsigned short> &val_VTKElem,
+                   vector<unsigned short> &val_markerID,
+                   vector<unsigned long>  &val_elemID);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
