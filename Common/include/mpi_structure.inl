@@ -191,6 +191,11 @@ inline void CBaseMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendt
   MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
 }
 
+inline void CBaseMPIWrapper::Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
+                                            Datatype datatype, Op op, Comm comm) {
+  MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);
+}
+
 inline void CBaseMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {
   MPI_Waitany(nrequests, request, index, status);
@@ -379,6 +384,13 @@ inline void CMediMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendt
   AMPI_Sendrecv(sendbuf,sendcnt,convertDatatype(sendtype),dest,sendtag,recvbuf,recvcnt,convertDatatype(recvtype),source,recvtag,convertComm(comm),status);
 }
 
+inline void CMediMPIWrapper::Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
+                                            Datatype datatype, Op op, Comm comm) {
+  if(datatype == MPI_DOUBLE)
+    Error("Reduce_scatter not possible with MPI_DOUBLE", CURRENT_FUNCTION);
+  MPI_Reduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, comm);
+}
+
 inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {
   AMPI_Waitany(nrequests, request, index, status);
@@ -494,6 +506,11 @@ inline void CBaseMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, Datatype sendt
                                   Comm comm, Status *status){
   CopyData(sendbuf, recvbuf, sendcnt, sendtype);
 
+}
+
+inline void CBaseMPIWrapper::Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
+                                            Datatype datatype, Op op, Comm comm) {
+  CopyData(sendbuf, recvbuf, recvcounts[0], datatype);
 }
 
 inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sendtype,

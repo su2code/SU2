@@ -1210,8 +1210,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   int nRankRecv;
   vector<int> sizeRecv(size, 1);
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send out the messages with the global node numbers. Use nonblocking
         sends to avoid deadlock. ---*/
@@ -1423,8 +1423,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     }
   }
 
-  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
   sendReqs.resize(nRankSend);
@@ -1732,8 +1732,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       }
     }
 
-    MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
     sendReqs.resize(nRankSend);
@@ -1830,8 +1830,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       }
     }
 
-    MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
     sendReqs.resize(nRankSend);
@@ -2168,8 +2168,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   vector<int> sizeRecv(size, 1);
 
   unsigned long nMessRecv;
-  MPI_Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(),
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(),
+                          MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send the data using nonblocking sends. ---*/
   vector<SU2_MPI::Request> commReqs(max(nMessSend,nMessRecv));
@@ -3400,8 +3400,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     int nRankSend;
 
     vector<int> sizeSend(size, 1);
-    MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
-                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     /*--- Create the vector of vectors of the global element ID's that
           will be received from other ranks. ---*/
