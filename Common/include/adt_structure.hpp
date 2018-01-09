@@ -222,10 +222,10 @@ public:
    * \param[in] coor    Coordinates of the local points.
    * \param[in] pointID Local point IDs of the local points. 
    */
-  su2_adtPointsOnlyClass(unsigned short      nDim,
-                         unsigned long       nPoints,
-                         const su2double     *coor,
-                         const unsigned long *pointID);
+  su2_adtPointsOnlyClass(unsigned short nDim,
+                         unsigned long  nPoints,
+                         su2double      *coor,
+                         unsigned long  *pointID);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
