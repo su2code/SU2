@@ -35,6 +35,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
+import sys
 from optparse import OptionParser	# use a parser for configuration
 import pysu2			            # imports the SU2 wrapped module
 from math import *
@@ -141,6 +142,7 @@ def main():
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
   if rank == 0:
     print("\n------------------------------ Begin Solver -----------------------------\n")
+  sys.stdout.flush()
   if options.with_MPI == True:
     comm.Barrier()
 
