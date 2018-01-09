@@ -702,7 +702,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPressure_Sensor(CGeometry *geometry, CConfig *config);
+  virtual void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -718,7 +718,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetDucros_Sensor(CGeometry *geometry, CConfig *config);
+  virtual void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \author H. Kline
@@ -4611,7 +4611,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPressure_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute Ducros Sensor for Roe Dissipation.
@@ -4619,7 +4619,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDucros_Sensor(CGeometry *geometry, CConfig *config);
+  void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Parallelization of SetPressure_Sensor.
@@ -6881,7 +6881,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPressure_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Parallelization of SetPressure_Sensor.
@@ -9646,7 +9646,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPressure_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
@@ -10182,7 +10182,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPressure_Sensor(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.

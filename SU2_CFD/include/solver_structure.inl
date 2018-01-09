@@ -786,9 +786,9 @@ inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
 
-inline void CSolver::SetPressure_Sensor(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetDucros_Sensor(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) { }
 
