@@ -4284,7 +4284,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetPressure_Sensor(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -4294,7 +4294,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (roe_low_dissipation){
     SetRoe_Dissipation(geometry, config);
     if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
-      SetDucros_Sensor(geometry, config);
+      SetUpwind_Ducros_Sensor(geometry, config);
     }
   }
   
@@ -5211,7 +5211,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   
 }
 
-void CEulerSolver::SetPressure_Sensor(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   su2double Pressure_i = 0.0, Pressure_j = 0.0;
@@ -5267,7 +5267,7 @@ void CEulerSolver::SetPressure_Sensor(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolver::SetDucros_Sensor(CGeometry *geometry, CConfig *config){
+void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
   
   unsigned long iPoint, jPoint;
   unsigned short iNeigh, iDim;
@@ -15860,7 +15860,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetPressure_Sensor(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -15870,7 +15870,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (roe_low_dissipation){
     SetRoe_Dissipation(geometry, config);
     if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
-      SetDucros_Sensor(geometry, config);
+      SetUpwind_Ducros_Sensor(geometry, config);
     }
   }
   
