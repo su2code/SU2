@@ -3490,7 +3490,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if (Kind_Regime == INCOMPRESSIBLE) {    
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_Solver != EULER)) {
     if (Kind_ViscosityModel == SUTHERLAND) {
       if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS)) {
         if (rank == MASTER_NODE) {
