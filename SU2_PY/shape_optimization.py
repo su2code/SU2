@@ -154,13 +154,26 @@ def shape_optimization( filename                           ,
     # Optimize
     if optimization == 'SLSQP':
       SU2.opt.SLSQP(project,x0,xb,its,accu)
-    if optimization == 'CG':
+    elif optimization == 'CG':
       SU2.opt.CG(project,x0,xb,its,accu)
-    if optimization == 'BFGS':
+    elif optimization == 'BFGS':
       SU2.opt.BFGS(project,x0,xb,its,accu)
-    if optimization == 'POWELL':
+    elif optimization == 'POWELL':
       SU2.opt.POWELL(project,x0,xb,its,accu)
-
+    elif optimization=='PYOPTSLSQP':
+      print (" NOTE: pyopt_slsqp requires installation of pyopt and its dependencies.")
+      SU2.opt.PYOPT(project,x0,xb,its,accu, 'SLSQP')
+    elif optimization=='SNOPT':
+      print (" NOTE: pyopt_snopt requires installation of pyopt, snopt, and their dependencies.")
+      SU2.opt.PYOPT(project,x0,xb,its,accu, 'SNOPT')
+    elif optimization=='SNOPT2':
+      print (" NOTE: pyopt_snopt requires installation of pyopt, snopt, and their dependencies.")
+      SU2.opt.PYOPT(project,x0,xb,its,accu, 'SNOPT2')
+    elif optimization=='NLPQLP':
+      print (" NOTE: pyopt_snopt requires installation of pyopt, snopt, and their dependencies.")
+      SU2.opt.PYOPT(project,x0,xb,its,accu, 'NLPQLP')
+    else:
+      SU2.opt.SLSQP(project,x0,xb,its,accu)
 
     # rename project file
     if projectname:

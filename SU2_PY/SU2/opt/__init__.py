@@ -5,3 +5,6 @@ from .scipy_tools import scipy_slsqp as SLSQP
 from .scipy_tools import scipy_cg as CG
 from .scipy_tools import scipy_bfgs as BFGS
 from .scipy_tools import scipy_powell as POWELL
+
+from .pyopt_tools import pyopt_optimization as PYOPT
+
