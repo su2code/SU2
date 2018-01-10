@@ -5398,6 +5398,7 @@ void CHBMultiZoneDriver::Run() {
   if (rank == MASTER_NODE)
       SetAvgTurboPerformance_HB(iTimeInstance);
 
+
 //  /*--- Print residuals ---*/
 cout << "===========================" << endl;
 cout << "EXT_ITER: " <<  ExtIter << endl;
@@ -5507,9 +5508,9 @@ void CHBMultiZoneDriver::SetTurboPerformance(unsigned short iTimeInstance){
   jTimeInstance = iTimeInstance;
   for (iGeomZone = 1; iGeomZone < nGeomZones; iGeomZone++) {
     jTimeInstance += nTimeInstances;
-      transfer_container[jTimeInstance][iTimeInstance]->GatherAverageValues(solver_container[jTimeInstance][MESH_0][FLOW_SOL],
-          solver_container[iTimeInstance][MESH_0][FLOW_SOL], iGeomZone);
-    }
+    transfer_container[jTimeInstance][iTimeInstance]->GatherAverageValues(solver_container[jTimeInstance][MESH_0][FLOW_SOL],
+        solver_container[iTimeInstance][MESH_0][FLOW_SOL], iGeomZone);
+  }
 
   /* --- compute turboperformance for each stage and the global machine ---*/
 
@@ -5519,7 +5520,7 @@ void CHBMultiZoneDriver::SetTurboPerformance(unsigned short iTimeInstance){
 
 void CHBMultiZoneDriver::SetAvgTurboPerformance_HB(unsigned short iTimeInstance){
 
-  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++)
+//  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++)
     output->ComputeAvgTurboPerformance_HB(config_container[ZONE_0], nTimeInstances, iGeomZone);
 
   output->WriteHBTurbomachineryOutput(solver_container, config_container, nTotTimeInstances, iTimeInstance);
@@ -6062,7 +6063,7 @@ void CDiscAdjHBMultiZone::SetObjFunction(){
 //TODO finish generalize this with HB outputs
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case ENTROPY_GENERATION:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGenAvg_HB(config_container[ZONE_0]->GetnMarker_TurboPerformance()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGenAvg_HB());
     break;
   case FLOW_ANGLE_OUT:
     solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));

@@ -35,7 +35,7 @@
 
 inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
-inline su2double COutput::GetEntropyGenAvg_HB(unsigned short iMarkerTP) { return EntropyGenAverage_HB[iMarkerTP]; }
+inline su2double COutput::GetEntropyGenAvg_HB() { return EntropyGenAverage_HB; }
 
 inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 

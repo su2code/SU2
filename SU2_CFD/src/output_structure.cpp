@@ -289,9 +289,6 @@ COutput::COutput(CConfig *config) {
       }
     }
 
-    EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery() + 1]();
-    TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery() + 1]();
-
   }
 }
 
@@ -410,8 +407,6 @@ COutput::~COutput(void) {
     delete [] NuFactorIn;
     delete [] NuFactorOut;
 
-    if (EntropyGenAverage_HB != NULL)      delete[] EntropyGenAverage_HB;
-    if (TotPressureLossAverage_HB != NULL) delete[] TotPressureLossAverage_HB;
   }
 }
 
@@ -4532,7 +4527,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       /*--- Output a file with the forces breakdown. ---*/
       
-      if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+      if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE && !turbo ) {
         SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iZone, nZone, output_files);
       }
       
@@ -5121,7 +5116,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
 //                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
-                SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB[4]);
+                SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
