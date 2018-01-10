@@ -783,12 +783,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
      time level to guarantee a good gemm performance. */
   unsigned long nFullChunks = 0, nPartialChunks = 0;
   for(unsigned short tLev=0; tLev<nTimeLevels; ++tLev) {
-    for(unsigned long j=1; j<=nInternalElem[tLev].size(); ++j) {
+    for(unsigned long j=1; j<nInternalElem[tLev].size(); ++j) {
       nFullChunks += nInternalElem[tLev][j]/nElemSimul;
       if(nInternalElem[tLev][j]%nElemSimul) ++nPartialChunks;
     }
 
-    for(unsigned long j=1; j<=nCommElem[tLev].size(); ++j) {
+    for(unsigned long j=1; j<nCommElem[tLev].size(); ++j) {
       nFullChunks += nCommElem[tLev][j]/nElemSimul;
       if(nCommElem[tLev][j]%nElemSimul) ++nPartialChunks;
     }
@@ -815,11 +815,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /* Put nInternalElem and nCommElem in cumulative storage format. */
   for(unsigned short tLev=0; tLev<nTimeLevels; ++tLev) {
     if( tLev ) nInternalElem[tLev][0] = nCommElem[tLev-1].back();
-    for(unsigned long j=1; j<=nInternalElem[tLev].size(); ++j)
+    for(unsigned long j=1; j<nInternalElem[tLev].size(); ++j)
       nInternalElem[tLev][j] += nInternalElem[tLev][j-1];
 
     nCommElem[tLev][0] = nInternalElem[tLev].back();
-    for(unsigned long j=1; j<=nCommElem[tLev].size(); ++j)
+    for(unsigned long j=1; j<nCommElem[tLev].size(); ++j)
       nCommElem[tLev][j] += nCommElem[tLev][j-1];
   }
 
