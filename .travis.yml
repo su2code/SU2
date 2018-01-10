@@ -16,7 +16,8 @@ notifications:
   
 branches:
     only:
-        - develop  
+        - develop
+
 
 python:
     - 2.7
