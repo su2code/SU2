@@ -3594,6 +3594,13 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	su2double Max_Sensor, threshold;
 	su2double *Sensor = new su2double[geometry->GetnElem()];
 	unsigned long ip_0, ip_1, ip_2, ip_3, iElem, nElem_real;
+  
+	if (max_elem > geometry->GetnElem()) {
+		cout << "WARNING: Attempted to adapt " << max_elem << " cells," << endl;
+		cout << "  which is greater than the total number of cells, ";
+		cout << geometry->GetnElem() << "." << endl;
+		cout << "  Did you set the option NEW_ELEMS in the *.cfg file?" << endl;
+  }
 	
 	/*--- Compute the the adaptation index at each element ---*/
 	Max_Sensor = 0.0;
@@ -3618,7 +3625,7 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	/*--- Selection of the elements to be adapted ---*/
 	threshold = 0.999;
 	nElem_real = 0;
-	while (nElem_real <= max_elem) {
+	while (nElem_real <= max_elem && threshold >= 0) {
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 			if ( Sensor[iElem] >= threshold && !geometry->elem[iElem]->GetDivide() ) {
 				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nElem_real = nElem_real + 3;
@@ -3628,6 +3635,17 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 				if (nElem_real >= max_elem) break;
 			}	
 		threshold = threshold - 0.001;
+	}
+
+	if (threshold < 0) {
+		cout << "WARNING: Tried to find " << max_elem;
+		cout << " cells suitable for adaptation, but only found ";
+		cout << nElem_real << endl;
+		cout << "The following cell types are currently adaptable: " << endl;
+		cout << "  + triangles" << endl;
+		cout << "  + quadrilaterals" << endl;
+		cout << "  + tetrahedrons" << endl;
+		cout << "Your grid may have too high a percentage of other types." << endl;
 	}
 	
 	cout << "Number of elements to adapt: " << nElem_real << endl;
