@@ -35,9 +35,9 @@
 #  Imports
 # ----------------------------------------------------------------------
 
+from __future__ import division, print_function, absolute_import
 from optparse import OptionParser	# use a parser for configuration
 import SU2				# imports SU2 python tools
-
 import pysu2			# imports the SU2 wrapped module
 
 # -------------------------------------------------------------------

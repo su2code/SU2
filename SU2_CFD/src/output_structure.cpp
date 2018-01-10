@@ -35,6 +35,9 @@
 
 COutput::COutput(CConfig *config) {
 
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
 	unsigned short iDim, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
@@ -52,7 +55,7 @@ COutput::COutput(CConfig *config) {
   nGlobal_Line      = 0;
   nGlobal_BoundTria = 0;
   nGlobal_BoundQuad = 0;
-  
+
   /*--- Initialize pointers to NULL ---*/
   
   Coords = NULL;
@@ -81,7 +84,7 @@ COutput::COutput(CConfig *config) {
   
   /*--- Initialize pointers to NULL ---*/
   
-  Conn_Line_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
+  Conn_BoundLine_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
   Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
   Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
   
@@ -505,10 +508,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #else
   
-  int rank, iProcessor, nProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+  int iProcessor, nProcessor = size;
+
   unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
   unsigned long nVertex_Surface = 0, nLocalVertex_Surface = 0;
   unsigned long MaxLocalVertex_Surface = 0;
@@ -874,11 +875,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file.close();
   
 #else
-  int rank, iProcessor, nProcessor;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+  int iProcessor, nProcessor = size;
+
   unsigned short nDim = geometry->GetnDim(), iMarker;
   su2double *Solution, *Coord;
   unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
@@ -1166,14 +1164,6 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
 void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   /*--- Flags identifying the types of files to be written. ---*/
   
   bool Wrt_Vol = config->GetWrt_Vol_Sol();
@@ -1339,12 +1329,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 #else
   
   /*--- MPI preprocessing ---*/
-  int iProcessor, nProcessor, rank;
+  int iProcessor, nProcessor = size;
   unsigned long jPoint;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
   
   /*--- Local variables needed for merging the geometry with MPI. ---*/
@@ -1559,15 +1546,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   int *Conn_Elem = NULL;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
-  
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
    element type in the entire mesh. In parallel, it is the number on only
@@ -1599,8 +1577,10 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      nLocalElem = 0;
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Find the max number of this element type among all
@@ -1909,8 +1889,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+        break;
     }
   }
   
@@ -1943,14 +1923,6 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   int *Conn_Elem = NULL;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
    element type in the entire mesh. In parallel, it is the number on only
@@ -1979,8 +1951,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Find the max number of this element type among all
@@ -2267,8 +2240,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
       default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
+        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+        break;
     }
   }
   
@@ -2296,13 +2269,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
   
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   bool grid_movement  = (config->GetGrid_Movement());
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -2355,6 +2321,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Cont()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Disc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+    case DISC_ADJ_FEM: FirstIndex = ADJFEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     default: SecondIndex = NONE; ThirdIndex = NONE; break;
   }
   
@@ -2449,6 +2416,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())){
+      iVar_FEA_Extra = nVar_Total; nVar_Total += 2;
+    }
+
     if (config->GetExtraOutput()) {
       if (Kind_Solver == RANS) {
         iVar_Extra  = nVar_Total; nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables(); nVar_Total += nVar_Extra;
@@ -3641,6 +3612,64 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())) {
+      /*--- Loop over this partition to collect the current variable ---*/
+
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+        /*--- Check for halos & write only if requested ---*/
+
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+
+          Buffer_Send_Var[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetGeometry_CrossTerm_Derivative(0);
+          Buffer_Send_Res[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetGeometry_CrossTerm_Derivative(1);
+          if (geometry->GetnDim() == 3)
+            Buffer_Send_Vol[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetGeometry_CrossTerm_Derivative(2);
+          jPoint++;
+        }
+      }
+
+      /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      if (nDim == 3)
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      if (nDim == 3)
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
+
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_FEA_Extra;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+            /*--- Get global index, then loop over each variable and store ---*/
+
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            if (nDim == 3)
+              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+            jPoint++;
+          }
+
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+    }
+
     if (config->GetExtraOutput()) {
       
       for (jVar = 0; jVar < nVar_Extra; jVar++) {
@@ -3806,9 +3835,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
   /*--- MPI preprocessing ---*/
   
-  int rank, nProcessor, iProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  int nProcessor = size, iProcessor;
   
   /*--- Local variables needed for merging with MPI ---*/
   
@@ -3963,6 +3990,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   ofstream restart_file;
   ofstream meta_file;
   string filename, meta_filename;
@@ -3972,11 +4000,13 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
 
   /*--- Retrieve filename from config ---*/
   
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+  if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
     filename = config->GetRestart_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
+  } else if (disc_adj_fem){
+    filename = config->GetRestart_AdjFEMFileName();
   } else {
     filename = config->GetRestart_FlowFileName();
   }
@@ -3990,7 +4020,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
+  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
@@ -4012,7 +4042,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
   
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
-    if ( Kind_Solver == FEM_ELASTICITY )
+  if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == DISC_ADJ_FEM))
       restart_file << "\t\"Displacement_" << iVar+1<<"\"";
     else
       restart_file << "\t\"Conservative_" << iVar+1<<"\"";
@@ -4109,6 +4139,13 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       }
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())){
+      if (geometry->GetnDim() == 2)
+        restart_file << "\t\"CrossTerm_1\"\t\"CrossTerm_2\"";
+      if (geometry->GetnDim() == 3)
+        restart_file << "\t\"CrossTerm_1\"\t\"CrossTerm_2\"\t\"CrossTerm_3\"";
+    }
+
     
     if (config->GetExtraOutput()) {
       string *headings = NULL;
@@ -4172,11 +4209,6 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- The master node alone owns all data found in this routine. ---*/
   
   if (rank == MASTER_NODE) {
@@ -4191,11 +4223,6 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
 }
 
 void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- The master node alone owns all data found in this routine. ---*/
   if (rank == MASTER_NODE) {
@@ -4220,12 +4247,7 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
 }
 
 void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
+
   /*--- The master node alone owns all data found in this routine. ---*/
   if (rank == MASTER_NODE) {
     
@@ -4465,6 +4487,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
+  bool fluid_structure = (config[val_iZone]->GetFSI_Simulation());
   unsigned long iIntIter    = config[val_iZone]->GetIntIter();
   unsigned long iExtIter    = config[val_iZone]->GetExtIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
@@ -4472,16 +4495,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool output_files         = true;
-  int rank;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
-#endif
-  
-  
-  if (!disc_adj) {
+
+  if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
     if ((config[val_iZone]->GetFixed_CL_Mode()) &&
         (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 < iExtIter)) {
@@ -4603,7 +4618,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
-    bool fem = (config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY);          // FEM structural solver.
+    bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
+            (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
     bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
     bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
@@ -4651,7 +4667,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     *residual_adjturbulent = NULL;
     su2double *residual_wave         = NULL;
     su2double *residual_fea          = NULL;
-    su2double *residual_fem       = NULL;
+    su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
@@ -4690,6 +4706,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (fem) {
       if (linear_analysis) nVar_FEM = nDim;
       if (nonlinear_analysis) nVar_FEM = 3;
+
+      if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) nVar_FEM = nDim;
+
     }
     
     /*--- Adjoint problem variables ---*/
@@ -4708,7 +4727,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_transition = new su2double[nVar_Trans];
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
-    residual_fem     = new su2double[nVar_FEM];
+    residual_fem        = new su2double[nVar_FEM];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
@@ -4970,7 +4989,23 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         break;
-        
+
+      case DISC_ADJ_FEM:
+
+        /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
+
+        Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+
+        /*--- Residuals: ---*/
+        /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
+        /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
+         for (iVar = 0; iVar < nVar_FEM; iVar++) {
+           residual_fem[iVar] = solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetRes_RMS(iVar);
+         }
+
+        break;
+
+
     }
     
     /*--- Header frequency ---*/
@@ -5238,10 +5273,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             break;
-            
+
+          case DISC_ADJ_FEM:
+
+            SPRINTF (direct_coeff, ", %12.10f", Total_CFEM);
+            if (nDim == 2) {
+              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy, dummy, dummy);
+            }
+            else {
+              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]), dummy, dummy);
+            }
+
+            break;
+
         }
       }
-      if (val_iZone == 0){
+      if (val_iZone == 0 || fluid_structure){
         /*--- Write the screen header---*/
         if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
             (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
@@ -5486,9 +5533,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
               }
               else if (nonlinear_analysis) {
-                cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
-              }
-              break;
+                switch (config[val_iZone]->GetResidual_Criteria_FEM()) {
+                  case RESFEM_RELATIVE:
+                    cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                    break;
+                  case RESFEM_ABSOLUTE:
+                    cout << "    Res[UTOL-A]" << "    Res[RTOL-A]" << "    Res[ETOL-A]"  << "   CFEM(Total)"<<  endl;
+                    break;
+                  default:
+                    cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                    break;
+                }
+            }
+           break;
 
             case ADJ_EULER :              case ADJ_NAVIER_STOKES :
             case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
@@ -5579,7 +5636,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
       /*--- Write the solution on the screen and history file ---*/
       
-      if (val_iZone == 0){
+      if (val_iZone == 0 || fluid_structure){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5636,8 +5693,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
           /*--- Write screen output ---*/
-
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5720,7 +5776,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           /*--- Write screen output ---*/
 
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5782,7 +5838,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_wave[0]);
@@ -5797,7 +5853,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_heat[0]);
@@ -5832,6 +5888,26 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout << endl;
           break;
           
+        case DISC_ADJ_FEM:
+
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+
+          cout.width(15); cout << log10(residual_fem[0]);
+          cout.width(15); cout << log10(residual_fem[1]);
+          if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
+
+          cout.precision(4);
+          cout.setf(ios::scientific, ios::floatfield);
+          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+
+          cout.precision(4);
+          cout.setf(ios::scientific, ios::floatfield);
+          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+
+          cout << endl;
+          break;
+
         case ADJ_EULER :              case ADJ_NAVIER_STOKES :
         case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
           
@@ -5839,7 +5915,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5883,7 +5959,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0){
+          if (val_iZone == 0 || fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6028,7 +6104,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   unsigned short iMarker_Monitoring;
   ofstream Breakdown_file;
   
-  int rank = MASTER_NODE;
   bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
   bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
@@ -6042,10 +6117,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   unsigned short Kind_Turb_Model = config[val_iZone]->GetKind_Turb_Model();
   unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
   bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
@@ -7469,12 +7540,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
 void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
                               unsigned long iExtIter, unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -7489,7 +7554,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
@@ -7671,14 +7736,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -7831,11 +7888,6 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 }
 
 void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned short iZone;
@@ -7949,17 +8001,17 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   
   short iSection, nSection;
   unsigned long iVertex, iPoint, Trailing_Point;
-  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *CPressure,
+  su2double *Plane_P0, *Plane_P0_, *Plane_Normal, *Plane_Normal_, *CPressure,
   Force[3], ForceInviscid[3], MomentInviscid[3] =
   { 0.0, 0.0, 0.0 }, MomentDist[3] = { 0.0, 0.0, 0.0 }, RefDensity,
   RefPressure, RefArea, *Velocity_Inf, Gas_Constant, Mach2Vel,
   Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
-  RefLength, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv,
+  RefLength, Alpha, CL_Inv,
   Xcoord_LeadingEdge = 0.0, Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
   Xcoord_TrailingEdge = 0.0, Ycoord_TrailingEdge = 0.0, Zcoord_TrailingEdge = 0.0,
-  Xcoord_LeadingEdge_ = 0.0, Ycoord_LeadingEdge_ = 0.0, Zcoord_LeadingEdge_ = 0.0,
+  Xcoord_LeadingEdge_ = 0.0, 
   Xcoord_TrailingEdge_ = 0.0, Ycoord_TrailingEdge_ = 0.0, Zcoord_TrailingEdge_ = 0.0,
-  MaxDistance, Distance, Chord, Aux, Dihedral_Leading, Dihedral_Trailing;
+  MaxDistance, Distance, Chord, Aux, Dihedral_Trailing;
   
   su2double B, Y, C_L, C_L0, Elliptic_Spanload;
   
@@ -7976,6 +8028,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Plane_P0 = new su2double[3];
   Plane_P0_ = new su2double[3];
   Plane_Normal = new su2double[3];
+  Plane_Normal_ = new su2double[3];
   CPressure = new su2double[geometry->GetnPoint()];
   
   /*--- Compute some reference quantities and necessary values ---*/
@@ -7988,7 +8041,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Origin = config->GetRefOriginMoment(0);
   RefLength = config->GetRefLength();
   Alpha = config->GetAoA() * PI_NUMBER / 180.0;
-  Beta = config->GetAoS() * PI_NUMBER / 180.0;
   
   if (grid_movement) {
     Gas_Constant = config->GetGas_ConstantND();
@@ -8002,12 +8054,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
   }
   factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
-  
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   if (geometry->GetnDim() == 3) {
     
@@ -8029,42 +8075,64 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
       Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
       
       if (config->GetGeo_Description() == FUSELAGE) {
-		      Plane_Normal[0] = 1.0;
-		      Plane_P0[0] = config->GetLocationStations(iSection);
+        Plane_Normal[0] = 1.0;
+        Plane_P0[0] = config->GetLocationStations(iSection);
       }
-      
-      if (config->GetGeo_Description() == WING) {
+      else if (config->GetGeo_Description() == NACELLE) {
+        Plane_Normal[0] = 0.0;
+        Plane_Normal[1] = -sin(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+        Plane_Normal[2] = cos(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+      }
+      else {
         Plane_Normal[1] = 1.0;
         Plane_P0[1] = config->GetLocationStations(iSection);
       }
-      
+
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
-      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
-                                       1E6, CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+                                       CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
                                        CPressure_Airfoil, true, config);
       
       if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
-        cout << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+        if ((config->GetGeo_Description() == FUSELAGE) || (config->GetGeo_Description() == WING))
+          cout << endl << "Please check the config file, the section (" << Plane_P0[0] <<", " << Plane_P0[1] <<", " << Plane_P0[2] << ") has not been detected." << endl;
+        if (config->GetGeo_Description() == NACELLE)
+          cout << endl << "Please check the config file, the section (" << Plane_Normal[0] <<", " << Plane_Normal[1] <<", " << Plane_Normal[2] << ") has not been detected." << endl;
       }
       
       
       /*--- Compute dihedral using a step in the station value ---*/
       
-      Plane_P0_[0] = 0.0; Plane_P0_[1] = 0.0; Plane_P0_[2] = 0.0;
-      
+      Plane_P0_[0] = 0.0; Plane_Normal_[0] = 0.0;
+      Plane_P0_[1] = 0.0; Plane_Normal_[1] = 0.0;
+      Plane_P0_[2] = 0.0; Plane_Normal_[2] = 0.0;
+
       if (config->GetGeo_Description() == FUSELAGE) {
-		      if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
+        Plane_Normal_[0] = 1.0;
+        if (iSection == 0) Plane_P0_[0] = config->GetLocationStations(iSection) + 0.01;
         else Plane_P0_[0] = config->GetLocationStations(iSection) - 0.01;
       }
-      
-      if (config->GetGeo_Description() == WING) {
+      else if (config->GetGeo_Description() == NACELLE) {
+        if (iSection == 0) {
+          Plane_Normal_[0] = 0.0;
+          Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+          Plane_Normal_[2] = cos((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+        }
+        else {
+          Plane_Normal_[0] = 0.0;
+          Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+          Plane_Normal_[2] = cos((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+        }
+      }
+      else {
+        Plane_Normal_[1] = 1.0;
         if (iSection == 0) Plane_P0_[1] = config->GetLocationStations(iSection) + 0.01;
         else Plane_P0_[1] = config->GetLocationStations(iSection) - 0.01;
       }
-      
-      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal, -1E6,
-                                       1E6, CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
+   
+      geometry->ComputeAirfoil_Section(Plane_P0_, Plane_Normal_, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6,
+                                       CPressure, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_,
                                        CPressure_Airfoil_, true, config);
       
       /*--- Output the pressure on each section (tecplot format) ---*/
@@ -8095,8 +8163,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
           if (Xcoord_Airfoil_[iVertex] < Xcoord_LeadingEdge_) {
             Xcoord_LeadingEdge_ = Xcoord_Airfoil_[iVertex];
-            Ycoord_LeadingEdge_ = Ycoord_Airfoil_[iVertex];
-            Zcoord_LeadingEdge_ = Zcoord_Airfoil_[iVertex];
           }
           if (Xcoord_Airfoil_[iVertex] > Xcoord_TrailingEdge_) {
             Xcoord_TrailingEdge_ = Xcoord_Airfoil_[iVertex];
@@ -8106,11 +8172,9 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         }
         
         if (iSection == 0) {
-          Dihedral_Leading = atan((Zcoord_LeadingEdge_ - Zcoord_LeadingEdge) / (Ycoord_LeadingEdge_ - Ycoord_LeadingEdge))*180/PI_NUMBER;
           Dihedral_Trailing = atan((Zcoord_TrailingEdge_ - Zcoord_TrailingEdge) / (Ycoord_TrailingEdge_ - Ycoord_TrailingEdge))*180/PI_NUMBER;
         }
         else {
-          Dihedral_Leading = atan((Zcoord_LeadingEdge - Zcoord_LeadingEdge_) / (Ycoord_LeadingEdge - Ycoord_LeadingEdge_))*180/PI_NUMBER;
           Dihedral_Trailing = atan((Zcoord_TrailingEdge - Zcoord_TrailingEdge_) / (Ycoord_TrailingEdge - Ycoord_TrailingEdge_))*180/PI_NUMBER;
         }
         
@@ -8127,16 +8191,11 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           } else
             Cp_File.open("cp_sections.dat", ios::app);
           
-          
-          if (config->GetGeo_Description() == FUSELAGE) {
-            if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[0] << " m\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
-            
-            if (config->GetSystemMeasurements() == US) Cp_File << "ZONE T=\"y = " << Plane_P0[0]*12.0 << " in\", I= "
-              << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
+          if (config->GetGeo_Description() == NACELLE) {
+            su2double theta_deg = atan2(Plane_Normal[1], -Plane_Normal[2])/PI_NUMBER*180 + 180;
+            Cp_File << "ZONE T=\"Theta = " << theta_deg << " deg\", I= " << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           }
-          
-          if (config->GetGeo_Description() == WING) {
+          else {
             if (config->GetSystemMeasurements() == SI) Cp_File << "ZONE T=\"y = " << Plane_P0[1] << " m\", I= "
               << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
             
@@ -8144,21 +8203,39 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
               << Xcoord_Airfoil.size() << ", F=POINT" << "\n";
           }
           
+
+          
           /*--- Coordinates and pressure value ---*/
           
-          if (config->GetSystemMeasurements() == SI) {
-            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
-              << " " << Xcoord_Airfoil[iVertex] << " " << Ycoord_Airfoil[iVertex] << " " << Zcoord_Airfoil[iVertex]
-              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            su2double XCoord = Xcoord_Airfoil[iVertex];
+            su2double YCoord = Ycoord_Airfoil[iVertex];
+            su2double ZCoord = Zcoord_Airfoil[iVertex];
+            
+            /*--- Undo the transformation based on the Theta angle ---*/
+            
+            if (config->GetGeo_Description() == NACELLE) {
+              su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+              su2double Angle = theta_deg*PI_NUMBER/180 - 0.5*PI_NUMBER;
+              
+              XCoord = Xcoord_Airfoil[iVertex] + config->GetNacelleLocation(0);
+              YCoord = (Ycoord_Airfoil[iVertex]*cos(Angle) - Zcoord_Airfoil[iVertex]*sin(Angle)) + config->GetNacelleLocation(1);
+              ZCoord = (Zcoord_Airfoil[iVertex]*cos(Angle) + Ycoord_Airfoil[iVertex]*sin(Angle)) + config->GetNacelleLocation(2);
+              
             }
-          }
-          if (config->GetSystemMeasurements() == US) {
-            for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            if (config->GetSystemMeasurements() == US) {
               Cp_File <<  (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord  << " " << CPressure_Airfoil[iVertex]
-              << " " << Xcoord_Airfoil[iVertex] * 12.0 << " " << Ycoord_Airfoil[iVertex] * 12.0 << " " << Zcoord_Airfoil[iVertex] * 12.0
-              << " " << (Ycoord_Airfoil[iVertex] -Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+              << " " << XCoord * 12.0 << " " << YCoord * 12.0 << " " << ZCoord * 12.0
+              << " " << (Ycoord_Airfoil[iVertex] - Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
             }
+            else {
+              Cp_File << (Xcoord_Airfoil[iVertex] - Xcoord_LeadingEdge) / Chord << " " << CPressure_Airfoil[iVertex]
+              << " " << XCoord << " " << YCoord << " " << ZCoord
+              << " " << (Ycoord_Airfoil[iVertex] - Ycoord_LeadingEdge) / Chord << " " << (Zcoord_Airfoil[iVertex] - Zcoord_LeadingEdge)  / Chord << "\n";
+            }
+            
           }
           
           Cp_File.close();
@@ -8206,8 +8283,6 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         Chord = MaxDistance;
         
         CL_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha) )/ Chord;
-        CD_Inv = cos(Dihedral_Trailing * PI_NUMBER / 180.0) * fabs( ForceInviscid[0] * cos(Alpha) * cos(Beta) + ForceInviscid[1] * sin(Beta) + ForceInviscid[2] * sin(Alpha) * cos(Beta)) / Chord;
-        CMy_Inv = MomentInviscid[1]/ Chord;
         
         /*--- Compute sectional lift at the root ---*/
         
@@ -8265,6 +8340,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   delete[] Plane_P0;
   delete[] Plane_P0_;
   delete[] Plane_Normal;
+  delete[] Plane_Normal_;
   delete[] CPressure;
   
 }
@@ -8594,12 +8670,6 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
   su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
   su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
   
-  int rank = MESH_0;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   Mach  = config->GetMach();
   Gamma = config->GetGamma();
   Beta = sqrt(Mach*Mach-1.0);
@@ -8706,7 +8776,7 @@ void COutput::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CCon
 #else
   
   int nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
@@ -9235,14 +9305,13 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   su2double Beta_ij, Beta_ip1j, Beta_im1j, Beta_ijp1, Beta_ijm1, Filtered_Beta;
   su2double a, b, c, d;
 
-  int rank, iProcessor, nProcessor;
-  rank = MASTER_NODE;
-  nProcessor = SINGLE_NODE;
+  int iProcessor, nProcessor;
+  nProcessor = size;
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+
+  if (rank == MASTER_NODE && !config->GetDiscrete_Adjoint()) cout << endl << "Writing Surface Analysis file (surface_analysis.dat).";
+
+  /*--- Open and rrite file name with extension if unsteady ---*/
 
   ofstream SurfFlow_file;
 
@@ -10307,8 +10376,6 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
   if (output) {
     SurfFlow_file.close();
   }
-    
-  if (rank == MASTER_NODE) cout << "Writing surface analysis files (surface_analysis.dat)." << endl;
 
 }
 
@@ -10402,6 +10469,10 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    delete solver[iZone];
+  }
+  delete [] solver;
 }
 
 void COutput::WriteTurboPerfConvHistory(CConfig *config){
@@ -10415,7 +10486,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
   unsigned short nBladesRow, nStages;
   unsigned short iStage;
   nBladesRow = config->GetnMarker_Turbomachinery();
-  nStages    = int(nBladesRow/2);
+  nStages    = SU2_TYPE::Int(nBladesRow/2);
 
   cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
   cout << endl;
@@ -10662,12 +10733,6 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
 
   unsigned long iExtIter = config[val_iZone]->GetExtIter();
   su2double* SpanWiseValuesIn, *SpanWiseValuesOut;
-  int rank;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MASTER_NODE;
-#endif
   ofstream myfile;
   string spanwise_performance_filename;
 
@@ -10913,12 +10978,6 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
 
 void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) {
   
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
   ofstream mean_HB_file;
@@ -11014,12 +11073,6 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
                                        unsigned long iExtIter,
                                        unsigned short val_nZone) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   unsigned short iZone, iVar;
   unsigned long iPoint;
   
@@ -11043,7 +11096,6 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
      if we are running in parallel. Force the use of SU2_SOL to merge and
      write the viz. files in this case to save overhead. ---*/
 
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
@@ -11083,7 +11135,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         LoadLocalData_AdjFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
         break;
-      case FEM_ELASTICITY:
+      case FEM_ELASTICITY: case DISC_ADJ_FEM:
         LoadLocalData_Elasticity(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
         break;
       case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION:
@@ -12217,6 +12269,7 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   
   switch (config->GetKind_Solver()) {
     case FEM_ELASTICITY: FirstIndex = FEA_SOL; break;
+    case DISC_ADJ_FEM: FirstIndex = ADJFEA_SOL; break;
   }
   
   nVar_First = solver[FirstIndex]->GetnVar();
@@ -12302,23 +12355,27 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       }
     }
     
-    /*--- Add the stresses. ---*/
+    if (!(config->GetDiscrete_Adjoint())) {
+
+      /*--- Add the stresses. ---*/
     
-    nVar_Par += 3;
-    Variable_Names.push_back("Sxx");
-    Variable_Names.push_back("Syy");
-    Variable_Names.push_back("Sxy");
-    if (geometry->GetnDim() == 3) {
       nVar_Par += 3;
-      Variable_Names.push_back("Szz");
-      Variable_Names.push_back("Sxz");
-      Variable_Names.push_back("Syz");
+      Variable_Names.push_back("Sxx");
+      Variable_Names.push_back("Syy");
+      Variable_Names.push_back("Sxy");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 3;
+        Variable_Names.push_back("Szz");
+        Variable_Names.push_back("Sxz");
+        Variable_Names.push_back("Syz");
+      }
+
+      /*--- Add the Von Mises Stress. ---*/
+    
+      nVar_Par += 1;
+      Variable_Names.push_back("Von_Mises_Stress");
+    
     }
-    
-    /*--- Add the Von Mises Stress. ---*/
-    
-    nVar_Par += 1;
-    Variable_Names.push_back("Von_Mises_Stress");
     
     /*--- New variables get registered here before the end of the loop. ---*/
     
@@ -12440,39 +12497,43 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
           }
         }
         
-        /*--- Add the stresses. ---*/
+        if (!(config->GetDiscrete_Adjoint())) {
+
+          /*--- Add the stresses. ---*/
         
-        Stress = solver[FEA_SOL]->node[iPoint]->GetStress_FEM();
+          Stress = solver[FEA_SOL]->node[iPoint]->GetStress_FEM();
         
-        /*--- Sigma xx ---*/
-        Local_Data[jPoint][iVar] = Stress[0]; iVar++;
-        /*--- Sigma yy ---*/
-        Local_Data[jPoint][iVar] = Stress[1]; iVar++;
-        /*--- Sigma xy ---*/
-        Local_Data[jPoint][iVar] = Stress[2]; iVar++;
+          /*--- Sigma xx ---*/
+          Local_Data[jPoint][iVar] = Stress[0]; iVar++;
+          /*--- Sigma yy ---*/
+          Local_Data[jPoint][iVar] = Stress[1]; iVar++;
+          /*--- Sigma xy ---*/
+          Local_Data[jPoint][iVar] = Stress[2]; iVar++;
         
-        if (geometry->GetnDim() == 3) {
-          /*--- Sigma zz ---*/
-          Local_Data[jPoint][iVar] = Stress[3]; iVar++;
-          /*--- Sigma xz ---*/
-          Local_Data[jPoint][iVar] = Stress[4]; iVar++;
-          /*--- Sigma yz ---*/
-          Local_Data[jPoint][iVar] = Stress[5]; iVar++;
-        }
+          if (geometry->GetnDim() == 3) {
+            /*--- Sigma zz ---*/
+            Local_Data[jPoint][iVar] = Stress[3]; iVar++;
+            /*--- Sigma xz ---*/
+            Local_Data[jPoint][iVar] = Stress[4]; iVar++;
+            /*--- Sigma yz ---*/
+            Local_Data[jPoint][iVar] = Stress[5]; iVar++;
+          }
         
-        /*--- Add the Von Mises Stress. ---*/
+          /*--- Add the Von Mises Stress. ---*/
         
-        Local_Data[iPoint][iVar] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); iVar++;
+          Local_Data[iPoint][iVar] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); iVar++;
         
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         
+        }
+
       }
 
-      /*--- Increment the point counter, as there may have been halos we
-       skipped over during the data loading. ---*/
-
-      jPoint++;
+        /*--- Increment the point counter, as there may have been halos we
+         skipped over during the data loading. ---*/
+        
+        jPoint++;
     }
   }
   
@@ -12657,15 +12718,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
 }
 
 void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
+
   /*--- Flags identifying the types of files to be written. ---*/
   
   bool Wrt_Vol = config->GetWrt_Vol_Sol();
@@ -12732,14 +12785,10 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   
   int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -12768,8 +12817,9 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -13149,8 +13199,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -13292,8 +13342,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -13331,13 +13381,9 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -13357,8 +13403,9 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      NODES_PER_ELEMENT = 0;
+      break;
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -13750,8 +13797,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -13862,7 +13909,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
         count++;
       }
     }
-  }  
+  }
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -13870,7 +13917,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nElem_Total;
-      if (nParallel_Line > 0) Conn_Line_Par = Conn_Elem;
+      if (nParallel_Line > 0) Conn_BoundLine_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_BoundTria = nElem_Total;
@@ -13881,8 +13928,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
       if (nParallel_BoundQuad > 0) Conn_BoundQuad_Par = Conn_Elem;
       break;
     default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
+      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -13916,13 +13963,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
 
   bool isPeriodic;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -14171,8 +14214,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the global IDs. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -14327,14 +14370,10 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   int SendRecv, RecvFrom;
   
   bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status status;
   int ind;
 #endif
   
@@ -14448,7 +14487,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -14586,7 +14625,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       /*--- Get global index. Note the -1 since it was 1-based for viz. ---*/
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -14712,8 +14751,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nSends];
-  recv_req = new MPI_Request[nRecvs];
+  send_req = new SU2_MPI::Request[nSends];
+  recv_req = new SU2_MPI::Request[nRecvs];
   
   /*--- Launch the non-blocking recv's for the global IDs. ---*/
   
@@ -15198,8 +15237,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI::Request[2*nSends];
+  recv_req = new SU2_MPI::Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the global ID. ---*/
   
@@ -15320,7 +15359,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     for ( int jj = 0; jj < N_POINTS_LINE; jj++ ) {
       
       iNode = ii*N_POINTS_LINE+jj;
-      Global_Index = Conn_Line_Par[iNode]-1;
+      Global_Index = Conn_BoundLine_Par[iNode]-1;
       
       /*--- Search for the processor that owns this point ---*/
       
@@ -15522,8 +15561,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nSends];
-  recv_req = new MPI_Request[nRecvs];
+  send_req = new SU2_MPI::Request[nSends];
+  recv_req = new SU2_MPI::Request[nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -15599,8 +15638,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nRecvs];
-  recv_req = new MPI_Request[nSends];
+  send_req = new SU2_MPI::Request[nRecvs];
+  recv_req = new SU2_MPI::Request[nSends];
   
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
@@ -15672,15 +15711,14 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
   for (iElem = 0; iElem < nParallel_Line; iElem++) {
     iNode = (int)iElem*N_POINTS_LINE;
-    Conn_Line_Par[iNode+0] = (int)Global2Renumber[Conn_Line_Par[iNode+0]-1];
-    Conn_Line_Par[iNode+1] = (int)Global2Renumber[Conn_Line_Par[iNode+1]-1];
+    Conn_BoundLine_Par[iNode+0] = (int)Global2Renumber[Conn_BoundLine_Par[iNode+0]-1];
+    Conn_BoundLine_Par[iNode+1] = (int)Global2Renumber[Conn_BoundLine_Par[iNode+1]-1];
   }
   
   for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
     iNode = (int)iElem*N_POINTS_TRIANGLE;
     Conn_BoundTria_Par[iNode+0] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+0]-1];
     Conn_BoundTria_Par[iNode+1] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+1]-1];
-    Conn_BoundTria_Par[iNode+2] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+2]-1];
     Conn_BoundTria_Par[iNode+2] = (int)Global2Renumber[Conn_BoundTria_Par[iNode+2]-1];
   }
   
@@ -15730,6 +15768,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -15738,13 +15777,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   string filename;
   
   int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
+
   /*--- Retrieve filename from config ---*/
   
   if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
@@ -15752,6 +15785,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
+  } else if (disc_adj_fem){
+    filename = config->GetRestart_AdjFEMFileName();
   } else {
     filename = config->GetRestart_FlowFileName();
   }
@@ -15765,7 +15800,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
+  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
@@ -15782,7 +15817,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- All processors open the file. ---*/
@@ -15824,7 +15859,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file.flush();
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     
   }
@@ -15866,13 +15901,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   ofstream restart_file;
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
-
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- Retrieve filename from config ---*/
 
@@ -16022,8 +16050,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
-    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, write the number of variables and points. ---*/
@@ -16060,7 +16087,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Parallel binary output using MPI I/O. ---*/
 
   MPI_File fhw;
-  MPI_Status status;
+  SU2_MPI::Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
   int ierr;
@@ -16090,11 +16117,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    if (rank == MASTER_NODE)
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, write the number of variables and points (i.e., cols and rows),
@@ -16125,7 +16148,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
   /*--- Collective call for all ranks to write to their view simultaneously. ---*/
 
@@ -16137,7 +16160,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Reset the file view before writing the metadata. ---*/
 
-  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
   /*--- Finally, the master rank writes the metadata. ---*/
 
@@ -16167,6 +16190,10 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   delete [] buf;
 
+  delete [] Local_Halo;
+  delete [] npoint_procs;
+  delete [] nPoint_Linear;
+
 }
 
 void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
@@ -16174,8 +16201,8 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_Line_Par      != NULL)
-      delete [] Conn_Line_Par;
+    if (nParallel_Line > 0      && Conn_BoundLine_Par      != NULL)
+      delete [] Conn_BoundLine_Par;
     if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL)
       delete [] Conn_BoundTria_Par;
     if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL)
@@ -16228,14 +16255,12 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short nDim         = geometry->GetnDim();
   unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
-  
+
+  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   su2double  *Vector                   = new su2double[nDim];
   su2double  *Surface_MassFlow         = new su2double[nMarker];
@@ -16249,6 +16274,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   su2double  *Surface_TotalPressure    = new su2double[nMarker];
   su2double  *Surface_VelocityIdeal    = new su2double[nMarker];
   su2double  *Surface_Area             = new su2double[nMarker];
+  su2double  *Surface_MassFlow_Abs     = new su2double[nMarker];
   
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
   
@@ -16265,7 +16291,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalPressure[iMarker]    = 0.0;
     Surface_VelocityIdeal[iMarker]    = 0.0;
     Surface_Area[iMarker]             = 0.0;
-    
+    Surface_MassFlow_Abs[iMarker]     = 0.0;
+
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -16283,29 +16310,39 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->node[iPoint]->GetSolution(iDim+1) / Density;
+            Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim];
-            MassFlow += Vector[iDim] * AxiFactor * solver->node[iPoint]->GetSolution(iDim+1);
+            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
           }
           
           Area              = sqrt (Area);
           Vn                = Vn / Area;
-          Energy            = solver->node[iPoint]->GetSolution(nVar-1)/Density;
-          Pressure          = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-          SoundSpeed        = sqrt(Gamma*Pressure/Density);
-          Mach              = sqrt(Velocity2)/SoundSpeed;
-          Temperature       = Pressure / (Gas_Constant * Density);
-          TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-          TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-          
+          Energy            = solver->node[iPoint]->GetEnergy();
+          Pressure          = solver->node[iPoint]->GetPressure();
+          SoundSpeed        = solver->node[iPoint]->GetSoundSpeed();
+
+          if (compressible){
+            Mach              = sqrt(Velocity2)/SoundSpeed;
+            TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
+            Temperature       = Pressure / (Gas_Constant * Density);
+            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+          }
+          if (incompressible){
+            Mach              = 0.0;
+            TotalPressure     = Pressure + 0.5 * Density * Velocity2;
+            Temperature       = 0.0;
+            TotalTemperature  = 0.0;
+          }
+
           /*--- Compute the mass Surface_MassFlow ---*/
 
           Surface_Area[iMarker]             += Area;
           Surface_MassFlow[iMarker]         += MassFlow;
+          Surface_MassFlow_Abs[iMarker]     += abs(MassFlow);
 
-          if (Kind_Average == AVERAGE_MASSFLUX) Weight = MassFlow;
-          else if (Kind_Average == AVERAGE_AREA) Weight = Area;
+          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
           else Weight = 1.0;
           
           Surface_Mach[iMarker]             += Mach*Weight;
@@ -16336,6 +16373,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   su2double *Surface_TotalTemperature_Local = new su2double [nMarker_Analyze];
   su2double *Surface_TotalPressure_Local    = new su2double [nMarker_Analyze];
   su2double *Surface_Area_Local             = new su2double [nMarker_Analyze];
+  su2double *Surface_MassFlow_Abs_Local     = new su2double [nMarker_Analyze];
   
   su2double *Surface_MassFlow_Total         = new su2double [nMarker_Analyze];
   su2double *Surface_Mach_Total             = new su2double [nMarker_Analyze];
@@ -16347,7 +16385,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   su2double *Surface_TotalTemperature_Total = new su2double [nMarker_Analyze];
   su2double *Surface_TotalPressure_Total    = new su2double [nMarker_Analyze];
   su2double *Surface_Area_Total             = new su2double [nMarker_Analyze];
-  
+  su2double *Surface_MassFlow_Abs_Total     = new su2double [nMarker_Analyze];
+
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     Surface_MassFlow_Local[iMarker_Analyze]         = 0.0;
     Surface_Mach_Local[iMarker_Analyze]             = 0.0;
@@ -16359,6 +16398,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalTemperature_Local[iMarker_Analyze] = 0.0;
     Surface_TotalPressure_Local[iMarker_Analyze]    = 0.0;
     Surface_Area_Local[iMarker_Analyze]             = 0.0;
+    Surface_MassFlow_Abs_Local[iMarker_Analyze]     = 0.0;
     
     Surface_MassFlow_Total[iMarker_Analyze]         = 0.0;
     Surface_Mach_Total[iMarker_Analyze]             = 0.0;
@@ -16370,6 +16410,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
     Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
     Surface_Area_Total[iMarker_Analyze]             = 0.0;
+    Surface_MassFlow_Abs_Total[iMarker_Analyze]     = 0.0;
+
   }
   
   /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
@@ -16386,13 +16428,14 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           Surface_MassFlow_Local[iMarker_Analyze]         += Surface_MassFlow[iMarker];
           Surface_Mach_Local[iMarker_Analyze]             += Surface_Mach[iMarker];
           Surface_Temperature_Local[iMarker_Analyze]      += Surface_Temperature[iMarker];
-          Surface_Density_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Temperature[iMarker];
-          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_Temperature[iMarker];
+          Surface_Density_Local[iMarker_Analyze]          += Surface_Density[iMarker];
+          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Enthalpy[iMarker];
+          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_NormalVelocity[iMarker];
           Surface_Pressure_Local[iMarker_Analyze]         += Surface_Pressure[iMarker];
           Surface_TotalTemperature_Local[iMarker_Analyze] += Surface_TotalTemperature[iMarker];
           Surface_TotalPressure_Local[iMarker_Analyze]    += Surface_TotalPressure[iMarker];
           Surface_Area_Local[iMarker_Analyze]             += Surface_Area[iMarker];
+          Surface_MassFlow_Abs_Local[iMarker_Analyze]     += Surface_MassFlow_Abs[iMarker];
         }
         
       }
@@ -16413,7 +16456,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_Area_Local, Surface_Area_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  
+  SU2_MPI::Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
 #else
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
@@ -16427,6 +16471,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     Surface_TotalTemperature_Total[iMarker_Analyze] = Surface_TotalTemperature_Local[iMarker_Analyze];
     Surface_TotalPressure_Total[iMarker_Analyze]    = Surface_TotalPressure_Local[iMarker_Analyze];
     Surface_Area_Total[iMarker_Analyze]        = Surface_Area_Local[iMarker_Analyze];
+    Surface_MassFlow_Abs_Total[iMarker_Analyze] = Surface_MassFlow_Abs_Local[iMarker_Analyze];
   }
   
 #endif
@@ -16436,8 +16481,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
     
-    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Total[iMarker_Analyze];
-    else if (Kind_Average == AVERAGE_AREA) Weight = Surface_Area_Total[iMarker_Analyze];
+    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
     else Weight = 1.0;
 
     if (Weight != 0.0) {
@@ -16446,6 +16491,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
       Surface_Density_Total[iMarker_Analyze]          /= Weight;
       Surface_Enthalpy_Total[iMarker_Analyze]         /= Weight;
       Surface_NormalVelocity_Total[iMarker_Analyze]   /= Weight;
+      Surface_Pressure_Total[iMarker_Analyze]         /= Weight;
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;
     }
@@ -16496,46 +16542,54 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
-    cout.precision(4);
-    cout.setf(ios::fixed, ios::floatfield);
-    
+    cout.precision(4);    
     cout << endl << "Computing surface mean values." << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-      cout << "Surface ("<< config->GetMarker_Analyze_TagBound(iMarker_Analyze);
+      cout << "Surface "<< config->GetMarker_Analyze_TagBound(iMarker_Analyze) << ":" << endl;
       
       su2double MassFlow = config->GetSurface_MassFlow(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): " << MassFlow;
-      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
-      
-      su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
-      cout << ", Mach: " << Mach;
-      
-      su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", T (K): " << Temperature << "," << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", T (R): " << Temperature << "," << endl;
-      
-      su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "     P (Pa): " << Pressure;
-      else if (config->GetSystemMeasurements() == US) cout << "     P (psf): " << Pressure;
-      
-      su2double Density = config->GetSurface_Density(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Rho (kg/m^3): " << Density;
-      else if (config->GetSystemMeasurements() == US) cout << ", Rho (lb/ft^3): " << Density;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Mf (kg/s): " << setw(10) << MassFlow;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Mf (lbs/s): " << setw(10) << MassFlow;
       
       su2double NormalVelocity = config->GetSurface_NormalVelocity(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", Vn (m/s): " << NormalVelocity << "," << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", Vn (ft/s): " << NormalVelocity << "," << endl;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Vn (m/s): " << setw(10) << NormalVelocity;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Vn (ft/s): " << setw(10) << NormalVelocity;
       
-      su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "     TT (K): " << TotalTemperature;
-      else if (config->GetSystemMeasurements() == US) cout << "     TT (R): " << TotalTemperature;
+      cout << endl;
+      
+      su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "P (Pa): " << setw(10) << Pressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "P (psf): " << setw(10) << Pressure;
       
       su2double TotalPressure = config->GetSurface_TotalPressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << ", PT (Pa): " << TotalPressure << "." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << ", PT (psf): " << TotalPressure << "." << endl;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "PT (Pa): " << setw(10) <<TotalPressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "PT (psf): " << setw(10) <<TotalPressure;
+
+      if (compressible){
+        cout << endl;
+
+        su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
+        cout << setw(18) << "Mach: " << setw(10) << Mach;
+
+        su2double Density = config->GetSurface_Density(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Rho (kg/m^3): " << setw(10) << Density;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Rho (lb/ft^3): " << setw(10) << Density;
+
+        cout << endl;
+
+        su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "T (K): " << setw(10) << Temperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "T (R): " << setw(10) << Temperature;
+
+        su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "TT (K): " << setw(10) << TotalTemperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "TT (R): " << setw(10) << TotalTemperature;
+      }
       
+      cout << endl;
     }
+    cout.unsetf(ios_base::floatfield);
     
   }
   
@@ -16549,6 +16603,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalTemperature_Local;
   delete [] Surface_TotalPressure_Local;
   delete [] Surface_Area_Local;
+  delete [] Surface_MassFlow_Abs_Local;
   
   delete [] Surface_MassFlow_Total;
   delete [] Surface_Mach_Total;
@@ -16560,6 +16615,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalTemperature_Total;
   delete [] Surface_TotalPressure_Total;
   delete [] Surface_Area_Total;
+  delete [] Surface_MassFlow_Abs_Total;
   
   delete [] Surface_MassFlow;
   delete [] Surface_Mach;
@@ -16572,6 +16628,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_TotalPressure;
   delete [] Surface_Area;
   delete [] Vector;
+  delete [] Surface_VelocityIdeal;
+  delete [] Surface_MassFlow_Abs;
   
 }
 
