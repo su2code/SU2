@@ -80,7 +80,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b feature_MultiObjUpdate https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the test cases

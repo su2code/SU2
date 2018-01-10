@@ -321,7 +321,8 @@ def obj_df(dvs,config,state=None):
     combine_obj = (config['OPT_COMBINE_OBJECTIVE']=="YES") 
      
     dv_scales = config['DEFINITION_DV']['SCALE']
-    dv_size   = config['DEFINITION_DV']['SIZE'] 
+    dv_size   = config['DEFINITION_DV']['SIZE']
+    
     # evaluate each objective
     vals_out = []
     if (combine_obj and n_obj>1):
@@ -364,6 +365,7 @@ def obj_df(dvs,config,state=None):
                 # MARKER_MONITORING should be updated to only include the marker for i_obj
                 # For single objectives, multiple markers can be used 
                 config['MARKER_MONITORING'] = marker_monitored[i_obj]
+
             
             # Evaluate Objective Gradient
             grad = su2grad(this_obj,grad_method,config,state)
