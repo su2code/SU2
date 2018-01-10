@@ -241,16 +241,15 @@ class TestCase:
             # Compare files
             fromfile = self.reference_file
             tofile = self.test_file 
-            fromlines = 'fromlines' # will be overwritten if test successful
-            fromdate = 'fromdate'
-            tolines = 'tolines'
-            todate = 'todate'
+            # Initial value s.t. will fail if it does not get to diff step
+            diff = ''
             try:
                 fromdate = time.ctime(os.stat(fromfile).st_mtime)
                 fromlines = open(fromfile, 'U').readlines()
                 try: 
                     todate = time.ctime(os.stat(tofile).st_mtime)
                     tolines = open(tofile, 'U').readlines()
+                    diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
                 except OSError:
                     print("OS error, most likely from missing reference file:", fromfile)
                     print("Current working directory contents:")
@@ -261,7 +260,7 @@ class TestCase:
                 print(os.listdir("."))
 
 
-            diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
+
 
 
             if (diff==[]):
