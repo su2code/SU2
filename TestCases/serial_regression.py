@@ -1109,6 +1109,32 @@ def main():
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
     pass_list.append(pywrapper_fsi2d.run_test())
+
+    # Unsteady CHT
+    pywrapper_unsteadyCHT               = TestCase('pywrapper_unsteadyCHT')
+    pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
+    pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
+    pywrapper_unsteadyCHT.test_iter     = 5
+    pywrapper_unsteadyCHT.test_vals     = [-1.607237, 2.263302, 0.001077, 0.145817] #last 4 columns
+    pywrapper_unsteadyCHT.su2_exec      = "python launch_unsteady_CHT_FlatPlate.py -f"
+    pywrapper_unsteadyCHT.timeout       = 1600
+    pywrapper_unsteadyCHT.tol           = 0.00001
+    pywrapper_unsteadyCHT.unsteady      = True
+    test_list.append(pywrapper_unsteadyCHT)
+    pass_list.append(pywrapper_unsteadyCHT.run_test())
+
+    # Rigid motion
+    pywrapper_rigidMotion               = TestCase('pywrapper_rigidMotion')
+    pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
+    pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
+    pywrapper_rigidMotion.test_iter     = 5
+    pywrapper_rigidMotion.test_vals     = [-1.607237, 2.259664, -0.040621, 0.144133] #last 4 columns
+    pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
+    pywrapper_rigidMotion.timeout       = 1600
+    pywrapper_rigidMotion.tol           = 0.00001
+    pywrapper_rigidMotion.unsteady      = True
+    test_list.append(pywrapper_rigidMotion)
+    pass_list.append(pywrapper_rigidMotion.run_test())
     
     # Tests summary
     print('==================================================================')

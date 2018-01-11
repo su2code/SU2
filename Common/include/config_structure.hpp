@@ -591,6 +591,7 @@ private:
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_PyCustom,               /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
@@ -600,6 +601,7 @@ private:
   *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_PyCustom,            /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
@@ -615,6 +617,7 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
@@ -626,6 +629,7 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
@@ -2554,6 +2558,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Moving(void);
+
+  /*!
+   * \brief Get the total number of Python customizable markers.
+   * \return Total number of Python customizable markers.
+   */
+  unsigned short GetnMarker_PyCustom(void);
   
   /*!
    * \brief Get the total number of moving markers.
@@ -2952,6 +2962,14 @@ public:
    * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
    */
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
+
+  /*!
+   * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_PyCustom - 0 or 1 depending if the the marker is going to be customized in Python.
+   */
+  void SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom);
   
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
@@ -3067,6 +3085,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
+
+  /*!
+   * \brief Get the Python customization for a marker <i>val_marker</i>.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \return 0 or 1 depending if the marker is going to be customized in Python.
+   */
+  unsigned short GetMarker_All_PyCustom(unsigned short val_marker);
   
   /*!
    * \brief Get the airfoil sections in the slicing process.
@@ -5347,6 +5372,12 @@ public:
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
+
+  /*!
+   * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
+   * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_PyCustom(string val_marker);
   
   /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
@@ -5694,6 +5725,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_PyCustom_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
