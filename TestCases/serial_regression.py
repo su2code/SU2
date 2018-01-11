@@ -1031,17 +1031,31 @@ def main():
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
     
-    # test optimization, with multiple objectives
+    # test optimization, with multiple objectives, with gradients evaluated separately
+    # the difference in gradient value relative to combined case 
+    # is due to lack of solution file for the adjoint and small number of iterations
     opt_multiobj_py            = TestCase('opt_multiobj_py')
     opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     opt_multiobj_py.test_iter  = 1
-    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.404266E+02] #last 4 columns
     opt_multiobj_py.su2_exec   = "shape_optimization.py -f"
     opt_multiobj_py.timeout    = 1600
     opt_multiobj_py.tol       = 0.00001
     pass_list.append(opt_multiobj_py.run_opt())
     test_list.append(opt_multiobj_py)
+
+    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
+    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
+    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
+    opt_multiobjcombo_py.test_iter  = 1
+    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -f"
+    opt_multiobjcombo_py.timeout    = 1600
+    opt_multiobjcombo_py.tol       = 0.00001
+    pass_list.append(opt_multiobjcombo_py.run_opt())
+    test_list.append(opt_multiobjcombo_py)
 
 
     ##########################

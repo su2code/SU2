@@ -85,7 +85,7 @@ def gradient( func_name, method, config, state=None ):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
             func_output = 'COMBO'
         else:
-            func_name = func_name[0]
+            func_output = func_name[0]
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_WEIGHT = "1.0"
@@ -98,22 +98,19 @@ def gradient( func_name, method, config, state=None ):
               
             # Aerodynamics
             if func_output in su2io.optnames_aero + su2io.optnames_turbo:
-                grads = adjoint( func_name, config, state )
-
-            elif func_name[0] in su2io.optnames_aero + su2io.optnames_turbo:
-                grads = adjoint( func_name, config, state )
-                
+                grads = adjoint( func_output, config, state )
+               
             # Stability
             elif func_output in su2io.optnames_stab:
-                grads = stability( func_name, config, state )
+                grads = stability( func_output, config, state )
             
             # Multipoint
             elif func_output in su2io.optnames_multi:
-              grads = multipoint( func_name, config, state )
+              grads = multipoint( func_output, config, state )
 
             # Geometry (actually a finite difference)
             elif func_output in su2io.optnames_geo:
-                grads = geometry( func_name, config, state )
+                grads = geometry( func_output, config, state )
 
             else:
                 raise Exception('unknown function name: %s' % func_name)
