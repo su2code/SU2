@@ -7887,6 +7887,8 @@ void CCHTDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZo
 #endif
 
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
+  bool donor_flow = (config_container[donorZone]->GetKind_Solver() == NAVIER_STOKES) || (config_container[donorZone]->GetKind_Solver() == RANS);
+  bool target_flow = (config_container[targetZone]->GetKind_Solver() == NAVIER_STOKES) || (config_container[targetZone]->GetKind_Solver() == RANS);
 
   /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
 
@@ -7894,16 +7896,41 @@ void CCHTDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZo
 
   case BROADCAST_DATA:
       if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
-        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
+        if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE && donor_flow) {
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+        }
+        else if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE && target_flow) {
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+        }
+        else {
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+        }
+
       /*--- Set the volume deformation for the fluid zone ---*/
       //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
       }
       else {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
-        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
+        if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE && donor_flow) {
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+        }
+        else if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE && target_flow) {
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+        }
+        else {
+          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+          geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+          config_container[donorZone], config_container[targetZone]);
+        }
       /*--- Set the volume deformation for the fluid zone ---*/
       //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
     }
@@ -7911,9 +7938,21 @@ void CCHTDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZo
 
   case SCATTER_DATA:
     if (MatchingMesh) {
-      transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
-      geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-      config_container[donorZone], config_container[targetZone]);
+      if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE && donor_flow) {
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      }
+      else if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE && target_flow) {
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      }
       /*--- Set the volume deformation for the fluid zone ---*/
       //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
     }
@@ -7929,9 +7968,21 @@ void CCHTDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZo
       exit(EXIT_FAILURE);
     }
     else {
-      transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
-      geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-      config_container[donorZone], config_container[targetZone]);
+      if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE && donor_flow) {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      }
+      else if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE && target_flow) {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
+        geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+      }
       /*--- Set the volume deformation for the fluid zone ---*/
       //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
     }
