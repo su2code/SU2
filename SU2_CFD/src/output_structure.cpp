@@ -4869,7 +4869,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (thermal) {
           Total_Heat              = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
           Total_MaxHeat           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
-          Total_AvgTemperature    = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
         }
 
         if (thermal && heat) {
