@@ -291,10 +291,11 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
+  Marker_CfgFile_PyCustom     = NULL;   Marker_All_PyCustom      = NULL;
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
-  Marker_Analyze              = NULL;   Marker_WallFunctions     = NULL;
+  Marker_Analyze              = NULL;   Marker_PyCustom          = NULL;    Marker_WallFunctions        = NULL;
   Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
 
   Kind_WallFunctions       = NULL;
@@ -803,6 +804,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+
+  /*!\brief MARKER_PYTHON_CUSTOM\n DESCRIPTION: Python customizable marker(s) \ingroup Config*/
+  addStringListOption("MARKER_PYTHON_CUSTOM", nMarker_PyCustom, Marker_PyCustom);
 
   /*!\brief MARKER_WALL_FUNCTIONS\n DESCRIPTION: Viscous wall markers for which wall functions must be applied.
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
@@ -3464,7 +3468,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
+  iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
@@ -3498,22 +3502,23 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
-  Marker_All_TagBound             = new string[nMarker_All];			// Store the tag that correspond with each marker.
-  Marker_All_SendRecv             = new short[nMarker_All];				// +#domain (send), -#domain (receive).
-  Marker_All_KindBC               = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
-  Marker_All_Monitoring           = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
-  Marker_All_Designing            = new unsigned short[nMarker_All];    // Store whether the boundary should be designed.
-  Marker_All_Plotting             = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_Analyze              = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_ZoneInterface        = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval              = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV                   = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving               = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound             = new short[nMarker_All];				// Store whether the boundary belongs to a periodic boundary.
+  Marker_All_TagBound       = new string[nMarker_All];		// Store the tag that correspond with each marker.
+  Marker_All_SendRecv       = new short[nMarker_All];		// +#domain (send), -#domain (receive).
+  Marker_All_KindBC         = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring     = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
+  Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
+  Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_ZoneInterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PyCustom       = new unsigned short[nMarker_All];  // Store whether the boundary is Python customizable.
+  Marker_All_PerBound       = new short[nMarker_All];		// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
-  
+
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]             = "SEND_RECEIVE";
@@ -3531,6 +3536,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_Turbomachinery[iMarker_All]       = 0;
     Marker_All_TurbomachineryFlag[iMarker_All]   = 0;
     Marker_All_MixingPlaneInterface[iMarker_All] = 0;
+    Marker_All_PyCustom[iMarker_All]             = 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
@@ -3549,7 +3555,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile];
-  
+  Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile];
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]             = "SEND_RECEIVE";
     Marker_CfgFile_KindBC[iMarker_CfgFile]               = 0;
@@ -3565,6 +3572,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_Turbomachinery[iMarker_CfgFile]       = 0;
     Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]   = 0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = 0;
+    Marker_CfgFile_PyCustom[iMarker_CfgFile]             = 0;
   }
 
   /*--- Allocate memory to store surface information (Analyze BC) ---*/
@@ -4011,6 +4019,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_Moving[iMarker_CfgFile] = YES;
   }
 
+  for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_PyCustom[iMarker_CfgFile] = NO;
+    for(iMarker_PyCustom=0; iMarker_PyCustom < nMarker_PyCustom; iMarker_PyCustom++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PyCustom[iMarker_PyCustom])
+        Marker_CfgFile_PyCustom[iMarker_CfgFile] = YES;
+  }
+
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -4022,7 +4037,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
-  iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
   
@@ -4283,6 +4298,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
       cout<<endl;
     }
+
+    if(nMarker_PyCustom != 0) {
+      cout << "Surface(s) that are customizable in Python: ";
+      for(iMarker_PyCustom=0; iMarker_PyCustom < nMarker_PyCustom; iMarker_PyCustom++){
+        cout << Marker_PyCustom[iMarker_PyCustom];
+        if (iMarker_PyCustom < nMarker_PyCustom-1) cout << ", ";
+        else cout << ".";
+      }
+      cout << endl;
+    }
     
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
@@ -4294,7 +4319,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout<< endl;
     }
 
-    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
+    if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL) || (Kind_GridMovement[ZONE_0] == FLUID_STRUCTURE)) {
       cout << "Surface(s) in motion: ";
       for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++) {
         cout << Marker_Moving[iMarker_Moving];
@@ -5735,6 +5760,13 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_PyCustom(string val_marker){
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile=0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_PyCustom[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -5872,6 +5904,10 @@ CConfig::~CConfig(void) {
   
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+
+  if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
+
+  if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
   
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
@@ -5885,6 +5921,7 @@ CConfig::~CConfig(void) {
   if (Marker_Analyze != NULL)        delete[] Marker_Analyze;
   if (Marker_WallFunctions != NULL)  delete[] Marker_WallFunctions;
   if (Marker_ZoneInterface != NULL)        delete[] Marker_ZoneInterface;
+  if (Marker_PyCustom != NULL)             delete [] Marker_PyCustom;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
