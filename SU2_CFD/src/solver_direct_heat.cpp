@@ -56,6 +56,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   int rank = MASTER_NODE;
 
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   unsigned short turbulent = config->GetKind_Turb_Model();
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -180,7 +181,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       for (iVar = 0; iVar < nConjVariables ; iVar++) {
         ConjugateVar[iMarker][iVertex][iVar] = 0.0;
       }
-      ConjugateVar[iMarker][iVertex][0] = 1.0;
+      ConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
     }
   }
 
@@ -195,7 +196,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       for (iVar = 0; iVar < nInterfaceVariables ; iVar++) {
         InterfaceVar[iMarker][iVertex][iVar] = 0.0;
       }
-      InterfaceVar[iMarker][iVertex][0] = 1.0;
+      InterfaceVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
     }
   }
 
@@ -203,9 +204,16 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   SolidInterfaceFileName.assign("interface_data_solid.dat");
   InterfaceOutputCounter = 0;
 
-  /*--- Non-dimensionalization of heat equation */
   config->SetTemperature_Ref(config->GetTemperature_FreeStream());
+
+  /*--- Non-dimensionalization of heat equation */
+  if(compressible) {
+    cout << "Heat solver in compressible environment: Setting reference temperature to 1.0K." << endl;
+    config->SetTemperature_Ref(1.0);
+  }
+
   config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
+  cout << "Heat solver freestream temperature: " << config->GetTemperature_FreeStreamND() << endl;
 
   /*--- If the heat solver runs stand-alone, we have to set the reference values ---*/
   if(!flow) {
@@ -215,10 +223,11 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   }
 
   su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
+  cout << "Heat solver freestream temperature in case for solids: " << Temperature_Solid_Freestream_ND << endl;
 
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       if (flow)
-        node[iPoint] = new CHeatVariable(1.0, nDim, nVar, config);
+        node[iPoint] = new CHeatVariable(config->GetTemperature_FreeStreamND(), nDim, nVar, config);
       else
         node[iPoint] = new CHeatVariable(Temperature_Solid_Freestream_ND, nDim, nVar, config);
 
