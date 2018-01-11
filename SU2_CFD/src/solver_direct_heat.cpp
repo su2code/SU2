@@ -1254,13 +1254,13 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iVertex, iPoint, total_index, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
   su2double *Coord_i, *Coord_j;
-  su2double Area, dist_ij, rho_cp_solid, cp_fluid, thermal_conductivityND, Prandtl_Lam, Prandtl_Turb,
+  su2double Area, dist_ij, rho_cp_solid, cp_fluid, thermal_conductivityND, Prandtl_Lam, Prandtl_Turb, Temperature_Ref,
       laminar_viscosity, laminar_viscosity_ref, eddy_viscosity, Tthis, Tconjugate, Tinterface, dTdn, HeatFluxDensity, HeatFluxValue, HF_FactorThis, HF_FactorConjugate;
   su2double maxTemperature, maxHeatFluxDensity, avTemperature, avHeatFlux, HeatFluxIntegral;
 
@@ -1272,6 +1272,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
 
   Prandtl_Turb = config->GetPrandtl_Turb();
   Prandtl_Lam = config->GetPrandtl_Lam();
+  Temperature_Ref = config->GetTemperature_Ref();
   laminar_viscosity = config->GetViscosity_FreeStreamND();
   laminar_viscosity_ref = config->GetViscosity_Ref();
   rho_cp_solid = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
@@ -1309,7 +1310,7 @@ void CHeatSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solv
             /*--- Calculate the temperature at the interface with the help of conjugates variables ---*/
 
             Tthis = node[Point_Normal]->GetSolution(0);
-            Tconjugate = GetConjugateVariable(iMarker, iVertex, 0);
+            Tconjugate = GetConjugateVariable(iMarker, iVertex, 0)/Temperature_Ref;
 
             HF_FactorThis = (thermal_conductivityND*config->GetViscosity_Ref()*cp_fluid)/dist_ij;
             HF_FactorConjugate = GetConjugateVariable(iMarker, iVertex, 2);
@@ -1436,7 +1437,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_FreeStream()*Area;
+          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
 
         }
 

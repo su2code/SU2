@@ -770,7 +770,7 @@ inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_containe
                   CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_ConjugateTFFB_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                      CConfig *config) { }
+                      CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_ConjugateHFBased_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                       CConfig *config) { }
