@@ -7803,25 +7803,24 @@ public:
     
   /*!
    * \brief Get the Kind of Hybrid RANS/LES.
-   * \return Verbosity level for the console output.
+   * \return Value of Hybrid RANS/LES method.
    */
   unsigned short GetKind_HybridRANSLES(void);
 
   /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
-   * \return Verbosity level for the console output.
+   * \return Value of Low dissipation approach.
    */
    unsigned short GetKind_RoeLowDiss(void);
     
   /*!
    * \brief Get the DES Constant.
-   * \return Verbosity level for the console output.
+   * \return Value of DES constant.
    */
    su2double GetConst_DES(void);
 
   /*!
    * \brief Get QCR (SA-QCR2000).
-   * \return Verbosity level for the console output 
    */
   bool GetQCR(void);
 
