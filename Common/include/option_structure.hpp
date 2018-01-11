@@ -644,17 +644,15 @@ enum ENUM_LIMITER {
   NO_LIMITER           = 0, /*!< \brief No limiter. */
   VENKATAKRISHNAN      = 1,	/*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
   VENKATAKRISHNAN_WANG = 2,	/*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
-  VENKATAKRISHNAN_2NDLIM = 3,	/*!< \brief Slope limiter using Venkatakrisnan + 2nd limiter method. */
-  BARTH_JESPERSEN      = 4, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
-  VAN_ALBADA_EDGE      = 5, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
-  SHARP_EDGES          = 6, /*!< \brief Slope limiter using sharp edges. */
-  WALL_DISTANCE        = 7  /*!< \brief Slope limiter using wall distance. */
+  BARTH_JESPERSEN      = 3, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
+  VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
+  SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
+  WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("NONE", NO_LIMITER)
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
-("VENKATAKRISHNAN_2NDLIM", VENKATAKRISHNAN_2NDLIM)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
 ("SHARP_EDGES", SHARP_EDGES)
