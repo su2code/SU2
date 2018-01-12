@@ -12,12 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - molinaedu85@gmail.com
-            - tim.albring@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_DDESv5.0
+        - develop
 
 python:
     - 2.7
@@ -81,10 +80,10 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b feature_DDES https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
-    # Get the test cases
+    # Get the tutorial cases
     - git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
