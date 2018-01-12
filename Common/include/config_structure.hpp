@@ -606,6 +606,7 @@ private:
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_PyCustom,               /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
@@ -615,6 +616,7 @@ private:
   *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_PyCustom,            /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
@@ -630,6 +632,7 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
@@ -641,6 +644,7 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
@@ -909,10 +913,15 @@ private:
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
-  Nonphys_Reconstr;           /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
-  bool ParMETIS;              /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
+  Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
+  unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
+  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
+  su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
+  unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
+  unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
+  bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
@@ -2626,6 +2635,12 @@ public:
   unsigned short GetnMarker_Moving(void);
 
   /*!
+   * \brief Get the total number of Python customizable markers.
+   * \return Total number of Python customizable markers.
+   */
+  unsigned short GetnMarker_PyCustom(void);
+  
+  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
@@ -3030,6 +3045,14 @@ public:
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_PyCustom - 0 or 1 depending if the the marker is going to be customized in Python.
+   */
+  void SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom);
+  
+  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3144,6 +3167,13 @@ public:
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
 
+  /*!
+   * \brief Get the Python customization for a marker <i>val_marker</i>.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \return 0 or 1 depending if the marker is going to be customized in Python.
+   */
+  unsigned short GetMarker_All_PyCustom(unsigned short val_marker);
+  
   /*!
    * \brief Get the airfoil sections in the slicing process.
    * \param[in] val_section - Index of the section.
@@ -5471,6 +5501,12 @@ public:
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
 
   /*!
+   * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
+   * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_PyCustom(string val_marker);
+  
+  /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
    * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
    */
@@ -5817,6 +5853,14 @@ public:
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
 
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_PyCustom_TagBound(unsigned short val_marker);
+  
   /*!
    * \brief Get the name of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
@@ -7979,6 +8023,35 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Get the frequency for writing the surface solution file in Dual Time.
+   * \return It writes the surface solution file with this frequency.
+   */
+  unsigned long GetWrt_Surf_Freq_DualTime(void);
+    
+  /*!
+   * \brief Get the Kind of Hybrid RANS/LES.
+   * \return Value of Hybrid RANS/LES method.
+   */
+  unsigned short GetKind_HybridRANSLES(void);
+
+  /*!
+   * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
+   * \return Value of Low dissipation approach.
+   */
+   unsigned short GetKind_RoeLowDiss(void);
+    
+  /*!
+   * \brief Get the DES Constant.
+   * \return Value of DES constant.
+   */
+   su2double GetConst_DES(void);
+
+  /*!
+   * \brief Get QCR (SA-QCR2000).
+   */
+  bool GetQCR(void);
 
   /*!
    * \brief Get if AD preaccumulation should be performed.
