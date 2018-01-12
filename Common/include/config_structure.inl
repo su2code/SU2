@@ -295,6 +295,8 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline bool CConfig::GetReorientElements(void) { return ReorientElements; }
+
 inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
@@ -1428,7 +1430,7 @@ inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 
-inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; } 
+inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; }
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
@@ -1721,3 +1723,13 @@ inline bool CConfig::GetAD_Preaccumulation(void) {return AD_Preaccumulation;}
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
+
+inline unsigned long CConfig::GetWrt_Surf_Freq_DualTime(void) { return Wrt_Surf_Freq_DualTime; }
+
+inline unsigned short CConfig::GetKind_HybridRANSLES(void) {return Kind_HybridRANSLES; }
+
+inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss; }
+
+inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
+
+inline bool CConfig::GetQCR(void) {return QCR;}
