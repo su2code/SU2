@@ -897,10 +897,15 @@ private:
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
-  Nonphys_Reconstr;           /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
-  bool ParMETIS;              /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
+  Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
+  unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
+  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
+  su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
+  unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
+  unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
+  bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
@@ -7767,7 +7772,7 @@ public:
    * \return 	Number of increments.
    */
   unsigned long GetNumberIncrements(void);
-  
+
   /*!
    * \brief Get the value of the criteria for applying incremental loading.
    * \return Value of the log10 of the residual.
@@ -7789,6 +7794,35 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Get the frequency for writing the surface solution file in Dual Time.
+   * \return It writes the surface solution file with this frequency.
+   */
+  unsigned long GetWrt_Surf_Freq_DualTime(void);
+    
+  /*!
+   * \brief Get the Kind of Hybrid RANS/LES.
+   * \return Value of Hybrid RANS/LES method.
+   */
+  unsigned short GetKind_HybridRANSLES(void);
+
+  /*!
+   * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
+   * \return Value of Low dissipation approach.
+   */
+   unsigned short GetKind_RoeLowDiss(void);
+    
+  /*!
+   * \brief Get the DES Constant.
+   * \return Value of DES constant.
+   */
+   su2double GetConst_DES(void);
+
+  /*!
+   * \brief Get QCR (SA-QCR2000).
+   */
+  bool GetQCR(void);
 
   /*!
    * \brief Get if AD preaccumulation should be performed.
