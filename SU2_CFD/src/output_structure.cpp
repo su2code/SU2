@@ -3998,6 +3998,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
   /*--- Retrieve filename from config ---*/
   
   if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
@@ -4505,8 +4510,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
-    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
+    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
+        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
+        /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-2))) ||
         ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
       
@@ -6523,14 +6532,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     
     if (fixed_cl) {
       Breakdown_file << "Simulation at a cte. CL: " << config[val_iZone]->GetTarget_CL() << ".\n";
-      Breakdown_file << "Approx. Delta CL / Delta AoA: " << config[val_iZone]->GetdCL_dAlpha() << " (1/deg).\n";
-      Breakdown_file << "Approx. Delta CD / Delta CL: " << config[val_iZone]->GetdCD_dCL() << ".\n";
-      if (nDim == 3 ) {
-        Breakdown_file << "Approx. Delta CMx / Delta CL: " << config[val_iZone]->GetdCMx_dCL() << ".\n";
-        Breakdown_file << "Approx. Delta CMy / Delta CL: " << config[val_iZone]->GetdCMy_dCL() << ".\n";
-      }
-      Breakdown_file << "Approx. Delta CMz / Delta CL: " << config[val_iZone]->GetdCMz_dCL() << ".\n";
-    }
+     }
     
     if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
     else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
@@ -8030,6 +8032,10 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Plane_Normal = new su2double[3];
   Plane_Normal_ = new su2double[3];
   CPressure = new su2double[geometry->GetnPoint()];
+  
+  if ((rank == MASTER_NODE) && (output)) {
+    cout << endl << "Writing the spanload file (load_distribution.dat).";
+  }
   
   /*--- Compute some reference quantities and necessary values ---*/
   
@@ -11073,6 +11079,14 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
                                        unsigned long iExtIter,
                                        unsigned short val_nZone) {
   
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
   unsigned short iZone, iVar;
   unsigned long iPoint;
   
@@ -11205,13 +11219,13 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    /*--- Write the solution files iff they are requested and we are executing
+    /*--- Write the solution files if they are requested and we are executing
      with a single rank (all data on one proc and no comm. overhead). Once we
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
-
+    if ((size == SINGLE_NODE) && (rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
+      
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
       if (rank == MASTER_NODE)

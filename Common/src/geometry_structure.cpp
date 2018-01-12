@@ -1458,7 +1458,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               
               W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
               
-              Length_U = 0.0, Length_V = 0.0, Length_W = 0.0, CosValue = 0.0;
+              Length_U = 0.0; Length_V = 0.0; Length_W = 0.0; CosValue = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { Length_U += U[iDim]*U[iDim]; Length_V += V[iDim]*V[iDim]; Length_W += W[iDim]*W[iDim]; }
               Length_U = sqrt(Length_U); Length_V = sqrt(Length_V); Length_W = sqrt(Length_W);
               for (iDim = 0; iDim < nDim; iDim++) { U[iDim] /= Length_U; V[iDim] /= Length_V; CosValue += U[iDim]*V[iDim]; }
