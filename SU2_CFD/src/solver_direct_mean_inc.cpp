@@ -4331,16 +4331,27 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
-  unsigned short iMarker_Monitoring;
+  unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
 
+  Total_ComboObj = 0.0;
+  
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-
-    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+    /*--- If there is only one objective function, it will use it for all the markers ---*/
+    
+    if (config->GetnMarker_Monitoring() != config->GetnObj())  {
+      Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+      Kind_ObjFunc = config->GetKind_ObjFunc(0);
+    }
+    else {
+      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+      Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+    }
+    
+    switch(Kind_ObjFunc) {
       case DRAG_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);

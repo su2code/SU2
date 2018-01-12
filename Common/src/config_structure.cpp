@@ -709,7 +709,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
   addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
-  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, true);
+  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
@@ -1277,6 +1277,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
   /* DESCRIPTION: Discrete Adjoint frozen limiter */
   addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
+  /* DESCRIPTION: Use an inconsistent (primal/dual) discrete adjoint formulation */
+  addBoolOption("INCONSISTEN_DISC", Inconsistent_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
@@ -3181,6 +3183,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
 
+  if ((DiscreteAdjoint) && (Inconsistent_Disc)) {
+    Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
+    Kind_Centered_Flow = Kind_Centered_AdjFlow;
+    Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
+    Kappa_Flow[0] = Kappa_AdjFlow[0];
+    Kappa_Flow[1] = Kappa_AdjFlow[1];
+  }
+  
   if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
