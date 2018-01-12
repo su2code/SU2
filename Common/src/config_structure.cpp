@@ -1061,7 +1061,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Roe coefficient */
   addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
-  addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
+  addBoolOption("LOW_MACH_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Post-reconstruction correction for low Mach number flows */
   addBoolOption("LOW_MACH_CORR", Low_Mach_Corr, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -1282,6 +1282,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SENS_REMOVE_SHARP
    * \n DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n DEFAULT: NO \ingroup Config*/
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
+
+  /* DESCRIPTION: Automatically reorient elements that seem flipped */
+  addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -1958,6 +1961,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
+    
+  /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
+  /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
+    
+  /* DESCRIPTION: Writing surface solution file frequency for dual time */
+  addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
+
+  /* DESCRIPTION: DES Constant */
+  addDoubleOption("DES_CONST", Const_DES, 0.65);
+
+  /* DESCRIPTION: Specify Hybrid RANS/LES model */
+  addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
+    
+  /* DESCRIPTION:  Roe with low dissipation for unsteady flows */
+  addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
+
+  /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
+  addBoolOption("SA_QCR", QCR, false);
   
   /* DESCRIPTION: Multipoint design Mach number*/
   addPythonOption("MULTIPOINT_MACH_NUMBER");
@@ -4100,6 +4121,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
+          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
+          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
+          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+        }
+        if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
+        cout << "Hybrid RANS/LES: ";
+        switch (Kind_HybridRANSLES){
+          case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
+          case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
@@ -4577,6 +4610,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SW)  cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == L2ROE) cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == SLAU) cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
+
+        switch (Kind_RoeLowDiss) {
+          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+        }
         
         if (MUSCL_Flow) {
           cout << "Second order integration in space, with slope limiter." << endl;
