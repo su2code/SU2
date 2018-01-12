@@ -779,17 +779,24 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  virtual void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
-
-
+  virtual void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
@@ -4099,7 +4106,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_TurboSolution(CConfig *config);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
 };
 
@@ -4739,16 +4760,24 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
-   * \brief Parallelization of SetDissipation_Switch.
+   * \brief Compute Ducros Sensor for Roe Dissipation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Parallelization of SetPressure_Sensor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -7001,16 +7030,16 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
-   * \brief Parallelization of SetDissipation_Switch.
+   * \brief Parallelization of SetPressure_Sensor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -8263,7 +8292,14 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
+  
 };
 
 /*!
@@ -9121,7 +9157,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] solver - Solver container
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
+  
 };
 
 /*!
@@ -9751,8 +9795,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9770,8 +9814,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief Impose via the residual the adjoint Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10287,7 +10331,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -10295,8 +10339,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
-
+  void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief Impose via the residual the adjoint Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.

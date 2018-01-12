@@ -155,10 +155,12 @@ int main(int argc, char *argv[]) {
 
     /*--- Check the orientation before computing geometrical quantities ---*/
 
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
     geometry_container[iZone]->SetBoundVolume();
-    geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
-    geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+    if (config_container[iZone]->GetReorientElements()) {
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+      geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+      geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+    }
 
     /*--- Create the edge structure ---*/
 

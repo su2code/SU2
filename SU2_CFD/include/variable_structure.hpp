@@ -72,7 +72,7 @@ protected:
   Max_Lambda_Inv,    /*!< \brief Maximun inviscid eingenvalue. */
   Max_Lambda_Visc,  /*!< \brief Maximun viscous eingenvalue. */
   Lambda;        /*!< \brief Value of the eingenvalue. */
-  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme. */
+  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
   su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
@@ -263,6 +263,36 @@ public:
    * \return Pointer to the old solution vector.
    */
   virtual su2double GetSolution_New(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetRoe_Dissipation(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation(su2double val_dissipation);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation_FD(su2double val_wall_dist);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation_NTS();
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetDES_LengthScale(su2double val_des_lengthscale);
 
   /*!
    * \brief A virtual member.
@@ -2292,7 +2322,17 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
-
+  
+  /*!
+   * \brief Virtual member. 
+   */
+  virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+ 
+  /*!
+   * \brief Virtual member. 
+   */
+  virtual su2double GetVortex_Tilting();
+  
   virtual void SetDynamic_Derivative(unsigned short iVar, su2double der);
 
   virtual void SetDynamic_Derivative_n(unsigned short iVar, su2double der);
@@ -3738,6 +3778,11 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double DES_LengthScale; /*!< \brief DES Length Scale. */
+  su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
+  su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
+  su2double Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  
 public:
   
   /*!
@@ -3884,6 +3929,40 @@ public:
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
+  
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);
+  
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation_NTS();
+    
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation_FD(su2double wall_distance);
+    
+  /*!
+ * \brief Get the Roe Dissipation Coefficient.
+ * \return Value of the Roe Dissipation.
+ */
+  su2double GetRoe_Dissipation(void);
+  
+  /*!
+ * \brief Set the Roe Dissipation Coefficient.
+ * \param[in] val_dissipation - Value of the Roe dissipation factor.
+ */
+  void SetRoe_Dissipation(su2double val_dissipation);
+  
 };
 
 /*!
@@ -3902,6 +3981,8 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  
+  su2double DES_LengthScale;
 public:
   
   /*!
@@ -3985,6 +4066,17 @@ public:
   bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
   using CVariable::SetPrimVar;
   
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);  
+    
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
 };
 
 /*!
@@ -4043,7 +4135,9 @@ class CTurbSAVariable : public CTurbVariable {
 
 private:
   su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
-
+  su2double DES_LengthScale;
+  su2double Vortex_Tilting;
+  
 public:
   /*!
    * \brief Constructor of the class.
@@ -4090,6 +4184,28 @@ public:
    * \param[in] val_gamma - New value of the intermittency.
    */
   void SetGammaBC(su2double val_gamma);
+  
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);  
+  
+  /*!
+   * \brief Set the vortex tilting measure for computation of the EDDES length scale
+   */
+  void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+  
+  /*!
+   * \brief Get the vortex tilting measure for computation of the EDDES length scale
+   * \return Value of the DES length Scale
+   */
+  su2double GetVortex_Tilting();
   
 };
 
