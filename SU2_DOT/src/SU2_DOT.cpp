@@ -159,10 +159,12 @@ int main(int argc, char *argv[]) {
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
     geometry_container[iZone]->SetBoundVolume();
-    geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
-    geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+    if (config_container[iZone]->GetReorientElements()) {
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
+      geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+      geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+    }
   
   /*--- Create the edge structure ---*/
   
@@ -601,6 +603,15 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   AD::StopRecording();
   
+  /*--- Create a structure to identify points that have been already visited. 
+   * We need that to make sure to set the sensitivity of surface points only once
+   *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
+  
+  bool* visited = new bool[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    visited[iPoint] = false;
+  }
+  
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
   
@@ -609,26 +620,31 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
-        VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-        Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
-        
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++){
-          Area += Normal[iDim]*Normal[iDim];
-        }
-        Area = sqrt(Area);
-        
-        for (iDim = 0; iDim < nDim; iDim++){
-          if (config->GetDiscrete_Adjoint()){
-            Sensitivity = geometry->GetSensitivity(iPoint, iDim);
-          } else {
-            Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
+        if (!visited[iPoint]){
+          VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+          Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            Area += Normal[iDim]*Normal[iDim];
           }
-          SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
+          Area = sqrt(Area);
+          
+          for (iDim = 0; iDim < nDim; iDim++){
+            if (config->GetDiscrete_Adjoint()){
+              Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+            } else {
+              Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
+            }
+            SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
+          }
+          visited[iPoint] = true;
         }
       }
     }
   }
+  
+  delete [] visited;
   
   /*--- Compute derivatives and extract gradient ---*/
   

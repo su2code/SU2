@@ -1355,6 +1355,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * \n DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n DEFAULT: NO \ingroup Config*/
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
 
+  /* DESCRIPTION: Automatically reorient elements that seem flipped */
+  addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
+
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
