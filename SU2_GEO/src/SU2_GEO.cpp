@@ -189,8 +189,10 @@ int main(int argc, char *argv[]) {
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
-  if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+  if (config_container[ZONE_0]->GetReorientElements()) {
+    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+    geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+  }
   
   /*--- Create the edge structure ---*/
   
