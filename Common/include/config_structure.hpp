@@ -394,6 +394,7 @@ private:
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
+  bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
   unsigned short nDV,		/*!< \brief Number of design variables. */
   nObj, nObjW;              /*! \brief Number of objective functions. */
@@ -2400,6 +2401,12 @@ public:
    * \return CFL number for unsteady simulations.
    */
   su2double GetUnst_CFL(void);
+
+  /*!
+   * \brief Get information about element reorientation
+   * \return 	<code>TRUE</code> means that elements can be reoriented if suspected unhealthy
+   */
+  bool GetReorientElements(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
