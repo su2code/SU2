@@ -64,6 +64,10 @@ inline SortFacesClass::SortFacesClass(unsigned long            val_nVolElemOwned
 
 inline SortFacesClass::~SortFacesClass(void) { }
 
+inline SortBoundaryFacesClass::SortBoundaryFacesClass() { }
+
+inline SortBoundaryFacesClass::~SortBoundaryFacesClass() { }
+
 inline CVolumeElementFEM::CVolumeElementFEM(void) { }
 
 inline CVolumeElementFEM::~CVolumeElementFEM(void) { }

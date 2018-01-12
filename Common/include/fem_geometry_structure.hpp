@@ -167,11 +167,11 @@ class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class SortFacesClass {
 public:
   /*!
-   * \brief Constructor of the class. Set the value of nVolElemTot.
+   * \brief Constructor of the class. Set the values of the member variables.
    */
-   SortFacesClass(unsigned long            val_nVolElemOwned,
-                  unsigned long            val_nVolElemTot,
-                  const CVolumeElementFEM *val_volElem);
+  SortFacesClass(unsigned long            val_nVolElemOwned,
+                 unsigned long            val_nVolElemTot,
+                 const CVolumeElementFEM *val_volElem);
 
  /*!
   * \brief Destructor of the class. Nothing to be done.
@@ -195,6 +195,35 @@ private:
    * \brief Default constructor of the class. Disabled.
    */
    SortFacesClass(void);
+};
+
+/*!
+ * \class SortBoundaryFacesClass
+ * \brief Functor, used for a different sorting of the faces than the < operator
+ *        of CSurfaceElementFEM.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class CSurfaceElementFEM;   // Forward declaration to avoid problems.
+class SortBoundaryFacesClass {
+public:
+  /*!
+   * \brief Constructor of the class. Nothing to be done.
+   */
+  SortBoundaryFacesClass(void);
+
+  /*!
+   * \brief Destructor of the class. Nothing to be done.
+   */
+  ~SortBoundaryFacesClass(void);
+
+ /*!
+  * \brief Operator used for the comparison.
+  * \param[in] f0 - First boundary face in the comparison.
+  * \param[in] f1 - Second boundary face in the comparison.
+  */
+  bool operator()(const CSurfaceElementFEM &f0,
+                  const CSurfaceElementFEM &f1);
 };
 
 /*!

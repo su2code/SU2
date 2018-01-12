@@ -195,6 +195,21 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
   return f0.faceIndicator > f1.faceIndicator;
 }
 
+bool SortBoundaryFacesClass::operator()(const CSurfaceElementFEM &f0,
+                                        const CSurfaceElementFEM &f1) {
+
+  /* First sorting criterion is the index of the standard element. The
+     boundary faces should be sorted per standard element. Note that the
+     time level is not taken into account here, because it is assumed that
+     the surface elements to be sorted belong to one time level. */
+  if(f0.indStandardElement != f1.indStandardElement)
+    return f0.indStandardElement < f1.indStandardElement;
+
+  /* The standard elements are the same. The second criterion is the
+     corresponding volume IDs of the surface elements. */
+  return f0.volElemID < f1.volElemID;
+}
+
 void CPointFEM::Copy(const CPointFEM &other) {
   globalID           = other.globalID;
   periodIndexToDonor = other.periodIndexToDonor;
@@ -2705,6 +2720,29 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   sort(localFaces.begin(), localFaces.end());
   localFaces.resize(nFacesLoc);
 
+  /* Loop again over the faces and determine whether or not the integration
+     rule for straight and curved faces is the same. If that is the case
+     the value of JacFaceIsConsideredConstant is set to false. Hence it is
+     only needed to carry out this check for faces with a constant Jacobian. */
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if( localFaces[i].JacFaceIsConsideredConstant ) {
+
+      unsigned short orderExactStraight =
+         (unsigned short) ceil(localFaces[i].nPolyGrid0*config->GetQuadrature_Factor_Straight());
+      unsigned short orderExactCurved =
+         (unsigned short) ceil(localFaces[i].nPolyGrid0*config->GetQuadrature_Factor_Curved());
+
+      if(orderExactStraight == orderExactCurved) {
+        orderExactStraight =
+           (unsigned short) ceil(localFaces[i].nPolySol0*config->GetQuadrature_Factor_Straight());
+        orderExactCurved =
+           (unsigned short) ceil(localFaces[i].nPolySol0*config->GetQuadrature_Factor_Curved());
+        if(orderExactStraight == orderExactCurved)
+          localFaces[i].JacFaceIsConsideredConstant = false;
+      }
+    }
+  }
+
   /*---------------------------------------------------------------------------*/
   /*--- Step 2: Preparation of the localFaces vector, such that the info    ---*/
   /*---         stored in this vector can be separated in a contribution    ---*/
@@ -3158,16 +3196,16 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
             the connectivity information, which is stored in surfElem. ---*/
       for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
 
-         /* Determine the time level of the adjacent element and increment
-            the number of surface elements for this time level. The +1 is there,
-            because this vector will be put in cumulative storage format
-            afterwards. */
-         ii = i - indBegMarker;
-         const unsigned short timeLevel = volElem[surfElem[ii].volElemID].timeLevel;
-         ++boundaries[iMarker].nSurfElem[timeLevel+1];
+        /* Determine the time level of the adjacent element and increment
+           the number of surface elements for this time level. The +1 is there,
+           because this vector will be put in cumulative storage format
+           afterwards. */
+        ii = i - indBegMarker;
+        const unsigned short timeLevel = volElem[surfElem[ii].volElemID].timeLevel;
+        ++boundaries[iMarker].nSurfElem[timeLevel+1];
 
-         /*--- Determine the number of DOFs of the face for both the grid
-               and solution. This value depends on the face type. ---*/
+        /*--- Determine the number of DOFs of the face for both the grid
+              and solution. This value depends on the face type. ---*/
         unsigned short sizeDOFsGridFace = 0, sizeDOFsSolFace = 0;
 
         unsigned short VTK_Type = 0; // To avoid a compiler warning.
@@ -3276,6 +3314,16 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       /* Put boundaries[iMarker].nSurfElem in cumulative storage. */
       for(unsigned short i=0; i<nTimeLevels; ++i)
         boundaries[iMarker].nSurfElem[i+1] += boundaries[iMarker].nSurfElem[i];
+
+      /* Carry out another sort of the surface elements, such that surface elements
+         belonging to the same standard element are contiguous in memory. In this
+         way a simultaneous treatment of several surface elements is possible, which
+         increases the performance. Note that this renumbering must happen within
+         each time level. */
+      for(unsigned short i=0; i<nTimeLevels; ++i)
+        sort(surfElem.begin()+boundaries[iMarker].nSurfElem[i],
+             surfElem.begin()+boundaries[iMarker].nSurfElem[i+1],
+             SortBoundaryFacesClass());
     }
   }
 }
