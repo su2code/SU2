@@ -700,10 +700,12 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Check the orientation before computing geometrical quantities ---*/
 
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
     geometry_container[iZone][MESH_0]->SetBoundVolume();
-    geometry_container[iZone][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
-    geometry_container[iZone][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+    if (config_container[iZone]->GetReorientElements()) {
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+      geometry_container[iZone][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
+      geometry_container[iZone][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+    }
 
     /*--- Create the edge structure ---*/
 
