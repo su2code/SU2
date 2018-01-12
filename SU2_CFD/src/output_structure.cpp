@@ -13855,10 +13855,9 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   unsigned long nVar_First = 0, nVar_Consv_Par = 0;
   
   su2double *Node_Vel = NULL, *Node_Accel = NULL, *Stress = NULL;
-  
-  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
-  
-  int *Local_Halo;
+
+  bool Wrt_Halo   = config->GetWrt_Halo(), isPeriodic;
+  int *Local_Halo = NULL;
   
   stringstream varname;
   
@@ -14121,17 +14120,18 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
         
           Local_Data[iPoint][iVar] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); iVar++;
         
-        /*--- New variables can be loaded to the Local_Data structure here,
-         assuming they were registered above correctly. ---*/
         
+          /*--- New variables can be loaded to the Local_Data structure here,
+           assuming they were registered above correctly. ---*/
+
         }
 
       }
 
-        /*--- Increment the point counter, as there may have been halos we
-         skipped over during the data loading. ---*/
+      /*--- Increment the point counter, as there may have been halos we
+       skipped over during the data loading. ---*/
         
-        jPoint++;
+      jPoint++;
     }
   }
   
