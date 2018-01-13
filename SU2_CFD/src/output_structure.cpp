@@ -12040,7 +12040,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
     case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
     case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
     case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL; break;
-    case TWO_PHASE_RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; ThirdIndex = TWO_PHASE_SOL; break;
+    case TWO_PHASE_RANS : FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL; ThirdIndex = TURB_SOL; break;
     default: SecondIndex = NONE; break;
   }
 
@@ -12092,7 +12092,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   }
   if (SecondIndex == TWO_PHASE_SOL) {
       Variable_Names.push_back("S");
-      Variable_Names.push_back("h");
+      Variable_Names.push_back("h_liquid");
       Variable_Names.push_back("Rc");
       Variable_Names.push_back("mom0");
       Variable_Names.push_back("mom1");
@@ -12108,14 +12108,14 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
       Variable_Names.push_back("Nu_Tilde");
     }
   }
-  if (ThirdIndex == TWO_PHASE_SOL) {
-      Variable_Names.push_back("S");
-      Variable_Names.push_back("h");
-      Variable_Names.push_back("Rc");
-      Variable_Names.push_back("mom0");
-      Variable_Names.push_back("mom1");
-      Variable_Names.push_back("mom2");
-      Variable_Names.push_back("mom3");
+  if (ThirdIndex == TURB_SOL) {
+    if (config->GetKind_Turb_Model() == SST) {
+      Variable_Names.push_back("TKE");
+      Variable_Names.push_back("Omega");
+    } else {
+      /*--- S-A variants ---*/
+      Variable_Names.push_back("Nu_Tilde");
+    }
   }
 
 
@@ -12172,11 +12172,14 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
           Variable_Names.push_back("Limiter_mom2");
           Variable_Names.push_back("Limiter_mom3");
       }
-      if (ThirdIndex == TWO_PHASE_SOL) {
-          Variable_Names.push_back("Limiter_mom0");
-          Variable_Names.push_back("Limiter_mom1");
-          Variable_Names.push_back("Limiter_mom2");
-          Variable_Names.push_back("Limiter_mom3");
+      if (ThirdIndex == TURB_SOL) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Limiter_TKE");
+          Variable_Names.push_back("Limiter_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Limiter_Nu_Tilde");
+        }
       }
     }
 
@@ -12211,12 +12214,15 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
           Variable_Names.push_back("Residual_mom2");
           Variable_Names.push_back("Residual_mom3");
       }
-      if (ThirdIndex == TWO_PHASE_SOL) {
-          Variable_Names.push_back("Residual_mom0");
-          Variable_Names.push_back("Residual_mom1");
-          Variable_Names.push_back("Residual_mom2");
-          Variable_Names.push_back("Residual_mom3");
-      }
+      if (ThirdIndex == TURB_SOL) {
+		  if (config->GetKind_Turb_Model() == SST) {
+			Variable_Names.push_back("Residual_TKE");
+			Variable_Names.push_back("Residual_Omega");
+		  } else {
+			/*--- S-A variants ---*/
+			Variable_Names.push_back("Residual_Nu_Tilde");
+		  }
+		}
     }
 
     /*--- Add the grid velocity. ---*/
@@ -12342,10 +12348,9 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   	Variable_Names.push_back("J (1/kg/s)");
 
   	if (liquid_props == true) {
-  		nVar_Par += 8;
+  		nVar_Par += 7;
   		Variable_Names.push_back("Rho_liquid");
   		Variable_Names.push_back("T_liquid");
-  		Variable_Names.push_back("h_liquid");
   		Variable_Names.push_back("R_critical");
   		Variable_Names.push_back("sigma");
   		Variable_Names.push_back("Tsat");
@@ -12566,7 +12571,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         	if (liquid_props == true) {
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(2)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(5)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
@@ -12719,7 +12723,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   }
 
 
-/*  if ((Kind_Solver == DISC_ADJ_EULER)                   ||
+  if ((Kind_Solver == DISC_ADJ_EULER)                   ||
       (Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
       (Kind_Solver == DISC_ADJ_RANS)                    ||
 	  (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
@@ -12731,10 +12735,10 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 	  nVar_Par += 2;
       if (geometry->GetnDim()== 3) {
         Variable_Names.push_back("Sensit.2");
-        nVar_par +=1;
+        nVar_Par +=1;
     }
   }
-  */
+
 
 
   /*--- If requested, register the limiter and residuals for all of the

@@ -1042,10 +1042,10 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   
   /*--- Initialize some useful booleans ---*/
   
-  euler            = false;  ns              = false;  turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;  two_phase = false;
-  poisson          = false;  neg_spalart_allmaras = false;
+  euler            = false;  ns              = false;      turbulent = false;
+  adj_euler        = false;  adj_ns          = false;      adj_turb  = false;
+  spalart_allmaras = false;  menter_sst      = false;      two_phase = false;
+  poisson          = false;  neg_spalart_allmaras = false; adj_two_phase = false;
   wave             = false;  disc_adj        = false;
   fem = false;
   heat             = false;
@@ -1074,7 +1074,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
     case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; adj_two_phase = true;  break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true; adj_two_phase=true; break;
-    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1108,6 +1108,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       delete solver_container[iMGlevel][ADJFLOW_SOL];
       if ((turbulent && disc_adj) || adj_turb) {
         delete solver_container[iMGlevel][ADJTURB_SOL];
+      }
+      if (adj_two_phase == true) {
+              delete solver_container[iMGlevel][ADJTWO_PHASE_SOL];
       }
     }
     
@@ -1151,7 +1154,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj, two_phase;
+      heat, template_solver, transition, disc_adj, two_phase, adj_two_phase;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1159,7 +1162,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
   wave             = false; two_phase        = false;
-  heat             = false;
+  heat             = false; adj_two_phase    = false;
   fem = false;
   transition       = false;
   template_solver  = false;
@@ -1183,9 +1186,9 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
-    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; break;
-    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true;  break;
-    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; adj_two_phase = true; break;
+    case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true; adj_two_phase = true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Cont());break;
   }
 
   /*--- Allocate solution for a template problem ---*/
@@ -1206,6 +1209,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_ns) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
+  if (adj_two_phase) integration_container[ADJTWO_PHASE_SOL] = new CSingleGridIntegration(config);
 
   if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
 
@@ -1248,7 +1252,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
     case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; disc_adj= true; adj_two_phase = true;  break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; disc_adj = true; adj_two_phase=true; break;
-    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; disc_adj = true; adj_two_phase = true; adj_turb = (!config->GetFrozen_Visc_Cont());break;
   }
 
   /*--- DeAllocate solution for a template problem ---*/
@@ -1267,6 +1271,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
   if (adj_turb) delete integration_container[ADJTURB_SOL];
+  if (adj_two_phase) delete integration_container[ADJTWO_PHASE_SOL];
   
 
 }
@@ -1294,7 +1299,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   bool
   euler, adj_euler,
   ns, adj_ns,
-  turbulent, adj_turb, hill_rus, hill_ausm,
+  turbulent, adj_turb, adj_two_phase, hill_rus, hill_ausm,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
@@ -1309,12 +1314,12 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   
   /*--- Initialize some useful booleans ---*/
-  euler            = false;   ns               = false;   turbulent        = false;
+  euler            = false;   ns               = false;      turbulent        = false;
   poisson          = false;
-  adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   fem        = false;
+  adj_euler        = false;   adj_ns           = false;      adj_turb         = false;
+  wave             = false;   heat             = false;      fem              = false;
   spalart_allmaras = false;   neg_spalart_allmaras = false;  menter_sst       = false;
-  transition       = false;   two_phase        = false;
+  transition       = false;   two_phase        = false;      adj_two_phase    = false;
   template_solver  = false;
   hill_rus = false; hill_ausm = false;
   
@@ -1334,7 +1339,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; break;
+    case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; adj_euler = true; adj_two_phase = true; break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; break;
     case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; break;
   }
@@ -1369,15 +1374,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (transition)   nVar_Trans   = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
-  if (wave)        nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
-  if (fem)        nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
-  if (heat)        nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
+  if (wave)         nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
+  if (fem)          nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
+  if (heat)         nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
   /*--- Number of variables for adjoint problem ---*/
   
-  if (adj_euler)        nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
-  if (adj_ns)           nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
-  if (adj_turb)         nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
+  if (adj_euler)        nVar_Adj_Flow   = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
+  if (adj_ns)           nVar_Adj_Flow   = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
+  if (adj_turb)         nVar_Adj_Turb   = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
   
   /*--- Number of dimensions ---*/
   
@@ -2033,7 +2038,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   bool
   euler, adj_euler,
   ns, adj_ns,
-  turbulent, adj_turb, hill_rus, hill_ausm,
+  turbulent, adj_turb, hill_rus, hill_ausm, adj_two_phase,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
@@ -2050,9 +2055,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   euler            = false;   ns               = false;   turbulent        = false;
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   fem        = false;
+  wave             = false;   heat             = false;   fem              = false;
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
-  transition       = false;   two_phase        = false;
+  transition       = false;   two_phase        = false;   adj_two_phase    = false;
   template_solver  = false;
   
   hill_rus = false; hill_ausm = false;
@@ -2075,7 +2080,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; break;
-    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; adj_ns = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -2416,7 +2421,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       }
     }
   }
-  
+
   /*--- Solver definition for the wave problem ---*/
   if (wave) {
     
@@ -3130,9 +3135,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
- /*   case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
-       StopCalc = (integration_container[ZONE_0][FLOW_SOL]->GetConvergence();
-       && integration_container[ZONE_0][TWO_PHASE_SOL]->GetConvergence(); break;*/
+    case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
+       StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
     case WAVE_EQUATION:
       StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
     case HEAT_EQUATION:
@@ -3142,6 +3146,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+   case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
+	 StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
   
   return StopCalc;
@@ -3792,6 +3798,13 @@ void CGeneralDriver::ResetConvergence() {
       integration_container[ZONE_0][ADJTURB_SOL]->SetConvergence(false);
     break;
 
+    case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
+    integration_container[ZONE_0][ADJFLOW_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][ADJTWO_PHASE_SOL]->SetConvergence(false);
+      if( (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) )
+      integration_container[ZONE_0][ADJTURB_SOL]->SetConvergence(false);
+    break;
+
   }
 
 }
@@ -4031,6 +4044,13 @@ void CFluidDriver::ResetConvergence() {
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
       if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) )
+        integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
+      break;
+
+    case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
+      integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
+      integration_container[iZone][ADJTWO_PHASE_SOL]->SetConvergence(false);
+      if( (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) )
         integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
       break;
     }
@@ -4323,7 +4343,11 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
   case EULER: case NAVIER_STOKES: case RANS:
     StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+  case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
+    StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+  case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
     StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 
@@ -4520,7 +4544,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
       solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
     }
-    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+    if ((config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS || config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
     if(two_phase){
@@ -4932,9 +4956,15 @@ void CHBDriver::ResetConvergence() {
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
       integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) )
+      if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
+    		  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS))
         integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
+      break;
+      if( (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+    	(config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) )
+        integration_container[iZone][ADJTWO_PHASE_SOL]->SetConvergence(false);
       break;
     }
   }

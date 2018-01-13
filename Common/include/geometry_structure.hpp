@@ -55,7 +55,6 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "primal_grid_structure.hpp"
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"

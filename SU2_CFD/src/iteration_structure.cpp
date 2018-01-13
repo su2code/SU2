@@ -455,7 +455,7 @@ void CFluidIteration::Iterate(COutput *output,
     case RANS: case DISC_ADJ_RANS:
       config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
       
-    case TWO_PHASE_RANS:
+    case TWO_PHASE_RANS: case DISC_ADJ_TWO_PHASE_RANS:
           config_container[val_iZone]->SetGlobalParam(TWO_PHASE_RANS, RUNTIME_FLOW_SYS, ExtIter); break;
 
   }
@@ -477,7 +477,7 @@ void CFluidIteration::Iterate(COutput *output,
 
   }
 
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) || (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES)) {
 
     /*--- Solve the 2phase model ---*/
 
@@ -488,7 +488,7 @@ void CFluidIteration::Iterate(COutput *output,
 
   }
 
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) || (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS)) {
 
     /*--- Solve the 2phase model ---*/
 
@@ -501,7 +501,8 @@ void CFluidIteration::Iterate(COutput *output,
 
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
      (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||       
-     ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
+     ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc) ||
+	 ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) && !frozen_visc)) {
       
     /*--- Solve the turbulence model ---*/
     
@@ -574,7 +575,9 @@ void CFluidIteration::Update(COutput *output,
     if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
     	(config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
         (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
-        (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)) {
+        (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)||
+		(config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES)||
+		(config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS)) {
       integration_container[val_iZone][TWO_PHASE_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TWO_PHASE_SOL], config_container[val_iZone], MESH_0);
       integration_container[val_iZone][TWO_PHASE_SOL]->SetConvergence(false);
     }
@@ -583,7 +586,8 @@ void CFluidIteration::Update(COutput *output,
     
     if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
     	(config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
-        (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
+        (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)||
+		(config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS)) {
       integration_container[val_iZone][TURB_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TURB_SOL], config_container[val_iZone], MESH_0);
       integration_container[val_iZone][TURB_SOL]->SetConvergence(false);
     }
@@ -1642,7 +1646,7 @@ void CAdjFluidIteration::Postprocess(CConfig **config_container,
 
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   
-  turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
+  turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS);
   two_phase = ((config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
                (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   

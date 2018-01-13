@@ -15221,22 +15221,22 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       node[iPoint_Local]->SetSolution(Solution);
 
       /*--- load source data for two-phase simulation ---*/
-//      if (two_phase) {
-//        if (Old_Solution_1Ph) {
-//          S = 0.0;
-//          H = 0.0;
-//        }
-//        else {
-//          if (Old_Solution_Turb) {
-//            index += skipVarsTurb;
-//          }
-//          S = Restart_Data[index+nVar];
-//          H = Restart_Data[index+nVar+1];
-//        }
-//        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
-//        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
-//      }
-
+/*      if (two_phase) {
+        if (Old_Solution_1Ph) {
+          S = 0.0;
+          H = 0.0;
+        }
+        else {
+          if (Old_Solution_Turb) {
+            index += skipVarsTurb;
+          }
+          S = Restart_Data[index+nVar];
+          H = Restart_Data[index+nVar+1];
+         }
+        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
+        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
+      }
+*/
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
