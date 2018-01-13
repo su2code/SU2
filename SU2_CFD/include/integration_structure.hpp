@@ -237,8 +237,8 @@ public:
    */
   bool GetConvergence_FullMG(void);
   
-  /*! 
-   * \brief Save the solution, and volume at different time steps. 
+  /*!
+   * \brief Save the solution, and volume at different time steps.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
