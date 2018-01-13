@@ -1868,13 +1868,14 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_contain
   if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading flow solution from direct iteration " << val_DirectIter  << "." << endl;
+    if (two_phase) {
+      solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, false);
+    }
     solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, true);
     if (turbulent) {
       solver_container[val_iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, false);
     }
-    if (two_phase) {
-      solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, false);
-    }
+
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
@@ -1933,7 +1934,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                                                           IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
     }
-  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+  if ((Kind_Solver == DISC_ADJ_RANS || Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) && !frozen_visc) {
 
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
                                                                               config_container[val_iZone]);
@@ -1957,12 +1958,12 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGe
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
-
+// this if is always executed by definition???? why is there an if here
     solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                   config_container[iZone]);
   }
 
-  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+  if (turbulent && !frozen_visc) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
         config_container[iZone]);
   }
@@ -1984,13 +1985,13 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
     /*--- Register flow and turbulent variables as input ---*/
     
     if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
-
+    	// this if is always executed by definition???? why is there an if here
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
 
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
     
-    if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+    if (turbulent && !frozen_visc) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
 
@@ -2026,7 +2027,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
 
   solver_container[iZone][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
 
-  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
+  if (turbulent && !frozen_visc){
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
@@ -2034,7 +2035,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
   // check if for 2phase is needed both pre and pro
   if(two_phase){
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_2PHASE_SYS, true);
+//    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_2PHASE_SYS, true);
     solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
   }
@@ -2047,13 +2048,13 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
   
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
-  
+	  // this if is always executed by definition???? why is there an if here
   /*--- Register conservative variables as output of the iteration ---*/
   
     solver_container[iZone][MESH_0][FLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
   
   }
-  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
+  if (turbulent && !frozen_visc){
     solver_container[iZone][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
                                                                  config_container[iZone]);
   }
