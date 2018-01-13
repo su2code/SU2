@@ -2579,6 +2579,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
 
+      /* Copy the data from the volume element. */
       thisFace.elemID0       =  k;
       thisFace.nPolyGrid0    =  volElem[k].nPolyGrid;
       thisFace.nPolySol0     =  volElem[k].nPolySol;
@@ -2590,6 +2591,29 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       thisFace.JacFaceIsConsideredConstant = volElem[k].JacFacesIsConsideredConstant[i];
       thisFace.elem0IsOwner                = volElem[k].ElementOwnsFaces[i];
 
+      /* Determine whether or not the integration rule for straight and curved
+         faces is the same. If that is the case, the value of JacFaceIsConsideredConstant
+         is set to false. Hence it is only needed to carry out this check for faces
+         with a constant Jacobian. This is done to reduce the number of standard elements. */
+      if( thisFace.JacFaceIsConsideredConstant ) {
+
+        unsigned short orderExactStraight =
+           (unsigned short) ceil(thisFace.nPolyGrid0*config->GetQuadrature_Factor_Straight());
+        unsigned short orderExactCurved =
+           (unsigned short) ceil(thisFace.nPolyGrid0*config->GetQuadrature_Factor_Curved());
+
+        if(orderExactStraight == orderExactCurved) {
+          orderExactStraight =
+             (unsigned short) ceil(thisFace.nPolySol0*config->GetQuadrature_Factor_Straight());
+          orderExactCurved =
+             (unsigned short) ceil(thisFace.nPolySol0*config->GetQuadrature_Factor_Curved());
+          if(orderExactStraight == orderExactCurved)
+            thisFace.JacFaceIsConsideredConstant = false;
+        }
+      }
+
+      /* Renumber the corner points of the face, but keep the orientation.
+         Afterwards, add it to localFaces. */
       thisFace.CreateUniqueNumberingWithOrientation();
 
       localFaces.push_back(thisFace);
@@ -2719,29 +2743,6 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
   sort(localFaces.begin(), localFaces.end());
   localFaces.resize(nFacesLoc);
-
-  /* Loop again over the faces and determine whether or not the integration
-     rule for straight and curved faces is the same. If that is the case
-     the value of JacFaceIsConsideredConstant is set to false. Hence it is
-     only needed to carry out this check for faces with a constant Jacobian. */
-  for(unsigned long i=0; i<localFaces.size(); ++i) {
-    if( localFaces[i].JacFaceIsConsideredConstant ) {
-
-      unsigned short orderExactStraight =
-         (unsigned short) ceil(localFaces[i].nPolyGrid0*config->GetQuadrature_Factor_Straight());
-      unsigned short orderExactCurved =
-         (unsigned short) ceil(localFaces[i].nPolyGrid0*config->GetQuadrature_Factor_Curved());
-
-      if(orderExactStraight == orderExactCurved) {
-        orderExactStraight =
-           (unsigned short) ceil(localFaces[i].nPolySol0*config->GetQuadrature_Factor_Straight());
-        orderExactCurved =
-           (unsigned short) ceil(localFaces[i].nPolySol0*config->GetQuadrature_Factor_Curved());
-        if(orderExactStraight == orderExactCurved)
-          localFaces[i].JacFaceIsConsideredConstant = false;
-      }
-    }
-  }
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 2: Preparation of the localFaces vector, such that the info    ---*/
