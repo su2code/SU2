@@ -16263,15 +16263,13 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
-  su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
-  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
+  su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
+  Enthalpy, Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
   
   su2double Gas_Constant      = config->GetGas_ConstantND();
   su2double Gamma             = config->GetGamma();
-  su2double Gamma_Minus_One   = Gamma - 1.0;
   unsigned short nMarker      = config->GetnMarker_All();
   unsigned short nDim         = geometry->GetnDim();
-  unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
 
   bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
