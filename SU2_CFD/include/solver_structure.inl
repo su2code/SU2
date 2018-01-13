@@ -786,9 +786,11 @@ inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
 
-inline void CSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
@@ -1079,6 +1081,10 @@ inline void CSolver::SetOmegaOut(su2double value, unsigned short inMarkerTP, uns
 inline void CSolver::SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
+
+inline void CSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config) {}
+
+inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config) { }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
