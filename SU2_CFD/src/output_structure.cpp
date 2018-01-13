@@ -3997,11 +3997,6 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Retrieve filename from config ---*/
   
@@ -11078,14 +11073,6 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
                                        CConfig **config,
                                        unsigned long iExtIter,
                                        unsigned short val_nZone) {
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   unsigned short iZone, iVar;
   unsigned long iPoint;
