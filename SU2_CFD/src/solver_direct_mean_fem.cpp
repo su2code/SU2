@@ -3586,7 +3586,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 #ifdef CODI_FORWARD_TYPE
             Jac[var+j*nVar] = resDOF[j].getGradient();
 #else
-            Jac[var+j*nVar] = resDOF[j];   /* This is to avoid a compiler warning. */
+            Jac[var+j*nVar] = 0.0;   /* This is to avoid a compiler warning. */
 #endif
           }
         }
