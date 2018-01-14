@@ -246,6 +246,47 @@ void CVolumeElementFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
   }
 }
 
+bool CInternalFaceElementFEM::operator<(const CInternalFaceElementFEM &other) const {
+
+  /* First comparison is the standard element, such that elements with
+     the same same standard elements are grouped together. */
+  if(indStandardElement != other.indStandardElement)
+    return indStandardElement < other.indStandardElement;
+
+  /* The second comparison is the element ID on side 0. */
+  if(elemID0 != other.elemID0) return elemID0 < other.elemID0;
+
+  /* The final comparison is the element ID on side 1. */
+  return elemID1 < other.elemID1;
+}
+
+void CInternalFaceElementFEM::Copy(const CInternalFaceElementFEM &other) {
+
+  VTK_Type           = other.VTK_Type;
+  indStandardElement = other.indStandardElement;
+
+  elemID0 = other.elemID0;
+  elemID1 = other.elemID1;
+
+  DOFsGridFaceSide0 = other.DOFsGridFaceSide0;
+  DOFsGridFaceSide1 = other.DOFsGridFaceSide1;
+  DOFsSolFaceSide0  = other.DOFsSolFaceSide0;
+  DOFsSolFaceSide1  = other.DOFsSolFaceSide1;
+
+  DOFsGridElementSide0 = other.DOFsGridElementSide0;
+  DOFsGridElementSide1 = other.DOFsGridElementSide1;
+  DOFsSolElementSide0  = other.DOFsSolElementSide0;
+  DOFsSolElementSide1  = other.DOFsSolElementSide1;
+
+  metricNormalsFace    = other.metricNormalsFace;
+  metricCoorDerivFace0 = other.metricCoorDerivFace0;
+  metricCoorDerivFace1 = other.metricCoorDerivFace1;
+
+  coorIntegrationPoints = other.coorIntegrationPoints;
+  gridVelocities        = other.gridVelocities;
+  wallDistance          = other.wallDistance;
+}
+
 void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
                                              unsigned long  faceConn[]) {
 
@@ -3117,6 +3158,21 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       /* Update the counter ii for the next internal matching face. */
       ++ii;
     }
+  }
+
+  /* Carry out an additional sorting of matchingFaces, such that faces with the
+     same standard face are contiguous in memory as much as possible. This allows
+     for a simultaneous treatment of faces, which increases the gemm performance.
+     Note that this sorting takes place for each time level, because the grouping
+     of faces per time level is essential for the correct functioning of the code.
+     The same holds for the distinction between internal faces and faces that
+     are adjacent to a halo element. */
+  for(unsigned short i=0; i<nTimeLevels; ++i) {
+    sort(matchingFaces.begin()+nMatchingFacesInternal[i],
+         matchingFaces.begin()+nMatchingFacesInternal[i+1]);
+
+    sort(matchingFaces.begin()+nMatchingFacesWithHaloElem[i],
+         matchingFaces.begin()+nMatchingFacesWithHaloElem[i+1]);
   }
 
   /* Loop over the faces to flag the elements that share one or more faces
