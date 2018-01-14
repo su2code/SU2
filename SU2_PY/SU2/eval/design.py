@@ -329,7 +329,9 @@ def obj_df(dvs,config,state=None):
         # Evaluate objectives all-at-once; for adjoint methods this results in a 
         # single, combined objective.
         scale = [1.0]*n_obj
+        obj_list=['DRAG']*n_obj	
         for i_obj,this_obj in enumerate(objectives):
+            obj_list[i_obj]=this_obj
             scale[i_obj] = def_objs[this_obj]['SCALE']
             if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
                 # Standard case
@@ -342,8 +344,7 @@ def obj_df(dvs,config,state=None):
                 scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
-        
-        grad= su2grad(objectives,grad_method,config,state)
+        grad= su2grad(obj_list,grad_method,config,state)
         # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
