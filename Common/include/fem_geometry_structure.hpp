@@ -431,6 +431,29 @@ public:
    * \brief Destructor of the class. Nothing to be done.
    */
   ~CInternalFaceElementFEM(void);
+
+  /*!
+   * \brief Copy constructor of the class.
+   */
+  CInternalFaceElementFEM(const CInternalFaceElementFEM &other);
+
+  /*!
+   * \brief Assignment operator of the class.
+   */
+  CInternalFaceElementFEM& operator=(const CInternalFaceElementFEM &other);
+
+  /*!
+   * \brief Less than operator of the class. Needed for the sorting.
+            The criterion for comparison are the standard element and
+            adjacent volume ID's.
+   */
+  bool operator<(const CInternalFaceElementFEM &other) const;
+
+private:
+  /*!
+   * \brief Copy function. Needed for the copy constructor and assignment operator.
+   */
+  void Copy(const CInternalFaceElementFEM &other);
 };
 
 /*!
