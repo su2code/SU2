@@ -33,13 +33,15 @@
 
 #include "../include/vector_structure.hpp"
 
-CSysVector::CSysVector(void) {
+template<class CalcType>
+TCSysVector<CalcType>::TCSysVector(void) {
   
   vec_val = NULL;
   
 }
 
-CSysVector::CSysVector(const unsigned long & size, const su2double & val) {
+template<class CalcType>
+TCSysVector<CalcType>::TCSysVector(const unsigned long & size, const CalcType & val) {
   
   nElm = size; nElmDomain = size;
   nBlk = nElm; nBlkDomain = nElmDomain;
@@ -52,7 +54,7 @@ CSysVector::CSysVector(const unsigned long & size, const su2double & val) {
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
@@ -63,8 +65,9 @@ CSysVector::CSysVector(const unsigned long & size, const su2double & val) {
   
 }
 
-CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
-                       const su2double & val) {
+template<class CalcType>
+TCSysVector<CalcType>::TCSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
+                       const CalcType & val) {
 
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
@@ -77,7 +80,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 	
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
@@ -88,14 +91,15 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
 }
 
-CSysVector::CSysVector(const CSysVector & u) {
+template<class CalcType>
+TCSysVector<CalcType>::TCSysVector(const TCSysVector<CalcType> & u) {
   
   /*--- Copy size information, allocate memory, and initialize values ---*/
   nElm = u.nElm; nElmDomain = u.nElmDomain;
   nBlk = u.nBlk; nBlkDomain = u.nBlkDomain;
   nVar = u.nVar;
   
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
@@ -105,7 +109,8 @@ CSysVector::CSysVector(const CSysVector & u) {
   
 }
 
-CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
+template<class CalcType>
+TCSysVector<CalcType>::TCSysVector(const unsigned long & size, const CalcType* u_array) {
   
   nElm = size; nElmDomain = size;
   nBlk = nElm; nBlkDomain = nElmDomain;
@@ -118,7 +123,7 @@ CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
@@ -129,8 +134,9 @@ CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
   
 }
 
-CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
-                       const su2double* u_array) {
+template<class CalcType>
+TCSysVector<CalcType>::TCSysVector(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar,
+                       const CalcType* u_array) {
 
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
@@ -143,7 +149,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
@@ -154,7 +160,8 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
 }
 
-CSysVector::~CSysVector() {
+template<class CalcType>
+TCSysVector<CalcType>::~TCSysVector() {
   delete [] vec_val;
   
   nElm = 0; nElmDomain = 0;
@@ -163,7 +170,8 @@ CSysVector::~CSysVector() {
   
 }
 
-void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const su2double & val) {
+template<class CalcType>
+void TCSysVector<CalcType>::Initialize(const unsigned long & numBlk, const unsigned long & numBlkDomain, const unsigned short & numVar, const CalcType & val) {
   
   nElm = numBlk*numVar; nElmDomain = numBlkDomain*numVar;
   nBlk = numBlk; nBlkDomain = numBlkDomain;
@@ -176,7 +184,7 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 	
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
   
@@ -187,17 +195,19 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
 }
 
-void CSysVector::Equals_AX(const su2double & a, CSysVector & x) {
+template<class CalcType>
+void TCSysVector<CalcType>::Equals_AX(const CalcType & a, TCSysVector<CalcType> & x) {
   /*--- check that *this and x are compatible ---*/
   if (nElm != x.nElm) {
-    cerr << "CSysVector::Equals_AX(): " << "sizes do not match";
+    cerr << "TCSysVector<CalcType>::Equals_AX(): " << "sizes do not match";
     throw(-1);
   }
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = a * x.vec_val[i];
 }
 
-void CSysVector::Plus_AX(const su2double & a, CSysVector & x) {
+template<class CalcType>
+void TCSysVector<CalcType>::Plus_AX(const CalcType & a, TCSysVector<CalcType> & x) {
   /*--- check that *this and x are compatible ---*/
   if (nElm != x.nElm) {
     SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
@@ -206,7 +216,8 @@ void CSysVector::Plus_AX(const su2double & a, CSysVector & x) {
     vec_val[i] += a * x.vec_val[i];
 }
 
-void CSysVector::Equals_AX_Plus_BY(const su2double & a, CSysVector & x, const su2double & b, CSysVector & y) {
+template<class CalcType>
+void TCSysVector<CalcType>::Equals_AX_Plus_BY(const CalcType & a, TCSysVector<CalcType> & x, const CalcType & b, TCSysVector<CalcType> & y) {
   /*--- check that *this, x and y are compatible ---*/
   if ((nElm != x.nElm) || (nElm != y.nElm)) {
     SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
@@ -215,7 +226,8 @@ void CSysVector::Equals_AX_Plus_BY(const su2double & a, CSysVector & x, const su
     vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
 }
 
-CSysVector & CSysVector::operator=(const CSysVector & u) {
+template<class CalcType>
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator=(const TCSysVector<CalcType> & u) {
   
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if (this == &u) return *this;
@@ -228,7 +240,7 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
 	nBlkDomain = u.nBlkDomain;
   
   nVar = u.nVar;
-  vec_val = new su2double[nElm];
+  vec_val = new CalcType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
@@ -239,21 +251,24 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
   return *this;
 }
 
-CSysVector & CSysVector::operator=(const su2double & val) {
+template<class CalcType>
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator=(const CalcType & val) {
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
   return *this;
 }
 
-CSysVector CSysVector::operator+(const CSysVector & u) const {
+template<class CalcType>
+TCSysVector<CalcType> TCSysVector<CalcType>::operator+(const TCSysVector<CalcType> & u) const {
   
   /*--- Use copy constructor and compound addition-assignment ---*/
-  CSysVector sum(*this);
+  TCSysVector<CalcType> sum(*this);
   sum += u;
   return sum;
 }
 
-CSysVector & CSysVector::operator+=(const CSysVector & u) {
+template<class CalcType>
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator+=(const TCSysVector<CalcType> & u) {
   
   /*--- Check for consistent sizes, then add elements ---*/
   if (nElm != u.nElm) {
@@ -264,15 +279,17 @@ CSysVector & CSysVector::operator+=(const CSysVector & u) {
   return *this;
 }
 
-CSysVector CSysVector::operator-(const CSysVector & u) const {
+template<class CalcType>
+TCSysVector<CalcType> TCSysVector<CalcType>::operator-(const TCSysVector<CalcType> & u) const {
   
   /*--- Use copy constructor and compound subtraction-assignment ---*/
-  CSysVector diff(*this);
+  TCSysVector<CalcType> diff(*this);
   diff -= u;
   return diff;
 }
 
-CSysVector & CSysVector::operator-=(const CSysVector & u) {
+template<class CalcType>
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator-=(const TCSysVector<CalcType> & u) {
   
   /*--- Check for consistent sizes, then subtract elements ---*/
   if (nElm != u.nElm) {
@@ -283,109 +300,125 @@ CSysVector & CSysVector::operator-=(const CSysVector & u) {
   return *this;
 }
 
-CSysVector CSysVector::operator*(const su2double & val) const {
+template<class CalcType>
+TCSysVector<CalcType> TCSysVector<CalcType>::operator*(const CalcType & val) const {
   
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
-  CSysVector prod(*this);
+  TCSysVector<CalcType> prod(*this);
   prod *= val;
   return prod;
 }
 
-CSysVector operator*(const su2double & val, const CSysVector & u) {
+template<class CalcType>
+TCSysVector<CalcType> operator*(const CalcType & val, const CSysVector & u) {
   
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
-  CSysVector prod(u);
+  TCSysVector<CalcType> prod(u);
   prod *= val;
   return prod;
 }
 
-CSysVector & CSysVector::operator*=(const su2double & val) {
+template<class CalcType>
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator*=(const CalcType & val) {
   
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] *= val;
   return *this;
 }
 
-CSysVector CSysVector::operator/(const su2double & val) const {
+template<class CalcType>
+TCSysVector<CalcType> TCSysVector<CalcType>::operator/(const CalcType & val) const {
   
   /*--- use copy constructor and compound scalar
    division-assignment ---*/
-  CSysVector quotient(*this);
+  TCSysVector<CalcType> quotient(*this);
   quotient /= val;
   return quotient;
 }
 
-CSysVector & CSysVector::operator/=(const su2double & val) {
+template<class CalcType>
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator/=(const CalcType & val) {
   
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] /= val;
   return *this;
 }
 
-su2double CSysVector::norm() const {
+template<class CalcType>
+CalcType TCSysVector<CalcType>::norm() const {
   
   /*--- just call dotProd on this*, then sqrt ---*/
-  su2double val = dotProd(*this, *this);
+  CalcType val = dotProd(*this, *this);
   if (val < 0.0) {
     SU2_MPI::Error("Inner product of CSysVector is negative", CURRENT_FUNCTION);
   }
   return sqrt(val);
 }
 
-void CSysVector::CopyToArray(su2double* u_array) {
+template<class CalcType>
+void TCSysVector<CalcType>::CopyToArray(CalcType* u_array) {
   
   for (unsigned long i = 0; i < nElm; i++)
     u_array[i] = vec_val[i];
 }
 
-void CSysVector::AddBlock(unsigned long val_ipoint, su2double *val_residual) {
+template<class CalcType>
+void TCSysVector<CalcType>::AddBlock(unsigned long val_ipoint, CalcType *val_residual) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
 }
 
-void CSysVector::SubtractBlock(unsigned long val_ipoint, su2double *val_residual) {
+template<class CalcType>
+void TCSysVector<CalcType>::SubtractBlock(unsigned long val_ipoint, CalcType *val_residual) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
 }
 
-void CSysVector::SetBlock(unsigned long val_ipoint, su2double *val_residual) {
+template<class CalcType>
+void TCSysVector<CalcType>::SetBlock(unsigned long val_ipoint, CalcType *val_residual) {
   unsigned short iVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
 }
 
-void CSysVector::SetBlock(unsigned long val_ipoint, unsigned short val_var, su2double val_residual) {
+template<class CalcType>
+void TCSysVector<CalcType>::SetBlock(unsigned long val_ipoint, unsigned short val_var, CalcType val_residual) {
 
   vec_val[val_ipoint*nVar+val_var] = val_residual;
 }
 
-void CSysVector::SetBlock_Zero(unsigned long val_ipoint) {
+template<class CalcType> 
+void TCSysVector<CalcType>::SetBlock_Zero(unsigned long val_ipoint) {
   unsigned short iVar;
 
   for (iVar = 0; iVar < nVar; iVar++)
     vec_val[val_ipoint*nVar+iVar] = 0.0;
 }
 
-void CSysVector::SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var) {
+template<class CalcType>
+void TCSysVector<CalcType>::SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var) {
     vec_val[val_ipoint*nVar+val_var] = 0.0;
 }
 
-su2double CSysVector::GetBlock(unsigned long val_ipoint, unsigned short val_var) {
+template<class CalcType>
+CalcType TCSysVector<CalcType>::GetBlock(unsigned long val_ipoint, unsigned short val_var) {
   return vec_val[val_ipoint*nVar + val_var];
 }
 
-su2double *CSysVector::GetBlock(unsigned long val_ipoint) {
+template<class CalcType>
+CalcType *TCSysVector<CalcType>::GetBlock(unsigned long val_ipoint) {
   return &vec_val[val_ipoint*nVar];
 }
 
-su2double dotProd(const CSysVector & u, const CSysVector & v) {
+template<class CalcType>
+CalcType dotProd(const TCSysVector<CalcType> & u, const TCSysVector<CalcType> & v) {
   
   /*--- check for consistent sizes ---*/
   if (u.nElm != v.nElm) {
@@ -394,10 +427,10 @@ su2double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- find local inner product and, if a parallel run, sum over all
    processors (we use nElemDomain instead of nElem) ---*/
-  su2double loc_prod = 0.0;
+  CalcType loc_prod = 0.0;
   for (unsigned long i = 0; i < u.nElmDomain; i++)
     loc_prod += u.vec_val[i]*v.vec_val[i];
-  su2double prod = 0.0;
+  CalcType prod = 0.0;
   
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

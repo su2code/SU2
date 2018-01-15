@@ -33,7 +33,8 @@
 
 #include "../include/matrix_structure.hpp"
 
-CSysMatrix::CSysMatrix(void) {
+template <class CalcType>
+TCSysMatrix<CalcType>::TCSysMatrix(void) {
   
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
@@ -72,7 +73,8 @@ CSysMatrix::CSysMatrix(void) {
   
 }
 
-CSysMatrix::~CSysMatrix(void) {
+template <class CalcType>
+TCSysMatrix<CalcType>::~TCSysMatrix(void) {
   
   unsigned long iElem;
 
@@ -121,7 +123,8 @@ CSysMatrix::~CSysMatrix(void) {
   
 }
 
-void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
+template <class CalcType>
+void TCSysMatrix<CalcType>::Initialize(unsigned long nPoint, unsigned long nPointDomain,
                             unsigned short nVar, unsigned short nEqn,
                             bool EdgeConnect, CGeometry *geometry, CConfig *config) {
 
@@ -254,7 +257,7 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
       
     }
     
-    ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
+    ILU_matrix = new CalcType [nnz_ilu*nVar*nEqn];
     for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
     
     delete [] nNeigh_ilu;
@@ -263,7 +266,8 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   
 }
 
-void CSysMatrix::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
+template <class CalcType>
+void TCSysMatrix<CalcType>::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
                                bool EdgeConnect, vector<unsigned long> & vneighs) {
   unsigned long Point, iElem, Elem;
   unsigned short iNode;
@@ -290,7 +294,8 @@ void CSysMatrix::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsign
   
 }
 
-void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
+template <class CalcType>
+void TCSysMatrix<CalcType>::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
   
   unsigned long iVar;
   
@@ -309,15 +314,15 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     nnz_ilu      = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (ILU structure)
   }
   
-  matrix            = new su2double [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
-  block             = new su2double [nVar*nEqn];
-  block_weight      = new su2double [nVar*nEqn];
-  block_inverse     = new su2double [nVar*nEqn];
+  matrix            = new CalcType [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
+  block             = new CalcType [nVar*nEqn];
+  block_weight      = new CalcType [nVar*nEqn];
+  block_inverse     = new CalcType [nVar*nEqn];
 
-  prod_block_vector = new su2double [nEqn];
-  prod_row_vector   = new su2double [nVar];
-  aux_vector        = new su2double [nVar];
-  sum_vector        = new su2double [nVar];
+  prod_block_vector = new CalcType [nEqn];
+  prod_row_vector   = new CalcType [nVar];
+  aux_vector        = new CalcType [nVar];
+  sum_vector        = new CalcType [nVar];
   
   /*--- Memory initialization ---*/
   
@@ -344,7 +349,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
       
       /*--- Reserve memory for the ILU matrix. ---*/
       
-      ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
+      ILU_matrix = new CalcType [nnz_ilu*nVar*nEqn];
       for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
       
     }
@@ -364,14 +369,15 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
     
-    invM = new su2double [nPoint*nVar*nEqn];
+    invM = new CalcType [nPoint*nVar*nEqn];
     for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
 
   }
 
 }
 
-su2double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
+template<class CalcType>
+CalcType *TCSysMatrix<CalcType>::GetBlock(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
   
@@ -383,7 +389,8 @@ su2double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
   
 }
 
-su2double CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
+template<class CalcType>
+CalcType TCSysMatrix<CalcType>::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
   
   unsigned long step = 0, index;
   
@@ -395,7 +402,8 @@ su2double CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j, uns
   
 }
 
-void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::SetBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -411,8 +419,9 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2doubl
   }
   
 }
-  
-void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+
+template<class CalcType>  
+void TCSysMatrix<CalcType>::SetBlock(unsigned long block_i, unsigned long block_j, CalcType *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -429,7 +438,8 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2doubl
   
 }
 
-void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::AddBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -446,7 +456,8 @@ void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, su2doubl
   
 }
 
-void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2double **val_block) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::SubtractBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -463,7 +474,8 @@ void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2
   
 }
 
-su2double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
+template<class CalcType>
+CalcType *TCSysMatrix<CalcType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
   
@@ -475,7 +487,8 @@ su2double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long b
   
 }
 
-void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -491,7 +504,8 @@ void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j
   
 }
 
-void CSysMatrix::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block) {
 
   unsigned long iVar, jVar, index, step = 0;
 
@@ -507,7 +521,8 @@ void CSysMatrix::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned lo
 
 }
 
-void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, su2double *val_block) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -523,7 +538,8 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
   
 }
 
-void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2double *product) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixVectorProduct(CalcType *matrix, CalcType *vector, CalcType *product) {
   
   unsigned short iVar, jVar;
   
@@ -536,7 +552,8 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
   
 }
 
-void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixMatrixProduct(CalcType *matrix_a, CalcType *matrix_b, CalcType *product) {
   
   unsigned short iVar, jVar, kVar;
 
@@ -551,7 +568,8 @@ void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, s
   
 }
 
-void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::AddVal2Diag(unsigned long block_i, CalcType val_matrix) {
   
   unsigned long step = 0, iVar, index;
   
@@ -567,7 +585,8 @@ void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
   
 }
 
-void CSysMatrix::SetVal2Diag(unsigned long block_i, su2double val_matrix) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::SetVal2Diag(unsigned long block_i, CalcType val_matrix) {
   
   unsigned long step = 0, iVar, jVar, index;
   
@@ -589,7 +608,8 @@ void CSysMatrix::SetVal2Diag(unsigned long block_i, su2double val_matrix) {
   
 }
 
-void CSysMatrix::DeleteValsRowi(unsigned long i) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::DeleteValsRowi(unsigned long i) {
   
   unsigned long block_i = i/nVar;
   unsigned long row = i - block_i*nVar;
@@ -605,11 +625,12 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
 }
 
 
-su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
+template<class CalcType>
+CalcType TCSysMatrix<CalcType>::MatrixDeterminant(CalcType **a, unsigned long n) {
   
   unsigned long i, j, j1, j2;
-  su2double det = 0;
-  su2double **m = NULL;
+  CalcType det = 0;
+  CalcType **m = NULL;
   
   if (n < 1) { }
   else if (n == 1) { det = a[0][0]; }
@@ -618,9 +639,9 @@ su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
     det = 0.0;
 
     for (j1=0;j1<n;j1++) {
-      m = new su2double*[n-1];
+      m = new CalcType*[n-1];
       for (i=0;i<n-1;i++)
-        m[i] = new su2double[n-1];
+        m[i] = new CalcType[n-1];
       
       for (i=1;i<n;i++) {
         j2 = 0;
@@ -644,15 +665,16 @@ su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
   
 }
 
-void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixCoFactor(CalcType **a, unsigned long n, CalcType **b) {
   
   unsigned long i,j,ii,jj,i1,j1;
-  su2double det;
-  su2double **c;
+  CalcType det;
+  CalcType **c;
   
-  c = new su2double*[n-1];
+  c = new CalcType*[n-1];
   for (i=0;i<n-1;i++)
-    c[i] = new su2double[n-1];
+    c[i] = new CalcType[n-1];
   
   for (j=0;j<n;j++) {
     for (i=0;i<n;i++) {
@@ -685,10 +707,11 @@ void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
   
 }
 
-void CSysMatrix::MatrixTranspose(su2double **a, unsigned long n) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixTranspose(CalcType **a, unsigned long n) {
   
   unsigned long i, j;
-  su2double tmp;
+  CalcType tmp;
   
   for (i=1;i<n;i++) {
     for (j=0;j<i;j++) {
@@ -700,12 +723,13 @@ void CSysMatrix::MatrixTranspose(su2double **a, unsigned long n) {
   
 }
 
-void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::Gauss_Elimination(unsigned long block_i, CalcType* rhs, bool transposed) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  su2double weight, aux;
+  CalcType weight, aux;
   
-  su2double *Block = GetBlock(block_i, block_i);
+  CalcType *Block = GetBlock(block_i, block_i);
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -751,12 +775,13 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool t
   
 }
 
-void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* rhs) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::Gauss_Elimination_ILUMatrix(unsigned long block_i, CalcType* rhs) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  su2double weight, aux;
+  CalcType weight, aux;
   
-  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
+  CalcType *Block = GetBlock_ILUMatrix(block_i, block_i);
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -797,10 +822,11 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   
 }
 
-void CSysMatrix::Gauss_Elimination(su2double* Block, su2double* rhs) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::Gauss_Elimination(CalcType* Block, CalcType* rhs) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
-  su2double weight, aux;
+  CalcType weight, aux;
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -837,12 +863,13 @@ void CSysMatrix::Gauss_Elimination(su2double* Block, su2double* rhs) {
   
 }
 
-void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, const CSysVector & vec) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::ProdBlockVector(unsigned long block_i, unsigned long block_j, const TCSysVector<CalcType> & vec) {
   
   unsigned long j = block_j*nVar;
   unsigned short iVar, jVar;
   
-  su2double *block = GetBlock(block_i, block_j);
+  CalcType *block = GetBlock(block_i, block_j);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     prod_block_vector[iVar] = 0;
@@ -852,7 +879,8 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   
 }
 
-void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::UpperProduct(TCSysVector<CalcType> & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
   
@@ -869,7 +897,8 @@ void CSysMatrix::UpperProduct(CSysVector & vec, unsigned long row_i) {
   
 }
 
-void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::LowerProduct(TCSysVector<CalcType> & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
   
@@ -886,7 +915,8 @@ void CSysMatrix::LowerProduct(CSysVector & vec, unsigned long row_i) {
 
 }
 
-void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::DiagonalProduct(TCSysVector<CalcType> & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
   
@@ -903,7 +933,8 @@ void CSysMatrix::DiagonalProduct(CSysVector & vec, unsigned long row_i) {
   
 }
 
-void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config) {
+template<>
+void TCSysMatrix<su2double>::SendReceive_Solution(TCSysVector<su2double> & x, CGeometry *geometry, CConfig *config) {
   
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
@@ -991,7 +1022,99 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   
 }
 
-void CSysMatrix::SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geometry, CConfig *config) {
+#ifdef CODI_REVERSE_TYPE
+template<>
+void TCSysMatrix<passivedouble>::SendReceive_Solution(TCSysVector<passivedouble> & x, CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  passivedouble *Buffer_Receive = NULL, *Buffer_Send = NULL;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+      
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      
+      Buffer_Receive = new passivedouble [nBufferR_Vector];
+      Buffer_Send = new passivedouble[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sended ---*/
+      
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      
+      CBaseMPIWrapper::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      
+      delete [] Buffer_Send;
+      
+      /*--- Do the coordinate transformation ---*/
+      
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          x[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      
+      delete [] Buffer_Receive;
+      
+    }
+    
+  }
+  
+}
+#endif
+
+template<>
+void TCSysMatrix<su2double>::SendReceive_SolutionTransposed(TCSysVector<su2double> & x, CGeometry *geometry, CConfig *config) {
 
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
@@ -1079,7 +1202,100 @@ void CSysMatrix::SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geome
 
 }
 
-void CSysMatrix::RowProduct(const CSysVector & vec, unsigned long row_i) {
+#ifdef CODI_REVERSE_TYPE
+template<>
+void TCSysMatrix<passivedouble>::SendReceive_SolutionTransposed(TCSysVector<passivedouble> & x, CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  passivedouble *Buffer_Receive = NULL, *Buffer_Send = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker + 1;  MarkerR = iMarker;
+
+#ifdef HAVE_MPI
+
+      receive_from = config->GetMarker_All_SendRecv(MarkerR)-1;
+      send_to = abs(config->GetMarker_All_SendRecv(MarkerS))-1;
+
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive = new passivedouble [nBufferR_Vector];
+      Buffer_Send = new passivedouble[nBufferS_Vector];
+
+      /*--- Copy the solution that should be sended ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+
+      CBaseMPIWrapper::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send;
+
+      /*--- Do the coordinate transformation ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          x[iPoint*nVar+iVar] += Buffer_Receive[iVertex*nVar+iVar];
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+
+      delete [] Buffer_Receive;
+
+    }
+
+  }
+
+}
+
+#endif
+
+template<class CalcType>
+void TCSysMatrix<CalcType>::RowProduct(const TCSysVector<CalcType> & vec, unsigned long row_i) {
   
   unsigned long iVar, index;
   
@@ -1094,7 +1310,8 @@ void CSysMatrix::RowProduct(const CSysVector & vec, unsigned long row_i) {
   
 }
 
-void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixVectorProduct(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod) {
   
   unsigned long iPoint, iVar;
   
@@ -1106,23 +1323,24 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod) 
   
 }
 
-void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixVectorProduct(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
   
   /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    cerr << "CSysMatrix::MatrixVectorProduct(const CSysVector&, CSysVector): "
+    cerr << "TCSysMatrix<CalcType>::MatrixVectorProduct(const CSysVector&, CSysVector): "
     << "nVar values incompatible." << endl;
     throw(-1);
   }
   if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    cerr << "CSysMatrix::MatrixVectorProduct(const CSysVector&, CSysVector): "
+    cerr << "TCSysMatrix<CalcType>::MatrixVectorProduct(const CSysVector&, CSysVector): "
     << "nPoint and nBlk values incompatible." << endl;
     throw(-1);
   }
   
-  prod = su2double(0.0); // set all entries of prod to zero
+  prod = CalcType(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     prod_begin = row_i*nVar; // offset to beginning of block row_i
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
@@ -1141,7 +1359,8 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
   
 }
 
-void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::MatrixVectorProductTransposed(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config) {
 
   unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar , row_i;
 
@@ -1153,7 +1372,7 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
 
-  prod = su2double(0.0); // set all entries of prod to zero
+  prod = CalcType(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
@@ -1172,7 +1391,8 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
 
 }
 
-void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::GetMultBlockBlock(CalcType *c, CalcType *a, CalcType *b) {
   
   unsigned long iVar, jVar, kVar;
   
@@ -1185,7 +1405,8 @@ void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
   
 }
 
-void CSysMatrix::GetMultBlockVector(su2double *c, su2double *a, su2double *b) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::GetMultBlockVector(CalcType *c, CalcType *a, CalcType *b) {
   
   unsigned long iVar, jVar;
   
@@ -1197,7 +1418,8 @@ void CSysMatrix::GetMultBlockVector(su2double *c, su2double *a, su2double *b) {
   
 }
 
-void CSysMatrix::GetSubsBlock(su2double *c, su2double *a, su2double *b) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::GetSubsBlock(CalcType *c, CalcType *a, CalcType *b) {
   
   unsigned long iVar, jVar;
   
@@ -1207,7 +1429,8 @@ void CSysMatrix::GetSubsBlock(su2double *c, su2double *a, su2double *b) {
   
 }
 
-void CSysMatrix::GetSubsVector(su2double *c, su2double *a, su2double *b) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::GetSubsVector(CalcType *c, CalcType *a, CalcType *b) {
   
   unsigned long iVar;
   
@@ -1216,7 +1439,8 @@ void CSysMatrix::GetSubsVector(su2double *c, su2double *a, su2double *b) {
   
 }
 
-void CSysMatrix::InverseBlock(su2double *Block, su2double *invBlock) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::InverseBlock(CalcType *Block, CalcType *invBlock) {
   
   unsigned long iVar, jVar;
   
@@ -1234,7 +1458,8 @@ void CSysMatrix::InverseBlock(su2double *Block, su2double *invBlock) {
   
 }
 
-void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock, bool transpose) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::InverseDiagonalBlock(unsigned long block_i, CalcType *invBlock, bool transpose) {
   
   unsigned long iVar, jVar;
   
@@ -1250,14 +1475,14 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
-  //  su2double Det, **Matrix, **CoFactor;
-  //  su2double *Block = GetBlock(block_i, block_i);
+  //  CalcType Det, **Matrix, **CoFactor;
+  //  CalcType *Block = GetBlock(block_i, block_i);
   //
-  //  Matrix = new su2double*[nVar];
-  //  CoFactor = new su2double*[nVar];
+  //  Matrix = new CalcType*[nVar];
+  //  CoFactor = new CalcType*[nVar];
   //  for (iVar=0;iVar<nVar;iVar++) {
-  //    Matrix[iVar] = new su2double[nVar];
-  //    CoFactor[iVar] = new su2double[nVar];
+  //    Matrix[iVar] = new CalcType[nVar];
+  //    CoFactor[iVar] = new CalcType[nVar];
   //  }
   //
   //  for (iVar = 0; iVar < nVar; iVar++) {
@@ -1285,7 +1510,8 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
 }
 
 
-void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, CalcType *invBlock) {
   
   unsigned long iVar, jVar;
 
@@ -1301,14 +1527,14 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
-  //  su2double Det, **Matrix, **CoFactor;
-  //  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
+  //  CalcType Det, **Matrix, **CoFactor;
+  //  CalcType *Block = GetBlock_ILUMatrix(block_i, block_i);
   //
-  //  Matrix = new su2double*[nVar];
-  //  CoFactor = new su2double*[nVar];
+  //  Matrix = new CalcType*[nVar];
+  //  CoFactor = new CalcType*[nVar];
   //  for (iVar=0;iVar<nVar;iVar++) {
-  //    Matrix[iVar] = new su2double[nVar];
-  //    CoFactor[iVar] = new su2double[nVar];
+  //    Matrix[iVar] = new CalcType[nVar];
+  //    CoFactor[iVar] = new CalcType[nVar];
   //  }
   //
   //  for (iVar = 0; iVar < nVar; iVar++) {
@@ -1335,7 +1561,8 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
   
 }
 
-void CSysMatrix::BuildJacobiPreconditioner(bool transpose) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::BuildJacobiPreconditioner(bool transpose) {
 
   unsigned long iPoint, iVar, jVar;
 
@@ -1354,7 +1581,8 @@ void CSysMatrix::BuildJacobiPreconditioner(bool transpose) {
 }
 
 
-void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::ComputeJacobiPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
   
@@ -1373,7 +1601,8 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
 }
 
-unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+unsigned long TCSysMatrix<CalcType>::Jacobi_Smoother(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec, CalcType tol, unsigned long m, CalcType *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
   
@@ -1389,18 +1618,18 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
    of the Jacobian matrix with the current solution (x^k). These must be
    stored in order to perform multiple iterations of the smoother. ---*/
   
-  CSysVector r(b);
-  CSysVector A_x(b);
+  TCSysVector<CalcType> r(b);
+  TCSysVector<CalcType> A_x(b);
   
   /*--- Calculate the initial residual, compute norm, and check
    if system is already solved. Recall, r holds b initially. ---*/
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
+  CalcType norm_r = r.norm();
+  CalcType norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "TCSysMatrix<CalcType>::Jacobi_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1463,10 +1692,11 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   
 }
 
-void CSysMatrix::BuildILUPreconditioner(bool transposed) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::BuildILUPreconditioner(bool transposed) {
   
   unsigned long index, index_, iVar;
-  su2double *Block_ij, *Block_jk;
+  CalcType *Block_ij, *Block_jk;
   long iPoint, jPoint, kPoint;
   
 
@@ -1546,10 +1776,11 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   
 }
 
-void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::ComputeILUPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long index;
-  su2double *Block_ij;
+  CalcType *Block_ij;
   long iPoint, jPoint;
   unsigned short iVar;
   
@@ -1610,10 +1841,11 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
 }
 
-unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+unsigned long TCSysMatrix<CalcType>::ILU_Smoother(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec, CalcType tol, unsigned long m, CalcType *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long index;
-  su2double *Block_ij, omega = 1.0;
+  CalcType *Block_ij, omega = 1.0;
   long iPoint, jPoint;
   unsigned short iVar;
   
@@ -1629,18 +1861,18 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
    of the Jacobian matrix with the current solution (x^k). These must be
    stored in order to perform multiple iterations of the smoother. ---*/
   
-  CSysVector r(b);
-  CSysVector A_x(b);
+  TCSysVector<CalcType> r(b);
+  TCSysVector<CalcType> A_x(b);
   
   /*--- Calculate the initial residual, compute norm, and check
    if system is already solved. Recall, r holds b initially. ---*/
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
+  CalcType norm_r = r.norm();
+  CalcType norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "TCSysMatrix<CalcType>::ILU_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1754,7 +1986,8 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   
 }
 
-void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::ComputeLU_SGSPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, iVar;
   
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
@@ -1792,10 +2025,11 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
 }
 
-unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+unsigned long TCSysMatrix<CalcType>::LU_SGS_Smoother(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec, CalcType tol, unsigned long m, CalcType *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar;
-  su2double omega = 1.0;
+  CalcType omega = 1.0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -1809,19 +2043,19 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
    of the Jacobian matrix with the current solution (x^k). These must be
    stored in order to perform multiple iterations of the smoother. ---*/
   
-  CSysVector r(b);
-  CSysVector A_x(b);
-  CSysVector xStar(x);
+  TCSysVector<CalcType> r(b);
+  TCSysVector<CalcType> A_x(b);
+  TCSysVector<CalcType> xStar(x);
   
   /*--- Calculate the initial residual, compute norm, and check
    if system is already solved. Recall, r holds b initially. ---*/
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
+  CalcType norm_r = r.norm();
+  CalcType norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
+    if (rank == MASTER_NODE) cout << "TCSysMatrix<CalcType>::LU_SGS_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1908,204 +2142,207 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
 }
 
-unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
+template<class CalcType>
+unsigned short TCSysMatrix<CalcType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
   
-  bool *check_Point, add_point;
-  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
-  su2double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
-  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
+//  bool *check_Point, add_point;
+//  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
+//  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
+//  CalcType alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
+//  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
   
-  /*--- Memory allocation --*/
+//  /*--- Memory allocation --*/
   
-  check_Point = new bool [geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    check_Point[iPoint] = true;
+//  check_Point = new bool [geometry->GetnPoint()];
+//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+//    check_Point[iPoint] = true;
   
-  LineletBool = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-    LineletBool[iPoint] = false;
+//  LineletBool = new bool[geometry->GetnPoint()];
+//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
+//    LineletBool[iPoint] = false;
   
-  nLinelet = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-      nLinelet += geometry->nVertex[iMarker];
-    }
-  }
+//  nLinelet = 0;
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+//        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+//        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+//        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
+//      nLinelet += geometry->nVertex[iMarker];
+//    }
+//  }
   
-  /*--- If the domain contains well defined Linelets ---*/
+//  /*--- If the domain contains well defined Linelets ---*/
   
-  if (nLinelet != 0) {
+//  if (nLinelet != 0) {
     
-    /*--- Basic initial allocation ---*/
+//    /*--- Basic initial allocation ---*/
     
-    LineletPoint = new vector<unsigned long>[nLinelet + ExtraLines];
+//    LineletPoint = new vector<unsigned long>[nLinelet + ExtraLines];
     
-    /*--- Define the basic linelets, starting from each vertex ---*/
+//    /*--- Define the basic linelets, starting from each vertex ---*/
     
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-        iLinelet = 0;
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          LineletPoint[iLinelet].push_back(iPoint);
-          check_Point[iPoint] = false;
-          iLinelet++;
-        }
-      }
-    }
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+//          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+//          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+//          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
+//        iLinelet = 0;
+//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          LineletPoint[iLinelet].push_back(iPoint);
+//          check_Point[iPoint] = false;
+//          iLinelet++;
+//        }
+//      }
+//    }
     
-    /*--- Create the linelet structure ---*/
+//    /*--- Create the linelet structure ---*/
     
-    iLinelet = 0;
+//    iLinelet = 0;
     
-    do {
+//    do {
       
-      index_Point = 0;
+//      index_Point = 0;
       
-      do {
+//      do {
         
-        /*--- Compute the value of the max weight ---*/
+//        /*--- Compute the value of the max weight ---*/
         
-        iPoint = LineletPoint[iLinelet][index_Point];
-        max_weight = 0.0;
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
-            iEdge = geometry->FindEdge(iPoint, jPoint);
-            normal = geometry->edge[iEdge]->GetNormal();
-            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-            volume_iPoint = geometry->node[iPoint]->GetVolume();
-            volume_jPoint = geometry->node[jPoint]->GetVolume();
-            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-            max_weight = max(max_weight, weight);
-          }
-        }
+//        iPoint = LineletPoint[iLinelet][index_Point];
+//        max_weight = 0.0;
+//        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+//          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+//          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
+//            iEdge = geometry->FindEdge(iPoint, jPoint);
+//            normal = geometry->edge[iEdge]->GetNormal();
+//            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
+//            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
+//            volume_iPoint = geometry->node[iPoint]->GetVolume();
+//            volume_jPoint = geometry->node[jPoint]->GetVolume();
+//            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
+//            max_weight = max(max_weight, weight);
+//          }
+//        }
         
-        /*--- Verify if any face of the control volume must be added ---*/
+//        /*--- Verify if any face of the control volume must be added ---*/
         
-        add_point = false;
-        counter = 0;
-        next_Point = geometry->node[iPoint]->GetPoint(0);
-        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-          iEdge = geometry->FindEdge(iPoint, jPoint);
-          normal = geometry->edge[iEdge]->GetNormal();
-          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-          volume_iPoint = geometry->node[iPoint]->GetVolume();
-          volume_jPoint = geometry->node[jPoint]->GetVolume();
-          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
-              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
-            add_point = true;
-            next_Point = jPoint;
-            counter++;
-          }
-        }
+//        add_point = false;
+//        counter = 0;
+//        next_Point = geometry->node[iPoint]->GetPoint(0);
+//        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+//          jPoint = geometry->node[iPoint]->GetPoint(iNode);
+//          iEdge = geometry->FindEdge(iPoint, jPoint);
+//          normal = geometry->edge[iEdge]->GetNormal();
+//          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
+//          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
+//          volume_iPoint = geometry->node[iPoint]->GetVolume();
+//          volume_jPoint = geometry->node[jPoint]->GetVolume();
+//          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
+//          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
+//              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
+//            add_point = true;
+//            next_Point = jPoint;
+//            counter++;
+//          }
+//        }
         
-        /*--- We have arrived to an isotropic zone ---*/
+//        /*--- We have arrived to an isotropic zone ---*/
         
-        if (counter > 1) add_point = false;
+//        if (counter > 1) add_point = false;
         
-        /*--- Add a typical point to the linelet, no leading edge ---*/
+//        /*--- Add a typical point to the linelet, no leading edge ---*/
         
-        if (add_point) {
-          LineletPoint[iLinelet].push_back(next_Point);
-          check_Point[next_Point] = false;
-          index_Point++;
-        }
+//        if (add_point) {
+//          LineletPoint[iLinelet].push_back(next_Point);
+//          check_Point[next_Point] = false;
+//          index_Point++;
+//        }
         
-      } while (add_point);
-      iLinelet++;
-    } while (iLinelet < nLinelet);
+//      } while (add_point);
+//      iLinelet++;
+//    } while (iLinelet < nLinelet);
     
-    /*--- Identify the points that belong to a Linelet ---*/
+//    /*--- Identify the points that belong to a Linelet ---*/
     
-    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        LineletBool[iPoint] = true;
-      }
-    }
+//    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+//      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
+//        iPoint = LineletPoint[iLinelet][iElem];
+//        LineletBool[iPoint] = true;
+//      }
+//    }
     
-    /*--- Identify the maximum number of elements in a Linelet ---*/
+//    /*--- Identify the maximum number of elements in a Linelet ---*/
     
-    max_nElem = LineletPoint[0].size();
-    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
-      if (LineletPoint[iLinelet].size() > max_nElem)
-        max_nElem = LineletPoint[iLinelet].size();
+//    max_nElem = LineletPoint[0].size();
+//    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
+//      if (LineletPoint[iLinelet].size() > max_nElem)
+//        max_nElem = LineletPoint[iLinelet].size();
     
-  }
+//  }
   
-  /*--- The domain doesn't have well defined linelets ---*/
+//  /*--- The domain doesn't have well defined linelets ---*/
   
-  else {
+//  else {
     
-    max_nElem = 0;
+//    max_nElem = 0;
     
-  }
+//  }
   
-  /*--- Screen output ---*/
+//  /*--- Screen output ---*/
   
-  Local_nPoints = 0;
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-    Local_nPoints += LineletPoint[iLinelet].size();
-  }
-  Local_nLineLets = nLinelet;
+//  Local_nPoints = 0;
+//  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+//    Local_nPoints += LineletPoint[iLinelet].size();
+//  }
+//  Local_nLineLets = nLinelet;
   
-#ifndef HAVE_MPI
-  Global_nPoints = Local_nPoints;
-  Global_nLineLets = Local_nLineLets;
-#else
-  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
+//#ifndef HAVE_MPI
+//  Global_nPoints = Local_nPoints;
+//  Global_nLineLets = Local_nLineLets;
+//#else
+//  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//#endif
   
-  MeanPoints = SU2_TYPE::Int(su2double(Global_nPoints)/su2double(Global_nLineLets));
+//  MeanPoints = SU2_TYPE::Int(CalcType(Global_nPoints)/CalcType(Global_nLineLets));
   
-  /*--- Memory allocation --*/
+//  /*--- Memory allocation --*/
   
-  UBlock = new su2double* [max_nElem];
-  invUBlock = new su2double* [max_nElem];
-  LBlock = new su2double* [max_nElem];
-  yVector = new su2double* [max_nElem];
-  zVector = new su2double* [max_nElem];
-  rVector = new su2double* [max_nElem];
-  for (iElem = 0; iElem < max_nElem; iElem++) {
-    UBlock[iElem] = new su2double [nVar*nVar];
-    invUBlock[iElem] = new su2double [nVar*nVar];
-    LBlock[iElem] = new su2double [nVar*nVar];
-    yVector[iElem] = new su2double [nVar];
-    zVector[iElem] = new su2double [nVar];
-    rVector[iElem] = new su2double [nVar];
-  }
+//  UBlock = new CalcType* [max_nElem];
+//  invUBlock = new CalcType* [max_nElem];
+//  LBlock = new CalcType* [max_nElem];
+//  yVector = new CalcType* [max_nElem];
+//  zVector = new CalcType* [max_nElem];
+//  rVector = new CalcType* [max_nElem];
+//  for (iElem = 0; iElem < max_nElem; iElem++) {
+//    UBlock[iElem] = new CalcType [nVar*nVar];
+//    invUBlock[iElem] = new CalcType [nVar*nVar];
+//    LBlock[iElem] = new CalcType [nVar*nVar];
+//    yVector[iElem] = new CalcType [nVar];
+//    zVector[iElem] = new CalcType [nVar];
+//    rVector[iElem] = new CalcType [nVar];
+//  }
   
-  LFBlock = new su2double [nVar*nVar];
-  LyVector = new su2double [nVar];
-  FzVector = new su2double [nVar];
+//  LFBlock = new CalcType [nVar*nVar];
+//  LyVector = new CalcType [nVar];
+//  FzVector = new CalcType [nVar];
   
-  /*--- Memory deallocation --*/
+//  /*--- Memory deallocation --*/
   
-  delete [] check_Point;
+//  delete [] check_Point;
   
-  return MeanPoints;
+//  return MeanPoints;
   
+  return 0;
 }
 
-void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod,
+template<class CalcType>
+void TCSysMatrix<CalcType>::ComputeLineletPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod,
                                               CGeometry *geometry, CConfig *config) {
   
   unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
   long iElemLoop;
-  su2double *block;
+  CalcType *block;
   
   if (size == SINGLE_NODE) {
     
@@ -2203,7 +2440,8 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   
 }
 
-void CSysMatrix::ComputeResidual(const CSysVector & sol, const CSysVector & f, CSysVector & res) {
+template<class CalcType>
+void TCSysMatrix<CalcType>::ComputeResidual(const TCSysVector<CalcType> & sol, const TCSysVector<CalcType> & f, TCSysVector<CalcType> & res) {
   
   unsigned long iPoint, iVar;
   

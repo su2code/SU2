@@ -33,7 +33,8 @@
 
 #pragma once
 
-inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const {
+template<class CalcType>
+inline CalcType TCSysSolve<CalcType>::Sign(const CalcType & x, const CalcType & y) const {
   if (y == 0.0)
     return 0.0;
   else {

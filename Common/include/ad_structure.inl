@@ -40,6 +40,10 @@ namespace AD{
 
   typedef su2double::TapeType Tape;
 
+  typedef codi::ExternalFunctionHelper<su2double> ExtFuncHelper;
+
+  extern ExtFuncHelper* FuncHelper;
+
   /*--- Stores the indices of the input variables (they might be overwritten) ---*/
 
   extern std::vector<su2double::GradientData> inputValues;
@@ -63,6 +67,8 @@ namespace AD{
   extern std::vector<su2double::GradientData> localInputValues;
 
   extern std::vector<su2double*> localOutputValues;
+  
+  extern codi::PreaccumulationHelper<su2double> PreaccHelper;  
 
   inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
                                              inputValues.push_back(data.getGradientData());}
@@ -91,7 +97,7 @@ namespace AD{
   inline void SetPreaccIn(const su2double &data) {
     if (PreaccActive) {
       if (data.isActive()) {
-        localInputValues.push_back(data.getGradientData());
+        PreaccHelper.addInput(data);       
       }
     }
   }
@@ -100,7 +106,7 @@ namespace AD{
     if (PreaccActive) {
       for (unsigned short i = 0; i < size; i++) {
         if (data[i].isActive()) {
-          localInputValues.push_back(data[i].getGradientData());
+          PreaccHelper.addInput(data[i]);
         }
       }
     }
@@ -111,7 +117,7 @@ namespace AD{
       for (unsigned short i = 0; i < size_x; i++) {
         for (unsigned short j = 0; j < size_y; j++) {
           if (data[i][j].isActive()) {
-            localInputValues.push_back(data[i][j].getGradientData());
+            PreaccHelper.addInput(data[i][j]);
           }
         }
       }
@@ -120,7 +126,7 @@ namespace AD{
 
   inline void StartPreacc() {
     if (globalTape.isActive() && PreaccEnabled) {
-      StartPosition = globalTape.getPosition();
+      PreaccHelper.start();
       PreaccActive = true;
     }
   }
@@ -128,7 +134,7 @@ namespace AD{
   inline void SetPreaccOut(su2double& data) {
     if (PreaccActive) {
       if (data.isActive()) {
-        localOutputValues.push_back(&data);
+        PreaccHelper.addOutput(data);
       }
     }
   }
@@ -137,7 +143,7 @@ namespace AD{
     if (PreaccActive) {
       for (unsigned short i = 0; i < size; i++) {
         if (data[i].isActive()) {
-          localOutputValues.push_back(&data[i]);
+          PreaccHelper.addOutput(data[i]);
         }
       }
     }
@@ -148,13 +154,71 @@ namespace AD{
       for (unsigned short i = 0; i < size_x; i++) {
         for (unsigned short j = 0; j < size_y; j++) {
           if (data[i][j].isActive()) {
-            localOutputValues.push_back(&data[i][j]);
+            PreaccHelper.addOutput(data[i][j]);
           }
         }
       }
     }
   }
+  
+  inline void EndPreacc(){
+    if (PreaccActive) {
+      PreaccHelper.finish(false);
+    }
+  }
+  
+  inline void InitExtFunc(bool storePrimalInput, bool storePrimalOutput){
+    FuncHelper = new ExtFuncHelper();
+    if (!storePrimalInput){
+      FuncHelper->disableInputPrimalStore();
+    }
+    if (!storePrimalOutput){
+      FuncHelper->disableOutputPrimalStore();
+    }
+  }
+  
+  inline void SetExtFuncIn(const su2double &data) {
+    FuncHelper->addInput(data);       
+  }
 
+  inline void SetExtFuncIn(const su2double* data, const int size) {
+    for (unsigned short i = 0; i < size; i++) {
+      FuncHelper->addInput(data[i]);
+    }
+
+  }
+
+  inline void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y) {
+    for (unsigned short i = 0; i < size_x; i++) {
+      for (unsigned short j = 0; j < size_y; j++) {
+        FuncHelper->addInput(data[i][j]);
+      }
+    }
+  }
+  
+  inline void SetExtFuncOut(su2double& data) {
+    if (globalTape.isActive()) {
+      FuncHelper->addOutput(data);
+    }
+  }
+
+  inline void SetExtFuncOut(su2double* data, const int size) {
+    for (unsigned short i = 0; i < size; i++) {
+      if (globalTape.isActive()) {
+        FuncHelper->addOutput(data[i]);
+      }
+    }
+  }
+
+  inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {
+    for (unsigned short i = 0; i < size_x; i++) {
+      for (unsigned short j = 0; j < size_y; j++) {
+        if (globalTape.isActive()) {
+          FuncHelper->addOutput(data[i][j]);
+        }
+      }
+    }
+  }
 
   inline void delete_handler(void *handler) {
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);

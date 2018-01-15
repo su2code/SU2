@@ -144,6 +144,33 @@ namespace AD{
    * for each output variable to the AD tape.
    */
   void EndPreacc();
+  
+  
+  void InitExtFunc(bool storePrimalInput, bool storePrimalOutput);
+  
+  void SetExtFuncIn(su2double &data);
+  
+  void SetExtFuncIn(const su2double* data, const int size);
+  
+  void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y);
+
+  /*!
+   * \brief Sets the scalar output of a preaccumulation section.
+   * \param[in] data - the scalar output variable.
+   */
+  void SetExtFuncOut(su2double &data);
+
+  /*!
+   * \brief Sets the output variables of a preaccumulation section using a 1D array.
+   * \param[in] data - the output 1D array.
+   */
+  void SetExtFuncOut(su2double* data, const int size);
+
+  /*!
+   * \brief Sets the input variables of a preaccumulation section using a 2D array.
+   * \param[in] data - the output 1D array.
+   */
+  void SetExtFuncOut(su2double** data, const int size_x, const int size_y);
 
 }
 

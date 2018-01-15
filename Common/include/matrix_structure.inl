@@ -33,20 +33,22 @@
  
 #pragma once
 
-inline void CSysMatrix::SetValZero(void) { 
+template<class CalcType>
+inline void TCSysMatrix<CalcType>::SetValZero(void) { 
   if(NULL != matrix) {
 	  for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
 		matrix[index] = 0.0;
   }
 }
-
-inline CSysMatrixVectorProduct::CSysMatrixVectorProduct(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+template<class CalcType>
+inline TCSysMatrixVectorProduct<CalcType>::TCSysMatrixVectorProduct(TCSysMatrix<CalcType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
   config = config_ref;  
 }
 
-inline void CSysMatrixVectorProduct::operator()(const CSysVector & u, CSysVector & v) const {
+template<class CalcType>
+inline void TCSysMatrixVectorProduct<CalcType>::operator()(const TCSysVector<CalcType> & u, TCSysVector<CalcType> & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CSysMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;
@@ -55,13 +57,15 @@ inline void CSysMatrixVectorProduct::operator()(const CSysVector & u, CSysVector
   sparse_matrix->MatrixVectorProduct(u, v, geometry, config);
 }
 
-inline CSysMatrixVectorProductTransposed::CSysMatrixVectorProductTransposed(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+template<class CalcType>
+inline TCSysMatrixVectorProductTransposed<CalcType>::TCSysMatrixVectorProductTransposed(TCSysMatrix<CalcType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
   config = config_ref;
 }
 
-inline void CSysMatrixVectorProductTransposed::operator()(const CSysVector & u, CSysVector & v) const {
+template<class CalcType>
+inline void TCSysMatrixVectorProductTransposed<CalcType>::operator()(const TCSysVector<CalcType> & u, TCSysVector<CalcType> & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CSysMatrixVectorProduct::operator()(const CSysVector &, CSysVector &): " << endl;
     cerr << "pointer to sparse matrix is NULL." << endl;
@@ -71,13 +75,15 @@ inline void CSysMatrixVectorProductTransposed::operator()(const CSysVector & u, 
 }
 
 
-inline CJacobiPreconditioner::CJacobiPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+template<class CalcType>
+inline TCJacobiPreconditioner<CalcType>::TCJacobiPreconditioner(TCSysMatrix<CalcType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
   config = config_ref;  
 }
 
-inline void CJacobiPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
+template<class CalcType>
+inline void TCJacobiPreconditioner<CalcType>::operator()(const TCSysVector<CalcType> & u, TCSysVector<CalcType> & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CJacobiPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;
@@ -86,13 +92,15 @@ inline void CJacobiPreconditioner::operator()(const CSysVector & u, CSysVector &
   sparse_matrix->ComputeJacobiPreconditioner(u, v, geometry, config);
 }
 
-inline CILUPreconditioner::CILUPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+template<class CalcType>
+inline TCILUPreconditioner<CalcType>::TCILUPreconditioner(TCSysMatrix<CalcType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
   config = config_ref;
 }
 
-inline void CILUPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
+template<class CalcType>
+inline void TCILUPreconditioner<CalcType>::operator()(const TCSysVector<CalcType> & u, TCSysVector<CalcType> & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CILUPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl;
     cerr << "pointer to sparse matrix is NULL." << endl;
@@ -101,13 +109,15 @@ inline void CILUPreconditioner::operator()(const CSysVector & u, CSysVector & v)
   sparse_matrix->ComputeILUPreconditioner(u, v, geometry, config);
 }
 
-inline CLU_SGSPreconditioner::CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+template<class CalcType>
+inline TCLU_SGSPreconditioner<CalcType>::TCLU_SGSPreconditioner(TCSysMatrix<CalcType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
       geometry = geometry_ref;
   config = config_ref;
 }
 
-inline void CLU_SGSPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
+template<class CalcType>
+inline void TCLU_SGSPreconditioner<CalcType>::operator()(const TCSysVector<CalcType> & u, TCSysVector<CalcType> & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CLU_SGSPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;
@@ -116,13 +126,15 @@ inline void CLU_SGSPreconditioner::operator()(const CSysVector & u, CSysVector &
   sparse_matrix->ComputeLU_SGSPreconditioner(u, v, geometry, config);
 }
 
-inline CLineletPreconditioner::CLineletPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+template<class CalcType>
+inline TCLineletPreconditioner<CalcType>::TCLineletPreconditioner(TCSysMatrix<CalcType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
   config = config_ref;  
 }
 
-inline void CLineletPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
+template<class CalcType>
+inline void TCLineletPreconditioner<CalcType>::operator()(const TCSysVector<CalcType> & u, TCSysVector<CalcType> & v) const {
   if (sparse_matrix == NULL) {
     cerr << "CLineletPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl; 
     cerr << "pointer to sparse matrix is NULL." << endl;

@@ -33,14 +33,17 @@
 
 #pragma once
 
-inline void CSysVector::SetValZero(void) { 
+template<class CalcType>
+inline void TCSysVector<CalcType>::SetValZero(void) { 
   for (unsigned long i = 0; i < nElm; i++)
 		vec_val[i] = 0.0;
 }
 
-inline unsigned long CSysVector::GetLocSize() const { return nElm; }
+template<class CalcType>
+inline unsigned long TCSysVector<CalcType>::GetLocSize() const { return nElm; }
 
-inline unsigned long CSysVector::GetSize() const {
+template<class CalcType>
+inline unsigned long TCSysVector<CalcType>::GetSize() const {
 #ifdef HAVE_MPI
   return nElmGlobal;
 #else
@@ -48,12 +51,17 @@ inline unsigned long CSysVector::GetSize() const {
 #endif
 }
 
-inline unsigned short CSysVector::GetNVar() const { return nVar; }
+template<class CalcType>
+inline unsigned short TCSysVector<CalcType>::GetNVar() const { return nVar; }
 
-inline unsigned long CSysVector::GetNBlk() const { return nBlk; }
+template<class CalcType>
+inline unsigned long TCSysVector<CalcType>::GetNBlk() const { return nBlk; }
 
-inline unsigned long CSysVector::GetNBlkDomain() const { return nBlkDomain; }
+template<class CalcType>
+inline unsigned long TCSysVector<CalcType>::GetNBlkDomain() const { return nBlkDomain; }
 
-inline su2double & CSysVector::operator[](const unsigned long & i) { return vec_val[i]; }
+template<class CalcType>
+inline CalcType & TCSysVector<CalcType>::operator[](const unsigned long & i) { return vec_val[i]; }
 
-inline const su2double & CSysVector::operator[](const unsigned long & i) const { return vec_val[i]; }
+template<class CalcType>
+inline const CalcType & TCSysVector<CalcType>::operator[](const unsigned long & i) const { return vec_val[i]; }
