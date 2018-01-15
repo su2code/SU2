@@ -336,7 +336,8 @@ CDriver::CDriver(char* confFile,
 
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
           (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS)||
+		  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS))
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
   }
@@ -893,7 +894,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     	  solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
     	  solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     	  solver_container[iMGlevel][TWO_PHASE_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
-      solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+//      solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
     if (two_phase && turbulent) {
     	solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
@@ -4928,18 +4929,19 @@ void CHBDriver::ResetConvergence() {
     switch (config_container[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
+    case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
       integration_container[iZone][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
       if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
       break;
 
-    case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
+ /*   case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
       integration_container[iZone][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == TWO_PHASE_RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
       if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
       integration_container[iZone][TWO_PHASE_SOL]->SetConvergence(false);
       break;
-
+*/
     case WAVE_EQUATION:
       integration_container[iZone][WAVE_SOL]->SetConvergence(false);
       break;
@@ -4962,11 +4964,11 @@ void CHBDriver::ResetConvergence() {
     		  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS))
         integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
       break;
-      if( (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+/*      if( (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
     	(config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) )
         integration_container[iZone][ADJTWO_PHASE_SOL]->SetConvergence(false);
       break;
-    }
+ */   }
   }
 
 }

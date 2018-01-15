@@ -5160,16 +5160,19 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar;
   unsigned long iPoint;
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame   = config->GetRotating_Frame();
-  bool axisymmetric     = config->GetAxisymmetric();
-  bool gravity          = (config->GetGravityForce() == YES);
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool windgust         = config->GetWind_Gust();
-  bool body_force       = config->GetBody_Force();
-  unsigned short two_phase        = (config->GetKind_Solver()== TWO_PHASE_EULER ||
-		                             config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
-									  config->GetKind_Solver()== TWO_PHASE_RANS);
+  bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rotating_frame      = config->GetRotating_Frame();
+  bool axisymmetric        = config->GetAxisymmetric();
+  bool gravity             = (config->GetGravityForce() == YES);
+  bool harmonic_balance    = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool windgust            = config->GetWind_Gust();
+  bool body_force          = config->GetBody_Force();
+  unsigned short two_phase = (config->GetKind_Solver()== TWO_PHASE_EULER ||
+		                      config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
+							  config->GetKind_Solver()== TWO_PHASE_RANS ||
+							  config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_EULER ||
+							  config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_NAVIER_STOKES ||
+							  config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_RANS);
 
   su2double S, h, R, Y;
 
@@ -5353,8 +5356,6 @@ getchar();
       /*--- Compute the 2-phase source residual ---*/
       numerics->ComputeResidual_HeatMassTransfer(S, h, Y, Residual, Jacobian_i);
 
-//      cout << Residual[0] << " " << Residual[1] << " " << Residual[2] << " " << Residual[3] <<endl;
-
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
 
@@ -5362,6 +5363,7 @@ getchar();
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
+
   }
   
 }
@@ -15145,7 +15147,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool Old_Solution_Turb = config->GetOld_Solution_Turb();
   bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER) ||
        (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-       (config->GetKind_Solver() == TWO_PHASE_RANS);
+       (config->GetKind_Solver() == TWO_PHASE_RANS) ||
+	   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) ||
+	   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+	   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) ;
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -15221,7 +15226,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       node[iPoint_Local]->SetSolution(Solution);
 
       /*--- load source data for two-phase simulation ---*/
-/*      if (two_phase) {
+      if (two_phase) {
         if (Old_Solution_1Ph) {
           S = 0.0;
           H = 0.0;
@@ -15236,7 +15241,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
         solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
       }
-*/
+
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
@@ -15278,7 +15283,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
-
   }
 
   /*--- Detect a wrong solution file ---*/
@@ -15369,7 +15373,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
-
 }
 
 void CEulerSolver::SetFreeStream_Solution(CConfig *config) {

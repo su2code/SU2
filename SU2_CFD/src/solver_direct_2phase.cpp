@@ -1010,8 +1010,6 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
         node[iPoint_Local]->SetLiqEnthalpy(H);
 
         node[iPoint_Local]->SetCriticalRadius(Restart_Data[index+2]);
- //       Sol = [0 0 0 0 0 0 Restart_Data[index+2] 0 0 0 0];
- //        node[iPoint]->SetLiquidPrim(Sol);
 
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] = Restart_Data[index+iVar+3];
@@ -1061,16 +1059,15 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
 
   Set_MPI_Solution(geometry[MESH_0], config);
-  Set_MPI_Solution(geometry[MESH_0], config);
 //  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
-//  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-//    Rc = solver[MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6);
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+    Rc = solver[MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6);
 
-//    Sol = node[iPoint]->SetLiquidPrim(solver[MESH_0][FLOW_SOL]->node[iPoint]->GetPrimitive(),
-//        node[iPoint]->GetSolution(), Rc,
-//        solver[MESH_0][FLOW_SOL]->GetFluidModel(), config);
-//  }
+    Sol = node[iPoint]->SetLiquidPrim(solver[MESH_0][FLOW_SOL]->node[iPoint]->GetPrimitive(),
+        node[iPoint]->GetSolution(), Rc,
+        solver[MESH_0][FLOW_SOL]->GetFluidModel(), config);
+  }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -1092,13 +1089,13 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 //    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
 
-/*    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Rc = node[iPoint]->GetLiquidPrim(6);
       Sol = node[iPoint]->SetLiquidPrim(solver[iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(),
           node[iPoint]->GetSolution(), Rc,
           solver[iMesh][FLOW_SOL]->GetFluidModel(), config);
     }
- */
+
   }
 
 
@@ -1108,7 +1105,6 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
-
 }
 
 
@@ -1475,7 +1471,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
       numerics->Set2phaseVar(Solution_i, Solution_j);
     }
 
-    /*--- Add and subtract residual if in the metastable region---*/
+    /*--- Add and subtract residual---*/
 
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
@@ -1500,7 +1496,7 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
      rho_v   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
@@ -1510,7 +1506,8 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
 
      Liquid_vec = node[iPoint]->GetLiquidPrim();
 
-     if (mom0 != 0.0 && mom1!=0.0 && Liquid_vec[2]!=0) {
+     if (mom0 != 0.0 && mom1!=0.0 && Liquid_vec[1]!=0) {
+
        r = mom1 / mom0;
 
        y = mom3*(Liquid_vec[1] - rho_v);
@@ -1522,7 +1519,6 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
 
        s = 3.0 * rho_m * y * Liquid_vec[9];
        s = s/r;
-
      } else {
        r = 0; y = 0; rho_m = rho_v; s = 0;
      }
@@ -1534,7 +1530,6 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
      node[iPoint]->SetMixtureDensity(rho_m);
     
   }
-
 }
 
 
@@ -1569,7 +1564,7 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     node[iPoint]->SetLiquidPrim(Liquid_vec);
 
     /*--- Subtract residual and the Jacobian ---*/
-    
+
     LinSysRes.SubtractBlock(iPoint, Residual);
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);

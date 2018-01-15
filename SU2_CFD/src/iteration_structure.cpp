@@ -2035,8 +2035,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
   // check if for 2phase is needed both pre and pro
   if(two_phase){
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-//    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_2PHASE_SYS, true);
-    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
+    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_2PHASE_SYS, true);
+//    solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][MESH_0][TWO_PHASE_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
   }
 
