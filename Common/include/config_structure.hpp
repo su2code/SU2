@@ -7436,6 +7436,7 @@ public:
   unsigned short GetBoom_N_phi(void);
   su2double *GetBoom_phi(void);
   su2double GetBoom_r0(void);
+  su2double GetBoom_flt_h(void);
   su2double GetBoom_Tol_dphi(void);
   su2double GetBoom_Tol_dr(void);
   su2double GetBoom_Tol_m(void);
