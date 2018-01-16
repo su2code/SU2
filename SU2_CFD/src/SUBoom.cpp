@@ -923,11 +923,9 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
   if(abs(deg - 360.) <= 3.){
     /*--- Get info needed for isoparameter computation ---*/
     su2double *Coord = new su2double[2];
-    jElem = pointID_original[iPhi][i];
     Coord[0] = y0; Coord[1] = z0;
-    su2double *X_donor = new su2double[2*nNode];
+    su2double *X_donor = new su2double[2*nCoord];
     for(int iCoord = 0; iCoord < nCoord; iCoord++){
-      jNode = geometry->elem[jElem]->GetNode(iNode);
       for(int iDim = 0; iDim < 2; iDim++){  
         X_donor[iDim*nNode + iNode] = Coord_i[iCoord][iDim+1];
       }
