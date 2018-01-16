@@ -2914,7 +2914,8 @@ private:
   su2double **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the effective thermal conductivity. */
-  dist_ij;              /*!< \brief Length of the edge and face. */
+  dist_ij,              /*!< \brief Length of the edge and face. */
+  proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   bool implicit;        /*!< \brief Implicit calculus. */
   bool energy; /*!< \brief computation with the energy equation. */
   
@@ -3341,7 +3342,8 @@ private:
   **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,      /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, Mean_Cp, /*!< \brief Mean value of the effective thermal conductivity and specific heat at constant pressure. */
-  dist_ij_2;          /*!< \brief Length of the edge and face. */
+  dist_ij_2,          /*!< \brief Length of the edge and face. */
+  proj_vector_ij;     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   bool implicit;      /*!< \brief Implicit calculus. */
   bool energy; /*!< \brief computation with the energy equation. */
   

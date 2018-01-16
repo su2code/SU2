@@ -2731,7 +2731,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
 				cout.precision(6);
-				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+				cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
 				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
 			}
 			config->SetAoA(AoA_ + config->GetAoA_Offset());
@@ -2746,7 +2746,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
 				cout.precision(6);
-				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+				cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
 				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
 			}
 			config->SetAoS(AoS_ + config->GetAoS_Offset());
