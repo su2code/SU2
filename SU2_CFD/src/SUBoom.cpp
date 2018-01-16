@@ -581,6 +581,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
                 pointID_tmp[i] = pointID_original[iPhi][i];
                 Coord_tmp[i][0] = Coord_original[iPhi][i][0];
                 Coord_tmp[i][1] = Coord_original[iPhi][i][1];
+                if(nDim == 3) Coord_tmp[i][2] = Coord_original[iPhi][i][2];
 
                 delete [] Coord_original[iPhi][i];
               }
@@ -594,6 +595,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
                 pointID_original[iPhi][i] = pointID_tmp[i];
                 Coord_original[iPhi][i][0] = Coord_tmp[i][0];
                 Coord_original[iPhi][i][1] = Coord_tmp[i][1];
+                if(nDim == 3) Coord_original[iPhi][i][2] = Coord_tmp[i][2];
 
                 delete [] Coord_tmp[i];
               }
@@ -607,7 +609,7 @@ void SUBoom::ExtractLine(CGeometry *geometry, const su2double r0, unsigned short
                 Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
               }
               else{
-                Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0*sin(ray_phi[iPhi]);
+                Coord_original[iPhi][nPanel[iPhi]-1][1] = r0*sin(ray_phi[iPhi]);
                 Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
               }
 
@@ -873,66 +875,83 @@ int SUBoom::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, 
 
 int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *p1){
   
-  /*--- t = -(P0.N + d)/(V.N) where P0 is origin of ray, N is plane normal, d is offset vector of plane, V is direction of ray ---*/
-  su2double normal[3] = {Coord_i[0][1]*Coord_i[1][2] - Coord_i[0][2]*Coord_i[1][1],
-                      Coord_i[0][2]*Coord_i[1][0] - Coord_i[0][0]*Coord_i[1][2],
-                      Coord_i[0][0]*Coord_i[1][1] - Coord_i[0][1]*Coord_i[1][0]};
+  su2double y0 = r0*sin(phi), z0 = -r0*cos(phi);
+  su2double ymin = 1.0E9, ymax = -1.0E9, zmin = 1.0E9, zmax = -1.0E9;
 
-  /*--- We only care about rays in +x direction, so only use x components in denominator---*/
-  if(abs(normal[0]) < 1.0E-8){ // Ray and plane are parallel
+  /*--- First check simple bounding box ---*/
+  for(int iCoord = 0; iCoord < nCoord; iCoord++){
+    if(Coord_i[iCoord][1] < ymin) ymin = Coord_i[iCoord][1];
+    if(Coord_i[iCoord][1] > ymax) ymin = Coord_i[iCoord][1];
+    if(Coord_i[iCoord][2] < zmin) zmin = Coord_i[iCoord][2];
+    if(Coord_i[iCoord][2] > zmax) zmax = Coord_i[iCoord][2];
+  }
+
+  if(y0 < ymin || y0 > ymax || z0 < zmin || z0 > zmax){
     return 0;
   }
-  else{
-    unsigned short i0, i1, i2;
-    su2double p0[3] = {-1.0, -r0*sin(phi), -r0*cos(phi)};
-    su2double d = -Coord_i[0][0]*normal[0] - Coord_i[0][1]*normal[1] - Coord_i[0][2]*normal[2];
-    su2double t = -(p0[0]*normal[0] + p0[1]*normal[1] + p0[2]*normal[2] + d)/(normal[0]);
 
-    p1[0] = p0[0] + t;
-    p1[1] = p0[1];
-    p1[2] = p0[2];
+  /*--- If inside bounding box, check sum of angles ---*/
+  su2double d0, d1, d2;
+  su2double a_x, a_y, b_x, b_y;
+  su2double c;
+  su2double deg = 0.0;
+  bool cw;
 
-    /*--- Project onto yz plane ---*/
-    for(unsigned short i = 0; i < nCoord-2; i++){
-      if(nCoord == 3){
-        i0 = 0;
-        i1 = 1;
-        i2 = 2;
-      }
-      else{ // if 4 points, check if inside triangle 0-1-2 and 2-3-0
-        i0 = 2*i;
-        i1 = i0+1;
-        i2 = (i0+2)%nCoord;
-      }
-      su2double u0 = p1[1] - Coord_i[i0][1];
-      su2double v0 = p1[2] - Coord_i[i0][2];
-      su2double u1 = Coord_i[i1][1] - Coord_i[i0][1];
-      su2double u2 = Coord_i[i2][1] - Coord_i[i0][1];
-      su2double v1 = Coord_i[i1][2] - Coord_i[i0][2];
-      su2double v2 = Coord_i[i2][2] - Coord_i[i0][2];
-      su2double alpha = -1.0, beta;
+  for(int iCoord = 0; iCoord < nCoord; iCoord++){
+    int i = iCoord, ip = iCoord+1;
+    if(i == nCoord-1) ip = 0;
+    /*--- Vector magnitudes ---*/
+    d0 = sqrt((Coord_i[i][1]-Coord_i[ip][1])*(Coord_i[i][1]-Coord_i[ip][1]) + (Coord_i[i][2]-Coord_i[ip][2])*(Coord_i[i][2]-Coord_i[ip][2]));
+    d1 = sqrt((y0-Coord_i[ip][1])*(y0-Coord_i[ip][1]) + (z0-Coord_i[ip][2])*(z0-Coord_i[ip][2]));
+    d2 = sqrt((Coord_i[i][1]-y0)*(Coord_i[i][1]-y0) + (Coord_i[i][2]-z0)*(Coord_i[i][2]-z0));
+    /*--- Vector directions ---*/
+    a_x = Coord_i[i][1] - y0;
+    a_y = Coord_i[i][2] - z0;
+    b_x = Coord_i[ip][1] - y0;
+    b_y = Coord_i[ip][2] - z0;
+    /*--- Clockwise or counterclockwise ---*/
+    c = b_y*a_x - b_x*a_y;
+    cw = (c < 0);
+    if(cw){
+      deg += acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
+    }
+    else{
+      deg -= acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
+    }
+  }
 
-      if(u1 < 1.0E-8){
-        beta = u0 / u2;
-        if(0 <= beta && beta <= 1){
-          alpha = (v0 - beta*v2)/v1;
-        }
-      }
-      else{
-        beta = (v0*u1 - u0*v1)/(v2*u1 - u2*v1);
-        if(0 <= beta && beta <= 1){
-          alpha = (u0 - beta*u2)/u1;
-        }
-
-      }
-
-      if(alpha >= 0.0 && beta >= 0.0 && (alpha+beta) <= 1.0){
-        return 1;
+  if(abs(deg - 360.) <= 3.){
+    /*--- Get info needed for isoparameter computation ---*/
+    su2double *Coord = new su2double[2];
+    jElem = pointID_original[iPhi][i];
+    Coord[0] = y0; Coord[1] = z0;
+    su2double *X_donor = new su2double[2*nNode];
+    for(int iCoord = 0; iCoord < nCoord; iCoord++){
+      jNode = geometry->elem[jElem]->GetNode(iNode);
+      for(int iDim = 0; iDim < 2; iDim++){  
+        X_donor[iDim*nNode + iNode] = Coord_i[iCoord][iDim+1];
       }
     }
 
+    /*--- Compute isoparameters ---*/
+    su2double *isoparams = new su2double[nCoord];
+    Isoparameters(2, nCoord, X_donor, Coord, isoparams);
 
+    /*--- Interpolate x-coord ---*/
+    p1[0] = 0.0;
+    p1[1] = y0;
+    p1[2] = z0;
+    for(int iCoord = 0; iCoord < nCoord; iCoord++){
+      p1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
+    }
 
+    delete [] isoparams;
+    delete [] Coord;
+    delete [] X_donor;
+    return 1;
+  }
+  else{
+    return 0;
   }
 
 }
