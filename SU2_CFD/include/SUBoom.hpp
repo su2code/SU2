@@ -142,3 +142,4 @@ su2double *derivsProp(su2double t, int m, su2double y[], SUBoom::RayData data);
 su2double **WaveformToPressureSignal(su2double fvec[], unsigned int M, int &Msig);
 su2double EvaluateSpline(su2double x, int N, su2double t[], su2double fit[], su2double coeffs[]);
 void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams);
+void InvDistWeight(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams);

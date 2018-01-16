@@ -491,6 +491,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                       pointID_tmp[i] = pointID_original[iPhi][i];
                       Coord_tmp[i][0] = Coord_original[iPhi][i][0];
                       Coord_tmp[i][1] = Coord_original[iPhi][i][1];
+                      if(nDim == 3) Coord_tmp[i][2] = Coord_original[iPhi][i][2];
 
                       delete [] Coord_original[iPhi][i];
                     }
@@ -504,6 +505,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                       pointID_original[iPhi][i] = pointID_tmp[i];
                       Coord_original[iPhi][i][0] = Coord_tmp[i][0];
                       Coord_original[iPhi][i][1] = Coord_tmp[i][1];
+                      if(nDim == 3) Coord_original[iPhi][i][2] = Coord_tmp[i][2];
 
                       delete [] Coord_tmp[i];
                     }
@@ -519,7 +521,7 @@ void SUBoom::SearchLinear(CConfig *config, CGeometry *geometry,
                     }
 
                     else{
-                      Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0*sin(ray_phi[iPhi]);
+                      Coord_original[iPhi][nPanel[iPhi]-1][1] = r0*sin(ray_phi[iPhi]);
                       Coord_original[iPhi][nPanel[iPhi]-1][2] = -r0*cos(ray_phi[iPhi]);
                     }
                   }
@@ -657,15 +659,21 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     /*--- Get info needed for isoparameter computation ---*/
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
+    cout << "Coord = ( ";
     for(unsigned short j = 0; j < nDim; j++){
       Coord[j] = Coord_original[iPhi][i][j];
+      cout << Coord[j] << ", ";
     }
+    cout << "); X_donors = [ ";
     X_donor = new su2double[nDim*nNode];
     for(iNode = 0; iNode < nNode; iNode++){
+      cout << "( ";
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){  
         X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord(iDim);
+        cout << X_donor[iDim*nNode + iNode] << ", ";
       }
+      cout << "), ";
 
       /*--- Compile list of all nodes ---*/
       if(nNode_list == 0){
@@ -686,13 +694,15 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         }
       }
     }
+    cout << endl;
 
     /*--- Compute isoparameters ---*/
     isoparams[i] = new su2double[nNode];
-    Isoparameters(nDim, nNode, X_donor, Coord, isoparams[i]);
+    InvDistWeight(nDim, nNode, X_donor, Coord, isoparams[i]);
 
     /*--- x-locations of nearfield signal ---*/
     signal.x[iPhi][i] = Coord_original[iPhi][i][0];
+    signal.original_p[iPhi][i] = 0.0;
   }
 
     /*--- Now interpolate pressure ---*/
@@ -931,7 +941,7 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
 
     /*--- Compute isoparameters ---*/
     su2double *isoparams = new su2double[nCoord];
-    Isoparameters(2, nCoord, X_donor, Coord, isoparams);
+    InvDistWeight(2, nCoord, X_donor, Coord, isoparams);
 
     /*--- Interpolate x-coord ---*/
     p1[0] = 0.0;
@@ -1094,7 +1104,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   }
 
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
-  if (nDonor==4) {
+  if (nDonor==4 && nDim == 2) {
     //-- Bilinear coordinates, bounded by [-1,1] ---
     su2double xi, eta;
     xi = -isoparams[0]+isoparams[1]+isoparams[2]-isoparams[3];
@@ -1132,6 +1142,22 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   
   if (A2 != NULL) delete [] A2;
 
+}
+
+void InvDistWeight(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams){
+  su2double *weight = new su2double[nDonor];
+  su2double dist, sum_weight = 0.0;
+  for(unsigned short iDonor = 0; iDonor < nDonor; iDonor++){
+    dist = 0.0;
+    for(unsigned short iDim = 0; iDim < nDim; iDim++){
+      dist += (X[iDim*nNode + iNode]-xj[iDim])*(X[iDim*nNode + iNode]-xj[iDim]);
+    }
+    weight[iDonor] = 1/dist;
+    sum_weight += weight[iDonor];
+  }
+  for(unsigned short iDonor = 0; iDonor < nDonor; iDonor++){
+    isoparams[iDonor] = weight[iDonor]/sum_weight;
+  }
 }
 
 void SUBoom::AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
