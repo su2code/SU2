@@ -927,7 +927,7 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
     su2double *X_donor = new su2double[2*nCoord];
     for(int iCoord = 0; iCoord < nCoord; iCoord++){
       for(int iDim = 0; iDim < 2; iDim++){  
-        X_donor[iDim*nNode + iNode] = Coord_i[iCoord][iDim+1];
+        X_donor[iDim*nCoord + iCoord] = Coord_i[iCoord][iDim+1];
       }
     }
 
