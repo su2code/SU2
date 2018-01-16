@@ -169,8 +169,10 @@ class Config(ordered_bunch):
         k = 0
         for i, dv_scl in enumerate(dv_scales):
             for j in range(def_dv['SIZE'][i]):
-                dv_new[k] = dv_new[k]*dv_scl;
-                dv_old[k] = dv_old[k]*dv_scl;
+                ##dv_new[k] = dv_new[k]*dv_scl;
+                ##dv_old[k] = dv_old[k]*dv_scl;
+                dv_new[k] = dv_new[k]/dv_scl;
+                dv_old[k] = dv_old[k]/dv_scl;
                 k = k + 1
         
         # Change the parameters of the design variables
