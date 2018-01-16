@@ -659,21 +659,15 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
     /*--- Get info needed for isoparameter computation ---*/
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
-    cout << "Coord = ( ";
     for(unsigned short j = 0; j < nDim; j++){
       Coord[j] = Coord_original[iPhi][i][j];
-      cout << Coord[j] << ", ";
     }
-    cout << "); X_donors = [ ";
     X_donor = new su2double[nDim*nNode];
     for(iNode = 0; iNode < nNode; iNode++){
-      cout << "( ";
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){  
         X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord(iDim);
-        cout << X_donor[iDim*nNode + iNode] << ", ";
       }
-      cout << "), ";
 
       /*--- Compile list of all nodes ---*/
       if(nNode_list == 0){
@@ -694,7 +688,6 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
         }
       }
     }
-    cout << endl;
 
     /*--- Compute isoparameters ---*/
     isoparams[i] = new su2double[nNode];
