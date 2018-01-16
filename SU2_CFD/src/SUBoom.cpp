@@ -27,7 +27,7 @@ SUBoom::SUBoom(CSolver *solver, CConfig *config, CGeometry *geometry){
   nDim = geometry->GetnDim();
 
   /*---Flight variables---*/
-  flt_h = 15240; // altitude [m]
+  flt_h = config->GetBoom_flt_h(); // altitude [m]
   flt_M = config->GetMach();
   flt_psi = 0.;  // heading angle [deg]
   flt_gamma = 0.; // flight path angle [deg]
