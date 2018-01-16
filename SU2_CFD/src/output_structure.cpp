@@ -6040,7 +6040,7 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
 void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output) {
   
   char cstr[200];
-  unsigned short iMarker_Monitoring;
+  unsigned short iDim, iMarker_Monitoring;
   ofstream Breakdown_file;
   
   int rank = MASTER_NODE;
@@ -6431,8 +6431,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
     
     Breakdown_file.precision(6);
-    Breakdown_file << fixed;
-    
+
     Breakdown_file << "\n" << "\n" << "Problem definition:" << "\n" << "\n";
     
     switch (Kind_Solver) {
@@ -6455,7 +6454,13 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
         }
         break;
     }
-    
+
+
+    /*--- Compressible version of console output ---*/
+
+    if (compressible) {
+
+
     if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY) &&
         (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       Breakdown_file << "Mach number: " << config[val_iZone]->GetMach() <<"."<< "\n";
@@ -6775,36 +6780,353 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       Breakdown_file << "Total time (non-dim): " << config[val_iZone]->GetTotal_UnstTimeND() << "\n";
       Breakdown_file << "Time step (non-dim): " << config[val_iZone]->GetDelta_UnstTimeND() << "\n";
     }
-    
-    Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
-    
-    if (compressible) {
-      
+
+    } else {
+
+    /*--- Incompressible version of the console output ---*/
+
+      bool energy     = config[val_iZone]->GetEnergy_Equation();
+      bool boussinesq = (config[val_iZone]->GetKind_DensityModel() == BOUSSINESQ);
+
+      if (config[val_iZone]->GetRef_Inc_NonDim() == DIMENSIONAL) {
+        Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
+        Breakdown_file << "are set to 1.0 in order to perform a dimensional calculation." << "\n";
+        if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+        else Breakdown_file << "Force coefficients computed using initial values." << "\n";
+      }
+      else if (config[val_iZone]->GetRef_Inc_NonDim() == INITIAL_VALUES) {
+        Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
+        Breakdown_file << "are based on the initial values, p_ref = rho_ref*vel_ref^2." << "\n";
+        if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+        else Breakdown_file << "Force coefficients computed using initial values." << "\n";
+      }
+      else if (config[val_iZone]->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
+        Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
+        Breakdown_file << "are user-provided reference values, p_ref = rho_ref*vel_ref^2." << "\n";
+        if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+        else Breakdown_file << "Force coefficients computed using reference values." << "\n";
+      }
+      Breakdown_file << "The reference area for force coeffs. is " << config[val_iZone]->GetRefArea() << " m^2." << "\n";
+      Breakdown_file << "The reference length for force coeffs. is " << config[val_iZone]->GetRefLength() << " m." << "\n";
+
+      Breakdown_file << "The pressure is decomposed into thermodynamic and dynamic components." << "\n";
+      Breakdown_file << "The initial value of the dynamic pressure is 0." << "\n";
+
+      Breakdown_file << "Mach number: "<< config[val_iZone]->GetMach();
+      if (config[val_iZone]->GetKind_FluidModel() == CONSTANT_DENSITY) {
+        Breakdown_file << ", computed using the Bulk modulus." << "\n";
+      } else {
+        Breakdown_file << ", computed using fluid speed of sound." << "\n";
+      }
+
+      Breakdown_file << "For external flows, the initial state is imposed at the far-field." << "\n";
+      Breakdown_file << "Angle of attack (deg): "<< config[val_iZone]->GetAoA() << ", computed using the initial velocity." << "\n";
+      Breakdown_file << "Side slip angle (deg): "<< config[val_iZone]->GetAoS() << ", computed using the initial velocity." << "\n";
+
+      if (viscous) {
+        Breakdown_file << "Reynolds number per meter: " << config[val_iZone]->GetReynolds() << ", computed using initial values."<< "\n";
+        Breakdown_file << "Reynolds number is a byproduct of inputs only (not used internally)." << "\n";
+      }
+      Breakdown_file << "SI units only. The grid should be dimensional (meters)." << "\n";
+
+      switch (config[val_iZone]->GetKind_DensityModel()) {
+
+        case CONSTANT:
+          if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
+          else Breakdown_file << "No energy equation." << "\n";
+          break;
+
+        case BOUSSINESQ:
+          if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
+          break;
+
+        case VARIABLE:
+          if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
+          break;
+
+      }
+
+      Breakdown_file <<"-- Input conditions:"<< "\n";
+
+      switch (config[val_iZone]->GetKind_FluidModel()) {
+
+        case CONSTANT_DENSITY:
+          Breakdown_file << "Fluid Model: CONSTANT_DENSITY "<< "\n";
+          if (energy) {
+            Breakdown_file << "Specific heat at constant pressure (Cp): " << config[val_iZone]->GetSpecific_Heat_Cp() << " N.m/kg.K." << "\n";
+            Breakdown_file << "Specific heat at constant volume (Cv): " << config[val_iZone]->GetSpecific_Heat_Cv() << " N.m/kg.K." << "\n";
+          }
+          if (boussinesq) Breakdown_file << "Thermal expansion coefficient: " << config[val_iZone]->GetThermal_Expansion_Coeff() << " K^-1." << "\n";
+          Breakdown_file << "Thermodynamic pressure not required." << "\n";
+          break;
+
+        case INC_STANDARD_AIR:
+          Breakdown_file << "Fluid Model: INC_STANDARD_AIR "<< "\n";
+          Breakdown_file << "Variable density incompressible flow using ideal gas law (air)." << "\n";
+          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << "\n";
+          Breakdown_file << "Specific gas constant: 287.058 N.m/kg.K." << "\n";
+          Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND()<< "\n";
+          Breakdown_file << "Specific Heat Ratio: 1.4" << "\n";
+          Breakdown_file << "Thermodynamic pressure: " << config[val_iZone]->GetPressure_Thermodynamic();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+          break;
+
+        case INC_IDEAL_GAS:
+          Breakdown_file << "Fluid Model: INC_IDEAL_GAS "<< "\n";
+          Breakdown_file << "Variable density incompressible flow using ideal gas law." << "\n";
+          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << "\n";
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << "\n";
+          Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND()<< "\n";
+          Breakdown_file << "Specific Heat Ratio: "<< config[val_iZone]->GetGamma() << "\n";
+          Breakdown_file << "Thermodynamic pressure: " << config[val_iZone]->GetPressure_Thermodynamic();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+          break;
+
+      }
+      if (viscous) {
+        switch (config[val_iZone]->GetKind_ViscosityModel()) {
+
+          case CONSTANT_VISCOSITY:
+            Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
+            Breakdown_file << "Constant Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+            Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
+            break;
+
+          case SUTHERLAND:
+            Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
+            Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+            Breakdown_file << "Ref. Temperature: " << config[val_iZone]->GetMu_Temperature_Ref();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+            Breakdown_file << "Sutherland Constant: "<< config[val_iZone]->GetMu_S();
+            if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+            else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+            Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
+            Breakdown_file << "Ref. Temperature (non-dim): " << config[val_iZone]->GetMu_Temperature_RefND()<< "\n";
+            Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
+            break;
+
+        }
+
+        if (energy) {
+          switch (config[val_iZone]->GetKind_ConductivityModel()) {
+
+            case CONSTANT_PRANDTL:
+              Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
+              Breakdown_file << "Prandtl (Laminar): " << config[val_iZone]->GetPrandtl_Lam()<< "\n";
+              Breakdown_file << "Prandtl (Turbulent): " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
+              break;
+
+            case CONSTANT_CONDUCTIVITY:
+              Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+              Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
+              Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
+              break;
+
+          }
+        }
+
+      }
+
+      if (config[val_iZone]->GetKind_FluidModel() == CONSTANT_DENSITY) {
+        Breakdown_file << "Bulk modulus: " << config[val_iZone]->GetBulk_Modulus();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+      }
+
+      Breakdown_file << "Initial dynamic pressure: " << config[val_iZone]->GetPressure_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+
+      Breakdown_file << "Initial total pressure: " << config[val_iZone]->GetPressure_FreeStream() + 0.5*config[val_iZone]->GetDensity_FreeStream()*config[val_iZone]->GetModVel_FreeStream()*config[val_iZone]->GetModVel_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+
+      if (energy) {
+        Breakdown_file << "Initial temperature: " << config[val_iZone]->GetTemperature_FreeStream();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+      }
+
+      Breakdown_file << "Initial density: " << config[val_iZone]->GetDensity_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
+
+      if (nDim == 2) {
+        Breakdown_file << "Initial velocity: (" << config[val_iZone]->GetVelocity_FreeStream()[0] << ", ";
+        Breakdown_file << config[val_iZone]->GetVelocity_FreeStream()[1] << ")";
+      }
       if (nDim == 3) {
-        su2double m = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz()/solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-        su2double term = (Total_CoPz/m)-Total_CoPx;
-        
-        if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z-"<< term << "." << "\n\n";
-        else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z+"<< fabs(term);
-        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
-        else Breakdown_file << " in." << "\n\n";
+        Breakdown_file << "Initial velocity: (" << config[val_iZone]->GetVelocity_FreeStream()[0] << ", ";
+        Breakdown_file << config[val_iZone]->GetVelocity_FreeStream()[1] << ", " << config[val_iZone]->GetVelocity_FreeStream()[2] << ")";
       }
-      else {
-        su2double m = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy()/solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-        su2double term = (Total_CoPy/m)-Total_CoPx;
-        if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y-"<< term << "." << "\n\n";
-        else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y+"<< fabs(term);
-        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
-        else Breakdown_file << " in." << "\n\n";
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m/s. ";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft/s. ";
+
+      Breakdown_file << "Magnitude: "  << config[val_iZone]->GetModVel_FreeStream();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
+
+      if (viscous) {
+        Breakdown_file << "Initial laminar viscosity: " << config[val_iZone]->GetViscosity_FreeStream();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+        if (turbulent) {
+          Breakdown_file << "Initial turb. kinetic energy per unit mass: " << config[val_iZone]->GetTke_FreeStream();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
+          Breakdown_file << "Initial specific dissipation: " << config[val_iZone]->GetOmega_FreeStream();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " 1/s." << "\n";
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " 1/s." << "\n";
+        }
+      }
+
+      if (unsteady) { Breakdown_file << "Total time: " << config[val_iZone]->GetTotal_UnstTime() << " s. Time step: " << config[val_iZone]->GetDelta_UnstTime() << " s." << "\n"; }
+
+      /*--- Print out reference values. ---*/
+
+      Breakdown_file <<"-- Reference values:"<< "\n";
+
+      if (config[val_iZone]->GetKind_FluidModel() != CONSTANT_DENSITY) {
+        Breakdown_file << "Reference specific gas constant: " << config[val_iZone]->GetGas_Constant_Ref();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
+      } else {
+        if (energy) {
+          Breakdown_file << "Reference specific heat: " << config[val_iZone]->GetGas_Constant_Ref();
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
+        }
+      }
+
+      Breakdown_file << "Reference pressure: " << config[val_iZone]->GetPressure_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+
+      if (energy) {
+        Breakdown_file << "Reference temperature: " << config[val_iZone]->GetTemperature_Ref();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+      }
+
+      Breakdown_file << "Reference density: " << config[val_iZone]->GetDensity_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
+
+      Breakdown_file << "Reference velocity: " << config[val_iZone]->GetVelocity_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
+
+      Breakdown_file << "Reference length: " << config[val_iZone]->GetLength_Ref();
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
+      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
+
+      if (viscous) {
+        Breakdown_file << "Reference viscosity: " << config[val_iZone]->GetViscosity_Ref();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+      }
+
+      if (unsteady) Breakdown_file << "Reference time: " << config[val_iZone]->GetTime_Ref() <<" s." << "\n";
+
+      /*--- Print out resulting non-dim values here. ---*/
+
+      Breakdown_file << "-- Resulting non-dimensional state:" << "\n";
+      Breakdown_file << "Mach number (non-dim): " << config[val_iZone]->GetMach() << "\n";
+      if (viscous) {
+        Breakdown_file << "Reynolds number (per m): " << config[val_iZone]->GetReynolds() << "\n";
+      }
+
+      if (config[val_iZone]->GetKind_FluidModel() != CONSTANT_DENSITY) {
+        Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND() << "\n";
+        Breakdown_file << "Initial thermodynamic pressure (non-dim): " << config[val_iZone]->GetPressure_ThermodynamicND() << "\n";
+      } else {
+        if (energy) {
+          Breakdown_file << "Specific heat at constant pressure (non-dim): " << config[val_iZone]->GetSpecific_Heat_CpND() << "\n";
+          Breakdown_file << "Specific heat at constant volume (non-dim): " << config[val_iZone]->GetSpecific_Heat_CvND() << "\n";
+          if (boussinesq) Breakdown_file << "Thermal expansion coefficient (non-dim.): " << config[val_iZone]->GetThermal_Expansion_CoeffND() << " K^-1." << "\n";
+        }
+      }
+
+      if (energy) Breakdown_file << "Initial temperature (non-dim): " << config[val_iZone]->GetTemperature_FreeStreamND() << "\n";
+      Breakdown_file << "Initial pressure (non-dim): " << config[val_iZone]->GetPressure_FreeStreamND() << "\n";
+      Breakdown_file << "Initial density (non-dim): " << config[val_iZone]->GetDensity_FreeStreamND() << "\n";
+
+      if (nDim == 2) {
+        Breakdown_file << "Initial velocity (non-dim): (" << config[val_iZone]->GetVelocity_FreeStreamND()[0] << ", ";
+        Breakdown_file << config[val_iZone]->GetVelocity_FreeStreamND()[1] << "). ";
+      } else {
+        Breakdown_file << "Initial velocity (non-dim): (" << config[val_iZone]->GetVelocity_FreeStreamND()[0] << ", ";
+        Breakdown_file << config[val_iZone]->GetVelocity_FreeStreamND()[1] << ", " << config[val_iZone]->GetVelocity_FreeStreamND()[2] << "). ";
+      }
+      Breakdown_file << "Magnitude: "   << config[val_iZone]->GetModVel_FreeStreamND() << "\n";
+      
+      if (viscous) {
+        Breakdown_file << "Initial viscosity (non-dim): " << config[val_iZone]->GetViscosity_FreeStreamND() << "\n";
+        if (turbulent) {
+          Breakdown_file << "Initial turb. kinetic energy (non-dim): " << config[val_iZone]->GetTke_FreeStreamND() << "\n";
+          Breakdown_file << "Initial specific dissipation (non-dim): " << config[val_iZone]->GetOmega_FreeStreamND() << "\n";
+        }
       }
       
+      if (unsteady) {
+        Breakdown_file << "Total time (non-dim): " << config[val_iZone]->GetTotal_UnstTimeND() << "\n";
+        Breakdown_file << "Time step (non-dim): " << config[val_iZone]->GetDelta_UnstTimeND() << "\n";
+      }
+
     }
+
+    /*--- Begin forces breakdown info. ---*/
     
-    su2double RefDensity  = solver[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-    su2double RefArea     = config[val_iZone]->GetRefArea();
-    su2double RefVel = solver[val_iZone][FinestMesh][FLOW_SOL]->GetModVelocity_Inf();
-    su2double Factor = (0.5*RefDensity*RefArea*RefVel*RefVel);
-    su2double Ref = config[val_iZone]->GetDensity_Ref() * config[val_iZone]->GetVelocity_Ref() * config[val_iZone]->GetVelocity_Ref() * 1.0 * 1.0;
+    Breakdown_file << fixed;
+    Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
+
+    if (nDim == 3) {
+      su2double m = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz()/solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      su2double term = (Total_CoPz/m)-Total_CoPx;
+      
+      if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z-"<< term << "." << "\n\n";
+      else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z+"<< fabs(term);
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
+      else Breakdown_file << " in." << "\n\n";
+    }
+    else {
+      su2double m = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy()/solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      su2double term = (Total_CoPy/m)-Total_CoPx;
+      if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y-"<< term << "." << "\n\n";
+      else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y+"<< fabs(term);
+      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n\n";
+      else Breakdown_file << " in." << "\n\n";
+    }
+
+    /*--- Reference area and force factors. ---*/
+
+    su2double RefDensity, RefArea, RefVel, Factor, Ref;
+    RefArea     = config[val_iZone]->GetRefArea();
+    if (compressible) {
+      RefDensity  = solver[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
+      RefVel = solver[val_iZone][FinestMesh][FLOW_SOL]->GetModVelocity_Inf();
+    } else {
+      if ((config[val_iZone]->GetRef_Inc_NonDim() == DIMENSIONAL) ||
+          (config[val_iZone]->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
+        RefDensity  = solver[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
+        RefVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          RefVel  += solver[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim)*solver[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim);
+        RefVel = sqrt(RefVel);
+      } else {
+        RefDensity = config[val_iZone]->GetInc_Density_Ref();
+        RefVel    = config[val_iZone]->GetInc_Velocity_Ref();
+      }
+    }
+    Factor = (0.5*RefDensity*RefArea*RefVel*RefVel);
+    Ref = config[val_iZone]->GetDensity_Ref() * config[val_iZone]->GetVelocity_Ref() * config[val_iZone]->GetVelocity_Ref() * 1.0 * 1.0;
 
     Breakdown_file << "NOTE: Multiply forces by the non-dimensional factor: " << Factor << ", and the reference factor: " << Ref  << "\n";
     Breakdown_file << "to obtain the dimensional force."  << "\n" << "\n";
