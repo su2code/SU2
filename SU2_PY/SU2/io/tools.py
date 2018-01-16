@@ -353,7 +353,18 @@ optnames_geo = [ "AIRFOIL_AREA"                   ,
                  "WING_OBJFUN_MIN_TOC"    ,
                  "WING_MAX_TWIST"         ,
                  "WING_MAX_CURVATURE"     ,
-                 "WING_MAX_DIHEDRAL"      ]
+                 "WING_MAX_DIHEDRAL"           ,
+                 "NACELLE_VOLUME"            ,
+                 "NACELLE_MIN_THICKNESS"     ,
+                 "NACELLE_MAX_THICKNESS"     ,
+                 "NACELLE_MIN_CHORD"         ,
+                 "NACELLE_MAX_CHORD"         ,
+                 "NACELLE_MIN_LE_RADIUS"     ,
+                 "NACELLE_MAX_LE_RADIUS"     ,
+                 "NACELLE_MIN_TOC"           ,
+                 "NACELLE_MAX_TOC"           ,
+                 "NACELLE_OBJFUN_MIN_TOC"    ,
+                 "NACELLE_MAX_TWIST"         ]
                  
 PerStation = []
 for i in range(20):

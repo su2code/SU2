@@ -67,8 +67,8 @@ using namespace std;
 
 class CConfig {
 private:
-  SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
-  int rank;
+  SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
+  int rank, size;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_AverageProcess; /*!< \brief Kind of mixing process.*/
@@ -426,6 +426,7 @@ private:
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
+  su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -501,6 +502,7 @@ private:
   bool CHT_Problem;     /*!< \brief Boolean to determine whether the simulation is CHT or not. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver,		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -612,6 +614,7 @@ private:
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_PyCustom,               /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
@@ -621,6 +624,7 @@ private:
   *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_PyCustom,            /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
@@ -636,6 +640,7 @@ private:
   *Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */    
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_PyCustom,                 /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
@@ -647,6 +652,7 @@ private:
   *Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_PyCustom,        /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
@@ -959,6 +965,7 @@ private:
   su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
+  su2double *default_nacelle_location;        /*!< \brief Location of the nacelle. */
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
@@ -1277,14 +1284,14 @@ public:
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
    */
-  SU2_Comm GetMPICommunicator();
-  
+  SU2_MPI::Comm GetMPICommunicator();
+
   /*!
    * \brief Set the MPI communicator for SU2.
    * \param[in] Communicator - MPI communicator for SU2.
    */
-  void SetMPICommunicator(SU2_Comm Communicator);
-  
+  void SetMPICommunicator(SU2_MPI::Comm Communicator);
+
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -2631,6 +2638,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Moving(void);
+
+  /*!
+   * \brief Get the total number of Python customizable markers.
+   * \return Total number of Python customizable markers.
+   */
+  unsigned short GetnMarker_PyCustom(void);
   
   /*!
    * \brief Get the total number of moving markers.
@@ -3049,6 +3062,14 @@ public:
    * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
    */
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
+
+  /*!
+   * \brief Set if a marker <i>val_marker</i> is going to be customized in Python <i>val_PyCustom</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_PyCustom - 0 or 1 depending if the the marker is going to be customized in Python.
+   */
+  void SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom);
   
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
@@ -3164,6 +3185,13 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
+
+  /*!
+   * \brief Get the Python customization for a marker <i>val_marker</i>.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \return 0 or 1 depending if the marker is going to be customized in Python.
+   */
+  unsigned short GetMarker_All_PyCustom(unsigned short val_marker);
   
   /*!
    * \brief Get the airfoil sections in the slicing process.
@@ -3172,6 +3200,13 @@ public:
    */
   su2double GetLocationStations(unsigned short val_section);
   
+  /*!
+   * \brief Get the defintion of the nacelle location.
+   * \param[in] val_index - Index of the section.
+   * \return Coordinate of the nacelle location.
+   */
+  su2double GetNacelleLocation(unsigned short val_index);
+
   /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
    * \param[in] val_mesh - Index of the grid.
@@ -5501,6 +5536,12 @@ public:
    * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_Moving(string val_marker);
+
+  /*!
+   * \brief Get the Python customization information from the config definition for the marker <i>val_marker</i>.
+   * \return Python customization information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_PyCustom(string val_marker);
   
   /*!
    * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
@@ -5848,6 +5889,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Moving_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_PyCustom_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the name of the surface defined in the geometry file.
@@ -7927,6 +7976,11 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Get if AD preaccumulation should be performed.
+   */
+  bool GetAD_Preaccumulation(void);
 
   /*!
    * \brief Get the heat equation.

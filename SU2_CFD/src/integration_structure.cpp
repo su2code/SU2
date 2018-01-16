@@ -34,6 +34,8 @@
 #include "../include/integration_structure.hpp"
 
 CIntegration::CIntegration(CConfig *config) {
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   Cauchy_Value = 0;
   Cauchy_Func = 0;
   Old_Func = 0;
@@ -452,8 +454,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
                                           su2double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
-  int rank = MASTER_NODE;
-  
+
   /*--- Initialize some variables for controlling the output frequency. ---*/
   
   bool DualTime_Iteration = false;
@@ -468,12 +469,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
   
   if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
-    
-#ifdef HAVE_MPI
-    int size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
     
     bool Already_Converged = Convergence;
     
@@ -573,15 +568,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
     
     if (monitor != monitor) {
-      if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_DIVERGENCE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
     }
     
     if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
@@ -621,10 +608,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     unsigned long iProcessor, owner, *owner_all = NULL;
     
     string Marker_Tag, Monitoring_Tag;
-  int rank, nProcessor;
-    
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    int nProcessor = size;
 
     /*--- Only if mater node allocate memory ---*/
     
@@ -756,13 +740,6 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
   su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
   
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   bool Already_Converged = Convergence;
   
   Reference_UTOL = config->GetResidual_FEM_UTOL();
@@ -822,13 +799,6 @@ void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *
 
   su2double val_I, Max_Val_I;
 
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   bool Already_Converged = Convergence;
 
   Max_Val_I = config->GetCriteria_FEM_ADJ();
@@ -879,13 +849,6 @@ void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *
 
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   su2double FEA_check[2] = {0.0, 0.0};
   su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;

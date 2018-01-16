@@ -56,6 +56,8 @@ using namespace std;
  */
 class CInterpolator {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   unsigned int nZone;
   unsigned int donorZone, targetZone;
 

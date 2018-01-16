@@ -700,6 +700,8 @@ inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_
 
 inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
 
+inline su2double CConfig::GetNacelleLocation(unsigned short val_index) { return NacelleLocation[val_index]; }
+
 inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }
 
 inline unsigned short CConfig::GetnFFD_Fix_JDir(void) { return nFFD_Fix_JDir; }
@@ -1193,6 +1195,8 @@ inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
+inline string CConfig::GetMarker_PyCustom_TagBound(unsigned short val_marker){ return Marker_PyCustom[val_marker]; }
+
 inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
@@ -1230,6 +1234,8 @@ inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short 
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
 
+inline void CConfig::SetMarker_All_PyCustom(unsigned short val_marker, unsigned short val_PyCustom) { Marker_All_PyCustom[val_marker] = val_PyCustom; }
+
 inline void CConfig::SetMarker_All_PerBound(unsigned short val_marker, short val_perbound) { Marker_All_PerBound[val_marker] = val_perbound; }
 
 inline short CConfig::GetMarker_All_PerBound(unsigned short val_marker) { return Marker_All_PerBound[val_marker]; }
@@ -1262,6 +1268,8 @@ inline unsigned short CConfig::GetMarker_All_DV(unsigned short val_marker) { ret
 
 inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) { return Marker_All_Moving[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_PyCustom(unsigned short val_marker) { return Marker_All_PyCustom[val_marker];}
+
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
@@ -1277,6 +1285,8 @@ inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nM
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
+
+inline unsigned short CConfig::GetnMarker_PyCustom(void) { return nMarker_PyCustom; }
 
 inline unsigned short CConfig::GetnMarker_Analyze(void) { return nMarker_Analyze; }
 
@@ -1755,6 +1765,8 @@ inline bool CConfig::GetHeat_Inc(void) { return Heat_Inc;}
 inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
 
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
+
+inline bool CConfig::GetAD_Preaccumulation(void) {return AD_Preaccumulation;}
 
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 

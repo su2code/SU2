@@ -454,9 +454,9 @@ class Solver:
 	rotCoord = rotMatrix.dot(r)
 
         newCoord = newCenter + rotCoord
-        newVel[0] = psidot*(newCoord[1]-newCenter[1])
-	newVel[1] = -psidot*(newCoord[0]-newCenter[0])
-	newVel[2] = 0.0
+        newVel[0] = Centerdot[0]+psidot*(newCoord[1]-newCenter[1])
+	newVel[1] = Centerdot[1]-psidot*(newCoord[0]-newCenter[0])
+	newVel[2] = Centerdot[2]+0.0
 
         self.node[iPoint].SetCoord((newCoord[0], newCoord[1], newCoord[2]))
         self.node[iPoint].SetVel((newVel[0], newVel[1], newVel[2]))
@@ -592,9 +592,11 @@ class Solver:
 
     self.centerOfRotation_n = np.copy(self.centerOfRotation)
 
-  def applyload(self, iPoint, fx, fy, fz):
+  def applyload(self, iVertex, fx, fy, fz, time):
     """ Description """
 
+    makerID = self.markers.keys()[0]
+    iPoint = self.getInterfaceNodeGlobalIndex(makerID, iVertex)
     self.node[iPoint].SetForce((fx,fy,fz))
 
   def getFSIMarkerID(self):

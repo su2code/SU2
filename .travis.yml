@@ -12,12 +12,12 @@ compiler:
 notifications:
     email:
         recipients:
-            - ole.burghardt@scicomp.uni-kl.de
-            - tim.albring@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_incompressible  
+        - develop
+
 
 python:
     - 2.7
@@ -84,6 +84,9 @@ before_script:
     - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
+    # Get the test cases
+    - git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
+    
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
 

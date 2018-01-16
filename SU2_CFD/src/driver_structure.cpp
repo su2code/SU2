@@ -44,12 +44,10 @@ CDriver::CDriver(char* confFile,
   unsigned short Kind_Grid_Movement;
   bool initStaticMovement;
 
+  SU2_MPI::SetComm(MPICommunicator);
 
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPICommunicator, &rank);
-#endif
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
@@ -359,7 +357,7 @@ CDriver::CDriver(char* confFile,
       if (rank == MASTER_NODE)
         cout << "Setting moving mesh structure for static FSI problems." << endl;
         /*--- Instantiate the container for the grid movement structure ---*/
-        grid_movement[iZone]    = new CElasticityMovement(geometry_container[iZone][MESH_0], config_container[iZone]);
+      grid_movement[iZone]    = new CElasticityMovement(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
 
   }
@@ -392,6 +390,9 @@ CDriver::CDriver(char* confFile,
   }
 
 
+  if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
+  PythonInterface_Preprocessing();
+
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
    surface comma-separated value, and convergence history files (both in serial
@@ -416,16 +417,7 @@ CDriver::CDriver(char* confFile,
       && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
-  /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
-  APIVarCoord[0] = 0.0;
-  APIVarCoord[1] = 0.0;
-  APIVarCoord[2] = 0.0;
-  APINodalForce[0] = 0.0;
-  APINodalForce[1] = 0.0;
-  APINodalForce[2] = 0.0;
-  APINodalForceDensity[0] = 0.0;
-  APINodalForceDensity[1] = 0.0;
-  APINodalForceDensity[2] = 0.0;
+
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
 
@@ -438,14 +430,6 @@ CDriver::CDriver(char* confFile,
 }
 
 void CDriver::Postprocessing() {
-
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
     /*--- Output some information to the console. ---*/
 
@@ -594,11 +578,6 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short iMGlevel;
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -755,13 +734,13 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   poisson, wave, heat,
   fem, disc_adj_fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj;
+  template_solver, disc_adj, disc_adj_turb;
 
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;	 disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
@@ -788,7 +767,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetHeat_Inc(); break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); heat = config->GetHeat_Inc(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat = config->GetHeat_Inc(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
@@ -800,7 +779,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;           break;
         
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -892,7 +871,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
-      if (adj_turb)
+      if (disc_adj_turb)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
       if (heat)
         solver_container[iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
@@ -921,13 +900,8 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat,
   fem,
-  template_solver, disc_adj, disc_adj_fem;
+  template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
   int val_iter = 0;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Initialize some useful booleans ---*/
 
@@ -936,7 +910,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
   poisson          = false;
   wave             = false;  disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
-  heat             = false;
+  heat             = false;  disc_adj_turb    = false;
   template_solver  = false;
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
@@ -981,7 +955,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1018,12 +992,12 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
-    if (adj_turb && !disc_adj) {
+    if (adj_turb) {
       no_restart = true;
     }
     if (disc_adj) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
-      if (adj_turb)
+      if (disc_adj_turb)
         solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
@@ -1035,17 +1009,8 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
   /*--- Exit if a restart was requested for a solver that is not available. ---*/
 
   if (no_restart) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "A restart capability has not been implemented yet for this solver. " << endl;
-      cout << "Please set RESTART_SOL= NO and try again." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("A restart capability has not been implemented yet for this solver.\n") +
+                   string("Please set RESTART_SOL= NO and try again."), CURRENT_FUNCTION);
   }
 
   /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
@@ -1060,13 +1025,13 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, disc_adj_fem;
+  template_solver, disc_adj, disc_adj_turb, disc_adj_fem;
   
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
   fem              = false;  disc_adj_fem    = false;
@@ -1090,7 +1055,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
@@ -1118,7 +1083,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     
     if (adj_euler || adj_ns || disc_adj) {
       delete solver_container[iMGlevel][ADJFLOW_SOL];
-      if ((turbulent && disc_adj) || adj_turb) {
+      if (disc_adj_turb || adj_turb) {
         delete solver_container[iMGlevel][ADJTURB_SOL];
       }
     }
@@ -1338,7 +1303,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
-      default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
   /*--- Number of variables for the template ---*/
@@ -1392,7 +1357,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
           numerics_container[iMGlevel][TEMPLATE_SOL][CONV_TERM] = new CConvective_Template(nDim, nVar_Template, config);
         break;
-      default : cout << "Convective scheme not implemented (template_solver)." << endl; exit(EXIT_FAILURE); break;
+      default : SU2_MPI::Error("Convective scheme not implemented (template_solver).", CURRENT_FUNCTION); break;
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
@@ -1416,7 +1381,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("No convective scheme.", CURRENT_FUNCTION);
         break;
         
       case SPACE_CENTERED :
@@ -1427,7 +1392,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config); break;
             case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim, nVar_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1444,7 +1409,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config);
@@ -1519,7 +1484,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
               }
               break;
               
-            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
           }
           
         }
@@ -1533,13 +1498,13 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
           }
         }
         break;
         
       default :
-        cout << "Convective scheme not implemented (euler and ns)." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("Convective scheme not implemented (euler and ns).", CURRENT_FUNCTION);
         break;
     }
     
@@ -1618,7 +1583,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         break;
       default :
-        cout << "Convective scheme not implemented (turbulent)." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("Convective scheme not implemented (turbulent).", CURRENT_FUNCTION);
         break;
     }
     
@@ -1670,7 +1635,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         break;
       default :
-        cout << "Convective scheme not implemented (transition)." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("Convective scheme not implemented (transition).", CURRENT_FUNCTION);
         break;
     }
     
@@ -1741,7 +1706,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("No convective scheme.", CURRENT_FUNCTION);
         break;
         
       case SPACE_CENTERED :
@@ -1754,7 +1719,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1773,7 +1738,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJSTArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
           }
           
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1800,7 +1765,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
           }
         }
         
@@ -1816,14 +1781,14 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
               }
               break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+            default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
           }
         }
         
         break;
         
       default :
-        cout << "Convective scheme not implemented (adj_euler and adj_ns)." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("Convective scheme not implemented (adj_euler and adj_ns).", CURRENT_FUNCTION);
         break;
     }
     
@@ -1913,11 +1878,11 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           if (spalart_allmaras) {
             numerics_container[iMGlevel][ADJTURB_SOL][CONV_TERM] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
           }
-          else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+          else if (neg_spalart_allmaras) {SU2_MPI::Error("Adjoint Neg SA turbulence model not implemented.", CURRENT_FUNCTION);}
+          else if (menter_sst) {SU2_MPI::Error("Adjoint SST turbulence model not implemented.", CURRENT_FUNCTION);}
         break;
       default :
-        cout << "Convective scheme not implemented (adj_turb)." << endl; exit(EXIT_FAILURE);
+        SU2_MPI::Error("Convective scheme not implemented (adj_turb).", CURRENT_FUNCTION);
         break;
     }
     
@@ -1926,8 +1891,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras) {
         numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
-      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (neg_spalart_allmaras) {SU2_MPI::Error("Adjoint Neg SA turbulence model not implemented.", CURRENT_FUNCTION);}
+      else if (menter_sst) {SU2_MPI::Error("Adjoint SST turbulence model not implemented.", CURRENT_FUNCTION);}
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1936,15 +1901,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
         numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
       }
-      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (neg_spalart_allmaras) {SU2_MPI::Error("Adjoint Neg SA turbulence model not implemented.", CURRENT_FUNCTION);}
+      else if (menter_sst) {SU2_MPI::Error("Adjoint SST turbulence model not implemented.", CURRENT_FUNCTION);}
     }
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
-      else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
-      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (neg_spalart_allmaras) {SU2_MPI::Error("Adjoint Neg SA turbulence model not implemented.", CURRENT_FUNCTION);}
+      else if (menter_sst) {SU2_MPI::Error("Adjoint SST turbulence model not implemented.", CURRENT_FUNCTION);}
     }
     
   }
@@ -1965,37 +1930,37 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       case SMALL_DEFORMATIONS :
         switch (config->GetMaterialModel()) {
           case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
-          case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-          default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+          case NEO_HOOKEAN : SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION); break;
+          default: SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
         }
         break;
       case LARGE_DEFORMATIONS :
         switch (config->GetMaterialModel()) {
-        case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+          case LINEAR_ELASTIC: SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION); break;
           case NEO_HOOKEAN :
             switch (config->GetMaterialCompressibility()) {
               case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
               case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
-              default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+              default: SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
           case KNOWLES:
             switch (config->GetMaterialCompressibility()) {
               case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
               case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
-              default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+              default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
           case IDEAL_DE:
             switch (config->GetMaterialCompressibility()) {
               case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config); break;
-              default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+              default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
             }
             break;
-          default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+          default:  SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION); break;
         }
         break;
-      default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+      default:  SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);  break;
     }
 
   /*--- The following definitions only make sense if we have a non-linear solution ---*/
@@ -2421,11 +2386,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
 void CDriver::Iteration_Preprocessing() {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Initial print to console for this zone. ---*/
 
   if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
@@ -2496,7 +2456,6 @@ void CDriver::Iteration_Preprocessing() {
 
 void CDriver::Interface_Preprocessing() {
 
-  int rank = MASTER_NODE;
   unsigned short donorZone, targetZone;
   unsigned short nVar, nVarTransfer;
 
@@ -2511,18 +2470,14 @@ void CDriver::Interface_Preprocessing() {
   int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
 #ifdef HAVE_MPI
-  int *Buffer_Recv_mark = NULL, iRank, nProcessor = 1;;
-
-  MPI_Comm_rank(config_container[ZONE_0]->GetMPICommunicator(), &rank);
-  MPI_Comm_size(config_container[ZONE_0]->GetMPICommunicator(), &nProcessor);
+  int *Buffer_Recv_mark = NULL, iRank, nProcessor = size;
 
   if (rank == MASTER_NODE)
-  Buffer_Recv_mark = new int[nProcessor];
+    Buffer_Recv_mark = new int[nProcessor];
 #endif
 
   if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2 && rank == MASTER_NODE) {
-    cout << "Error, cannot run the FSI solver on more than 2 zones!" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("Error, cannot run the FSI solver on more than 2 zones!", CURRENT_FUNCTION);
   }
 
   /*--- Coupling between zones ---*/
@@ -2793,11 +2748,6 @@ void CDriver::InitStaticMeshMovement(){
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   for (iZone = 0; iZone < nZone; iZone++) {
     Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
 
@@ -2863,16 +2813,12 @@ void CDriver::InitStaticMeshMovement(){
 
 void CDriver::TurbomachineryPreprocessing(){
 
-  int rank = MASTER_NODE;
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool restart   = (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetRestart_Flow());
   mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
   bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Create turbovertex structure ---*/
   if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
@@ -2996,12 +2942,6 @@ void CDriver::TurbomachineryPreprocessing(){
 
 void CDriver::StartSolver() {
 
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
   if (rank == MASTER_NODE)
@@ -3090,7 +3030,7 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
   }
 
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
 }
@@ -3156,16 +3096,10 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   
 }
 
-
 void CDriver::Output(unsigned long ExtIter) {
   
-  int rank = MASTER_NODE;
   unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
   bool output_files = false;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
@@ -3235,472 +3169,10 @@ void CDriver::Output(unsigned long ExtIter) {
   }
   
 }
+
 CDriver::~CDriver(void) {}
 
-su2double CDriver::Get_Drag() {
 
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CDrag, RefDensity, RefArea, RefVel2, factor;
-
-  /*--- Export free-stream density and reference area ---*/
-  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefArea = config_container[val_iZone]->GetRefArea();
-
-  /*--- Calculate free-stream velocity (squared) ---*/
-  RefVel2 = 0.0;
-  for(unsigned short iDim = 0; iDim < nDim; iDim++)
-    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
-
-  /*--- Calculate drag force based on drag coefficient ---*/
-  factor = 0.5*RefDensity*RefArea*RefVel2;
-  CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
-
-  return CDrag*factor;
-}
-
-su2double CDriver::Get_Lift() {
-
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CLift, RefDensity, RefArea, RefVel2, factor;
-
-  /*--- Export free-stream density and reference area ---*/
-  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefArea = config_container[val_iZone]->GetRefArea();
-
-  /*--- Calculate free-stream velocity (squared) ---*/
-  RefVel2 = 0.0;
-  for(unsigned short iDim = 0; iDim < nDim; iDim++)
-    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
-
-  /*--- Calculate drag force based on drag coefficient ---*/
-  factor = 0.5*RefDensity*RefArea*RefVel2;
-  CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
-
-  return CLift*factor;
-}
-
-su2double CDriver::Get_Mx(){
-
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMx, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
-
-  /*--- Export free-stream density and reference area ---*/
-  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefArea = config_container[val_iZone]->GetRefArea();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
-
-  /*--- Calculate free-stream velocity (squared) ---*/
-  RefVel2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
-
-  /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefArea*RefVel2;
-  CMx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-
-  return CMx*factor*RefLengthCoeff;
-
-}
-
-su2double CDriver::Get_My(){
-
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMy, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
-
-  /*--- Export free-stream density and reference area ---*/
-  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefArea = config_container[val_iZone]->GetRefArea();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
-
-  /*--- Calculate free-stream velocity (squared) ---*/
-  RefVel2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
-
-  /*--- Calculate moment around x-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefArea*RefVel2;
-  CMy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-
-  return CMy*factor*RefLengthCoeff;
-
-}
-
-su2double CDriver::Get_Mz() {
-
-  unsigned short val_iZone = ZONE_0;
-  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMz, RefDensity, RefArea, RefLengthCoeff, RefVel2, factor;
-
-  /*--- Export free-stream density and reference area ---*/
-  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-  RefArea = config_container[val_iZone]->GetRefArea();
-  RefLengthCoeff = config_container[val_iZone]->GetRefLength();
-
-  /*--- Calculate free-stream velocity (squared) ---*/
-  RefVel2 = 0.0;
-  for(unsigned short iDim = 0; iDim < nDim; iDim++)
-    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
-
-  /*--- Calculate moment around z-axis based on coefficients ---*/
-  factor = 0.5*RefDensity*RefArea*RefVel2;
-  CMz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-
-  return CMz*factor*RefLengthCoeff;
-
-}
-
-su2double CDriver::Get_DragCoeff() {
-
-    unsigned short val_iZone = ZONE_0;
-    unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-    su2double CDrag;
-
-    CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
-
-    return CDrag;
-}
-
-su2double CDriver::Get_LiftCoeff() {
-
-    unsigned short val_iZone = ZONE_0;
-    unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-    su2double CLift;
-
-    CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
-
-    return CLift;
-}
-
-unsigned short CDriver::GetMovingMarker() {
-
-  unsigned short IDtoSend,iMarker, jMarker, Moving;
-  string Marker_Tag, Moving_Tag;
-
-  IDtoSend = 0;
-  for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
-    Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
-    if (Moving == YES) {
-      for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
-        Moving_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(jMarker);
-        Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-        if (Marker_Tag == Moving_Tag) {
-          IDtoSend = iMarker;
-          break;
-        }
-      }
-    }
-  }
-
-  return IDtoSend;
-
-}
-
-unsigned long CDriver::GetNumberVertices(unsigned short iMarker) {
-
-  unsigned long nVertices;
-  unsigned short jMarker, Moving;
-  string Marker_Tag, Moving_Tag;
-
-  nVertices = 0;
-  Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
-  if (Moving == YES) {
-    for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
-      Moving_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(jMarker);
-      Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-      if (Marker_Tag == Moving_Tag) {
-        nVertices = geometry_container[ZONE_0][MESH_0]->nVertex[iMarker];
-      }
-    }
-  }
-
-  return nVertices;
-
-}
-
-unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) {
-
-  unsigned long nHalovertices, iVertex, iPoint;
-  unsigned short jMarker, Moving;
-  string Marker_Tag, Moving_Tag;
-
-  nHalovertices = 0;
-  Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
-  if (Moving == YES) {
-    for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
-      Moving_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(jMarker);
-      Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-      if (Marker_Tag == Moving_Tag) {
-        for(iVertex = 0; iVertex < geometry_container[ZONE_0][MESH_0]->nVertex[iMarker]; iVertex++){
-          iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-          if(!(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain())) nHalovertices += 1;
-        }
-      }
-    }
-  }
-
-  return nHalovertices;
-}
-
-unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex) {
-
-  unsigned long iPoint, GlobalIndex;
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  GlobalIndex = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetGlobalIndex();
-
-  return GlobalIndex;
-
-}
-
-bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex) {
- 
-  unsigned long iPoint; 
-  
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) return false;
-  else return true;
-
-}
-
-unsigned long CDriver::GetnExtIter() {
-
-    return config_container[ZONE_0]->GetnExtIter();
-}
-
-su2double CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iVertex) {
-
-  su2double* Coord;
-  unsigned long iPoint;
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  Coord = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord();
-  return Coord[0];
-
-}
-
-su2double CDriver::GetVertexCoordY(unsigned short iMarker, unsigned short iVertex) {
-
-  su2double* Coord;
-  unsigned long iPoint;
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  Coord = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord();
-  return Coord[1];
-}
-
-su2double CDriver::GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex) {
-
-  su2double* Coord;
-  unsigned long iPoint;
-
-  if(nDim == 3) {
-    iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    Coord = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord();
-    return Coord[2];
-  }
-  else {
-    return 0.0;
-  }
-
-}
-
-bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex) {
-
-  unsigned long iPoint;
-  unsigned short iDim, jDim;
-  su2double *Normal, AreaSquare, Area;
-  bool halo;
-
-  unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
-
-  /*--- Check the kind of fluid problem ---*/
-  bool compressible       = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (config_container[ZONE_0]->GetKind_Regime() == INCOMPRESSIBLE);
-  bool viscous_flow       = ((config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
-                 (config_container[ZONE_0]->GetKind_Solver() == RANS) );
-
-  /*--- Parameters for the calculations ---*/
-  // Pn: Pressure
-  // Pinf: Pressure_infinite
-  // div_vel: Velocity divergence
-  // Dij: Dirac delta
-  su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
-  su2double Viscosity = 0.0;
-  su2double Grad_Vel[3][3] = { {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} } ;
-  su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} } ;
-
-  su2double Pinf = solver_container[ZONE_0][FinestMesh][FLOW_SOL]->GetPressure_Inf();
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-
-  /*--- It is necessary to distinguish the halo nodes from the others, since they introduce non physical forces. ---*/
-  if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) {
-    /*--- Get the normal at the vertex: this normal goes inside the fluid domain. ---*/
-    Normal = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-    AreaSquare = 0.0;
-    for(iDim = 0; iDim < nDim; iDim++) {
-      AreaSquare += Normal[iDim]*Normal[iDim];
-    }
-    Area = sqrt(AreaSquare);
-
-    /*--- Get the values of pressure and viscosity ---*/
-    Pn = solver_container[ZONE_0][MESH_0][FLOW_SOL]->node[iPoint]->GetPressure();
-    if (viscous_flow) {
-      for(iDim=0; iDim<nDim; iDim++) {
-        for(jDim=0; jDim<nDim; jDim++) {
-          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][FinestMesh][FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
-        }
-      }
-      Viscosity = solver_container[ZONE_0][MESH_0][FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
-
-    /*--- Calculate the inviscid (pressure) part of tn in the fluid nodes (force units) ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-     APINodalForce[iDim] = -(Pn-Pinf)*Normal[iDim];     //NB : norm(Normal) = Area
-    }
-
-    /*--- Calculate the viscous (shear stress) part of tn in the fluid nodes (force units) ---*/
-    if ((incompressible || compressible) && viscous_flow) {
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += Grad_Vel[iDim][iDim];
-     if (incompressible) div_vel = 0.0;
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0 ; jDim < nDim; jDim++) {
-         Dij = 0.0; if (iDim == jDim) Dij = 1.0;
-         Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*Dij;
-         APINodalForce[iDim] += Tau[iDim][jDim]*Normal[jDim];
-        }
-      }
-    }
-
-    //Divide by local are in case of force density communication.
-   for(iDim = 0; iDim < nDim; iDim++) {
-     APINodalForceDensity[iDim] = APINodalForce[iDim]/Area;
-    }
-
-    halo = false;
-  }
-  else {
-    halo = true;
-  }
-
-  return halo;
-
-}
-
-su2double CDriver::GetVertexForceX(unsigned short iMarker, unsigned short iVertex) {
-
-  return APINodalForce[0];
-
-}
-
-su2double CDriver::GetVertexForceY(unsigned short iMarker, unsigned short iVertex) {
-
-  return APINodalForce[1];
-
-}
-
-su2double CDriver::GetVertexForceZ(unsigned short iMarker, unsigned short iVertex) {
-
-  return APINodalForce[2];
-
-}
-
-su2double CDriver::GetVertexForceDensityX(unsigned short iMarker, unsigned short iVertex) {
-  return APINodalForceDensity[0];
-}
-
-su2double CDriver::GetVertexForceDensityY(unsigned short iMarker, unsigned short iVertex) {
-  return APINodalForceDensity[1];
-}
-
-su2double CDriver::GetVertexForceDensityZ(unsigned short iMarker, unsigned short iVertex) {
-  return APINodalForceDensity[2];
-}
-
-void CDriver::SetVertexCoordX(unsigned short iMarker, unsigned short iVertex, su2double newPosX) {
-
-  unsigned long iPoint;
-  su2double *Coord, *Coord_n;
-  su2double dispX;
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  Coord = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord();
-
-  if(config_container[ZONE_0]->GetUnsteady_Simulation()) {
-    Coord_n = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord_n();
-    dispX = newPosX - Coord_n[0];
-    APIVarCoord[0] = dispX - Coord[0] + Coord_n[0];
-  }
-  else {
-    APIVarCoord[0] = newPosX - Coord[0];
-  }
-
-}
-
-void CDriver::SetVertexCoordY(unsigned short iMarker, unsigned short iVertex, su2double newPosY) {
-
-  unsigned long iPoint;
-  su2double *Coord, *Coord_n;
-  su2double dispY;
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  Coord = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord();
-
-  if(config_container[ZONE_0]->GetUnsteady_Simulation()) {
-    Coord_n = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord_n();
-    dispY = newPosY - Coord_n[1];
-    APIVarCoord[1] = dispY - Coord[1] + Coord_n[1];
-  }
-  else {
-    APIVarCoord[1] = newPosY - Coord[1];
-  }
-}
-
-void CDriver::SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, su2double newPosZ) {
-
-  unsigned long iPoint;
-  su2double *Coord, *Coord_n;
-  su2double dispZ;
-
-  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  Coord = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord();
-  Coord_n = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord_n();
-  if(nDim > 2) {
-    if(config_container[ZONE_0]->GetUnsteady_Simulation()) {
-      Coord_n = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetCoord_n();
-      dispZ = newPosZ - Coord_n[2];
-      APIVarCoord[2] = dispZ - Coord[2] + Coord_n[2];
-    }
-    else {
-      APIVarCoord[2] = newPosZ - Coord[2];
-    }
-  }
-  else {
-    APIVarCoord[2] = 0.0;
-  }
-}
-
-su2double CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex) {
-
-  su2double nodalVarCoordNorm;
-
-    geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(APIVarCoord);
-    nodalVarCoordNorm = sqrt((APIVarCoord[0])*(APIVarCoord[0]) + (APIVarCoord[1])*(APIVarCoord[1]) + (APIVarCoord[2])*(APIVarCoord[2]));
-
-  return nodalVarCoordNorm;
-
-}
 
 CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
                                unsigned short val_nDim, 
@@ -3747,45 +3219,6 @@ void CGeneralDriver::Update() {
 
 }
 
-void CGeneralDriver::ResetConvergence() {
-
-  switch (config_container[ZONE_0]->GetKind_Solver()) {
-
-    case EULER: case NAVIER_STOKES: case RANS:
-    integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
-      if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][TRANS_SOL]->SetConvergence(false);
-    break;
-
-  case WAVE_EQUATION:
-    integration_container[ZONE_0][WAVE_SOL]->SetConvergence(false);
-    break;
-
-  case HEAT_EQUATION:
-    integration_container[ZONE_0][HEAT_SOL]->SetConvergence(false);
-    break;
-
-  case POISSON_EQUATION:
-    break;
-
-  case FEM_ELASTICITY:
-    integration_container[ZONE_0][FEA_SOL]->SetConvergence(false);
-    break;
-
-  case DISC_ADJ_FEM:
-    integration_container[ZONE_0][ADJFEA_SOL]->SetConvergence(false);
-    break;
-
-  case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    integration_container[ZONE_0][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[ZONE_0]->GetKind_Solver() == ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) )
-      integration_container[ZONE_0][ADJTURB_SOL]->SetConvergence(false);
-    break;
-
-  }
-
-}
-
 void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance;
@@ -3797,46 +3230,6 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
-}
-
-void CGeneralDriver::StaticMeshUpdate() {
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
-  grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
-
-  if(rank == MASTER_NODE) cout << "No grid velocity to be computed : static grid deformation." << endl;
-
-  if(rank == MASTER_NODE) cout << " Updating multigrid structure." << endl;
-  grid_movement[ZONE_0]->UpdateMultiGrid(geometry_container[ZONE_0], config_container[ZONE_0]);
-
-}
-
-void CGeneralDriver::SetInitialMesh() {
-
-  unsigned long iPoint;
-
-  StaticMeshUpdate();
-
-  /*--- Propagate the initial deformation to the past ---*/
-  //if (!restart) {
-  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
-      for(iPoint = 0; iPoint < geometry_container[ZONE_0][iMesh]->GetnPoint(); iPoint++) {
-      //solver_container[ZONE_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-      //solver_container[ZONE_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-      geometry_container[ZONE_0][iMesh]->node[iPoint]->SetVolume_n();
-      geometry_container[ZONE_0][iMesh]->node[iPoint]->SetVolume_nM1();
-      geometry_container[ZONE_0][iMesh]->node[iPoint]->SetCoord_n();
-      geometry_container[ZONE_0][iMesh]->node[iPoint]->SetCoord_n1();
-    }
-  }
-  //}
-
 }
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
@@ -3910,11 +3303,6 @@ void CFluidDriver::Run() {
 
 void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
 
   /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
@@ -3953,15 +3341,13 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
             config_container[donorZone], config_container[targetZone]);
     }
     else {
-      cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Scatter method not implemented for non-matching meshes. ", CURRENT_FUNCTION);
     }
     break;
 
   case ALLGATHER_DATA:
     if (MatchingMesh) {
-      cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("Allgather method not implemented for matching meshes. ", CURRENT_FUNCTION);
     }
     else {
       transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
@@ -3985,42 +3371,6 @@ void CFluidDriver::Update() {
          surface_movement, grid_movement, FFDBox, iZone);
 }
 
-void CFluidDriver::ResetConvergence() {
-
-  for(iZone = 0; iZone < nZone; iZone++) {
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-    case EULER: case NAVIER_STOKES: case RANS:
-      integration_container[iZone][FLOW_SOL]->SetConvergence(false);
-      if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
-      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
-      break;
-
-    case WAVE_EQUATION:
-      integration_container[iZone][WAVE_SOL]->SetConvergence(false);
-      break;
-
-    case HEAT_EQUATION:
-      integration_container[iZone][HEAT_SOL]->SetConvergence(false);
-      break;
-
-    case POISSON_EQUATION:
-      break;
-
-    case FEM_ELASTICITY:
-      integration_container[iZone][FEA_SOL]->SetConvergence(false);
-      break;
-
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
-      if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) )
-        integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
-      break;
-    }
-  }
-
-}
-
 void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance;
@@ -4035,48 +3385,6 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 
-void CFluidDriver::StaticMeshUpdate() {
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  for(iZone = 0; iZone < nZone; iZone++) {
-    if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
-    grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][MESH_0], config_container[iZone], true);
-
-    if(rank == MASTER_NODE) cout << "No grid velocity to be computde : static grid deformation." << endl;
-
-    if(rank == MASTER_NODE) cout << " Updating multigrid structure." << endl;
-    grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone], config_container[iZone]);
-  }
-}
-
-void CFluidDriver::SetInitialMesh() {
-
-  unsigned long iPoint;
-
-  StaticMeshUpdate();
-
-  /*--- Propagate the initial deformation to the past ---*/
-  //if (!restart) {
-    for(iZone = 0; iZone < nZone; iZone++) {
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-        for(iPoint = 0; iPoint < geometry_container[iZone][iMesh]->GetnPoint(); iPoint++) {
-        //solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-        //solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-        geometry_container[iZone][iMesh]->node[iPoint]->SetVolume_n();
-        geometry_container[iZone][iMesh]->node[iPoint]->SetVolume_nM1();
-        geometry_container[iZone][iMesh]->node[iPoint]->SetCoord_n();
-        geometry_container[iZone][iMesh]->node[iPoint]->SetCoord_n1();
-      }
-    }
-  }
-  //}
-}
-
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
     unsigned short val_nZone,
     unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
@@ -4087,16 +3395,6 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
 void CTurbomachineryDriver::Run() {
-
-
-//  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
@@ -4149,7 +3447,6 @@ void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
   }
 }
 
-
 void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
   unsigned short donorZone;
@@ -4175,11 +3472,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   unsigned short iMarker, KindBC, KindBCOption;
   string Marker_Tag;
 
-  int rank = MASTER_NODE;
   bool print;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -4283,8 +3576,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
             Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
             KindBCOption       = config_container[iZone]->GetKind_Data_Riemann(Marker_Tag);
             if(KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM ){
-              cout << "Outlet pressure ramp only implemented for NRBC" <<endl;
-              exit(EXIT_FAILURE);
+              SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
             }
             break;
           case GILES_BOUNDARY:
@@ -4314,7 +3606,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   return StopCalc;
 
 }
-
 
 CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -4480,19 +3771,11 @@ void CDiscAdjFluidDriver::Run() {
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
     AD::ClearAdjoints();
-
   }
-
 }
-
 
 void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   unsigned short iZone, iMesh;
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   AD::Reset();
 
@@ -4570,8 +3853,6 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 
-  int rank = MASTER_NODE;
-
   bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -4586,10 +3867,6 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
     }
   }
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   if (rank == MASTER_NODE){
     SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
   } else {
@@ -4599,11 +3876,6 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 }
 
 void CDiscAdjFluidDriver::SetObjFunction(){
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   ObjFunc = 0.0;
 
@@ -4662,13 +3934,6 @@ void CDiscAdjFluidDriver::DirectRun(){
   unsigned short iZone, jZone;
   bool unsteady = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
 
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-
-
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -4721,12 +3986,6 @@ CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 void CDiscAdjTurbomachineryDriver::DirectRun(){
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -4765,12 +4024,6 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 }
 
 void CDiscAdjTurbomachineryDriver::SetObjFunction(){
-
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
 
@@ -4827,6 +4080,7 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
   output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0], config_container[targetZone]);
 
 }
+
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
     unsigned short val_nDim,
@@ -4931,11 +4185,6 @@ void CHBDriver::ResetConvergence() {
 }
 
 void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
-
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   unsigned short iVar, jZone, iMGlevel;
   unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
@@ -5050,6 +4299,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
     delete [] Source_Turb;
   }
 
+  delete [] Source;
   delete [] U;
   delete [] U_old;
   delete [] Psi;
@@ -5059,19 +4309,10 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
 void CHBDriver::StabilizeHarmonicBalance() {
 
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   unsigned short i, j, k, iVar, iZone, jZone, iMGlevel;
   unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
   unsigned long iPoint;
-  bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
-  if (adjoint) {
-    implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  }
 
   /*--- Retrieve values from the config file ---*/
   su2double *Source     = new su2double[nZone];
@@ -5430,11 +4671,6 @@ void CFSIDriver::Run() {
 
   bool StopCalc_Flow = false;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Be careful with whether or not we load the coords and grid velocity
    from the restart files... this needs to be standardized for the different
    solvers, in particular with FSI. ---*/
@@ -5532,10 +4768,8 @@ void CFSIDriver::Run() {
 
   } else {
 
-    if (rank == MASTER_NODE) cout << "The definition of Fluid and Structural solvers is inconsistent for FSI applications " << endl;
-
-    exit(EXIT_FAILURE);
-
+    SU2_MPI::Error( "The definition of Fluid and Structural solvers is inconsistent for FSI applications ", CURRENT_FUNCTION);
+    
   }
 
   /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
@@ -5618,11 +4852,6 @@ void CFSIDriver::Run() {
 
 void CFSIDriver::Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   solver_container[donorZone][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[donorZone], config_container[donorZone],
       solver_container[donorZone]);
 
@@ -5638,11 +4867,6 @@ void CFSIDriver::Predict_Tractions(unsigned short donorZone, unsigned short targ
 }
 
 void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
-
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
 
@@ -5675,14 +4899,12 @@ void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short
       //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
       }
       else {
-        cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
-      exit(EXIT_FAILURE);
+        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
     }
     break;
   case ALLGATHER_DATA:
     if (MatchingMesh) {
-        cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
-      exit(EXIT_FAILURE);
+        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
       }
       else {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
@@ -5709,11 +4931,6 @@ void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short
 }
 
 void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
-
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
 
@@ -5747,14 +4964,12 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
                                                                          config_container[donorZone], config_container[targetZone]);
       }
       else {
-        cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
-      exit(EXIT_FAILURE);
+        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
     }
     break;
   case ALLGATHER_DATA:
     if (MatchingMesh) {
-        cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
-      exit(EXIT_FAILURE);
+        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
       }
       else {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
@@ -5777,11 +4992,6 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
 }
 
 void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter) {
-
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*-------------------- Aitken's relaxation ------------------------*/
 
@@ -5828,10 +5038,6 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   /*--- TODO: Temporary output of objective function for Flow OFs. Needs to be integrated into the refurbished output ---*/
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   if (rank == MASTER_NODE){
 
@@ -5893,8 +5099,6 @@ void CFSIStatDriver::Run() {
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
 
-  int rank = MASTER_NODE;
-
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
   unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
@@ -5906,10 +5110,6 @@ void CFSIStatDriver::Run() {
   /*--- I will use GetUnst_nIntIter() temporarily, as an analogy with the dynamic solver ---*/
   unsigned long nExtIter_FLOW = config_container[ZONE_FLOW]->GetUnst_nIntIter();
   unsigned long iExtIter_FLOW = 0;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   ofstream ConvHist_file;
   if (rank == MASTER_NODE)
@@ -6073,10 +5273,6 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
                                                                                                val_nDim,
                                                                                                MPICommunicator) { 
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -6536,11 +5732,6 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
   cout.precision(6);
   cout.setf(ios::scientific, ios::floatfield);
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   if ((kind_recording == FLOW_CONS_VARS) || (kind_recording == MESH_COORDS)) {
 
     /*--- Print residuals in the first iteration ---*/
@@ -6788,14 +5979,9 @@ void CDiscAdjFSIStatDriver::SetRecording(unsigned short ZONE_FLOW,
   string kind_AdjointIteration = " ";
 
   if (unsteady || dynamic){
-    cout << "DYNAMIC ADJOINT SOLVER NOT IMPLEMENTED FOR FSI APPLICATIONS" << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("DYNAMIC ADJOINT SOLVER NOT IMPLEMENTED FOR FSI APPLICATIONS", CURRENT_FUNCTION);
   }
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   if (rank == MASTER_NODE){
     cout << endl;
@@ -7251,13 +6437,6 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
                                                    unsigned short ZONE_STRUCT,
                                                    unsigned short kind_recording){
 
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   bool flow_convergence    = false,
         struct_convergence  = false;
 
@@ -7343,10 +6522,6 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(unsigned long IntIter,
 
   unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetFSIIter();
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   ofstream ConvHist_file;
   if (rank == MASTER_NODE)
@@ -7406,11 +6581,6 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
                                                        unsigned short ZONE_STRUCT,
                                                        unsigned short kind_recording){
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   bool BGS_Converged = false;
 
   unsigned short iZone;
@@ -7466,11 +6636,6 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
 void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
                                                               unsigned short ZONE_STRUCT,
                                                               unsigned short kind_recording){
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   bool BGS_Converged = false;
 
@@ -7529,13 +6694,6 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
 bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
                                                  unsigned short ZONE_FLOW,
                                                  unsigned short ZONE_STRUCT){
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   unsigned short iMarker;
   unsigned short nVar_Flow = solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetnVar(),
