@@ -16697,7 +16697,6 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
-<<<<<<< HEAD
     cout.precision(4);
     cout << endl << "Computing surface mean values." << endl;
     
