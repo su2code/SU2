@@ -33,10 +33,14 @@
 
 #include "../include/SU2_CFD.hpp"
 
+#include <fenv.h>
+
 using namespace std;
 
 int main(int argc, char *argv[]) {
   
+  //feenableexcept(FE_INVALID | FE_OVERFLOW);
+
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi, cht, turbo;
