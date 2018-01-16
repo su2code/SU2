@@ -673,7 +673,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Artifical compressibility factor  */
-  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
+  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 4.1);
   /*!\brief MACH_NUMBER  \n DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values). 0.0 by default \ingroup Config*/
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
@@ -4866,10 +4866,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     switch (Kind_Gradient_Method) {
       case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
       case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
-    }
-
-    if (Kind_Regime == INCOMPRESSIBLE) {
-      cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;

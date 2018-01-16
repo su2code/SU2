@@ -622,11 +622,14 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
   
   if (implicit) {
     
-    dist_ij = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+    dist_ij = 0.0; proj_vector_ij = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      dist_ij        += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
+    }
+    proj_vector_ij = proj_vector_ij/dist_ij;
     dist_ij = sqrt(dist_ij);
-    
+
     if (dist_ij == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -638,25 +641,13 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
     else {
       GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal,
                                 Area, val_Jacobian_i, val_Jacobian_j);
+
+      /*--- Include the temperature equation Jacobian. ---*/
+
+      val_Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
+      val_Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
     }
     
-  }
-
-  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-
-  if (implicit) {
-    su2double Edge_Vector[3];
-    su2double dist_ij_2 = 0.0, proj_vector_ij = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-      dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-      proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-    }
-    if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-    else proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-    val_Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
-    val_Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
   }
 
   if (!energy) {
@@ -776,11 +767,17 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   }
-  
-  /*--- Implicit part for conservative portion ---*/
-  
+
+  /*--- Implicit part ---*/
+
   if (implicit) {
-    
+
+    proj_vector_ij = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
+    }
+    proj_vector_ij = proj_vector_ij/dist_ij_2;
+
     if (dist_ij_2 == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -792,21 +789,14 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
     else {
       GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, sqrt(dist_ij_2), UnitNormal,
                                 Area, val_Jacobian_i, val_Jacobian_j);
-    }
-  }
 
-    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-    
-    if (implicit) {
-      su2double proj_vector_ij = 0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-      if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-      else proj_vector_ij = proj_vector_ij/dist_ij_2;
+      /*--- Include the temperature equation Jacobian. ---*/
 
       val_Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
       val_Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
     }
+    
+  }
 
   if (!energy) {
     val_residual[nDim+1] = 0.0;
@@ -845,23 +835,29 @@ CSourceIncBodyForce::~CSourceIncBodyForce(void) {
 void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
 
   unsigned short iDim;
-  su2double DensityInc_0 = config->GetDensity_FreeStreamND();
+  su2double DensityInc_0 = 0.0;
   su2double Force_Ref    = config->GetForce_Ref();
+  bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
 
-    /*--- Zero the continuity contribution ---*/
+  /*--- Check for variable density. If we have a variable density
+   problem, we should subtract out the hydrostatic pressure component. ---*/
 
-    val_residual[0] = 0.0;
+  if (variable_density) DensityInc_0 = config->GetDensity_FreeStreamND();
+
+  /*--- Zero the continuity contribution ---*/
+
+  val_residual[0] = 0.0;
 
   /*--- Momentum contribution. Note that this form assumes we have
    subtracted the operating density * gravity, i.e., removed the
    hydrostatic pressure component (important for pressure BCs). ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
 
-    /*--- Zero the temperature contribution ---*/
+  /*--- Zero the temperature contribution ---*/
 
-    val_residual[nDim+1] = 0.0;
+  val_residual[nDim+1] = 0.0;
 
 }
 
