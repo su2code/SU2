@@ -879,18 +879,21 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
   su2double ymin = 1.0E9, ymax = -1.0E9, zmin = 1.0E9, zmax = -1.0E9;
 
   /*--- First check simple bounding box ---*/
+  //cout << "Check bounding box";
   for(int iCoord = 0; iCoord < nCoord; iCoord++){
     if(Coord_i[iCoord][1] < ymin) ymin = Coord_i[iCoord][1];
-    if(Coord_i[iCoord][1] > ymax) ymin = Coord_i[iCoord][1];
+    if(Coord_i[iCoord][1] > ymax) ymax = Coord_i[iCoord][1];
     if(Coord_i[iCoord][2] < zmin) zmin = Coord_i[iCoord][2];
     if(Coord_i[iCoord][2] > zmax) zmax = Coord_i[iCoord][2];
   }
 
   if(y0 < ymin || y0 > ymax || z0 < zmin || z0 > zmax){
+    //cout << "y0 = " << y0 << ", z0 = " << z0 << ", ymin = " << ymin << ", ymax = " << ymax << ", zmin = " << zmin << ", zmax = " << zmax << endl;
     return 0;
   }
 
   /*--- If inside bounding box, check sum of angles ---*/
+  //cout << "Check sum of angles" << endl;
   su2double d0, d1, d2;
   su2double a_x, a_y, b_x, b_y;
   su2double c;
