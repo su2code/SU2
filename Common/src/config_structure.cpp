@@ -1901,6 +1901,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Radius from aircraft to begin boom propagation. \ingroup Config*/
   addDoubleOption("BOOM_R0", Boom_r0, 1.0);
 
+  /*!\brief BOOM_FLT_H
+   *  \n DESCRIPTION: Aircraft altitude for boom propagation. \ingroup Config*/
+  addDoubleOption("BOOM_FLT_H", Boom_flt_h, 15240.0);
+
   /*!\brief BOOM_TOL_DPHI
    *  \n DESCRIPTION: Tolerance for azimuth angle in boom propagation. \ingroup Config*/
   addDoubleOption("BOOM_TOL_DPHI", Boom_Tol_dphi, 1.0E-3);

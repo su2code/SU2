@@ -895,6 +895,7 @@ private:
   unsigned short Boom_N_phi;  /*!< \brief Number of azimuth angles to evaluate boom. */
   su2double *Boom_phi,        /*!< \brief Azimuth angles to evaluate boom. */
   Boom_r0,                    /*!< \brief Radius from aircraft to begin boom propagation. */
+  Boom_flt_h,                 /*!< \brief Aircraft altitude for boom propagation. */
   Boom_Tol_dphi,              /*!< \brief Tolerance for azimuth angle in boom propagation. */
   Boom_Tol_dr,                /*!< \brief Tolerance for radius in boom propagation. */
   Boom_Tol_m,                 /*!< \brief Tolerance for signal slope in boom propagation. */
