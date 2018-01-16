@@ -168,6 +168,20 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   Set_Heatflux_Areas(geometry, config);
 
+  config->SetTemperature_Ref(config->GetTemperature_FreeStream());
+
+  /*--- Non-dimensionalization of heat equation */
+  if(compressible) {
+    cout << "Heat solver in compressible environment: Setting reference temperature to 1.0K." << endl;
+    config->SetTemperature_Ref(1.0);
+  }
+
+  config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
+  cout << "Heat solver freestream temperature: " << config->GetTemperature_FreeStreamND() << endl;
+
+  su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
+  cout << "Heat solver freestream temperature in case for solids: " << Temperature_Solid_Freestream_ND << endl;
+
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
    used for IO with a donor cell ---*/
   unsigned short nConjVariables = 3;
@@ -204,26 +218,12 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   SolidInterfaceFileName.assign("interface_data_solid.dat");
   InterfaceOutputCounter = 0;
 
-  config->SetTemperature_Ref(config->GetTemperature_FreeStream());
-
-  /*--- Non-dimensionalization of heat equation */
-  if(compressible) {
-    cout << "Heat solver in compressible environment: Setting reference temperature to 1.0K." << endl;
-    config->SetTemperature_Ref(1.0);
-  }
-
-  config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
-  cout << "Heat solver freestream temperature: " << config->GetTemperature_FreeStreamND() << endl;
-
   /*--- If the heat solver runs stand-alone, we have to set the reference values ---*/
   if(!flow) {
     su2double rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
     su2double thermal_diffusivity_solid = config->GetThermalConductivity_Solid() / rho_cp;
     config->SetThermalDiffusivity_Solid(thermal_diffusivity_solid);
   }
-
-  su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
-  cout << "Heat solver freestream temperature in case for solids: " << Temperature_Solid_Freestream_ND << endl;
 
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       if (flow)
@@ -957,17 +957,17 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
       Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
       if (Marker_Tag == HeatFlux_Tag) {
-
+        //cout << "Heat flux wall --- Prescribed heatflux: " << Wall_HeatFlux << ", area: " << Surface_Areas[iMarker_HeatFlux] << "." << endl;
         Wall_HeatFlux = Wall_HeatFlux / Surface_Areas[iMarker_HeatFlux];
       }
     }
   }
 
   if(flow) {
-    Wall_HeatFlux = Wall_HeatFlux/(config->GetViscosity_Ref()*config->GetSpecificHeat_Fluid()*config->GetTemperature_FreeStream());
+    Wall_HeatFlux = Wall_HeatFlux/(config->GetViscosity_Ref()*config->GetSpecificHeat_Fluid()*config->GetTemperature_Ref());
   }
   else {
-    Wall_HeatFlux = Wall_HeatFlux/(config->GetDensity_Solid()*config->GetSpecificHeat_Solid()*config->GetTemperature_FreeStream());
+    Wall_HeatFlux = Wall_HeatFlux/(config->GetDensity_Solid()*config->GetSpecificHeat_Solid()*config->GetTemperature_Ref());
   }
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1477,12 +1477,12 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
             thermal_conductivity = config->GetThermalDiffusivity_Solid()*rho_cp_solid;
           }
 
-          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_FreeStream()*Area;
+          Heat_Flux[iMarker] += thermal_conductivity*dTdn*config->GetTemperature_Ref()*Area;
 
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
           if ( Boundary == HEAT_FLUX ) {
 
-            AvgTemperature[iMarker] += Twall*config->GetTemperature_FreeStream()*Area;
+            AvgTemperature[iMarker] += Twall*config->GetTemperature_Ref()*Area;
           }
 
         }
