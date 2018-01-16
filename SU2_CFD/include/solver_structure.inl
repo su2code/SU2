@@ -1623,6 +1623,12 @@ inline su2double CIncEulerSolver::GetTotal_CMy() { return Total_CMy; }
 
 inline su2double CIncEulerSolver::GetTotal_CMz() { return Total_CMz; }
 
+inline su2double CIncEulerSolver::GetTotal_CoPx() { return Total_CoPx; }
+
+inline su2double CIncEulerSolver::GetTotal_CoPy() { return Total_CoPy; }
+
+inline su2double CIncEulerSolver::GetTotal_CoPz() { return Total_CoPz; }
+
 inline su2double CIncEulerSolver::GetTotal_CFx() { return Total_CFx; }
 
 inline su2double CIncEulerSolver::GetTotal_CFy() { return Total_CFy; }
@@ -1681,6 +1687,12 @@ inline su2double CIncEulerSolver::GetAllBound_CMy_Inv() { return AllBound_CMy_In
 
 inline su2double CIncEulerSolver::GetAllBound_CMz_Inv() { return AllBound_CMz_Inv; }
 
+inline su2double CIncEulerSolver::GetAllBound_CoPx_Inv() { return AllBound_CoPx_Inv; }
+
+inline su2double CIncEulerSolver::GetAllBound_CoPy_Inv() { return AllBound_CoPy_Inv; }
+
+inline su2double CIncEulerSolver::GetAllBound_CoPz_Inv() { return AllBound_CoPz_Inv; }
+
 inline su2double CIncEulerSolver::GetAllBound_CFx_Inv() { return AllBound_CFx_Inv; }
 
 inline su2double CIncEulerSolver::GetAllBound_CFy_Inv() { return AllBound_CFy_Inv; }
@@ -1700,6 +1712,12 @@ inline su2double CIncEulerSolver::GetAllBound_CMx_Mnt() { return AllBound_CMx_Mn
 inline su2double CIncEulerSolver::GetAllBound_CMy_Mnt() { return AllBound_CMy_Mnt; }
 
 inline su2double CIncEulerSolver::GetAllBound_CMz_Mnt() { return AllBound_CMz_Mnt; }
+
+inline su2double CIncEulerSolver::GetAllBound_CoPx_Mnt() { return AllBound_CoPx_Mnt; }
+
+inline su2double CIncEulerSolver::GetAllBound_CoPy_Mnt() { return AllBound_CoPy_Mnt; }
+
+inline su2double CIncEulerSolver::GetAllBound_CoPz_Mnt() { return AllBound_CoPz_Mnt; }
 
 inline su2double CIncEulerSolver::GetAllBound_CFx_Mnt() { return AllBound_CFx_Mnt; }
 
@@ -1762,6 +1780,12 @@ inline su2double CIncNSSolver::GetAllBound_CMx_Visc() { return AllBound_CMx_Visc
 inline su2double CIncNSSolver::GetAllBound_CMy_Visc() { return AllBound_CMy_Visc; }
 
 inline su2double CIncNSSolver::GetAllBound_CMz_Visc() { return AllBound_CMz_Visc; }
+
+inline su2double CIncNSSolver::GetAllBound_CoPx_Visc() { return AllBound_CoPx_Visc; }
+
+inline su2double CIncNSSolver::GetAllBound_CoPy_Visc() { return AllBound_CoPy_Visc; }
+
+inline su2double CIncNSSolver::GetAllBound_CoPz_Visc() { return AllBound_CoPz_Visc; }
 
 inline su2double CIncNSSolver::GetAllBound_CFx_Visc() { return AllBound_CFx_Visc; }
 
