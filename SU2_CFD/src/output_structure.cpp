@@ -17003,7 +17003,9 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze    = config->GetnMarker_Analyze();
-  
+ 
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+ 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -17051,26 +17053,36 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           else AxiFactor = 1.0;
           
           Density = solver->node[iPoint]->GetDensity();
-          Enthalpy = solver->node[iPoint]->GetEnthalpy();
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
-            Velocity[iDim] = solver->node[iPoint]->GetSolution(iDim+1) / Density;
+            Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
             Velocity2 += Velocity[iDim] * Velocity[iDim];
             Vn += Velocity[iDim] * Vector[iDim];
             MassFlow += Vector[iDim] * AxiFactor * solver->node[iPoint]->GetSolution(iDim+1);
           }
-          
-          Area              = sqrt (Area);
-          Vn                = Vn / Area;
-          Energy            = solver->node[iPoint]->GetSolution(nVar-1)/Density;
-          Pressure          = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-          SoundSpeed        = sqrt(Gamma*Pressure/Density);
-          Mach              = sqrt(Velocity2)/SoundSpeed;
-          Temperature       = Pressure / (Gas_Constant * Density);
-          TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-          TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-          
+          Area = sqrt (Area);
+          Vn   = Vn / Area;
+
+          if (!incompressible) {
+            Enthalpy          = solver->node[iPoint]->GetEnthalpy();
+            Energy            = solver->node[iPoint]->GetSolution(nVar-1)/Density;
+            Pressure          = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+            SoundSpeed        = sqrt(Gamma*Pressure/Density);
+            Mach              = sqrt(Velocity2)/SoundSpeed;
+            Temperature       = Pressure / (Gas_Constant * Density);
+            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+            TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
+          } else {
+            Temperature       = solver->node[iPoint]->GetTemperature();
+            Pressure          = solver->node[iPoint]->GetPressure();
+            SoundSpeed        = 0.0;
+            Mach              = 0.0;
+            Enthalpy          = solver->node[iPoint]->GetSpecificHeatCp()*Temperature + 0.5*Velocity2;
+            TotalTemperature  = Temperature + 0.5*Velocity2/solver->node[iPoint]->GetSpecificHeatCp();
+            TotalPressure     = Pressure + 0.5*Density*Velocity2;
+          }
+ 
           /*--- Compute the mass Surface_MassFlow ---*/
 
           Surface_Area[iMarker]             += Area;
