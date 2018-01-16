@@ -912,12 +912,7 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
     /*--- Clockwise or counterclockwise ---*/
     c = b_y*a_x - b_x*a_y;
     cw = (c < 0);
-    if(cw){
-      deg += acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
-    }
-    else{
-      deg -= acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
-    }
+    deg += acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
   }
 
   if(abs(deg - 360.) <= 3.){
