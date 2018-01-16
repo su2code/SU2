@@ -1150,7 +1150,7 @@ void InvDistWeight(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   for(unsigned short iDonor = 0; iDonor < nDonor; iDonor++){
     dist = 0.0;
     for(unsigned short iDim = 0; iDim < nDim; iDim++){
-      dist += (X[iDim*nNode + iNode]-xj[iDim])*(X[iDim*nNode + iNode]-xj[iDim]);
+      dist += (X[iDim*nNDonor + iDonor]-xj[iDim])*(X[iDim*nNDonor + iDonor]-xj[iDim]);
     }
     weight[iDonor] = 1/dist;
     sum_weight += weight[iDonor];
