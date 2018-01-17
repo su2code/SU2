@@ -8475,7 +8475,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   FFDBox_file << "ASCII" << endl;
   FFDBox_file << "DATASET STRUCTURED_GRID" << endl;
   
-  if (nDim == 2) FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<< endl;
+  if (nDim == 2) FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<<" "<<1<< endl;
   else FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<<" "<<nDegree+1<< endl;
   if (nDim == 2) FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)<<" float"<< endl;
   else FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)*(nDegree+1)<<" float"<< endl;
@@ -8487,7 +8487,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
       for (iDegree = 0; iDegree <= lDegree; iDegree++) {
         for (iDim = 0; iDim < nDim; iDim++)
         FFDBox_file << scientific << Coord_Control_Points[iDegree][jDegree][0][iDim] << "\t";
-        FFDBox_file << "\n";
+        FFDBox_file << " 0.0 \n";
       }
     }
   }
