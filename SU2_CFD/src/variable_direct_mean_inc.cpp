@@ -401,6 +401,8 @@ CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity, 
   Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   
+  DES_LengthScale = 0.0;
+  
 }
 
 CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
@@ -411,6 +413,9 @@ CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  DES_LengthScale = 0.0;
+  
 }
 
 CIncNSVariable::~CIncNSVariable(void) { }

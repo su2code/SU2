@@ -121,6 +121,10 @@ inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
 
+inline void CGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){ }
+
+inline void CGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){ }
+
 inline void CGeometry::SetPoint_Connectivity(CGeometry *fine_grid) { }
 
 inline void CGeometry::SetElement_Connectivity(void) { }
@@ -303,9 +307,11 @@ inline su2double CGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2dou
                                               su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) { return 0; }
 
 inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness,
+                                    su2double &Wing_MinChord, su2double &Wing_MaxChord,
                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC,
+                                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                     su2double &Wing_MaxDihedral) { }
 
 
@@ -316,9 +322,24 @@ inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   		                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
   		                                su2double &Fuselage_MaxCurvature) { }
 
+inline void CGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
+                                       su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                                       su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                                       su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                                       su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                                       su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) { }
+
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
+
+inline su2double CGeometry::GetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryTemperature[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryTemperature){ CustomBoundaryTemperature[val_marker][val_vertex] = val_customBoundaryTemperature; }
+
+inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 

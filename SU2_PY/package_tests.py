@@ -30,7 +30,10 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil, copy
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
+import os, sys, copy
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
@@ -72,7 +75,7 @@ def main():
     
     mesh0()
     
-    print 'DONE!'
+    print('DONE!')
     
 def io0():
     folder='test_io0'; pull='config_NACA0012.cfg'; link='mesh_NACA0012.su2'
@@ -81,8 +84,9 @@ def io0():
         config_name = 'config_NACA0012.cfg'
         config = SU2.io.Config(filename=config_name)
         
-        print config
-        
+        print(config)
+
+
         config.ADAPT_CYCLES
         config['ADAPT_CYCLES']
         
@@ -94,7 +98,7 @@ def io0():
         
         config_diff = config.diff(konfig)
         
-        print config_diff
+        print(config_diff)
         
     
     wait = 0
@@ -150,7 +154,7 @@ def level1():
         info = SU2.run.projection(config)
         state.update(info)
         
-        print state
+        print(state)
         
         SU2.io.save_data('state.pkl',state)
         data = SU2.io.load_data('state.pkl')
@@ -261,7 +265,7 @@ def level4():
         data = project.data
         
     wait = 0
-    print "Done!"
+    print("Done!")
     
 def level5():
     folder='test_level5'; pull='config_NACA0012.cfg'; link='mesh_NACA0012.su2'
