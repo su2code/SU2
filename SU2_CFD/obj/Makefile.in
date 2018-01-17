@@ -206,11 +206,10 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
 	../src/solver_direct_elasticity.cpp \
-	../src/solver_error_estimate.cpp \
-	../src/solver_structure.cpp ../src/solver_template.cpp \
-	../src/SUBoom.cpp ../src/transfer_physics.cpp \
-	../src/transfer_structure.cpp ../src/transport_model.cpp \
-	../src/variable_adjoint_mean.cpp \
+	../src/solver_error_estimate.cpp ../src/solver_structure.cpp \
+	../src/solver_template.cpp ../src/SUBoom.cpp \
+	../src/transfer_physics.cpp ../src/transfer_structure.cpp \
+	../src/transport_model.cpp ../src/variable_adjoint_mean.cpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
@@ -361,11 +360,10 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
 	../src/solver_direct_elasticity.cpp \
-	../src/solver_error_estimate.cpp \
-	../src/solver_structure.cpp ../src/solver_template.cpp \
-	../src/SUBoom.cpp ../src/transfer_physics.cpp \
-	../src/transfer_structure.cpp ../src/transport_model.cpp \
-	../src/variable_adjoint_mean.cpp \
+	../src/solver_error_estimate.cpp ../src/solver_structure.cpp \
+	../src/solver_template.cpp ../src/SUBoom.cpp \
+	../src/transfer_physics.cpp ../src/transfer_structure.cpp \
+	../src/transport_model.cpp ../src/variable_adjoint_mean.cpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
@@ -507,10 +505,10 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
 	../src/solver_direct_elasticity.cpp \
-	../src/solver_structure.cpp ../src/solver_template.cpp \
-	../src/SUBoom.cpp ../src/transfer_physics.cpp \
-	../src/transfer_structure.cpp ../src/transport_model.cpp \
-	../src/variable_adjoint_mean.cpp \
+	../src/solver_error_estimate.cpp ../src/solver_structure.cpp \
+	../src/solver_template.cpp ../src/SUBoom.cpp \
+	../src/transfer_physics.cpp ../src/transfer_structure.cpp \
+	../src/transport_model.cpp ../src/variable_adjoint_mean.cpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
@@ -568,6 +566,7 @@ am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-definition_structure.$(OBJEXT) 
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_wave.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_elasticity.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_template.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-SUBoom.$(OBJEXT) \
@@ -880,6 +879,7 @@ libSU2Core_sources = \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_error_estimate.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/SUBoom.cpp \
@@ -1070,6 +1070,8 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_direct_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-solver_error_estimate.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_template.$(OBJEXT): ../src/$(am__dirstamp) \
@@ -1256,6 +1258,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_direct_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-solver_error_estimate.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_template.$(OBJEXT):  \
@@ -1390,6 +1394,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_template.$(OBJEXT):  \
@@ -1489,6 +1495,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_wave.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-transfer_physics.Po@am__quote@
@@ -1554,6 +1561,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_wave.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-transfer_physics.Po@am__quote@
@@ -1618,6 +1626,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_direct_wave.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-transfer_physics.Po@am__quote@
@@ -2269,6 +2278,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_elasticity.cpp' object='../src/libSU2Core_a-solver_direct_elasticity.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_direct_elasticity.obj `if test -f '../src/solver_direct_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_direct_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_elasticity.cpp'; fi`
+
+../src/libSU2Core_a-solver_error_estimate.o: ../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_error_estimate.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Tpo -c -o ../src/libSU2Core_a-solver_error_estimate.o `test -f '../src/solver_error_estimate.cpp' || echo '$(srcdir)/'`../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_error_estimate.cpp' object='../src/libSU2Core_a-solver_error_estimate.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_error_estimate.o `test -f '../src/solver_error_estimate.cpp' || echo '$(srcdir)/'`../src/solver_error_estimate.cpp
+
+../src/libSU2Core_a-solver_error_estimate.obj: ../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_error_estimate.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Tpo -c -o ../src/libSU2Core_a-solver_error_estimate.obj `if test -f '../src/solver_error_estimate.cpp'; then $(CYGPATH_W) '../src/solver_error_estimate.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_error_estimate.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_error_estimate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_error_estimate.cpp' object='../src/libSU2Core_a-solver_error_estimate.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_error_estimate.obj `if test -f '../src/solver_error_estimate.cpp'; then $(CYGPATH_W) '../src/solver_error_estimate.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_error_estimate.cpp'; fi`
 
 ../src/libSU2Core_a-solver_structure.o: ../src/solver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_structure.Tpo -c -o ../src/libSU2Core_a-solver_structure.o `test -f '../src/solver_structure.cpp' || echo '$(srcdir)/'`../src/solver_structure.cpp
@@ -3194,6 +3217,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-solver_direct_elasticity.obj `if test -f '../src/solver_direct_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_direct_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_elasticity.cpp'; fi`
 
+../src/___bin_SU2_CFD_AD-solver_error_estimate.o: ../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_error_estimate.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_error_estimate.o `test -f '../src/solver_error_estimate.cpp' || echo '$(srcdir)/'`../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_error_estimate.cpp' object='../src/___bin_SU2_CFD_AD-solver_error_estimate.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-solver_error_estimate.o `test -f '../src/solver_error_estimate.cpp' || echo '$(srcdir)/'`../src/solver_error_estimate.cpp
+
+../src/___bin_SU2_CFD_AD-solver_error_estimate.obj: ../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_error_estimate.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_error_estimate.obj `if test -f '../src/solver_error_estimate.cpp'; then $(CYGPATH_W) '../src/solver_error_estimate.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_error_estimate.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_error_estimate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_error_estimate.cpp' object='../src/___bin_SU2_CFD_AD-solver_error_estimate.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-solver_error_estimate.obj `if test -f '../src/solver_error_estimate.cpp'; then $(CYGPATH_W) '../src/solver_error_estimate.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_error_estimate.cpp'; fi`
+
 ../src/___bin_SU2_CFD_AD-solver_structure.o: ../src/solver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_structure.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_structure.o `test -f '../src/solver_structure.cpp' || echo '$(srcdir)/'`../src/solver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_structure.Po
@@ -4103,6 +4140,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_elasticity.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_elasticity.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_elasticity.obj `if test -f '../src/solver_direct_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_direct_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_elasticity.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.o: ../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.o `test -f '../src/solver_error_estimate.cpp' || echo '$(srcdir)/'`../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_error_estimate.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.o `test -f '../src/solver_error_estimate.cpp' || echo '$(srcdir)/'`../src/solver_error_estimate.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.obj: ../src/solver_error_estimate.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.obj `if test -f '../src/solver_error_estimate.cpp'; then $(CYGPATH_W) '../src/solver_error_estimate.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_error_estimate.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_error_estimate.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_error_estimate.obj `if test -f '../src/solver_error_estimate.cpp'; then $(CYGPATH_W) '../src/solver_error_estimate.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_error_estimate.cpp'; fi`
 
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_structure.o: ../src/solver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_structure.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_structure.o `test -f '../src/solver_structure.cpp' || echo '$(srcdir)/'`../src/solver_structure.cpp

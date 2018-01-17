@@ -691,7 +691,7 @@ void SUBoom::ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geomet
 
     /*--- Compute isoparameters ---*/
     isoparams[i] = new su2double[nNode];
-    InvDistWeight(nDim, nNode, X_donor, Coord, isoparams[i]);
+    Isoparameters(nDim, nNode, X_donor, Coord, isoparams[i]);
 
     /*--- x-locations of nearfield signal ---*/
     signal.x[iPhi][i] = Coord_original[iPhi][i][0];
@@ -934,7 +934,7 @@ int SUBoom::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coo
 
     /*--- Compute isoparameters ---*/
     su2double *isoparams = new su2double[nCoord];
-    InvDistWeight(2, nCoord, X_donor, Coord, isoparams);
+    Isoparameters(2, nCoord, X_donor, Coord, isoparams);
 
     /*--- Interpolate x-coord ---*/
     p1[0] = 0.0;
