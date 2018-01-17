@@ -87,7 +87,7 @@ def function( func_name, config, state=None ):
     if multi_objective:   func_name_string = func_name[0]  
 
     # redundancy check
-    if not state['FUNCTIONS'].has_key(func_name_string):
+    if not func_name_string in state['FUNCTIONS']:
 
         # Aerodynamics
         if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
@@ -106,7 +106,7 @@ def function( func_name, config, state=None ):
             geometry( func_name, config, state )
             
         else:
-            raise Exception, 'unknown function name, %s' % func_name
+            raise Exception('unknown function name, %s' % func_name)
         
     #: if not redundant
 
@@ -119,11 +119,11 @@ def function( func_name, config, state=None ):
     else:
         func_out = state['FUNCTIONS'][func_name]
 
-    if config['OPT_OBJECTIVE'].has_key(func_name_string):
+    if func_name_string in config['OPT_OBJECTIVE']:
         marker = config['OPT_OBJECTIVE'][func_name_string]['MARKER']
-        if su2io.per_surface_map.has_key(func_name_string):
+        if func_name_string in su2io.per_surface_map:
             name = su2io.per_surface_map[func_name_string]+'_'+marker
-            if state['FUNCTIONS'].has_key(name):
+            if name in state['FUNCTIONS']:
                 func_out = state['FUNCTIONS'][name]
 
     
@@ -167,7 +167,7 @@ def aerodynamics( config, state=None ):
     
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
@@ -197,12 +197,12 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------    
     
     # redundancy check
-    direct_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_aero[:9] ] )
+    direct_done = all([key in state.FUNCTIONS for key in su2io.optnames_aero[:9]])
     if direct_done:
         # return aerodynamic function values
         aero = su2util.ordered_bunch()
         for key in su2io.optnames_aero:
-            if state.FUNCTIONS.has_key(key):
+            if key in state.FUNCTIONS:
                 aero[key] = state.FUNCTIONS[key]
         return copy.deepcopy(aero)    
     #: if redundant
@@ -217,7 +217,7 @@ def aerodynamics( config, state=None ):
     link.extend(name)
     
     # files: direct solution
-    if files.has_key('DIRECT'):
+    if 'DIRECT' in files:
         name = files['DIRECT']
         name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
@@ -273,7 +273,7 @@ def aerodynamics( config, state=None ):
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
-        if state['FUNCTIONS'].has_key(key):
+        if key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
             
     return funcs
@@ -296,7 +296,7 @@ def stability( config, state=None, step=1e-2 ):
     
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
@@ -336,7 +336,7 @@ def stability( config, state=None, step=1e-2 ):
     link.extend(name)
     
     # files: direct solution
-    if files.has_key('DIRECT'):
+    if 'DIRECT' in files:
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend( name )
@@ -374,7 +374,7 @@ def stability( config, state=None, step=1e-2 ):
                         
             ## direct files to store
             #name = ztate.FILES['DIRECT']
-            #if not state.FILES.has_key('STABILITY'):
+            #if not 'STABILITY' in state.FILES:
                 #state.FILES.STABILITY = su2io.ordered_bunch()
             #state.FILES.STABILITY['DIRECT'] = name
             
@@ -400,7 +400,7 @@ def stability( config, state=None, step=1e-2 ):
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_stab:
-        if state['FUNCTIONS'].has_key(key):
+        if key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]    
     
     return funcs
@@ -436,7 +436,7 @@ def multipoint( config, state=None, step=1e-2 ):
     
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
       state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
@@ -482,7 +482,7 @@ def multipoint( config, state=None, step=1e-2 ):
     link.extend(name)
     
     # files: direct solution
-    if files.has_key('DIRECT'):
+    if 'DIRECT' in files:
       name = files['DIRECT']
       name = su2io.expand_time(name,config)
       link.extend( name )
@@ -558,7 +558,7 @@ def multipoint( config, state=None, step=1e-2 ):
     # return output
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_multi:
-      if state['FUNCTIONS'].has_key(key):
+      if key in state['FUNCTIONS']:
         funcs[key] = state['FUNCTIONS'][key]
     
     return funcs
@@ -599,7 +599,7 @@ def geometry( func_name, config, state=None ):
     
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     
@@ -622,8 +622,8 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------    
     
     # redundancy check
-    geometry_done = state.FUNCTIONS.has_key(func_name)
-    #geometry_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_geo ] )
+    geometry_done = func_name in state.FUNCTIONS
+    #geometry_done = all([key in state.FUNCTIONS for key in su2io.optnames_geo])
     if not geometry_done:    
         
         # files to pull
@@ -659,7 +659,7 @@ def geometry( func_name, config, state=None ):
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_geo:
-        if state['FUNCTIONS'].has_key(key):
+        if key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
     return funcs
     
@@ -699,7 +699,7 @@ def update_mesh(config,state=None):
     
     # initialize
     state = su2io.State(state)
-    if not state.FILES.has_key('MESH'):
+    if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
     

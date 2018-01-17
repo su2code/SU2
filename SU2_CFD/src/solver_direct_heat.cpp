@@ -40,11 +40,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   unsigned short iDim, iVar, nLineLets;
   unsigned long iPoint;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   nPoint =        geometry->GetnPoint();
   nPointDomain =  geometry->GetnPointDomain();
   nDim    =       geometry->GetnDim();
@@ -133,8 +128,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
     restart_file.open(cstr, ios::in);
     
     if (restart_file.fail()) {
-      cout << "There is no Heat restart file!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("There is no Heat restart file", CURRENT_FUNCTION);
     }
     unsigned long index;
     string text_line;

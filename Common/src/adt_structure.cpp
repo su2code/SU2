@@ -238,10 +238,10 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   }
 }
 
-su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
-                                               unsigned long       nPoints,
-                                               const su2double     *coor,
-                                               const unsigned long *pointID) {
+su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short nDim,
+                                               unsigned long  nPoints,
+                                               su2double      *coor,
+                                               unsigned long  *pointID) {
 
   /*--- Make a distinction between parallel and sequential mode. ---*/
 
@@ -249,89 +249,38 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
 
   /*--- Parallel mode. All points are gathered on all ranks. First determine the
         number of points per rank and store them in such a way that the info can
-        be used directly in Allgatherv. For now, we will use the regular 
-        Allgather until we add Allgatherv to the SU2_MPI wrapper. ---*/
-  
-  int rank, iProcessor, nProcessor;
-  unsigned long  iVertex, nBuffer;
-  unsigned short iDim;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  unsigned long nLocalVertex = nPoints, nGlobalVertex = 0, MaxLocalVertex = 0;
-  
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+        be used directly in Allgatherv.    ---*/
+  int rank, size;
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 
-  Buffer_Send_nVertex[0] = nLocalVertex;
-  
-  SU2_MPI::Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  vector<int> recvCounts(size), displs(size);
+  int sizeLocal = (int) nPoints;
+
+  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
+                     MPI_INT, MPI_COMM_WORLD);
+  displs[0] = 0;
+  for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
+
+  int sizeGlobal = displs.back() + recvCounts.back();
 
   /*--- Gather the local pointID's and the ranks of the nodes on all ranks. ---*/
-  
-  unsigned long *Buffer_Send = new unsigned long[MaxLocalVertex];
-  unsigned long *Buffer_Recv = new unsigned long[nProcessor*MaxLocalVertex];
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send[iVertex] = pointID[iVertex];
-  }
-  
-  SU2_MPI::Allgather(Buffer_Send, MaxLocalVertex, MPI_UNSIGNED_LONG, Buffer_Recv, MaxLocalVertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  /*--- Unpack the buffer into the local point ID vector. ---*/
-  
-  localPointIDs.resize(nGlobalVertex);
-  
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
-      localPointIDs.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
+  localPointIDs.resize(sizeGlobal);
+  SU2_MPI::Allgatherv(pointID, sizeLocal, MPI_UNSIGNED_LONG, localPointIDs.data(),
+                      recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
+                      MPI_COMM_WORLD);
 
-  /*--- Now gather the ranks for all points ---*/
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send[iVertex] = (unsigned long) rank;
-  }
-  
-  SU2_MPI::Allgather(Buffer_Send, MaxLocalVertex, MPI_UNSIGNED_LONG, Buffer_Recv, MaxLocalVertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  /*--- Unpack the ranks into the vector and delete buffer memory. ---*/
-  
-  ranksOfPoints.resize(nGlobalVertex);
+  ranksOfPoints.resize(sizeGlobal);
+  vector<int> rankLocal(sizeLocal, rank);
+  SU2_MPI::Allgatherv(rankLocal.data(), sizeLocal, MPI_INT, ranksOfPoints.data(),
+                      recvCounts.data(), displs.data(), MPI_INT, MPI_COMM_WORLD);
 
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
-      ranksOfPoints.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
-  
-  delete [] Buffer_Send;  delete [] Buffer_Recv;
-  
   /*--- Gather the coordinates of the points on all ranks. ---*/
-  
-  su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex*nDim];
-  su2double *Buffer_Recv_Coord = new su2double [nProcessor*MaxLocalVertex*nDim];
-  
-  nBuffer = MaxLocalVertex*nDim;
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    for (iDim = 0; iDim < nDim; iDim++)
-    Buffer_Send_Coord[iVertex*nDim + iDim] = coor[iVertex*nDim + iDim];
-  }
-  
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Recv_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Unpack the coordinates into the vector and delete buffer memory. ---*/
-  
-  coorPoints.resize(nDim*nGlobalVertex);
-  
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
-      for (iDim = 0; iDim < nDim; iDim++)
-      coorPoints.push_back( Buffer_Recv_Coord[iProcessor*MaxLocalVertex*nDim + iVertex*nDim + iDim] );
-  
-  delete [] Buffer_Send_Coord;   delete [] Buffer_Recv_Coord;
-  delete [] Buffer_Send_nVertex; delete [] Buffer_Receive_nVertex;
-  
+  for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
+
+  coorPoints.resize(nDim*sizeGlobal);
+  SU2_MPI::Allgatherv(coor, nDim*sizeLocal, MPI_DOUBLE, coorPoints.data(),
+                      recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD); 
 #else
 
   /*--- Sequential mode. Copy the coordinates and point IDs and
