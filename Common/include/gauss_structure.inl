@@ -56,3 +56,12 @@ inline su2double CGaussVariable::GetNi(unsigned short val_Ni) { return Ni[val_Ni
 inline su2double CGaussVariable::GetJ_X(void) { return J_X; }
 
 inline su2double CGaussVariable::GetJ_x(void) { return J_x; }
+
+inline unsigned long CElementProperty::GetMat_Mod(void) { return iMat_Mod; }
+
+inline unsigned long CElementProperty::GetMat_Prop(void) { return iMat_Prop; }
+
+inline unsigned long CElementProperty::GetElectric_Prop(void) { return iElectric_Prop; }
+
+inline unsigned long CElementProperty::GetDV(void) { return iDV; }
+

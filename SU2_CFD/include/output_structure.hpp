@@ -104,7 +104,7 @@ class COutput {
   nParallel_Hexa,
   nParallel_Pris,
   nParallel_Pyra;
-  int *Conn_Line_Par;
+  int *Conn_BoundLine_Par;
   int *Conn_BoundTria_Par;
   int *Conn_BoundQuad_Par;
   int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
@@ -184,6 +184,9 @@ class COutput {
         **NuFactorOut;
 
 protected:
+
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
 
 public:
 
@@ -436,12 +439,6 @@ public:
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
   void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-
-  /*!
-   * \brief Write a Tecplot ASCII solution file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CSolver **solver, char mesh_filename[MAX_STRING_SIZE], bool surf_sol);
 
   /*!
    * \brief Write a Tecplot ASCII solution file.
