@@ -1806,8 +1806,8 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
   /*--- Compute Alpha angle ---*/
 
-  if (nDim == 2) Alpha = atan(config->GetVelocity_FreeStream()[1]/config->GetVelocity_FreeStream()[0])*180.0/PI_NUMBER;
-  else Alpha = atan(config->GetVelocity_FreeStream()[2]/config->GetVelocity_FreeStream()[0])*180.0/PI_NUMBER;
+  if (nDim == 2) Alpha = acos(config->GetVelocity_FreeStream()[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
+  else Alpha = acos(config->GetVelocity_FreeStream()[2]/ModVel_FreeStream)*180.0/PI_NUMBER;
   config->SetAoA(Alpha);
 
   /*--- Compute Beta angle ---*/
@@ -7457,6 +7457,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
 
   bool axisymmetric = config->GetAxisymmetric();
+  bool energy       = config->GetEnergy_Equation();
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dimensional or non-dim based on initial values, use
@@ -7604,9 +7605,11 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Compute total and maximum heat flux on the wall ---*/
 
         GradTemperature = 0.0;
+        if (energy) {
         for (iDim = 0; iDim < nDim; iDim++)
           GradTemperature -= Grad_Temp[iDim]*UnitNormal[iDim];
-
+        }
+        
         thermal_conductivity       = node[iPoint]->GetThermalConductivity();
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
         HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
