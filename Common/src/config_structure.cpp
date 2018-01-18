@@ -3544,7 +3544,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_Solver != EULER)) {
     if (Kind_ViscosityModel == SUTHERLAND) {
       if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS)) {
-        SU2_MPI::Error("Sutherland's law only valid for ideal gases.\n Must use CONSTANT_VISCOSITY, or use DENSITY_MODEL= VARIABLE \n with INC_STANDARD_AIR or INC_IDEAL_GAS for SUTHERLAND.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with MU_CONSTANT,\n or use DENSITY_MODEL= VARIABLE \n with FLUID_MODEL= INC_STANDARD_AIR or FLUID_MODEL= INC_IDEAL_GAS \n for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
   }
