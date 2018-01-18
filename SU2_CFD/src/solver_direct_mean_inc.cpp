@@ -1806,8 +1806,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
   /*--- Compute Alpha angle ---*/
 
-  if (nDim == 2) Alpha = acos(config->GetVelocity_FreeStream()[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
-  else Alpha = acos(config->GetVelocity_FreeStream()[2]/ModVel_FreeStream)*180.0/PI_NUMBER;
+  Alpha = acos(config->GetVelocity_FreeStream()[0]/ModVel_FreeStream)*180.0/PI_NUMBER;
   config->SetAoA(Alpha);
 
   /*--- Compute Beta angle ---*/
