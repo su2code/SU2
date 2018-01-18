@@ -325,6 +325,28 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     config->SetTotalTemperatureIn_BC(Temperature);
   }
 
+  /*--- Register incompressible initialization values as input ---*/
+
+//  if((config->GetKind_Regime() == INCOMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
+//
+//    Density     = config->GetDensity_FreeStreamND()
+//    ModVel      = config->GetModVel_FreeStreamND();
+//    Temperature = config->GetTemperature_FreeStreamND();
+//
+//    if (!reset) {
+//      AD::RegisterInput(Density);
+//      AD::RegisterInput(ModVel);
+//      AD::RegisterInput(Temperature);
+//    }
+//
+//    config->SetPressure_FreeStreamND(Density);
+//    direct_solver->SetDensity_Inf(Density);
+//    config->SetModVel_FreeStreamND(ModVel);
+//    direct_solver->SetModVel_Inf(Pressure);
+//    config->SetTemperature_FreeStreamND(Temperature);
+//    direct_solver->SetTemperature_Inf(Temperature);
+//    
+//  }
 
     /*--- Here it is possible to register other variables as input that influence the flow solution
      * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
