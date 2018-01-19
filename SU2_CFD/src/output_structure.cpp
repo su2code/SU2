@@ -38,7 +38,7 @@ COutput::COutput(CConfig *config) {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
-	unsigned short iDim, iSpan, iMarker;
+  unsigned short iDim, iZone, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
   
@@ -112,7 +112,8 @@ COutput::COutput(CConfig *config) {
   /*--- Initialize residual ---*/
   
   RhoRes_New = EPS;
-  RhoRes_Old = EPS;
+  RhoRes_Old = new su2double[config->GetnZone()];
+  for (iZone = 0; iZone < config->GetnZone(); iZone++) RhoRes_Old[iZone] = EPS;
   
   wrote_Paraview_base = false;
 
@@ -6034,43 +6035,51 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
+
+  bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
   
-  RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
   switch( config[val_iZone]->GetKind_Solver()) {
+    case EULER : case NAVIER_STOKES : case RANS:
+      RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+      if (weakly_coupled_heat) RhoRes_New = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+      break;
     case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
       RhoRes_New = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+      break;
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+      RhoRes_New = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
       break;
   }
   
   if (RhoRes_New < EPS) RhoRes_New = EPS;
-  if (RhoRes_Old < EPS) RhoRes_Old = RhoRes_New;
-  
-  Div = RhoRes_Old/RhoRes_New;
-  Diff = RhoRes_New-RhoRes_Old;
-  
+  if (RhoRes_Old[val_iZone] < EPS) RhoRes_Old[val_iZone] = RhoRes_New;
+
+  Div = RhoRes_Old[val_iZone]/RhoRes_New;
+  Diff = RhoRes_New-RhoRes_Old[val_iZone];
+
   /*--- Compute MG factor ---*/
-  
+
   for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
     if (iMesh == MESH_0) MGFactor[iMesh] = 1.0;
     else MGFactor[iMesh] = MGFactor[iMesh-1] * config[val_iZone]->GetCFL(iMesh)/config[val_iZone]->GetCFL(iMesh-1);
   }
-  
+
   if (Div < 1.0) power = config[val_iZone]->GetCFL_AdaptParam(0);
   else power = config[val_iZone]->GetCFL_AdaptParam(1);
-  
+
   /*--- Detect a stall in the residual ---*/
-  
+
   if ((fabs(Diff) <= RhoRes_New*1E-8) && (ExtIter != 0)) { Div = 0.1; power = config[val_iZone]->GetCFL_AdaptParam(1); }
-  
+
   CFLMin = config[val_iZone]->GetCFL_AdaptParam(2);
   CFLMax = config[val_iZone]->GetCFL_AdaptParam(3);
-  
+
   CFLFactor = pow(Div, power);
-  
+
   for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
     CFL = config[val_iZone]->GetCFL(iMesh);
     CFL *= CFLFactor;
-    
+
     if ((iMesh == MESH_0) && (CFL <= CFLMin)) {
       for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
         config[val_iZone]->SetCFL(iMesh, 1.001*CFLMin*MGFactor[iMesh]);
@@ -6082,16 +6091,22 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
         config[val_iZone]->SetCFL(iMesh, 0.999*CFLMax*MGFactor[iMesh]);
       break;
     }
-    
+
     config[val_iZone]->SetCFL(iMesh, CFL);
-    
+
   }
-  
-  RhoRes_Old = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+
   switch( config[val_iZone]->GetKind_Solver()) {
-    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      RhoRes_Old = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-      break;
+  case EULER : case NAVIER_STOKES : case RANS:
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+    if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    break;
+  case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+    break;
+  case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    break;
   }
   
 }
