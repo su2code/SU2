@@ -137,7 +137,8 @@ private:
   Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
-  Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
+  Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -196,6 +197,7 @@ private:
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
   nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
+  nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
@@ -236,6 +238,7 @@ private:
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
   *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
+  *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
   *Marker_ActDiskOutlet,
   *Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
@@ -393,6 +396,7 @@ private:
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
+  CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
@@ -456,6 +460,7 @@ private:
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
+  Kind_TimeStep_Heat, /*!< \brief Time stepping method for the (fvm) heat equation. */
   Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -485,6 +490,7 @@ private:
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
+  MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
@@ -520,14 +526,18 @@ private:
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
+  *Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
+  *Kappa_Heat;                    /*!< \brief Numerical dissipation coefficients for the (fvm) heat equation. */  
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-  Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_1st_Heat,     /*!< \brief 1st order dissipation coefficient for heat equation. */
+  Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
+  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -730,6 +740,12 @@ private:
   Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,     /*!< \brief Reference S for Sutherland model.  */
   Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  Specific_Heat_Fluid, /*!< \brief Specific heat in fluids. */
+  Specific_Heat_Solid, /*!< \brief Specific heat in solids. */
+  Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
+  Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
+  Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
+  Density_Solid,      /*!< \brief Total density in solids. */  
   *Velocity_FreeStream,     /*!< \brief Free-stream velocity vector of the fluid.  */
   Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,     /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
@@ -921,6 +937,7 @@ private:
   *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
   *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
   *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_ad_coeff_heat,     /*!< \brief Default artificial dissipation (heat) array for the COption class. */  
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -1544,6 +1561,12 @@ public:
    * \return Freestream temperature.
    */
   su2double GetDensity_FreeStream(void);
+
+  /*!
+   * \brief Get the value of the solid density.
+   * \return Solid density.
+   */
+  su2double GetDensity_Solid(void);
   
   /*!
    * \brief Get the value of the frestream temperature.
@@ -1574,6 +1597,36 @@ public:
    * \return Turbulent Prandtl number.
    */
   su2double GetPrandtl_Turb(void);
+
+  /*!
+   * \brief Get the value of the specific heat for fluids.
+   * \return Specific heat number (fluid).
+   */
+  su2double GetSpecificHeat_Fluid(void);
+
+  /*!
+   * \brief Get the value of the specific heat for solids.
+   * \return Specific heat number (solid).
+   */
+  su2double GetSpecificHeat_Solid(void);
+
+  /*!
+   * \brief Get the value of the thermal conductivity for solids.
+   * \return Thermal conductivity (solid).
+   */
+  su2double GetThermalConductivity_Solid(void);
+
+  /*!
+   * \brief Get the value of the thermal diffusivity for solids.
+   * \return Thermal conductivity (solid).
+   */
+  su2double GetThermalDiffusivity_Solid(void);
+
+  /*!
+   * \brief Get the temperature in solids at freestream conditions.
+   * \return Freestream temperature (solid).
+   */
+  su2double GetTemperature_Freestream_Solid(void);
   
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
@@ -2276,6 +2329,12 @@ public:
    * \return Value of the Froude number.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream);
+
+  /*!
+   * \brief Set the thermal diffusivity for solids.
+   * \return Value of the Froude number.
+   */
+  void SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity);
   
   /*!
    * \brief Set the Froude number for free surface problems.
@@ -2392,6 +2451,13 @@ public:
    * \return CFL number for each grid.
    */
   su2double GetCFL(unsigned short val_mesh);
+
+  /*!
+   * \brief Get the Courant Friedrich Levi number for solid solvers.
+   * \param[in] val_mesh - Index of the mesh were the CFL is applied.
+   * \return CFL number for each grid.
+   */
+  su2double GetCFL_Solid(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for each grid.
@@ -2581,6 +2647,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Analyze(void);
+
+  /*!
+   * \brief Get the total number of heat flux markers.
+   * \return Total number of heat flux markers.
+   */
+  unsigned short GetnMarker_HeatFlux(void);
   
   /*!
    * \brief Get the total number of objectives in kind_objective list
@@ -2854,6 +2926,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Monitoring_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_HeatFlux_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the tag if the iMarker defined in the geometry file.
@@ -3682,6 +3762,15 @@ public:
    *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
+  bool GetMUSCL_Heat(void);
+
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
   bool GetMUSCL_Turb(void);
   
   /*!
@@ -3729,6 +3818,15 @@ public:
    */
   unsigned short GetKind_TimeIntScheme_Heat(void);
   
+  /*!
+   * \brief Get the kind of time stepping
+   *        for the heat equation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of time stepping for the heat equation.
+   */
+  unsigned short GetKind_TimeStep_Heat(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
@@ -3863,6 +3961,25 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the Lax method (center scheme).
+   * \note This constant is used in coarse levels and with first order methods.
+   * \return Calibrated constant for the Lax method.
+   */
+  su2double GetKappa_1st_Heat(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+   * \return Calibrated constant for the JST-like method for the heat equations.
+   */
+  su2double GetKappa_2nd_Heat(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST-like method (center scheme).
+   * \return Calibrated constant for the JST-like method for the heat equation.
+   */
+  su2double GetKappa_4th_Heat(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3968,6 +4085,14 @@ public:
    */
   unsigned short GetKind_ConvNumScheme_AdjTurb(void);
   
+  /*!
+   * \brief Get the kind of convective numerical scheme for the heat equation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the heat equation.
+   */
+  unsigned short GetKind_ConvNumScheme_Heat(void);
+
   /*!
    * \brief Get the kind of center convective numerical scheme for the adjoint turbulence equations.
    * \note This value is obtained from the config file, and it is constant
@@ -7857,6 +7982,12 @@ public:
    * \return YES if weakly coupled heat equation for inc. flow is enabled.
    */
   bool GetWeakly_Coupled_Heat(void);
+
+  /*!
+   * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
+   * \return YES if the passed values is the integrated heat flux over the marker's surface.
+   */
+  bool GetIntegrated_HeatFlux(void);
 };
 
 #include "config_structure.inl"
