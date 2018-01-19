@@ -1065,6 +1065,8 @@ inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingP
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
 
+inline bool CConfig::GetBoolZoneSpecific(void) { return ZoneSpecific_Problem;}
+
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
 inline bool CConfig::GetSpatialFourier(void){return SpatialFourier;}
@@ -1715,6 +1717,8 @@ inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_Lo
 inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
+
+inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
 
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo;
+  bool fsi, turbo, zone_specific;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi   = config->GetFSI_Simulation();
   turbo = config->GetBoolTurbomachinery();
+  zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -118,6 +119,8 @@ int main(int argc, char *argv[]) {
       driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
     }
 
+  } else if (zone_specific) {
+    driver = new CMultiPhysicalZonesDriver(config_file_name, nZone, nDim, MPICommunicator);
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
