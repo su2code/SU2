@@ -5129,7 +5129,7 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim, iVar, jVar;
   
-  bool implicit       = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
@@ -5188,11 +5188,15 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   }
   
   else {
-    
-    for (iVar=0; iVar < nVar; iVar++) {
+
+    for (iVar=0; iVar < nVar; iVar++)
       val_residual[iVar] = 0.0;
-      for (jVar=0; jVar < nVar; jVar++)
-      Jacobian_i[iVar][jVar] = 0.0;
+
+    if (implicit) {
+      for (iVar=0; iVar < nVar; iVar++) {
+        for (jVar=0; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
+      }
     }
     
   }

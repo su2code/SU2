@@ -593,9 +593,7 @@ enum ENUM_UPWIND {
   TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
   AUSMPWPLUS = 8,             /*!< \brief AUSMPW+ numerical method. */
   CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE = 10,   /*!< \brief Template for new numerical method . */
-  L2ROE = 11,                 /*!< \brief L2ROE numerical method . */
-  LMROE = 12                  /*!< \brief Rieper's Low Mach ROE numerical method . */
+  CONVECTIVE_TEMPLATE = 10    /*!< \brief Template for new numerical method . */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -608,10 +606,7 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("MSW", MSW)
 ("CUSP", CUSP)
 ("SCALAR_UPWIND", SCALAR_UPWIND)
-("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
-("L2ROE", L2ROE)
-("LMROE", LMROE);
-
+("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
 
 /*!
  * \brief types of slope limiters
@@ -642,18 +637,12 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
-  SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
-  SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
-("SA_E", SA_E)
-("SA_COMP", SA_COMP)
-("SA_E_COMP", SA_E_COMP);
+("SST", SST);
 
 /*!
  * \brief types of transition models
@@ -669,42 +658,23 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("BC", BC); //BAS-CAKMAKCIOGLU
 
 /*!
- * \brief types of hybrid RANS/LES models
+ * \brief types of wall functions.
  */
-enum ENUM_HYBRIDRANSLES {
-  NO_HYBRIDRANSLES = 0, /*!< \brief No turbulence model. */
-  SA_DES   = 1, /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
-  SA_DDES  = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
-  SA_ZDES  = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
-  SA_EDDES  = 4,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
-  SA_IDDES  = 5,  /*!< \brief Kind of Hybrid RANS/LES (SA - Improved DDES with Delta_max SGS). */
-  SA_IZDES  = 6  /*!< \brief Kind of Hybrid RANS/LES (SA - Improved DDES with Vorticity based SGS). */
+enum ENUM_WALL_FUNCTIONS {
+  NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
+  ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
+  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
+  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
+  NONEQUILIBRIUM_WALL_MODEL = 5    /*!< \brief Non-equilibrium wall model for LES. */
 };
-static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<string, ENUM_HYBRIDRANSLES>
-("NONE", NO_HYBRIDRANSLES)
-("SA_DES", SA_DES)
-("SA_DDES", SA_DDES)
-("SA_ZDES", SA_ZDES)
-("SA_EDDES", SA_EDDES)
-("SA_IDDES", SA_IDDES)
-("SA_IZDES", SA_IZDES);
-
-/*!
- * \brief types of Roe Low Dissipation Schemes
- */
-enum ENUM_ROELOWDISS {
-    NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
-    FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
-    NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
-    NTS_DUCROS    = 3,  /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
-    FD_DUCROS     = 4 /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
-};
-static const map<string, ENUM_ROELOWDISS> RoeLowDiss_Map = CCreateMap<string, ENUM_ROELOWDISS>
-("NONE", NO_ROELOWDISS)
-("FD", FD)
-("NTS", NTS)
-("NTS_DUCROS", NTS_DUCROS)
-("FD_DUCROS", FD_DUCROS);
+static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<string, ENUM_WALL_FUNCTIONS>
+("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
+("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
+("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
+("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
+("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
+("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL);
 
 /*!
  * \brief type of time integration schemes
@@ -1912,8 +1882,8 @@ public:
   }
 
   ~COptionDoubleArray() {
-     if(def  != NULL) delete [] def;
-     if(vals != NULL) delete [] vals;
+     if(def  != NULL) delete [] def; 
+     if(vals != NULL) delete [] vals; 
   };
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
@@ -2000,12 +1970,12 @@ class COptionShortList : public COptionBase {
   short * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
-
+  
 public:
   COptionShortList(string option_field_name, unsigned short & list_size,  short * & option_field) : field(option_field), size(list_size) {
     this->name = option_field_name;
   }
-
+  
   ~COptionShortList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
@@ -2016,7 +1986,7 @@ public:
       return "";
     }
     this->size = option_size;
-
+    
     // Parse all of the options
     short * vals = new  short[option_size];
     for (unsigned long i  = 0; i < option_size; i++) {
@@ -2031,7 +2001,7 @@ public:
     this->field = vals;
     return "";
   }
-
+  
   void SetDefault() {
     this->size = 0; // There is no default value for list
   }
@@ -2213,7 +2183,7 @@ public:
     this->disc_adjoint = this->disc_adjoint_def;
     this->restart = this->restart_def;
   }
-
+  
 };
 
 class COptionDVParam : public COptionBase {
@@ -2229,7 +2199,7 @@ public:
   }
 
   ~COptionDVParam() {};
-
+  
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nDV = 0;
@@ -2474,20 +2444,20 @@ class COptionFFDDef : public COptionBase {
   unsigned short & nFFD;
   su2double ** & CoordFFD;
   string * & FFDTag;
-
+  
 public:
   COptionFFDDef(string option_field_name, unsigned short & nFFD_field, su2double** & coordFFD_field, string* & FFDTag_field) : nFFD(nFFD_field), CoordFFD(coordFFD_field), FFDTag(FFDTag_field) {
     this->name = option_field_name;
   }
-
+  
   ~COptionFFDDef() {};
-
+  
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
     }
-
+    
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0) {
       string newstring;
@@ -2501,8 +2471,8 @@ public:
       newstring.append(": may not have ending semicolon");
       return newstring;
     }
-
-
+    
+    
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
     this->nFFD = 0;
@@ -2511,35 +2481,35 @@ public:
         this->nFFD++;
       }
     }
-
+    
     // One more design variable than semicolon
     this->nFFD++;
-
+    
     this->CoordFFD = new su2double*[this->nFFD];
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
       this->CoordFFD[iFFD] = new su2double[25];
     }
-
+    
     this->FFDTag = new string[this->nFFD];
-
+    
     unsigned short nCoordFFD = 0;
     stringstream ss;
     unsigned int i = 0;
-
+    
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-
+      
       nCoordFFD = 25;
-
+      
       for (unsigned short iCoordFFD = 0; iCoordFFD < nCoordFFD; iCoordFFD++) {
-
+        
         ss << option_value[i] << " ";
-
+        
         if (iCoordFFD == 0) ss >> this->FFDTag[iFFD];
         else ss >> this->CoordFFD[iFFD][iCoordFFD-1];
-
+        
         i++;
       }
-
+      
       if (iFFD < (this->nFFD-1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
@@ -2549,39 +2519,39 @@ public:
         }
         i++;
       }
-
+      
     }
-
+    
     // Need to return something...
     return "";
   }
-
+  
   void SetDefault() {
     this->nFFD = 0;
     this->CoordFFD = NULL;
     this->FFDTag = NULL;
   }
-
+  
 };
 
 class COptionFFDDegree : public COptionBase {
   string name;
   unsigned short & nFFD;
   unsigned short ** & DegreeFFD;
-
+  
 public:
   COptionFFDDegree(string option_field_name, unsigned short & nFFD_field, unsigned short** & degreeFFD_field) : nFFD(nFFD_field), DegreeFFD(degreeFFD_field) {
     this->name = option_field_name;
   }
-
+  
   ~COptionFFDDegree() {};
-
+  
   string SetValue(vector<string> option_value) {
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
       this->nFFD = 0;
       return "";
     }
-
+    
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0) {
       string newstring;
@@ -2595,8 +2565,8 @@ public:
       newstring.append(": may not have ending semicolon");
       return newstring;
     }
-
-
+    
+    
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
     this->nFFD = 0;
@@ -2605,29 +2575,29 @@ public:
         this->nFFD++;
       }
     }
-
+    
     // One more design variable than semicolon
     this->nFFD++;
-
+    
     this->DegreeFFD = new unsigned short*[this->nFFD];
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
       this->DegreeFFD[iFFD] = new unsigned short[3];
     }
-
+    
     unsigned short nDegreeFFD = 0;
     stringstream ss;
     unsigned int i = 0;
-
+    
     for (unsigned short iFFD = 0; iFFD < this->nFFD; iFFD++) {
-
+      
       nDegreeFFD = 3;
-
+      
       for (unsigned short iDegreeFFD = 0; iDegreeFFD < nDegreeFFD; iDegreeFFD++) {
         ss << option_value[i] << " ";
         ss >> this->DegreeFFD[iFFD][iDegreeFFD];
         i++;
       }
-
+      
       if (iFFD < (this->nFFD-1)) {
         if (option_value[i].compare(";") != 0) {
           string newstring;
@@ -2637,18 +2607,18 @@ public:
         }
         i++;
       }
-
+      
     }
-
+    
     // Need to return something...
     return "";
   }
-
+  
   void SetDefault() {
     this->nFFD = 0;
     this->DegreeFFD = NULL;
   }
-
+  
 };
 
 // Class where the option is represented by (String, su2double, string, su2double, ...)
@@ -3036,7 +3006,7 @@ public:
   }
 
   ~COptionExhaust() {};
-
+  
   string SetValue(vector<string> option_value) {
 
     unsigned short totalVals = option_value.size();
@@ -3074,7 +3044,7 @@ public:
       if (!(ss_2nd >> this->ptotal[i]))
         return badValue(option_value, "exhaust fixed", this->name);
     }
-
+    
     return "";
   }
 
@@ -3084,7 +3054,7 @@ public:
     this->ptotal = NULL;
     this->size = 0; // There is no default value for list
   }
-
+  
 };
 
 class COptionPeriodic : public COptionBase {
@@ -3340,7 +3310,7 @@ class COptionActDisk : public COptionBase {
   su2double ** & press_jump;
   su2double ** & temp_jump;
   su2double ** & omega;
-
+  
 public:
   COptionActDisk(const string name,
                  unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet,
@@ -3349,7 +3319,7 @@ public:
   press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
-
+  
   ~COptionActDisk() {};
   string SetValue(vector<string> option_value) {
     const int mod_num = 8;
@@ -3358,7 +3328,7 @@ public:
       this->SetDefault();
       return "";
     }
-
+    
     if (totalVals % mod_num != 0) {
       string newstring;
       newstring.append(this->name);
@@ -3366,13 +3336,13 @@ public:
       this->SetDefault();
       return newstring;
     }
-
+    
     unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
     this->marker_outlet = new string[this->outlet_size];
-
+    
     this->press_jump = new su2double*[this->inlet_size];
     this->temp_jump = new su2double*[this->inlet_size];
     this->omega = new su2double*[this->inlet_size];
@@ -3381,9 +3351,9 @@ public:
       this->temp_jump[i] = new su2double[2];
       this->omega[i] = new su2double[2];
     }
-
+    
     string tname = "actuator disk";
-
+    
     for (int i = 0; i < this->inlet_size; i++) {
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
@@ -3422,5 +3392,202 @@ public:
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
+  }
+};
+
+
+class COptionWallFunction : public COptionBase {
+  string name; // identifier for the option
+  unsigned short &nMarkers;
+  string* &markers;
+  unsigned short*  &walltype;
+  unsigned short** &intInfo;
+  su2double**      &doubleInfo;
+
+public:
+  COptionWallFunction(const string name, unsigned short &nMarker_WF, 
+                      string* &Marker_WF, unsigned short* &type_WF,
+                      unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
+  nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
+  intInfo(intInfo_WF), doubleInfo(doubleInfo_WF) {
+    this->name = name;
+  }
+
+  ~COptionWallFunction(){}
+
+  string SetValue(vector<string> option_value) {
+
+    /*--- First check if NONE is specified. ---*/
+    unsigned short totalSize = option_value.size();
+    if ((totalSize == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->SetDefault();
+      return "";
+    }
+
+    /*--- Determine the number of markers, for which a wall
+          function treatment has been specified. ---*/
+    unsigned short counter = 0, nVals = 0;
+    while (counter < totalSize ) {
+
+      /* Update the counter for the number of markers specified
+         and store the current index for possible error messages. */
+      ++nVals;
+      const unsigned short indMarker = counter;
+
+      /* Check if a wall function type has been specified for this marker.
+         If not, create an error message and return. */
+      ++counter;
+      const unsigned short indWallType = counter;
+      unsigned short typeWF = NO_WALL_FUNCTION;
+      bool validWF = true;
+      if (counter == totalSize) validWF = false;
+      else {
+        map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+        it = Wall_Functions_Map.find(option_value[counter]);
+        if(it == Wall_Functions_Map.end()) validWF = false;
+        else                               typeWF  = it->second;
+      }
+
+      if (!validWF ) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": Invalid wall function type, ");
+        newstring.append(option_value[counter]);
+        newstring.append(", encountered for marker ");
+        newstring.append(option_value[indMarker]);
+        return newstring;
+      }
+
+      /* Update the counter, as the wall function type is valid. */
+      ++counter;
+
+      /*--- For some wall function types some additional info
+            must be specified. Hence the counter must be updated
+            accordingly. ---*/
+      switch( typeWF ) {
+        case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
+        case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
+        default: break;
+      }
+
+      /* In case the counter is larger than totalSize, the data for
+         this wall function type has not been specified correctly. */
+      if (counter > totalSize) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(", marker ");
+        newstring.append(option_value[indMarker]);
+        newstring.append(", wall function type ");
+        newstring.append(option_value[indWallType]);
+        newstring.append(": Additional information is missing.");
+        return newstring;
+      }
+    }
+
+    /* Allocate the memory to store the data for the wall function markers. */
+    this->nMarkers   = nVals;
+    this->markers    = new string[nVals];
+    this->walltype   = new unsigned short[nVals];
+    this->intInfo    = new unsigned short*[nVals];
+    this->doubleInfo = new su2double*[nVals];
+
+    for (unsigned short i=0; i<nVals; i++) {
+      this->intInfo[i]    = NULL;
+      this->doubleInfo[i] = NULL;
+    }
+
+    /*--- Loop over the wall markers and store the info in the
+          appropriate arrays. ---*/
+    counter = 0;
+    for (unsigned short i=0; i<nVals; i++) {
+
+      /* Set the name of the wall function marker. */
+      this->markers[i].assign(option_value[counter++]);
+
+      /* Determine the wall function type. As their validaties have
+         already been tested, there is no need to do so again. */
+      map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+      it = Wall_Functions_Map.find(option_value[counter++]);
+
+      this->walltype[i] = it->second;
+
+      /*--- For some wall function types, some additional info
+            is needed, which is extracted from option_value. ---*/
+      switch( this->walltype[i] ) {
+
+        case EQUILIBRIUM_WALL_MODEL: {
+
+          /* LES equilibrium wall model. The exchange distance, stretching
+             factor and number of points in the wall model must be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[2];
+
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          istringstream ss_2nd(option_value[counter++]);
+          if (!(ss_2nd >> this->doubleInfo[i][1])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          istringstream ss_3rd(option_value[counter++]);
+          if (!(ss_3rd >> this->intInfo[i][0])) {
+            return badValue(option_value, "unsigned short", this->name);
+          }
+
+          break;
+        }
+
+        case NONEQUILIBRIUM_WALL_MODEL: {
+
+          /* LES non-equilibrium model. The RANS turbulence model and
+             the exchange distance need to be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[1];
+
+          /* Check for a valid RANS turbulence model. */
+          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          iit = Turb_Model_Map.find(option_value[counter++]);
+          if(iit == Turb_Model_Map.end()) {
+            string newstring;
+            newstring.append(this->name);
+            newstring.append(", marker ");
+            newstring.append(this->markers[i]);
+            newstring.append(", wall function type ");
+            newstring.append(option_value[counter-2]);
+            newstring.append(": Invalid RANS turbulence model, ");
+            newstring.append(option_value[counter-1]);
+            newstring.append(", specified");
+            return newstring;
+          }
+
+          this->intInfo[i][0] = iit->second;
+
+          /* Extract the exchange distance. */
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          break;
+        }
+
+        default: // Just to avoid a compiler warning.
+          break;
+      }
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nMarkers   = 0;
+    this->markers    = NULL;
+    this->walltype   = NULL;
+    this->intInfo    = NULL;
+    this->doubleInfo = NULL;
   }
 };

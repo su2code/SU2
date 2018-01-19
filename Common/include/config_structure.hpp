@@ -559,7 +559,6 @@ private:
   bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Update_Restart_Params,
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
@@ -570,7 +569,8 @@ private:
   nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Analyze,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_WallFunctions;    /*!< \brief Number of markers for which wall functions must be applied. */
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
@@ -578,7 +578,11 @@ private:
   *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_ZoneInterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  *Marker_DV;            /*!< \brief Markers affected by the design variables. */
+  *Marker_DV,            /*!< \brief Markers affected by the design variables. */
+  *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
+  unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
+  su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
@@ -611,6 +615,7 @@ private:
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
   bool CFL_Adapt;      /*!< \brief Adaptive CFL number. */
+  bool HB_Precondition;    /*< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,		/*!< \brief Reference area for coefficient computation. */
   RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
   RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
@@ -1167,6 +1172,16 @@ private:
     COptionBase* val = new COptionActDisk(name,
                                           nMarker_ActDiskInlet, nMarker_ActDiskOutlet, Marker_ActDiskInlet, Marker_ActDiskOutlet,
                                           ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addWallFunctionOption(const string &name,               unsigned short &list_size,
+                             string* &string_field,            unsigned short* &val_Kind_WF,
+                             unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionWallFunction(name, list_size, string_field, val_Kind_WF,
+                                               val_IntInfo_WF, val_DoubleInfo_WF);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -1845,6 +1860,13 @@ public:
    * \param[in] val_area - Value of the reference area for non dimensional coefficient computation.
    */
   void SetRefArea(su2double val_area);
+  
+  /*!
+   * \brief In case the <i>SemiSpan</i> is equal to 0 then, it is necessary to compute the max y distance,
+   *        with this function we set the value of the semi span.
+   * \param[in] val_semispan - Value of the semispan.
+   */
+  void SetSemiSpan(su2double val_semispan);
   
   /*!
    * \brief Set the value of the domain volume computed on the finest grid.
@@ -2550,6 +2572,12 @@ public:
    */
   unsigned long GetWrt_Con_Freq(void);
   
+  /*!
+   * \brief Set the frequency for writing the convergence file.
+   * \return It writes the convergence file with this frequency.
+   */
+  void SetWrt_Con_Freq(unsigned long val_freq);
+
   /*!
    * \brief Get the frequency for writing the convergence file in Dual Time.
    * \return It writes the convergence file with this frequency.
@@ -4926,6 +4954,12 @@ public:
    * \return Harmonic Balance Frequency pointer.
    */
   su2double* GetOmega_HB(void);
+	
+  /*!
+   * \brief Get if harmonic balance source term is to be preconditioned
+   * \return yes or no to harmonic balance preconditioning
+   */
+  bool GetHB_Precondition(void);
   
   /*!
    * \brief Get if we should update the motion origin.
@@ -5722,6 +5756,29 @@ public:
    * \return The heat flux.
    */
   su2double GetWall_HeatFlux(string val_index);
+
+  /*!
+   * \brief Get the wall function treatment for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return The type of wall function treatment.
+   */
+  unsigned short GetWallFunction_Treatment(string val_marker);
+
+  /*!
+   * \brief Get the additional integer info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the integer info for the given marker.
+   */
+  unsigned short* GetWallFunction_IntInfo(string val_marker);
+
+  /*!
+   * \brief Get the additional double info for the wall function treatment
+            for the given boundary marker.
+   * \param[in] val_marker - String of the viscous wall marker.
+   * \return Pointer to the double info for the given marker.
+   */
+  su2double* GetWallFunction_DoubleInfo(string val_marker);
   
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.

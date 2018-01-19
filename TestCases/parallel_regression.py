@@ -49,8 +49,8 @@ def main():
     channel           = TestCase('channel')
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
-    channel.test_iter = 100
-    channel.test_vals = [-3.071007, 2.301191, 0.008562, 0.028922] #last 4 columns
+    channel.test_iter = 20
+    channel.test_vals = [ -2.638725, 2.829514, 0.041076, 0.001657 ] #last 4 columns
     channel.su2_exec  = "parallel_computation.py -f"
     channel.timeout   = 1600
     channel.tol       = 0.00001
@@ -60,8 +60,8 @@ def main():
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
-    naca0012.test_iter = 100
-    naca0012.test_vals = [-6.237188, -5.641250, 0.334843, 0.022206] #last 4 columns
+    naca0012.test_iter = 20
+    naca0012.test_vals = [-4.098048, -3.597419, 0.334199, 0.022359] #last 4 columns
     naca0012.su2_exec  = "parallel_computation.py -f"
     naca0012.timeout   = 1600
     naca0012.tol       = 0.00001
@@ -71,8 +71,8 @@ def main():
     wedge           = TestCase('wedge')
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
-    wedge.test_iter = 100
-    wedge.test_vals = [-1.690232, 3.924432, -0.252221, 0.044419] #last 4 columns
+    wedge.test_iter = 20
+    wedge.test_vals = [-0.804916, 4.936706, -0.250306, 0.044097] #last 4 columns
     wedge.su2_exec  = "parallel_computation.py -f"
     wedge.timeout   = 1600
     wedge.tol       = 0.00001
@@ -93,8 +93,8 @@ def main():
     fixedCL_naca0012           = TestCase('fixedcl_naca0012')
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
-    fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-5.767126,-0.377182,0.299930,0.019384] #last 4 columns
+    fixedCL_naca0012.test_iter = 100
+    fixedCL_naca0012.test_vals = [-2.522925, 2.876017, 0.291992, 0.019109] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -120,8 +120,8 @@ def main():
     flatplate           = TestCase('flatplate')
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
-    flatplate.test_iter = 100
-    flatplate.test_vals = [-5.231727, 0.261637, -0.166869, 0.012707] #last 4 columns
+    flatplate.test_iter = 20
+    flatplate.test_vals = [-4.679955, 0.781133, -0.136008, 0.022966] #last 4 columns
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
@@ -168,8 +168,8 @@ def main():
     rae2822_sa           = TestCase('rae2822_sa')
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
-    rae2822_sa.test_iter = 100
-    rae2822_sa.test_vals = [-3.647743, -5.442583, 0.903159, 0.025800] #last 4 columns
+    rae2822_sa.test_iter = 20
+    rae2822_sa.test_vals = [-2.003658, -5.226525, 0.832376, 0.053705] #last 4 columns
     rae2822_sa.su2_exec  = "parallel_computation.py -f"
     rae2822_sa.timeout   = 1600
     rae2822_sa.tol       = 0.00001
@@ -179,8 +179,8 @@ def main():
     rae2822_sst           = TestCase('rae2822_sst')
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
-    rae2822_sst.test_iter = 100
-    rae2822_sst.test_vals = [-1.198777, 4.013989, 0.904265, 0.025941] #last 4 columns
+    rae2822_sst.test_iter = 20
+    rae2822_sst.test_vals = [-0.514933, 4.911224, 0.835836, 0.054149] #last 4 columns
     rae2822_sst.su2_exec  = "parallel_computation.py -f"
     rae2822_sst.timeout   = 1600
     rae2822_sst.tol       = 0.00001
@@ -190,8 +190,8 @@ def main():
     turb_flatplate           = TestCase('turb_flatplate')
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
-    turb_flatplate.test_iter = 100
-    turb_flatplate.test_vals = [-5.071289, -7.366446, -0.187145, 0.010957] #last 4 columns
+    turb_flatplate.test_iter = 20
+    turb_flatplate.test_vals = [-4.146425, -6.736667, -0.176279, 0.057569] #last 4 columns
     turb_flatplate.su2_exec  = "parallel_computation.py -f"
     turb_flatplate.timeout   = 1600
     turb_flatplate.tol       = 0.00001
@@ -224,7 +224,7 @@ def main():
     turb_naca0012_sa_bin.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa_bin.cfg_file  = "turb_NACA0012_sa_binary.cfg"
     turb_naca0012_sa_bin.test_iter = 10
-    turb_naca0012_sa_bin.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
+    turb_naca0012_sa_bin.test_vals = [-12.000899, -9.145363, 1.070528, 0.019417] #last 4 columns
     turb_naca0012_sa_bin.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa_bin.timeout   = 3200
     turb_naca0012_sa_bin.tol       = 0.00001
@@ -260,9 +260,9 @@ def main():
     turb_naca0012_sst_restart_mg           = TestCase('turb_naca0012_sst_restart_mg')
     turb_naca0012_sst_restart_mg.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
-    turb_naca0012_sst_restart_mg.test_iter = 600
+    turb_naca0012_sst_restart_mg.test_iter = 20
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.482396, -4.653908, 1.155000, -0.006296, 0.078747] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-6.436213, -4.558644, 1.231772, -0.007019, 0.081472] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
@@ -321,8 +321,8 @@ def main():
     schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
-    schubauer_klebanoff_transition.test_iter    = 250
-    schubauer_klebanoff_transition.test_vals    = [-9.467876, -15.630835, 0.000520, 0.001062] #last 4 columns
+    schubauer_klebanoff_transition.test_iter    = 50
+    schubauer_klebanoff_transition.test_vals    = [ -8.706566, -15.066785, 0.000358, 0.002447] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -369,8 +369,8 @@ def main():
     contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
     contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
-    contadj_fixed_CL_naca0012.test_iter = 500
-    contadj_fixed_CL_naca0012.test_vals = [-2.093175,-6.967350,2.4987e-01,-1.9392e-05] #last 4 columns
+    contadj_fixed_CL_naca0012.test_iter = 100
+    contadj_fixed_CL_naca0012.test_vals = [0.339385, -5.198719, 0.254980, -0.000163] #last 4 columns
     contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_fixed_CL_naca0012.timeout   = 1600
     contadj_fixed_CL_naca0012.tol       = 0.00001
@@ -384,8 +384,8 @@ def main():
     contadj_ns_cylinder           = TestCase('contadj_ns_cylinder')
     contadj_ns_cylinder.cfg_dir   = "cont_adj_navierstokes/cylinder"
     contadj_ns_cylinder.cfg_file  = "lam_cylinder.cfg"
-    contadj_ns_cylinder.test_iter = 100
-    contadj_ns_cylinder.test_vals = [-3.659040, -9.117773, 2.056700, -0.000000] #last 4 columns
+    contadj_ns_cylinder.test_iter = 20
+    contadj_ns_cylinder.test_vals = [ -3.648130, -9.104844, 2.056700, -0.000000] #last 4 columns
     contadj_ns_cylinder.su2_exec  = "parallel_computation.py -f"
     contadj_ns_cylinder.timeout   = 1600
     contadj_ns_cylinder.tol       = 0.00001
@@ -395,8 +395,8 @@ def main():
     contadj_ns_naca0012_sub           = TestCase('contadj_ns_naca0012_sub')
     contadj_ns_naca0012_sub.cfg_dir   = "cont_adj_navierstokes/naca0012_sub"
     contadj_ns_naca0012_sub.cfg_file  = "lam_NACA0012.cfg"
-    contadj_ns_naca0012_sub.test_iter = 100
-    contadj_ns_naca0012_sub.test_vals = [-2.744551, -8.216469, 0.518810, 0.001210] #last 4 columns
+    contadj_ns_naca0012_sub.test_iter = 20
+    contadj_ns_naca0012_sub.test_vals = [-2.743268, -8.215193, 0.518810, 0.001210] #last 4 columns
     contadj_ns_naca0012_sub.su2_exec  = "parallel_computation.py -f"
     contadj_ns_naca0012_sub.timeout   = 1600
     contadj_ns_naca0012_sub.tol       = 0.00001
@@ -406,8 +406,8 @@ def main():
     contadj_ns_naca0012_trans           = TestCase('contadj_ns_naca0012_trans')
     contadj_ns_naca0012_trans.cfg_dir   = "cont_adj_navierstokes/naca0012_trans"
     contadj_ns_naca0012_trans.cfg_file  = "lam_NACA0012.cfg"
-    contadj_ns_naca0012_trans.test_iter = 100
-    contadj_ns_naca0012_trans.test_vals = [-1.041539, -6.578524, 1.772300, 0.012494] #last 4 columns
+    contadj_ns_naca0012_trans.test_iter = 20
+    contadj_ns_naca0012_trans.test_vals = [ -1.039664, -6.575019, 1.772300, 0.012495] #last 4 columns
     contadj_ns_naca0012_trans.su2_exec  = "parallel_computation.py -f"
     contadj_ns_naca0012_trans.timeout   = 1600
     contadj_ns_naca0012_trans.tol       = 0.00001
@@ -421,8 +421,8 @@ def main():
     contadj_rans_naca0012           = TestCase('contadj_rans_naca0012')
     contadj_rans_naca0012.cfg_dir   = "cont_adj_rans/naca0012"
     contadj_rans_naca0012.cfg_file  = "turb_nasa.cfg"
-    contadj_rans_naca0012.test_iter = 100
-    contadj_rans_naca0012.test_vals = [-0.814757, -5.726517, 19.169000, -0.000000] #last 4 columns
+    contadj_rans_naca0012.test_iter = 20
+    contadj_rans_naca0012.test_vals = [ -0.794162, -5.761722, 19.214000, -0.000000] #last 4 columns
     contadj_rans_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_rans_naca0012.timeout   = 1600
     contadj_rans_naca0012.tol       = 0.00001
@@ -432,8 +432,8 @@ def main():
     contadj_rans_naca0012_bin           = TestCase('contadj_rans_naca0012_bin')
     contadj_rans_naca0012_bin.cfg_dir   = "cont_adj_rans/naca0012"
     contadj_rans_naca0012_bin.cfg_file  = "turb_nasa_binary.cfg"
-    contadj_rans_naca0012_bin.test_iter = 100
-    contadj_rans_naca0012_bin.test_vals = [-0.814736,-5.726472,1.9169e+01,-4.6176e-07] #last 4 columns
+    contadj_rans_naca0012_bin.test_iter = 20
+    contadj_rans_naca0012_bin.test_vals = [-0.794169, -5.761671, 19.214000, -0.000000] #last 4 columns
     contadj_rans_naca0012_bin.su2_exec  = "parallel_computation.py -f"
     contadj_rans_naca0012_bin.timeout   = 1600
     contadj_rans_naca0012_bin.tol       = 0.00001
@@ -443,8 +443,8 @@ def main():
     contadj_rans_rae2822           = TestCase('contadj_rans_rae822')
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
     contadj_rans_rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
-    contadj_rans_rae2822.test_iter = 100
-    contadj_rans_rae2822.test_vals = [-5.380910, -10.886057, -0.212470, 0.005448] #last 4 columns
+    contadj_rans_rae2822.test_iter = 20
+    contadj_rans_rae2822.test_vals = [-5.369195, -10.871609, -0.212470, 0.005448] #last 4 columns
     contadj_rans_rae2822.su2_exec  = "parallel_computation.py -f"
     contadj_rans_rae2822.timeout   = 1600
     contadj_rans_rae2822.tol       = 0.00001
@@ -494,6 +494,17 @@ def main():
     harmonic_balance.timeout   = 1600
     harmonic_balance.tol       = 0.00001
     test_list.append(harmonic_balance)
+
+    # Turbulent pitching NACA 64a010 airfoil
+    hb_rans_preconditioning           = TestCase('hb_rans_preconditioning')
+    hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
+    hb_rans_preconditioning.cfg_file  = "davis.cfg"
+    hb_rans_preconditioning.test_iter = 25
+    hb_rans_preconditioning.test_vals = [-1.900976,-5.876722, 0.007761, 0.125934] #last 4 columns
+    hb_rans_preconditioning.su2_exec  = "parallel_computation.py -f"
+    hb_rans_preconditioning.timeout   = 1600
+    hb_rans_preconditioning.tol       = 0.00001
+    test_list.append(hb_rans_preconditioning)
 
     ######################################
     ### Moving Wall                    ###
@@ -595,8 +606,8 @@ def main():
     Jones_tc           = TestCase('jones_turbocharger')
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
-    Jones_tc.test_iter = 29
-    Jones_tc.test_vals = [-5.563796, -0.197664, 92.039250, 0.708515] #last 4 columns
+    Jones_tc.test_iter = 5
+    Jones_tc.test_vals = [-5.341490, 0.417322, 82.840150, 0.882252] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -606,8 +617,8 @@ def main():
     Jones_tc_rst           = TestCase('jones_turbocharger_restart')
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
-    Jones_tc_rst.test_iter = 30
-    Jones_tc_rst.test_vals = [-3.936718, -0.754654, 8.277812e+01, 2.715092e+00] #last 4 columns
+    Jones_tc_rst.test_iter = 5
+    Jones_tc_rst.test_vals = [-4.268817, -1.409751, 82.253670, 2.776472] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -617,8 +628,8 @@ def main():
     axial_stage2D           = TestCase('axial_stage2D')
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
-    axial_stage2D.test_iter = 100
-    axial_stage2D.test_vals = [-1.534374, 6.555997, 7.559178e+01, 7.911872e-01] #last 4 columns
+    axial_stage2D.test_iter = 20
+    axial_stage2D.test_vals = [-1.833798, 5.788690, 73.680320, 0.888891] #last 4 columns
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
@@ -628,8 +639,8 @@ def main():
     transonic_stator           = TestCase('transonic_stator')
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
-    transonic_stator.test_iter = 100
-    transonic_stator.test_vals = [-0.053921, 4.588521, 8.511798e+00, 7.254821e-03] #last 4 columns
+    transonic_stator.test_iter = 20
+    transonic_stator.test_vals = [ -1.101166, 6.115630, 67.308660, 0.071862] #last 4 columns
     transonic_stator.su2_exec  = "parallel_computation.py -f"
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
@@ -639,8 +650,8 @@ def main():
     transonic_stator_rst           = TestCase('transonic_stator_restart')
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
-    transonic_stator_rst.test_iter = 300
-    transonic_stator_rst.test_vals = [-0.682536, 4.593684, 6.248191e+00, 3.774933e-03] #last 4 columns
+    transonic_stator_rst.test_iter = 20
+    transonic_stator_rst.test_vals = [-0.485439, 4.462528, 6.460864, 0.004009] #last 4 columns
     transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001
