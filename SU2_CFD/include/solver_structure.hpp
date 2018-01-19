@@ -11652,7 +11652,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDiscAdjSolver(void);
+  CGradErrSolver(void);
   
   /*!
    * \overload
@@ -11660,7 +11660,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CDiscAdjSolver(CGeometry *geometry, CConfig *config);
+  CGradErrSolver(CGeometry *geometry, CConfig *config);
   
   /*!
    * \overload
@@ -11669,12 +11669,12 @@ public:
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
    */
-  CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+  CGradErrSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSolver(void);
+  ~CGradErrSolver(void);
   
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
