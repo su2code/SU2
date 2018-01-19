@@ -3191,12 +3191,14 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
 
   /*--- Set the initial condition for EULER/N-S/RANS and for a non FSI simulation ---*/
 
-  if ( (!fsi) &&
-      ( (config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
-       (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
-       (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ) ) {
-        for(iZone = 0; iZone < nZone; iZone++) {
-          solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+  if(!fsi) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
+          (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
+          (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
+
+        solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+      }
     }
   }
 
