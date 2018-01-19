@@ -1195,7 +1195,25 @@ public:
    * \param[in] value      - number of outer states
    */
   virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
-    
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   * \param[in] relaxation factor - relaxation factor for the change of the variables
+   * \param[in] val_var           - value of the variable
+   */
+  virtual void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   */
+  virtual su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.

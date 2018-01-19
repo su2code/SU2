@@ -197,6 +197,7 @@ enum ENUM_SOLVER {
   RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
   POISSON_EQUATION = 4,       			/*!< \brief Definition of the poisson potential solver. */
   WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
+  HEAT_EQUATION_FVM = 28,     /*!< \brief Definition of the finite volume heat solver. */
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
@@ -204,6 +205,7 @@ enum ENUM_SOLVER {
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
+  ZONE_SPECIFIC = 31,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
@@ -220,6 +222,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
 ("WAVE_EQUATION", WAVE_EQUATION)
+("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("FEM_ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
@@ -228,7 +231,8 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 
-("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
+("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
+("ZONE_SPECIFIC", ZONE_SPECIFIC);
 
 
 /*!
@@ -317,6 +321,39 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 ("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE);
 
 /*!
+ * \brief types of (coupling) transfers between distinct physical zones
+ */
+
+enum ENUM_TRANSFER {
+  ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
+  NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
+  NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
+  FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS          = 11,   /*!< \brief Structural displacements (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
+  SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
+  CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
+  MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
+  CONJUGATE_HEAT_COMPRESSIBLE_FS    = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
+  CONJUGATE_HEAT_INCOMPRESSIBLE_FS  = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
+  CONJUGATE_HEAT_COMPRESSIBLE_SF    = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
+  CONJUGATE_HEAT_INCOMPRESSIBLE_SF  = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+};
+static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
+("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
+("NO_COMMON_INTERFACE", NO_COMMON_INTERFACE)
+("NO_TRANSFER", NO_TRANSFER)
+("FLOW_TRACTION", FLOW_TRACTION)
+("STRUCTURAL_DISPLACEMENTS", STRUCTURAL_DISPLACEMENTS)
+("STRUCTURAL_DISPLACEMENTS_DISC_ADJ", STRUCTURAL_DISPLACEMENTS_DISC_ADJ)
+("SLIDING_INTERFACE", SLIDING_INTERFACE)
+("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
+("MIXING_PLANE", MIXING_PLANE)
+("CONJUGATE_HEAT_COMPRESSIBLE_FS", CONJUGATE_HEAT_COMPRESSIBLE_FS)
+("CONJUGATE_HEAT_INCOMPRESSIBLE_FS", CONJUGATE_HEAT_INCOMPRESSIBLE_FS)
+("CONJUGATE_HEAT_COMPRESSIBLE_SF", CONJUGATE_HEAT_COMPRESSIBLE_SF)
+("CONJUGATE_HEAT_INCOMPRESSIBLE_SF", CONJUGATE_HEAT_INCOMPRESSIBLE_SF);
+/*!
  * \brief different regime modes
  */
 enum ENUM_REGIME {
@@ -326,6 +363,7 @@ enum ENUM_REGIME {
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE);
+
 /*!
  * \brief different non-dimensional modes
  */

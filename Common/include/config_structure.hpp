@@ -123,6 +123,7 @@ private:
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
+  Weakly_Coupled_Heat, /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
   Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
   PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
   Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
@@ -422,6 +423,7 @@ private:
   su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
+  *Kind_Solver_PerZone,  /*!< \brief Kind of solvers for each zone Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
@@ -485,7 +487,8 @@ private:
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  ZoneSpecific_Problem;   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
@@ -4144,6 +4147,12 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void);
+
+  /*!
+   * \brief Verify if there are zone specific solvers entered in the config file.
+   * \return boolean.
+   */
+  bool GetBoolZoneSpecific(void);
   
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
@@ -7835,6 +7844,12 @@ public:
    * \brief Get if AD preaccumulation should be performed.
    */
   bool GetAD_Preaccumulation(void);
+
+  /*!
+   * \brief Get the heat equation.
+   * \return YES if weakly coupled heat equation for inc. flow is enabled.
+   */
+  bool GetWeakly_Coupled_Heat(void);
 };
 
 #include "config_structure.inl"
