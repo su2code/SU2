@@ -264,8 +264,8 @@ def adjoint( func_name, config, state=None ):
     if config['OBJECTIVE_FUNCTION'] == "NOISE":
         pull.append("Observer_Locations.dat")
 
-    if config['OBJECTIVE_FUNCTION'] == "BOOM":
-        pull.append("DIRECT/Adj_Boom.dat")
+    #if config['OBJECTIVE_FUNCTION'] == "BOOM":
+    #    pull.append("DIRECT/Adj_Boom.dat")
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
