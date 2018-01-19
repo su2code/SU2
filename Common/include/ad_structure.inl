@@ -182,15 +182,15 @@ namespace AD{
   }
 
   inline void SetExtFuncIn(const su2double* data, const int size) {
-    for (unsigned short i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
       FuncHelper->addInput(data[i]);
     }
 
   }
 
   inline void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y) {
-    for (unsigned short i = 0; i < size_x; i++) {
-      for (unsigned short j = 0; j < size_y; j++) {
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
         FuncHelper->addInput(data[i][j]);
       }
     }
@@ -203,7 +203,7 @@ namespace AD{
   }
 
   inline void SetExtFuncOut(su2double* data, const int size) {
-    for (unsigned short i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
       if (globalTape.isActive()) {
         FuncHelper->addOutput(data[i]);
       }
@@ -211,8 +211,8 @@ namespace AD{
   }
 
   inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {
-    for (unsigned short i = 0; i < size_x; i++) {
-      for (unsigned short j = 0; j < size_y; j++) {
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
         if (globalTape.isActive()) {
           FuncHelper->addOutput(data[i][j]);
         }
@@ -259,5 +259,19 @@ namespace AD{
   inline void StartPreacc() {}
 
   inline void EndPreacc() {}
+  
+  inline void InitExtFunc(bool storePrimalInput, bool storePrimalOutput){}
+  
+  inline void SetExtFuncIn(const su2double &data) {}
+
+  inline void SetExtFuncIn(const su2double* data, const int size) {}
+
+  inline void SetExtFuncIn(const su2double* const *data, const int size_x, const int size_y) {}
+  
+  inline void SetExtFuncOut(su2double& data) {}
+
+  inline void SetExtFuncOut(su2double* data, const int size) {}
+
+  inline void SetExtFuncOut(su2double** data, const int size_x, const int size_y) {}
 #endif
 }
