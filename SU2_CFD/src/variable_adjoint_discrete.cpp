@@ -38,6 +38,9 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
+  S2phase_Direct  = NULL;
+  R2phase_Direct  = NULL;
+  H2phase_Direct  = NULL;
   Sensitivity    = NULL;
 
   DualTime_Derivative   = NULL;

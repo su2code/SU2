@@ -1734,12 +1734,24 @@ public:
    */
   virtual void SetSolution_Direct(su2double *val_solution_direct);
   
+  virtual void SetS2phase_Direct(su2double val_S2phase_direct);
+
+  virtual void SetR2phase_Direct(su2double val_R2phase_direct);
+
+  virtual void SetH2phase_Direct(su2double val_H2phase_direct);
+
   /*!
    * \brief A virtual member. Get the direct solution for the adjoint solver.
    * \return Pointer to the direct solution vector.
    */
   virtual su2double *GetSolution_Direct(void);
   
+  virtual su2double  GetS2phase_Direct(void);
+
+  virtual su2double  GetR2phase_Direct(void);
+
+  virtual su2double  GetH2phase_Direct(void);
+
   /*!
    * STRUCTURAL ANALYSIS: NEW VARIABLES
    */
@@ -4472,6 +4484,9 @@ class CDiscAdjVariable : public CVariable {
 private:
   su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
   su2double* Solution_Direct;
+  su2double  S2phase_Direct;
+  su2double  R2phase_Direct;
+  su2double  H2phase_Direct;
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;
   
@@ -4519,7 +4534,19 @@ public:
   
   void SetSolution_Direct(su2double *sol);
   
-  su2double* GetSolution_Direct();
+  void SetS2phase_Direct(su2double s2phase_direct);
+
+  void SetR2phase_Direct(su2double r2phase_direct);
+
+  void SetH2phase_Direct(su2double h2phase_direct);
+
+  su2double *GetSolution_Direct();
+
+  su2double  GetS2phase_Direct();
+
+  su2double  GetR2phase_Direct();
+
+  su2double  GetH2phase_Direct();
 };
 
 

@@ -1837,6 +1837,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     if(two_phase){
       for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
         solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetSolution());
+        solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetS2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetMassSource());
+        solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetR2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetPrimitive(6));
+        solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetH2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy());
       }
     }
   }

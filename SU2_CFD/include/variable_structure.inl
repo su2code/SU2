@@ -483,9 +483,21 @@ inline su2double CVariable::GetmuT() { return 0;}
 
 inline void CVariable::SetmuT(su2double val_muT) { }
 
-inline su2double* CVariable::GetSolution_Direct() { return NULL; }
+inline su2double CVariable::GetS2phase_Direct() { return NULL; }
+
+inline su2double CVariable::GetR2phase_Direct() { return NULL; }
+
+inline su2double CVariable::GetH2phase_Direct() { return NULL; }
+
+inline su2double *CVariable::GetSolution_Direct() { return NULL;}
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
+
+inline void CVariable::SetS2phase_Direct(su2double val_S2phase_direct) { }
+
+inline void CVariable::SetR2phase_Direct(su2double val_R2phase_direct) { }
+
+inline void CVariable::SetH2phase_Direct(su2double val_H2phase_direct) { }
 
 inline void CVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { }
 
@@ -1283,8 +1295,26 @@ inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim) { return 
 
 inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direct; }
 
+inline su2double CDiscAdjVariable::GetS2phase_Direct() { return S2phase_Direct; }
+
+inline su2double CDiscAdjVariable::GetR2phase_Direct() { return R2phase_Direct; }
+
+inline su2double CDiscAdjVariable::GetH2phase_Direct() { return H2phase_Direct; }
+
 inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
+}
+
+inline void CDiscAdjVariable::SetS2phase_Direct(su2double val_S2phase_direct) {
+     S2phase_Direct = val_S2phase_direct;
+}
+
+inline void CDiscAdjVariable::SetR2phase_Direct(su2double val_R2phase_direct) {
+     R2phase_Direct = val_R2phase_direct;
+}
+
+inline void CDiscAdjVariable::SetH2phase_Direct(su2double val_H2phase_direct) {
+     H2phase_Direct = val_H2phase_direct;
 }
