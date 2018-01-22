@@ -138,7 +138,17 @@ def shape_optimization( filename                           ,
     x0          = [0.0]*n_dv # initial design
     xb_low           = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
     xb_up            = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
-    xb          = zip(xb_low,xb_up) # design bounds
+
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    dv_scales = project.config['DEFINITION_DV']['SCALE']
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            xb_low[k] = xb_low[k]*dv_scl;
+            xb_up[k]  = xb_up[k] *dv_scl;
+            k = k + 1
+
+    xb = zip(xb_low,xb_up) # design bounds
 
     # State
     state = SU2.io.State()
