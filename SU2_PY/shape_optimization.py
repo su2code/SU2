@@ -139,8 +139,8 @@ def shape_optimization( filename                           ,
     xb_low           = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
     xb_up            = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
 
-    dv_size = project.config['DEFINITION_DV']['SIZE']
-    dv_scales = project.config['DEFINITION_DV']['SCALE']
+    dv_size = config['DEFINITION_DV']['SIZE']
+    dv_scales = config['DEFINITION_DV']['SCALE']
     k = 0
     for i, dv_scl in enumerate(dv_scales):
         for j in range(dv_size[i]):
