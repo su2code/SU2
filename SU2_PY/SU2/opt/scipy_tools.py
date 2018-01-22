@@ -100,6 +100,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         for j in range(dv_size[i]):
             ##x0[k] =x0[k]/dv_scl;
             x0[k] =x0[k]*dv_scl;
+            xb[k] =xb[k]*dv_scl;
             k = k + 1
 
     # scale accuracy
@@ -191,6 +192,7 @@ def scipy_cg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     dv_scales = project.config['DEFINITION_DV']['SCALE']
     ##x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]
     x0 = [ x0[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
+    xb = [ xb[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
 
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
@@ -276,6 +278,7 @@ def scipy_bfgs(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     dv_scales = project.config['DEFINITION_DV']['SCALE']
     ##x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]
     x0 = [ x0[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
+    xb = [ xb[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
 
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
@@ -349,6 +352,7 @@ def scipy_powell(project,x0=None,xb=None,its=100,accu=1e-10,grads=False):
     dv_scales = project.config['DEFINITION_DV']['SCALE']
     ##x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]
     x0 = [ x0[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
+    xb = [ xb[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
 
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
