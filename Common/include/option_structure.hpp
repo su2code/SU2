@@ -615,22 +615,29 @@ enum ENUM_UPWIND {
   SW = 5,                     /*!< \brief Steger-Warming method. */
   MSW = 6,                    /*!< \brief Modified Steger-Warming method. */
   TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
-  AUSMPWPLUS = 8,             /*!< \brief AUSMPW+ numerical method. */
+  SLAU = 8,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
   CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE = 10    /*!< \brief Template for new numerical method . */
+  CONVECTIVE_TEMPLATE = 10,   /*!< \brief Template for new numerical method . */
+  L2ROE = 11,                 /*!< \brief L2ROE numerical method . */
+  LMROE = 12,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
+  SLAU2 = 13                   /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
 ("ROE", ROE)
 ("TURKEL_PREC", TURKEL)
 ("AUSM", AUSM)
-("AUSMPW+", AUSMPWPLUS)
+("SLAU", SLAU)
 ("HLLC", HLLC)
 ("SW", SW)
 ("MSW", MSW)
 ("CUSP", CUSP)
 ("SCALAR_UPWIND", SCALAR_UPWIND)
-("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
+("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
+("L2ROE", L2ROE)
+("LMROE", LMROE)
+("SLAU2", SLAU2);
+
 
 /*!
  * \brief types of slope limiters
@@ -661,12 +668,18 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
+  SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST);
+("SST", SST)
+("SA_E", SA_E)
+("SA_COMP", SA_COMP)
+("SA_E_COMP", SA_E_COMP);
 
 /*!
  * \brief types of transition models
@@ -680,6 +693,40 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("NONE", NO_TRANS_MODEL)
 ("LM", LM)
 ("BC", BC); //BAS-CAKMAKCIOGLU
+
+/*!
+ * \brief types of hybrid RANS/LES models
+ */
+enum ENUM_HYBRIDRANSLES {
+  NO_HYBRIDRANSLES = 0, /*!< \brief No turbulence model. */
+  SA_DES   = 1, /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
+  SA_DDES  = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
+  SA_ZDES  = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
+  SA_EDDES  = 4  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+};
+static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<string, ENUM_HYBRIDRANSLES>
+("NONE", NO_HYBRIDRANSLES)
+("SA_DES", SA_DES)
+("SA_DDES", SA_DDES)
+("SA_ZDES", SA_ZDES)
+("SA_EDDES", SA_EDDES);
+
+/*!
+ * \brief types of Roe Low Dissipation Schemes
+ */
+enum ENUM_ROELOWDISS {
+    NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
+    FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
+    NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
+    NTS_DUCROS    = 3,  /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
+    FD_DUCROS     = 4 /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+};
+static const map<string, ENUM_ROELOWDISS> RoeLowDiss_Map = CCreateMap<string, ENUM_ROELOWDISS>
+("NONE", NO_ROELOWDISS)
+("FD", FD)
+("NTS", NTS)
+("NTS_DUCROS", NTS_DUCROS)
+("FD_DUCROS", FD_DUCROS);
 
 /*!
  * \brief types of wall functions.

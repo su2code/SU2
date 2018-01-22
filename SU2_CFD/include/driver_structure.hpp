@@ -84,9 +84,10 @@ protected:
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
-  su2double APIVarCoord[3];                     /*!< \brief This is used to store the VarCoord of each node. */
-  su2double APINodalForce[3];                   /*!< \brief This is used to store the force at each node. */
-  su2double APINodalForceDensity[3];            /*!< \brief This is used to store the force density at each node. */
+  su2double PyWrapVarCoord[3],                  /*!< \brief This is used to store the VarCoord of each vertex. */
+            PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
+            PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
+            PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
 
 public:
 	
@@ -187,6 +188,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Initialize Python interface functionalities
+   */
+  void PythonInterface_Preprocessing();
 
   /*!
    * \brief Deallocation routine
@@ -293,6 +299,11 @@ public:
   virtual void SetInitialMesh() { };
 
   /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  virtual void BoundaryConditionsUpdate() { };
+
+  /*!
    * \brief Get the total drag.
    * \return Total drag.
    */
@@ -367,6 +378,18 @@ public:
    * \return Number of external iterations.
    */
   unsigned long GetnExtIter();
+
+  /*!
+   * \brief Get the current external iteration.
+   * \return Current external iteration.
+   */
+  unsigned long GetExtIter();
+
+  /*!
+   * \brief Get the unsteady time step.
+   * \return Unsteady time step.
+   */
+  su2double GetUnsteady_TimeStep();
 
   /*!
    * \brief Get the global index of a vertex on a specified marker.
@@ -488,6 +511,116 @@ public:
    */
   su2double SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
 
+  /*!
+   * \brief Get the temperature at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Temperature of the vertex.
+   */
+  su2double GetVertexTemperature(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the temperature of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_WallTemp - Value of the temperature.
+   */
+  void SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, su2double val_WallTemp);
+
+  /*!
+   * \brief Compute the heat flux at a vertex on a specified marker (3 components).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return True if the vertex is a halo node.
+   */
+  bool ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the x component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return x component of the heat flux at the vertex.
+   */
+  su2double GetVertexHeatFluxX(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the y component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return y component of the heat flux at the vertex.
+   */
+  su2double GetVertexHeatFluxY(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the z component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return z component of the heat flux at the vertex.
+   */
+  su2double GetVertexHeatFluxZ(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Wall normal component of the heat flux at the vertex.
+   */
+  su2double GetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_WallHeatFlux - Value of the normal heat flux.
+   */
+  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, su2double val_WallHeatFlux);
+
+  /*!
+   * \brief Get the thermal conductivity at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Thermal conductivity at the vertex.
+   */
+  su2double GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the unit normal (vector) at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Unit normal (vector) at the vertex.
+   */
+  vector<su2double> GetVertexUnitNormal(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get all the boundary markers tags.
+   * \return List of boundary markers tags.
+   */
+  vector<string> GetAllBoundaryMarkersTag();
+
+  /*!
+   * \brief Get all the moving boundary markers tags.
+   * \return List of moving boundary markers tags.
+   */
+  vector<string> GetAllMovingMarkersTag();
+
+  /*!
+   * \brief Get all the heat transfer boundary markers tags.
+   * \return List of heat transfer boundary markers tags.
+   */
+  vector<string> GetAllCHTMarkersTag();
+
+  /*!
+   * \brief Get all the boundary markers tags with their associated indices.
+   * \return List of boundary markers tags with their indices.
+   */
+  map<string, int> GetAllBoundaryMarkers();
+
+  /*!
+   * \brief Get all the boundary markers tags with their associated types.
+   * \return List of boundary markers tags with their types.
+   */
+  map<string, string> GetAllBoundaryMarkersType();
+
 };
 
 /*!
@@ -545,6 +678,11 @@ public:
    * \brief Perform a mesh deformation as initial condition (single zone).
    */
   void SetInitialMesh();
+
+  /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
 };
 
 
@@ -603,6 +741,11 @@ public:
    * \brief Perform a mesh deformation as initial condition (multiple zone).
    */
   void SetInitialMesh();
+
+  /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
 
   /*!
    * \brief Transfer data among different zones (multiple zone).

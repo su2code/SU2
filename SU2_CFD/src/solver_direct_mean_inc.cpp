@@ -1057,7 +1057,7 @@ void CIncEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config
   }
 }
 
-void CIncEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -2076,7 +2076,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -2794,7 +2794,7 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
 }
 
-void CIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   su2double Pressure_i = 0.0, Pressure_j = 0.0;
@@ -2863,7 +2863,7 @@ void CIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -3760,6 +3760,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -6324,7 +6326,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -6392,7 +6394,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool RightSol = true;
   
@@ -6405,6 +6407,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+      
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+        DES_LengthScale = solver_container[TURB_SOL]->node[iPoint]->GetDES_LengthScale();
+      }
     }
     
     /*--- Initialize the non-physical points vector ---*/
@@ -6416,6 +6422,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     RightSol = node[iPoint]->SetPrimVar(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
     
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+    
+    /*--- Set the DES length scale ---*/
+    
+    node[iPoint]->SetDES_LengthScale(DES_LengthScale);    
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
