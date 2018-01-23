@@ -1107,19 +1107,7 @@ public:
 	 * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
 	 */
 	void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
-    
-	/*!
-	 * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
-	 *        the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_betainv2 - Value of the compresibility factor.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_p_tensor - Pointer to the P matrix.
-	 */
-	void GetPArtCompMatrix(su2double *val_density, su2double *val_velocity,
-                         su2double *val_betainv2, su2double *val_normal,
-                         su2double **val_p_tensor);
+
   
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
@@ -1147,19 +1135,6 @@ public:
   void GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
                       su2double *val_soundspeed, su2double *val_normal,
                       su2double **val_invp_tensor);
-
-  /*!
-   * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_betainv2 - Value of the compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-   */
-  void GetPArtCompMatrix_inv(su2double *val_density, su2double *val_velocity,
-                             su2double *val_betainv2, su2double *val_normal,
-                             su2double **val_invp_tensor);
   
   /*!
    * \brief Compute viscous residual and jacobian.
