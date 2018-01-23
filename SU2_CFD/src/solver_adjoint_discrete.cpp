@@ -327,26 +327,112 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register incompressible initialization values as input ---*/
 
-//  if((config->GetKind_Regime() == INCOMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
-//
-//    Density     = config->GetDensity_FreeStreamND()
-//    ModVel      = config->GetModVel_FreeStreamND();
-//    Temperature = config->GetTemperature_FreeStreamND();
-//
-//    if (!reset) {
-//      AD::RegisterInput(Density);
-//      AD::RegisterInput(ModVel);
-//      AD::RegisterInput(Temperature);
-//    }
-//
-//    config->SetPressure_FreeStreamND(Density);
-//    direct_solver->SetDensity_Inf(Density);
-//    config->SetModVel_FreeStreamND(ModVel);
-//    direct_solver->SetModVel_Inf(Pressure);
-//    config->SetTemperature_FreeStreamND(Temperature);
-//    direct_solver->SetTemperature_Inf(Temperature);
-//    
-//  }
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      (KindDirect_Solver == RUNTIME_FLOW_SYS && (!config->GetBoolTurbomachinery()))) {
+
+        string Marker_Tag;
+        unsigned short KindBC, Kind_Inlet, iMarker, iDim;
+        bool notRegisteredIn  = true;
+        bool notRegisteredOut = true;
+
+        ModVel    = 0.0;
+        BPressure = 0.0;
+
+        Alpha = config->GetAoA()*PI_NUMBER/180.0;
+        Beta  = config->GetAoS()*PI_NUMBER/180.0;
+
+        /*--- Loop over inlet/outlet markers. We will only register the first
+         inlet and first outlet that we find, if any. ---*/
+
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          KindBC     = config->GetMarker_All_KindBC(iMarker);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          switch (KindBC) {
+            case FAR_FIELD:
+              if (notRegisteredIn) {
+                for (iDim = 0; iDim < nDim; iDim++)
+                  ModVel += config->GetVelocity_FreeStreamND()[iDim];
+                ModVel = sqrt(ModVel);
+                notRegisteredIn = false;
+              }
+              if (notRegisteredOut) {
+                BPressure = config->GetPressure_FreeStreamND();
+                notRegisteredOut = false;
+              }
+            case INLET_FLOW:
+              if (notRegisteredIn) {
+                Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
+                if (Kind_Inlet == VELOCITY_INLET)
+                  ModVel = config->GetInlet_Ptotal(Marker_Tag);
+                notRegisteredIn = false;
+              }
+              break;
+            case OUTLET_FLOW:
+              if (notRegisteredOut) {
+                BPressure = config->GetOutlet_Pressure(Marker_Tag);
+                notRegisteredOut = false;
+              }
+              break;
+          }
+        }
+
+        if (!reset) {
+          AD::RegisterInput(ModVel);
+          AD::RegisterInput(BPressure);
+        }
+
+        /*--- Reload the BC data after registering. We will only register 
+         the first inlet and first outlet that we find, if any. ---*/
+
+        notRegisteredIn  = true;
+        notRegisteredOut = true;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          KindBC     = config->GetMarker_All_KindBC(iMarker);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          switch (KindBC) {
+            case FAR_FIELD:
+              if (notRegisteredIn) {
+                if (nDim == 2) {
+                  config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*ModVel;
+                  config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*ModVel;
+
+                  direct_solver->SetVelocity_Inf(0,cos(Alpha)*ModVel);
+                  direct_solver->SetVelocity_Inf(1,sin(Alpha)*ModVel);
+                }
+                if (nDim == 3) {
+                  config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*ModVel;
+                  config->GetVelocity_FreeStreamND()[1] = sin(Beta)*ModVel;
+                  config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*ModVel;
+
+                  direct_solver->SetVelocity_Inf(0,cos(Alpha)*cos(Beta)*ModVel);
+                  direct_solver->SetVelocity_Inf(1,sin(Beta)*ModVel);
+                  direct_solver->SetVelocity_Inf(2,sin(Alpha)*cos(Beta)*ModVel);
+                }
+                notRegisteredIn = false;
+              }
+              if (notRegisteredOut) {
+                config->SetPressure_FreeStreamND(BPressure);
+                direct_solver->SetPressure_Inf(BPressure);
+                notRegisteredOut = false;
+              }
+            case INLET_FLOW:
+              if (notRegisteredIn) {
+                Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
+                if (Kind_Inlet == VELOCITY_INLET)
+                  config->SetInlet_Ptotal(ModVel, Marker_Tag);
+                notRegisteredIn = false;
+              }
+              break;
+            case OUTLET_FLOW:
+              if (notRegisteredOut) {
+                config->SetOutlet_Pressure(BPressure, Marker_Tag);
+                notRegisteredOut = false;
+              }
+              break;
+          }
+        }
+        
+      }
 
     /*--- Here it is possible to register other variables as input that influence the flow solution
      * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
@@ -553,6 +639,23 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 #else
     Total_Sens_BPress = Local_Sens_BPress;
     Total_Sens_Temp = Local_Sens_Temperature;
+#endif
+
+  }
+
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      (KindDirect_Solver == RUNTIME_FLOW_SYS && (!config->GetBoolTurbomachinery()))) {
+    su2double Local_Sens_BPress, Local_Sens_ModVel;
+
+    Local_Sens_ModVel = SU2_TYPE::GetDerivative(ModVel);
+    Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_ModVel,   &Total_Sens_ModVel,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_BPress,   &Total_Sens_BPress,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_ModVel = Local_Sens_ModVel;
+    Total_Sens_BPress = Local_Sens_BPress;
 #endif
 
   }

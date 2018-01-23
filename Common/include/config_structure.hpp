@@ -6072,7 +6072,14 @@ public:
    * \return The total pressure.
    */
   su2double GetInlet_Ptotal(string val_index);
-  
+
+  /*!
+   * \brief Set the total pressure at an inlet boundary.
+   * \param[in] val_pressure - Pressure value at the inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   */
+  void SetInlet_Ptotal(su2double val_pressure, string val_marker);
+
   /*!
    * \brief Get the total pressure at an nacelle boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -6099,7 +6106,14 @@ public:
    * \return The outlet pressure.
    */
   su2double GetOutlet_Pressure(string val_index);
-  
+
+  /*!
+   * \brief Set the back pressure (static) at an outlet boundary.
+   * \param[in] val_pressure - Pressure value at the outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   */
+  void SetOutlet_Pressure(su2double val_pressure, string val_marker);
+
   /*!
    * \brief Get the var 1 at Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.

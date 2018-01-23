@@ -2902,7 +2902,13 @@ public:
    *         (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_Sens_BPress(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the velocity magnitude sensitivity.
+   */
+  virtual su2double GetTotal_Sens_ModVel(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the density at the infinity.
@@ -3673,7 +3679,14 @@ public:
    * \param[in] Value of freestream temperature.
    */
   virtual void SetTemperature_Inf(su2double t_inf);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_dim - Index of the velocity vector.
+   * \param[in] val_velocity - Value of the velocity.
+   */
+  virtual void SetVelocity_Inf(unsigned short val_dim, su2double val_velocity);
+
   /*!
    * \brief A virtual member.
    * \param[in] kind_recording - Kind of AD recording.
@@ -6823,7 +6836,14 @@ public:
    * \return Value of the velocity at the infinity.
    */
   su2double *GetVelocity_Inf(void);
-  
+
+  /*!
+   * \brief Set the velocity at infinity.
+   * \param[in] val_dim - Index of the velocity vector.
+   * \param[in] val_velocity - Value of the velocity.
+   */
+  void SetVelocity_Inf(unsigned short val_dim, su2double val_velocity);
+
   /*!
    * \brief Compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11672,8 +11692,9 @@ private:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
+  su2double Total_Sens_ModVel;    /*!< \brief Total sensitivity to inlet velocity. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
-  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure;
+  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
@@ -11849,7 +11870,13 @@ public:
    *         (inviscid + viscous contribution).
    */
   su2double GetTotal_Sens_BPress(void);
-  
+
+  /*!
+   * \brief Get the total velocity magnitude sensitivity coefficient.
+   * \return Value of the velocity magnitude sensitivity.
+   */
+  su2double GetTotal_Sens_ModVel(void);
+
   /*!
    * \brief Get the shape sensitivity coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
