@@ -35,7 +35,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy, glob, re
+import os, copy
 from .. import io   as su2io
 from .  import func as su2func
 from .  import grad as su2grad
@@ -91,8 +91,6 @@ class Design(object):
         ## ???: Move to Project, no next folder here
         
         if '*' in folder: folder = su2io.next_folder(folder)
-        
-#        print "New Design: %s" % folder
         
         config = copy.deepcopy(config)
         state  = copy.deepcopy(state)
@@ -247,7 +245,7 @@ def obj_f(dvs,config,state=None):
     #: for each objective
     # If evaluating the combined function is desired, update it here.
     # This is only used when OPT_COMBINE_OBJECTIVE = YES
-    if state.FUNCTIONS.has_key('COMBO'):
+    if 'COMBO' in state.FUNCTIONS:
         state['FUNCTIONS']['COMBO'] = func
         
     return vals_out

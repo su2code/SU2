@@ -118,6 +118,7 @@ const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domai
 const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
@@ -205,7 +206,8 @@ enum ENUM_SOLVER {
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
-  DISC_ADJ_NAVIER_STOKES = 37
+  DISC_ADJ_NAVIER_STOKES = 37,
+  DISC_ADJ_FEM = 40
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -223,6 +225,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
+("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
@@ -249,6 +252,7 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  ADJFEM_ELASTICITY_SFSI = 14,   /*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
@@ -272,20 +276,26 @@ static const map<string, ENUM_STRUCT_SOLVER> Struct_Map = CCreateMap<string, ENU
 enum ENUM_MATERIAL_MODEL {
 	LINEAR_ELASTIC = 0,			/*!< \brief Definition of linear elastic material. */
 	NEO_HOOKEAN = 1,			/*!< \brief Definition of Neo-Hookean material. */
+	KNOWLES = 2,				/*!< \brief Definition of Knowles stored-energy potential */
+	IDEAL_DE = 3				/*!< \brief Definition of ideal Dielectric Elastomer */
 };
 static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, ENUM_MATERIAL_MODEL>
 ("LINEAR_ELASTIC", LINEAR_ELASTIC)
-("NEO_HOOKEAN", NEO_HOOKEAN);
+("NEO_HOOKEAN", NEO_HOOKEAN)
+("KNOWLES", KNOWLES)
+("IDEAL_DE", IDEAL_DE);
 
 /*!
  * \brief Material compressibility
  */
 enum ENUM_MAT_COMPRESS {
-  COMPRESSIBLE_MAT = 0,			/*!< \brief Definition of compressible material. */
-  INCOMPRESSIBLE_MAT = 1,		/*!< \brief Definition of incompressible material. */
+  COMPRESSIBLE_MAT = 0,		/*!< \brief Definition of compressible material. */
+  NEARLY_INCOMPRESSIBLE_MAT = 1,	/*!< \brief Definition of nearly incompressible material. */
+  INCOMPRESSIBLE_MAT = 2			/*!< \brief Definition of incompressible material. */
 };
 static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
 ("COMPRESSIBLE", COMPRESSIBLE_MAT)
+("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
 
 
@@ -355,6 +365,7 @@ enum RUNTIME_TYPE {
   RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
   RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
+  RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
 };
@@ -369,7 +380,9 @@ const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution i
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
-const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution solver array. */
+
+const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
+const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
 const int TEMPLATE_SOL = 0;     /*!< \brief Position of the template solution. */
 
@@ -381,6 +394,18 @@ const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boun
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
+const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
+
+const int MAT_NHCOMP  = 2;   /*!< \brief Position of the Neo-Hookean compressible material model. */
+const int MAT_NHINC   = 3;   /*!< \brief Position of the Neo-Hookean incompressible material model. */
+const int MAT_IDEALDE = 4;   /*!< \brief Position of the Ideal-DE material model. */
+const int MAT_KNOWLES = 5;   /*!< \brief Position of the Knowles material model. */
+
+const int INC_TERM = 2;      /*!< \brief Position of the incompressible term in the element container array. */
+
+const int FEA_ADJ = 6;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
+const int DE_ADJ = 7;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
+
 
 
 /*!
@@ -391,7 +416,9 @@ const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
 
 const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
-const int EL_HEXA = 1;		/*!< \brief Elements of eight nodes (3D). */
+const int EL_HEXA  = 1;		/*!< \brief Elements of eight nodes (3D). */
+const int EL_PYRAM = 2;    /*!< \brief Elements of five nodes (3D). */
+const int EL_PRISM = 3;    /*!< \brief Elements of six nodes (3D). */
 
 
 /*!
@@ -495,7 +522,7 @@ enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0, /*!< \brief Simulation on a static mesh. */
   DEFORMING = 1,		/*!< \brief Simulation with dynamically deforming meshes (plunging/pitching/rotation). */
   RIGID_MOTION = 2,		/*!< \brief Simulation with rigid mesh motion (plunging/pitching/rotation). */
-  FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure defromation. */
+  FLUID_STRUCTURE = 3,		/*!< \brief Fluid structure deformation. */
   EXTERNAL = 4,  /*!< \brief Arbitrary grid motion specified by external files at each time step. */
   EXTERNAL_ROTATION = 5,  /*!< \brief Arbitrary grid motion specified by external files at each time step with rigid rotation. */
   AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
@@ -505,8 +532,8 @@ enum ENUM_GRIDMOVEMENT {
   AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
-  MOVING_HTP = 13    /*!< \brief Simulation with moving HTP (rotation). */
-
+  MOVING_HTP = 13,    /*!< \brief Simulation with moving HTP (rotation). */
+  FLUID_STRUCTURE_STATIC = 14 /*!< \brief Fluid structure deformation with no grid velocity. */
 };
 
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
@@ -523,7 +550,8 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("MOVING_HTP", MOVING_HTP)
 ("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
-("GUST", GUST);
+("GUST", GUST)
+("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC);
 
 /*!
  * \brief type of wind gusts
@@ -585,22 +613,29 @@ enum ENUM_UPWIND {
   SW = 5,                     /*!< \brief Steger-Warming method. */
   MSW = 6,                    /*!< \brief Modified Steger-Warming method. */
   TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
-  AUSMPWPLUS = 8,             /*!< \brief AUSMPW+ numerical method. */
+  SLAU = 8,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
   CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE = 10    /*!< \brief Template for new numerical method . */
+  CONVECTIVE_TEMPLATE = 10,   /*!< \brief Template for new numerical method . */
+  L2ROE = 11,                 /*!< \brief L2ROE numerical method . */
+  LMROE = 12,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
+  SLAU2 = 13                   /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
 ("ROE", ROE)
 ("TURKEL_PREC", TURKEL)
 ("AUSM", AUSM)
-("AUSMPW+", AUSMPWPLUS)
+("SLAU", SLAU)
 ("HLLC", HLLC)
 ("SW", SW)
 ("MSW", MSW)
 ("CUSP", CUSP)
 ("SCALAR_UPWIND", SCALAR_UPWIND)
-("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
+("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
+("L2ROE", L2ROE)
+("LMROE", LMROE)
+("SLAU2", SLAU2);
+
 
 /*!
  * \brief types of slope limiters
@@ -631,12 +666,18 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
+  SA_E    = 4, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards). */
+  SA_COMP = 5, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Compressibility Correction). */
+  SA_E_COMP = 6, /*!< \brief Kind of Turbulent model (Spalart-Allmaras Edwards with Compressibility Correction). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST);
+("SST", SST)
+("SA_E", SA_E)
+("SA_COMP", SA_COMP)
+("SA_E_COMP", SA_E_COMP);
 
 /*!
  * \brief types of transition models
@@ -650,6 +691,40 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("NONE", NO_TRANS_MODEL)
 ("LM", LM)
 ("BC", BC); //BAS-CAKMAKCIOGLU
+
+/*!
+ * \brief types of hybrid RANS/LES models
+ */
+enum ENUM_HYBRIDRANSLES {
+  NO_HYBRIDRANSLES = 0, /*!< \brief No turbulence model. */
+  SA_DES   = 1, /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
+  SA_DDES  = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
+  SA_ZDES  = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
+  SA_EDDES  = 4  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+};
+static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<string, ENUM_HYBRIDRANSLES>
+("NONE", NO_HYBRIDRANSLES)
+("SA_DES", SA_DES)
+("SA_DDES", SA_DDES)
+("SA_ZDES", SA_ZDES)
+("SA_EDDES", SA_EDDES);
+
+/*!
+ * \brief types of Roe Low Dissipation Schemes
+ */
+enum ENUM_ROELOWDISS {
+    NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
+    FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
+    NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
+    NTS_DUCROS    = 3,  /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
+    FD_DUCROS     = 4 /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+};
+static const map<string, ENUM_ROELOWDISS> RoeLowDiss_Map = CCreateMap<string, ENUM_ROELOWDISS>
+("NONE", NO_ROELOWDISS)
+("FD", FD)
+("NTS", NTS)
+("NTS_DUCROS", NTS_DUCROS)
+("FD_DUCROS", FD_DUCROS);
 
 /*!
  * \brief types of wall functions.
@@ -790,6 +865,8 @@ enum BC_TYPE {
   GILES_BOUNDARY= 37,   /*!< \brief Giles Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
+  DISP_DIR_BOUNDARY = 40,    /*!< \brief Boundary displacement definition. */
+  DAMPER_BOUNDARY = 41,    /*!< \brief Damper. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -807,7 +884,7 @@ static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFO
 
 
 /*!
- * \brief different regime modes
+ * \brief Kinds of relaxation for FSI problem
  */
 enum ENUM_AITKEN {
   NO_RELAXATION = 0,			/*!< \brief No relaxation in the strongly coupled approach. */
@@ -819,6 +896,44 @@ static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_A
 ("FIXED_PARAMETER", FIXED_PARAMETER)
 ("AITKEN_DYNAMIC", AITKEN_DYNAMIC);
 
+/*!
+ * \brief types of dynamic transfer methods
+ */
+enum ENUM_DYN_TRANSFER_METHOD {
+  INSTANTANEOUS = 1,   /*!< \brief No ramp, load is transfer instantaneously. */
+  POL_ORDER_1 = 2,     /*!< \brief The load is transferred using a ramp. */
+  POL_ORDER_3 = 3,     /*!< \brief The load is transferred using an order 3 polynomial function */
+  POL_ORDER_5 = 4,     /*!< \brief The load is transferred using an order 5 polynomial function */
+  SIGMOID_10 = 5,      /*!< \brief The load is transferred using a sigmoid with parameter 10 */
+  SIGMOID_20 = 6       /*!< \brief The load is transferred using a sigmoid with parameter 20 */
+};
+static const map<string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = CCreateMap<string, ENUM_DYN_TRANSFER_METHOD>
+("INSTANTANEOUS", INSTANTANEOUS)
+("RAMP", POL_ORDER_1)
+("CUBIC", POL_ORDER_3)
+("QUINTIC", POL_ORDER_5)
+("SIGMOID_10", SIGMOID_10)
+("SIGMOID_20", SIGMOID_20);
+
+
+/*!
+ * \brief Kinds of Design Variables for FEA problems 
+ */
+enum ENUM_DVFEA {
+  NODV_FEA = 0,         /*!< \brief No design variable for FEA problems. */
+  YOUNG_MODULUS = 1,		/*!< \brief Young modulus (E) as design variable. */
+  POISSON_RATIO = 2,  	/*!< \brief Poisson ratio (Nu) as design variable. */
+  DENSITY_VAL = 3,      /*!< \brief Density (Rho) as design variable. */
+  DEAD_WEIGHT = 4,      /*!< \brief Dead Weight (Rho_DL) as design variable. */
+  ELECTRIC_FIELD = 5    /*!< \brief Electric field (E) as design variable. */
+};
+static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
+("NONE", NODV_FEA)
+("YOUNG_MODULUS", YOUNG_MODULUS)
+("POISSON_RATIO", POISSON_RATIO)
+("DENSITY", DENSITY_VAL)
+("DEAD_WEIGHT", DEAD_WEIGHT)
+("ELECTRIC_FIELD", ELECTRIC_FIELD);
 
 
 /*!
@@ -1055,7 +1170,9 @@ enum ENUM_OBJECTIVE {
   MASS_FLOW_IN = 47,
   MASS_FLOW_OUT = 48,
   PRESSURE_RATIO = 49,
-  ENTROPY_GENERATION = 50
+  ENTROPY_GENERATION = 50,
+  REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
+  REFERENCE_NODE=61               /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1094,7 +1211,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MASS_FLOW_OUT", MASS_FLOW_OUT)
 ("PRESSURE_RATIO",  PRESSURE_RATIO)
 ("ENTROPY_GENERATION",  ENTROPY_GENERATION)
-("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS);
+("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
+("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
+("REFERENCE_NODE", REFERENCE_NODE);
 
 /*!
  * \brief types of residual criteria equations
@@ -1108,6 +1227,19 @@ enum ENUM_RESIDUAL {
 static const map<string, ENUM_RESIDUAL> Residual_Map = CCreateMap<string, ENUM_RESIDUAL>
 ("RHO", RHO_RESIDUAL)
 ("RHO_ENERGY", RHO_ENERGY_RESIDUAL);
+
+/*!
+ * \brief types of residual criteria for structural problems
+ */
+
+enum ENUM_RESFEM {
+  RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
+  RESFEM_ABSOLUTE = 2          /*!< \brief Absolute criteria: abs(Res). */
+};
+
+static const map<string, ENUM_RESFEM> ResFem_Map = CCreateMap<string, ENUM_RESFEM>
+("RELATIVE", RESFEM_RELATIVE)
+("ABSOLUTE", RESFEM_ABSOLUTE);
 
 /*!
  * \brief types of sensitivities to compute
@@ -1269,6 +1401,11 @@ enum ENUM_PARAM {
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
+  DV_EFIELD = 30,            /*!< \brief Electric field in deformable membranes. */
+  DV_YOUNG = 31,
+  DV_POISSON = 32,
+  DV_RHO = 33,
+  DV_RHO_DL = 34,
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1299,7 +1436,13 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
 ("NO_DEFORMATION", NO_DEFORMATION)
-("CST", CST);
+("CST", CST)
+("ELECTRIC_FIELD", DV_EFIELD)
+("YOUNG_MODULUS", DV_YOUNG)
+("POISSON_RATIO", DV_POISSON)
+("STRUCTURAL_DENSITY", DV_RHO)
+("DEAD_WEIGHT", DV_RHO_DL)
+;
 
 
 /*!
@@ -1421,14 +1564,16 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
  * \brief types of axis orientation
  */
 enum ENUM_GEO_DESCRIPTION {
-	TWOD_AIRFOIL = 0,   /*!< \brief Airfoil analysis. */
-  WING = 1, 	/*!< \brief Wing analysis. */
-  FUSELAGE = 2    /*!< \brief Fuselage analysis. */
+	TWOD_AIRFOIL = 0, /*!< \brief Airfoil analysis. */
+  WING = 1, 	      /*!< \brief Wing analysis. */
+  FUSELAGE = 2,    /*!< \brief Fuselage analysis. */
+  NACELLE = 3      /*!< \brief Nacelle analysis. */
 };
 static const map<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = CCreateMap<string, ENUM_GEO_DESCRIPTION>
 ("AIRFOIL", TWOD_AIRFOIL)
 ("WING", WING)
-("FUSELAGE", FUSELAGE);
+("FUSELAGE", FUSELAGE)
+("NACELLE", NACELLE);
 
 /*!
  * \brief types of schemes for unsteady computations
@@ -1488,7 +1633,12 @@ enum ENUM_DIRECTDIFF_VAR {
   D_SIDESLIP = 7,
   D_VISCOSITY = 8,
   D_REYNOLDS = 9,
-  D_DESIGN = 10
+  D_DESIGN = 10,
+  D_YOUNG = 11,
+  D_POISSON = 12,
+  D_RHO = 13,
+  D_RHO_DL = 14,
+  D_EFIELD = 15
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
@@ -1501,13 +1651,23 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 ("SIDESLIP", D_SIDESLIP)
 ("VISCOSITY", D_VISCOSITY)
 ("REYNOLDS", D_REYNOLDS)
-("DESIGN_VARIABLES", D_DESIGN);
+("DESIGN_VARIABLES", D_DESIGN)
+("YOUNG_MODULUS", D_YOUNG)
+("POISSON_RATIO", D_POISSON)
+("STRUCTURAL_DENSITY", D_RHO)
+("STRUCTURAL_DEAD_LOAD", D_RHO_DL)
+("ELECTRIC_FIELD", D_EFIELD);
 
 
 enum ENUM_RECORDING {
-  CONS_VARS   = 1,
+  FLOW_CONS_VARS   = 1,
   MESH_COORDS = 2,
-  COMBINED    = 3
+  COMBINED    = 3,
+  FEA_DISP_VARS = 4,
+  FLOW_CROSS_TERM = 5,
+  FEM_CROSS_TERM_GEOMETRY = 6,
+  GEOMETRY_CROSS_TERM = 7,
+  ALL_VARIABLES = 8
 };
 
 /*!
@@ -1520,6 +1680,17 @@ enum ENUM_DYNAMIC {
 static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYNAMIC>
 ("NO", STATIC)
 ("YES", DYNAMIC);
+
+/*!
+ * \brief types of input file formats
+ */
+enum ENUM_INPUT_REF {
+  SU2_REF = 1,                     /*!< \brief SU2 input format (from a restart). */
+  CUSTOM_REF = 2                   /*!< \brief CGNS input format for the computational grid. */
+};
+static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM_INPUT_REF>
+("SU2", SU2_REF)
+("CUSTOM", CUSTOM_REF);
 
 /* END_CONFIG_ENUMS */
 
@@ -2270,6 +2441,11 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
+        case DV_EFIELD:            nParamDV = 2; break;
+        case DV_YOUNG:             nParamDV = 0; break;
+        case DV_POISSON:           nParamDV = 0; break;
+        case DV_RHO:               nParamDV = 0; break;
+        case DV_RHO_DL:            nParamDV = 0; break;
         default : {
           string newstring;
           newstring.append(this->name);
