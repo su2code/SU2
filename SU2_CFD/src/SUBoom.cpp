@@ -2095,7 +2095,7 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
           su2double T0 = signal.final_T[iPhi][j-1] + (-signal.final_p[iPhi][j-1])
                         *(signal.final_T[iPhi][j]-signal.final_T[iPhi][j-1])/(signal.final_p[iPhi][j]-signal.final_p[iPhi][j-1]);
           p_int2[iPhi] += 0.5*(signal.final_p[iPhi][j-1]*signal.final_p[iPhi][j-1])*(T0-signal.final_T[iPhi][j-1])
-                          + 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j])*(T0-signal.final_T[iPhi][j]);
+                          + 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j])*(signal.final_T[iPhi][j]-T0);
         }
         else{ // otherwise, do trapezoidal integration
           p_int2[iPhi] += 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j]+signal.final_p[iPhi][j-1]*signal.final_p[iPhi][j-1])
