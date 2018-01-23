@@ -574,6 +574,8 @@ inline su2double CSolver::GetTotal_Sens_Temp() { return 0; }
 
 inline su2double CSolver::GetTotal_Sens_BPress() { return 0; }
 
+inline su2double CSolver::GetTotal_Sens_ModVel() { return 0; }
+
 inline su2double CSolver::GetDensity_Inf(void) { return 0; }
 
 inline su2double CSolver::GetDensity_Inf(unsigned short val_var) { return 0; }
@@ -982,6 +984,8 @@ inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
 inline void CSolver::SetPressure_Inf(su2double p_inf){}
 
 inline void CSolver::SetTemperature_Inf(su2double t_inf){}
+
+inline void CSolver::SetVelocity_Inf(unsigned short val_dim, su2double val_velocity) { }
 
 inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
 
@@ -1684,6 +1688,8 @@ inline su2double CIncEulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim
 
 inline su2double CIncEulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
 
+inline void CIncEulerSolver::SetVelocity_Inf(unsigned short val_dim, su2double val_velocity) { Velocity_Inf[val_dim] = val_velocity; }
+
 inline su2double *CIncEulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; }
 
 inline su2double CIncEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
@@ -2024,6 +2030,8 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_Press() { return Total_Sens_Press
 inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_ModVel() { return Total_Sens_ModVel; }
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
