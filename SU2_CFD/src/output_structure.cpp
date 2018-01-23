@@ -4500,6 +4500,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool energy               = config[val_iZone]->GetEnergy_Equation();
   bool output_files         = true;
 
+  bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
+
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
     if ((config[val_iZone]->GetFixed_CL_Mode()) &&
@@ -4523,7 +4526,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       /*--- For specific applications, evaluate and plot the surface. ---*/
       
-      if (config[val_iZone]->GetnMarker_Analyze() != 0) {
+      if ((config[val_iZone]->GetnMarker_Analyze() != 0) && compressible) {
         SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                  geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
       }
@@ -4600,9 +4603,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double timeiter = timeused/su2double(iExtIter+1);
     
     unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
-    
-    bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-    bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
+
     
     bool rotating_frame = config[val_iZone]->GetRotating_Frame();
     bool aeroelastic = config[val_iZone]->GetAeroelastic_Simulation();
@@ -17356,19 +17357,19 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
-  su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
+  su2double Mach = 0.0, Pressure = 0.0, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0, Enthalpy = 0.0,
   Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
   
   su2double Gas_Constant      = config->GetGas_ConstantND();
   su2double Gamma             = config->GetGamma();
-  su2double Gamma_Minus_One   = Gamma - 1.0;
   unsigned short nMarker      = config->GetnMarker_All();
   unsigned short nDim         = geometry->GetnDim();
-  unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
 
   bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
   bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  bool energy         = config->GetEnergy_Equation();
+
 
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
@@ -17694,15 +17695,18 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 
       cout << endl;
 
-      su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "T (K): " << setw(10) << Temperature;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "T (R): " << setw(10) << Temperature;
+      if (compressible || energy) {
+        su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "T (K): " << setw(10) << Temperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "T (R): " << setw(10) << Temperature;
 
-      su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "TT (K): " << setw(10) << TotalTemperature;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "TT (R): " << setw(10) << TotalTemperature;
+        su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
+        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "TT (K): " << setw(10) << TotalTemperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "TT (R): " << setw(10) << TotalTemperature;
 
-      cout << endl;
+        cout << endl;
+      }
+
     }
     cout.unsetf(ios_base::floatfield);
     

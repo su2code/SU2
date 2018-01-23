@@ -931,7 +931,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       skipVars += nDim + 2;
     }
     if (incompressible) {
-      skipVars += nDim + 1;
+      skipVars += nDim + 2;
     }
   }
 
