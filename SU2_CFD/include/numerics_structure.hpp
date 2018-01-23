@@ -2013,51 +2013,6 @@ public:
 };
 
 /*!
- * \class CUpwRoeArtComp_AdjFlow
- * \brief Class for solving an approximate Riemann solver of Roe
- *        for the adjoint flow equations.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 5.0.0 "Raven"
- */
-class CUpwRoeArtComp_AdjFlow : public CNumerics {
-private:
-  su2double Area, *Lambda, *Velocity_i, *Velocity_j, **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j,
-  Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor, **P_Tensor, **invP_Tensor, MeanDensity,
-  MeanPressure, MeanBetaInc2, ProjVelocity, *MeanVelocity, MeanSoundSpeed;
-  unsigned short iDim, iVar, jVar, kVar;
-  bool implicit;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwRoeArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwRoeArtComp_AdjFlow(void);
-  
-  /*!
-   * \brief Compute the adjoint Roe's flux between two nodes i and j.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii,
-                       su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
-};
-
-/*!
  * \class CUpwAUSM_Flow
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
@@ -2829,56 +2784,6 @@ public:
 };
 
 /*!
- * \class CCentJSTArtComp_AdjFlow
- * \brief Class for and adjoint centered scheme - JST.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 5.0.0 "Raven"
- */
-class CCentJSTArtComp_AdjFlow : public CNumerics {
-private:
-  su2double sc2, *Diff_Psi, *Diff_Lapl;
-  su2double *Velocity_i, *Velocity_j;
-  su2double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-  unsigned short iDim, iVar, jVar;
-  su2double Residual, ProjVelocity_i, ProjVelocity_j;
-  su2double Param_p, Param_Kappa_4, Param_Kappa_2, Local_Lambda_i, Local_Lambda_j, MeanLambda;
-  su2double Phi_i, Phi_j, sc4, StretchingFactor, Epsilon_4, Epsilon_2;
-  bool implicit;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CCentJSTArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCentJSTArtComp_AdjFlow(void);
-  
-  /*!
-   * \brief Compute the adjoint flow residual using a JST method.
-   * \param[out] val_resconv_i - Pointer to the convective residual at point i.
-   * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
-   * \param[out] val_resconv_j - Pointer to the convective residual at point j.
-   * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual (su2double *val_resconv_i, su2double *val_resvisc_i, su2double *val_resconv_j, su2double *val_resvisc_j,
-                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
-                        CConfig *config);
-};
-
-/*!
  * \class CCentLax_Flow
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
@@ -3015,56 +2920,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CCentLax_AdjFlow(void);
-  
-  /*!
-   * \brief Compute the adjoint flow residual using a Lax method.
-   * \param[out] val_resconv_i - Pointer to the convective residual at point i.
-   * \param[out] val_resvisc_i - Pointer to the artificial viscosity residual at point i.
-   * \param[out] val_resconv_j - Pointer to the convective residual at point j.
-   * \param[out] val_resvisc_j - Pointer to the artificial viscosity residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual (su2double *val_resconv_i, su2double *val_resvisc_i, su2double *val_resconv_j, su2double *val_resvisc_j,
-                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
-                        CConfig *config);
-};
-
-/*!
- * \class CCentLaxArtComp_AdjFlow
- * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 5.0.0 "Raven"
- */
-class CCentLaxArtComp_AdjFlow : public CNumerics {
-private:
-  su2double *Diff_Psi;
-  su2double *Velocity_i, *Velocity_j;
-  su2double *MeanPhi, **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-  unsigned short iDim, iVar, jVar;
-  su2double Residual, ProjVelocity_i, ProjVelocity_j, Param_p, Param_Kappa_0,
-  Local_Lambda_i, Local_Lambda_j, MeanLambda,
-  Phi_i, Phi_j, sc2, StretchingFactor, Epsilon_0;
-  bool implicit;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CCentLaxArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCentLaxArtComp_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow residual using a Lax method.
@@ -3468,46 +3323,6 @@ public:
 };
 
 /*!
- * \class CAvgGradArtComp_AdjFlow
- * \brief Class for computing the adjoint viscous terms.
- * \ingroup ViscDiscr
- * \author F. Palacios
- * \version 5.0.0 "Raven"
- */
-class CAvgGradArtComp_AdjFlow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
-  su2double **Mean_GradPsiVar,          /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-  dist_ij;              /*!< \brief Length of the edge and face. */
-  bool implicit;        /*!< \brief Implicit calculus. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradArtComp_AdjFlow(void);
-  
-  /*!
-   * \brief Residual computation.
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total residual at point j.
-   */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
-                       su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                       su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
-};
-
-/*!
  * \class CAvgGradCorrected_Flow
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
@@ -3791,52 +3606,6 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
-};
-
-/*!
- * \class CAvgGradCorrectedArtComp_AdjFlow
- * \brief Class for computing the adjoint viscous terms, including correction.
- * \ingroup ViscDiscr
- * \author F.Palacios
- * \version 5.0.0 "Raven"
- */
-class CAvgGradCorrectedArtComp_AdjFlow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
-  su2double *PsiVar_i, *PsiVar_j,      /*!< \brief Primitives variables at point i and 1. */
-  *Edge_Vector,                /*!< \brief Vector form point i to point j. */
-  **Mean_GradPsiVar, *Proj_Mean_GradPsiVar_Edge,  /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,      /*!< \brief Mean value of the viscosity. */
-  dist_ij_2;          /*!< \brief Length of the edge and face. */
-  bool implicit;      /*!< \brief Implicit calculus. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrectedArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrectedArtComp_AdjFlow(void);
-  
-  /*!
-   * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
-   * \param[out] val_residual_i - Pointer to the viscous residual at point i.
-   * \param[out] val_residual_j - Pointer to the viscous residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual (su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
-                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
 /*!

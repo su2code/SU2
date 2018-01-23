@@ -1039,30 +1039,6 @@ inline void CIncNSVariable::SetThermalConductivity(su2double val_thermal_conduct
   Primitive[nDim+6] = val_thermal_conductivity;
 }
 
-inline su2double *CAdjIncEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
-
-inline su2double *CAdjIncEulerVariable::GetObjFuncSource(void) { return ObjFuncSource; }
-
-inline su2double *CAdjIncEulerVariable::GetIntBoundary_Jump(void) { return IntBoundary_Jump; }
-
-inline void CAdjIncEulerVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) { for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
-
-inline void CAdjIncEulerVariable::SetObjFuncSource(su2double *val_ObjFuncSource) { for (unsigned short iVar = 0; iVar < nVar; iVar++) ObjFuncSource[iVar] = val_ObjFuncSource[iVar]; }
-
-inline void CAdjIncEulerVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) { for (unsigned short iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump[iVar] = val_IntBoundary_Jump[iVar]; }
-
-inline void CAdjIncEulerVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
-
-inline su2double *CAdjIncNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
-
-inline void CAdjIncNSVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) {  for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
-
-inline void CAdjIncNSVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = val_phi[iDim]; };
-
-inline void CAdjIncNSVariable::SetVelSolutionOldDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = ForceProj_Vector[iDim]; };
-
-inline void CAdjIncNSVariable::SetVelSolutionDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution[iDim+1] = ForceProj_Vector[iDim]; };
-
 inline su2double CTransLMVariable::GetIntermittency() { return Solution[0]; }
 
 inline void CTransLMVariable::SetGammaSep(su2double gamma_sep_in) {gamma_sep = gamma_sep_in;}
