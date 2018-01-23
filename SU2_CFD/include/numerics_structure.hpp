@@ -198,9 +198,11 @@ public:
   *WindGustDer_j;      /*!< \brief Wind gust derivatives at point j. */
   su2double *Vorticity_i, *Vorticity_j;  /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
-  
+  su2double Dissipation_i, Dissipation_j;
+  su2double Dissipation_ij;
+    
   su2double *l, *m;
-  
+
   /*!
    * \brief Constructor of the class.
    */
@@ -288,7 +290,7 @@ public:
    * \param[in] val_u_j - Value of the conservative variable at point j.
    */
   void SetConservative_ZeroOrder(su2double *val_u_i, su2double *val_u_j);
-  
+
   /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_v_i - Value of the primitive variable at point i.
@@ -710,6 +712,18 @@ public:
   void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j);
   
   /*!
+  * \brief Sets the values of the roe dissipation.
+  * \param[in] diss_i - Dissipation value at node i
+  * \param[in] diss_j - Dissipation value at node j
+  */
+  void SetDissipation(su2double diss_i, su2double diss_j);
+  
+  /*!
+  * \brief Get the final Roe dissipation factor.
+  */
+  su2double GetDissipation();
+  
+  /*!
    * \brief Get the inviscid fluxes.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
@@ -771,7 +785,8 @@ public:
   void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
                           su2double val_turb_ke, su2double *val_normal,
                           su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity);
+                          su2double val_eddy_viscosity,
+                          bool val_qcr);
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
    * \param[in] val_primvar - Primitive variables.
@@ -1392,6 +1407,71 @@ public:
   virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to compute the element-based Lame parameters and set the local properties
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] config - Config structure
+   */
+  virtual void ReadDV(CConfig *config);
+
+  /*!
+   * \brief A virtual member to set the value of the design variables
+   * \param[in] i_DV - Index of the design variable.
+   * \param[in] val_DV - Value of the design variable
+   */
+  virtual void Set_DV_Val(unsigned short i_DV, su2double val_DV);
+
+  /*!
+   * \brief A virtual member to retrieve the value of the design variables
+   * \param[in] i_DV - Index of the design variable.
+   */
+  virtual su2double Get_DV_Val(unsigned short i_DV);
+
+  /*!
+   * \brief A virtual member to add the Maxwell stress contribution
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member to set element-based electric field modulus
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member to set the electric field
+   * \param[in] EField_DV - New electric field computed by adjoint methods.
+   */
+  virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+
+  /*!
+   * \brief A virtual member to set the young modulus
+   * \param[in] val_Young - Value of the Young Modulus.
+   */
+  virtual void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
+  /*!
+   * \brief A virtual member to set the material properties
+   * \param[in] iVal - Index of the region of concern
+   * \param[in] val_E - Value of the Young Modulus.
+   * \param[in] val_Nu - Value of the Poisson's ratio.
+   */
+  virtual void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
+
+  /*!
+   * \brief A virtual member to set the material properties
+   * \param[in] iVal - Index of the region of concern
+   * \param[in] val_Rho - Value of the density (inertial effects).
+   * \param[in] val_Rho_DL - Value of the density (dead load effects).
+   */
+  virtual void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL);
+
+  /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -1414,6 +1494,12 @@ public:
    * \param[in] config - Normal vector
    */
   void CreateBasis(su2double *val_Normal);
+  
+  
+  void SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
+                          const su2double Dissipation_i, const su2double Dissipation_j,
+                          const su2double Sensor_i, const su2double Sensor_j,
+                          su2double& Dissipation_ij, CConfig *config);
   
 };
 
@@ -1476,7 +1562,7 @@ public:
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
-  bool implicit, grid_movement;
+  bool implicit, grid_movement, roe_low_dissipation;
   su2double *Diff_U;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
   su2double *ProjFlux_i, *ProjFlux_j;
@@ -1486,7 +1572,7 @@ private:
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
-  unsigned short iDim, iVar, jVar, kVar;
+  unsigned short iVar, jVar, kVar, iDim;
   
 public:
   
@@ -1496,7 +1582,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
   
   /*!
    * \brief Destructor of the class.
@@ -1511,6 +1597,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
 };
 
 
@@ -1574,6 +1661,97 @@ public:
   void ComputeRoeAverage();
 };
 
+/*!
+ * \class CUpwL2Roe_Flow
+ * \brief Class for solving an approximate Riemann solver of L2Roe for the flow equations.
+ * \ingroup ConvDiscr
+ * \author E. Molina, A. Bueno, F. Palacios
+ * \version 4.1.2 "Cardinal"
+ */
+class CUpwL2Roe_Flow : public CNumerics {
+private:
+    bool implicit, grid_movement;
+    su2double *Diff_U;
+    su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+    su2double *ProjFlux_i, *ProjFlux_j;
+    su2double *delta_wave, *delta_vel;
+    su2double *Lambda, *Epsilon, MaxLambda, Delta;
+    su2double **P_Tensor, **invP_Tensor;
+    su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+    Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+    ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
+    unsigned short iDim, iVar, jVar, kVar;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CUpwL2Roe_Flow(void);
+    
+    /*!
+     * \brief Compute the Roe's flux between two nodes i and j.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwLMRoe_Flow
+ * \brief Class for solving an approximate Riemann solver of LMRoe for the flow equations.
+ * \ingroup ConvDiscr
+ * \author E. Molina, A. Bueno, F. Palacios
+ * \version 4.1.2 "Cardinal"
+ */
+class CUpwLMRoe_Flow : public CNumerics {
+private:
+    bool implicit, grid_movement;
+    su2double *Diff_U;
+    su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+    su2double *ProjFlux_i, *ProjFlux_j;
+    su2double *delta_wave, *delta_vel;
+    su2double *Lambda, *Epsilon, MaxLambda, Delta;
+    su2double **P_Tensor, **invP_Tensor;
+    su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+    Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+    ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
+    unsigned short iDim, iVar, jVar, kVar;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CUpwLMRoe_Flow(void);
+    
+    /*!
+     * \brief Compute the Roe's flux between two nodes i and j.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
 
 /*!
  * \class CUpwMSW_Flow
@@ -1854,6 +2032,102 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpwAUSM_Flow(void);
+  
+  /*!
+   * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwSLAU_Flow
+ * \brief Class for solving the Low-Dissipation AUSM.
+ * \ingroup ConvDiscr
+ * \author E. Molina
+ * \version 5.0.0 "Raven"
+ */
+class CUpwSLAU_Flow : public CNumerics {
+private:
+  bool implicit, slau_low_diss;
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *delta_wave, *delta_vel;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  unsigned short iDim, iVar, jVar, kVar;
+  su2double mL, mR, mF, pF;
+  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSLAU_Flow(void);
+  
+  /*!
+   * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwSLAU2_Flow
+ * \brief Class for solving the Simple Low-Dissipation AUSM 2.
+ * \ingroup ConvDiscr
+ * \author E. Molina
+ * \version 5.0.0 "Raven"
+ */
+class CUpwSLAU2_Flow : public CNumerics {
+private:
+  bool implicit, slau_low_dissipation;
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *delta_wave, *delta_vel;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  unsigned short iDim, iVar, jVar, kVar;
+  su2double mL, mR, mF, pF;
+  su2double aF, Vn_Mag, aux_slau, Mach_tilde, Chi, f_rho, BetaL, BetaR, Vn_MagL, Vn_MagR;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSLAU2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config, bool val_low_dissipation);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSLAU2_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -3642,23 +3916,33 @@ class CFEM_Elasticity : public CNumerics {
 
 protected:
 
-  su2double E;        /*!< \brief Young's modulus of elasticity. */
-  su2double Nu;      /*!< \brief Poisson's ratio. */
-  su2double Rho_s;    /*!< \brief Structural density. */
-  su2double Mu;      /*!< \brief Lame's coeficient. */
-  su2double Lambda;    /*!< \brief Lame's coeficient. */
-  su2double Kappa;    /*!< \brief Compressibility constant. */
-  bool plane_stress;    /*!< \brief Checks if we are solving a plane stress case */
+  su2double E;              /*!< \brief Aux. variable, Young's modulus of elasticity. */
+  su2double Nu;             /*!< \brief Aux. variable, Poisson's ratio. */
+  su2double Rho_s;          /*!< \brief Aux. variable, Structural density. */
+  su2double Rho_s_DL;       /*!< \brief Aux. variable, Structural density (for dead loads). */
+  su2double Mu;             /*!< \brief Aux. variable, Lame's coeficient. */
+  su2double Lambda;         /*!< \brief Aux. variable, Lame's coeficient. */
+  su2double Kappa;          /*!< \brief Aux. variable, Compressibility constant. */
 
-  su2double **Ba_Mat,   /*!< \brief Matrix B for node a - Auxiliary. */
-  **Bb_Mat;        /*!< \brief Matrix B for node b - Auxiliary. */
-  su2double *Ni_Vec;      /*!< \brief Vector of shape functions - Auxiliary. */
-  su2double **D_Mat;     /*!< \brief Constitutive matrix - Auxiliary. */
-  su2double **KAux_ab;   /*!< \brief Node ab stiffness matrix - Auxiliary. */
-  su2double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
-  su2double **GradNi_Curr_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+  su2double *E_i;           /*!< \brief Young's modulus of elasticity. */
+  su2double *Nu_i;          /*!< \brief Poisson's ratio. */
+  su2double *Rho_s_i;       /*!< \brief Structural density. */
+  su2double *Rho_s_DL_i;    /*!< \brief Structural density (for dead loads). */
+
+  bool plane_stress;        /*!< \brief Checks if we are solving a plane stress case */
+
+  su2double **Ba_Mat,          /*!< \brief Matrix B for node a - Auxiliary. */
+  **Bb_Mat;                    /*!< \brief Matrix B for node b - Auxiliary. */
+  su2double *Ni_Vec;           /*!< \brief Vector of shape functions - Auxiliary. */
+  su2double **D_Mat;           /*!< \brief Constitutive matrix - Auxiliary. */
+  su2double **KAux_ab;         /*!< \brief Node ab stiffness matrix - Auxiliary. */
+  su2double **GradNi_Ref_Mat;  /*!< \brief Gradients of Ni - Auxiliary. */
+  su2double **GradNi_Curr_Mat; /*!< \brief Gradients of Ni - Auxiliary. */
 
   su2double *FAux_Dead_Load;    /*!< \brief Auxiliar vector for the dead loads */
+
+  su2double *DV_Val;          /*!< \brief For optimization cases, value of the design variables. */
+  unsigned short n_DV;          /*!< \brief For optimization cases, number of design variables. */
 
 public:
 
@@ -3675,9 +3959,23 @@ public:
    */
   virtual ~CFEM_Elasticity(void);
 
+  void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
+
+  void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL);
+
   void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
   void Compute_Dead_Load(CElement *element_container, CConfig *config);
+
+  void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
+  void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  void ReadDV(CConfig *config);
+
+  void Set_DV_Val(unsigned short i_DV, su2double val_DV);
+
+  su2double Get_DV_Val(unsigned short i_DV);
 
   virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -3692,6 +3990,12 @@ public:
   virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   
   virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+	virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
+  virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
+
+  virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
 
 };
 
@@ -3728,12 +4032,6 @@ public:
 
   void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
-//  virtual void Compute_Stress_Tensor(void);
-
-//  virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
-
-//  virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
-
 };
 
 /*!
@@ -3747,17 +4045,44 @@ class CFEM_NonlinearElasticity : public CFEM_Elasticity {
 
 protected:
 
-  su2double **F_Mat;         /*!< \brief Deformation gradient. */
-  su2double **b_Mat;         /*!< \brief Left Cauchy-Green Tensor. */
-  su2double **currentCoord;     /*!< \brief Current coordinates. */
-  su2double **Stress_Tensor;    /*!< \brief Cauchy stress tensor */
+  su2double **F_Mat;             /*!< \brief Deformation gradient. */
+  su2double **b_Mat;             /*!< \brief Left Cauchy-Green Tensor. */
+  su2double **currentCoord;      /*!< \brief Current coordinates. */
+  su2double **Stress_Tensor;     /*!< \brief Cauchy stress tensor */
 
-  su2double **KAux_P_ab;      /*!< \brief Auxiliar matrix for the pressure term */
-  su2double *KAux_t_a;      /*!< \brief Auxiliar matrix for the pressure term */
+  su2double **FmT_Mat;           /*!< \brief Deformation gradient inverse and transpose. */
 
-  su2double J_F;           /*!< \brief Jacobian of the transformation (determinant of F) */
+  su2double **KAux_P_ab;         /*!< \brief Auxiliar matrix for the pressure term */
+  su2double *KAux_t_a;           /*!< \brief Auxiliar matrix for the pressure term */
 
-  su2double f33;           /*!< \brief Plane stress term for non-linear 2D plane stress analysis */
+  su2double J_F;                 /*!< \brief Jacobian of the transformation (determinant of F) */
+
+  su2double f33;                 /*!< \brief Plane stress term for non-linear 2D plane stress analysis */
+
+  bool nearly_incompressible;    /*!< \brief Boolean to consider nearly_incompressible effects */
+  bool incompressible;           /*!< \brief Boolean to consider Hu-Washizu incompressible effects */
+
+  su2double **F_Mat_Iso;         /*!< \brief Isocoric component of the deformation gradient. */
+  su2double **b_Mat_Iso;         /*!< \brief Isocoric component of the left Cauchy-Green tensor. */
+
+  su2double C10, D1;             /*!< \brief C10 = Mu/2. D1 = Kappa/2. */
+  su2double J_F_Iso;             /*!< \brief J_F_Iso: det(F)^-1/3. */
+
+  su2double ****cijkl;           /*!< \brief Constitutive tensor i,j,k,l (defined only for incompressibility - near inc.). */
+
+  bool maxwell_stress;           /*!< \brief Consider the effects of the dielectric loads */
+
+  su2double *EField_Ref_Unit,    /*!< \brief Electric Field, unitary, in the reference configuration. */
+  *EField_Ref_Mod;               /*!< \brief Electric Field, modulus, in the reference configuration. */
+  su2double *EField_Curr_Unit;   /*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
+  unsigned short nElectric_Field,
+  nDim_Electric_Field;
+
+  su2double *ke_DE_i;           /*!< \brief Electric Constant for Dielectric Elastomers. */
+
+  su2double ke_DE;              /*!< \brief Electric Constant for Dielectric Elastomers. */
+  su2double EFieldMod_Ref;      /*!< \brief Modulus of the electric field in the reference configuration. */
+
 
 public:
 
@@ -3781,6 +4106,26 @@ public:
   void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
   void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
+
+  void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
+  void SetElectric_Properties(CElement *element_container, CConfig *config);
+
+  void Compute_FmT_Mat(void);
+
+  void Compute_Isochoric_F_b(void);
+
+  void Assign_cijkl_D_Mat(void);
+
+  void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+
+  void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
+  void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
+
+  void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL);
+
+  su2double deltaij(unsigned short iVar, unsigned short jVar);
 
   virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
@@ -3857,6 +4202,108 @@ public:
 
 };
 
+/*!
+ * \class CFEM_IdealDE
+ * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_IdealDE : public CFEM_NonlinearElasticity {
+
+	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Variables of the model calculation. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEM_IdealDE(void);
+
+  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+
+  void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Comp
+ * \brief Class for computing the constitutive and stress tensors for a Knowles stored-energy function, nearly incompressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_Knowles_NearInc : public CFEM_NonlinearElasticity {
+
+	su2double trbbar, term1, term2, Ek, Pr;	/*!< \brief Variables of the model calculation. */
+	su2double Bk, Nk;						/*!< \brief Parameters b and n of the model. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEM_Knowles_NearInc(void);
+
+  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
+
+/*!
+ * \class CFEM_DielectricElastomer
+ * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEM_DielectricElastomer(void);
+
+  void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+  void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
 
 
 /*!
@@ -3984,6 +4431,298 @@ public:
    * \brief  ______________.
    */
   su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_E
+ * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina, A. Bueno.
+ * \version 4.1.0 "Cardinal"
+ */
+class CSourcePieceWise_TurbSA_E : public CNumerics {
+private:
+    su2double cv1_3;
+    su2double k2;
+    su2double cb1;
+    su2double cw2;
+    su2double ct3;
+    su2double ct4;
+    su2double cw3_6;
+    su2double cb2_sigma;
+    su2double sigma;
+    su2double cb2;
+    su2double cw1;
+    unsigned short iDim;
+    su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+    su2double r, g, g_6, glim, fw;
+    su2double norm2_Grad;
+    su2double dfv1, dfv2, dShat;
+    su2double dr, dg, dfw;
+    bool incompressible;
+    bool rotating_frame;
+    su2double intermittency;
+    su2double Production, Destruction, CrossProduction;
+    su2double Sbar;
+    unsigned short jDim;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CSourcePieceWise_TurbSA_E(void);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] intermittency_in - Value of the intermittency.
+     */
+    void SetIntermittency(su2double intermittency_in);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_production - Value of the Production.
+     */
+    void SetProduction(su2double val_production);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_destruction - Value of the Destruction.
+     */
+    void SetDestruction(su2double val_destruction);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_crossproduction - Value of the CrossProduction.
+     */
+    void SetCrossProduction(su2double val_crossproduction);
+    
+    /*!
+     * \brief ______________.
+     */
+    su2double GetProduction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetDestruction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_COMP
+ * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina, A. Bueno.
+ * \version 4.2.0 "Cardinal"
+ */
+class CSourcePieceWise_TurbSA_COMP : public CNumerics {
+private:
+    su2double cv1_3;
+    su2double k2;
+    su2double cb1;
+    su2double cw2;
+    su2double ct3;
+    su2double ct4;
+    su2double cw3_6;
+    su2double cb2_sigma;
+    su2double sigma;
+    su2double cb2;
+    su2double cw1;
+    unsigned short iDim;
+    su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+    su2double r, g, g_6, glim, fw;
+    su2double norm2_Grad;
+    su2double dfv1, dfv2, dShat;
+    su2double dr, dg, dfw;
+    bool incompressible;
+    bool rotating_frame;
+    su2double intermittency;
+    su2double Production, Destruction, CrossProduction;
+    su2double aux_cc, CompCorrection, c5;
+    unsigned short jDim;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CSourcePieceWise_TurbSA_COMP(void);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] intermittency_in - Value of the intermittency.
+     */
+    void SetIntermittency(su2double intermittency_in);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_production - Value of the Production.
+     */
+    void SetProduction(su2double val_production);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_destruction - Value of the Destruction.
+     */
+    void SetDestruction(su2double val_destruction);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_crossproduction - Value of the CrossProduction.
+     */
+    void SetCrossProduction(su2double val_crossproduction);
+    
+    /*!
+     * \brief ______________.
+     */
+    su2double GetProduction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetDestruction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_E_COMP
+ * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina, A. Bueno.
+ * \version 4.2.0 "Cardinal"
+ */
+class CSourcePieceWise_TurbSA_E_COMP : public CNumerics {
+private:
+    su2double cv1_3;
+    su2double k2;
+    su2double cb1;
+    su2double cw2;
+    su2double ct3;
+    su2double ct4;
+    su2double cw3_6;
+    su2double cb2_sigma;
+    su2double sigma;
+    su2double cb2;
+    su2double cw1;
+    unsigned short iDim;
+    su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+    su2double r, g, g_6, glim, fw;
+    su2double norm2_Grad;
+    su2double dfv1, dfv2, dShat;
+    su2double dr, dg, dfw;
+    bool incompressible;
+    bool rotating_frame;
+    su2double intermittency;
+    su2double Production, Destruction, CrossProduction;
+    su2double Sbar;
+    unsigned short jDim;
+    su2double aux_cc, CompCorrection, c5;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CSourcePieceWise_TurbSA_E_COMP(void);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] intermittency_in - Value of the intermittency.
+     */
+    void SetIntermittency(su2double intermittency_in);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_production - Value of the Production.
+     */
+    void SetProduction(su2double val_production);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_destruction - Value of the Destruction.
+     */
+    void SetDestruction(su2double val_destruction);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_crossproduction - Value of the CrossProduction.
+     */
+    void SetCrossProduction(su2double val_crossproduction);
+    
+    /*!
+     * \brief ______________.
+     */
+    su2double GetProduction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetDestruction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetCrossProduction(void);
 };
 
 /*!
