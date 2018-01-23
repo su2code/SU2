@@ -6891,6 +6891,13 @@ su2double CConfig::GetInlet_Ptotal(string val_marker) {
   return Inlet_Ptotal[iMarker_Inlet];
 }
 
+void CConfig::SetInlet_Ptotal(su2double val_pressure, string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
+    if (Marker_Inlet[iMarker_Inlet] == val_marker)
+      Inlet_Ptotal[iMarker_Inlet] = val_pressure;
+}
+
 su2double* CConfig::GetInlet_FlowDir(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
@@ -6924,6 +6931,13 @@ su2double CConfig::GetOutlet_Pressure(string val_marker) {
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
   return Outlet_Pressure[iMarker_Outlet];
+}
+
+void CConfig::SetOutlet_Pressure(su2double val_pressure, string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+    if (Marker_Outlet[iMarker_Outlet] == val_marker)
+      Outlet_Pressure[iMarker_Outlet] = val_pressure;
 }
 
 su2double CConfig::GetRiemann_Var1(string val_marker) {

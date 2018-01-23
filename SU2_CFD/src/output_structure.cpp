@@ -4285,6 +4285,9 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
   bool thermal = false; /* Flag for whether to print heat flux values */
 
   if (config->GetKind_Solver() == RANS or config->GetKind_Solver()  == NAVIER_STOKES) {
@@ -4332,6 +4335,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
+  char adj_inc_coeff[]=",\"Sens_Geo\",\"Sens_Vin\",\"Sens_Pout\"";
   char adj_turbo_coeff[]=",\"Sens_Geo\",\"Sens_PressOut\",\"Sens_TotTempIn\"";
   char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Avg_TotalTemp\",\"Avg_TotalPress\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
@@ -4446,7 +4450,14 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       
     case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      if (!turbo) ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+      if (!turbo) {
+        if (compressible) {
+          ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
+        }
+        if (incompressible) {
+          ConvHist_file[0] << begin << adj_inc_coeff << adj_flow_resid;
+        }
+      }
       else ConvHist_file[0] << begin << adj_turbo_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
       ConvHist_file[0] << end;
@@ -4657,6 +4668,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
 
     su2double Total_Sens_BPressure = 0.0;
+    su2double Total_Sens_ModVel = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
@@ -4916,13 +4928,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           /*--- Adjoint solution coefficients ---*/
           
-          Total_Sens_Geo   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
-          Total_Sens_Mach  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
-          Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
-          Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
-          Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_Geo       = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
+          Total_Sens_Mach      = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
+          Total_Sens_AoA       = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
+          Total_Sens_Press     = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
+          Total_Sens_Temp      = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
           Total_Sens_BPressure = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
-          
+          Total_Sens_ModVel    = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_ModVel();
+
           /*--- Adjoint flow residuals ---*/
           
           for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
@@ -5225,9 +5238,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              if (!turbo)
-                SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
-              else
+              if (!turbo) {
+                if (compressible) {
+                  SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
+                }
+                if (incompressible) {
+                  SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e", Total_Sens_Geo, Total_Sens_ModVel, Total_Sens_BPressure);
+                }
+              } else
                 SPRINTF (adjoint_coeff, ", %14.8e, %14.8e, %14.8e", Total_Sens_Geo, Total_Sens_BPressure, Total_Sens_Temp);
 
               /*--- Adjoint flow residuals ---*/
@@ -5584,8 +5602,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
               if (disc_adj) {
                 if (!turbo){
-                  cout << "    Sens_Press" << "      Sens_AoA" << endl;
-                } else {
+                  if (compressible) {
+                    cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                  }
+                  if (incompressible) {
+                    cout << "      Sens_Vin" << "     Sens_Pout" << endl;
+                  }                } else {
                   cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;
                 }
               } else {
@@ -5630,7 +5652,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               if (disc_adj) {
                 if (!turbo){
+                  if (compressible) {
                   cout << "    Sens_Press" << "      Sens_AoA" << endl;
+                  }
+                  if (incompressible) {
+                    cout << "      Sens_Vin" << "     Sens_Pout" << endl;
+                  }
                 } else {
                   cout << " Sens_PressOut" << " Sens_TotTempIn" << endl;                }
               } else {
@@ -5945,8 +5972,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
                 if (!turbo){
+                  if (compressible) {
                   cout.width(14); cout << Total_Sens_Press;
                   cout.width(14); cout << Total_Sens_AoA;
+                  }
+                  if (incompressible) {
+                    cout.width(14); cout << Total_Sens_ModVel;
+                    cout.width(14); cout << Total_Sens_BPressure;
+                  }
                 } else {
                   cout.width(14); cout << Total_Sens_BPressure;
                   cout.width(15); cout << Total_Sens_Temp;
@@ -5992,8 +6025,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               if (disc_adj) {
                 if (!turbo){
+                  if (compressible) {
                   cout.width(14); cout << Total_Sens_Press;
                   cout.width(14); cout << Total_Sens_AoA;
+                  }
+                  if (incompressible) {
+                    cout.width(14); cout << Total_Sens_ModVel;
+                    cout.width(14); cout << Total_Sens_BPressure;
+                  }
                 } else {
                   cout.width(14); cout << Total_Sens_BPressure;
                   cout.width(15); cout << Total_Sens_Temp;
