@@ -2089,8 +2089,19 @@ void SUBoom::PropagateSignal(unsigned short iPhi){
       signal.final_p[iPhi][j] = ground_signal[1][j]*scale_p;
       sigFile << signal.final_T[iPhi][j] << "\t" << signal.final_p[iPhi][j] << endl;
       if(signal.final_p[iPhi][j] > p_max[iPhi]) p_max[iPhi] = signal.final_p[iPhi][j];
-      if(j > 0) p_int2[iPhi] = p_int2[iPhi] + 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j]+signal.final_p[iPhi][j-1]*signal.final_p[iPhi][j-1])
+      if(j > 0){
+        if(signal.final_p[iPhi][j]*signal.final_p[iPhi][j-1] < 0.0){ // if sign change, do double triangular integration
+          /*--- Find root of line segment ---*/
+          su2double T0 = signal.final_T[iPhi][j-1] + (-signal.final_p[iPhi][j-1])
+                        *(signal.final_T[iPhi][j]-signal.final_T[iPhi][j-1])/(signal.final_p[iPhi][j]-signal.final_p[iPhi][j-1]);
+          p_int2[iPhi] += 0.5*(signal.final_p[iPhi][j-1]*signal.final_p[iPhi][j-1])*(T0-signal.final_T[iPhi][j-1])
+                          + 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j])*(T0-signal.final_T[iPhi][j]);
+        }
+        else{ // otherwise, do trapezoidal integration
+          p_int2[iPhi] += 0.5*(signal.final_p[iPhi][j]*signal.final_p[iPhi][j]+signal.final_p[iPhi][j-1]*signal.final_p[iPhi][j-1])
                         *(signal.final_T[iPhi][j]-signal.final_T[iPhi][j-1]);
+        }
+      }
     }
     sigFile.close();
     p_rise[iPhi] = signal.final_p[iPhi][0];
