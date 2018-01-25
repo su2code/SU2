@@ -1031,7 +1031,7 @@ def main():
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
 
-    # test continuous_adjoint.py, with multiple objectives
+    # Multiple functionals with the continuous adjoint
     contadj_multi_py            = TestCase('contadj_multi_py')
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
@@ -1043,7 +1043,7 @@ def main():
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
     
-    # test optimization, with multiple objectives, with gradients evaluated separately
+    # Optimization with multiple objectives, with gradients evaluated individually
     # the difference in gradient value relative to combined case 
     # is due to lack of solution file for the adjoint and small number of iterations
     opt_multiobj_py            = TestCase('opt_multiobj_py')
@@ -1082,16 +1082,16 @@ def main():
     test_list.append(opt_multiobj1surf_py)
 
     # test optimization, with a single objective evaluated on multiple surfaces
-    #opt_2surf1obj_py            = TestCase('opt_2surf1obj_py')
-    #opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
-    #opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
-    #opt_2surf1obj_py.test_iter  = 1
-    #opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 1.779489E-07] #last 4 columns
-    #opt_2surf1obj_py.su2_exec   = "shape_optimization.py -f"
-    #opt_2surf1obj_py.timeout    = 1600
-    #opt_2surf1obj_py.tol       = 0.00001
-    #pass_list.append(opt_2surf1obj_py.run_opt())
-    #test_list.append(opt_2surf1obj_py)
+    opt_2surf1obj_py            = TestCase('opt_2surf1obj_py')
+    opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
+    opt_2surf1obj_py.test_iter  = 1    
+    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 3.404769E-04] #last 4 columns
+    opt_2surf1obj_py.su2_exec   = "shape_optimization.py -f"
+    opt_2surf1obj_py.timeout    = 1600
+    opt_2surf1obj_py.tol       = 0.00001
+    pass_list.append(opt_2surf1obj_py.run_opt())
+    test_list.append(opt_2surf1obj_py)
 
     ##########################
     ###   Python wrapper   ###
