@@ -2278,11 +2278,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 				unsigned int obj = Kind_ObjFunc[0];
 				delete[] Kind_ObjFunc;
 				if (Weight_ObjFunc!=NULL) delete[] Weight_ObjFunc;
-				nObj = nMarker_Monitoring;
-				nObjW = nObj;
-				Kind_ObjFunc = new short unsigned int[nObj];
-				Weight_ObjFunc = new su2double[nObjW];
-				for (unsigned short iObj=0; iObj<nObj; iObj++){
+				Kind_ObjFunc = new short unsigned int[nMarker_Monitoring];
+				Weight_ObjFunc = new su2double[nMarker_Monitoring];
+				for (unsigned short iObj=0; iObj<nMarker_Monitoring; iObj++){
 					Kind_ObjFunc[iObj] = obj;
 					Weight_ObjFunc[iObj] = 1.0;
 				}
