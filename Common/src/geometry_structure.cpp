@@ -1302,6 +1302,9 @@ void CGeometry::SetCustomBoundary(CConfig *config) {
             CustomBoundaryTemperature[iMarker][iVertex] = config->GetIsothermal_Temperature(Marker_Tag);
           }
           break;
+        case INLET_FLOW:
+          // This case is handled in the solver class.
+          break;
         default:
           cout << "WARNING: Marker " << Marker_Tag << " is not customizable. Using default behavior." << endl;
           break;

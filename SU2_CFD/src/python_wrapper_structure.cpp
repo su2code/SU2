@@ -48,6 +48,7 @@ void CDriver::PythonInterface_Preprocessing(){
       geometry_container[iZone][iMesh]->SetCustomBoundary(config_container[iZone]);
     }
     geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+    solver_container[iZone][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
   }
   /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
   PyWrapVarCoord[0] = 0.0;
@@ -512,6 +513,24 @@ void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned short iVerte
   geometry_container[ZONE_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, val_WallTemp);
 }
 
+void CDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ttotal(iMarker, iVertex, val_Ttotal);
+
+}
+
+void CDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ptotal(iMarker, iVertex, val_Ptotal);
+
+}
+
+void CDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, iDim, val_FlowDir);
+
+}
+
 bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex){
 
   unsigned long iPoint;
@@ -705,6 +724,26 @@ vector<string> CDriver::GetAllCHTMarkersTag(){
   }
 
   return CHTBoundariesTagList;
+}
+
+vector<string> CDriver::GetAllInletMarkersTag(){
+
+  vector<string> BoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_All();
+
+  for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
+    bool isCustomizable = config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if(isCustomizable && isInlet) {
+      Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+      BoundariesTagList.push_back(Marker_Tag);
+    }
+  }
+
+  return BoundariesTagList;
 }
 
 map<string, int> CDriver::GetAllBoundaryMarkers(){
