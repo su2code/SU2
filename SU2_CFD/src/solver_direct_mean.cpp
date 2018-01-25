@@ -173,6 +173,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
+  bool low_mach_prec = config->Low_Mach_Preconditioning();
+
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = config->GetSolution_FlowFileName();
 
@@ -420,7 +423,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
   
-  if (roe_turkel) {
+  if (roe_turkel || low_mach_prec) {
     LowMach_Precontioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new su2double[nVar];
@@ -1884,7 +1887,7 @@ void CEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -4023,7 +4026,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   unsigned long iPoint;
   unsigned short iMesh, iDim;
-
   su2double X0[3] = {0.0,0.0,0.0}, X1[3] = {0.0,0.0,0.0}, X2[3] = {0.0,0.0,0.0},
   X1_X0[3] = {0.0,0.0,0.0}, X2_X0[3] = {0.0,0.0,0.0}, X2_X1[3] = {0.0,0.0,0.0},
   CP[3] = {0.0,0.0,0.0}, Distance, DotCheck, Radius;
@@ -4036,7 +4038,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
-  
 
   /*--- Set subsonic initial condition for engine intakes ---*/
   
@@ -4226,6 +4227,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -4281,8 +4284,17 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
+    }
+  }
+  
+  /*--- Roe Low Dissipation Sensor ---*/
+  
+  if (roe_low_dissipation){
+    SetRoe_Dissipation(geometry, config);
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+      SetUpwind_Ducros_Sensor(geometry, config);
     }
   }
   
@@ -4578,7 +4590,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, sqvel, Non_Physical = 1.0, Sensor_i, Sensor_j, Dissipation_i, Dissipation_j, *Coord_i, *Coord_j;
   
   su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
   
@@ -4597,7 +4609,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool low_mach_corr    = config->Low_Mach_Correction();
-
+  unsigned short kind_dissipation = config->GetKind_RoeLowDiss();
+    
   /*--- Loop over all the edges ---*/
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -4686,16 +4699,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         velocity2_i = 0.0;
         velocity2_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-            vel_i_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
-                    + z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-            vel_j_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
-                    + z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
+          vel_i_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+                  + z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
+          vel_j_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+                  + z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
 
-            velocity2_j += vel_j_corr[iDim]*vel_j_corr[iDim];
-            velocity2_i += vel_i_corr[iDim]*vel_i_corr[iDim];
+          velocity2_j += vel_j_corr[iDim]*vel_j_corr[iDim];
+          velocity2_i += vel_i_corr[iDim]*vel_i_corr[iDim];
 
-            Primitive_i[iDim+1] = vel_i_corr[iDim];
-            Primitive_j[iDim+1] = vel_j_corr[iDim];
+          Primitive_i[iDim+1] = vel_i_corr[iDim];
+          Primitive_j[iDim+1] = vel_j_corr[iDim];
         }
 
         FluidModel->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
@@ -4758,6 +4771,26 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
     }
     
+    /*--- Roe Low Dissipation Scheme ---*/
+    
+    if (kind_dissipation != NO_ROELOWDISS){
+      
+      Dissipation_i = node[iPoint]->GetRoe_Dissipation();
+      Dissipation_j = node[jPoint]->GetRoe_Dissipation();
+      numerics->SetDissipation(Dissipation_i, Dissipation_j);
+            
+      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+        Sensor_i = node[iPoint]->GetSensor();
+        Sensor_j = node[jPoint]->GetSensor();
+        numerics->SetSensor(Sensor_i, Sensor_j);
+      }
+      if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
+        Coord_i = geometry->node[iPoint]->GetCoord();
+        Coord_j = geometry->node[jPoint]->GetCoord();
+        numerics->SetCoord(Coord_i, Coord_j);
+      }
+    }
+      
     /*--- Compute the residual ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
@@ -4783,8 +4816,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       node[jPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
     }
     
+    /*--- Set the final value of the Roe dissipation coefficient ---*/
+    
+    if (kind_dissipation != NO_ROELOWDISS){
+      node[iPoint]->SetRoe_Dissipation(numerics->GetDissipation());
+      node[jPoint]->SetRoe_Dissipation(numerics->GetDissipation());      
+    }
+    
   }
-  
+
   /*--- Warning message about non-physical reconstructions ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
@@ -4795,7 +4835,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
-  
 }
 
 void CEulerSolver::ComputeConsExtrapolation(CConfig *config) {
@@ -5172,7 +5211,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   
 }
 
-void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   su2double Pressure_i = 0.0, Pressure_j = 0.0;
@@ -5224,7 +5263,80 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
+  
+}
+
+void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
+  
+  unsigned long iPoint, jPoint;
+  unsigned short iNeigh, iDim;
+  
+  su2double *Vorticity;
+  
+  su2double uixi, Ducros_i, Ducros_j, Omega;
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    
+    /*---- Dilatation for iPoint ---*/
+    
+    uixi=0.0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      uixi += node[iPoint]->GetGradient_Primitive(iDim+1, iDim);
+    } 
+    
+    /*--- Compute norm of vorticity ---*/
+    
+    Vorticity = node[iPoint]->GetVorticity();    
+    Omega = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      Omega += Vorticity[iDim]*Vorticity[iDim];
+    }
+    Omega = sqrt(Omega);
+    
+    /*---- Ducros sensor for iPoint ---*/
+    
+    if (config->GetKind_RoeLowDiss() == FD_DUCROS){
+      Ducros_i = -uixi / (fabs(uixi) + Omega + 1e-20);
+    } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS){
+      Ducros_i = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
+    }
+    
+    node[iPoint]->SetSensor(Ducros_i);
+    
+    /*---- Ducros sensor for neighbor points of iPoint to avoid lower the dissipation in regions near the shock ---*/
+    
+    for (iNeigh = 0; iNeigh > geometry->node[iPoint]->GetnNeighbor(); iNeigh++){
+      
+      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      
+      /*---- Dilatation for jPoint ---*/
+      
+      uixi=0.0;
+      for(iDim = 0; iDim < nDim; iDim++){
+        uixi += node[jPoint]->GetGradient_Primitive(iDim+1, iDim);
+      } 
+      
+      /*--- Compute norm of vorticity ---*/
+      
+      Vorticity = node[jPoint]->GetVorticity();      
+      Omega = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        Omega += Vorticity[iDim]*Vorticity[iDim];
+      }
+      Omega = sqrt(Omega);
+      
+      if (config->GetKind_RoeLowDiss() == FD_DUCROS){
+        Ducros_j = -uixi / (fabs(uixi) + Omega + 1e-20);
+      } else if (config->GetKind_RoeLowDiss() == NTS_DUCROS){
+        Ducros_j = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
+      }      
+      node[iPoint]->SetSensor(max(node[iPoint]->GetSensor(), Ducros_j));
+
+    }
+  }
+  
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -6151,6 +6263,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
+  bool low_mach_prec = config->Low_Mach_Preconditioning();
   
   /*--- Set maximum residual to zero ---*/
   
@@ -6176,7 +6289,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      if (roe_turkel) {
+      if (roe_turkel || low_mach_prec) {
         SetPreconditioner(config, iPoint);
         for (iVar = 0; iVar < nVar; iVar ++ )
           for (jVar = 0; jVar < nVar; jVar ++ )
@@ -6290,7 +6403,8 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   /*--- Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -6726,11 +6840,11 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
     delete [] LocalMaxPrimitive; delete [] GlobalMaxPrimitive;
     
   }
-  
+
   /*--- Limiter MPI ---*/
   
   Set_MPI_Primitive_Limiter(geometry, config);
-  
+
 }
 
 void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
@@ -6739,12 +6853,18 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   su2double *U_i = NULL;
   su2double Beta_min = config->GetminTurkelBeta();
   su2double Beta_max = config->GetmaxTurkelBeta();
-  
+  su2double Mach_infty2, Mach_lim2, aux, parameter;
   
   /*--- Variables to calculate the preconditioner parameter Beta ---*/
   local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
-  Beta          = max(Beta_min, min(local_Mach, Beta_max));
-  Beta2             = Beta*Beta;
+  Beta = max(Beta_min, min(local_Mach, Beta_max));
+  Beta2 = Beta*Beta;
+
+  /*--- Weiss and Smith Preconditioning---*/
+  Mach_infty2 = pow(config->GetMach(),2.0);
+  Mach_lim2 = pow(0.00001,2.0);
+  aux = max(pow(local_Mach,2.0),Mach_lim2);
+  parameter = min(1.0, max(aux,Beta_max*Mach_infty2));
   
   U_i = node[iPoint]->GetSolution();
   
@@ -6775,7 +6895,7 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
   for (iVar = 0; iVar < nVar; iVar ++ ) {
     for (jVar = 0; jVar < nVar; jVar ++ ) {
-      LowMach_Precontioner[iVar][jVar] = (1.0/(Beta2+EPS) - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*LowMach_Precontioner[iVar][jVar];
+      LowMach_Precontioner[iVar][jVar] = (parameter - 1.0) * ((Gamma-1.0)/(soundspeed*soundspeed))*LowMach_Precontioner[iVar][jVar];
       if (iVar == jVar)
         LowMach_Precontioner[iVar][iVar] += 1.0;
     }
@@ -8791,7 +8911,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
                      (config->GetKind_Solver() == DISC_ADJ_RANS))
                     && (config->GetKind_Turb_Model() == SST));
-  
+    
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -8965,7 +9085,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Compute the convective residual using an upwind scheme ---*/
-      
+
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
       /*--- Update residual value ---*/
@@ -10929,7 +11049,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double *Normal = new su2double[nDim];
-  
+    
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -11475,7 +11595,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
-      
+
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -12201,7 +12321,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
             if (grid_movement)
               conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
+            
             /*--- Compute the convective residual using an upwind scheme ---*/
 
             conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
@@ -14090,8 +14210,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       }
     }
 
-
-
 #ifdef HAVE_MPI
 
     /*--- Add information using all the nodes ---*/
@@ -14774,18 +14892,21 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart    = (config->GetRestart() || config->GetRestart_Flow());
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
+  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool low_mach_prec = config->Low_Mach_Preconditioning();
+  
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -14964,7 +15085,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
   
-  if (roe_turkel) {
+  if (roe_turkel || low_mach_prec) {
     LowMach_Precontioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new su2double[nVar];
@@ -15312,7 +15433,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev   = 0.0;   Total_CMy_Prev      = 0.0;   Total_CMz_Prev      = 0.0;
   Total_AeroCD     = 0.0;   Total_SolidCD     = 0.0;   Total_IDR   = 0.0; Total_IDC           = 0.0;
-
+  Total_Custom_ObjFunc = 0.0;
+  
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf     = config->GetDensity_FreeStreamND();
@@ -15528,6 +15650,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -15561,8 +15685,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
+    }
+  }
+  
+  /*--- Roe Low Dissipation Sensor ---*/
+  
+  if (roe_low_dissipation){
+    SetRoe_Dissipation(geometry, config);
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+      SetUpwind_Ducros_Sensor(geometry, config);
     }
   }
   
@@ -15597,7 +15730,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     Omega_Max = max(Omega_Max, Omega);
     
   }
-  
+
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
@@ -15629,7 +15762,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool RightSol = true;
   
@@ -15642,6 +15775,10 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+      
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+        DES_LengthScale = solver_container[TURB_SOL]->node[iPoint]->GetDES_LengthScale();
+      }
     }
     
     /*--- Initialize the non-physical points vector ---*/
@@ -15652,8 +15789,12 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     
     RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
-    
+
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+        
+    /*--- Set the DES length scale ---*/
+    
+    node[iPoint]->SetDES_LengthScale(DES_LengthScale);
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
@@ -15949,6 +16090,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   
   bool grid_movement        = config->GetGrid_Movement();
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
+  bool QCR                  = config->GetQCR();
   bool axisymmetric         = config->GetAxisymmetric();
 
   /*--- Evaluate reference values for non-dimensionalization.
@@ -16060,6 +16202,34 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
           }
+        }
+        
+        /*--- If necessary evaluate the QCR contribution to Tau ---*/
+        
+        if (QCR){
+            su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+            unsigned short kDim;
+            
+            /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+            
+            den_aux = 0.0;
+            for (iDim = 0 ; iDim < nDim; iDim++)
+                for (jDim = 0 ; jDim < nDim; jDim++)
+                    den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
+            den_aux = sqrt(max(den_aux,1E-10));
+            
+            /*--- Adding the QCR contribution ---*/
+            
+            for (iDim = 0 ; iDim < nDim; iDim++){
+                for (jDim = 0 ; jDim < nDim; jDim++){
+                    for (kDim = 0 ; kDim < nDim; kDim++){
+                        O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim])/ den_aux;
+                        O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim])/ den_aux;
+                        Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
+                    }
+                }
+            }
+        
         }
         
         /*--- Project Tau in each surface element ---*/
@@ -16410,6 +16580,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
+
+      /* If it is a customizable patch, retrieve the specified wall heat flux. */
+      if (config->GetMarker_All_PyCustom(val_marker)) Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
       
       /*--- Compute dual-grid area and boundary normal ---*/
       
@@ -16655,6 +16828,9 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     if (geometry->node[iPoint]->GetDomain()) {
+
+      /* If it is a customizable patch, retrieve the specified wall temperature. */
+      if (config->GetMarker_All_PyCustom(val_marker)) Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
       
       /*--- Compute dual-grid area and boundary normal ---*/
       
@@ -16903,6 +17079,31 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         }
       }
       
+    }
+  }
+}
+
+void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
+  
+  unsigned long iPoint;
+  su2double wall_distance;
+  
+  unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    
+    if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
+      if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
+        wall_distance = geometry->node[iPoint]->GetWall_Distance();
+      } else {
+        wall_distance = node[iPoint]->GetDES_LengthScale();
+      }
+      
+      node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
+    }
+    
+    if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS){
+      node[iPoint]->SetRoe_Dissipation_NTS();
     }
   }
 }
