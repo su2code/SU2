@@ -204,13 +204,10 @@ def get_headerMap(nZones = 1):
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "AreaAvg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
-                 "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
-                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
-                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
-                 "AreaAvg_Mach"        : "AVG_OUTLET_MACH"         ,
-                 "AreaAvg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
-                 "MassFlowRate"    : "MASS_FLOW_RATE"          ,
+                 "Avg_TotalPress"  : "SURFACE_TOTAL_PRESSURE"  ,
+                 "Avg_Press"       : "SURFACE_STATIC_PRESSURE" ,
+                 "Avg_MassFlow"    : "SURFACE_MASSFLOW"        ,
+                 "Avg_Mach"        : "SURFACE_MACH"            ,
                  "ComboObj"        : "COMBO"                   ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CL)"           : "D_LIFT"                  ,
@@ -280,11 +277,10 @@ optnames_aero = [ "LIFT"                    ,
                   "FIGURE_OF_MERIT"         ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
-                  "AVG_TOTAL_PRESSURE"      ,
-                  "AVG_OUTLET_PRESSURE"     ,
-                  "AVG_OUTLET_DENSITY"      ,
-                  "AVG_OUTLET_VELOCITY"     ,
-                  "MASS_FLOW_RATE"          ,
+                  "SURFACE_TOTAL_PRESSURE"  ,
+                  "SURFACE_STATIC_PRESSURE" ,
+                  "SURFACE_MASSFLOW"        ,
+                  "SURFACE_MACH"            ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
@@ -518,7 +514,11 @@ def get_objectiveSign( ObjFun_name ):
             THRUST
             FIGURE_OF_MERIT
             MASS_FLOW_RATE
-            AVG_TOTAL_PRESSURE
+            SURFACE_TOTAL_PRESSURE
+            SURFACE_STATIC_PRESSURE
+            SURFACE_MASSFLOW
+            SURFACE_MACH
+            TOTAL_STATIC_EFFICIENCY
         returns +1 otherwise
     """
     
@@ -527,9 +527,10 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
-    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
-    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
-    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
+    if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return -1.0
+    if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
+    if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
+    if ObjFun_name == "SURFACE_MACH"            : return -1.0
     if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
     
     # otherwise
@@ -582,10 +583,11 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                  : "ct"        ,
                  "TORQUE"                  : "cq"        ,
                  "FIGURE_OF_MERIT"         : "merit"     ,
-                 "AVG_TOTAL_PRESSURE"      : "pt"        ,
-                 "AVG_OUTLET_PRESSURE"     : "pe"        ,
-                 "MASS_FLOW_RATE"          : "mfr"       ,
                  "NOISE"                   : "no"        ,
+                 "SURFACE_TOTAL_PRESSURE"  : "pt"        ,
+                 "SURFACE_STATIC_PRESSURE" : "pe"        ,
+                 "SURFACE_MASSFLOW"        : "mfr"       ,
+                 "SURFACE_MACH"            : "mach"      ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "CUSTOM_OBJFUNC"          : "custom"    ,
                  "KINETIC_ENERGY_LOSS"     : "ke"        ,
@@ -1021,7 +1023,7 @@ def expand_part(name,config):
 def expand_time(name,config):
     if 'UNSTEADY_SIMULATION' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
-        if (config.SOLUTION_ADJ_FILENAME.split(".")[0] in name) or (config.RESTART_ADJ_FILENAME.split(".")[0] in name):
+        if (config.SOLUTION_ADJ_FILENAME.split(".")[0] in add_suffix(name[0], get_adjointSuffix(config['OBJECTIVE_FUNCTION']))) or (config.RESTART_ADJ_FILENAME.split(".")[0] in add_suffix(name[0], get_adjointSuffix(config['OBJECTIVE_FUNCTION']))):
           n_time = config['ITER_AVERAGE_OBJ']
 
         if not isinstance(name, list):
@@ -1031,6 +1033,7 @@ def expand_time(name,config):
             for n in range(len(name)):
                 name_pat = add_suffix(name[n], '%05d')
                 names    = [name_pat%i for i in range(n_time)]
+       # print names 
     else:
         if not isinstance(name, list):
             names = [name]

@@ -1518,12 +1518,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetVorticity(bool val_limiter);
+  virtual bool SetVorticity(void);
   
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetStrainMag(bool val_limiter);
+  virtual bool SetStrainMag(void);
   
   /*!
    * \brief A virtual member.
@@ -3398,12 +3398,12 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(bool val_limiter);
+  bool SetVorticity(void);
   
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(bool val_limiter);
+  bool SetStrainMag(void);
   
   /*!
    * \overload
@@ -3550,12 +3550,12 @@ public:
   /*!
    * \brief Set the vorticity value.
    */
-  bool SetVorticity(bool val_limiter);
+  bool SetVorticity(void);
   
   /*!
    * \brief Set the rate of strain magnitude.
    */
-  bool SetStrainMag(bool val_limiter);
+  bool SetStrainMag(void);
   
   /*!
    * \overload
@@ -3699,53 +3699,6 @@ public:
    * \param[in] val_gamma - New value of the intermittency.
    */
   void SetGammaBC(su2double val_gamma);
-  
-};
-
-
-/*!
- * \class CTurbMLVariable
- * \brief Main class for defining the variables of the turbulence model.
- * \ingroup Turbulence_Model
- * \author A. Bueno.
- * \version 5.0.0 "Raven"
- */
-
-class CTurbMLVariable : public CTurbVariable {
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CTurbMLVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_muT  - The eddy viscosity
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbMLVariable(void);
-  
-  /*!
-   * \brief Set the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
-   */
-  void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
-  
-  /*!
-   * \brief Get the harmonic balance source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
-   */
-  su2double GetHarmonicBalance_Source(unsigned short val_var);
   
 };
 

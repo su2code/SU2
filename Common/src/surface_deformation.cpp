@@ -5838,12 +5838,51 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
         }
         
       }
+
+      output_file << "FFD_PILOT_GROUPS= " << FFDBox[iFFDBox]->CSPPilotGroupNames.size() << endl;
+
+      for (unsigned short iGroup = 0; iGroup < FFDBox[iFFDBox]->CSPPilotGroupNames.size(); iGroup++){
+        output_file << "GROUP= " << FFDBox[iFFDBox]->CSPPilotGroupNames[iGroup] << endl;
+        output_file << "TYPE= " << FFDBox[iFFDBox]->CSPPilotGroupType[iGroup] << endl;
+        output_file << "NPILOTPOINTS= " << FFDBox[iFFDBox]->CSPPilotPointsX[iGroup].size() << endl;
+        for (unsigned short iPilotPoints = 0; iPilotPoints < FFDBox[iFFDBox]->CSPPilotPointsX[iGroup].size(); iPilotPoints++){
+          output_file << FFDBox[iFFDBox]->CSPPilotPointsX[iGroup][iPilotPoints] << "\t"
+                      << FFDBox[iFFDBox]->CSPPilotPointsY[iGroup][iPilotPoints] << "\t"
+                      << FFDBox[iFFDBox]->CSPPilotPointsZ[iGroup][iPilotPoints] << endl;
+        }
+      }
+     }       
       
     }
     
     output_file.close();
     
-  }
+      char Pilot_filename[MAX_STRING_SIZE];
+    ofstream Pilot_file;
+    SPRINTF (Pilot_filename, "pilot_points_tec.dat");
+    su2double* CartCoord, Coord [] = {0,0,0};
+    Pilot_file.open(Pilot_filename, ios::out);
+
+    Pilot_file << "TITLE= \"Pilot point positions.\"" << endl;
+    if (geometry[ZONE_0]->GetnDim() == 2) Pilot_file << "VARIABLES = \"x\", \"y\"" << endl;
+    else Pilot_file << "VARIABLES = \"x\", \"y\", \"z\"" << endl;
+
+    for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
+      for (unsigned short iGroup = 0; iGroup < FFDBox[iFFDBox]->CSPPilotGroupNames.size(); iGroup++){
+        Pilot_file << "ZONE T=\"" << FFDBox[iFFDBox]->CSPPilotGroupNames[iGroup] << "\", I=" << FFDBox[iFFDBox]->CSPPilotPointsX[iGroup].size()<<", J=1, K=1, DATAPACKING=POINT" << endl;
+        for (unsigned short iPilotPoints = 0; iPilotPoints < FFDBox[iFFDBox]->CSPPilotPointsX[iGroup].size(); iPilotPoints++){
+          Coord[0] = FFDBox[iFFDBox]->CSPPilotPointsX[iGroup][iPilotPoints];
+          Coord[1] = FFDBox[iFFDBox]->CSPPilotPointsY[iGroup][iPilotPoints];
+          Coord[2] = FFDBox[iFFDBox]->CSPPilotPointsZ[iGroup][iPilotPoints];
+          CartCoord = FFDBox[iFFDBox]->EvalCartesianCoord(Coord);
+          Pilot_file << scientific << CartCoord[0] << "\t" << CartCoord[1];
+          if (geometry[ZONE_0]->GetnDim() ==3) Pilot_file << scientific << "\t" << CartCoord[2];
+          Pilot_file << "\n";
+        }
+      }
+    }
+
+    Pilot_file.close();
 
 }
 

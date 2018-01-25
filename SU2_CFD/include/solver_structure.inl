@@ -574,38 +574,6 @@ inline su2double CSolver::GetTke_Inf(void) { return 0; }
 
 inline su2double* CSolver::GetConstants() { return NULL;}
 
-inline su2double CSolver::GetOneD_TotalPress(void) { return 0;}
-
-inline void CSolver::SetOneD_TotalPress(su2double AveragePressure) { }
-
-inline su2double CSolver::GetOneD_Mach(void) { return 0;}
-
-inline void CSolver::SetOneD_Mach(su2double AverageMach) { }
-
-inline su2double CSolver::GetOneD_Temp(void) { return 0;}
-
-inline void CSolver::SetOneD_Temp(su2double AverageTemperature) { }
-
-inline su2double CSolver::GetOneD_MassFlowRate(void) { return 0;}
-
-inline void CSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { }
-
-inline su2double CSolver::GetOneD_AvgPress(void) {return 0;}
-
-inline void CSolver::SetOneD_AvgPress(su2double Pressure1D) { }
-
-inline su2double CSolver::GetOneD_AvgDensity(void) {return 0;}
-
-inline void CSolver::SetOneD_AvgDensity(su2double Density1D) { }
-
-inline su2double CSolver::GetOneD_AvgVelocity(void) {return 0;}
-
-inline void CSolver::SetOneD_AvgVelocity(su2double Velocity1D) { }
-
-inline su2double CSolver::GetOneD_AvgEnthalpy(void) {return 0;}
-
-inline void CSolver::SetOneD_AvgEnthalpy(su2double Velocity1D) { }
-
 inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
 
 inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
@@ -717,12 +685,7 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
                   CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
-                                                 CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output) { }
-
 inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
-
-inline void CSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
 
@@ -1329,38 +1292,6 @@ inline su2double CEulerSolver::GetAllBound_CFy_Mnt() { return AllBound_CFy_Mnt; 
 
 inline su2double CEulerSolver::GetAllBound_CFz_Mnt() { return AllBound_CFz_Mnt; }
 
-inline su2double CEulerSolver::GetOneD_TotalPress(void) { return OneD_TotalPress; }
-
-inline void CEulerSolver::SetOneD_TotalPress(su2double AveragePressure) { OneD_TotalPress = AveragePressure; }
-
-inline su2double CEulerSolver::GetOneD_Mach(void) { return OneD_Mach;}
-
-inline void CEulerSolver::SetOneD_Mach(su2double AverageMach) { OneD_Mach = AverageMach; }
-
-inline su2double CEulerSolver::GetOneD_Temp(void) { return OneD_Temp;}
-
-inline void CEulerSolver::SetOneD_Temp(su2double AverageTemperature) { OneD_Temp = AverageTemperature; }
-
-inline su2double CEulerSolver::GetOneD_MassFlowRate(void) { return OneD_MassFlowRate;}
-
-inline void CEulerSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { OneD_MassFlowRate = MassFlowRate; }
-
-inline su2double CEulerSolver::GetOneD_AvgPress(void) {return OneD_Pressure1D;}
-
-inline void CEulerSolver::SetOneD_AvgPress(su2double Pressure1D) {OneD_Pressure1D = Pressure1D; }
-
-inline su2double CEulerSolver::GetOneD_AvgDensity(void) {return OneD_Density1D;}
-
-inline void CEulerSolver::SetOneD_AvgDensity(su2double Density1D) {OneD_Density1D = Density1D; }
-
-inline su2double CEulerSolver::GetOneD_AvgVelocity(void) {return OneD_Velocity1D;}
-
-inline void CEulerSolver::SetOneD_AvgVelocity(su2double Velocity1D) {OneD_Velocity1D = Velocity1D; }
-
-inline su2double CEulerSolver::GetOneD_AvgEnthalpy(void) {return OneD_Enthalpy1D;}
-
-inline void CEulerSolver::SetOneD_AvgEnthalpy(su2double Enthalpy1D) {OneD_Enthalpy1D = Enthalpy1D; }
-
 inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return AverageDensity[valMarker][valSpan];}
 
 inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return AveragePressure[valMarker][valSpan];}
@@ -1792,38 +1723,6 @@ inline su2double CIncEulerSolver::GetSurface_CMx_Mnt(unsigned short val_marker) 
 inline su2double CIncEulerSolver::GetSurface_CMy_Mnt(unsigned short val_marker) { return Surface_CMy_Mnt[val_marker]; }
 
 inline su2double CIncEulerSolver::GetSurface_CMz_Mnt(unsigned short val_marker) { return Surface_CMz_Mnt[val_marker]; }
-
-inline su2double CIncEulerSolver::GetOneD_TotalPress(void) { return OneD_TotalPress; }
-
-inline void CIncEulerSolver::SetOneD_TotalPress(su2double AveragePressure) { OneD_TotalPress = AveragePressure; }
-
-inline su2double CIncEulerSolver::GetOneD_Mach(void) {return OneD_Mach;}
-
-inline void CIncEulerSolver::SetOneD_Mach(su2double AverageMach) { OneD_Mach = AverageMach; }
-
-inline su2double CIncEulerSolver::GetOneD_Temp(void) {return OneD_Temp;}
-
-inline void CIncEulerSolver::SetOneD_Temp(su2double AverageTemperature) { OneD_Temp = AverageTemperature; }
-
-inline su2double CIncEulerSolver::GetOneD_MassFlowRate(void) {return OneD_MassFlowRate;}
-
-inline void CIncEulerSolver::SetOneD_MassFlowRate(su2double MassFlowRate) { OneD_MassFlowRate = MassFlowRate; }
-
-inline su2double CIncEulerSolver::GetOneD_FluxAvgPress(void) {return OneD_PressureRef;}
-
-inline void CIncEulerSolver::SetOneD_FluxAvgPress(su2double PressureRef) {OneD_PressureRef = PressureRef; }
-
-inline su2double CIncEulerSolver::GetOneD_FluxAvgDensity(void) {return OneD_DensityRef;}
-
-inline void CIncEulerSolver::SetOneD_FluxAvgDensity(su2double DensityRef) {OneD_DensityRef = DensityRef; }
-
-inline su2double CIncEulerSolver::GetOneD_FluxAvgVelocity(void) {return OneD_VelocityRef;}
-
-inline void CIncEulerSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) {OneD_VelocityRef = VelocityRef; }
-
-inline su2double CIncEulerSolver::GetOneD_FluxAvgEntalpy(void) {return OneD_EnthalpyRef;}
-
-inline void CIncEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
 
 inline void CIncEulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
 
