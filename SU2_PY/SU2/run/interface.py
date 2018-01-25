@@ -52,10 +52,10 @@ quote = '"' if sys.platform == 'win32' else ''
 base_Command = os.path.join(SU2_RUN, '%s')
 
 # check for slurm
-slurm_job = os.environ.has_key('SLURM_JOBID')
+slurm_job = 'SLURM_JOBID' in os.environ
 
 # Check for custom mpi command
-user_defined = os.environ.has_key('SU2_MPI_COMMAND')
+user_defined = 'SU2_MPI_COMMAND' in os.environ
 
 # set mpi command
 if user_defined:
@@ -269,7 +269,7 @@ def build_command( the_Command , processes=0 ):
     the_Command = quote + (base_Command % the_Command)
     if processes > 1:
         if not mpi_Command:
-            raise RuntimeError , 'could not find an mpi interface'
+            raise RuntimeError('could not find an mpi interface')
         the_Command = mpi_Command % (processes,the_Command)
     return the_Command
 
@@ -284,18 +284,18 @@ def run_command( Command ):
                              stdout=sys.stdout      , 
                              stderr=subprocess.PIPE  )
     return_code = proc.wait()
-    message = proc.stderr.read()
+    message = proc.stderr.read().decode()
     
     if return_code < 0:
         message = "SU2 process was terminated by signal '%s'\n%s" % (-return_code,message)
-        raise SystemExit , message
+        raise SystemExit(message)
     elif return_code > 0:
         message = "Path = %s\nCommand = %s\nSU2 process returned error '%s'\n%s" % (os.path.abspath(','),Command,return_code,message)
         if return_code in return_code_map.keys():
             exception = return_code_map[return_code]
         else:
             exception = RuntimeError
-        raise exception , message
+        raise exception(message)
     else:
         sys.stdout.write(message)
             

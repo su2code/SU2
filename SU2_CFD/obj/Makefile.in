@@ -124,6 +124,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/SU2_CFD.hpp \
 	../include/transport_model.hpp ../include/transport_model.inl \
@@ -153,10 +154,12 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
 	../src/output_physics.cpp ../src/output_tecplot.cpp \
 	../src/output_fieldview.cpp ../src/output_su2.cpp \
-	../src/output_paraview.cpp ../src/solver_adjoint_mean.cpp \
+	../src/output_paraview.cpp ../src/python_wrapper_structure.cpp \
+	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
 	../src/solver_adjoint_discrete.cpp \
+	../src/solver_adjoint_elasticity.cpp \
 	../src/solver_direct_poisson.cpp ../src/solver_direct_heat.cpp \
 	../src/solver_direct_mean.cpp \
 	../src/solver_direct_mean_inc.cpp \
@@ -170,6 +173,7 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
+	../src/variable_adjoint_elasticity.cpp \
 	../src/variable_direct_poisson.cpp \
 	../src/variable_direct_heat.cpp \
 	../src/variable_direct_mean.cpp \
@@ -211,10 +215,12 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-output_fieldview.$(OBJEXT) \
 	../src/libSU2Core_a-output_su2.$(OBJEXT) \
 	../src/libSU2Core_a-output_paraview.$(OBJEXT) \
+	../src/libSU2Core_a-python_wrapper_structure.$(OBJEXT) \
 	../src/libSU2Core_a-solver_adjoint_mean.$(OBJEXT) \
 	../src/libSU2Core_a-solver_adjoint_mean_inc.$(OBJEXT) \
 	../src/libSU2Core_a-solver_adjoint_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-solver_adjoint_discrete.$(OBJEXT) \
+	../src/libSU2Core_a-solver_adjoint_elasticity.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_poisson.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_heat.$(OBJEXT) \
 	../src/libSU2Core_a-solver_direct_mean.$(OBJEXT) \
@@ -232,6 +238,7 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-variable_adjoint_mean_inc.$(OBJEXT) \
 	../src/libSU2Core_a-variable_adjoint_turbulent.$(OBJEXT) \
 	../src/libSU2Core_a-variable_adjoint_discrete.$(OBJEXT) \
+	../src/libSU2Core_a-variable_adjoint_elasticity.$(OBJEXT) \
 	../src/libSU2Core_a-variable_direct_poisson.$(OBJEXT) \
 	../src/libSU2Core_a-variable_direct_heat.$(OBJEXT) \
 	../src/libSU2Core_a-variable_direct_mean.$(OBJEXT) \
@@ -270,6 +277,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/transport_model.hpp \
 	../include/transport_model.inl \
@@ -299,10 +307,12 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
 	../src/output_physics.cpp ../src/output_tecplot.cpp \
 	../src/output_fieldview.cpp ../src/output_su2.cpp \
-	../src/output_paraview.cpp ../src/solver_adjoint_mean.cpp \
+	../src/output_paraview.cpp ../src/python_wrapper_structure.cpp \
+	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
 	../src/solver_adjoint_discrete.cpp \
+	../src/solver_adjoint_elasticity.cpp \
 	../src/solver_direct_poisson.cpp ../src/solver_direct_heat.cpp \
 	../src/solver_direct_mean.cpp \
 	../src/solver_direct_mean_inc.cpp \
@@ -316,6 +326,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
+	../src/variable_adjoint_elasticity.cpp \
 	../src/variable_direct_poisson.cpp \
 	../src/variable_direct_heat.cpp \
 	../src/variable_direct_mean.cpp \
@@ -358,10 +369,12 @@ am__objects_4 =  \
 	../src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-python_wrapper_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_adjoint_mean.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_adjoint_mean_inc.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_adjoint_discrete.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-solver_direct_mean.$(OBJEXT) \
@@ -379,6 +392,7 @@ am__objects_4 =  \
 	../src/___bin_SU2_CFD_AD-variable_adjoint_mean_inc.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_adjoint_discrete.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-variable_direct_mean.$(OBJEXT) \
@@ -407,6 +421,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/numerics_structure.hpp \
 	../include/numerics_structure.inl \
 	../include/output_structure.hpp \
+	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/transport_model.hpp \
 	../include/transport_model.inl \
@@ -436,10 +451,12 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/output_cgns.cpp ../src/output_structure.cpp \
 	../src/output_physics.cpp ../src/output_tecplot.cpp \
 	../src/output_fieldview.cpp ../src/output_su2.cpp \
-	../src/output_paraview.cpp ../src/solver_adjoint_mean.cpp \
+	../src/output_paraview.cpp ../src/python_wrapper_structure.cpp \
+	../src/solver_adjoint_mean.cpp \
 	../src/solver_adjoint_mean_inc.cpp \
 	../src/solver_adjoint_turbulent.cpp \
 	../src/solver_adjoint_discrete.cpp \
+	../src/solver_adjoint_elasticity.cpp \
 	../src/solver_direct_poisson.cpp ../src/solver_direct_heat.cpp \
 	../src/solver_direct_mean.cpp \
 	../src/solver_direct_mean_inc.cpp \
@@ -453,6 +470,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
+	../src/variable_adjoint_elasticity.cpp \
 	../src/variable_direct_poisson.cpp \
 	../src/variable_direct_heat.cpp \
 	../src/variable_direct_mean.cpp \
@@ -494,10 +512,12 @@ am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-definition_structure.$(OBJEXT) 
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_fieldview.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_su2.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-output_paraview.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean_inc.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_discrete.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean.$(OBJEXT) \
@@ -515,6 +535,7 @@ am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-definition_structure.$(OBJEXT) 
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_mean_inc.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_discrete.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_mean.$(OBJEXT) \
@@ -655,6 +676,14 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
 PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PYTHON = @PYTHON@
+PYTHON_CONFIG = @PYTHON_CONFIG@
+PYTHON_EXEC_PREFIX = @PYTHON_EXEC_PREFIX@
+PYTHON_INCLUDE = @PYTHON_INCLUDE@
+PYTHON_LIB = @PYTHON_LIB@
+PYTHON_PLATFORM = @PYTHON_PLATFORM@
+PYTHON_PREFIX = @PYTHON_PREFIX@
+PYTHON_VERSION = @PYTHON_VERSION@
 RANLIB = @RANLIB@
 REVERSE_CXX = @REVERSE_CXX@
 REVERSE_LIBS = @REVERSE_LIBS@
@@ -711,9 +740,14 @@ mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
+pkgpyexecdir = @pkgpyexecdir@
+pkgpythondir = @pkgpythondir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+pyexecdir = @pyexecdir@
+pythondir = @pythondir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -742,6 +776,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
+  ../include/output_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
@@ -782,10 +817,12 @@ libSU2Core_sources = \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
+  ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
+  ../src/solver_adjoint_elasticity.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
@@ -803,6 +840,7 @@ libSU2Core_sources = \
   ../src/variable_adjoint_mean_inc.cpp \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
+  ../src/variable_adjoint_elasticity.cpp \
   ../src/variable_direct_poisson.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \
@@ -958,6 +996,8 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-output_paraview.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-python_wrapper_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_adjoint_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_adjoint_mean_inc.$(OBJEXT):  \
@@ -965,6 +1005,8 @@ clean-noinstLIBRARIES:
 ../src/libSU2Core_a-solver_adjoint_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_adjoint_discrete.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-solver_adjoint_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_direct_poisson.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -999,6 +1041,8 @@ clean-noinstLIBRARIES:
 ../src/libSU2Core_a-variable_adjoint_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-variable_adjoint_discrete.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-variable_adjoint_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-variable_direct_poisson.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1136,6 +1180,8 @@ clean-binPROGRAMS:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-python_wrapper_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_adjoint_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_adjoint_mean_inc.$(OBJEXT):  \
@@ -1143,6 +1189,8 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD_AD-solver_adjoint_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_adjoint_discrete.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-solver_direct_poisson.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1177,6 +1225,8 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD_AD-variable_adjoint_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-variable_adjoint_discrete.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-variable_direct_poisson.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1265,6 +1315,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-output_paraview.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean_inc.$(OBJEXT):  \
@@ -1272,6 +1324,8 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_discrete.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1306,6 +1360,8 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_discrete.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_poisson.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1371,7 +1427,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-output_tecplot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_discrete.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_turbulent.Po@am__quote@
@@ -1389,6 +1447,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-transfer_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-transport_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_discrete.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_turbulent.Po@am__quote@
@@ -1434,7 +1493,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-output_tecplot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_discrete.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_turbulent.Po@am__quote@
@@ -1452,6 +1513,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-transfer_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-transport_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_discrete.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_turbulent.Po@am__quote@
@@ -1496,7 +1558,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_su2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-output_tecplot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_discrete.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_turbulent.Po@am__quote@
@@ -1514,6 +1578,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-transfer_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-transport_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_discrete.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_mean_inc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_turbulent.Po@am__quote@
@@ -1978,6 +2043,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-output_paraview.obj `if test -f '../src/output_paraview.cpp'; then $(CYGPATH_W) '../src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_paraview.cpp'; fi`
 
+../src/libSU2Core_a-python_wrapper_structure.o: ../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-python_wrapper_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Tpo -c -o ../src/libSU2Core_a-python_wrapper_structure.o `test -f '../src/python_wrapper_structure.cpp' || echo '$(srcdir)/'`../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Tpo ../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/python_wrapper_structure.cpp' object='../src/libSU2Core_a-python_wrapper_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-python_wrapper_structure.o `test -f '../src/python_wrapper_structure.cpp' || echo '$(srcdir)/'`../src/python_wrapper_structure.cpp
+
+../src/libSU2Core_a-python_wrapper_structure.obj: ../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-python_wrapper_structure.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Tpo -c -o ../src/libSU2Core_a-python_wrapper_structure.obj `if test -f '../src/python_wrapper_structure.cpp'; then $(CYGPATH_W) '../src/python_wrapper_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/python_wrapper_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Tpo ../src/$(DEPDIR)/libSU2Core_a-python_wrapper_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/python_wrapper_structure.cpp' object='../src/libSU2Core_a-python_wrapper_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-python_wrapper_structure.obj `if test -f '../src/python_wrapper_structure.cpp'; then $(CYGPATH_W) '../src/python_wrapper_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/python_wrapper_structure.cpp'; fi`
+
 ../src/libSU2Core_a-solver_adjoint_mean.o: ../src/solver_adjoint_mean.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_adjoint_mean.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_mean.Tpo -c -o ../src/libSU2Core_a-solver_adjoint_mean.o `test -f '../src/solver_adjoint_mean.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_mean.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_mean.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_mean.Po
@@ -2033,6 +2112,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_discrete.cpp' object='../src/libSU2Core_a-solver_adjoint_discrete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_adjoint_discrete.obj `if test -f '../src/solver_adjoint_discrete.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_discrete.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_discrete.cpp'; fi`
+
+../src/libSU2Core_a-solver_adjoint_elasticity.o: ../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_adjoint_elasticity.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Tpo -c -o ../src/libSU2Core_a-solver_adjoint_elasticity.o `test -f '../src/solver_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_elasticity.cpp' object='../src/libSU2Core_a-solver_adjoint_elasticity.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_adjoint_elasticity.o `test -f '../src/solver_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_elasticity.cpp
+
+../src/libSU2Core_a-solver_adjoint_elasticity.obj: ../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_adjoint_elasticity.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Tpo -c -o ../src/libSU2Core_a-solver_adjoint_elasticity.obj `if test -f '../src/solver_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_elasticity.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Tpo ../src/$(DEPDIR)/libSU2Core_a-solver_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_elasticity.cpp' object='../src/libSU2Core_a-solver_adjoint_elasticity.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_adjoint_elasticity.obj `if test -f '../src/solver_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_elasticity.cpp'; fi`
 
 ../src/libSU2Core_a-solver_direct_poisson.o: ../src/solver_direct_poisson.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-solver_direct_poisson.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-solver_direct_poisson.Tpo -c -o ../src/libSU2Core_a-solver_direct_poisson.o `test -f '../src/solver_direct_poisson.cpp' || echo '$(srcdir)/'`../src/solver_direct_poisson.cpp
@@ -2271,6 +2364,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_discrete.cpp' object='../src/libSU2Core_a-variable_adjoint_discrete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-variable_adjoint_discrete.obj `if test -f '../src/variable_adjoint_discrete.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_discrete.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_discrete.cpp'; fi`
+
+../src/libSU2Core_a-variable_adjoint_elasticity.o: ../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-variable_adjoint_elasticity.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Tpo -c -o ../src/libSU2Core_a-variable_adjoint_elasticity.o `test -f '../src/variable_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Tpo ../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_elasticity.cpp' object='../src/libSU2Core_a-variable_adjoint_elasticity.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-variable_adjoint_elasticity.o `test -f '../src/variable_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_elasticity.cpp
+
+../src/libSU2Core_a-variable_adjoint_elasticity.obj: ../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-variable_adjoint_elasticity.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Tpo -c -o ../src/libSU2Core_a-variable_adjoint_elasticity.obj `if test -f '../src/variable_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_elasticity.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Tpo ../src/$(DEPDIR)/libSU2Core_a-variable_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_elasticity.cpp' object='../src/libSU2Core_a-variable_adjoint_elasticity.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-variable_adjoint_elasticity.obj `if test -f '../src/variable_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_elasticity.cpp'; fi`
 
 ../src/libSU2Core_a-variable_direct_poisson.o: ../src/variable_direct_poisson.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-variable_direct_poisson.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-variable_direct_poisson.Tpo -c -o ../src/libSU2Core_a-variable_direct_poisson.o `test -f '../src/variable_direct_poisson.cpp' || echo '$(srcdir)/'`../src/variable_direct_poisson.cpp
@@ -2874,6 +2981,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-output_paraview.obj `if test -f '../src/output_paraview.cpp'; then $(CYGPATH_W) '../src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_paraview.cpp'; fi`
 
+../src/___bin_SU2_CFD_AD-python_wrapper_structure.o: ../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-python_wrapper_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Tpo -c -o ../src/___bin_SU2_CFD_AD-python_wrapper_structure.o `test -f '../src/python_wrapper_structure.cpp' || echo '$(srcdir)/'`../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/python_wrapper_structure.cpp' object='../src/___bin_SU2_CFD_AD-python_wrapper_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-python_wrapper_structure.o `test -f '../src/python_wrapper_structure.cpp' || echo '$(srcdir)/'`../src/python_wrapper_structure.cpp
+
+../src/___bin_SU2_CFD_AD-python_wrapper_structure.obj: ../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-python_wrapper_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Tpo -c -o ../src/___bin_SU2_CFD_AD-python_wrapper_structure.obj `if test -f '../src/python_wrapper_structure.cpp'; then $(CYGPATH_W) '../src/python_wrapper_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/python_wrapper_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-python_wrapper_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/python_wrapper_structure.cpp' object='../src/___bin_SU2_CFD_AD-python_wrapper_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-python_wrapper_structure.obj `if test -f '../src/python_wrapper_structure.cpp'; then $(CYGPATH_W) '../src/python_wrapper_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/python_wrapper_structure.cpp'; fi`
+
 ../src/___bin_SU2_CFD_AD-solver_adjoint_mean.o: ../src/solver_adjoint_mean.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_adjoint_mean.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_mean.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_adjoint_mean.o `test -f '../src/solver_adjoint_mean.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_mean.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_mean.Po
@@ -2929,6 +3050,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_discrete.cpp' object='../src/___bin_SU2_CFD_AD-solver_adjoint_discrete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-solver_adjoint_discrete.obj `if test -f '../src/solver_adjoint_discrete.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_discrete.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_discrete.cpp'; fi`
+
+../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.o: ../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.o `test -f '../src/solver_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.o `test -f '../src/solver_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_elasticity.cpp
+
+../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.obj: ../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.obj `if test -f '../src/solver_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_elasticity.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-solver_adjoint_elasticity.obj `if test -f '../src/solver_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_elasticity.cpp'; fi`
 
 ../src/___bin_SU2_CFD_AD-solver_direct_poisson.o: ../src/solver_direct_poisson.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-solver_direct_poisson.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_poisson.Tpo -c -o ../src/___bin_SU2_CFD_AD-solver_direct_poisson.o `test -f '../src/solver_direct_poisson.cpp' || echo '$(srcdir)/'`../src/solver_direct_poisson.cpp
@@ -3167,6 +3302,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_discrete.cpp' object='../src/___bin_SU2_CFD_AD-variable_adjoint_discrete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-variable_adjoint_discrete.obj `if test -f '../src/variable_adjoint_discrete.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_discrete.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_discrete.cpp'; fi`
+
+../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.o: ../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.o `test -f '../src/variable_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.o `test -f '../src/variable_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_elasticity.cpp
+
+../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.obj: ../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.obj `if test -f '../src/variable_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_elasticity.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-variable_adjoint_elasticity.obj `if test -f '../src/variable_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_elasticity.cpp'; fi`
 
 ../src/___bin_SU2_CFD_AD-variable_direct_poisson.o: ../src/variable_direct_poisson.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-variable_direct_poisson.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-variable_direct_poisson.Tpo -c -o ../src/___bin_SU2_CFD_AD-variable_direct_poisson.o `test -f '../src/variable_direct_poisson.cpp' || echo '$(srcdir)/'`../src/variable_direct_poisson.cpp
@@ -3756,6 +3905,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-output_paraview.obj `if test -f '../src/output_paraview.cpp'; then $(CYGPATH_W) '../src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_paraview.cpp'; fi`
 
+../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.o: ../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.o `test -f '../src/python_wrapper_structure.cpp' || echo '$(srcdir)/'`../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/python_wrapper_structure.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.o `test -f '../src/python_wrapper_structure.cpp' || echo '$(srcdir)/'`../src/python_wrapper_structure.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.obj: ../src/python_wrapper_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.obj `if test -f '../src/python_wrapper_structure.cpp'; then $(CYGPATH_W) '../src/python_wrapper_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/python_wrapper_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/python_wrapper_structure.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-python_wrapper_structure.obj `if test -f '../src/python_wrapper_structure.cpp'; then $(CYGPATH_W) '../src/python_wrapper_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/python_wrapper_structure.cpp'; fi`
+
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.o: ../src/solver_adjoint_mean.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.o `test -f '../src/solver_adjoint_mean.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_mean.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_mean.Po
@@ -3811,6 +3974,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_discrete.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_discrete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_discrete.obj `if test -f '../src/solver_adjoint_discrete.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_discrete.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_discrete.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.o: ../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.o `test -f '../src/solver_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.o `test -f '../src/solver_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_elasticity.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.obj: ../src/solver_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.obj `if test -f '../src/solver_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_elasticity.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_adjoint_elasticity.obj `if test -f '../src/solver_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_elasticity.cpp'; fi`
 
 ../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.o: ../src/solver_direct_poisson.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.o `test -f '../src/solver_direct_poisson.cpp' || echo '$(srcdir)/'`../src/solver_direct_poisson.cpp
@@ -4049,6 +4226,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_discrete.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_discrete.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_discrete.obj `if test -f '../src/variable_adjoint_discrete.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_discrete.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_discrete.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.o: ../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.o `test -f '../src/variable_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.o `test -f '../src/variable_adjoint_elasticity.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_elasticity.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.obj: ../src/variable_adjoint_elasticity.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.obj `if test -f '../src/variable_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_elasticity.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/variable_adjoint_elasticity.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_adjoint_elasticity.obj `if test -f '../src/variable_adjoint_elasticity.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_elasticity.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_elasticity.cpp'; fi`
 
 ../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_poisson.o: ../src/variable_direct_poisson.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_poisson.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_direct_poisson.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-variable_direct_poisson.o `test -f '../src/variable_direct_poisson.cpp' || echo '$(srcdir)/'`../src/variable_direct_poisson.cpp
