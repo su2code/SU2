@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon, H. Kline
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -32,7 +32,6 @@
  */
 
 #include "../include/solver_structure.hpp"
-
 
 CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   
@@ -67,7 +66,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   bool axisymmetric = config->GetAxisymmetric();
   
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
@@ -77,11 +76,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iMarker_Monitoring, jMarker, ObjFunc;
   bool grid_movement  = config->GetGrid_Movement();
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Array initialization ---*/
   
   Phi_Inf = NULL;
@@ -269,7 +263,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
   /*--- If outflow objective, nonzero initialization ---*/
-  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)) {
+  if ((config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)) {
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
@@ -301,7 +295,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (restart && (iMesh == MESH_0)) {
     mesh_filename = config->GetSolution_AdjFileName();
     filename      = config->GetObjFunc_Extension(mesh_filename);
-    Read_SU2_Restart_Metadata(geometry, config, filename);
+    Read_SU2_Restart_Metadata(geometry, config, true, filename);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -314,8 +308,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   myArea_Monitored = 0.0;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    if (config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
-        config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE) {
+    if (config->GetKind_ObjFunc(iMarker_Monitoring)==SURFACE_TOTAL_PRESSURE ||
+        config->GetKind_ObjFunc(iMarker_Monitoring)==SURFACE_STATIC_PRESSURE) {
 
       Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
       /*-- Find the marker index ---*/
@@ -363,14 +357,14 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
-        factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+        factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
         ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
         if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
             (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-            (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+            (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
-       if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+       if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE))
          factor = 1.0/Area_Monitored;
 
        Weight_ObjFunc = Weight_ObjFunc*factor;
@@ -429,7 +423,7 @@ void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -546,7 +540,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -662,7 +656,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -778,7 +772,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   su2double **Gradient = new su2double* [nVar];
@@ -901,7 +895,7 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1009,14 +1003,14 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
   
 }
 
-void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1084,19 +1078,12 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
-  
-  /*--- MPI initialization ---*/
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
-  MPI_Status status, status_;
+  SU2_MPI::Status status, status_;
   
 
 #endif
@@ -1216,7 +1203,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1322,7 +1309,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1378,7 +1365,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1400,19 +1387,12 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
-  
-  /*--- MPI initialization ---*/
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
-  MPI_Status status, status_;
+  SU2_MPI::Status status, status_;
   
 
 #endif
@@ -1440,7 +1420,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1539,7 +1519,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1644,7 +1624,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1701,7 +1681,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1723,19 +1703,12 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+
 #ifdef HAVE_MPI
-  
-  /*--- MPI initialization ---*/
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
-  MPI_Status status, status_;
+  SU2_MPI::Status status, status_;
   
 
 #endif
@@ -1855,7 +1828,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -1960,7 +1933,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -2017,7 +1990,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
 #endif
   
@@ -2043,18 +2016,15 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Weight_ObjFunc=1.0;
   su2double *ForceProj_Vector2;
   
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
-  su2double RefLengthMoment  = config->GetRefLengthMoment();
+  su2double RefLength  = config->GetRefLength();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
   su2double dCD_dCL          = config->GetdCD_dCL();
-  su2double dCD_dCM          = config->GetdCD_dCM();
+  su2double dCMx_dCL         = config->GetdCMx_dCL();
+  su2double dCMy_dCL         = config->GetdCMy_dCL();
+  su2double dCMz_dCL         = config->GetdCMz_dCL();
+  su2double dCD_dCMy         = config->GetdCD_dCMy();
   bool Fixed_CL              = config->GetFixed_CL_Mode();
   bool Fixed_CM              = config->GetFixed_CM_Mode();
 
@@ -2067,7 +2037,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   CT = solver_container[FLOW_SOL]->GetTotal_CT();
   CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
   invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
-  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLengthMoment*CQ*CQ);
+  invCQ  = 1.0/CQ; CTRCQ2 = CT/(RefLength*CQ*CQ);
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
@@ -2075,7 +2045,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
    Since there may be more than one objective per marker, first we have to set all Force projection vectors to 0 ---*/
   
   for (iMarker = 0; iMarker<nMarker; iMarker++) {
-    if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
            (config->GetMarker_All_Monitoring(iMarker) == YES))
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         for (iDim=0; iDim<nDim; iDim++)
@@ -2097,7 +2067,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
     }
 
     
-    if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+    if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES)) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -2122,7 +2092,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               /*--- Modification to run at a fixed CL and CM value ---*/
               
               if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCM*Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCMy*Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += dCD_dCMy*Weight_ObjFunc*(x - x_origin)/RefLength; }
 
             }
             if (nDim == 3) {
@@ -2134,7 +2104,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               /*--- Modification to run at a fixed CL value ---*/
               
               if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
-              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCM*Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCMy*Weight_ObjFunc*(z - z_origin)/RefLength; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCMy*Weight_ObjFunc*(x - x_origin)/RefLength; }
               
             }
             break;
@@ -2143,9 +2113,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] += Weight_ObjFunc*cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Beta) * cos(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*cos(Beta); ForceProj_Vector[2] += -Weight_ObjFunc*sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
@@ -2157,16 +2125,55 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) ForceProj_Vector[2] += -Weight_ObjFunc*2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += 0.0;
+              ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLength;
+              ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLength;
+            
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMx_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCMx_dCL*Weight_ObjFunc*cos(Alpha); }
+            
+            }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment;}
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLength;
+              ForceProj_Vector[1] += 0.0;
+              ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLength;
+            
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMy_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCMy_dCL*Weight_ObjFunc*cos(Alpha); }
+
+            }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) {
+              
+              ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength;
+              ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength;
+            
+              /*--- Modification to run at a fixed CL and CM value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMz_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCMz_dCL*Weight_ObjFunc*cos(Alpha); }
+
+            }
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLength;
+              ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLength;
+              ForceProj_Vector[2] += 0;
+            
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCMz_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCMz_dCL*Weight_ObjFunc*cos(Alpha); }
+
+            }
             break;
           case EFFICIENCY :
             if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += Weight_ObjFunc*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
@@ -2191,46 +2198,26 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += Weight_ObjFunc*1.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
             break;
           case THRUST_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) {  ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) {  ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLength; }
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLength; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLength; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) {
               ForceProj_Vector[0] += -Weight_ObjFunc*invCQ;
               ForceProj_Vector[1] += -Weight_ObjFunc*CTRCQ2*(z - z_origin);
               ForceProj_Vector[2] +=  Weight_ObjFunc*CTRCQ2*(y - y_origin);
             }
             break;
-          case AERO_DRAG_COEFFICIENT :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
-          case RADIAL_DISTORTION :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
-          case CIRCUMFERENTIAL_DISTORTION :
-            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
-              exit(EXIT_FAILURE);
-            }
-            break;
+
           default :
             break;
         }
@@ -2280,8 +2267,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     /*--- Read derivative of the objective function at the NearField from file ---*/
     index_file.open("WeightNF.dat", ios::in);
     if (index_file.fail()) {
-      cout << "There is no Weight Nearfield Pressure file (WeightNF.dat)." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("There is no Weight Nearfield Pressure file (WeightNF.dat).", CURRENT_FUNCTION);
     }
     
     nPointNearField = 0;
@@ -2318,13 +2304,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
       IndexNF_inv[IndexNF[iIndex]] = iIndex;
   }
   else {
-    #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-    #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-        MPI_Finalize();
-    #endif
+    SU2_MPI::Error("", CURRENT_FUNCTION);
   }
     
   }
@@ -2611,25 +2591,20 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   su2double SharpEdge_Distance;
   bool RightSol = true;
   
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order   = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER));
-  bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool muscl          = config->GetMUSCL_AdjFlow();
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
-  bool eval_dcd_dcx   = config->GetEval_dCD_dCX();
+  bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 
   /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
-  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if (fixed_cl && eval_dof_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
@@ -2651,12 +2626,12 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Initialize the convective residual vector ---*/
     
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
   
-  if ((second_order) && (iMesh == MESH_0)) {
+  if ((muscl) && (iMesh == MESH_0)) {
     
     /*--- Compute gradients for upwind second-order reconstruction ---*/
 
@@ -2665,7 +2640,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Limiter computation ---*/
     
-    if (limiter) SetSolution_Limiter(geometry, config);
+    if (limiter && !Output) SetSolution_Limiter(geometry, config);
     
   }
   
@@ -2673,7 +2648,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (center) {
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
       if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -2702,7 +2677,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
+  bool jst_scheme = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
   bool grid_movement  = config->GetGrid_Movement();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2732,7 +2707,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetLambda(solver_container[FLOW_SOL]->node[iPoint]->GetLambda(),
                         solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
     
-    if (second_order) {
+    if (jst_scheme) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -2776,8 +2751,8 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim, iVar;
   
   bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order     = (((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
-  bool limiter          = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool muscl            = (config->GetMUSCL_AdjFlow() && (iMesh == MESH_0));
+  bool limiter          = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool grid_movement    = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2808,7 +2783,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     
     /*--- High order reconstruction using MUSCL strategy ---*/
     
-    if (second_order) {
+    if (muscl) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -3067,12 +3042,12 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
 }
 
-void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
   
-  eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+  eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
   Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
   Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
   
@@ -3081,7 +3056,7 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps);
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps);
     
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
@@ -3094,62 +3069,8 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
     
   }
   
-  //  su2double dx = 0.1;
-  //  su2double LimK = 0.03;
-  //  su2double eps2 =  pow((LimK*dx),3);
-  //
-  //  unsigned long iPoint, jPoint;
-  //  unsigned short iNeigh, nNeigh, iDim;
-  //  su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
-  //  du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
-  //
-  //
-  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //
-  //    if (geometry->node[iPoint]->GetDomain()) {
-  //
-  //      Solution_i = node[iPoint]->GetSolution();
-  //      Gradient_i = node[iPoint]->GetGradient();
-  //      Coord_i = geometry->node[iPoint]->GetCoord();
-  //      nNeigh = geometry->node[iPoint]->GetnPoint();
-  //
-  //      /*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-  //      du_max = 1.0E-8; du_min = -1.0E-8;
-  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //        Solution_j = node[jPoint]->GetSolution();
-  //        du_max = max(du_max, Solution_j[0] - Solution_i[0]);
-  //        du_min = min(du_min, Solution_j[0] - Solution_i[0]);
-  //      }
-  //
-  //      r_u = 1.0;
-  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //
-  //        /*--- Unconstrained reconstructed solution ---*/
-  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //        Solution_j = node[jPoint]->GetSolution();
-  //        Coord_j = geometry->node[jPoint]->GetCoord();
-  //        u_ij = Solution_i[0]; dist_ij = 0;
-  //        for (iDim = 0; iDim < nDim; iDim++) {
-  //          diff_coord = Coord_j[iDim]-Coord_i[iDim];
-  //          u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
-  //        }
-  //
-  //        /*--- Venkatakrishnan limiter ---*/
-  //        if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
-  //        else  dp = du_min;
-  //        dm = u_ij - Solution_i[0];
-  //        r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
-  //
-  //        /*--- Take the smallest value of the limiter ---*/
-  //        r_u = min(r_u, r_u_ij);
-  //
-  //      }
-  //      node[iPoint]->SetSensor(1.0-r_u);
-  //    }
-  
   /*--- MPI parallelization ---*/
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -3328,7 +3249,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
   su2double Gas_Constant    = config->GetGas_ConstantND();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
 
@@ -3356,13 +3277,13 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   factor = 1.0;
   /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1) {
-    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+    factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX)  ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-  (ObjFunc == MASS_FLOW_RATE) )
+  (ObjFunc == SURFACE_MASSFLOW) )
       factor = 1.0;
 
-    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE)) factor = 1.0/Area_Monitored;
 
   }
 
@@ -3464,8 +3385,8 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
@@ -3513,9 +3434,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             if (Vn<SoundSpeed and Vn>0) {
               /*TODO: MDO compatible*/
             Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
-            if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
+            if (config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE)
               Sens_BPress[iMarker]+=1;
-              if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE) {
+            if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE) {
               for (iDim=0; iDim<nDim; iDim++)
                 Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
             }
@@ -3923,11 +3844,7 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
   unsigned long ExtIter       = config->GetExtIter();
   bool Update_AoA             = false;
   su2double dCL_dAlpha        = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  unsigned long Update_Alpha  = config->GetUpdate_Alpha();
   
   if (ExtIter == 0) AoA_Counter = 0;
   
@@ -3944,8 +3861,8 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if (AoA_Counter >= 2) Update_AoA = true;
-      else Update_AoA = false;
+      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
+      Update_AoA = true;
     }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
@@ -3966,8 +3883,12 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     /*--- Retrieve the old ACoeff ---*/
     
-    ACoeff_old = config->GetdCD_dCL();
-    
+    if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) ACoeff_old = config->GetdCD_dCL();
+    else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) ACoeff_old = config->GetdCMx_dCL();
+    else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) ACoeff_old = config->GetdCMy_dCL();
+    else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) ACoeff_old = config->GetdCMz_dCL();
+    else ACoeff_old = 0.0;
+
     /*--- Estimate the increment in the A coeff, (note that the slope is negative, a decrease in
      *   the CL derivative requires an increase in the A coeff ---*/
     
@@ -3978,11 +3899,23 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     /*--- Compute a new value for the A coeff based on the fine mesh only (radians)---*/
     
     if (iMesh == MESH_0) { ACoeff = ACoeff_old + ACoeff_inc; }
-    else { ACoeff = config->GetdCD_dCL(); }
+    else {
+      if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT) ACoeff = config->GetdCD_dCL();
+      else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) ACoeff = config->GetdCMx_dCL();
+      else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) ACoeff = config->GetdCMy_dCL();
+      else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) ACoeff = config->GetdCMz_dCL();
+      else ACoeff = 0.0;
+    }
     
     /*--- Only the fine mesh stores the updated values for ACoeff in config ---*/
     
-    if (iMesh == MESH_0) config->SetdCD_dCL(ACoeff);
+    if (iMesh == MESH_0) {
+      if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)  config->SetdCD_dCL(ACoeff);
+      else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) config->SetdCMx_dCL(ACoeff);
+      else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) config->SetdCMy_dCL(ACoeff);
+      else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) config->SetdCMz_dCL(ACoeff);
+      else { config->SetdCD_dCL(0.0); config->SetdCMx_dCL(0.0); config->SetdCMy_dCL(0.0); config->SetdCMz_dCL(0.0); }
+    }
     
     /*--- Compute the adjoint boundary condition ---*/
     
@@ -3998,7 +3931,11 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "-------------------------- Adjoint Fixed CL Mode -------------------------" << endl;
     cout << "Target dCL/dAlpha: 0.0 (1/deg), current dCL/dAlpha: " << Total_Sens_AoA*PI_NUMBER/180;
-    cout << " (1/deg), current dCD/dCL: " << config->GetdCD_dCL() <<" "<< endl;
+    if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)  cout << " (1/deg), current dCD/dCL: " << config->GetdCD_dCL() <<" "<< endl;
+    else if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT) cout << " (1/deg), current dCMx/dCL: " << config->GetdCMx_dCL() <<" "<< endl;
+    else if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT) cout << " (1/deg), current dCMy/dCL: " << config->GetdCMy_dCL() <<" "<< endl;
+    else if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT) cout << " (1/deg), current dCMz/dCL: " << config->GetdCMz_dCL() <<" "<< endl;
+    else cout << endl;
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
   
@@ -5090,7 +5027,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
 
         switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
-        case AVG_TOTAL_PRESSURE:
+        case SURFACE_TOTAL_PRESSURE:
           /*--- Total Pressure term. NOTE: this is AREA averaged
            * Additional terms are added later (as they are common between subsonic,
            * supersonic equations) ---*/
@@ -5106,7 +5043,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
           Psi_outlet[nDim+1]+=Weight_ObjFunc*a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
           break;
-        case AVG_OUTLET_PRESSURE:
+        case SURFACE_STATIC_PRESSURE:
           /*Area averaged static pressure*/
           /*--- Note: further terms are NOT added later for this case, only energy term is modified ---*/
           Psi_outlet[nDim+1]+=Weight_ObjFunc*(a1*Vn_Exit);
@@ -5166,10 +5103,10 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Add terms for objective functions where additions are needed outside the energy term
        *     Terms which are added to the energy term are taken care of in the supersonic section above ---*/
       switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
-      case MASS_FLOW_RATE:
+      case SURFACE_MASSFLOW:
         Psi_outlet[0]+=Weight_ObjFunc;
         break;
-      case AVG_TOTAL_PRESSURE:
+      case SURFACE_TOTAL_PRESSURE:
         /*--- For total pressure objective function. NOTE: this is AREA averaged term---*/
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -5185,7 +5122,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
         }
         break;
-      case AVG_OUTLET_PRESSURE:
+      case SURFACE_STATIC_PRESSURE:
         /*0.0*/
         break;
       default:
@@ -5692,7 +5629,7 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
 }
 
 void CAdjEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
   
 }
 
@@ -5769,7 +5706,7 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   ifstream restart_file;
 
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[iZone]->GetnZone();
+  unsigned short nZone = config->GetnZone();
 
   /*--- Restart the solution from file information ---*/
 
@@ -5779,11 +5716,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Skip coordinates ---*/
 
@@ -5847,17 +5779,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -5906,7 +5829,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ifstream restart_file;
   string filename, AdjExt;
 
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
@@ -5918,11 +5841,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short iMarker_Monitoring, jMarker, ObjFunc;
   bool grid_movement  = config->GetGrid_Movement();
   bool restart = config->GetRestart();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Norm heat flux objective test ---*/
   pnorm = 1.0;
@@ -6109,14 +6027,14 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (restart && (iMesh == MESH_0)) {
     mesh_filename = config->GetSolution_AdjFileName();
     filename      = config->GetObjFunc_Extension(mesh_filename);
-    Read_SU2_Restart_Metadata(geometry, config, filename);
+    Read_SU2_Restart_Metadata(geometry, config, true, filename);
   }
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
    myArea_Monitored = 0.0;
    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-     if (config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
-         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE) {
+     if (config->GetKind_ObjFunc(iMarker_Monitoring)==SURFACE_TOTAL_PRESSURE ||
+         config->GetKind_ObjFunc(iMarker_Monitoring)==SURFACE_STATIC_PRESSURE) {
 
        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
        /*-- Find the marker index ---*/
@@ -6165,14 +6083,14 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
          Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
-         factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+         factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
          ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
          if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
              (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-             (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+             (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
-        if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+        if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE))
           factor = 1.0/Area_Monitored;
 
         Weight_ObjFunc = Weight_ObjFunc*factor;
@@ -6207,23 +6125,18 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   su2double SharpEdge_Distance;
   bool RightSol = true;
   
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
-  bool eval_dcd_dcx   = config->GetEval_dCD_dCX();
+  bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 
   /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
-  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if (fixed_cl && eval_dof_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
@@ -6245,7 +6158,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Initialize the convective residual vector ---*/
     
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
@@ -6256,11 +6169,11 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Limiter computation (upwind reconstruction) ---*/
   
-  if (limiter) SetSolution_Limiter(geometry, config);
+  if (limiter && !Output) SetSolution_Limiter(geometry, config);
 
   /*--- Compute gradients adj for viscous term coupling ---*/
 
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
   }
@@ -6268,7 +6181,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Artificial dissipation for centered schemes ---*/
   
   if (center_jst && (iMesh == MESH_0)) {
-    SetDissipation_Switch(geometry, config);
+    SetCentered_Dissipation_Sensor(geometry, config);
     SetUndivided_Laplacian(geometry, config);
   }
   
@@ -6357,7 +6270,6 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Gradient of adjoint variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
-    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 
     /*--- Set volume ---*/
     
@@ -6365,7 +6277,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
     
-    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+    if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
       
       /*--- Turbulent variables w/o reconstruction and its gradient ---*/
       
@@ -6397,7 +6309,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
   
-  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -6505,7 +6417,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
-  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefArea    = config->GetRefArea();
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
   su2double Gas_Constant    = config->GetGas_ConstantND();
@@ -6536,14 +6448,14 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   factor = 1.0;
   /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1) {
-    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+    factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE))
+        (ObjFunc == SURFACE_MASSFLOW))
       factor = 1.0;
 
-    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+    if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE))
       factor = 1.0/Area_Monitored;
 
   }
@@ -6769,8 +6681,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           

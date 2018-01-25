@@ -4,8 +4,8 @@
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -48,6 +48,7 @@ namespace AD {
 
   bool Status = false;
   bool PreaccActive = false;
+  bool PreaccEnabled = true;
 
   void EndPreacc() {
 
@@ -101,7 +102,7 @@ namespace AD {
 
       for (iVarOut = 0; iVarOut < nVarOut; iVarOut++) {
         if (nNonzero[iVarOut] != 0){
-          globalTape.store(0.0, localOutputValues[iVarOut]->getGradientData(), nNonzero[iVarOut]);
+          globalTape.store(localOutputValues[iVarOut]->getValue(), localOutputValues[iVarOut]->getGradientData(), nNonzero[iVarOut]);
           for (iVarIn = 0; iVarIn < nVarIn; iVarIn++) {
             index_in =  localInputValues[iVarIn];
            globalTape.pushJacobi(local_jacobi[iVarOut*nVarIn+iVarIn],

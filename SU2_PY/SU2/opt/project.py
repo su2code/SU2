@@ -5,8 +5,8 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -30,6 +30,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
 
 # -------------------------------------------------------------------
 #  Imports
@@ -106,7 +109,7 @@ class Project(object):
         if '*' in folder: folder = su2io.next_folder(folder)        
         if designs is None: designs = []
         
-        print 'New Project: %s' % (folder)
+        print('New Project: %s' % (folder))
         
         # setup config
         config = copy.deepcopy(config)
@@ -135,7 +138,7 @@ class Project(object):
         state.find_files(config)
 
         if 'MESH' not in state.FILES:
-            raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
+            raise Exception('Could not find mesh file: %s' % config.MESH_FILENAME)
         
         self.config  = config      # base config
         self.state   = state       # base state
@@ -191,7 +194,7 @@ class Project(object):
             design = self.new_design(konfig)
             
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
-                print os.path.join(self.folder,design.folder)
+                print(os.path.join(self.folder,design.folder))
             timestamp = design.state.tic()
             
             # run design+
@@ -298,7 +301,7 @@ class Project(object):
         if delta == 0.0 and closest:
             design = closest
         else:
-            raise Exception, 'design not found for this config'
+            raise Exception('design not found for this config')
         return design
         
     def closest_design(self,config):
@@ -402,7 +405,7 @@ class Project(object):
             for key in design.state.GRADIENTS.keys():
                 results.GRADIENTS[key] = []
             for TYPE in design.state.HISTORY.keys():
-                if not results.HISTORY.has_key(TYPE):
+                if not TYPE in results.HISTORY:
                     results.HISTORY[TYPE] = su2util.ordered_bunch()
                 for key in design.state.HISTORY[TYPE].keys():
                     results.HISTORY[TYPE][key] = []
@@ -421,13 +424,13 @@ class Project(object):
             this_designvector = design.state.design_vector()
             results.VARIABLES.append( this_designvector )
             for key in results.FUNCTIONS.keys():
-                if design.state.FUNCTIONS.has_key(key):
+                if key in design.state.FUNCTIONS:
                     new_func = design.state.FUNCTIONS[key]
                 else:
                     new_func = default
                 results.FUNCTIONS[key].append(new_func)
             for key in results.GRADIENTS.keys():
-                if design.state.GRADIENTS.has_key(key):
+                if key in design.state.GRADIENTS:
                     new_grad = design.state.GRADIENTS[key]
                 else:
                     new_grad = [default] * len( this_designvector )

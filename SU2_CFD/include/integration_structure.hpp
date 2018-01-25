@@ -6,8 +6,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -56,6 +56,8 @@ using namespace std;
  */
 class CIntegration {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
   Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
@@ -141,7 +143,7 @@ public:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*! 
-   * \brief Do the convergence analisys to determine if the code must stop the execution.
+   * \brief Do the convergence analysis to determine if the code must stop the execution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] Iteration - Current iteration.
@@ -151,6 +153,17 @@ public:
                 unsigned long Iteration, su2double monitor, unsigned short iMesh);
   
   /*! 
+   * \brief Average the scalar output in case there is a unsteady solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Iteration - Current iteration.
+   * \param[in] monitor - Objective function to be averaged.
+   * \param[in] iMesh - Index of the mesh.
+   */
+  void Average_Monitoring(CGeometry *geometry, CConfig *config,
+                unsigned long Iteration, su2double monitor, unsigned short iMesh);
+
+  /*!
    * \brief Do the convergence analysis to determine if the structural FEM analysis has converged.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -159,6 +172,16 @@ public:
    * \param[in] monitor - Objective function that is use to study its convergence.
    */
   void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
+
+  /*!
+   * \brief Do the convergence analysis to determine if the adjoint FEM analysis has converged.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Solution of the problem
+   * \param[in] Iteration - Current iteration.
+   * \param[in] monitor - Objective function that is use to study its convergence.
+   */
+  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
 
 
   /*!
@@ -214,8 +237,8 @@ public:
    */
   bool GetConvergence_FullMG(void);
   
-  /*! 
-   * \brief Save the solution, and volume at different time steps. 
+  /*!
+   * \brief Save the solution, and volume at different time steps.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.

@@ -5,8 +5,8 @@
  * \author F. Palacios
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -54,6 +54,8 @@ using namespace std;
  */
 class CGridAdaptation {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
 	unsigned long nPoint_new,	/*!< \brief Number of new points. */
 	nElem_new;					/*!< \brief Number of new elements. */
 	unsigned short nDim,	/*!< \brief Number of dimensions of the problem. */

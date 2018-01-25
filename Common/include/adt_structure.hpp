@@ -6,8 +6,8 @@
  * \author E. van der Weide
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -222,10 +222,10 @@ public:
    * \param[in] coor    Coordinates of the local points.
    * \param[in] pointID Local point IDs of the local points. 
    */
-  su2_adtPointsOnlyClass(unsigned short      nDim,
-                         unsigned long       nPoints,
-                         const su2double     *coor,
-                         const unsigned long *pointID);
+  su2_adtPointsOnlyClass(unsigned short nDim,
+                         unsigned long  nPoints,
+                         su2double      *coor,
+                         unsigned long  *pointID);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.

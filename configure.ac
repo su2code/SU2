@@ -5,8 +5,8 @@
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
 # \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -55,6 +55,27 @@ AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 AC_PROG_CXX
+
+# Python configuration
+AM_PATH_PYTHON
+AC_ARG_VAR([PYTHON_INCLUDE], [Include flags for python, bypassing python-config])
+AC_ARG_VAR([PYTHON_CONFIG], [Path to python-config])
+AC_ARG_VAR([PYTHON_LIB], [Python lib flags])
+AC_ARG_VAR([PYTHON_EXEC_PREFIX], [Python exec-prefix])
+AS_IF([test -z "$PYTHON_INCLUDE"], [
+  AS_IF([test -z "$PYTHON_CONFIG"], [
+    AC_PATH_PROGS([PYTHON_CONFIG],
+                  [python$PYTHON_VERSION-config python-config],
+                  [no],
+                  [`dirname $PYTHON`])
+    AS_IF([test "$PYTHON_CONFIG" = no], [AC_MSG_ERROR([cannot find python-config for $PYTHON.])])
+  ])
+  AC_MSG_CHECKING([python include flags])
+  PYTHON_INCLUDE=`$PYTHON_CONFIG --includes`
+  PYTHON_LIB=`$PYTHON_CONFIG --libs`
+  PYTHON_EXEC_PREFIX=`$PYTHON_CONFIG --exec-prefix`
+  AC_MSG_RESULT([$PYTHON_INCLUDE])
+])
 
 #PKG_PROG_PKG_CONFIG
 
@@ -470,9 +491,6 @@ AC_SUBST([LAPACK_LD])
 
 build_PY=yes
 
-# Complex type
-COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
-
 # direct differentation type
 build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
@@ -481,16 +499,7 @@ DIRECTDIFF_LIBS=
 build_REVERSE=no
 REVERSE_CXX=
 FORWARD_CXX=
-#CONFIGURE_ADOLC
 CONFIGURE_CODI
-
-if test $build_COMPLEX != "no"
-then 
-   DIRECTDIFF_CXX=$COMPLEX_CXX
-   build_DIRECTDIFF=yes
-   build_REVERSE=no
-   build_NORMAL=no
-fi
 
 AC_SUBST([DIRECTDIFF_CXX])
 AC_SUBST([DIRECTDIFF_LIBS])
@@ -508,6 +517,7 @@ then
   build_SOL=no
   build_GEO=no
   build_PY=no
+  build_PY_WRAPPER=no
 fi
 
 if test $build_REVERSE == "yes"
@@ -552,8 +562,8 @@ AC_MSG_RESULT([
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|
-|                Dr. Thomas D. Economon, economon@stanford.edu          |
+| SU2 Original Developers: Dr. Francisco D. Palacios.                   |
+|                          Dr. Thomas D. Economon.                      |
 -------------------------------------------------------------------------
 | SU2 Developers:                                                       |
 | - Prof. Juan J. Alonso's group at Stanford University.                |

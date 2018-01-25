@@ -5,8 +5,8 @@
 #  \author F. Palacios, T. Economon, T. Lukaczyk
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -31,7 +31,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil, copy
+import os, sys
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -52,16 +52,20 @@ def main():
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="DOT finite difference STEP", metavar="STEP")    
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                      help="Number of Zones", metavar="ZONES")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
+    options.nzones      = int( options.nzones )
     
     continuous_adjoint( options.filename    ,
                         options.partitions  ,
                         options.compute     ,
-                        options.step         )
+                        options.step        , 
+                        options.nzones       )
         
 #: def main()
 
@@ -73,12 +77,14 @@ def main():
 def continuous_adjoint( filename           , 
                         partitions  = 0    , 
                         compute     = True ,
-                        step        = 1e-4  ):
+                        step        = 1e-4 ,
+                        nzones      = 1     ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    
+    config.NZONES      = int( nzones )
+
     # State
     state = SU2.io.State()
     

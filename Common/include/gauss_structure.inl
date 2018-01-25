@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -56,3 +56,12 @@ inline su2double CGaussVariable::GetNi(unsigned short val_Ni) { return Ni[val_Ni
 inline su2double CGaussVariable::GetJ_X(void) { return J_X; }
 
 inline su2double CGaussVariable::GetJ_x(void) { return J_x; }
+
+inline unsigned long CElementProperty::GetMat_Mod(void) { return iMat_Mod; }
+
+inline unsigned long CElementProperty::GetMat_Prop(void) { return iMat_Prop; }
+
+inline unsigned long CElementProperty::GetElectric_Prop(void) { return iElectric_Prop; }
+
+inline unsigned long CElementProperty::GetDV(void) { return iDV; }
+

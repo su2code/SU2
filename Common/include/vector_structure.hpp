@@ -5,8 +5,8 @@
  * \author F. Palacios, J. Hicken, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -60,7 +60,6 @@ using namespace std;
 class CSysVector {
   
 private:
-  
 	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
 	unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
 #ifdef HAVE_MPI

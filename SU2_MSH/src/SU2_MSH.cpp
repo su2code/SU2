@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -42,19 +42,20 @@ int main(int argc, char *argv[]) {
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   char file_name[MAX_STRING_SIZE];
-  int rank = MASTER_NODE, size = SINGLE_NODE;
+  int rank, size;
   string str;
   
   /*--- MPI initialization ---*/
   
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 	
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
@@ -137,9 +138,11 @@ int main(int argc, char *argv[]) {
 	geometry_container[ZONE_0]->SetPoint_Connectivity(); geometry_container[ZONE_0]->SetElement_Connectivity();
 	
 	/*--- Check the orientation before computing geometrical quantities ---*/
-  
-	cout << "Check numerical grid orientation." <<endl;
-	geometry_container[ZONE_0]->SetBoundVolume(); geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]); geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+  geometry_container[ZONE_0]->SetBoundVolume();
+  if (config_container[ZONE_0]->GetReorientElements()) {
+		cout << "Check numerical grid orientation." <<endl;
+		geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]); geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+  }
 	
 	/*--- Create the edge structure ---*/
   
@@ -208,10 +211,7 @@ int main(int argc, char *argv[]) {
 				grid_adaptation->SetIndicator_Computable(geometry_container[ZONE_0], config_container[ZONE_0]);
 				break;
 			case REMAINING:
-				cout << "Adaptation method not implemented."<< endl;
-				cout << "Press any key to exit..." << endl;
-				cin.get();
-				exit(1);
+        SU2_MPI::Error("Adaptation method not implemented.", CURRENT_FUNCTION);
 				break;
 			default :
 				cout << "The adaptation is not defined" << endl;
@@ -230,7 +230,10 @@ int main(int argc, char *argv[]) {
 		if (config_container[ZONE_0]->GetSmoothNumGrid()) {
 			cout << "Preprocessing for doing the implicit smoothing." << endl;
 			geo_adapt->SetPoint_Connectivity(); geo_adapt->SetElement_Connectivity();
-			geo_adapt->SetBoundVolume(); geo_adapt->Check_IntElem_Orientation(config_container[ZONE_0]); geo_adapt->Check_BoundElem_Orientation(config_container[ZONE_0]);
+			geo_adapt->SetBoundVolume();
+			if (config_container[ZONE_0]->GetReorientElements()) {
+				geo_adapt->Check_IntElem_Orientation(config_container[ZONE_0]); geo_adapt->Check_BoundElem_Orientation(config_container[ZONE_0]);
+			}
 			geo_adapt->SetEdges(); geo_adapt->SetVertex(config_container[ZONE_0]);
 			cout << "Implicit smoothing of the numerical grid coordinates." << endl;
 			geo_adapt->SetCoord_Smoothing(5, 1.5, config_container[ZONE_0]);
@@ -325,7 +328,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

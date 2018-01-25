@@ -5,8 +5,8 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -114,17 +114,17 @@ class folder(object):
         
         # original path
         import os
-        print os.getcwd()
+        print(os.getcwd())
         
         # enter folder
         with SU2.io.redirect_folder(folder,pull,link,force) as push:
-            print os.getcwd()
+            print(os.getcwd())
             # code
             push.append('file4.txt')
         #: with folder redirection
         
         # returned to original path
-        print os.getcwd()
+        print(os.getcwd())
         
         Inputs:
             folder - working folder, relative or absolute

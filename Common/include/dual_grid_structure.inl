@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -241,6 +241,17 @@ inline void CPoint::SetZeroValues(void) { }
 
 inline void CPoint::AddNormal(su2double *val_face_normal) { }
 
+inline void CPoint::SetAdjointCoord(su2double *adj_coor){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(adj_coor[iDim]));
+}
+
+inline void CPoint::GetAdjointCoord(su2double *adj_coor){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
+      adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord[iDim]);
+    }
+}
+
 inline unsigned short CEdge::GetnNodes() { return 2; }
 
 inline unsigned long CEdge::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -403,3 +414,45 @@ inline void CVertex::SetVarRot(su2double* val) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     VarRot[iDim] = val[iDim];
 }
+
+inline void CTurboVertex::SetTurboNormal(su2double *val_normal ){
+	unsigned short iDim;
+	for(iDim= 0; iDim < nDim; iDim++)
+		TurboNormal[iDim] = val_normal[iDim];
+}
+
+inline void CTurboVertex::GetTurboNormal(su2double *val_normal) {
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		val_normal[iDim] = TurboNormal[iDim];
+}
+
+inline void CTurboVertex::SetGlobalVertexIndex(int globalindex){ GlobalIndex = globalindex;}
+
+inline int CTurboVertex::GetGlobalVertexIndex(void){return GlobalIndex;}
+
+inline su2double *CTurboVertex::GetTurboNormal(void) { return TurboNormal; }
+
+inline void CTurboVertex::SetArea(su2double val_area){Area = val_area;}
+
+inline su2double CTurboVertex::GetArea(void) { return Area; }
+
+inline void CTurboVertex::SetOldVertex(unsigned long val_vertex){OldVertex = val_vertex;}
+
+inline unsigned long CTurboVertex::GetOldVertex(void) { return OldVertex; }
+
+//inline void CTurboVertex::SetPitchCoord(su2double pitchCoord){PitchCoord = pitchCoord;}
+//
+//inline su2double CTurboVertex::GetPitchCoord(void) { return PitchCoord; }
+
+inline void CTurboVertex::SetAngularCoord(su2double angCoord){AngularCoord = angCoord;}
+
+inline su2double CTurboVertex::GetAngularCoord(void) { return AngularCoord; }
+
+inline void CTurboVertex::SetDeltaAngularCoord(su2double deltaAngCoord){DeltaAngularCoord = deltaAngCoord;}
+
+inline su2double CTurboVertex::GetDeltaAngularCoord(void) { return DeltaAngularCoord; }
+
+inline void CTurboVertex::SetRelAngularCoord(su2double minAngCoord) {RelAngularCoord = AngularCoord - minAngCoord;}
+
+inline su2double CTurboVertex::GetRelAngularCoord(void){return RelAngularCoord;}
+

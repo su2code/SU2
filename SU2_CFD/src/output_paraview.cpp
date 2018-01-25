@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -50,19 +50,21 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+
 
   char cstr[200], buffer[50];
   string filename, fieldname;
     
   /*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (adjoint || disc_adj)
+    if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetSurfAdjCoeff_FileName();
     else
       filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
-    if (adjoint || disc_adj)
+    if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();
@@ -73,6 +75,13 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetSurfStructure_FileName().c_str();
     else
       filename = config->GetStructure_FileName().c_str();
+  }
+
+  if (Kind_Solver == DISC_ADJ_FEM) {
+    if (surf_sol)
+      filename = config->GetAdjSurfStructure_FileName().c_str();
+    else
+      filename = config->GetAdjStructure_FileName().c_str();
   }
   
   if (Kind_Solver == WAVE_EQUATION)
@@ -383,7 +392,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-      if (Kind_Solver == FEM_ELASTICITY)
+      if ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM))
         Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
       else
         Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
@@ -909,6 +918,44 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())) {
+
+      Paraview_File << "\nSCALARS CrossTerm_1 float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      Paraview_File << "\nSCALARS CrossTerm_2 float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      if (nDim == 3){
+
+        Paraview_File << "\nSCALARS CrossTerm_3 float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (! surf_sol) {
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+
+      }
+
+    }
+
   }
   
   Paraview_File.close();
@@ -1752,13 +1799,6 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   int iProcessor;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Write file name with extension ---*/
   if (surf_sol) {
     if (adjoint || disc_adj)
@@ -1861,7 +1901,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   Paraview_File.close();
 
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -1892,7 +1932,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     }
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   }
 
@@ -1936,7 +1976,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   /*--- Write connectivity data. ---*/
@@ -1949,8 +1989,8 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Paraview_File << N_POINTS_LINE << "\t";
-      Paraview_File << Conn_Line_Par[iNode+0]-1 << "\t";
-      Paraview_File << Conn_Line_Par[iNode+1]-1 << "\t";
+      Paraview_File << Conn_BoundLine_Par[iNode+0]-1 << "\t";
+      Paraview_File << Conn_BoundLine_Par[iNode+1]-1 << "\t";
     }
 
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
@@ -2024,7 +2064,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   }
 
@@ -2037,7 +2077,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -2057,7 +2097,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       }
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   }
   
@@ -2070,7 +2110,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   unsigned short varStart = 2;
@@ -2093,7 +2133,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
     /*--- Write surface and volumetric point coordinates. ---*/
@@ -2115,7 +2155,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       }
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     }
     

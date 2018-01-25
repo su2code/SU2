@@ -5,8 +5,8 @@
 #  \author F. Palacios, T. Economon, T. Lukaczyk
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -31,7 +31,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil, copy
+import os, sys
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -54,17 +54,21 @@ def main():
                       help="DOT finite difference STEP", metavar="STEP")
     parser.add_option("-v", "--validate", dest="validate", default="False",
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                      help="Number of Zones", metavar="ZONES")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
+    options.nzones      = int( options.nzones )
     
     discrete_adjoint( options.filename    ,
-                        options.partitions  ,
-                        options.compute     ,
-                        options.step         )
+                      options.partitions  ,
+                      options.compute     ,
+                      options.step        ,
+                      options.nzones       )
         
 #: def main()
 
@@ -74,14 +78,16 @@ def main():
 # -------------------------------------------------------------------
 
 def discrete_adjoint( filename           ,
-                        partitions  = 0    , 
-                        compute     = True ,
-                        step        = 1e-4  ):
+                      partitions  = 0    , 
+                      compute     = True ,
+                      step        = 1e-4 ,
+                      nzones      = 1     ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    
+    config.NZONES      = int( nzones )
+
     # State
     state = SU2.io.State()
     
@@ -169,16 +175,16 @@ def discrete_design( filename           ,
 #        Definition_DV = config['DEFINITION_DV']
 #        n_dv = len(Definition_DV['KIND'])
 #        grads_dd  = grad_directdiff[ADJ_NAME]
-#        print "Validation Summary"
-#        print "--------------------------"
-#        print "VARIABLE   " + "DISCRETE ADJOINT"  + "  DIRECT DIFFERENTIATION" + "  ERROR (%)"
+#        print("Validation Summary")
+#        print("--------------------------")
+#        print("VARIABLE   " + "DISCRETE ADJOINT"  + "  DIRECT DIFFERENTIATION" + "  ERROR (%)")
 #        for idv in range(n_dv):
 #            if abs(grads[idv]) > abs(grads_dd[idv]):
 #                this_err = abs(grads[idv]/grads_dd[idv])
 #            else:
 #                this_err = abs(grads_dd[idv]/grads[idv])
 
-#            print str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %'
+#            print(str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %')
 
     
     return state

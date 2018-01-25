@@ -4,8 +4,8 @@
  * \author F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -48,12 +48,13 @@ int main(int argc, char *argv[]) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -153,18 +154,17 @@ int main(int argc, char *argv[]) {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
-
-  /*--- Definition of the output class (one for all the zones) ---*/
-  output = new COutput();
-
+  
+	/*--- Definition of the output class (one for all the zones) ---*/
+	output = new COutput(config_container[ZONE_0]);
+  
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
 
   if (fsi){
 
     if (nZone < 2){
-      cout << "For multizone computations, please add the number of zones as a second argument for SU2_SOL. " << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
     }
 
     su2double Physical_dt, Physical_t;
@@ -177,8 +177,7 @@ int main(int argc, char *argv[]) {
       iExtIterFlow = config_container[ZONE_0]->GetUnst_RestartIter();
       iExtIterFEM = config_container[ZONE_1]->GetDyn_RestartIter();
       if (iExtIterFlow != iExtIterFEM) {
-        if (rank == MASTER_NODE) cout << "The restart iteration is different from Flow to Structure!!" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
       }
       else {
         iExtIter = iExtIterFlow;
@@ -440,7 +439,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

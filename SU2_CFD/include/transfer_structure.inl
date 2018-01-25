@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -42,5 +42,11 @@ inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *don
                      unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
 inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                      CConfig *target_config, unsigned long Marker_Target,
-                      unsigned long Vertex_Target, unsigned long Point_Target) { }
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long Vertex_Target, unsigned long Point_Target) { }
+
+inline void CTransfer::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) { }
+
+inline void CTransfer::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) { }
+
+inline void CTransfer::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }

@@ -5,8 +5,8 @@
 #  \author A. Aranake
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -30,6 +30,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
 
 from parse_config import *
 import wx, sys
@@ -211,10 +214,10 @@ class config_gui(wx.Frame):
     self.SetInitialSize()
 
   def OnCheck(self,event):
-    print event
-    print dir(event)
-    print event.GetEventObject()
-    print event.GetEventObject().GetValue()
+    print(event)
+    print(dir(event))
+    print(event.GetEventObject())
+    print(event.GetEventObject().GetValue())
 
   def OnResize(self,event):
   # There is surely a better way to do this....
@@ -272,7 +275,7 @@ class config_gui(wx.Frame):
     sys.exit(1)
 
   def OnAbout(self,event):
-    print "OnAbout"
+    print("OnAbout")
 
   def list_click(self, event):
 

@@ -5,8 +5,8 @@
 #  \author David Thomas
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -82,7 +82,7 @@ def main():
           sys.path.append(os.getcwd())
 	  print("Setting working directory : {}".format(os.getcwd()))
       else: 
-	  print ("Working directory is set to {}".format(os.getcwd()))
+	  print("Working directory is set to {}".format(os.getcwd()))
 
   # starts timer
   start = timer.time()

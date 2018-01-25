@@ -5,8 +5,8 @@
  * \author J. Hicken, F. Palacios, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -167,7 +167,7 @@ public:
    */
   unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                   CPreconditioner & precond, su2double tol,
-                                  unsigned long m, bool monitoring);
+                                  unsigned long m, su2double *residual, bool monitoring);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -219,6 +219,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
+   * \param[in] Jacobian - Jacobian Matrix for the linear system
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in] LinSysSol - Linear system solution
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
+
 
 };
 

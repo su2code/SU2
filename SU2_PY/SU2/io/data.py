@@ -5,8 +5,8 @@
 #  \author T. Lukaczyk, F. Palacios
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -36,8 +36,15 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-import cPickle as pickle
-from filelock import filelock
+if sys.version_info.major > 2:
+    # Py3 pickle now manage both accelerated cPickle and pure python pickle
+    # See https://docs.python.org/3/whatsnew/3.0.html#library-changes, 4th item.
+    import pickle
+else:
+    import cPickle as pickle
+
+
+from .filelock import filelock
 
 # -------------------------------------------------------------------
 #  Load a Dictionary of Data
@@ -73,7 +80,7 @@ def load_data( file_name, var_names=None   ,
         scipy_loaded = False    
         
     if not os.path.exists(file_name):
-        raise Exception , 'File does not exist: %s' % file_name
+        raise Exception('File does not exist: %s' % file_name)
     
     # process file format
     if file_format == 'infer':
@@ -179,7 +186,7 @@ def save_data( file_name, data_dict, append=False ,
         if append == True and os.path.exists(file_name):
             # check file exists
             if not os.path.exists(file_name):
-                raise Exception , 'Cannot append, file does not exist: %s' % file_name  
+                raise Exception('Cannot append, file does not exist: %s' % file_name)
             # load old data
             data_dict_old = load( file_name   = file_name   ,
                                   var_names   = None        ,
@@ -238,28 +245,22 @@ def load_pickle(file_name):
     pkl_file.close()
     return data_dict
 
-#: def load_pickle()
-
-
 
 # -------------------------------------------------------------------
 #  Save Pickle
 # -------------------------------------------------------------------
 
-def save_pickle(file_name,data_dict):
-    """ save_pickle(file_name,data_dict)
+def save_pickle(file_name, data_dict):
+    """ save_pickle(file_name, data_dict)
         saves a core data dictionary
         first pickle entry is a list of all following data names
     """
-    pkl_file = open(file_name,'wb')
-    names = data_dict.keys()
-    pickle.dump(names,pkl_file)
+    pkl_file = open(file_name, 'wb')
+    names = list(data_dict.keys())
+    pickle.dump(names, pkl_file)
     for key in names:
-        pickle.dump(data_dict[key],pkl_file)
+        pickle.dump(data_dict[key], pkl_file)
     pkl_file.close()
-
-#: def save_pickle()
-
 
 
 # -------------------------------------------------------------------

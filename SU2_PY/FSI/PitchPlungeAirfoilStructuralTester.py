@@ -5,8 +5,8 @@
 #  \author David Thomas
 #  \version 5.0.0 "Raven"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# SU2 Original Developers: Dr. Francisco D. Palacios.
+#                          Dr. Thomas D. Economon.
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
 #                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -307,19 +307,19 @@ class Solver:
 		if not int(nodes[1]) in self.markers[markerTag]:
 		   self.markers[markerTag].append(int(nodes[1]))
 	      else:
-		print "Element type {} is not recognized !!".format(elemType)
+		print("Element type {} is not recognized !!".format(elemType))
 	    continue
 	  else:
 	    continue
 
-    print ("Number of dimensions: {}".format(self.nDim))
-    print ("Number of elements: {}".format(self.nElem))
-    print ("Number of point: {}".format(self.nPoint))
-    print ("Number of markers: {}".format(self.nMarker))
+    print("Number of dimensions: {}".format(self.nDim))
+    print("Number of elements: {}".format(self.nElem))
+    print("Number of point: {}".format(self.nPoint))
+    print("Number of markers: {}".format(self.nMarker))
     if len(self.markers) > 0:
-      print ("Moving marker(s):")
+      print("Moving marker(s):")
       for mark in self.markers.keys():
-        print mark
+        print(mark)
 
   def __setStructuralMatrices(self):
     """ Descriptions. """
@@ -454,9 +454,9 @@ class Solver:
 	rotCoord = rotMatrix.dot(r)
 
         newCoord = newCenter + rotCoord
-        newVel[0] = psidot*(newCoord[1]-newCenter[1])
-	newVel[1] = -psidot*(newCoord[0]-newCenter[0])
-	newVel[2] = 0.0
+        newVel[0] = Centerdot[0]+psidot*(newCoord[1]-newCenter[1])
+	newVel[1] = Centerdot[1]-psidot*(newCoord[0]-newCenter[0])
+	newVel[2] = Centerdot[2]+0.0
 
         self.node[iPoint].SetCoord((newCoord[0], newCoord[1], newCoord[2]))
         self.node[iPoint].SetVel((newVel[0], newVel[1], newVel[2]))
@@ -592,9 +592,11 @@ class Solver:
 
     self.centerOfRotation_n = np.copy(self.centerOfRotation)
 
-  def applyload(self, iPoint, fx, fy, fz):
+  def applyload(self, iVertex, fx, fy, fz, time):
     """ Description """
 
+    makerID = self.markers.keys()[0]
+    iPoint = self.getInterfaceNodeGlobalIndex(makerID, iVertex)
     self.node[iPoint].SetForce((fx,fy,fz))
 
   def getFSIMarkerID(self):

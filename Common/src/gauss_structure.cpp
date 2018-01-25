@@ -4,8 +4,8 @@
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -68,5 +68,27 @@ CGaussVariable::~CGaussVariable(void) {
   if (GradNi_Xj            != NULL) delete [] GradNi_Xj;
   if (GradNi_xj            != NULL) delete [] GradNi_xj;
   if (Ni            	   != NULL) delete [] Ni;
+
+}
+
+CElementProperty::CElementProperty(void) {
+
+  iMat_Mod = 0;
+  iMat_Prop = 0;
+  iElectric_Prop = 0;
+  iDV = 0;
+
+}
+
+CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV) {
+
+  iMat_Mod = valMat_Model;
+  iMat_Prop = valMat_Prop;
+  iElectric_Prop = valElectric_Prop;
+  iDV = valDV;
+
+}
+
+CElementProperty::~CElementProperty(void) {
 
 }

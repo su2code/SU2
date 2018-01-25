@@ -4,8 +4,8 @@
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -33,11 +33,12 @@
 
 #pragma once
 
-
 namespace AD{
 #if defined CODI_REVERSE_TYPE
 
   typedef codi::DataStore CheckpointHandler;
+
+  typedef su2double::TapeType Tape;
 
   /*--- Stores the indices of the input variables (they might be overwritten) ---*/
 
@@ -54,6 +55,8 @@ namespace AD{
   extern bool Status;
 
   extern bool PreaccActive;
+
+  extern bool PreaccEnabled;
 
   extern su2double::TapeType::Position StartPosition, EndPosition;
 
@@ -116,7 +119,7 @@ namespace AD{
   }
 
   inline void StartPreacc() {
-    if (globalTape.isActive()) {
+    if (globalTape.isActive() && PreaccEnabled) {
       StartPosition = globalTape.getPosition();
       PreaccActive = true;
     }

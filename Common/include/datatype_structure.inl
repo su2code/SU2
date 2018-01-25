@@ -4,8 +4,8 @@
  * \author T. Albring
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -30,8 +30,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
+#pragma once
 
 /*--- Explicit cast functions ---*/
 
@@ -47,8 +47,7 @@ namespace SU2_TYPE{
 
 /*--- Special handling of the sprint routine for non-primitive types. ---*/
 
-#if  defined COMPLEX_TYPE       || \
-     defined CODI_REVERSE_TYPE  || \
+#if  defined CODI_REVERSE_TYPE  || \
      defined CODI_FORWARD_TYPE
 
 /*--- This objective is used for primitive types,
@@ -171,13 +170,7 @@ inline int sprintfOver(char * str, const char * format, const A001 &a001, const 
 }
 #endif
 
-#if defined COMPLEX_TYPE
-#include "datatypes/complex_structure.inl"
-#elif defined ADOLC_FORWARD_TYPE
-#include "datatypes/adolc_forward_structure.inl"
-#elif defined ADOLC_REVERSE_TYPE
-#include "datatypes/adolc_reverse_structure.inl"
-#elif defined CODI_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE
 #include "datatypes/codi_reverse_structure.inl"
 #elif defined CODI_FORWARD_TYPE
 #include "datatypes/codi_forward_structure.inl"

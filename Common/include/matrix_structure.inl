@@ -4,8 +4,8 @@
  * \author F. Palacios, A. Bueno, T. Economon
  * \version 5.0.0 "Raven"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * SU2 Original Developers: Dr. Francisco D. Palacios.
+ *                          Dr. Thomas D. Economon.
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
  *                 Prof. Piero Colonna's group at Delft University of Technology.
@@ -34,8 +34,10 @@
 #pragma once
 
 inline void CSysMatrix::SetValZero(void) { 
-	for (unsigned long index = 0; index < nnz*nVar*nEqn; index++) 
+  if(NULL != matrix) {
+	  for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
 		matrix[index] = 0.0;
+  }
 }
 
 inline CSysMatrixVectorProduct::CSysMatrixVectorProduct(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
