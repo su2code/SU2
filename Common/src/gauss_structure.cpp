@@ -70,3 +70,25 @@ CGaussVariable::~CGaussVariable(void) {
   if (Ni            	   != NULL) delete [] Ni;
 
 }
+
+CElementProperty::CElementProperty(void) {
+
+  iMat_Mod = 0;
+  iMat_Prop = 0;
+  iElectric_Prop = 0;
+  iDV = 0;
+
+}
+
+CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV) {
+
+  iMat_Mod = valMat_Model;
+  iMat_Prop = valMat_Prop;
+  iElectric_Prop = valElectric_Prop;
+  iDV = valDV;
+
+}
+
+CElementProperty::~CElementProperty(void) {
+
+}
