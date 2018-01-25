@@ -2724,52 +2724,67 @@ public:
   virtual void SetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex, su2double val_deltat);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
+   * \return Value of the total temperature
    */
   virtual su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
    */
   virtual su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
    */
   virtual su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total temperature is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
+   * \param[in] val_ttotal - Value of the total temperature
    */
   virtual void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total pressure is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
+   * \param[in] val_ptotal - Value of the total pressure
    */
   virtual void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
   virtual void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetInlet(CConfig *config);
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \param geometry_container - Geometrical definition.
+   * \param config - Definition of the particular problem.
+   */
+  virtual void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -6013,52 +6028,67 @@ public:
   void SetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex, su2double val_deltat);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Value of the total temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
+   * \return Value of the total temperature
    */
   su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
    */
   su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
    */
   su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Set the value of the total temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total temperature is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
+   * \param[in] val_ttotal - Value of the total temperature
    */
   void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Set the value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
+   * \param[in] val_ptotal - Value of the total pressure
    */
   void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
+
+  /*!
+   * \brief Setup the inlet per the config file and stores the result
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetInlet(CConfig *config);
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \param geometry_container - Geometrical definition.
+   * \param config - Definition of the particular problem.
+   */
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

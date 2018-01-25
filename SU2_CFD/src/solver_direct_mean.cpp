@@ -576,6 +576,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
 
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
+
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
   CPressure = new su2double* [nMarker];
@@ -8606,6 +8610,46 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 }
 
+void CEulerSolver::SetInlet(CConfig *config) {
+
+  unsigned short iMarker, iDim;
+  unsigned long iVertex;
+  string Marker_Tag;
+
+  /* --- Initialize quantities for inlet boundary
+   * This routine does not check if the inlet boundaries are set to custom
+   * values (available through the py wrapper). This is intentional; the
+   * default values for these custom BCs are initialized with the default
+   * values specified in the config (avoiding non physical values) --- */
+  for(iMarker=0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
+      su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
+      su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+
+      for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_Ttotal[iMarker][iVertex] = t_total;
+        Inlet_Ptotal[iMarker][iVertex] = p_total;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+      }
+    }
+  }
+
+}
+
+void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
+
+  unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
+
+  // TODO: Update the fluid boundary conditions for MG
+  nMGlevel = config->GetnMGLevels();
+  if (nMGlevel > 1) {
+    SU2_MPI::Error("Custom inlet BCs are not currently compatible with multigrid.", CURRENT_FUNCTION);
+  }
+}
+
 void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
   unsigned short iMarker_Monitoring;
@@ -11103,10 +11147,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
-          if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
-          else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-          T_Total  = config->GetInlet_Ttotal(Marker_Tag);
-          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+          if (gravity) P_Total = Inlet_Ptotal[val_marker][iVertex] - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+          else P_Total  = Inlet_Ptotal[val_marker][iVertex];
+          T_Total  = Inlet_Ttotal[val_marker][iVertex];
+          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -11211,9 +11255,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified mass flow for the inlet. ---*/
 
-          Density  = config->GetInlet_Ttotal(Marker_Tag);
-          Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+          Density  = Inlet_Ttotal[val_marker][iVertex];
+          Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -14878,6 +14922,11 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+
+  /*--- Inlet Variables ---*/
+  Inlet_Ttotal = NULL;
+  Inlet_Ptotal = NULL;
+  Inlet_FlowDir = NULL;
   
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
@@ -15237,6 +15286,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       }
     }
   }
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
 
   /*--- Inviscid force definition and coefficient in all the markers ---*/
   
