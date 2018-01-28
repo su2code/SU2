@@ -6357,7 +6357,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
-  StrainMag_Max = 0.0, Omega_Max = 0.0;
+  StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
