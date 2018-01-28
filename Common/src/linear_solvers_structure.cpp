@@ -85,7 +85,7 @@ void CSysSolve::SolveReduced(const int & n, const vector<vector<su2double> > & H
 }
 
 void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<CSysVector> & w) {
-  
+
   bool Convergence = true;
 
   /*--- Parameter for reorthonormalization ---*/
@@ -105,9 +105,10 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   /*--- Synchronization point to check the convergence of the solver ---*/
 
 #ifdef HAVE_MPI
+
   int rank = SU2_MPI::GetRank();
   int size = SU2_MPI::GetSize();
-
+  
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
   sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
   rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
