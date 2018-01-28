@@ -59,6 +59,17 @@ def main():
     discadj_naca0012.tol       = 0.00001
     test_list.append(discadj_naca0012)
    
+    # Inviscid ONERAM6 (multiple markers)
+    discadj_oneram6           = TestCase('discadj_oneram6')
+    discadj_oneram6.cfg_dir   = "disc_adj_euler/oneram6"
+    discadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
+    discadj_oneram6.test_iter = 5
+    discadj_oneram6.test_vals = [-3.606841, -9.035214, -0.000000, 0.005688] #last 4 columns
+    discadj_oneram6.su2_exec  = "parallel_computation.py -f"
+    discadj_oneram6.timeout   = 1600
+    discadj_oneram6.tol       = 0.00001
+    test_list.append(discadj_oneram6)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################

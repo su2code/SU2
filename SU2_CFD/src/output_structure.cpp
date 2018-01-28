@@ -9341,7 +9341,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
     string Analyze_TagBound = config->GetMarker_Analyze_TagBound(iMarker_Analyze);
 
-    nVertex_Surface = 0, nLocalVertex_Surface = 0; MaxLocalVertex_Surface = 0;
+    nVertex_Surface = 0; nLocalVertex_Surface = 0; MaxLocalVertex_Surface = 0;
 
     /*--- Find the max number of surface vertices among all
      partitions and set up buffers. The master node will handle the
@@ -15166,7 +15166,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    the counters into cumulative storage format to make the
    communications simpler. ---*/
   
-  nSends = 0, nRecvs = 0;
+  nSends = 0; nRecvs = 0;
   for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
@@ -15510,7 +15510,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    the counters into cumulative storage format to make the
    communications simpler. ---*/
   
-  nSends = 0, nRecvs = 0;
+  nSends = 0; nRecvs = 0;
   for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
@@ -16263,15 +16263,13 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
-  su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
+  su2double Mach = 0.0, Pressure = 0.0, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0, Enthalpy = 0.0,
   Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
   
   su2double Gas_Constant      = config->GetGas_ConstantND();
   su2double Gamma             = config->GetGamma();
-  su2double Gamma_Minus_One   = Gamma - 1.0;
   unsigned short nMarker      = config->GetnMarker_All();
   unsigned short nDim         = geometry->GetnDim();
-  unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
 
   bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
@@ -16325,7 +16323,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           
           Density = solver->node[iPoint]->GetDensity();
           Enthalpy = solver->node[iPoint]->GetEnthalpy();
-          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
             Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
@@ -16560,7 +16558,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
-    cout.precision(4);    
+    cout.precision(3);
     cout << endl << "Computing surface mean values." << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
