@@ -979,26 +979,75 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
       
       
       if (config->GetGeo_Description() == NACELLE) {
-        su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
-        su2double Angle = 0.5*PI_NUMBER - theta_deg*PI_NUMBER/180;
+        
+        su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+        su2double Roll_Angle = 0.5*PI_NUMBER - Theta_deg*PI_NUMBER/180;
+
+        su2double XCoord_Trans, YCoord_Trans, ZCoord_Trans, XCoord_Trans_Tilt, YCoord_Trans_Tilt, ZCoord_Trans_Tilt,
+        XCoord_Trans_Tilt_Toe, YCoord_Trans_Tilt_Toe, ZCoord_Trans_Tilt_Toe, XCoord, YCoord, ZCoord;
+        
         for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
           
-          su2double XCoord_Translate = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
-          su2double YCoord_Translate = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
-          su2double ZCoord_Translate = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
+          /*--- First point of the edge ---*/
+
+          /*--- Translate to the origin ---*/
+
+          XCoord_Trans = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
           
-          su2double XCoord = XCoord_Translate;
-          su2double YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
-          su2double ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
+          /*--- Apply tilt angle ---*/
+
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+
+          /*--- Rotate to X-Z plane (roll) ---*/
+
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
           Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
           
-          XCoord_Translate = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
-          YCoord_Translate = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
-          ZCoord_Translate = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          /*--- Second point of the edge ---*/
           
-          XCoord = XCoord_Translate;
-          YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
-          ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
+          /*--- Translate to the origin ---*/
+          
+          XCoord_Trans = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          
+          /*--- Apply tilt angle ---*/
+          
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+          
+          /*--- Rotate to X-Z plane (roll) ---*/
+          
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
           Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
           
         }

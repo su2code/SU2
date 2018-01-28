@@ -307,7 +307,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
   
-  sqvel = 0.0, proj_vel = 0.0;
+  sqvel = 0.0; proj_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     sqvel    += val_velocity[iDim]*val_velocity[iDim];
     proj_vel += val_velocity[iDim]*val_normal[iDim];
@@ -346,7 +346,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_entha
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
 
-  sqvel = 0.0, proj_vel = 0.0;
+  sqvel = 0.0; proj_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     sqvel += val_velocity[iDim]*val_velocity[iDim];
     proj_vel += val_velocity[iDim]*val_normal[iDim];

@@ -557,7 +557,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit           = new su2double[3];
   default_htp_axis           = new su2double[2];
   default_body_force         = new su2double[3];
-  default_nacelle_location   = new su2double[6];
+  default_nacelle_location   = new su2double[5];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -1259,9 +1259,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
-  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0; default_nacelle_location[5] = 0.0;
-  /* DESCRIPTION: Definition of the nacelle location (point and axis) */
-  addDoubleArrayOption("GEO_NACELLE_LOCATION", 6, NacelleLocation, default_nacelle_location);
+  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0;
+  /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, NacelleLocation, default_nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */

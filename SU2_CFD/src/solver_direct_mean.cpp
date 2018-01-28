@@ -5274,7 +5274,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
   
   su2double *Vorticity;
   
-  su2double uixi, Ducros_i, Ducros_j, Omega;
+  su2double uixi = 0.0, Ducros_i = 0.0, Ducros_j = 0.0, Omega = 0.0;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
     
@@ -8287,7 +8287,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                 CTerm_ = (PolyCoeff-1.0)/(PolyCoeff+1.0);
                 DTerm_ = 1.0/(PolyCoeff-1.0);
                 
-                La = EPS, La_old = EPS;
+                La = EPS; La_old = EPS;
                 
                 for (iter = 0; iter < 100; iter++) {
                   
@@ -15726,7 +15726,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
-  StrainMag_Max = 0.0, Omega_Max = 0.0;
+  StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
