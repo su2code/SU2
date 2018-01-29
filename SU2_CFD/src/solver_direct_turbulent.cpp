@@ -41,7 +41,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   upperlimit    = NULL;
   nVertex       = NULL;
   nMarker       = 0;
-  Inlet_Turb_Vars = NULL;
+  Inlet_TurbVars = NULL;
   
 }
 
@@ -65,16 +65,16 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CTurbSolver::~CTurbSolver(void) {
 
-  if (Inlet_Turb_Vars != NULL) {
+  if (Inlet_TurbVars != NULL) {
     for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_Turb_Vars[iMarker] != NULL) {
+      if (Inlet_TurbVars[iMarker] != NULL) {
         for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          delete [] Inlet_Turb_Vars[iMarker][iVertex];
+          delete [] Inlet_TurbVars[iMarker][iVertex];
         }
-        delete [] Inlet_Turb_Vars[iMarker];
+        delete [] Inlet_TurbVars[iMarker];
       }
     }
-    delete [] Inlet_Turb_Vars;
+    delete [] Inlet_TurbVars;
   }
 
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
@@ -1194,7 +1194,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 
-  Inlet_Turb_Vars = NULL;
+  Inlet_TurbVars = NULL;
 
 }
 
@@ -1788,7 +1788,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       if (isCustomizable) {
         /*--- Only use the array version of the inlet BC when necessary ---*/
-        Solution_j[0] = Inlet_Turb_Vars[val_marker][iVertex][0];
+        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
       } else {
         Solution_j[0] = nu_tilde_Inf;
       }
@@ -3171,21 +3171,21 @@ void CTurbSASolver::SetInlet(CConfig* config) {
 
   /*-- Allocation has to happen in derived classes (not CTurbSolver),
    * due to arbitrary number of turbulence variables ---*/
-  Inlet_Turb_Vars = new su2double**[nMarker];
+  Inlet_TurbVars = new su2double**[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
     bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
     if (isCustomizable && isInlet) {
-      Inlet_Turb_Vars[iMarker] = new su2double*[nVertex[iMarker]];
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
       for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_Turb_Vars[iMarker][iVertex] = new su2double[nVar];
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
         /*--- The default values for these custom BCs are initialized with
          * the freestream values to avoid nonphysical values at unspecified
          * points ---*/
-        Inlet_Turb_Vars[iMarker][iVertex][0] = nu_tilde_Inf;
+        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
       }
     } else {
-      Inlet_Turb_Vars[iMarker] = NULL;
+      Inlet_TurbVars[iMarker] = NULL;
     }
   }
 
@@ -3195,7 +3195,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
   
   /*--- Array initialization ---*/
   constants = NULL;
-  Inlet_Turb_Vars = NULL;
+  Inlet_TurbVars = NULL;
   
 }
 
@@ -3790,8 +3790,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       
       if (isCustomizable) {
         /*--- Only use the array version of the inlet BC when necessary ---*/
-        Solution_j[0] = Inlet_Turb_Vars[val_marker][iVertex][0];
-        Solution_j[1] = Inlet_Turb_Vars[val_marker][iVertex][1];
+        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+        Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
       } else {
         Solution_j[0] = kine_Inf;
         Solution_j[1] = omega_Inf;
@@ -4295,22 +4295,22 @@ void CTurbSSTSolver::SetInlet(CConfig* config) {
 
   /*-- Allocation has to happen in derived classes (not CTurbSolver),
    * due to arbitrary number of turbulence variables ---*/
-  Inlet_Turb_Vars = new su2double**[nMarker];
+  Inlet_TurbVars = new su2double**[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
     bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
     if (isCustomizable && isInlet) {
-      Inlet_Turb_Vars[iMarker] = new su2double*[nVertex[iMarker]];
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
       for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_Turb_Vars[iMarker][iVertex] = new su2double[nVar];
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
         /*--- The default values for these custom BCs are initialized with
          * the freestream values to avoid nonphysical values at unspecified
          * points ---*/
-        Inlet_Turb_Vars[iMarker][iVertex][0] = kine_Inf;
-        Inlet_Turb_Vars[iMarker][iVertex][1] = omega_Inf;
+        Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+        Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
       }
     } else {
-      Inlet_Turb_Vars[iMarker] = NULL;
+      Inlet_TurbVars[iMarker] = NULL;
     }
   }
 

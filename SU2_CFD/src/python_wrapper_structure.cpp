@@ -531,6 +531,12 @@ void CDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, u
 
 }
 
+void CDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_turb_var){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_TurbVar(iMarker, iVertex, iDim, val_turb_var);
+
+}
+
 bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex){
 
   unsigned long iPoint;
