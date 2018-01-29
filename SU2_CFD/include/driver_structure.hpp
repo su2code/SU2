@@ -553,6 +553,15 @@ public:
   void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir);
 
   /*!
+   * \brief Set a turbulence variable on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_tub_var);
+
+  /*!
    * \brief Compute the heat flux at a vertex on a specified marker (3 components).
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
