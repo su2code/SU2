@@ -8621,6 +8621,7 @@ void CEulerSolver::SetInlet(CConfig *config) {
    * values (available through the py wrapper). This is intentional; the
    * default values for these custom BCs are initialized with the default
    * values specified in the config (avoiding non physical values) --- */
+  cout << "Setting default inlet conditions..." << endl;
   for(iMarker=0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
       string Marker_Tag = config->GetMarker_All_TagBound(iMarker);

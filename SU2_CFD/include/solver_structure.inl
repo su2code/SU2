@@ -532,6 +532,8 @@ inline void CSolver::SetInlet_Ptotal(unsigned short val_marker, unsigned long va
 
 inline void CSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir) { }
 
+inline void CSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) { }
+
 inline void CSolver::SetInlet(CConfig *config) { }
 
 inline void CSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) { }
@@ -2076,6 +2078,11 @@ inline void CTurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned l
 
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
+inline void CTurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) {
+  if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
+    SU2_MPI::Error("Tried to set a turbulence variable on an invalid marker!", CURRENT_FUNCTION);
+  else Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+}
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

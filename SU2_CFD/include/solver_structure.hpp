@@ -2775,6 +2775,15 @@ public:
 
   /*!
    * \brief A virtual member
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  virtual void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
+
+  /*!
+   * \brief A virtual member
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetInlet(CConfig *config);
@@ -8576,7 +8585,7 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  su2double*** Inlet_Turb_Vars; /*!< \brief Turbulence variables at inlet profiles */
+  su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
   
@@ -8780,6 +8789,15 @@ public:
    * \param[in] val_vertex - vertex index
    */
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set custom turbulence variables at the vertex of an inlet.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
 };
 
 /*!
