@@ -15271,7 +15271,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Store the value of the Total Pressure at the inlet BC ---*/
-
+  
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
@@ -15283,9 +15283,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Inlet_Ttotal[iMarker] = NULL;
     }
   }
-
+  
   /*--- Store the value of the Total Temperature at the inlet BC ---*/
-
+  
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
@@ -15297,9 +15297,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Inlet_Ptotal[iMarker] = NULL;
     }
   }
-
+  
   /*--- Store the value of the Flow direction at the inlet BC ---*/
-
+  
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
