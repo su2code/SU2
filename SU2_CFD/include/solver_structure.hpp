@@ -8664,7 +8664,7 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
+  
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9153,8 +9153,6 @@ public:
   void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh);
   
-
-
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9254,7 +9252,7 @@ public:
    * \return A pointer to an array containing a set of constants
    */
   su2double* GetConstants();
-
+  
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.

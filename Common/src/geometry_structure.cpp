@@ -1330,10 +1330,7 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
           case ISOTHERMAL:
             geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
             break;
-          case INLET_FLOW:
-            if (nMGlevel > 0)
-              SU2_MPI::Error("Multigrid is not currently supported for custom inlet profiles.", CURRENT_FUNCTION);
-            break; // Break not necessary, but prevents false compiler warnings
+          // Inlet flow handled in solver class.
           default: break;
         }
       }
