@@ -547,9 +547,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ttotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ttotal[iMarker] = NULL;
     }
   }
 
@@ -557,9 +561,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ptotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ptotal[iMarker] = NULL;
     }
   }
 
@@ -567,12 +575,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+        }
       }
+    } else {
+      Inlet_FlowDir[iMarker] = NULL;
     }
   }
 
@@ -1022,21 +1034,25 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (Inlet_Ttotal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] Inlet_Ttotal[iMarker];
+      if (Inlet_Ttotal[iMarker] != NULL)
+        delete [] Inlet_Ttotal[iMarker];
     delete [] Inlet_Ttotal;
   }
 
   if (Inlet_Ptotal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] Inlet_Ptotal[iMarker];
+      if (Inlet_Ptotal[iMarker] != NULL)
+        delete [] Inlet_Ptotal[iMarker];
     delete [] Inlet_Ptotal;
   }
 
   if (Inlet_FlowDir != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] Inlet_FlowDir[iMarker][iVertex];
-      delete [] Inlet_FlowDir[iMarker];
+      if (Inlet_FlowDir[iMarker] != NULL) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] Inlet_FlowDir[iMarker][iVertex];
+        delete [] Inlet_FlowDir[iMarker];
+      }
     }
     delete [] Inlet_FlowDir;
   }
@@ -15256,35 +15272,47 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Store the value of the Total Pressure at the inlet BC ---*/
-  
+
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ttotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ttotal[iMarker] = NULL;
     }
   }
-  
+
   /*--- Store the value of the Total Temperature at the inlet BC ---*/
-  
+
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ptotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ptotal[iMarker] = NULL;
     }
   }
-  
+
   /*--- Store the value of the Flow direction at the inlet BC ---*/
-  
+
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+        }
       }
+    } else {
+      Inlet_FlowDir[iMarker] = NULL;
     }
   }
 
