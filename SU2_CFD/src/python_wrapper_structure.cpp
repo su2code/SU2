@@ -988,7 +988,6 @@ void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVert
 
 }
 
-
 void CFluidDriver::BoundaryConditionsUpdate(){
 
   int rank = MASTER_NODE;

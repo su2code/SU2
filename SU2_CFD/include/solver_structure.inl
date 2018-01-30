@@ -1145,11 +1145,44 @@ inline su2double CEulerSolver::GetInlet_Ptotal(unsigned short val_marker, unsign
 
 inline su2double CEulerSolver::GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return Inlet_FlowDir[val_marker][val_vertex][val_dim]; }
 
-inline void CEulerSolver::SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) { Inlet_Ttotal[val_marker][val_vertex] = val_ttotal; }
+inline void CEulerSolver::SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) {
+  /*--- Since this call can be accessed indirectly using python, do some error
+   * checking to prevent segmentation faults ---*/
+  if (val_marker >= nMarker)
+    SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+  else if (Inlet_Ttotal == NULL || Inlet_Ttotal[val_marker] == NULL)
+    SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_vertex >= nVertex[val_marker])
+    SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+  else
+    Inlet_Ttotal[val_marker][val_vertex] = val_ttotal;
+}
 
-inline void CEulerSolver::SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) { Inlet_Ptotal[val_marker][val_vertex] = val_ptotal; }
+inline void CEulerSolver::SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) {
+  /*--- Since this call can be accessed indirectly using python, do some error
+   * checking to prevent segmentation faults ---*/
+  if (val_marker >= nMarker)
+    SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+  else if (Inlet_Ptotal == NULL || Inlet_Ptotal[val_marker] == NULL)
+    SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_vertex >= nVertex[val_marker])
+    SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+  else
+    Inlet_Ptotal[val_marker][val_vertex] = val_ptotal;
+}
 
-inline void CEulerSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir) { Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir; }
+inline void CEulerSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir) {
+  /*--- Since this call can be accessed indirectly using python, do some error
+   * checking to prevent segmentation faults ---*/
+  if (val_marker >= nMarker)
+    SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+  else if (Inlet_FlowDir == NULL || Inlet_FlowDir[val_marker] == NULL)
+      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_vertex >= nVertex[val_marker])
+    SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+  else
+    Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
+}
 
 inline su2double CEulerSolver::GetCL_Inv(unsigned short val_marker) { return CL_Inv[val_marker]; }
 
@@ -2079,11 +2112,18 @@ inline void CTurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned l
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
 inline void CTurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) {
-  if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
-    SU2_MPI::Error("Tried to set a turbulence variable on an invalid marker.", CURRENT_FUNCTION);
+  /*--- Since this call can be accessed indirectly using python, do some error
+   * checking to prevent segmentation faults ---*/
+  if (val_marker >= nMarker)
+    SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+  else if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
+    SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_vertex >= nVertex[val_marker])
+    SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
   else if (val_dim >= nVar)
     SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
-  else Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+  else
+    Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
 }
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
