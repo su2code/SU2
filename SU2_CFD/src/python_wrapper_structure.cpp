@@ -513,36 +513,6 @@ void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned short iVerte
   geometry_container[ZONE_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, val_WallTemp);
 }
 
-void CDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal){
-
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ttotal(iMarker, iVertex, val_Ttotal);
-
-}
-
-void CDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal){
-
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ptotal(iMarker, iVertex, val_Ptotal);
-
-}
-
-void CDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir){
-
-  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, iDim, val_FlowDir);
-
-}
-
-void CDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_turb_var){
-
-  if (solver_container[ZONE_0] == NULL ||
-      solver_container[ZONE_0][MESH_0] ==  NULL) {
-    SU2_MPI::Error("Could not find an appropriate solver.", CURRENT_FUNCTION);
-  } else if (solver_container[ZONE_0][MESH_0][TURB_SOL] == NULL) {
-    SU2_MPI::Error("Tried to set turbulence variables without a turbulence solver.", CURRENT_FUNCTION);
-  }
-  solver_container[ZONE_0][MESH_0][TURB_SOL]->SetInlet_TurbVar(iMarker, iVertex, iDim, val_turb_var);
-
-}
-
 bool CDriver::ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex){
 
   unsigned long iPoint;
@@ -987,6 +957,37 @@ void CFluidDriver::SetInitialMesh() {
   }
   //}
 }
+
+void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ttotal(iMarker, iVertex, val_Ttotal);
+
+}
+
+void CFluidDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ptotal(iMarker, iVertex, val_Ptotal);
+
+}
+
+void CFluidDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, iDim, val_FlowDir);
+
+}
+
+void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_turb_var){
+
+  if (solver_container[ZONE_0] == NULL ||
+      solver_container[ZONE_0][MESH_0] ==  NULL) {
+    SU2_MPI::Error("Could not find an appropriate solver.", CURRENT_FUNCTION);
+  } else if (solver_container[ZONE_0][MESH_0][TURB_SOL] == NULL) {
+    SU2_MPI::Error("Tried to set turbulence variables without a turbulence solver.", CURRENT_FUNCTION);
+  }
+  solver_container[ZONE_0][MESH_0][TURB_SOL]->SetInlet_TurbVar(iMarker, iVertex, iDim, val_turb_var);
+
+}
+
 
 void CFluidDriver::BoundaryConditionsUpdate(){
 

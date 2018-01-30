@@ -2080,7 +2080,9 @@ inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigne
 
 inline void CTurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) {
   if (Inlet_TurbVars == NULL || Inlet_TurbVars[val_marker] == NULL)
-    SU2_MPI::Error("Tried to set a turbulence variable on an invalid marker!", CURRENT_FUNCTION);
+    SU2_MPI::Error("Tried to set a turbulence variable on an invalid marker.", CURRENT_FUNCTION);
+  else if (val_dim >= nVar)
+    SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
   else Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
 }
 
