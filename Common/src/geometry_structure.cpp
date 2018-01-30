@@ -1322,11 +1322,20 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
     iMGfine = iMGlevel-1;
     for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
-      if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
-        geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
-      }
-      else if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+      if(config->GetMarker_All_PyCustom(iMarker)){
+        switch(config->GetMarker_All_KindBC(iMarker)){
+          case HEAT_FLUX:
+            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+            break;
+          case ISOTHERMAL:
+            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+            break;
+          case INLET_FLOW:
+            if (nMGlevel > 0)
+              SU2_MPI::Error("Multigrid is not currently supported for custom inlet profiles.", CURRENT_FUNCTION);
+            break; // Break not necessary, but prevents false compiler warnings
+          default: break;
+        }
       }
     }
   }
