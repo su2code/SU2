@@ -18832,7 +18832,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
     }
   }
 
-
+  
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
   output_file << "NELEM= " << nElem << endl;
