@@ -8663,7 +8663,9 @@ void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container
   nMGlevel = config->GetnMGLevels();
   if (nMGlevel > 1) {
     for (iMarker=0; iMarker < nMarker; iMarker++) {
-      if (config->GetMarker_All_PyCustom(iMarker))
+      bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
+      bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+      if (isCustomizable && isInlet)
         SU2_MPI::Error("Custom inlet BCs are not currently compatible with multigrid.", CURRENT_FUNCTION);
     }
   }
