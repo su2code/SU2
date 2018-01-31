@@ -105,7 +105,10 @@ int main(int argc, char *argv[]) {
     fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)         ||
                   (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
                   (config_container[iZone]->GetKind_Solver() == FEM_RANS)          ||
-                  (config_container[iZone]->GetKind_Solver() == FEM_LES));
+                  (config_container[iZone]->GetKind_Solver() == FEM_LES)           ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_EULER) ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_NS)    ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_RANS));
 
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
