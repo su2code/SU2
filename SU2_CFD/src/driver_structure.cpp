@@ -2858,16 +2858,20 @@ void CDriver::Interface_Preprocessing() {
         transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
       }
-      else if ((fluid_donor && heat_target) || (heat_donor && fluid_target)) {
+      else if (fluid_donor && heat_target) {
+        nVarTransfer = 0;
+        nVar = 4;
         if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE)
           transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_COMPRESSIBLE_FS;
         else if (config_container[donorZone]->GetKind_Regime() == INCOMPRESSIBLE)
           transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_INCOMPRESSIBLE_FS;
-        else {}
+        else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
       }
       else if (heat_donor && fluid_target) {
+        nVarTransfer = 0;
+        nVar = 4;
         if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE)
           transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_COMPRESSIBLE_SF;
         else if (config_container[targetZone]->GetKind_Regime() == INCOMPRESSIBLE)
