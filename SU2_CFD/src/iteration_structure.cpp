@@ -904,13 +904,13 @@ void CFEMFluidIteration::Iterate(COutput *output,
   
   /*--- Update global parameters ---*/
   
-  if (config_container[val_iZone]->GetKind_Solver() == FEM_EULER)
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_EULER || config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_DG_EULER)
     config_container[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FLOW_SYS, ExtIter);
   
-  if (config_container[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES || config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_DG_NS)
     config_container[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
   
-  if (config_container[val_iZone]->GetKind_Solver() == FEM_RANS)
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_RANS || config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_DG_RANS)
     config_container[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FLOW_SYS, ExtIter);
   
   if (config_container[val_iZone]->GetKind_Solver() == FEM_LES)

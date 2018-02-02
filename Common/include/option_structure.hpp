@@ -207,6 +207,9 @@ enum ENUM_SOLVER {
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
+  DISC_ADJ_DG_EULER = 65,
+  DISC_ADJ_DG_RANS = 66,
+  DISC_ADJ_DG_NS = 67,
   DISC_ADJ_FEM = 40,
   FEM_EULER = 50,                       /*!< \brief Definition of the finite element Euler's solver. */
   FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
@@ -233,6 +236,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
+("DISC_ADJ_DG_EULER", DISC_ADJ_DG_EULER)
+("DISC_ADJ_DG_RANS", DISC_ADJ_DG_RANS)
+("DISC_ADJ_DG_NS", DISC_ADJ_DG_NS)
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER);

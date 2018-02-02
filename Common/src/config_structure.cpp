@@ -3598,6 +3598,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case NAVIER_STOKES:
         Kind_Solver = DISC_ADJ_NAVIER_STOKES;
         break;
+      case FEM_EULER :
+        Kind_Solver = DISC_ADJ_DG_EULER;
+        break;
+      case FEM_RANS :
+        Kind_Solver = DISC_ADJ_DG_RANS;
+        break;
+      case FEM_NAVIER_STOKES : 
+        Kind_Solver = DISC_ADJ_DG_NS;
+        break;
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
@@ -4291,15 +4300,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER: case FEM_EULER:
+      case EULER: case DISC_ADJ_EULER: case FEM_EULER: case DISC_ADJ_DG_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES:
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES: case DISC_ADJ_DG_NS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS: case DISC_ADJ_RANS: case FEM_RANS:
+      case RANS: case DISC_ADJ_RANS: case FEM_RANS: case DISC_ADJ_DG_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -5002,7 +5011,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if(Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES &&
-       Kind_Solver != FEM_RANS  && Kind_Solver != FEM_LES) {
+       Kind_Solver != FEM_RANS  && Kind_Solver != FEM_LES &&
+       Kind_Solver != DISC_ADJ_DG_EULER && Kind_Solver != DISC_ADJ_DG_NS && 
+       Kind_Solver != DISC_ADJ_DG_RANS) {
       switch (Kind_Gradient_Method) {
         case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
         case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
@@ -5014,7 +5025,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if(Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES ||
-       Kind_Solver == FEM_RANS  || Kind_Solver == FEM_LES) {
+       Kind_Solver == FEM_RANS  || Kind_Solver == FEM_LES ||
+       Kind_Solver == DISC_ADJ_DG_EULER || Kind_Solver == DISC_ADJ_DG_NS ||
+       Kind_Solver == DISC_ADJ_DG_RANS) {
       if(Kind_FEM_Flow == DG) {
         cout << "Discontinuous Galerkin Finite element solver" << endl;
 
@@ -5027,8 +5040,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case VAN_LEER:      cout << "Van Leer solver inviscid fluxes over the faces" << endl; break;
         }
 
-        if(Kind_Solver != FEM_EULER) {
-          cout << "Theta symmetrizing terms interior penalty:  " << Theta_Interior_Penalty_DGFEM << endl;
+        if(Kind_Solver != FEM_EULER && Kind_Solver != DISC_ADJ_DG_EULER) {
+          cout << "Theta symmetrizing terms interior penalty: " << Theta_Interior_Penalty_DGFEM << endl;
         }
       }
 
@@ -5076,7 +5089,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	}
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
+        (Kind_Solver == DISC_ADJ_DG_EULER) || (Kind_Solver == DISC_ADJ_DG_NS) || (Kind_Solver == DISC_ADJ_DG_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
           cout << "Runge-Kutta explicit method for the flow equations." << endl;

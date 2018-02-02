@@ -2312,7 +2312,7 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
                                         CConfig      *config) {
 
   /* Determine whether or not the viscous terms are needed. */
-  const bool viscousTerms = (config->GetKind_Solver() != FEM_EULER);
+  const bool viscousTerms = (config->GetKind_Solver() != FEM_EULER && config->GetKind_Solver() != DISC_ADJ_DG_EULER);
 
   /*--- Loop over the boundary faces stored on this rank. ---*/
   for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
@@ -5002,7 +5002,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
 void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
   /* Determine whether or not the viscous terms are needed. */
-  bool viscousTerms = (config->GetKind_Solver() != FEM_EULER);
+  bool viscousTerms = (config->GetKind_Solver() != FEM_EULER && config->GetKind_Solver() != DISC_ADJ_DG_EULER);
 
   /* Loop over the internal matching faces. */
   for(unsigned long i=0; i<matchingFaces.size(); ++i) {
