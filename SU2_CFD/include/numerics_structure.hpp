@@ -86,7 +86,9 @@ public:
   su2double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
-  Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
+  Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
+  Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
   su2double Cp_i, /*!< \brief Cp at point i. */
   Cp_j;         /*!< \brief Cp at point j. */
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
@@ -483,6 +485,14 @@ public:
   void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
                                  su2double val_thermal_conductivity_ve_j);
   
+  /*!
+   * \brief Set the thermal diffusivity (translational/rotational)
+   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
+   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
+   * \param[in] iSpecies - Value of the species.
+   */
+  void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
+                              su2double val_thermal_diffusivity_j);
   /*!
    * \brief Set the eddy viscosity.
    * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
@@ -2554,6 +2564,44 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+/*!
+ * \class CUpwSca_Heat
+ * \brief Class for doing a scalar upwind solver for the heat convection equation.
+ * \ingroup ConvDiscr
+ * \author O. Burghardt.
+ * \version 4.3.0 "Cardinal"
+ */
+class CUpwSca_Heat : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSca_Heat(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
 
 /*!
  * \class CCentJST_Flow
@@ -2815,6 +2863,62 @@ public:
                         su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
                         CConfig *config);
 };
+
+/*!
+ * \class CCentSca_Heat
+ * \brief Class for scalar centered scheme.
+ * \ingroup ConvDiscr
+ * \author O. Burghardt
+ * \version 5.0.0 "Raven"
+ */
+class CCentSca_Heat : public CNumerics {
+
+private:
+  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
+  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
+  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
+  MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
+  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
+  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
+  Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
+  ProjGridVel;  /*!< \brief Projected grid velocity. */
+  bool implicit, /*!< \brief Implicit calculation. */
+  grid_movement; /*!< \brief Modification for grid movement. */
+
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCentSca_Heat(void);
+
+  /*!
+   * \brief Compute the flow residual using a JST method.
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+
 
 /*!
  * \class CCentLax_Flow
@@ -3872,6 +3976,89 @@ public:
    */
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
+};
+
+
+/*!
+ * \class CAvgGrad_Heat
+ * \brief Class for computing viscous term using average of gradients without correction (heat equation).
+ * \ingroup ViscDiscr
+ * \author O. Burghardt.
+ * \version 5.0.0 "Raven"
+ */
+class CAvgGrad_Heat : public CNumerics {
+private:
+  su2double **Mean_GradHeatVar;
+  su2double *Proj_Mean_GradHeatVar_Normal, *Proj_Mean_GradHeatVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Diffusivity_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Heat(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGradCorrected_Heat
+ * \brief Class for computing viscous term using average of gradients with correction (heat equation).
+ * \ingroup ViscDiscr
+ * \author O. Burghardt.
+ * \version 5.0.0 "Raven"
+ */
+class CAvgGradCorrected_Heat : public CNumerics {
+private:
+  su2double **Mean_GradHeatVar;
+  su2double *Proj_Mean_GradHeatVar_Kappa, *Proj_Mean_GradHeatVar_Edge, *Proj_Mean_GradHeatVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Diffusivity_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_Heat(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
 };
 
 /*!
@@ -5316,6 +5503,38 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+};
+
+/*!
+ * \class CSourceHeating
+ * \brief Class for a source term due to external heating.
+ * \ingroup SourceDiscr
+ * \author O. Burghardt
+ * \version 5.0.0 "Raven"
+ */
+class CSourceHeating : public CNumerics {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceHeating(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceHeating(void);
+
+  /*!
+   * \brief Residual of the wind gust source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, CConfig *config);
 };
 
 /*!
