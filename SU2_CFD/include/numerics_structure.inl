@@ -269,6 +269,11 @@ inline void CNumerics::SetThermalConductivity_ve(su2double val_therm_conductivit
   Thermal_Conductivity_ve_j = val_therm_conductivity_ve_j;
 }
 
+inline void CNumerics::SetThermalDiffusivity(su2double val_thermal_diffusivity_i,su2double val_thermal_diffusivity_j) {
+  Thermal_Diffusivity_i = val_thermal_diffusivity_i;
+  Thermal_Diffusivity_j = val_thermal_diffusivity_j;
+}
+
 inline void CNumerics::SetDiffusionCoeff(su2double* val_diffusioncoeff_i, su2double* val_diffusioncoeff_j) {
   Diffusion_Coeff_i = val_diffusioncoeff_i;
   Diffusion_Coeff_j = val_diffusioncoeff_j;
