@@ -2765,7 +2765,7 @@ void CDriver::Interface_Preprocessing() {
         /*--- Begin the creation of the communication pattern among zones ---*/
 
         /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
-        if (!structural_donor && !structural_target)
+        if (fluid_donor && fluid_target)
           nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
         else
           /*--- If at least one of the components is structural ---*/
@@ -7202,8 +7202,21 @@ void CMultiPhysicalZonesDriver::Run() {
     /*--- Check convergence in each zone --*/
 
     checkConvergence = 0;
-    for (iZone = 0; iZone < nZone; iZone++)
-    checkConvergence += (int) integration_container[iZone][FLOW_SOL]->GetConvergence();
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      if ((config_container[iZone]->GetKind_Solver() == EULER)
+          || (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES)
+          || (config_container[iZone]->GetKind_Solver() == RANS))
+        checkConvergence += (int) integration_container[iZone][FLOW_SOL]->GetConvergence();
+      else if ((config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER)
+               || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
+               || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+        checkConvergence += (int) integration_container[iZone][ADJFLOW_SOL]->GetConvergence();
+      else if ((config_container[iZone]->GetKind_Solver() == HEAT_EQUATION)
+               || (config_container[iZone]->GetKind_Solver() == HEAT_EQUATION_FVM))
+        checkConvergence += (int) integration_container[iZone][HEAT_SOL]->GetConvergence();
+      else { }
+    }
 
     /*--- If convergence was reached in every zone --*/
 
