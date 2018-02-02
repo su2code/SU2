@@ -197,10 +197,16 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-    }
-
+      case CHT_WALL_INTERFACE: 
+        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && config->GetKind_Regime() == COMPRESSIBLE)) {
+          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        }
+        else {
+          solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        }
+        break;
+    } 
 }
-
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      CSolver **solver_container,
