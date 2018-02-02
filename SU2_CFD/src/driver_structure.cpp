@@ -878,7 +878,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
     }
     if (heat_fvm) {
-      solver_container[iMGlevel][HEAT_SOL] = NULL;
+      solver_container[iMGlevel][HEAT_SOL] = new CHeatSolverFVM(geometry[iMGlevel], config, iMGlevel);
     }
     if (fem) {
       solver_container[iMGlevel][FEA_SOL] = new CFEM_ElasticitySolver(geometry[iMGlevel], config);
@@ -1761,30 +1761,23 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
-//      numerics_container[iMGlevel][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
-//      numerics_container[iMGlevel][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
-
-      numerics_container[iMGlevel][HEAT_SOL][VISC_TERM] = NULL;
-      numerics_container[iMGlevel][HEAT_SOL][VISC_BOUND_TERM] = NULL;
+      numerics_container[iMGlevel][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
+      numerics_container[iMGlevel][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
 
       switch (config->GetKind_ConvNumScheme_Heat()) {
+
         case SPACE_UPWIND :
-//          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
-//          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
-
-          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = NULL;
-          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = NULL;
-
+          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
           break;
-        case SPACE_CENTERED :
-//          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CCentSca_Heat(nDim, nVar_Heat, config);
-//          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
 
-          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = NULL;
-          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = NULL;
+        case SPACE_CENTERED :
+          numerics_container[iMGlevel][HEAT_SOL][CONV_TERM] = new CCentSca_Heat(nDim, nVar_Heat, config);
+          numerics_container[iMGlevel][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
         break;
+
         default :
-        cout << "Convective scheme not implemented (heat)." << endl; exit(EXIT_FAILURE);
+          cout << "Convective scheme not implemented (heat)." << endl; exit(EXIT_FAILURE);
         break;
       }
     }

@@ -293,7 +293,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     if ((Boundary == HEAT_FLUX             ) ||
-        (Boundary == ISOTHERMAL            )) {
+        (Boundary == ISOTHERMAL            ) ||
+        (Boundary == CHT_WALL_INTERFACE    )) {
       
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         
@@ -524,7 +525,8 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -571,7 +573,8 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
       for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -619,7 +622,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE    )) {
       
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
@@ -810,6 +814,10 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
     case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); break;
   }
   
+  if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {
+    solver_container[iZone][FinestMesh][HEAT_SOL]->Heat_Fluxes(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone]);
+  }
+  
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
@@ -891,7 +899,8 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE     )) {
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetmuT(0);
