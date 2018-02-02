@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - ole.burghardt@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - feature_cht
 
 python:
     - 2.7
