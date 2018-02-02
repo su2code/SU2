@@ -2483,6 +2483,39 @@ public:
 };
 
 /*!
+ * \class CHeatFVMVariable
+ * \brief Main class for defining the variables of the finite-volume heat equation solver.
+ * \author O. Burghardt
+ * \version 5.0.0 "Raven"
+ */
+class CHeatFVMVariable : public CVariable {
+protected:
+  su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHeatFVMVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_Heat - Values of the Heat solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHeatFVMVariable(void);
+
+};
+
+/*!
  * \class CHeatVariable
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation

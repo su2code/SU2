@@ -719,6 +719,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config);
   
   /*!
    * \author H. Kline
@@ -1157,6 +1165,16 @@ public:
   virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                             CConfig *config, unsigned short val_marker);
    
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  virtual void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+   
  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -1344,6 +1362,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -2077,6 +2103,12 @@ public:
    * \return Value of the heat load (integrated heat flux).
    */
   virtual su2double GetTotal_MaxHeatFlux(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the average temperature.
+   */
+  virtual su2double GetTotal_AvgTemperature(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -11085,6 +11117,284 @@ public:
   su2double GetTotal_CWave(void);
   
 };
+
+/*! \class CHeatSolverFVM
+ *  \brief Main class for defining the finite-volume heat solver.
+ *  \author O. Burghardt
+ *  \version 5.0.0 "Raven"
+ *  \date January 19, 2018.
+ */
+class CHeatSolverFVM : public CSolver {
+protected:
+  unsigned short nVarFlow, nMarker, CurrentMesh;
+  su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
+            *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
+            *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
+            *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
+  su2double ***ConjugateVar, ***InterfaceVar;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHeatSolverFVM(void);
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHeatSolverFVM(void);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Restart residual and compute gradients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                        unsigned short iMesh);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
+                         CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Compute the undivided laplacian for the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Parallelization of Undivided Laplacian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+
+  /*!
+   * \brief Compute the spatial integration using a upwind scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                       unsigned short iMesh);
+
+  /*!
+   * \brief Compute the viscous residuals for the turbulent equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+
+
+  void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the Navier-Stokes boundary condition (strong).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                         unsigned short val_marker);
+
+  /*!
+   * \brief Impose a constant heat-flux condition at the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                          unsigned short val_marker);
+
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                          unsigned short val_marker);
+  /*!
+   * \brief Impose the outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
+                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the (received) conjugate heat variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                          unsigned short val_marker);
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   */
+  su2double GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var);
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   * \param[in] relaxation factor - relaxation factor for the change of the variables
+   * \param[in] val_var           - value of the variable
+   */
+  void SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var);
+
+  /*!
+   * \brief Evaluate heat-flux related objectives.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Get value of the heat load (integrated heat flux).
+   * \return Value of the heat load (integrated heat flux).
+   */
+  su2double GetTotal_HeatFlux(void);
+
+  /*!
+   * \brief Get value of the integral-averaged temperature.
+   * \return Value of the integral-averaged temperature.
+   */
+  su2double GetTotal_AvgTemperature(void);
+
+  /*!
+   * \brief Update the solution using an implicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Update the solution using an explicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iMesh, unsigned long Iteration);
+  /*!
+   * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
+   * \param[in] geometry - Geometric definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+};
+
 
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.

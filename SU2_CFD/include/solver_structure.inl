@@ -382,6 +382,8 @@ inline su2double CSolver::GetTotal_CQ() { return 0; }
 
 inline su2double CSolver::GetTotal_HeatFlux() { return 0; }
 
+inline su2double CSolver::GetTotal_AvgTemperature() { return 0; }
+
 inline su2double CSolver::GetTotal_MaxHeatFlux() { return 0; }
 
 inline su2double CSolver::Get_PressureDrag() { return 0; }
@@ -644,6 +646,8 @@ inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
 
 inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
 
+inline void CSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Evaluate_ObjFunc(CConfig *config) {};
 
 inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -757,6 +761,9 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
                   CConfig *config, unsigned short val_marker) { }
 
+inline void CSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                      CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
@@ -811,6 +818,8 @@ inline void CSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) { }
 inline void CSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Friction_Forces(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
@@ -1085,6 +1094,10 @@ inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
 inline void CSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
+
+inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
@@ -1929,6 +1942,15 @@ inline void CIncNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { Strain
 
 inline void CIncNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
+inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
+
+inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
+
+inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
+
+inline void CHeatSolverFVM::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
+  ConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*ConjugateVar[val_marker][val_vertex][pos_var]; }
+
 inline su2double CAdjIncEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
 inline void CAdjIncEulerSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) {CSensitivity[val_marker][val_vertex]=val_sensitivity; }
@@ -2071,10 +2093,6 @@ inline void CTurbSolver::SetSlidingStateStructure(unsigned short val_marker, uns
 inline void CTurbSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
 
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
-
-inline void CSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) { }
-
-inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return 0.0; }
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
