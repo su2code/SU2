@@ -508,9 +508,11 @@ private:
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
@@ -535,7 +537,6 @@ private:
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
-  Kappa_1st_Heat,     /*!< \brief 1st order dissipation coefficient for heat equation. */
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
@@ -881,6 +882,7 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
+  long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
@@ -1445,6 +1447,12 @@ public:
    * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
    */
   bool GetExtraOutput(void);
+
+  /*!
+   * \brief Heat solver zone with extra screen output.
+   * \return Heat solver zone with extra screen output.
+   */
+  long GetExtraHeatOutputZone(void);
   
   /*!
    * \brief Get the value of the Mach number (velocity divided by speed of sound).
@@ -3961,13 +3969,6 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void);
-
-  /*!
-   * \brief Value of the calibrated constant for the Lax method (center scheme).
-   * \note This constant is used in coarse levels and with first order methods.
-   * \return Calibrated constant for the Lax method.
-   */
-  su2double GetKappa_1st_Heat(void);
 
   /*!
    * \brief Value of the calibrated constant for the JST method (center scheme).
