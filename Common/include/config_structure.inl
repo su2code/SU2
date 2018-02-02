@@ -325,6 +325,8 @@ inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
+inline long CConfig::GetExtraHeatOutputZone(void) { return ExtraHeatOutputZone; }
+
 inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
 inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
@@ -1010,8 +1012,6 @@ inline su2double CConfig::GetKappa_1st_Flow(void) { return Kappa_1st_Flow; }
 inline su2double CConfig::GetKappa_2nd_Flow(void) { return Kappa_2nd_Flow; }
 
 inline su2double CConfig::GetKappa_4th_Flow(void) { return Kappa_4th_Flow; }
-
-inline su2double CConfig::GetKappa_1st_Heat(void) { return Kappa_1st_Heat; }
 
 inline su2double CConfig::GetKappa_2nd_Heat(void) { return Kappa_2nd_Heat; }
 

@@ -552,7 +552,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_rampRotFrame_coeff = new su2double[3];
   default_rampOutPres_coeff  = new su2double[3];
   default_jst_adj_coeff      = new su2double[2];
-  default_ad_coeff_heat      = new su2double[3];
+  default_ad_coeff_heat      = new su2double[2];
   default_obj_coeff          = new su2double[5];
   default_geo_loc            = new su2double[2];
   default_distortion         = new su2double[2];
@@ -1073,8 +1073,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation for the FVM heat solver. */
+  addDoubleOption("LINEAR_SOLVER_ERROR_HEAT", Linear_Solver_Error_Heat, 1E-8);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /* DESCRIPTION: Max iterations of the linear solver for the FVM heat solver. */
+  addUnsignedLongOption("LINEAR_SOLVER_ITER_HEAT", Linear_Solver_Iter_Heat, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -1209,9 +1213,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax–Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
-  default_ad_coeff_heat[0] = 0.15; default_ad_coeff_heat[1] = 0.5; default_ad_coeff_heat[2] = 0.02;
-  /*!\brief AD_COEFF_HEAT \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_HEAT", 3, Kappa_Heat, default_ad_coeff_heat);
+  default_ad_coeff_heat[1] = 0.5; default_ad_coeff_heat[2] = 0.02;
+  /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1862,7 +1866,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
 
-
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY_SOLID", Thermal_Diffusivity_Solid, 1.172E-5);
 
@@ -1886,6 +1889,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Write extra output */
   addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
+
+  /* DESCRIPTION: Write extra heat output for a given zone heat solver zone */
+  addLongOption("EXTRA_HEAT_ZONE_OUTPUT", ExtraHeatOutputZone, -1);
 
   /*--- options related to the FFD problem ---*/
   /*!\par CONFIG_CATEGORY:FFD point inversion \ingroup Config*/
@@ -2354,6 +2360,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
   }
   else { FSI_Problem = false; }
+
+  if(Kind_Solver == HEAT_EQUATION_FVM) {
+    Linear_Solver_Iter = Linear_Solver_Iter_Heat;
+    Linear_Solver_Error = Linear_Solver_Error_Heat;
+  }
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
@@ -3100,9 +3111,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_4th_Flow    = Kappa_Flow[1];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
-  Kappa_1st_Heat = Kappa_Heat[0];
-  Kappa_2nd_Heat = Kappa_Heat[1];
-  Kappa_4th_Heat = Kappa_Heat[2];
+  Kappa_2nd_Heat = Kappa_Heat[0];
+  Kappa_4th_Heat = Kappa_Heat[1];
   
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -6451,6 +6461,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
+      if (val_system == RUNTIME_HEAT_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+      }
       break;
     case RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
@@ -6470,6 +6484,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               MUSCL_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+      }
+      if (val_system == RUNTIME_HEAT_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
     case ADJ_EULER:
@@ -6538,12 +6556,13 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
       }
       break;
-    case HEAT_EQUATION:
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
+
     case FEM_ELASTICITY:
 
       Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
