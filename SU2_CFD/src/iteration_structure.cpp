@@ -503,6 +503,12 @@ void CFluidIteration::Iterate(COutput *output,
     }
     
   }
+
+  if (config_container[val_iZone]->GetWeakly_Coupled_Heat()){
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS, ExtIter);
+    integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
+  }
   
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
   
@@ -1001,8 +1007,17 @@ void CHeatIteration::Iterate(COutput *output,
       (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
   
   /*--- Heat equation ---*/
-  
-  config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
+
+  switch( config_container[val_iZone]->GetKind_Solver()) {
+
+    case HEAT_EQUATION:
+      config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
+      break;
+    case HEAT_EQUATION_FVM:
+      config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION_FVM, RUNTIME_HEAT_SYS, ExtIter);
+      break;
+  }
+
   integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   
