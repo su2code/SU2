@@ -316,15 +316,20 @@ void COutput::ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTim
   nStages    = SU2_TYPE::Int(nBladesRow/2);
 
   EntropyGenAverage_HB = 0.;
+  Power_HB = 0.;
   TotalTotalEfficiencyAverage_HB = 0.;
   TotalStaticEfficiencyAverage_HB= 0.;
 
 for (iGeomZone = 0; iGeomZone < nBladesRow; iGeomZone++ ){
   for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
     EntropyGenAverage_HB    += EntropyGen[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
+    if (iGeomZone == nBladesRow-1)
+      Power_HB += MassFlowIn[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections]
+                  * EulerianWork[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
   }
 }
   EntropyGenAverage_HB /= nTimeInstances;
+  Power_HB /= nTimeInstances;
 
   if (nBladesRow > 1){
     for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){

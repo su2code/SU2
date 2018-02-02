@@ -5107,10 +5107,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if (turbo){
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++){
+//                if (iMarker_Monitoring == 0){
+//                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
+//                }else{
+//                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
+//                  strcat(turbo_coeff, surface_coeff);
+//                }
                 if (iMarker_Monitoring == 0){
-                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
+                  SPRINTF(turbo_coeff, ", %12.10f", Power_HB);
                 }else{
-                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
+                  SPRINTF(surface_coeff, ", %12.10f", Power_HB);
                   strcat(turbo_coeff, surface_coeff);
                 }
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);

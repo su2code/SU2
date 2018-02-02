@@ -4901,15 +4901,11 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
           if (!adjoint) {
             U[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
             Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
-//            if (jTimeInstance == 0 && iVar == 0 && iPoint == 0)
-//            cout << "SOL_NEW: " << solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar) << endl;
 
             if (implicit) {
               U_old[iVar] = solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaU = U[iVar] - U_old[iVar];
               Source[iVar] += deltaU*D[iTimeInstance%nTimeInstances][jTimeInstance];
-//            if (jTimeInstance == 0 && iVar == 0 && iPoint == 0)
-//              cout << "SOL_OLD: " << solver_container[jTimeInstance+iGeomZone*nTimeInstances][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar) << endl;
             }
 
           }
@@ -5400,19 +5396,19 @@ void CHBMultiZoneDriver::Run() {
 
 
 //  /*--- Print residuals ---*/
-cout << "===========================" << endl;
-cout << "EXT_ITER: " <<  ExtIter << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE ) {
-      cout << " Zone " << iZone << ": R[0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-                                << "  R[1]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(1))
-                                << "  R[2]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(2)) << endl;
-      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
-        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-      }
-    }
-  }
+//cout << "===========================" << endl;
+//cout << "EXT_ITER: " <<  ExtIter << endl;
+//
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (rank == MASTER_NODE ) {
+//      cout << " Zone " << iZone << ": R[0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+//                                << "  R[1]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(1))
+//                                << "  R[2]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(2)) << endl;
+//      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+//        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+//      }
+//    }
+//  }
 
 }
 
@@ -5692,20 +5688,11 @@ CDiscAdjHBMultiZone::CDiscAdjHBMultiZone(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++){
     SetHarmonicBalance(iZone);
 
-    //      cout << "SOURCE:"<< solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetHB_Source()[1] << endl;
     for (unsigned long iPoint = 0; iPoint < geometry_container[iZone][MESH_0]->GetnPoint(); iPoint++){
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetHB_Source());
       if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc())
         solver_container[iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->GetHB_Source());
 
-      if (iZone == 0  && iPoint == 0){
-        cout << "###SOL_NEW: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution()[0] << endl;
-        cout << "###SOL_OLD: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution_Old()[0] << endl;
-        if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc())
-        cout << "###SOL_TURB: " << solver_container[0][MESH_0][ADJTURB_SOL]->node[3]->GetSolution()[0] << endl;
-      }
-        //      }
-        //      }
       }
     }
 
@@ -5975,26 +5962,6 @@ void CDiscAdjHBMultiZone::DirectRun(){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-//  if (ExtIter == 0){
-//    for (iZone = 0; iZone < nZone; iZone++){
-//      SetHarmonicBalance(iZone);
-//
-//      //      cout << "SOURCE:"<< solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetHB_Source()[1] << endl;
-//      for (unsigned long iPoint = 0; iPoint < geometry_container[iZone][MESH_0]->GetnPoint(); iPoint++){
-//        solver_container[iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetHB_Source());
-//
-//        //        if (iZone == 0  && iPoint == 0){
-//        //          cout << "###SOL_NEW: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution()[0] << endl;
-//        //          cout << "###SOL_OLD: " << solver_container[0][MESH_0][FLOW_SOL]->node[3]->GetSolution_Old()[0] << endl;
-//        //        }
-//        //            solver_container[iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetHBSource_Direct( solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->GetHB_Source());
-//        //      }
-//        //      }
-//      }
-//    }
-//  }
-//    for (iZone = 0; iZone < nZone; iZone++)
-//        geometry_container[iZone][MESH_0]->SetTranslationalVelocity(config_container[iZone], iZone/nTimeInstances, false);
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     direct_iteration[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
@@ -6035,18 +6002,18 @@ void CDiscAdjHBMultiZone::DirectRun(){
   if (rank == MASTER_NODE)
       SetAvgTurboPerformance_HB(iTimeInstance);
 
-cout << "===========================" << endl;
-cout << "EXT_ITER: " <<  ExtIter << endl;
-    for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE ) {
-      cout << " Zone " << iZone << ": R[0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-                                << "  R[1]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(1))
-                                << "  R[2]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(2)) << endl;
-      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
-        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-      }
-    }
-  }
+//cout << "===========================" << endl;
+//cout << "EXT_ITER: " <<  ExtIter << endl;
+//    for (iZone = 0; iZone < nZone; iZone++) {
+//    if (rank == MASTER_NODE ) {
+//      cout << " Zone " << iZone << ": R[0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+//                                << "  R[1]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(1))
+//                                << "  R[2]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(2)) << endl;
+//      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+//        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+//      }
+//    }
+//  }
 
 
 }
@@ -6072,7 +6039,7 @@ void CDiscAdjHBMultiZone::SetObjFunction(){
     solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
     break;
   case TOTAL_PRESSURE_LOSS:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetTotalPressureLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetPower_HB());
     break;
   case KINETIC_ENERGY_LOSS:
     solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetKineticEnergyLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));

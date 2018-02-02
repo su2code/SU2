@@ -185,6 +185,7 @@ class COutput {
         **NuFactorOut;
 
   su2double EntropyGenAverage_HB,
+            Power_HB,
             TotalTotalEfficiencyAverage_HB,
             TotalStaticEfficiencyAverage_HB;
 
@@ -704,7 +705,12 @@ public:
    * \brief Give the average entropy generation performance parameterfors HB  turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    */
-  su2double GetEntropyGenAvg_HB();
+  su2double GetEntropyGenAvg_HB();  /*!
+
+   * \brief Give the average entropy generation performance parameterfors HB  turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   */
+  su2double GetPower_HB();
 
   /*!
    * \brief Give the flow outlet angle  performance parameters for turbomachinery.
