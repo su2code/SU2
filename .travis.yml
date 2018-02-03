@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - vivaan.khatri.70@gmail.com 
   
 branches:
     only:
-        - develop
+        - feature_small_bugs
 
 python:
     - 2.7
