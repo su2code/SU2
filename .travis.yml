@@ -89,6 +89,6 @@ before_script:
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
 
-script:
+script: travis_wait 30 mvn script
     # Run the tests via the Python scripts
     - python $TEST_SCRIPT
