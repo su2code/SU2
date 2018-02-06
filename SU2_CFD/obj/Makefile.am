@@ -118,6 +118,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
+  ../src/solver_adjoint_discrete_fem.cpp \
   ../src/solver_adjoint_elasticity.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_heat.cpp \
