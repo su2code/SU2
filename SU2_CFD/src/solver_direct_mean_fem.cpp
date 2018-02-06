@@ -3672,6 +3672,46 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
   memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
+void CFEM_DG_EulerSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStored){
+
+  memcpy(VecSolDOFs.data(), VecSolDOFsStored.data(), VecSolDOFsStored.size()*sizeof(su2double));
+}
+
+void CFEM_DG_EulerSolver::RegisterSolution(unsigned long iDOF, bool input){
+  if(input){
+    for(unsigned short iVar = 0; iVar < nVar; iVar++){
+      AD::RegisterInput(VecSolDOFs[nVar*iDOF+iVar]);
+    }
+  }
+  else{
+    for(unsigned short iVar = 0; iVar < nVar; iVar++){
+      AD::RegisterOutput(VecSolDOFs[nVar*iDOF+iVar]);
+    }
+  }
+
+}
+
+void CFEM_DG_EulerSolver::GetAdjointSolution(vector<su2double>& VecSolDOFsAdj){
+
+  for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
+    unsigned long ii = iDOF*nVar;
+    for(unsigned short iVar = 0; iVar < nVar; iVar++){
+      VecSolDOFsAdj[ii+iVar] = SU2_TYPE::GetDerivative(VecSolDOFs[ii+iVar]);
+    }
+  }
+
+}
+
+void CFEM_DG_EulerSolver::SetAdjointSolution(vector<su2double>& VecSolDOFsAdj){
+
+  for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
+    unsigned long ii = iDOF*nVar;
+    for(unsigned short iVar = 0; iVar < nVar; iVar++){
+      SU2_TYPE::SetDerivative(VecSolDOFs[ii+iVar], SU2_TYPE::GetValue(VecSolDOFsAdj[ii+iVar]));
+    }
+  }
+}
+
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 

@@ -2191,6 +2191,214 @@ void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CFreeFormDefBox*** FFDBox,
                                          unsigned short val_iZone) { }
 
+CFEM_DG_DiscAdjFluidIteration::CFEM_DG_DiscAdjFluidIteration(CConfig *config) : CIteration(config) {
+  
+  turbulent = ( config->GetKind_Solver() == DISC_ADJ_DG_RANS);
+  
+}
+
+CFEM_DG_DiscAdjFluidIteration::~CFEM_DG_DiscAdjFluidIteration(void) { }
+
+void CFEM_DG_DiscAdjFluidIteration::Preprocess(COutput *output,
+                                           CIntegration ***integration_container,
+                                           CGeometry ***geometry_container,
+                                           CSolver ****solver_container,
+                                           CNumerics *****numerics_container,
+                                           CConfig **config_container,
+                                           CSurfaceMovement **surface_movement,
+                                           CVolumetricMovement **grid_movement,
+                                           CFreeFormDefBox*** FFDBox,
+                                           unsigned short val_iZone) {
+
+}
+
+
+
+void CFEM_DG_DiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_container,
+                                           CSolver ****solver_container,
+                                           CConfig **config_container,
+                                           unsigned short val_iZone, int val_DirectIter) {
+
+}
+
+
+void CFEM_DG_DiscAdjFluidIteration::Iterate(COutput *output,
+                                        CIntegration ***integration_container,
+                                        CGeometry ***geometry_container,
+                                        CSolver ****solver_container,
+                                        CNumerics *****numerics_container,
+                                        CConfig **config_container,
+                                        CSurfaceMovement **surface_movement,
+                                        CVolumetricMovement **volume_grid_movement,
+                                        CFreeFormDefBox*** FFDBox,
+                                        unsigned short val_iZone) {
+  
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  unsigned short Kind_Solver = config_container[val_iZone]->GetKind_Solver();
+  unsigned long IntIter = 0;
+  bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
+  bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
+
+  if (!unsteady)
+    IntIter = ExtIter;
+  else {
+    IntIter = config_container[val_iZone]->GetIntIter();
+  }
+
+  /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+
+  if ((Kind_Solver == DISC_ADJ_DG_NS) || (Kind_Solver == DISC_ADJ_DG_RANS) || (Kind_Solver == DISC_ADJ_DG_EULER)) {
+
+    solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+
+    solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+
+    /*--- Set the convergence criteria (only residual possible) ---*/
+
+    integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0], config_container[val_iZone],
+                                                                          IntIter, log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+
+    }
+  if ((Kind_Solver == DISC_ADJ_DG_RANS) && !frozen_visc) {
+
+    solver_container[val_iZone][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
+                                                                              config_container[val_iZone]);
+  }
+
+  }
+  
+    
+void CFEM_DG_DiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
+  bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+  
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  /*--- Initialize the adjoints the conservative variables ---*/
+
+  if ((Kind_Solver == DISC_ADJ_DG_NS) || (Kind_Solver == DISC_ADJ_DG_RANS) || (Kind_Solver == DISC_ADJ_DG_EULER)) {
+
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                  config_container[iZone]);
+  }
+
+  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+    solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+        config_container[iZone]);
+  }
+}
+
+
+void CFEM_DG_DiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+
+  unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
+  bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+
+  if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
+    
+    /*--- Register flow and turbulent variables as input ---*/
+    
+    if ((Kind_Solver == DISC_ADJ_DG_NS) || (Kind_Solver == DISC_ADJ_DG_RANS) || (Kind_Solver == DISC_ADJ_DG_EULER)) {
+
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+    
+    if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+      solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+  }
+  if (kind_recording == MESH_COORDS){
+    
+    /*--- Register node coordinates as input ---*/
+    
+    // TODO: register higher order coordinates
+    //geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
+    
+  }
+
+}
+
+void CFEM_DG_DiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+
+
+  unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
+  bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
+      (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
+
+    /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
+
+    // TODO: get influence on geometry variables
+    //geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
+
+  }
+
+  /*--- Compute coupling between flow and turbulent equations ---*/
+
+  //solver_container[iZone][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  if ((Kind_Solver == DISC_ADJ_DG_RANS) && !frozen_visc){
+    // TODO: get coupling between flow and turbulent vars
+    //solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    //solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
+    //solver_container[iZone][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
+  }
+
+}
+
+void CFEM_DG_DiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, COutput* output, unsigned short iZone){
+  
+  unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
+  bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
+  
+  if ((Kind_Solver == DISC_ADJ_DG_NS) || (Kind_Solver == DISC_ADJ_DG_RANS) || (Kind_Solver == DISC_ADJ_DG_EULER)) {
+  
+  /*--- Register conservative variables as output of the iteration ---*/
+  
+    solver_container[iZone][MESH_0][FLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
+  
+  }
+  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
+    solver_container[iZone][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
+                                                                 config_container[iZone]);
+  }
+}
+
+void CFEM_DG_DiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+}
+
+
+void CFEM_DG_DiscAdjFluidIteration::Update(COutput *output,
+                                       CIntegration ***integration_container,
+                                       CGeometry ***geometry_container,
+                                       CSolver ****solver_container,
+                                       CNumerics *****numerics_container,
+                                       CConfig **config_container,
+                                       CSurfaceMovement **surface_movement,
+                                       CVolumetricMovement **grid_movement,
+                                       CFreeFormDefBox*** FFDBox,
+                                       unsigned short val_iZone)      {
+
+}
+void CFEM_DG_DiscAdjFluidIteration::Monitor()     { }
+void CFEM_DG_DiscAdjFluidIteration::Output()      { }
+void CFEM_DG_DiscAdjFluidIteration::Postprocess(COutput *output,
+                                         CIntegration ***integration_container,
+                                         CGeometry ***geometry_container,
+                                         CSolver ****solver_container,
+                                         CNumerics *****numerics_container,
+                                         CConfig **config_container,
+                                         CSurfaceMovement **surface_movement,
+                                         CVolumetricMovement **grid_movement,
+                                         CFreeFormDefBox*** FFDBox,
+                                         unsigned short val_iZone) { }
+
 
 CDiscAdjFEAIteration::CDiscAdjFEAIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
 
