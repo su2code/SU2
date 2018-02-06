@@ -18832,7 +18832,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
   ReverseSort.resize(NewSort.size());
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    unsigned short jPoint;
+    unsigned long jPoint;
     for (jPoint = 0; jPoint < nPoint; jPoint++) {
       if (NewSort[iPoint] == jPoint) {
         ReverseSort[jPoint] = iPoint;
