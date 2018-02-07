@@ -90,6 +90,9 @@ int main(int argc, char *argv[]) {
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi   = config->GetFSI_Simulation();
   turbo = config->GetBoolTurbomachinery();
+  bool fem_discadj = ((config->GetKind_Solver() == DISC_ADJ_DG_EULER) ||
+                 (config->GetKind_Solver() == DISC_ADJ_DG_RANS)  ||
+                 (config->GetKind_Solver() == DISC_ADJ_DG_NS));
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -144,6 +147,10 @@ int main(int argc, char *argv[]) {
       if (turbo) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+
+      } else if (fem_discadj){
+
+        driver = new CFEM_DG_DiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
 
       } else {
 

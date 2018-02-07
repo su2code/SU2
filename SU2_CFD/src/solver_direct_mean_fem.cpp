@@ -7359,7 +7359,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
          First determine the pointer to the coordinates of this integration
          point and the pointer to the solution. Afterwards call the function
          RinglebSolution to do the actual job. */
-      const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
+      const su2double *coor = surfElem[l].coorIntegrationPoints.data() + i*nDim;
             su2double *UR   = solIntR + i*nVar;
 
       RinglebSolution(coor, UR);
@@ -8049,8 +8049,12 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
     const su2double dxdq = -(1.0/(k*k) - 0.5/(q*q))*drhodq/(rho*rho)
                          +   1.0/(rho*q*q*q) - 0.5*dJJdq;
 
-    const su2double dydq = y > 0.0 ? -y*drhodq/rho - 1.0/(rho*q*q*sqrt(k*k - q*q))
-                                   : -y*drhodq/rho + 1.0/(rho*q*q*sqrt(k*k - q*q));
+    // Codipack didn't seem to like the ternary operator...
+    //const su2double dydq = y > 0.0 ? -y*drhodq/rho - 1.0/(rho*q*q*sqrt(k*k - q*q))
+    //                               : -y*drhodq/rho + 1.0/(rho*q*q*sqrt(k*k - q*q));
+    su2double dydq;
+    if(y > 0.0) dydq = -y*drhodq/rho - 1.0/(rho*q*q*sqrt(k*k - q*q));
+    else dydq = -y*drhodq/rho + 1.0/(rho*q*q*sqrt(k*k - q*q));
 
     const su2double vecLen = sqrt(dxdq*dxdq + dydq*dydq);
 

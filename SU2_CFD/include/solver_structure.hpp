@@ -586,6 +586,31 @@ public:
   virtual void Set_NewSolution(CGeometry *geometry);
 
   /*!
+   * \brief Reset the direct solution when solving discrete adjoint.
+   * \param[in] VecSolDOFsStored - Solution stored in CFEM_DG_DiscAdjSolver.
+   */
+  virtual void ResetSolution_Direct(vector<su2double> VecSolDOFsStored);
+
+  /*!
+   * \brief Set the derivative information for the adjoint computation.
+   * \param[in] VecSolDOFsAdj - Vector to store adjoint solution in CFEM_DG_DiscAdjSolver.
+   */
+  virtual void SetAdjointSolution(vector<su2double>& VecSolDOFsAdj);
+
+  /*!
+   * \brief Extract the adjoint solution from the AD tools.
+   * \param[in] VecSolDOFsAdj - Vector to store adjoint solution in CFEM_DG_DiscAdjSolver.
+   */
+  virtual void GetAdjointSolution(vector<su2double>& VecSolDOFsAdj);
+
+  /*!
+   * \brief Register the direct solution when solving discrete adjoint.
+   * \param[in] iDOF - node index.
+   * \param[in] input - whether solution is being registered as input (true) or output (false).
+   */
+  virtual void RegisterSolution(unsigned long iDOF, bool input);
+
+  /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
    */
@@ -12520,6 +12545,8 @@ private:
   unsigned long nMeshPoints;    /*!< \brief Number of mesh points in the local part of the grid. */
   CPointFEM *meshPoints;        /*!< \brief Array of the points of the FEM mesh. */
 
+  CBoundaryFEM *boundaries;                          /*!< \brief Array of the boundaries of the FEM mesh. */
+
   vector<su2double> VecSolDOFs;       /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsNew;    /*!< \brief Vector, which stores the new solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsDirect; /*!< \brief Vector, which stores the direct solution variables in the owned DOFs. */
@@ -12557,6 +12584,12 @@ public:
   ~CFEM_DG_DiscAdjSolver(void);
 
   /*!
+   * \brief Stores the direct solution in the discrete adjoint solver so it can be
+   *        accessed later.
+   */
+  void StoreSolution_Direct(void);
+
+  /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
    * \param[in] geometry_container - The geometry container holding all grid levels.
@@ -12580,14 +12613,6 @@ public:
    * \param[in] config - The particular config.
    */
   void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Sets the adjoint values of the output of the mesh deformation iteration
-   *        before evaluation of the tape.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
@@ -12596,38 +12621,6 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Sets the adjoint values of the flow variables due to cross term contributions
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry,  CConfig *config);
   
   /*!
    * \brief Register the objective function as output.
@@ -12756,17 +12749,6 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
-  /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -13515,6 +13497,12 @@ public:
    * \param[in] input - whether solution is being registered as input (true) or output (false).
    */
   void RegisterSolution(unsigned long iDOF, bool input);
+
+  /*!
+   * \brief Set the derivative information for the adjoint computation.
+   * \param[in] VecSolDOFsAdj - Vector to store adjoint solution in CFEM_DG_DiscAdjSolver.
+   */
+  void SetAdjointSolution(vector<su2double>& VecSolDOFsAdj);
 
   /*!
    * \brief Extract the adjoint solution from the AD tools.

@@ -1069,7 +1069,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
 
     if (disc_adj) {
-      if(fem_euler || fem_ns || fem_rans){
+      if(fem_euler || fem_ns){
         solver_container[iMGlevel][ADJFLOW_SOL] = new CFEM_DG_DiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       }
       else{
@@ -1424,8 +1424,8 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
 
   if (disc_adj){
-    if(fem_euler || fem_ns || fem_rans){
-      integreation_container[ADJFLOW_SOL] = new CFEM_DG_Integration(config);
+    if(fem_euler || fem_ns){
+      integration_container[ADJFLOW_SOL] = new CFEM_DG_Integration(config);
     }
     else{
       integration_container[ADJFLOW_SOL] = new CIntegration(config);
@@ -2872,7 +2872,7 @@ void CDriver::Iteration_Preprocessing() {
     case DISC_ADJ_DG_EULER : case DISC_ADJ_DG_NS : case DISC_ADJ_DG_RANS :
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);
+      iteration_container[iZone] = new CFEM_DG_DiscAdjFluidIteration(config_container[iZone]);
       break;
 
     case DISC_ADJ_FEM:

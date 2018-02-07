@@ -2216,6 +2216,28 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPre
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
+inline void CSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStored) { }
+
+inline void CSolver::SetAdjointSolution(vector<su2double>& VecSolDOFsAdj) { }
+
+inline void CSolver::GetAdjointSolution(vector<su2double>& VecSolDOFsAdj) { }
+
+inline void CSolver::RegisterSolution(unsigned long iDOF, bool input) { }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Mach() { return Total_Sens_Mach; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_AoA() { return Total_Sens_AoA; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Press() { return Total_Sens_Press; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+
 inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
 }

@@ -83,7 +83,7 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
   boundaries = DGGeometry->GetBoundaries();
 
   nStandardBoundaryFacesSol  = DGGeometry->GetNStandardBoundaryFacesSol();
-  *standardBoundaryFacesSol  = DGGeometry->GetStandardBoundaryFacesSol();
+  standardBoundaryFacesSol  = DGGeometry->GetStandardBoundaryFacesSol();
 
   nDOFsBoundary = new unsigned long[nMarker];
 
@@ -466,7 +466,7 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
 
   /*--- Set the old solution ---*/
 
-  memcpy(VecSolDOFs[0].data(), VecSolDOFsNew.data(), VecSolDOFs.size()*sizeof(su2double));
+  memcpy(VecSolDOFs.data(), VecSolDOFsNew.data(), VecSolDOFs.size()*sizeof(su2double));
 
   /*--- Extract the adjoint solution ---*/
 
@@ -608,7 +608,7 @@ void CFEM_DG_DiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config)
       // Set the pointer to the solution of this DOF and to the
       // coordinates of its corresponding node ID of the grid.
       const unsigned long ind = volElem[i].nodeIDsGrid[j];
-      const su2double *coor   = meshPoints[ind].coor;
+      su2double *coor   = meshPoints[ind].coor;
 
       for(iDim = 0; iDim < nDim; iDim++){
         if(!time_stepping){
@@ -674,7 +674,7 @@ void CFEM_DG_DiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig 
 
           Prod = 0.0;
           Area = 0.0;
-          const unsigned long  volID     = surfElem[l]->volElemID;
+          const unsigned long  volID     = surfElem[l].volElemID;
           for (iDim = 0; iDim < nDim; iDim++) {
             /*--- retrieve the gradient calculated with AD -- */
             SensDim = VecSolDOFsSens[volID*nDim+iDim];
@@ -753,10 +753,12 @@ void CFEM_DG_DiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   string UnstExt, text_line;
   ifstream restart_file;
 
+  string restart_filename, filename;
+
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  ilename = config->GetSolution_AdjFileName();
+  filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
 
   int counter = 0;
