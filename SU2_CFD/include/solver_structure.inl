@@ -2216,9 +2216,13 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPre
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
+inline void CSolver::StoreSolution_Direct(void) { }
+
+inline void CSolver::StoreSolution_Direct(vector<su2double>& VecSolDOFsDirect) { }
+
 inline void CSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStored) { }
 
-inline void CSolver::SetAdjointSolution(vector<su2double>& VecSolDOFsAdj) { }
+inline void CSolver::SetAdjointSolution(vector<su2double> VecSolDOFsAdj) { }
 
 inline void CSolver::GetAdjointSolution(vector<su2double>& VecSolDOFsAdj) { }
 

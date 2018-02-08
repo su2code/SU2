@@ -4567,7 +4567,7 @@ void CFEM_DG_DiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
       solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
     }
-    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+    if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }

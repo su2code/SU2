@@ -122,7 +122,8 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
     }
   }
 
-  StoreSolution_Direct();
+  // Store in iteration->preprocess
+  //StoreSolution_Direct();
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -177,14 +178,8 @@ CFEM_DG_DiscAdjSolver::~CFEM_DG_DiscAdjSolver(void) {
 
 void CFEM_DG_DiscAdjSolver::StoreSolution_Direct(){
 
-  su2double *Solution = direct_solver->GetVecSolDOFs();
+  direct_solver->StoreSolution_Direct(VecSolDOFsDirect);
 
-  for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
-    unsigned long ii = nVar*iDOF;
-    for(unsigned short iVar = 0; iVar < nVar; iVar++){
-      VecSolDOFsDirect[ii+iVar] = Solution[ii+iVar];
-    }
-  }
 }
 
 void CFEM_DG_DiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
@@ -211,7 +206,7 @@ void CFEM_DG_DiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
 
-  direct_solver->Jacobian.SetValZero();
+  //direct_solver->Jacobian.SetValZero();
 
   /*--- Set indices to zero ---*/
 

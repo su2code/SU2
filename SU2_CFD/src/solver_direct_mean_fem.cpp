@@ -3672,6 +3672,11 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
   memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
+void CFEM_DG_EulerSolver::StoreSolution_Direct(vector<su2double>& VecSolDOFsDirect){
+
+  memcpy(VecSolDOFsDirect.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
+}
+
 void CFEM_DG_EulerSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStored){
 
   memcpy(VecSolDOFs.data(), VecSolDOFsStored.data(), VecSolDOFsStored.size()*sizeof(su2double));
@@ -3702,7 +3707,7 @@ void CFEM_DG_EulerSolver::GetAdjointSolution(vector<su2double>& VecSolDOFsAdj){
 
 }
 
-void CFEM_DG_EulerSolver::SetAdjointSolution(vector<su2double>& VecSolDOFsAdj){
+void CFEM_DG_EulerSolver::SetAdjointSolution(vector<su2double> VecSolDOFsAdj){
 
   for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
     unsigned long ii = iDOF*nVar;

@@ -586,6 +586,18 @@ public:
   virtual void Set_NewSolution(CGeometry *geometry);
 
   /*!
+   * \brief Stores the direct solution in the discrete adjoint solver so it can be
+   *        accessed later.
+   */
+  virtual void StoreSolution_Direct(void);
+
+  /*!
+   * \brief Store the direct solution for solving discrete adjoint.
+   * \param[in] VecSolDOFsDirect - Flow solution vector in CFEM_DG_DiscAdjSolver.
+   */
+  virtual void StoreSolution_Direct(vector<su2double>& VecSolDOFsDirect);
+
+  /*!
    * \brief Reset the direct solution when solving discrete adjoint.
    * \param[in] VecSolDOFsStored - Solution stored in CFEM_DG_DiscAdjSolver.
    */
@@ -595,7 +607,7 @@ public:
    * \brief Set the derivative information for the adjoint computation.
    * \param[in] VecSolDOFsAdj - Vector to store adjoint solution in CFEM_DG_DiscAdjSolver.
    */
-  virtual void SetAdjointSolution(vector<su2double>& VecSolDOFsAdj);
+  virtual void SetAdjointSolution(vector<su2double> VecSolDOFsAdj);
 
   /*!
    * \brief Extract the adjoint solution from the AD tools.
@@ -13486,6 +13498,12 @@ public:
   void Set_NewSolution(CGeometry *geometry);
 
   /*!
+   * \brief Store the direct solution for solving discrete adjoint.
+   * \param[in] VecSolDOFsDirect - Flow solution vector in CFEM_DG_DiscAdjSolver.
+   */
+  void StoreSolution_Direct(vector<su2double>& VecSolDOFsDirect);
+
+  /*!
    * \brief Reset the direct solution when solving discrete adjoint.
    * \param[in] VecSolDOFsStored - Solution stored in CFEM_DG_DiscAdjSolver.
    */
@@ -13502,7 +13520,7 @@ public:
    * \brief Set the derivative information for the adjoint computation.
    * \param[in] VecSolDOFsAdj - Vector to store adjoint solution in CFEM_DG_DiscAdjSolver.
    */
-  void SetAdjointSolution(vector<su2double>& VecSolDOFsAdj);
+  void SetAdjointSolution(vector<su2double> VecSolDOFsAdj);
 
   /*!
    * \brief Extract the adjoint solution from the AD tools.

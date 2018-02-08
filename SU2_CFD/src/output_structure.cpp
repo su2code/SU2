@@ -4666,7 +4666,8 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
    index for their particular solution container. ---*/
   
   switch (Kind_Solver) {
-    case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES: case DISC_ADJ_DG_EULER : case DISC_ADJ_DG_NS : FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case DISC_ADJ_DG_EULER : case DISC_ADJ_DG_NS : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     default: SecondIndex = NONE; ThirdIndex = NONE; break;
   }
   
@@ -12751,8 +12752,10 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
         break;
       case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
         LoadLocalData_FEM(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        break;
       case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
         LoadLocalData_FEM_AdjFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        break;
       default: break;
     }
     

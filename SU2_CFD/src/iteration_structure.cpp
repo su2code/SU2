@@ -2210,6 +2210,14 @@ void CFEM_DG_DiscAdjFluidIteration::Preprocess(COutput *output,
                                            CFreeFormDefBox*** FFDBox,
                                            unsigned short val_iZone) {
 
+  unsigned long IntIter = 0, iPoint;
+  unsigned short iMesh;
+  config_container[ZONE_0]->SetIntIter(IntIter);
+
+  for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+    solver_container[val_iZone][iMesh][ADJFLOW_SOL]->StoreSolution_Direct();
+  }
+
 }
 
 
