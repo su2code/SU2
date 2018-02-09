@@ -1484,7 +1484,6 @@ enum ENUM_PARAM {
   DV_POISSON = 32,
   DV_RHO = 33,
   DV_RHO_DL = 34,
-  GE_LITE = 41,              /*!< Surface deformation by projecting points using the GELite library. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1521,7 +1520,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("POISSON_RATIO", DV_POISSON)
 ("STRUCTURAL_DENSITY", DV_RHO)
 ("DEAD_WEIGHT", DV_RHO_DL)
-("GE_LITE", GE_LITE)
 ;
 
 
@@ -2561,7 +2559,6 @@ public:
         case DV_POISSON:           nParamDV = 0; break;
         case DV_RHO:               nParamDV = 0; break;
         case DV_RHO_DL:            nParamDV = 0; break;
-        case GE_LITE:              nParamDV = 0; break;
         default : {
           string newstring;
           newstring.append(this->name);

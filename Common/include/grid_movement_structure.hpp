@@ -1674,15 +1674,6 @@ public:
 	 */
   void SetExternal_Deformation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
-  /*!
-   * \brief Set surface deformations for curved surfaces by point projection with Pointwise's GELite library.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Zone number in the mesh.
-   * \param[in] iter - Current physical time iteration.
-   */
-  void SetCurved_Surfaces(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-  
 	/*! 
 	 * \brief Set a displacement for surface movement.
 	 * \param[in] boundary - Geometry of the boundary.
