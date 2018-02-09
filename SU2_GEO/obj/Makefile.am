@@ -73,8 +73,3 @@ ___bin_SU2_GEO_LDADD += @MUTATIONPP_LD@
 ___bin_SU2_GEO_CXXFLAGS += @JSONCPP_CXX@
 ___bin_SU2_GEO_LDADD += @JSONCPP_LD@
 # endif
-
-# if BUILD_GELITE
-___bin_SU2_GEO_CXXFLAGS += @GELITE_CXX@
-___bin_SU2_GEO_LDADD += @GELITE_LD@
-# endif

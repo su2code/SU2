@@ -126,7 +126,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/fem_geometry_structure.hpp \
 	../include/fem_geometry_structure.inl \
 	../include/fem_standard_element.hpp \
-	../include/fem_standard_element.inl ../include/gelite.hpp \
+	../include/fem_standard_element.inl \
 	../include/geometry_structure.hpp \
 	../include/geometry_structure.inl \
 	../include/graph_vertex_coloring.hpp \
@@ -158,7 +158,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/fem_geometry_structure.cpp \
 	../src/fem_integration_rules.cpp \
 	../src/fem_standard_element.cpp ../src/fem_wall_distance.cpp \
-	../src/fem_work_estimate_metis.cpp ../src/gelite.cpp \
+	../src/fem_work_estimate_metis.cpp \
 	../src/geometry_structure.cpp \
 	../src/geometry_structure_fem_part.cpp \
 	../src/graph_vertex_coloring.cpp \
@@ -181,7 +181,6 @@ am__objects_1 = ../src/libSU2_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-fem_standard_element.$(OBJEXT) \
 	../src/libSU2_a-fem_wall_distance.$(OBJEXT) \
 	../src/libSU2_a-fem_work_estimate_metis.$(OBJEXT) \
-	../src/libSU2_a-gelite.$(OBJEXT) \
 	../src/libSU2_a-geometry_structure.$(OBJEXT) \
 	../src/libSU2_a-geometry_structure_fem_part.$(OBJEXT) \
 	../src/libSU2_a-graph_vertex_coloring.$(OBJEXT) \
@@ -218,7 +217,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/fem_geometry_structure.hpp \
 	../include/fem_geometry_structure.inl \
 	../include/fem_standard_element.hpp \
-	../include/fem_standard_element.inl ../include/gelite.hpp \
+	../include/fem_standard_element.inl \
 	../include/geometry_structure.hpp \
 	../include/geometry_structure.inl \
 	../include/graph_vertex_coloring.hpp \
@@ -250,7 +249,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/fem_geometry_structure.cpp \
 	../src/fem_integration_rules.cpp \
 	../src/fem_standard_element.cpp ../src/fem_wall_distance.cpp \
-	../src/fem_work_estimate_metis.cpp ../src/gelite.cpp \
+	../src/fem_work_estimate_metis.cpp \
 	../src/geometry_structure.cpp \
 	../src/geometry_structure_fem_part.cpp \
 	../src/graph_vertex_coloring.cpp \
@@ -272,7 +271,6 @@ am__objects_2 = ../src/libSU2_AD_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_standard_element.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_wall_distance.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_work_estimate_metis.$(OBJEXT) \
-	../src/libSU2_AD_a-gelite.$(OBJEXT) \
 	../src/libSU2_AD_a-geometry_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-geometry_structure_fem_part.$(OBJEXT) \
 	../src/libSU2_AD_a-graph_vertex_coloring.$(OBJEXT) \
@@ -310,7 +308,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/fem_geometry_structure.hpp \
 	../include/fem_geometry_structure.inl \
 	../include/fem_standard_element.hpp \
-	../include/fem_standard_element.inl ../include/gelite.hpp \
+	../include/fem_standard_element.inl \
 	../include/geometry_structure.hpp \
 	../include/geometry_structure.inl \
 	../include/graph_vertex_coloring.hpp \
@@ -342,7 +340,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/fem_geometry_structure.cpp \
 	../src/fem_integration_rules.cpp \
 	../src/fem_standard_element.cpp ../src/fem_wall_distance.cpp \
-	../src/fem_work_estimate_metis.cpp ../src/gelite.cpp \
+	../src/fem_work_estimate_metis.cpp \
 	../src/geometry_structure.cpp \
 	../src/geometry_structure_fem_part.cpp \
 	../src/graph_vertex_coloring.cpp \
@@ -364,7 +362,6 @@ am__objects_3 = ../src/libSU2_DIRECTDIFF_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_standard_element.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_wall_distance.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_work_estimate_metis.$(OBJEXT) \
-	../src/libSU2_DIRECTDIFF_a-gelite.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-graph_vertex_coloring.$(OBJEXT) \
@@ -475,8 +472,6 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-GELITE_CXX = @GELITE_CXX@
-GELITE_LD = @GELITE_LD@
 GREP = @GREP@
 HDF5_CXX = @HDF5_CXX@
 HDF5_LD = @HDF5_LD@
@@ -616,7 +611,6 @@ lib_sources = \
   ../include/fem_geometry_structure.inl \
   ../include/fem_standard_element.hpp \
   ../include/fem_standard_element.inl \
-  ../include/gelite.hpp \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
   ../include/graph_vertex_coloring.hpp \
@@ -656,7 +650,6 @@ lib_sources = \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
-  ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
   ../src/geometry_structure_fem_part.cpp \
   ../src/graph_vertex_coloring.cpp \
@@ -692,14 +685,10 @@ lib_sources = \
 # endif
 
 # if BUILD_JSONCPP
-# endif
-
-# if BUILD_GELITE
 lib_cxxflags = -fPIC @su2_externals_INCLUDES@ @HDF5_CXX@ @SZIP_CXX@ \
-	@ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ @GELITE_CXX@ \
-	$(am__empty)
+	@ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
 lib_ldadd = @su2_externals_LIBS@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
-	@MUTATIONPP_LD@ @JSONCPP_LD@ @GELITE_LD@ $(am__empty)
+	@MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@libSU2_a_SOURCES = $(lib_sources)
 @BUILD_NORMAL_TRUE@libSU2_a_CXXFLAGS = ${lib_cxxflags}
@@ -771,8 +760,6 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-fem_work_estimate_metis.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2_a-gelite.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-geometry_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-geometry_structure_fem_part.$(OBJEXT):  \
@@ -831,8 +818,6 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-fem_work_estimate_metis.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2_AD_a-gelite.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-geometry_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-geometry_structure_fem_part.$(OBJEXT):  \
@@ -891,8 +876,6 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-fem_work_estimate_metis.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2_DIRECTDIFF_a-gelite.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.$(OBJEXT):  \
@@ -956,7 +939,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-fem_work_estimate_metis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gauss_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-geometry_structure_fem_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-graph_vertex_coloring.Po@am__quote@
@@ -984,7 +966,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-fem_work_estimate_metis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure_fem_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-graph_vertex_coloring.Po@am__quote@
@@ -1012,7 +993,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-fem_work_estimate_metis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gauss_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-geometry_structure_fem_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-graph_vertex_coloring.Po@am__quote@
@@ -1167,20 +1147,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_work_estimate_metis.cpp' object='../src/libSU2_a-fem_work_estimate_metis.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-fem_work_estimate_metis.obj `if test -f '../src/fem_work_estimate_metis.cpp'; then $(CYGPATH_W) '../src/fem_work_estimate_metis.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_work_estimate_metis.cpp'; fi`
-
-../src/libSU2_a-gelite.o: ../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-gelite.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-gelite.Tpo -c -o ../src/libSU2_a-gelite.o `test -f '../src/gelite.cpp' || echo '$(srcdir)/'`../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-gelite.Tpo ../src/$(DEPDIR)/libSU2_a-gelite.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gelite.cpp' object='../src/libSU2_a-gelite.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-gelite.o `test -f '../src/gelite.cpp' || echo '$(srcdir)/'`../src/gelite.cpp
-
-../src/libSU2_a-gelite.obj: ../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-gelite.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-gelite.Tpo -c -o ../src/libSU2_a-gelite.obj `if test -f '../src/gelite.cpp'; then $(CYGPATH_W) '../src/gelite.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gelite.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-gelite.Tpo ../src/$(DEPDIR)/libSU2_a-gelite.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gelite.cpp' object='../src/libSU2_a-gelite.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-gelite.obj `if test -f '../src/gelite.cpp'; then $(CYGPATH_W) '../src/gelite.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gelite.cpp'; fi`
 
 ../src/libSU2_a-geometry_structure.o: ../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-geometry_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-geometry_structure.Tpo -c -o ../src/libSU2_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
@@ -1560,20 +1526,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-fem_work_estimate_metis.obj `if test -f '../src/fem_work_estimate_metis.cpp'; then $(CYGPATH_W) '../src/fem_work_estimate_metis.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_work_estimate_metis.cpp'; fi`
 
-../src/libSU2_AD_a-gelite.o: ../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-gelite.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-gelite.Tpo -c -o ../src/libSU2_AD_a-gelite.o `test -f '../src/gelite.cpp' || echo '$(srcdir)/'`../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-gelite.Tpo ../src/$(DEPDIR)/libSU2_AD_a-gelite.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gelite.cpp' object='../src/libSU2_AD_a-gelite.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-gelite.o `test -f '../src/gelite.cpp' || echo '$(srcdir)/'`../src/gelite.cpp
-
-../src/libSU2_AD_a-gelite.obj: ../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-gelite.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-gelite.Tpo -c -o ../src/libSU2_AD_a-gelite.obj `if test -f '../src/gelite.cpp'; then $(CYGPATH_W) '../src/gelite.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gelite.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-gelite.Tpo ../src/$(DEPDIR)/libSU2_AD_a-gelite.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gelite.cpp' object='../src/libSU2_AD_a-gelite.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-gelite.obj `if test -f '../src/gelite.cpp'; then $(CYGPATH_W) '../src/gelite.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gelite.cpp'; fi`
-
 ../src/libSU2_AD_a-geometry_structure.o: ../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-geometry_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure.Tpo -c -o ../src/libSU2_AD_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure.Tpo ../src/$(DEPDIR)/libSU2_AD_a-geometry_structure.Po
@@ -1951,20 +1903,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_work_estimate_metis.cpp' object='../src/libSU2_DIRECTDIFF_a-fem_work_estimate_metis.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-fem_work_estimate_metis.obj `if test -f '../src/fem_work_estimate_metis.cpp'; then $(CYGPATH_W) '../src/fem_work_estimate_metis.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_work_estimate_metis.cpp'; fi`
-
-../src/libSU2_DIRECTDIFF_a-gelite.o: ../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-gelite.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-gelite.o `test -f '../src/gelite.cpp' || echo '$(srcdir)/'`../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gelite.cpp' object='../src/libSU2_DIRECTDIFF_a-gelite.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-gelite.o `test -f '../src/gelite.cpp' || echo '$(srcdir)/'`../src/gelite.cpp
-
-../src/libSU2_DIRECTDIFF_a-gelite.obj: ../src/gelite.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-gelite.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-gelite.obj `if test -f '../src/gelite.cpp'; then $(CYGPATH_W) '../src/gelite.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gelite.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gelite.cpp' object='../src/libSU2_DIRECTDIFF_a-gelite.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-gelite.obj `if test -f '../src/gelite.cpp'; then $(CYGPATH_W) '../src/gelite.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gelite.cpp'; fi`
 
 ../src/libSU2_DIRECTDIFF_a-geometry_structure.o: ../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-geometry_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp

@@ -35,10 +35,6 @@
 #include "../include/adt_structure.hpp"
 #include <list>
 
-#ifdef HAVE_GELITE
-#include "../include/gelite.hpp"
-#endif
-
 using namespace std;
 
 CGridMovement::CGridMovement(void) { }
@@ -3026,28 +3022,6 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       Surface_File.close();
       if (rank == MASTER_NODE) cout << "Updating the surface coordinates from the input file." << endl;
       SetExternal_Deformation(geometry, config, ZONE_0, 0);
-    }
-    
-  }
-  
-  /*--- Set curved surfaces for high-order grids using the GELite library ---*/
-  
-  else if (config->GetDesign_Variable(0) == GE_LITE) {
-    
-    /*--- Check whether a surface file exists for input ---*/
-    ofstream Geometry_File;
-    string filename = config->GetMotion_FileName();
-    Geometry_File.open(filename.c_str(), ios::in);
-    
-    /*--- A surface file does not exist, so write a new one for the
-     markers that are specified as part of the motion. ---*/
-    if (Geometry_File.fail()) {
-      SU2_MPI::Error(string("No GELite geometry file found: ") + filename,
-                            CURRENT_FUNCTION);
-    } else {
-      Geometry_File.close();
-      if (rank == MASTER_NODE) cout << "Computing surface deflections using GELite point projection." << endl;
-      SetCurved_Surfaces(geometry, config, ZONE_0, 0);
     }
     
   }
@@ -6646,109 +6620,6 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
       }
     }	
   }
-}
-
-void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
- 
-#ifdef HAVE_GELITE
-
-  /*--- Local variables ---*/
-  
-  unsigned short nDim;
-  unsigned long iPoint = 0;
-  su2double VarCoord[3], *Coord_Old = NULL;;
-  unsigned long iVertex;
-  unsigned short iMarker;
-  string geometry_filename;
-  ifstream geometry_file;
-  
-  /*--- Load stuff from config ---*/
-  
-  nDim              = geometry->GetnDim();
-  geometry_filename = config->GetMotion_FileName();
-  
-  /*--- Initial preprocessing of the GELite library.
-  Read the file that contains the data base, if specified.
-  Build the BSP tree for optimized projections.  ---*/
-
-  /*--- Set the user specified values for the member 
-   variables of the data base. ---*/
-  ProjectionDatabase projectionDatabase;
-  
-  //projectionDatabase.MaxOffset       = 10.0*Tolerance::GetSamePoint();
-  projectionDatabase.MaxOffset       = 10.0;
-  projectionDatabase.SurfaceSamples  = 20;
-  projectionDatabase.CurveSamples    = 20;
-  projectionDatabase.FaceCoordinates = false;
-  projectionDatabase.Verbose         = false;
-  projectionDatabase.CreatePoints    = false;
-  
-  if(ReadGeomDefFile(geometry_filename.c_str(), &projectionDatabase)  != 0)
-    SU2_MPI::Error(string("Reading of the geometry definition file ") +
-                          geometry_filename + string(" failed."),
-                          CURRENT_FUNCTION);
-  
-  if(BuildBSPTree(&projectionDatabase) != 0)
-    SU2_MPI::Error("Building of the BSP tree failed.", CURRENT_FUNCTION);
-  
-  /*--- Loop through to find only moving surface markers ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-      
-      /*--- WARNING: we need to put an error check here to make sure
-       that this particular marker is part of the geo definition, like you 
-       are doing in the existing code by checking a max tolerance, for example.
-       For now, make sure the marker of interest is listed in MARKER_MOVING
-       within the config file. ---*/
-      
-      /*--- Loop over all surface points for this marker ---*/
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- Get current coordinates and prepare to call GELite ---*/
-        
-        Coord_Old = geometry->node[iPoint]->GetCoord();
-        
-        Vector3D Coordinate;
-        Coordinate[Vector3D::iX] = Coord_Old[0];
-        Coordinate[Vector3D::iY] = Coord_Old[1];
-        if (nDim == 3)
-          Coordinate[Vector3D::iZ] = Coord_Old[2];
-        else
-          Coordinate[Vector3D::iZ] = 0.0;
-        
-        /*--- Project the coordinates using GELite ---*/
-        
-        if(ProjectOneCoordinate(Coordinate, &projectionDatabase) != 0)
-          SU2_MPI::Error("Coordinate projection failed.", CURRENT_FUNCTION);
-        
-        /*--- Calculate delta change in the x, y, & z directions ---*/
-        
-        VarCoord[0] = Coordinate[Vector3D::iX] - Coord_Old[0];
-        VarCoord[1] = Coordinate[Vector3D::iY] - Coord_Old[1];
-        if (nDim == 3)
-          VarCoord[2] = Coordinate[Vector3D::iZ] - Coord_Old[2];
-        else
-          VarCoord[2] = 0.0;
-        
-        /*--- Set surface node location changes to be imposed 
-         for the volume mesh deformation ---*/
-        
-        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-        
-      }
-    }
-  }
-
-#else
-  /*--- Write an error message the GELite is needed to carry out
-        the projection onto the geometry. ---*/
-
-  SU2_MPI::Error("GELite support is needed to carry out this task", CURRENT_FUNCTION);
-
-#endif
 }
 
 void CSurfaceMovement::SetNACA_4Digits(CGeometry *boundary, CConfig *config) {
