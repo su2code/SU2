@@ -2408,8 +2408,10 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   if (rank == MASTER_NODE) {
     cout << " New physical time: " << time_new << " seconds." << endl;
     if (iter == 0) {
-    cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
-    cout << ", " << xDot[2] << ") m/s." << endl;
+    cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+      cout << ", " << xDot[2]*config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
+      else cout << ") ft/s." << endl;
     }
   }
   
@@ -5617,8 +5619,10 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
       if (rank == MASTER_NODE && iter == 0) {
         cout << " Storing grid velocity for marker: ";
         cout << Marker_Tag << "." << endl;
-        cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
-        cout << ", " << xDot[2] << ") m/s." << endl;
+        cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+        cout << ", " << xDot[2]*config->GetVelocity_Ref();
+        if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
+        else cout << ") ft/s." << endl;
         cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
         cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
         cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
@@ -5706,8 +5710,10 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
             cout << " Storing translating displacement for marker: ";
             cout << Marker_Tag << "." << endl;
             if (iter == 0) {
-              cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
-              cout << ", " << xDot[2] << ") m/s." << endl;
+              cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+              cout << ", " << xDot[2]*config->GetVelocity_Ref();
+              if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
+              else cout << ") ft/s." << endl;
             }
           }
           
