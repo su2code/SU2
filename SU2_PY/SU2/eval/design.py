@@ -258,7 +258,7 @@ def obj_p(config,state,this_obj,def_objs):
     # This code, and obj_dp, must be changed to use a non-quadratic penalty function
     funcval = su2func(this_obj,config,state)
     constraint = float(def_objs[this_obj]['VALUE'])
-              
+    penalty = 0.0
     if (def_objs[this_obj]['OBJTYPE']=='=' or \
         (def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint) or \
         (def_objs[this_obj]['OBJTYPE']=='<' and funcval > constraint )):
@@ -276,7 +276,7 @@ def obj_dp(config,state,this_obj,def_objs):
     # This code, and obj_p, must be changed to use a non-quadratic penalty function
     funcval = su2func(this_obj,config,state)
     constraint = float(def_objs[this_obj]['VALUE'])
-    
+    dpenalty=0.0
 
     # Inequalities will be 0 or a positive value
     if ((def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint)  or\
@@ -286,7 +286,7 @@ def obj_dp(config,state,this_obj,def_objs):
     elif (def_objs[this_obj]['OBJTYPE']=='='):
         dpenalty=2.0*(funcval -constraint)
     # If 'DEFAULT' objtype, this will return 1.0
-    else:
+    elif (def_objs[this_obj]['OBJTYPE']=='DEFAULT'):
         dpenalty = 1.0
     
 
