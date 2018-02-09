@@ -168,13 +168,6 @@ AC_ARG_ENABLE(normal,
     AS_HELP_STRING([--disable-normal], [build executables with normal datatype (default = yes)]),
     [build_NORMAL=$enableval], [build_NORMAL="yes"])
 
-AC_ARG_WITH(GELITE-lib,
-        AS_HELP_STRING([--with-GELITE-lib[=ARG]], [GELITE library directory, ARG = path to libgeom.a]),
-        [with_GELITE_lib=$withval], [with_GELITE_lib="no"])
-AC_ARG_WITH(GELITE-include,
-        AS_HELP_STRING([--with-GELITE-include[=ARG]], [GELITE include directory, ARG = path to geom/Geometry.h]),
-        [with_GELITE_include=$withval], [with_GELITE_include="no"])
-
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
 AS_HELP_STRING(),
@@ -577,62 +570,6 @@ AC_SUBST([LAPACK_LD])
 
 ###########################
 
-# check for lib
-GELITElibgeom=libgeom.a
-GELITElibnmb=libnmb.a
-GELITElibvmath=libvmath.a
-GELITEheader=geom/Geometry.h
-have_GELITE="no"
-
-if test "$with_GELITE_lib" != "no"
-then
-        AC_CHECK_FILE([$with_GELITE_lib/$GELITElibgeom],[have_GELITE="yes"],[have_GELITE="no"])
-        if test "$have_GELITE" == "no"
-        then
-                AC_MSG_ERROR([GELITE requested but geom library file not found.])
-        fi
-        AC_CHECK_FILE([$with_GELITE_lib/$GELITElibnmb],[have_GELITE="yes"],[have_GELITE="no"])
-        if test "$have_GELITE" == "no"
-        then
-                AC_MSG_ERROR([GELITE requested but nmb library file not found.])
-        fi
-        AC_CHECK_FILE([$with_GELITE_lib/$GELITElibvmath],[have_GELITE="yes"],[have_GELITE="no"])
-        if test "$have_GELITE" == "no"
-        then
-                AC_MSG_ERROR([GELITE requested but vmath library file not found.])
-        fi
-fi
-
-# check for header
-if test "$have_GELITE" != "no"
-then
-        if test "$with_GELITE_include" != "no"
-        then
-                AC_CHECK_FILE([$with_GELITE_include/$GELITEheader],[have_GELITE='yes'],[have_GELITE='no'])
-                if test "$have_GELITE" == "no"
-                then
-                        AC_MSG_ERROR([GELITE requested but header file not found.])
-                fi
-        else
-                have_GELITE="no"
-        fi
-fi
-
-if test "$have_GELITE" != "no"
-then
-        AM_CONDITIONAL(BUILD_GELITE,true)
-        GELITE_CXX="-DHAVE_GELITE -I"$with_GELITE_include""
-        GELITE_LD=""$with_GELITE_lib"/$GELITElibnmb "$with_GELITE_lib"/$GELITElibgeom "$with_GELITE_lib"/$GELITElibvmath"
-else
-        AM_CONDITIONAL(BUILD_GELITE,false)
-        GELITE_CXX=
-        GELITE_LD=
-fi
-AC_SUBST([GELITE_CXX])
-AC_SUBST([GELITE_LD])
-
-
-##########################
 # Determine what versions of the code to build
 
 build_PY=yes
@@ -759,7 +696,6 @@ Build Configuration Summary:
     BLAS support:         $have_BLAS
     CBLAS support:        $have_CBLAS
     LAPACKE support:      $have_LAPACK
-    GELite support:       $have_GELITE
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX

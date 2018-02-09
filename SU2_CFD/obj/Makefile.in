@@ -662,8 +662,6 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-GELITE_CXX = @GELITE_CXX@
-GELITE_LD = @GELITE_LD@
 GREP = @GREP@
 HDF5_CXX = @HDF5_CXX@
 HDF5_LD = @HDF5_LD@
@@ -900,14 +898,10 @@ libSU2Core_libadd =
 # endif
 
 # if BUILD_ZLIB
-# endif
-
-# if BUILD_GELITE
 su2_cfd_cxx_flags = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@ \
-	@JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @GELITE_CXX@ \
-	$(am__empty)
+	@JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ $(am__empty)
 su2_cfd_ldadd = @su2_externals_LIBS@ @MUTATIONPP_LD@ @JSONCPP_LD@ \
-	@HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @GELITE_LD@ $(am__empty)
+	@HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ $(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@libSU2Core_a_SOURCES = $(libSU2Core_sources)
 @BUILD_NORMAL_TRUE@libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
