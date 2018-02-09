@@ -64,7 +64,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.606839, -9.035212, -0.000000, 0.005688] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.724711, -4.052467, -0.000000, 0.000000] #last 4 columns
     discadj_cylinder3D.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001

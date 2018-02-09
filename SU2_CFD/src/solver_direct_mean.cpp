@@ -11300,41 +11300,41 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       
-      /*--- Viscous contribution ---*/
-      
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_inlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//        V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
     }
   }
@@ -11480,34 +11480,35 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       
-      /*--- Viscous contribution ---*/
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      /*--- Viscous contribution, commented out because serious convergence problems  ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//        V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//        V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//        visc_numerics->SetPrimitive(V_domain, V_outlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//        if (implicit)
+//         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
     }
   }
@@ -11617,40 +11618,40 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_inlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//        V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      }
       
     }
   }
@@ -11736,40 +11737,40 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      }
+ //     /*--- Viscous contribution, commented out because serious convergence problems ---*/
+ //
+ //     if (viscous) {
+ //
+ //       /*--- Set laminar and eddy viscosity at the infinity ---*/
+ //
+ //       V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+ //       V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+ //
+ //       /*--- Set the normal vector and the coordinates ---*/
+ //
+ //       visc_numerics->SetNormal(Normal);
+ //       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+ //
+ //       /*--- Primitive variables, and gradient ---*/
+ //
+ //       visc_numerics->SetPrimitive(V_domain, V_outlet);
+ //       visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+ //
+ //       /*--- Turbulent kinetic energy ---*/
+ //
+ //       if (config->GetKind_Turb_Model() == SST)
+ //         visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      }
       
     }
   }
@@ -11788,6 +11789,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old, Inflow_MassFlow_old;
   su2double *V_inflow, *V_domain;
   
+  bool grid_movement  = config->GetGrid_Movement();
+
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   unsigned short Kind_Engine_Inflow = config->GetKind_Engine_Inflow();
@@ -11944,6 +11947,11 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_inflow);
       
+      /*--- Set grid movement ---*/
+      
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -11954,41 +11962,41 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        V_inflow[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        V_inflow[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_inflow);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        V_inflow[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//        V_inflow[nDim+6] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_inflow);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
     }
   }
@@ -12007,6 +12015,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
   su2double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement        = config->GetGrid_Movement();
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
@@ -12194,6 +12203,11 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_exhaust);
       
+      /*--- Set grid movement ---*/
+
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -12204,41 +12218,41 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        V_exhaust[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        V_exhaust[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_exhaust);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        V_exhaust[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//        V_exhaust[nDim+6] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_exhaust);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
     }
   }
@@ -12847,48 +12861,48 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
-        if (inlet_surface) {
-          V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-          V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        }
-        else {
-          V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-          V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        }
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
-        else visc_numerics->SetPrimitive(V_domain, V_outlet);
-        
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        if (inlet_surface) {
+//          V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//          V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//        }
+//        else {
+//          V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//          V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//        }
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        else visc_numerics->SetPrimitive(V_domain, V_outlet);
+//
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
     }
     
