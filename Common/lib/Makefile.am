@@ -68,7 +68,6 @@ lib_sources = \
   ../include/fem_geometry_structure.inl \
   ../include/fem_standard_element.hpp \
   ../include/fem_standard_element.inl \
-  ../include/gelite.hpp \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
   ../include/graph_vertex_coloring.hpp \
@@ -108,7 +107,6 @@ lib_sources = \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
-  ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
   ../src/geometry_structure_fem_part.cpp \
   ../src/graph_vertex_coloring.cpp \
@@ -158,11 +156,6 @@ lib_ldadd += @MUTATIONPP_LD@
 # if BUILD_JSONCPP
 lib_cxxflags += @JSONCPP_CXX@
 lib_ldadd += @JSONCPP_LD@
-# endif
-
-# if BUILD_GELITE
-lib_cxxflags += @GELITE_CXX@
-lib_ldadd += @GELITE_LD@
 # endif
 
 if BUILD_NORMAL

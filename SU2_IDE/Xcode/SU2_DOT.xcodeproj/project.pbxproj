@@ -40,7 +40,6 @@
 		E9DE0E3D1E7B58A800D6A68C /* fem_wall_distance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9DE0E351E7B58A800D6A68C /* fem_wall_distance.cpp */; };
 		E9DE0E3E1E7B58A800D6A68C /* fem_work_estimate_metis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9DE0E361E7B58A800D6A68C /* fem_work_estimate_metis.cpp */; };
 		E9DE0E3F1E7B58A800D6A68C /* gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9DE0E371E7B58A800D6A68C /* gauss_jacobi_quadrature.cpp */; };
-		E9DE0E401E7B58A800D6A68C /* gelite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9DE0E381E7B58A800D6A68C /* gelite.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -149,7 +148,6 @@
 		E9DE0E351E7B58A800D6A68C /* fem_wall_distance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_wall_distance.cpp; path = ../../Common/src/fem_wall_distance.cpp; sourceTree = "<group>"; };
 		E9DE0E361E7B58A800D6A68C /* fem_work_estimate_metis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_work_estimate_metis.cpp; path = ../../Common/src/fem_work_estimate_metis.cpp; sourceTree = "<group>"; };
 		E9DE0E371E7B58A800D6A68C /* gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gauss_jacobi_quadrature.cpp; path = ../../Common/src/gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
-		E9DE0E381E7B58A800D6A68C /* gelite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gelite.cpp; path = ../../Common/src/gelite.cpp; sourceTree = "<group>"; };
 		E9DE0E411E7B58DA00D6A68C /* dense_matrix_product.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = dense_matrix_product.hpp; path = ../../Common/include/dense_matrix_product.hpp; sourceTree = "<group>"; };
 		E9DE0E421E7B58DA00D6A68C /* fem_geometry_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = fem_geometry_structure.hpp; path = ../../Common/include/fem_geometry_structure.hpp; sourceTree = "<group>"; };
 		E9DE0E431E7B58DA00D6A68C /* fem_geometry_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_geometry_structure.inl; path = ../../Common/include/fem_geometry_structure.inl; sourceTree = "<group>"; };
@@ -157,7 +155,6 @@
 		E9DE0E451E7B58DA00D6A68C /* fem_standard_element.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = fem_standard_element.inl; path = ../../Common/include/fem_standard_element.inl; sourceTree = "<group>"; };
 		E9DE0E461E7B58DA00D6A68C /* gauss_jacobi_quadrature.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gauss_jacobi_quadrature.hpp; path = ../../Common/include/gauss_jacobi_quadrature.hpp; sourceTree = "<group>"; };
 		E9DE0E471E7B58DA00D6A68C /* gauss_jacobi_quadrature.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gauss_jacobi_quadrature.inl; path = ../../Common/include/gauss_jacobi_quadrature.inl; sourceTree = "<group>"; };
-		E9DE0E481E7B58DA00D6A68C /* gelite.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gelite.hpp; path = ../../Common/include/gelite.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,7 +171,6 @@
 		0546740714EF44CD004209AC /* Include */ = {
 			isa = PBXGroup;
 			children = (
-				E9DE0E481E7B58DA00D6A68C /* gelite.hpp */,
 				05E6DC5817EB64DE00FA1F7E /* SU2_DOT.hpp */,
 				05E6DB0117EB615700FA1F7E /* config_structure.hpp */,
 				05E6DB0217EB615700FA1F7E /* dual_grid_structure.hpp */,
@@ -281,7 +277,6 @@
 				E9DE0E351E7B58A800D6A68C /* fem_wall_distance.cpp */,
 				E9DE0E361E7B58A800D6A68C /* fem_work_estimate_metis.cpp */,
 				E9DE0E371E7B58A800D6A68C /* gauss_jacobi_quadrature.cpp */,
-				E9DE0E381E7B58A800D6A68C /* gelite.cpp */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -404,7 +399,6 @@
 				05E6DB2C17EB61BD00FA1F7E /* matrix_structure.cpp in Sources */,
 				E962E7E21E022A8D00AF4742 /* gauss_structure.cpp in Sources */,
 				E962E7E01E022A8D00AF4742 /* element_linear.cpp in Sources */,
-				E9DE0E401E7B58A800D6A68C /* gelite.cpp in Sources */,
 				E9DE0E3F1E7B58A800D6A68C /* gauss_jacobi_quadrature.cpp in Sources */,
 				E962E7D21E022A1D00AF4742 /* output_fieldview.cpp in Sources */,
 				05E6DB2D17EB61BD00FA1F7E /* primal_grid_structure.cpp in Sources */,

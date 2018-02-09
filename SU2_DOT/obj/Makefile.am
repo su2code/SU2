@@ -107,11 +107,6 @@ su2_dot_cxx_flags += @ZLIB_CXX@
 su2_dot_ldadd += @ZLIB_LD@
 # endif
 
-# if BUILD_GELITE
-su2_dot_cxx_flags += @GELITE_CXX@
-su2_dot_ldadd += @GELITE_LD@
-# endif
-
 if BUILD_NORMAL
 ___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 ___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
