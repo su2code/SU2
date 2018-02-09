@@ -651,10 +651,6 @@ REVERSE_LIBS
 REVERSE_CXX
 DIRECTDIFF_LIBS
 DIRECTDIFF_CXX
-GELITE_LD
-GELITE_CXX
-BUILD_GELITE_FALSE
-BUILD_GELITE_TRUE
 LAPACK_LD
 LAPACK_CXX
 BUILD_LAPACK_FALSE
@@ -857,8 +853,6 @@ enable_GEO
 enable_PY_WRAPPER
 enable_complex
 enable_normal
-with_GELITE_lib
-with_GELITE_include
 with_MPI
 enable_tecio
 enable_metis
@@ -1574,10 +1568,6 @@ Optional Packages:
   --with-LAPACK-lib=ARG   LAPACK library directory, ARG = path to liblapacke.a
   --with-LAPACK-include=ARG
                           LAPACK include directory, ARG = path to lapacke.h
-  --with-GELITE-lib=ARG   GELITE library directory, ARG = path to libgeom.a
-  --with-GELITE-include=ARG
-                          GELITE include directory, ARG = path to
-                          geom/Geometry.h
 
   --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
                           Specific METIS C Preprocessor flags to use
@@ -6085,23 +6075,6 @@ else
 fi
 
 
-
-# Check whether --with-GELITE-lib was given.
-if test "${with_GELITE_lib+set}" = set; then :
-  withval=$with_GELITE_lib; with_GELITE_lib=$withval
-else
-  with_GELITE_lib="no"
-fi
-
-
-# Check whether --with-GELITE-include was given.
-if test "${with_GELITE_include+set}" = set; then :
-  withval=$with_GELITE_include; with_GELITE_include=$withval
-else
-  with_GELITE_include="no"
-fi
-
-
 # Check for the old  MPI option so that we can throw an error
 
 # Check whether --with-MPI was given.
@@ -7240,164 +7213,6 @@ fi
 
 ###########################
 
-# check for lib
-GELITElibgeom=libgeom.a
-GELITElibnmb=libnmb.a
-GELITElibvmath=libvmath.a
-GELITEheader=geom/Geometry.h
-have_GELITE="no"
-
-if test "$with_GELITE_lib" != "no"
-then
-        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElibgeom" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElibgeom" >&5
-$as_echo_n "checking for $with_GELITE_lib/$GELITElibgeom... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_GELITE_lib/$GELITElibgeom"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  have_GELITE="yes"
-else
-  have_GELITE="no"
-fi
-
-        if test "$have_GELITE" == "no"
-        then
-                as_fn_error $? "GELITE requested but geom library file not found." "$LINENO" 5
-        fi
-        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElibnmb" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElibnmb" >&5
-$as_echo_n "checking for $with_GELITE_lib/$GELITElibnmb... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_GELITE_lib/$GELITElibnmb"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  have_GELITE="yes"
-else
-  have_GELITE="no"
-fi
-
-        if test "$have_GELITE" == "no"
-        then
-                as_fn_error $? "GELITE requested but nmb library file not found." "$LINENO" 5
-        fi
-        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElibvmath" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElibvmath" >&5
-$as_echo_n "checking for $with_GELITE_lib/$GELITElibvmath... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_GELITE_lib/$GELITElibvmath"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  have_GELITE="yes"
-else
-  have_GELITE="no"
-fi
-
-        if test "$have_GELITE" == "no"
-        then
-                as_fn_error $? "GELITE requested but vmath library file not found." "$LINENO" 5
-        fi
-fi
-
-# check for header
-if test "$have_GELITE" != "no"
-then
-        if test "$with_GELITE_include" != "no"
-        then
-                as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_include/$GELITEheader" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_include/$GELITEheader" >&5
-$as_echo_n "checking for $with_GELITE_include/$GELITEheader... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_GELITE_include/$GELITEheader"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-  have_GELITE='yes'
-else
-  have_GELITE='no'
-fi
-
-                if test "$have_GELITE" == "no"
-                then
-                        as_fn_error $? "GELITE requested but header file not found." "$LINENO" 5
-                fi
-        else
-                have_GELITE="no"
-        fi
-fi
-
-if test "$have_GELITE" != "no"
-then
-         if true; then
-  BUILD_GELITE_TRUE=
-  BUILD_GELITE_FALSE='#'
-else
-  BUILD_GELITE_TRUE='#'
-  BUILD_GELITE_FALSE=
-fi
-
-        GELITE_CXX="-DHAVE_GELITE -I"$with_GELITE_include""
-        GELITE_LD=""$with_GELITE_lib"/$GELITElibnmb "$with_GELITE_lib"/$GELITElibgeom "$with_GELITE_lib"/$GELITElibvmath"
-else
-         if false; then
-  BUILD_GELITE_TRUE=
-  BUILD_GELITE_FALSE='#'
-else
-  BUILD_GELITE_TRUE='#'
-  BUILD_GELITE_FALSE=
-fi
-
-        GELITE_CXX=
-        GELITE_LD=
-fi
-
-
-
-
-##########################
 # Determine what versions of the code to build
 
 build_PY=yes
@@ -7907,14 +7722,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_LAPACK_TRUE}" && test -z "${BUILD_LAPACK_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_LAPACK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_GELITE_TRUE}" && test -z "${BUILD_GELITE_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_GELITE\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_GELITE_TRUE}" && test -z "${BUILD_GELITE_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_GELITE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_NORMAL_TRUE}" && test -z "${BUILD_NORMAL_FALSE}"; then
@@ -9175,7 +8982,6 @@ Build Configuration Summary:
     BLAS support:         $have_BLAS
     CBLAS support:        $have_CBLAS
     LAPACKE support:      $have_LAPACK
-    GELite support:       $have_GELITE
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
@@ -9264,7 +9070,6 @@ Build Configuration Summary:
     BLAS support:         $have_BLAS
     CBLAS support:        $have_CBLAS
     LAPACKE support:      $have_LAPACK
-    GELite support:       $have_GELITE
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX

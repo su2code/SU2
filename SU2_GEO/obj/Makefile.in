@@ -194,8 +194,6 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-GELITE_CXX = @GELITE_CXX@
-GELITE_LD = @GELITE_LD@
 GREP = @GREP@
 HDF5_CXX = @HDF5_CXX@
 HDF5_LD = @HDF5_LD@
@@ -336,15 +334,12 @@ ___bin_SU2_GEO_SOURCES = \
 # endif
 
 # if BUILD_JSONCPP
-# endif
-
-# if BUILD_GELITE
 ___bin_SU2_GEO_CXXFLAGS = @su2_externals_INCLUDES@ @HDF5_CXX@ \
 	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
-	@GELITE_CXX@ $(am__empty)
+	$(am__empty)
 ___bin_SU2_GEO_LDADD = ../../Common/lib/libSU2.a @su2_externals_LIBS@ \
 	@HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ \
-	@GELITE_LD@ $(am__empty)
+	$(am__empty)
 all: all-am
 
 .SUFFIXES:

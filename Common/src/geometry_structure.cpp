@@ -18810,28 +18810,53 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   GhostPoints = nElem_Bound[iMarkerReceive];
 
   /*--- Change the numbering to guarantee that the all the receive
-   points are at the end of the file ---*/
-  unsigned long OldnPoint = geometry->GetnPoint();
-  unsigned long *NewSort = new unsigned long[nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    NewSort[iPoint] = iPoint;
-  }
-
-  unsigned long Index = OldnPoint-1;
+   points are at the end of the file. ---*/
+  std::vector<unsigned long> receive_nodes;
+  std::vector<unsigned long> send_nodes;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       if (config->GetMarker_All_SendRecv(iMarker) < 0) {
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          if (bound[iMarker][iElem_Bound]->GetNode(0) < geometry->GetnPoint()) {
-            NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] = Index;
-            NewSort[Index] = bound[iMarker][iElem_Bound]->GetNode(0);
-            Index--;
+          if (bound[iMarker][iElem_Bound]->GetRotation_Type() == 1) {
+            receive_nodes.push_back(bound[iMarker][iElem_Bound]->GetNode(0));
+          } else {
+            send_nodes.push_back(bound[iMarker][iElem_Bound]->GetNode(0));
           }
         }
       }
     }
   }
 
+  /*--- Build the sorted lists of node numbers with receive/send at the end
+   * NewSort[i] = j maps the new number (i) to the old number (j)
+   * ReverseSort[j] = i maps the old number (j) to the new number (i) ---*/
+  std::vector<unsigned long> NewSort;
+  std::vector<unsigned long> ReverseSort;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    bool isReceive = (find(receive_nodes.begin(), receive_nodes.end(), iPoint)
+                      != receive_nodes.end());
+    bool isSend = (find(send_nodes.begin(), send_nodes.end(), iPoint)
+                   != send_nodes.end());
+    if (!isSend && !isReceive) {
+      NewSort.push_back(iPoint);
+    }
+  }
+  NewSort.insert(NewSort.end(), receive_nodes.begin(), receive_nodes.end());
+  NewSort.insert(NewSort.end(), send_nodes.begin(), send_nodes.end());
+  
+  ReverseSort.resize(NewSort.size());
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    unsigned long jPoint;
+    for (jPoint = 0; jPoint < nPoint; jPoint++) {
+      if (NewSort[iPoint] == jPoint) {
+        ReverseSort[jPoint] = iPoint;
+        break;
+      }
+    }
+    if (jPoint == nPoint) { // Loop fell through without break
+      SU2_MPI::Error("Remapping of periodic nodes failed.", CURRENT_FUNCTION);
+    }
+  }
   
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
@@ -18925,10 +18950,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
 
 
   output_file.close();
-
-  /*--- Free memory ---*/
-  delete [] NewSort;
-
 }
 
 void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {

@@ -82,9 +82,3 @@ ___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
 ___bin_SU2_SOL_CXXFLAGS += @JSONCPP_CXX@
 ___bin_SU2_SOL_LDADD += @JSONCPP_LD@
 # endif
-
-# if BUILD_GELITE
-___bin_SU2_SOL_CXXFLAGS += @GELITE_CXX@
-___bin_SU2_SOL_LDADD += @GELITE_LD@
-# endif
-
