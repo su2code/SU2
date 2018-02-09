@@ -1,0 +1,1 @@
+./preconfigure.py --with-Eigen-include=/home/nitish/Softwares/EIGEN --prefix=/home/nitish/Softwares/SU2 --enable-mpi  --with-cc=/usr/bin/mpicc  --with-cxx=/usr/bin/mpicxx --enable-autodiff
