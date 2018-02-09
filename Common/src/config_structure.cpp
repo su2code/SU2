@@ -4598,8 +4598,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if ((Design_Variable[iDV] != NO_DEFORMATION) &&
           (Design_Variable[iDV] != FFD_SETTING) &&
-          (Design_Variable[iDV] != SURFACE_FILE) &&
-          (Design_Variable[iDV] != GE_LITE)) {
+          (Design_Variable[iDV] != SURFACE_FILE)) {
 
         if (iDV == 0)
           cout << "Design variables definition (markers <-> value <-> param):" << endl;
@@ -4612,7 +4611,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
           case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
-	        case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
+          case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
           case TRANSLATION:           cout << "Translation design variable."; break;
           case SCALE:                 cout << "Scale design variable."; break;
           case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
