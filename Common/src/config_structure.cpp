@@ -2248,17 +2248,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
 
-  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
-  
-  if (nObjW<nObj) {
-    if (Weight_ObjFunc!= NULL) {
-      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
-    }
-    Weight_ObjFunc = new su2double[nObj];
-    for (unsigned short iObj=0; iObj<nObj; iObj++)
-      Weight_ObjFunc[iObj] = 1.0;
-  }
+
 
   /*--- Maker sure that nMarker = nObj ---*/
 
@@ -2294,7 +2284,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
     }
   }
-
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
+  
+  if (nObjW<nObj) {
+    if (Weight_ObjFunc!= NULL and nObjW>1) {
+      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
+                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+    }
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj] = 1.0;
+  }
   /*--- Ignore weights if only one objective provided ---*/
   
   if (nObj == 1 )
