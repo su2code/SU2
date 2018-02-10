@@ -85,11 +85,9 @@ void CSysSolve::SolveReduced(const int & n, const vector<vector<su2double> > & H
 }
 
 void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<CSysVector> & w) {
-  
+
   bool Convergence = true;
-  int rank = SU2_MPI::GetRank();
-  int size = SU2_MPI::GetSize();
-  
+
   /*--- Parameter for reorthonormalization ---*/
   
   static const su2double reorth = 0.98;
@@ -107,6 +105,9 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   /*--- Synchronization point to check the convergence of the solver ---*/
 
 #ifdef HAVE_MPI
+
+  int rank = SU2_MPI::GetRank();
+  int size = SU2_MPI::GetSize();
   
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
   sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
@@ -319,7 +320,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
 
   /*---  Check the subspace size ---*/
   
-  if (m > 1000) {
+  if (m > 5000) {
     char buf[100];
     SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
