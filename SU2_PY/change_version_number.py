@@ -40,7 +40,7 @@ import os,sys
 oldvers = '4.3.0 "Cardinal"'
 newvers = '5.0.0 "Raven"'
 
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.
   # For original input behaviour, just write eval(input())
   raw_input = input
