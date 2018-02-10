@@ -333,15 +333,15 @@ def obj_df(dvs,config,state=None):
         for i_obj,this_obj in enumerate(objectives):
             obj_list[i_obj]=this_obj
             scale[i_obj] = def_objs[this_obj]['SCALE']
+            global_factor = float(config['OPT_GRADIENT_FACTOR'])
             if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
                 # Standard case
                 sign = su2io.get_objectiveSign(this_obj)
-                global_factor = float(config['OPT_GRADIENT_FACTOR'])
                 scale[i_obj] *= sign * global_factor
             else:
                 # For a penalty function, the term is scaled by the partial derivative
                 # d p(j) / dx = (dj / dx) * ( dp / dj)  
-                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
+                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)*global_factor
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         grad= su2grad(obj_list,grad_method,config,state)
@@ -366,6 +366,10 @@ def obj_df(dvs,config,state=None):
                 # MARKER_MONITORING should be updated to only include the marker for i_obj
                 # For single objectives, multiple markers can be used 
                 config['MARKER_MONITORING'] = marker_monitored[i_obj]
+	        if def_objs[this_obj]['OBJTYPE']!= 'DEFAULT':
+                    # For a penalty function, the term is scaled by the partial derivative
+                    # d p(j) / dx = (dj / dx) * ( dp / dj)  
+                    scale*=obj_dp(config, state, this_obj, def_objs)
 
             
             # Evaluate Objective Gradient
