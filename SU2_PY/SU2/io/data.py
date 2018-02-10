@@ -36,7 +36,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
     # Py3 pickle now manage both accelerated cPickle and pure python pickle
     # See https://docs.python.org/3/whatsnew/3.0.html#library-changes, 4th item.
     import pickle
