@@ -695,10 +695,54 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               v3[0] = v1[1]*Plane_Normal[2]-v1[2]*Plane_Normal[1];
               v3[1] = v1[2]*Plane_Normal[0]-v1[0]*Plane_Normal[2];
               v3[2] = v1[0]*Plane_Normal[1]-v1[1]*Plane_Normal[0];
+              
+              su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+              su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+              
+              /*--- Translate to the origin ---*/
+              
+              su2double XCoord_Trans = node[iPoint]->GetCoord(0) - config->GetNacelleLocation(0);
+              su2double YCoord_Trans = node[iPoint]->GetCoord(1) - config->GetNacelleLocation(1);
+              su2double ZCoord_Trans = node[iPoint]->GetCoord(2) - config->GetNacelleLocation(2);
+              
+              /*--- Apply tilt angle ---*/
+              
+              su2double XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+              su2double YCoord_Trans_Tilt = YCoord_Trans;
+              su2double ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+              
+              /*--- Apply toe angle ---*/
+              
+              su2double XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+              su2double YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+              su2double ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+              
+              /*--- Undo plane rotation, we have already rotated the nacelle ---*/
+              
+              /*--- Undo tilt angle ---*/
+              
+              su2double XPlane_Normal_Tilt = Plane_Normal[0]*cos(-Tilt_Angle) + Plane_Normal[2]*sin(-Tilt_Angle);
+              su2double YPlane_Normal_Tilt = Plane_Normal[1];
+              su2double ZPlane_Normal_Tilt = Plane_Normal[2]*cos(-Tilt_Angle) - Plane_Normal[0]*sin(-Tilt_Angle);
+              
+              /*--- Undo toe angle ---*/
+              
+              su2double XPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*cos(-Toe_Angle) - YPlane_Normal_Tilt*sin(-Toe_Angle);
+              su2double YPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*sin(-Toe_Angle) + YPlane_Normal_Tilt*cos(-Toe_Angle);
+              su2double ZPlane_Normal_Tilt_Toe = ZPlane_Normal_Tilt;
+              
+              
+              v1[0] = 0.0;
+              v1[1] = YCoord_Trans_Tilt_Toe;
+              v1[2] = ZCoord_Trans_Tilt_Toe;
+              v3[0] = v1[1]*ZPlane_Normal_Tilt_Toe-v1[2]*YPlane_Normal_Tilt_Toe;
+              v3[1] = v1[2]*XPlane_Normal_Tilt_Toe-v1[0]*ZPlane_Normal_Tilt_Toe;
+              v3[2] = v1[0]*YPlane_Normal_Tilt_Toe-v1[1]*XPlane_Normal_Tilt_Toe;
               CrossProduct = v3[0] * 1.0 + v3[1] * 0.0 + v3[2] * 0.0;
+              
             }
             
-            if ((jPoint > iPoint) && (CrossProduct >= 0.0)
+            if ((jPoint > iPoint) // && (CrossProduct >= 0.0)
                 && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))
                 && ((node[iPoint]->GetCoord(1) > MinYCoord) && (node[iPoint]->GetCoord(1) < MaxYCoord))
                 && ((node[iPoint]->GetCoord(2) > MinZCoord) && (node[iPoint]->GetCoord(2) < MaxZCoord))) {
@@ -979,26 +1023,75 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
       
       
       if (config->GetGeo_Description() == NACELLE) {
-        su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
-        su2double Angle = 0.5*PI_NUMBER - theta_deg*PI_NUMBER/180;
+        
+        su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+        su2double Roll_Angle = 0.5*PI_NUMBER - Theta_deg*PI_NUMBER/180;
+
+        su2double XCoord_Trans, YCoord_Trans, ZCoord_Trans, XCoord_Trans_Tilt, YCoord_Trans_Tilt, ZCoord_Trans_Tilt,
+        XCoord_Trans_Tilt_Toe, YCoord_Trans_Tilt_Toe, ZCoord_Trans_Tilt_Toe, XCoord, YCoord, ZCoord;
+        
         for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
           
-          su2double XCoord_Translate = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
-          su2double YCoord_Translate = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
-          su2double ZCoord_Translate = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
+          /*--- First point of the edge ---*/
+
+          /*--- Translate to the origin ---*/
+
+          XCoord_Trans = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
           
-          su2double XCoord = XCoord_Translate;
-          su2double YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
-          su2double ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
+          /*--- Apply tilt angle ---*/
+
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+
+          /*--- Rotate to X-Z plane (roll) ---*/
+
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
           Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
           
-          XCoord_Translate = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
-          YCoord_Translate = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
-          ZCoord_Translate = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          /*--- Second point of the edge ---*/
           
-          XCoord = XCoord_Translate;
-          YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
-          ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
+          /*--- Translate to the origin ---*/
+          
+          XCoord_Trans = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          
+          /*--- Apply tilt angle ---*/
+          
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+          
+          /*--- Rotate to X-Z plane (roll) ---*/
+          
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
           Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
           
         }
@@ -1467,7 +1560,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               
               W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
               
-              Length_U = 0.0, Length_V = 0.0, Length_W = 0.0, CosValue = 0.0;
+              Length_U = 0.0; Length_V = 0.0; Length_W = 0.0; CosValue = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { Length_U += U[iDim]*U[iDim]; Length_V += V[iDim]*V[iDim]; Length_W += W[iDim]*W[iDim]; }
               Length_U = sqrt(Length_U); Length_V = sqrt(Length_V); Length_W = sqrt(Length_W);
               for (iDim = 0; iDim < nDim; iDim++) { U[iDim] /= Length_U; V[iDim] /= Length_V; CosValue += U[iDim]*V[iDim]; }
@@ -16590,10 +16683,35 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
     
+    /*--- Apply roll to cut the nacelle ---*/
+
     Angle = iPlane*dAngle*PI_NUMBER/180.0;
     Plane_Normal[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = -sin(Angle);
     Plane_Normal[iPlane][2] = cos(Angle);
+    
+    /*--- Apply tilt angle to the plane ---*/
+    
+    su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+    su2double Plane_NormalX_Tilt = Plane_Normal[iPlane][0]*cos(Tilt_Angle) + Plane_Normal[iPlane][2]*sin(Tilt_Angle);
+    su2double Plane_NormalY_Tilt = Plane_Normal[iPlane][1];
+    su2double Plane_NormalZ_Tilt = Plane_Normal[iPlane][2]*cos(Tilt_Angle) - Plane_Normal[iPlane][0]*sin(Tilt_Angle);
+    
+    /*--- Apply toe angle to the plane ---*/
+    
+    su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+    su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+    su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+    su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+    
+    /*--- Update normal vector ---*/
+    
+    Plane_Normal[iPlane][0] = Plane_NormalX_Tilt_Toe;
+    Plane_Normal[iPlane][1] = Plane_NormalY_Tilt_Toe;
+    Plane_Normal[iPlane][2] = Plane_NormalZ_Tilt_Toe;
+    
+    /*--- Point in the plane ---*/
+    
     Plane_P0[iPlane][0] = config->GetNacelleLocation(0);
     Plane_P0[iPlane][1] = config->GetNacelleLocation(1);
     Plane_P0[iPlane][2] = config->GetNacelleLocation(2);
@@ -18841,7 +18959,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
   ReverseSort.resize(NewSort.size());
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    unsigned short jPoint;
+    unsigned long jPoint;
     for (jPoint = 0; jPoint < nPoint; jPoint++) {
       if (NewSort[iPoint] == jPoint) {
         ReverseSort[jPoint] = iPoint;
