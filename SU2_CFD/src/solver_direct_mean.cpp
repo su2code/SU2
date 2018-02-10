@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 5.0.0 "Raven
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
  *                          Dr. Thomas D. Economon.
@@ -8616,17 +8616,6 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    
-    /*--- If there is only one objective function, it will use it for all the markers ---*/
-    
-    if (config->GetnMarker_Monitoring() != config->GetnObj())  {
-      Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-      Kind_ObjFunc = config->GetKind_ObjFunc(0);
-    }
-    else {
-      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-      Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
-    }
     
     switch(Kind_ObjFunc) {
       case DRAG_COEFFICIENT:
