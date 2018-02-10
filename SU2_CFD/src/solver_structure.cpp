@@ -1908,7 +1908,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-  iPoint_Global_Local = 0, iPoint_Global = 0;
+  iPoint_Global_Local = 0; iPoint_Global = 0;
 
   /*--- Read all lines in the restart file ---*/
   /*--- The first line is the header ---*/
@@ -1939,7 +1939,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
   if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
@@ -1980,7 +1980,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-    iPoint_Global_Local = 0, iPoint_Global = 0;
+    iPoint_Global_Local = 0; iPoint_Global = 0;
 
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
@@ -2012,7 +2012,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+    rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
     if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
