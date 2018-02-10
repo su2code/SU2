@@ -4333,16 +4333,27 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
-  unsigned short iMarker_Monitoring;
+  unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
 
+  Total_ComboObj = 0.0;
+  
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-
-    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+    /*--- If there is only one objective function, it will use it for all the markers ---*/
+    
+    if (config->GetnMarker_Monitoring() != config->GetnObj())  {
+      Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+      Kind_ObjFunc = config->GetKind_ObjFunc(0);
+    }
+    else {
+      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+      Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+    }
+    
+    switch(Kind_ObjFunc) {
       case DRAG_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
@@ -4706,45 +4717,46 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      /*--- Viscous contribution ---*/
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the inlet ---*/
+//
+//        V_inlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
+//        V_inlet[nDim+4] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+//                                          node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+//                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the inlet ---*/
-        
-        V_inlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
-        V_inlet[nDim+4] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_inlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                          node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
     }
   }
   
@@ -4846,42 +4858,44 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
-      /*--- Viscous contribution ---*/
+      /*--- Viscous contribution, commented out because serious convergence problems ---*/
       
-      if (viscous) {
-
-        V_outlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
-        V_outlet[nDim+4] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                          node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      if (viscous) {
+//
+//        V_outlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
+//        V_outlet[nDim+4] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_outlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+//                                          node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+//                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
+      
     }
   }
   
@@ -6348,7 +6362,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
-  StrainMag_Max = 0.0, Omega_Max = 0.0;
+  StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
