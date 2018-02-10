@@ -3998,7 +3998,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
+  
   /*--- Retrieve filename from config ---*/
   
   if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
@@ -4510,8 +4510,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
-    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
+    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
+        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
+        /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-2))) ||
         ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
       
@@ -6662,14 +6666,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     
     if (fixed_cl) {
       Breakdown_file << "Simulation at a cte. CL: " << config[val_iZone]->GetTarget_CL() << ".\n";
-      Breakdown_file << "Approx. Delta CL / Delta AoA: " << config[val_iZone]->GetdCL_dAlpha() << " (1/deg).\n";
-      Breakdown_file << "Approx. Delta CD / Delta CL: " << config[val_iZone]->GetdCD_dCL() << ".\n";
-      if (nDim == 3 ) {
-        Breakdown_file << "Approx. Delta CMx / Delta CL: " << config[val_iZone]->GetdCMx_dCL() << ".\n";
-        Breakdown_file << "Approx. Delta CMy / Delta CL: " << config[val_iZone]->GetdCMy_dCL() << ".\n";
-      }
-      Breakdown_file << "Approx. Delta CMz / Delta CL: " << config[val_iZone]->GetdCMz_dCL() << ".\n";
-    }
+     }
     
     if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
     else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
@@ -8170,6 +8167,10 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Plane_Normal_ = new su2double[3];
   CPressure = new su2double[geometry->GetnPoint()];
   
+  if ((rank == MASTER_NODE) && (output)) {
+    cout << endl << "Writing the spanload file (load_distribution.dat).";
+  }
+  
   /*--- Compute some reference quantities and necessary values ---*/
   
   RefDensity = solver->GetDensity_Inf();
@@ -8221,6 +8222,27 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         Plane_Normal[0] = 0.0;
         Plane_Normal[1] = -sin(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
         Plane_Normal[2] = cos(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+        
+        /*--- Apply tilt angle to the plane ---*/
+        
+        su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt = Plane_Normal[0]*cos(Tilt_Angle) + Plane_Normal[2]*sin(Tilt_Angle);
+        su2double Plane_NormalY_Tilt = Plane_Normal[1];
+        su2double Plane_NormalZ_Tilt = Plane_Normal[2]*cos(Tilt_Angle) - Plane_Normal[0]*sin(Tilt_Angle);
+        
+        /*--- Apply toe angle to the plane ---*/
+        
+        su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+        su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+        su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+        
+        /*--- Update normal vector ---*/
+        
+        Plane_Normal[0] = Plane_NormalX_Tilt_Toe;
+        Plane_Normal[1] = Plane_NormalY_Tilt_Toe;
+        Plane_Normal[2] = Plane_NormalZ_Tilt_Toe;
+        
       }
       else {
         Plane_Normal[1] = 1.0;
@@ -8257,11 +8279,53 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           Plane_Normal_[0] = 0.0;
           Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
           Plane_Normal_[2] = cos((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+          
+          /*--- Apply tilt angle to the plane ---*/
+          
+          su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt = Plane_Normal[0]*cos(Tilt_Angle) + Plane_Normal[2]*sin(Tilt_Angle);
+          su2double Plane_NormalY_Tilt = Plane_Normal[1];
+          su2double Plane_NormalZ_Tilt = Plane_Normal[2]*cos(Tilt_Angle) - Plane_Normal[0]*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle to the plane ---*/
+          
+          su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+          su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+          su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+          
+          /*--- Update normal vector ---*/
+          
+          Plane_Normal[0] = Plane_NormalX_Tilt_Toe;
+          Plane_Normal[1] = Plane_NormalY_Tilt_Toe;
+          Plane_Normal[2] = Plane_NormalZ_Tilt_Toe;
+          
         }
         else {
           Plane_Normal_[0] = 0.0;
           Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
           Plane_Normal_[2] = cos((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+          
+          /*--- Apply tilt angle to the plane ---*/
+          
+          su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt = Plane_Normal[0]*cos(Tilt_Angle) + Plane_Normal[2]*sin(Tilt_Angle);
+          su2double Plane_NormalY_Tilt = Plane_Normal[1];
+          su2double Plane_NormalZ_Tilt = Plane_Normal[2]*cos(Tilt_Angle) - Plane_Normal[0]*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle to the plane ---*/
+          
+          su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+          su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+          su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+          
+          /*--- Update normal vector ---*/
+          
+          Plane_Normal[0] = Plane_NormalX_Tilt_Toe;
+          Plane_Normal[1] = Plane_NormalY_Tilt_Toe;
+          Plane_Normal[2] = Plane_NormalZ_Tilt_Toe;
+          
         }
       }
       else {
@@ -9481,7 +9545,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
     string Analyze_TagBound = config->GetMarker_Analyze_TagBound(iMarker_Analyze);
 
-    nVertex_Surface = 0, nLocalVertex_Surface = 0; MaxLocalVertex_Surface = 0;
+    nVertex_Surface = 0; nLocalVertex_Surface = 0; MaxLocalVertex_Surface = 0;
 
     /*--- Find the max number of surface vertices among all
      partitions and set up buffers. The master node will handle the
@@ -11344,13 +11408,13 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    /*--- Write the solution files iff they are requested and we are executing
+    /*--- Write the solution files if they are requested and we are executing
      with a single rank (all data on one proc and no comm. overhead). Once we
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
-
+    if ((size == SINGLE_NODE) && (rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
+      
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
       if (rank == MASTER_NODE)
@@ -15315,7 +15379,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    the counters into cumulative storage format to make the
    communications simpler. ---*/
   
-  nSends = 0, nRecvs = 0;
+  nSends = 0; nRecvs = 0;
   for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
@@ -15659,7 +15723,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    the counters into cumulative storage format to make the
    communications simpler. ---*/
   
-  nSends = 0, nRecvs = 0;
+  nSends = 0; nRecvs = 0;
   for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
@@ -16412,15 +16476,13 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
-  su2double Mach, Pressure, Temperature, TotalPressure, TotalTemperature, Enthalpy,
-  Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
+  su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
+  Enthalpy, Velocity[3], Velocity2, MassFlow, Density, Energy, Area, AxiFactor = 1.0, SoundSpeed, Vn, Weight = 1.0;
   
   su2double Gas_Constant      = config->GetGas_ConstantND();
   su2double Gamma             = config->GetGamma();
-  su2double Gamma_Minus_One   = Gamma - 1.0;
   unsigned short nMarker      = config->GetnMarker_All();
   unsigned short nDim         = geometry->GetnDim();
-  unsigned short nVar         = solver->GetnVar();
   unsigned short Kind_Average = config->GetKind_Average();
 
   bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
@@ -16474,7 +16536,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           
           Density = solver->node[iPoint]->GetDensity();
           Enthalpy = solver->node[iPoint]->GetEnthalpy();
-          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0, Vn = 0.0;
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
             Velocity[iDim] = solver->node[iPoint]->GetVelocity(iDim);
@@ -16709,7 +16771,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
-    cout.precision(4);    
+    cout.precision(3);
     cout << endl << "Computing surface mean values." << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
@@ -16741,7 +16803,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 
         su2double Density = config->GetSurface_Density(iMarker_Analyze);
         if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Rho (kg/m^3): " << setw(10) << Density;
-        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Rho (lb/ft^3): " << setw(10) << Density;
+        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Rho (lb/ft^3): " << setw(10) << Density*32.174;
 
         cout << endl;
 
