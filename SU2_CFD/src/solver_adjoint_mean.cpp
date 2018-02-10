@@ -3983,7 +3983,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
 
       /*--- Compute projections ---*/
-      ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
+      ProjVel = 0.0; bcn = 0.0; vn = 0.0; phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel -= Velocity[iDim]*Normal[iDim];
         bcn     += d[iDim]*UnitNormal[iDim];
@@ -4127,7 +4127,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Compute projections ---*/
 
-      ProjVel = 0.0; vn = 0.0, phin = 0.0;
+      ProjVel = 0.0; vn = 0.0; phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel -= Velocity[iDim]*Normal[iDim];
         vn      += Velocity[iDim]*UnitNormal[iDim];

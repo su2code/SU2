@@ -242,6 +242,29 @@ int main(int argc, char *argv[]) {
         Plane_Normal[iPlane][0] = 0.0;
         Plane_Normal[iPlane][1] = -sin(config_container[ZONE_0]->GetLocationStations(iPlane)*PI_NUMBER/180.0);
         Plane_Normal[iPlane][2] = cos(config_container[ZONE_0]->GetLocationStations(iPlane)*PI_NUMBER/180.0);
+        
+        /*--- Apply tilt angle to the plane ---*/
+        
+        su2double Tilt_Angle = config_container[ZONE_0]->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt = Plane_Normal[iPlane][0]*cos(Tilt_Angle) + Plane_Normal[iPlane][2]*sin(Tilt_Angle);
+        su2double Plane_NormalY_Tilt = Plane_Normal[iPlane][1];
+        su2double Plane_NormalZ_Tilt = Plane_Normal[iPlane][2]*cos(Tilt_Angle) - Plane_Normal[iPlane][0]*sin(Tilt_Angle);
+        
+        /*--- Apply toe angle to the plane ---*/
+        
+        su2double Toe_Angle = config_container[ZONE_0]->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+        su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+        su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+        
+        /*--- Update normal vector ---*/
+        
+        Plane_Normal[iPlane][0] = Plane_NormalX_Tilt_Toe;
+        Plane_Normal[iPlane][1] = Plane_NormalY_Tilt_Toe;
+        Plane_Normal[iPlane][2] = Plane_NormalZ_Tilt_Toe;
+        
+        /*--- Point in the plane ---*/
+        
         Plane_P0[iPlane][0] = config_container[ZONE_0]->GetNacelleLocation(0);
         Plane_P0[iPlane][1] = config_container[ZONE_0]->GetNacelleLocation(1);
         Plane_P0[iPlane][2] = config_container[ZONE_0]->GetNacelleLocation(2);
