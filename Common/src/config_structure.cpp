@@ -557,7 +557,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit           = new su2double[3];
   default_htp_axis           = new su2double[2];
   default_body_force         = new su2double[3];
-  default_nacelle_location   = new su2double[6];
+  default_nacelle_location   = new su2double[5];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -709,7 +709,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
   addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
-  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, true);
+  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
@@ -1259,9 +1259,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
-  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0; default_nacelle_location[5] = 0.0;
-  /* DESCRIPTION: Definition of the nacelle location (point and axis) */
-  addDoubleArrayOption("GEO_NACELLE_LOCATION", 6, NacelleLocation, default_nacelle_location);
+  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0;
+  /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, NacelleLocation, default_nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -1277,6 +1277,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
   /* DESCRIPTION: Discrete Adjoint frozen limiter */
   addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
+  /* DESCRIPTION: Use an inconsistent (primal/dual) discrete adjoint formulation */
+  addBoolOption("INCONSISTENT_DISC", Inconsistent_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
@@ -3217,6 +3219,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
 
+  if ((DiscreteAdjoint) && (Inconsistent_Disc)) {
+    Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
+    Kind_Centered_Flow = Kind_Centered_AdjFlow;
+    Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
+    Kappa_Flow[0] = Kappa_AdjFlow[0];
+    Kappa_Flow[1] = Kappa_AdjFlow[1];
+  }
+  
   if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
