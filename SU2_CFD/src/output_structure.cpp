@@ -4333,9 +4333,14 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS));
+                    (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+					(config->GetKind_Solver() == TWO_PHASE_RANS)||
+					(config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_RANS) ||
-                    (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES));
+                    (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+					(config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)||
+					(config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) ||
+                    (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES));
   bool cont_adj = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool frozen_visc = (cont_adj && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
@@ -4644,7 +4649,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                     or config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS or
 			        config[val_iZone]->GetKind_Solver()  == TWO_PHASE_NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
-                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+                      (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
+					  (config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
+					  (config[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
     bool cont_adj = config[val_iZone]->GetContinuous_Adjoint();
     bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool two_phase = ((config[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) || (config[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
@@ -4808,7 +4815,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case ADJ_EULER:                 case ADJ_NAVIER_STOKES:                 case ADJ_RANS:
       case DISC_ADJ_EULER:            case DISC_ADJ_NAVIER_STOKES:            case DISC_ADJ_RANS:
       case DISC_ADJ_TWO_PHASE_EULER:  case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:  case DISC_ADJ_TWO_PHASE_RANS:
-        
+
         /*--- Flow solution coefficients ---*/
         Total_CL             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
         Total_CD             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
@@ -5128,7 +5135,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Write the end of the history file ---*/
         SPRINTF (end, ", %12.10f, %12.10f, %12.10f\n", su2double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
-        
+
         /*--- Write the solution and residual of the history file ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
             
@@ -5352,9 +5359,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               /*--- Adjoint two phase residuals ---*/
               if (two_phase)
                 if (!frozen_visc)
-                  SPRINTF (adj_2phase_resid, ", %12.10f, %12.10f", log10(residual_adjtwophase[0]), log10(residual_adjtwophase[3]));
-
-            }
+                  SPRINTF (adj_2phase_resid, ", %12.10f, %12.10f", max(log10(residual_adjtwophase[0]), 1e-40), max(log10(residual_adjtwophase[3]), 1e-40));
             
             break;
             
@@ -6104,10 +6109,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
-            if (two_phase) {
+            if (two_phase)
               ConvHist_file[0] << adj_2phase_resid;
-            }
-            ConvHist_file[0] << endl;
+
+            ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
 
@@ -6156,9 +6161,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
               ConvHist_file[0] << adj_turb_resid;
-            if (two_phase) {
+            if (two_phase)
               ConvHist_file[0] << adj_2phase_resid;
-            }
+
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -6174,7 +6179,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (two_phase) {
                 cout.width(17); cout << log10(max(residual_adjtwophase[0], 1e-40)) << log10(max(residual_adjtwophase[3], 1e-40));
               }
-            else {
+            } else {
               if (compressible) {
                 if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
                 else { cout.width(15); cout << log10(residual_adjflow[4]); }
@@ -6204,9 +6209,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout << endl;
               cout.unsetf(ios_base::floatfield);
             }
-          }
+
           break;
-          
+        }
       }
       cout.unsetf(ios::fixed);
 
@@ -12348,10 +12353,12 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   	Variable_Names.push_back("J (1/kg/s)");
 
   	if (liquid_props == true) {
-  		nVar_Par += 7;
+  		nVar_Par += 9;
   		Variable_Names.push_back("Rho_liquid");
   		Variable_Names.push_back("T_liquid");
   		Variable_Names.push_back("R_critical");
+  		Variable_Names.push_back("Rho_m");
+  		Variable_Names.push_back("Liq_mass_frac");
   		Variable_Names.push_back("sigma");
   		Variable_Names.push_back("Tsat");
   		Variable_Names.push_back("Gamma");
@@ -12572,6 +12579,14 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
+        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8)); iVar++;
+   				if (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9) > 0)
+   	        		Local_Data[jPoint][iVar] = solver[TWO_PHASE_SOL]->node[iPoint]->GetMassSource()*
+					solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(7)/3/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8)
+					/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9);
+   				else
+   					Local_Data[jPoint][iVar] = 0;
+   				iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(5)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
         		Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim + 9)); iVar++;

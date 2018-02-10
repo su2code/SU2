@@ -1558,6 +1558,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
 	/* DESCRIPTION: Kind of deformation */
 	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
   addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: Parameters of the shape deformation
@@ -4216,6 +4217,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_DOT) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
+
 
   if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
 
