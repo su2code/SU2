@@ -1050,8 +1050,8 @@ def main():
     opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     opt_multiobj_py.test_iter  = 1
-    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.404266E+02] #last 4 columns
-    opt_multiobj_py.su2_exec   = "shape_optimization.py -f"
+    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
+    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     opt_multiobj_py.timeout    = 1600
     opt_multiobj_py.tol       = 0.00001
     pass_list.append(opt_multiobj_py.run_opt())
@@ -1063,7 +1063,7 @@ def main():
     opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
     opt_multiobjcombo_py.test_iter  = 1
     opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
-    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -f"
+    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     opt_multiobjcombo_py.timeout    = 1600
     opt_multiobjcombo_py.tol       = 0.00001
     pass_list.append(opt_multiobjcombo_py.run_opt())
@@ -1075,7 +1075,7 @@ def main():
     opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
     opt_multiobj1surf_py.test_iter  = 1
     opt_multiobj1surf_py.test_vals = [1, 1, 3.083034E+01, 3.789380E+00] #last 4 columns
-    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -f"
+    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
     pass_list.append(opt_multiobj1surf_py.run_opt())
@@ -1087,7 +1087,7 @@ def main():
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1    
     opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 3.404769E-04] #last 4 columns
-    opt_2surf1obj_py.su2_exec   = "shape_optimization.py -f"
+    opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001
     pass_list.append(opt_2surf1obj_py.run_opt())
