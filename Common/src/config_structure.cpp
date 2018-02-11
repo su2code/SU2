@@ -2238,6 +2238,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       || (Kind_ActDisk == POWER))
     ActDisk_Jump = RATIO;
 
+  /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
+
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
   if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL) {
@@ -2248,11 +2250,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObj=1;
     nObjW=1;
   }
-  
 
-
-
-  /*--- Maker sure that nMarker = nObj ---*/
+  /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
@@ -2265,27 +2264,33 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
-			else if(nObj==1){
-				/*--- If one objective and more than one marker: repeat objective over each marker, evenly weighted ---*/
-				unsigned int obj = Kind_ObjFunc[0];
-				delete[] Kind_ObjFunc;
-				if (Weight_ObjFunc!=NULL) delete[] Weight_ObjFunc;
-				Kind_ObjFunc = new short unsigned int[nMarker_Monitoring];
-				Weight_ObjFunc = new su2double[nMarker_Monitoring];
-				for (unsigned short iObj=0; iObj<nMarker_Monitoring; iObj++){
-					Kind_ObjFunc[iObj] = obj;
-					Weight_ObjFunc[iObj] = 1.0;
-				}
-			}
+      else if(nObj==1){
+        /*--- If one objective and more than one marker: repeat objective over each marker, evenly weighted ---*/
+        unsigned int obj = Kind_ObjFunc[0];
+        su2double wt=1.0;
+        delete[] Kind_ObjFunc;
+        if (Weight_ObjFunc!=NULL){
+         wt = Weight_ObjFunc[0];
+         delete[] Weight_ObjFunc;
+        }
+        Kind_ObjFunc = new short unsigned int[nMarker_Monitoring];
+        Weight_ObjFunc = new su2double[nMarker_Monitoring];
+        for (unsigned short iObj=0; iObj<nMarker_Monitoring; iObj++){
+          Kind_ObjFunc[iObj] = obj;
+          Weight_ObjFunc[iObj] = wt;
+        }
+        nObjW = nObj;
+      }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n ") +
-                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times. \n") +
+        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIORING must be the same length or length 1.\n ") +
+                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
                        string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
                        string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
                        CURRENT_FUNCTION);
       }
     }
   }
+
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
   if (nObjW<nObj) {
@@ -2297,10 +2302,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for (unsigned short iObj=0; iObj<nObj; iObj++)
       Weight_ObjFunc[iObj] = 1.0;
   }
-  /*--- Ignore weights if only one objective provided ---*/
-  
-  if (nObj == 1 )
-      Weight_ObjFunc[0] = 1.0;
 
   /*--- Low memory only for ASCII Tecplot ---*/
 

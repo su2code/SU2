@@ -4340,7 +4340,10 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {   
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
    
     switch(Kind_ObjFunc) {
       case DRAG_COEFFICIENT:
