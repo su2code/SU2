@@ -1086,7 +1086,7 @@ def main():
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1    
-    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 3.404769E-04] #last 4 columns
+    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 1.779489E-07] #last 4 columns
     opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001
