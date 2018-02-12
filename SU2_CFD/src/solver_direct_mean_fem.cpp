@@ -3682,7 +3682,7 @@ void CFEM_DG_EulerSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStore
   memcpy(VecSolDOFs.data(), VecSolDOFsStored.data(), VecSolDOFsStored.size()*sizeof(su2double));
 }
 
-void CFEM_DG_EulerSolver::RegisterSolution(unsigned long iDOF, bool input){
+void CFEM_DG_EulerSolver::RegisterSolution(bool input){
   if(input){
     for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
       for(unsigned short iVar = 0; iVar < nVar; iVar++){
