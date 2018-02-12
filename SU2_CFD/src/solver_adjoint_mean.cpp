@@ -1003,7 +1003,7 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
   
 }
 
-void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -2647,8 +2647,8 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Artificial dissipation for centered schemes ---*/
   
   if (center) {
-    if ((center_jst) && (iMesh == MESH_0) && !Output) {
-      SetDissipation_Switch(geometry, config);
+    if ((center_jst) && (iMesh == MESH_0)) {
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
       if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -3042,7 +3042,7 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
 }
 
-void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
@@ -3070,7 +3070,7 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   }
   
   /*--- MPI parallelization ---*/
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -3983,7 +3983,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
 
       /*--- Compute projections ---*/
-      ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
+      ProjVel = 0.0; bcn = 0.0; vn = 0.0; phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel -= Velocity[iDim]*Normal[iDim];
         bcn     += d[iDim]*UnitNormal[iDim];
@@ -4127,7 +4127,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Compute projections ---*/
 
-      ProjVel = 0.0; vn = 0.0, phin = 0.0;
+      ProjVel = 0.0; vn = 0.0; phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         ProjVel -= Velocity[iDim]*Normal[iDim];
         vn      += Velocity[iDim]*UnitNormal[iDim];
@@ -6180,8 +6180,8 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Artificial dissipation for centered schemes ---*/
   
-  if (center_jst && (iMesh == MESH_0) &&!Output) {
-    SetDissipation_Switch(geometry, config);
+  if (center_jst && (iMesh == MESH_0)) {
+    SetCentered_Dissipation_Sensor(geometry, config);
     SetUndivided_Laplacian(geometry, config);
   }
   
