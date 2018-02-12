@@ -48,6 +48,7 @@ void CDriver::PythonInterface_Preprocessing(){
       geometry_container[iZone][iMesh]->SetCustomBoundary(config_container[iZone]);
     }
     geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+    solver_container[iZone][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
   }
   /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
   PyWrapVarCoord[0] = 0.0;
@@ -707,6 +708,26 @@ vector<string> CDriver::GetAllCHTMarkersTag(){
   return CHTBoundariesTagList;
 }
 
+vector<string> CDriver::GetAllInletMarkersTag(){
+
+  vector<string> BoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_All();
+
+  for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
+    bool isCustomizable = config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if(isCustomizable && isInlet) {
+      Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+      BoundariesTagList.push_back(Marker_Tag);
+    }
+  }
+
+  return BoundariesTagList;
+}
+
 map<string, int> CDriver::GetAllBoundaryMarkers(){
 
   map<string, int>  allBoundariesMap;
@@ -935,6 +956,36 @@ void CFluidDriver::SetInitialMesh() {
     }
   }
   //}
+}
+
+void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ttotal(iMarker, iVertex, val_Ttotal);
+
+}
+
+void CFluidDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ptotal(iMarker, iVertex, val_Ptotal);
+
+}
+
+void CFluidDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, iDim, val_FlowDir);
+
+}
+
+void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_turb_var){
+
+  if (solver_container[ZONE_0] == NULL ||
+      solver_container[ZONE_0][MESH_0] ==  NULL) {
+    SU2_MPI::Error("Could not find an appropriate solver.", CURRENT_FUNCTION);
+  } else if (solver_container[ZONE_0][MESH_0][TURB_SOL] == NULL) {
+    SU2_MPI::Error("Tried to set turbulence variables without a turbulence solver.", CURRENT_FUNCTION);
+  }
+  solver_container[ZONE_0][MESH_0][TURB_SOL]->SetInlet_TurbVar(iMarker, iVertex, iDim, val_turb_var);
+
 }
 
 void CFluidDriver::BoundaryConditionsUpdate(){
