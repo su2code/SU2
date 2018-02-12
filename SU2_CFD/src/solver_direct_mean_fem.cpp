@@ -3677,7 +3677,7 @@ void CFEM_DG_EulerSolver::StoreSolution_Direct(vector<su2double>& VecSolDOFsDire
   memcpy(VecSolDOFsDirect.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
 }
 
-void CFEM_DG_EulerSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStored){
+void CFEM_DG_EulerSolver::ResetSolution_Direct(vector<su2double>& VecSolDOFsStored){
 
   memcpy(VecSolDOFs.data(), VecSolDOFsStored.data(), VecSolDOFsStored.size()*sizeof(su2double));
 }

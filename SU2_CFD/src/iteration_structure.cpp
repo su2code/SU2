@@ -2283,7 +2283,7 @@ void CFEM_DG_DiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_contain
 
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
-  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+  //solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);  // This is done in driver_structure.cpp
 
   /*--- Initialize the adjoints the conservative variables ---*/
 

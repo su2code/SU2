@@ -4478,7 +4478,7 @@ void CFEM_DG_DiscAdjFluidDriver::Run() {
 
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    //SetAdj_ObjFunction(); // This is already done in InitializeAdjoint
+    SetAdj_ObjFunction(); // This is already done in InitializeAdjoint
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 

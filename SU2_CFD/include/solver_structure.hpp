@@ -601,7 +601,7 @@ public:
    * \brief Reset the direct solution when solving discrete adjoint.
    * \param[in] VecSolDOFsStored - Solution stored in CFEM_DG_DiscAdjSolver.
    */
-  virtual void ResetSolution_Direct(vector<su2double> VecSolDOFsStored);
+  virtual void ResetSolution_Direct(vector<su2double>& VecSolDOFsStored);
 
   /*!
    * \brief Set the derivative information for the adjoint computation.
@@ -12568,8 +12568,8 @@ private:
 
   CBoundaryFEM *boundaries;                          /*!< \brief Array of the boundaries of the FEM mesh. */
 
-  vector<su2double> VecSolDOFs;       /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
-  vector<su2double> VecSolDOFsNew;    /*!< \brief Vector, which stores the new solution variables in the owned DOFs. */
+  vector<su2double> VecSolDOFsAdj;    /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
+  vector<su2double> VecSolDOFsAdjNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsDirect; /*!< \brief Vector, which stores the direct solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsSens;   /*!< \brief Vector, which stores the mesh sensitivity variables in the owned DOFs. */
   
@@ -13517,7 +13517,7 @@ public:
    * \brief Reset the direct solution when solving discrete adjoint.
    * \param[in] VecSolDOFsStored - Solution stored in CFEM_DG_DiscAdjSolver.
    */
-  void ResetSolution_Direct(vector<su2double> VecSolDOFsStored);
+  void ResetSolution_Direct(vector<su2double>& VecSolDOFsStored);
 
   /*!
    * \brief Register the direct solution when solving discrete adjoint.
@@ -14229,6 +14229,12 @@ public:
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   void SetTotal_CD(su2double val_Total_CD);
+
+  /*!
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  su2double GetTotal_ComboObj(void);
 
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.

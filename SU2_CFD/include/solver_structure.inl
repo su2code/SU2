@@ -1748,6 +1748,8 @@ inline su2double CFEM_DG_EulerSolver::GetTotal_CSF() { return Total_CSF; }
 
 inline su2double CFEM_DG_EulerSolver::GetTotal_CEff() { return Total_CEff; }
 
+inline su2double CFEM_DG_EulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
+
 inline void CFEM_DG_EulerSolver::SetTotal_CL(su2double val_Total_CL) { Total_CL = val_Total_CL; }
 
 inline void CFEM_DG_EulerSolver::SetTotal_CD(su2double val_Total_CD) { Total_CD = val_Total_CD; }
@@ -2220,7 +2222,7 @@ inline void CSolver::StoreSolution_Direct(void) { }
 
 inline void CSolver::StoreSolution_Direct(vector<su2double>& VecSolDOFsDirect) { }
 
-inline void CSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStored) { }
+inline void CSolver::ResetSolution_Direct(vector<su2double>& VecSolDOFsStored) { }
 
 inline void CSolver::SetAdjointSolution(vector<su2double> VecSolDOFsAdj) { }
 

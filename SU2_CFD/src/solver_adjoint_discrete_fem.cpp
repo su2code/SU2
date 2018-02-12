@@ -105,8 +105,8 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
 
   /*--- Allocate solution vectors ---*/
 
-  VecSolDOFs.resize(nVar*nDOFsLocOwned);
-  VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
+  VecSolDOFsAdj.resize(nVar*nDOFsLocOwned);
+  VecSolDOFsAdjNew.resize(nVar*nDOFsLocOwned);
   VecSolDOFsDirect.resize(nVar*nDOFsLocOwned);
   VecSolDOFsSens.resize(nDim*nDOFsLocOwned);
 
@@ -114,8 +114,8 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
   for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
     ii = nVar*iDOF;
     for (iVar = 0; iVar < nVar; iVar++, ii++){
-      VecSolDOFs[ii+iVar] = 1E-16;
-      VecSolDOFsNew[ii+iVar] = 1E-16;
+      VecSolDOFsAdj[ii+iVar] = 0.0;
+      VecSolDOFsAdjNew[ii+iVar] = 0.0;
     }
     for(iDim = 0; iDim < nDim; iDim++){
       VecSolDOFsSens[nDim*iDOF+iDim] = 1e-16;
@@ -188,7 +188,6 @@ void CFEM_DG_DiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   unsigned short iVar;
 
   /*--- Reset the solution to the initial (converged) solution ---*/
-  if(rank == MASTER_NODE) cout << "Reset direct solution..." << endl;
 
   direct_solver->ResetSolution_Direct(VecSolDOFsDirect);
 
@@ -272,7 +271,6 @@ void CFEM_DG_DiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *confi
   bool time_stepping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
-  if(rank == MASTER_NODE) cout << "Register solution..." << endl;
 
   direct_solver->RegisterSolution(true);
 
@@ -286,7 +284,6 @@ void CFEM_DG_DiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *confi
 void CFEM_DG_DiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
   /*--- Register farfield values as input ---*/
-  if(rank == MASTER_NODE) cout << "Register variables..." << endl;
 
   if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
@@ -356,7 +353,6 @@ void CFEM_DG_DiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config)
   bool time_stepping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /*--- Register output variables on the tape ---*/
-  if(rank == MASTER_NODE) cout << "Register output..." << endl;
 
   direct_solver->RegisterSolution(false);
 
@@ -454,14 +450,13 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
       SetRes_Max(iVar,0.0,0);
   }
 
-
   /*--- Set the old solution ---*/
 
-  memcpy(VecSolDOFs.data(), VecSolDOFsNew.data(), VecSolDOFs.size()*sizeof(su2double));
+  memcpy(VecSolDOFsAdj.data(), VecSolDOFsAdjNew.data(), VecSolDOFsAdjNew.size()*sizeof(su2double));
 
   /*--- Extract the adjoint solution ---*/
 
-  direct_solver->GetAdjointSolution(VecSolDOFsNew);
+  direct_solver->GetAdjointSolution(VecSolDOFsAdjNew);
 
   if (time_stepping) {
     // TODO: code for unsteady
@@ -478,8 +473,8 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
 
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
-    const su2double *solDOFsOld = VecSolDOFs.data() + offset;
-    const su2double *solDOFsNew = VecSolDOFsNew.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFsAdj.data() + offset;
+    const su2double *solDOFsNew = VecSolDOFsAdjNew.data() + offset;
 
     unsigned int i = 0;
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
@@ -492,16 +487,6 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
       }
     }
   }
-
-  //for(iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
-  //  for(iVar = 0; iVar < nVar; iVar++){
-  //    ii = iDOF*nVar + iVar;
-  //    residual = VecSolDOFsNew[ii] - VecSolDOFs[ii];
-
-  //    AddRes_RMS(iVar, residual*residual);
-  //    AddRes_Max(iVar, fabs(residual), globalIndex, coor);
-  //  }
-  //}
 
   /*--- Compute the root mean square residual. Note that the SetResidual_RMS
         function cannot be used, because that is for the FV solver.    ---*/
@@ -523,6 +508,48 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
       SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
   }
+
+  /*--- Set the Maximum residual in all the processors ---*/
+  int nProcessor = SU2_MPI::GetSize(), iProcessor;
+
+  su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
+  unsigned long *sbuf_point, *rbuf_point;
+  unsigned short iDim;
+
+  sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+  
+  rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+  rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    sbuf_residual[iVar] = Residual_Max[iVar];
+    sbuf_point[iVar] = Point_Max[iVar];
+    Coord = Point_Max_Coord[iVar];
+    for (iDim = 0; iDim < nDim; iDim++)
+      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
+  }
+  
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+    }
+  }
+  
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+  
+  delete [] sbuf_point;
+  delete [] rbuf_point;
+  
+  delete [] sbuf_coord;
+  delete [] rbuf_coord;
 
 #else
   /*--- Sequential mode. Check for a divergence of the solver and compute
@@ -588,7 +615,7 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfi
 void CFEM_DG_DiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
 
-  direct_solver->SetAdjointSolution(VecSolDOFsNew);
+  direct_solver->SetAdjointSolution(VecSolDOFsAdjNew);
 
 }
 
@@ -796,7 +823,7 @@ void CFEM_DG_DiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) {
-        VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
+        VecSolDOFsAdj[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
       /*--- Update the local counter nDOF_Read. ---*/
       ++nDOF_Read;
