@@ -1835,9 +1835,10 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   ending_node   = NULL;
   npoint_procs  = NULL;
 
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
   SpanWiseValue           = NULL;
   nVertexSpan             = NULL;
   nTotVertexSpan          = NULL;
@@ -1873,9 +1874,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ending_node   = NULL;
   npoint_procs  = NULL;
   
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
   SpanWiseValue           = NULL;
   nVertexSpan             = NULL;
   nTotVertexSpan          = NULL;
@@ -2019,9 +2021,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   ending_node   = NULL;
   npoint_procs  = NULL;
 
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
   SpanWiseValue           = NULL;
   nVertexSpan             = NULL;
   nTotVertexSpan          = NULL;
