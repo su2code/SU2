@@ -8654,7 +8654,7 @@ void CEulerSolver::SetInlet(CConfig *config) {
 
 void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
 
-  unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
+  unsigned short nMGlevel, iMarker;
 
   // TODO: Update the fluid boundary conditions for MG
   nMGlevel = config->GetnMGLevels();
