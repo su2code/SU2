@@ -183,7 +183,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.514933, 4.911224, 0.835836, 0.054149] #last 4 columns
+    rae2822_sst.test_vals = [-0.510795, 4.910154, 0.835836, 0.054149] #last 4 columns
     rae2822_sst.su2_exec  = "parallel_computation.py -f"
     rae2822_sst.timeout   = 1600
     rae2822_sst.tol       = 0.00001
@@ -265,7 +265,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 20
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.436213, -4.558644, 1.231772, -0.007019, 0.081472] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-6.436237, -4.558626, 1.231779, -0.007019, 0.081472] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
@@ -544,7 +544,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.166422,0.076751,1.398549,2.197047] #last 4 columns
+    square_cylinder.test_vals = [-1.166437, 0.076752, 1.398549, 2.197047] #last 4 columns
     square_cylinder.su2_exec  = "parallel_computation.py -f"
     square_cylinder.timeout   = 1600
     square_cylinder.tol       = 0.00001
@@ -573,7 +573,19 @@ def main():
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.000001
     aeroelastic.unsteady  = True
-    test_list.append(aeroelastic) 
+    test_list.append(aeroelastic)
+
+    # Delayed Detached Eddy Simulation
+    ddes_flatplate        = TestCase('ddes_flatplate')
+    ddes_flatplate.cfg_dir   = "ddes/flatplate"
+    ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
+    ddes_flatplate.test_iter = 10
+    ddes_flatplate.test_vals = [-2.714721, -5.883008, -0.214968, 0.023783] #last 4 columns
+    ddes_flatplate.su2_exec  = "parallel_computation.py -f"
+    ddes_flatplate.timeout   = 1600
+    ddes_flatplate.tol       = 0.00001
+    ddes_flatplate.unsteady  = True
+    test_list.append(ddes_flatplate)    
 
     ######################################
     ### NICFD                          ###
@@ -610,7 +622,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.341490, 0.417322, 82.840150, 0.882252] #last 4 columns
+    Jones_tc.test_vals = [-5.352425, 0.417103, 82.840150, 0.882252] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -621,7 +633,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.268817, -1.409751, 82.253670, 2.776472] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.254084, -1.410305, 82.253620, 2.776442] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -632,7 +644,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.835031, 5.788692, 73.679940, 0.888906] #last 4 columns
+    axial_stage2D.test_vals = [-1.835157, 5.788694, 73.679930, 0.888906] #last 4 columns
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
@@ -643,7 +655,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [ -1.101166, 6.115630, 67.308660, 0.071862] #last 4 columns
+    transonic_stator.test_vals = [-1.102837, 6.115650, 67.308710, 0.071862] #last 4 columns
     transonic_stator.su2_exec  = "parallel_computation.py -f"
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
@@ -654,7 +666,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-0.485439, 4.462528, 6.460864, 0.004009] #last 4 columns
+    transonic_stator_rst.test_vals = [-0.484778, 4.462654, 6.460856, 0.004009] #last 4 columns
     transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001
@@ -741,7 +753,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [-2.133738, 1.644733, -0.000831, 0.117497] #last 4 columns
+    bars_SST_2D.test_vals = [-2.133553, 1.644733, -0.000831, 0.117497] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -815,7 +827,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
-    pywrapper_square_cylinder.test_vals = [-1.166422,0.076751,1.398549,2.197047] #last 4 columns
+    pywrapper_square_cylinder.test_vals = [-1.166437, 0.076752, 1.398549, 2.197047] #last 4 columns
     pywrapper_square_cylinder.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
@@ -844,6 +856,30 @@ def main():
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
+
+    # Unsteady CHT
+    pywrapper_unsteadyCHT               = TestCase('pywrapper_unsteadyCHT')
+    pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
+    pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
+    pywrapper_unsteadyCHT.test_iter     = 5
+    pywrapper_unsteadyCHT.test_vals     = [-1.598116, 2.263342, 0.001088, 0.145901] #last 4 columns
+    pywrapper_unsteadyCHT.su2_exec      = "mpirun -np 2 python launch_unsteady_CHT_FlatPlate.py --parallel -f"
+    pywrapper_unsteadyCHT.timeout       = 1600
+    pywrapper_unsteadyCHT.tol           = 0.00001
+    pywrapper_unsteadyCHT.unsteady      = True
+    test_list.append(pywrapper_unsteadyCHT)
+
+    # Rigid motion
+    pywrapper_rigidMotion               = TestCase('pywrapper_rigidMotion')
+    pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
+    pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
+    pywrapper_rigidMotion.test_iter     = 5
+    pywrapper_rigidMotion.test_vals     = [-1.598116, 2.259705, -0.040360, 0.144232] #last 4 columns
+    pywrapper_rigidMotion.su2_exec      = "mpirun -np 2 python launch_flatPlate_rigidMotion.py --parallel -f"
+    pywrapper_rigidMotion.timeout       = 1600
+    pywrapper_rigidMotion.tol           = 0.00001
+    pywrapper_rigidMotion.unsteady      = True
+    test_list.append(pywrapper_rigidMotion)
     
     ######################################
     ### RUN TUTORIAL CASES             ###
