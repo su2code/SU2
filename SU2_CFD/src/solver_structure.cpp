@@ -652,7 +652,8 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       Solution_Vertex = node[Point]->GetSolution();
@@ -1907,7 +1908,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-  iPoint_Global_Local = 0, iPoint_Global = 0;
+  iPoint_Global_Local = 0; iPoint_Global = 0;
 
   /*--- Read all lines in the restart file ---*/
   /*--- The first line is the header ---*/
@@ -1938,7 +1939,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
   if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
@@ -1979,7 +1980,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-    iPoint_Global_Local = 0, iPoint_Global = 0;
+    iPoint_Global_Local = 0; iPoint_Global = 0;
 
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
@@ -2011,7 +2012,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+    rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
     if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 

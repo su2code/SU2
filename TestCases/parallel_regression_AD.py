@@ -59,6 +59,17 @@ def main():
     discadj_naca0012.tol       = 0.00001
     test_list.append(discadj_naca0012)
    
+    # Inviscid Cylinder 3D (multiple markers)
+    discadj_cylinder3D           = TestCase('discadj_cylinder3D')
+    discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
+    discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
+    discadj_cylinder3D.test_iter = 5
+    discadj_cylinder3D.test_vals = [-3.720476, -4.039256, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder3D.timeout   = 1600
+    discadj_cylinder3D.tol       = 0.00001
+    test_list.append(discadj_cylinder3D)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -155,7 +166,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [-2.001081, -2.115321, -0.450988, -15.778151] #last 4 columns
+    discadj_trans_stator.test_vals = [-2.001081, -2.115303, -0.450996, -15.778175] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
