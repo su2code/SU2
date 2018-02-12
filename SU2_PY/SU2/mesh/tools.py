@@ -32,7 +32,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
     # In PY3, 'long' and 'int' are unified in 'int' type
     long = int
 

@@ -134,6 +134,7 @@ private:
   Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
   Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
+  Inconsistent_Disc,      /*!< \brief Use an inconsistent (primal/dual) discrete adjoint formulation. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
@@ -4116,6 +4117,12 @@ public:
    * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
    */
   bool GetFrozen_Visc_Disc(void);
+  
+  /*!
+   * \brief Provides information about using an inconsistent (primal/dual) discrete adjoint formulation
+   * \return <code>FALSE</code> means that the adjoint use the same numerical methods than the primal problem.
+   */
+  bool GetInconsistent_Disc(void);
 
   /*!
    * \brief Provides information about the way in which the limiter will be treated by the
