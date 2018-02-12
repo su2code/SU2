@@ -41,10 +41,11 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   upperlimit    = NULL;
   nVertex       = NULL;
   nMarker       = 0;
+  Inlet_TurbVars = NULL;
   
 }
 
-CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
+CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -53,17 +54,36 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
+  nMarker       = config->GetnMarker_All();
+  
+  /*--- Store the number of vertices on each marker for deallocation later ---*/
+  nVertex = new unsigned long[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+    nVertex[iMarker] = geometry->nVertex[iMarker];
   
 }
 
 CTurbSolver::~CTurbSolver(void) {
-  
+
+  if (Inlet_TurbVars != NULL) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (Inlet_TurbVars[iMarker] != NULL) {
+        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          delete [] Inlet_TurbVars[iMarker][iVertex];
+        }
+        delete [] Inlet_TurbVars[iMarker];
+      }
+    }
+    delete [] Inlet_TurbVars;
+  }
+
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
   if (nVertex != NULL) delete [] nVertex;
   
+
 }
 
 void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -1172,9 +1192,14 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 }
 
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
+CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 
-CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
+  Inlet_TurbVars = NULL;
+
+}
+
+CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
+    : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
@@ -1334,7 +1359,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  unsigned long iMarker,  nMarker = config->GetnMarker_All();
+  unsigned long iMarker;
 
   SlidingState       = new su2double*** [nMarker];
   SlidingStateNodes  = new int*         [nMarker];
@@ -1359,6 +1384,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     }
   }
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
 
 }
 
@@ -1389,6 +1418,7 @@ CTurbSASolver::~CTurbSASolver(void) {
     }
     delete [] SlidingStateNodes;
   }
+
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1712,8 +1742,9 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
+  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
   Normal = new su2double[nDim];
   
@@ -1729,10 +1760,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -1754,7 +1781,13 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       
       Solution_i[0] = node[iPoint]->GetSolution(0);
-      Solution_j[0] = nu_tilde_Inf;
+
+      if (isCustomizable) {
+        /*--- Only use the array version of the inlet BC when necessary ---*/
+        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      } else {
+        Solution_j[0] = nu_tilde_Inf;
+      }
       
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
@@ -1808,7 +1841,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -1824,10 +1857,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Allocate the value at the outlet ---*/
       
@@ -2114,7 +2143,7 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool inlet_surface) {
   
-  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
+  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
   bool ReverseFlow;
   unsigned short iDim;
@@ -2129,7 +2158,6 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    iPoint_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
     GlobalIndex_donor = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     
@@ -2950,10 +2978,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   
   su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0,
       deltaDDES = 0.0, deltaAuxDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
-      aux_ln = 0.0, f_kh = 0.0, deltaMin = 0.0, deltaw = 0.0, alpha2 = 0.0, f_b = 0.0, f_d_tilde = 0.0;
+      aux_ln = 0.0, f_kh = 0.0;
   
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
-  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5, cw_iddes = 0.15;
+  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
   su2double *coord_i = NULL, *coord_j = NULL, **primVarGrad = NULL, *vorticity = NULL, delta[3] = {0.0,0.0,0.0},
@@ -3148,14 +3176,40 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
+void CTurbSASolver::SetInlet(CConfig* config) {
+
+  /*-- Allocation has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
+  Inlet_TurbVars = new su2double**[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if (isCustomizable && isInlet) {
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        /*--- The default values for these custom BCs are initialized with
+         * the freestream values to avoid nonphysical values at unspecified
+         * points ---*/
+        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+      }
+    } else {
+      Inlet_TurbVars[iMarker] = NULL;
+    }
+  }
+
+}
+
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
   
   /*--- Array initialization ---*/
   constants = NULL;
+  Inlet_TurbVars = NULL;
   
 }
 
-CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+    : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
@@ -3312,7 +3366,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  unsigned long iMarker,  nMarker = config->GetnMarker_All();
+  unsigned long iMarker;
 
   SlidingState       = new su2double*** [nMarker];
   SlidingStateNodes  = new int*         [nMarker];
@@ -3337,7 +3391,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     }
   }
-  
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
+
 }
 
 CTurbSSTSolver::~CTurbSSTSolver(void) {
@@ -3369,6 +3427,7 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
     }
     delete [] SlidingStateNodes;
   }
+
 }
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -3699,8 +3758,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
                               unsigned short val_marker) {
   
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
+  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
   Normal = new su2double[nDim];
   
@@ -3717,10 +3777,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -3745,8 +3801,14 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       for (iVar = 0; iVar < nVar; iVar++)
       Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
       
-      Solution_j[0]= kine_Inf;
-      Solution_j[1]= omega_Inf;
+      if (isCustomizable) {
+        /*--- Only use the array version of the inlet BC when necessary ---*/
+        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+        Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
+      } else {
+        Solution_j[0] = kine_Inf;
+        Solution_j[1] = omega_Inf;
+      }
       
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
@@ -3805,7 +3867,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -3821,10 +3883,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Allocate the value at the outlet ---*/
       
@@ -4265,4 +4323,30 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
 su2double* CTurbSSTSolver::GetConstants() {
   return constants;
+}
+
+
+void CTurbSSTSolver::SetInlet(CConfig* config) {
+
+  /*-- Allocation has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
+  Inlet_TurbVars = new su2double**[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if (isCustomizable && isInlet) {
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        /*--- The default values for these custom BCs are initialized with
+         * the freestream values to avoid nonphysical values at unspecified
+         * points ---*/
+        Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+        Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+      }
+    } else {
+      Inlet_TurbVars[iMarker] = NULL;
+    }
+  }
+
 }
