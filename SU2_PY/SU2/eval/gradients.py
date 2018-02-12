@@ -100,7 +100,7 @@ def gradient( func_name, method, config, state=None ):
             if func_output in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
 
-            elif func_name[0] in su2io.optnames_aero + su2io.optnames_turbo:
+            elif func_name in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
                 
             # Stability
