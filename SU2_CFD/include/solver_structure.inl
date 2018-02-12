@@ -2226,7 +2226,9 @@ inline void CSolver::SetAdjointSolution(vector<su2double> VecSolDOFsAdj) { }
 
 inline void CSolver::GetAdjointSolution(vector<su2double>& VecSolDOFsAdj) { }
 
-inline void CSolver::RegisterSolution(unsigned long iDOF, bool input) { }
+inline void CSolver::RegisterSolution(bool input) { }
+
+inline void CSolver::Initiate_MPI_Communication(CConfig *config, const unsigned short timeLevel) { };
 
 inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 

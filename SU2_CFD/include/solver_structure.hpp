@@ -620,7 +620,16 @@ public:
    * \param[in] iDOF - node index.
    * \param[in] input - whether solution is being registered as input (true) or output (false).
    */
-  virtual void RegisterSolution(unsigned long iDOF, bool input);
+  virtual void RegisterSolution(bool input);
+
+  /*!
+   * \brief Routine that initiates the non-blocking communication between ranks
+            for the givem time level.
+   * \param[in] config    - Definition of the particular problem.
+   * \param[in] timeLevel - The time level for which the communication must be
+                            initiated.
+   */
+  virtual void Initiate_MPI_Communication(CConfig *config, const unsigned short timeLevel);
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
@@ -13180,6 +13189,7 @@ protected:
   AllBound_CEff_Inv; 	  /*!< \brief Total efficiency (Cl/Cd) (inviscid contribution) for all the boundaries. */
 
   su2double
+  Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CL, 	  /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CD,      /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CSF, /*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -13514,7 +13524,7 @@ public:
    * \param[in] iDOF - node index.
    * \param[in] input - whether solution is being registered as input (true) or output (false).
    */
-  void RegisterSolution(unsigned long iDOF, bool input);
+  void RegisterSolution(bool input);
 
   /*!
    * \brief Set the derivative information for the adjoint computation.
@@ -13527,6 +13537,13 @@ public:
    * \param[in] VecSolDOFsAdj - Vector to store adjoint solution in CFEM_DG_DiscAdjSolver.
    */
   void GetAdjointSolution(vector<su2double>& VecSolDOFsAdj);
+
+  /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(CConfig *config);
 
   /*!
    * \brief Function to compute the time step for solving the Euler equations.

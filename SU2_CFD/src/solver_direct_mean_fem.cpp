@@ -3684,13 +3684,17 @@ void CFEM_DG_EulerSolver::ResetSolution_Direct(vector<su2double> VecSolDOFsStore
 
 void CFEM_DG_EulerSolver::RegisterSolution(unsigned long iDOF, bool input){
   if(input){
-    for(unsigned short iVar = 0; iVar < nVar; iVar++){
-      AD::RegisterInput(VecSolDOFs[nVar*iDOF+iVar]);
+    for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
+      for(unsigned short iVar = 0; iVar < nVar; iVar++){
+        AD::RegisterInput(VecSolDOFs[nVar*iDOF+iVar]);
+      }
     }
   }
   else{
-    for(unsigned short iVar = 0; iVar < nVar; iVar++){
-      AD::RegisterOutput(VecSolDOFs[nVar*iDOF+iVar]);
+    for(unsigned long iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
+      for(unsigned short iVar = 0; iVar < nVar; iVar++){
+        AD::RegisterOutput(VecSolDOFs[nVar*iDOF+iVar]);
+      }
     }
   }
 
@@ -6245,6 +6249,65 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
     Surface_CMy[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
   }
+}
+
+void CFEM_DG_EulerSolver::Evaluate_ObjFunc(CConfig *config) {
+  
+  unsigned short iMarker_Monitoring;
+  su2double Weight_ObjFunc;
+  
+  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+  
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    
+    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+      case DRAG_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
+        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
+        break;
+      case LIFT_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case SIDEFORCE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
+        break;
+      case EFFICIENCY:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
+        break;
+      case MOMENT_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case FORCE_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
+        break;
+      case FORCE_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
+        break;
+      case FORCE_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
+        break;
+        
+        /*--- The following are not per-surface, and as a result will be
+         double-counted iff multiple surfaces are specified as well as multi-objective ---*/
+
+      default:
+        break;
+
+    }
+  }
+  
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,

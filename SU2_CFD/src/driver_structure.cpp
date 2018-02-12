@@ -1426,6 +1426,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (disc_adj){
     if(fem_euler || fem_ns){
       integration_container[ADJFLOW_SOL] = new CFEM_DG_Integration(config);
+      //integration_container[ADJFLOW_SOL] = new CIntegration(config);
     }
     else{
       integration_container[ADJFLOW_SOL] = new CIntegration(config);
@@ -4030,7 +4031,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case EULER: case NAVIER_STOKES: case RANS:
     StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-  case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
     StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 
@@ -4311,7 +4311,6 @@ void CDiscAdjFluidDriver::SetObjFunction(){
     switch (config_container[iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-      case DISC_ADJ_DG_EULER:       case DISC_ADJ_DG_NS:                  case DISC_ADJ_DG_RANS:
         
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
           output->SpecialOutput_AnalyzeSurface(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone], false);
@@ -4404,7 +4403,7 @@ CFEM_DG_DiscAdjFluidDriver::CFEM_DG_DiscAdjFluidDriver(char* confFile,
       direct_iteration[iZone] = new CTurboIteration(config_container[iZone]);
     }
     else{
-      direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+      direct_iteration[iZone] = new CFEMFluidIteration(config_container[iZone]);
     }
   }
 
@@ -4459,6 +4458,8 @@ void CFEM_DG_DiscAdjFluidDriver::Run() {
 
     SetRecording(FLOW_CONS_VARS);
 
+    RecordingState = NONE; // Hack to enter this conditional at next iteration, since RecordingState=FLOW_CONS_VARS otherwise...
+
   }
 
   for (IntIter = 0; IntIter < nIntIter; IntIter++) {
@@ -4477,7 +4478,7 @@ void CFEM_DG_DiscAdjFluidDriver::Run() {
 
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    SetAdj_ObjFunction();
+    //SetAdj_ObjFunction(); // This is already done in InitializeAdjoint
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -4512,48 +4513,8 @@ void CFEM_DG_DiscAdjFluidDriver::Run() {
 
   }
 
-  /*--- Compute the geometrical sensitivities ---*/
+  /*--- TODO: Compute the geometrical sensitivities ---*/
 
-  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
-      integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence() ||
-      (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) || unsteady){
-
-    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
-     * as argument ensures that all information from a previous recording is removed. ---*/
-
-    SetRecording(NONE);
-
-    /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
-
-    SetRecording(MESH_COORDS);
-
-    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
-     *    of the current iteration. The values are passed to the AD tool. ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
-
-    }
-
-    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
-
-    SetAdj_ObjFunction();
-
-    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-
-    AD::ComputeAdjoint();
-
-    /*--- Extract the computed sensitivity values. ---*/
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][MESH_0],config_container[iZone]);
-    }
-
-    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-
-    AD::ClearAdjoints();
-  }
 }
 
 void CFEM_DG_DiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
@@ -4592,7 +4553,7 @@ void CFEM_DG_DiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
+    iteration_container[iZone]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, iZone, kind_recording);
   }
 
   /*--- Do one iteration of the direct flow solver ---*/
@@ -4660,8 +4621,7 @@ void CFEM_DG_DiscAdjFluidDriver::SetObjFunction(){
 
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+      case FEM_EULER:               case FEM_NAVIER_STOKES:               case FEM_RANS:
       case DISC_ADJ_DG_EULER:       case DISC_ADJ_DG_NS:                  case DISC_ADJ_DG_RANS:
         
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)

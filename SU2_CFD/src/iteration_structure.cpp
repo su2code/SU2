@@ -2293,7 +2293,7 @@ void CFEM_DG_DiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_contain
                                                                   config_container[iZone]);
   }
 
-  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+  if ((Kind_Solver == DISC_ADJ_DG_RANS) && !frozen_visc) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
         config_container[iZone]);
   }
@@ -2316,7 +2316,7 @@ void CFEM_DG_DiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, 
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
     
-    if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
+    if ((Kind_Solver == DISC_ADJ_DG_RANS) && !frozen_visc) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
@@ -2331,7 +2331,7 @@ void CFEM_DG_DiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, 
 
 }
 
-void CFEM_DG_DiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CFEM_DG_DiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
@@ -2349,6 +2349,10 @@ void CFEM_DG_DiscAdjFluidIteration::SetDependencies(CSolver ****solver_container
   /*--- Compute coupling between flow and turbulent equations ---*/
 
   //solver_container[iZone][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
+  //unsigned short SolContainer_Position = config_container[iZone]->GetContainerPosition(RUNTIME_FLOW_SYS);
+  //solver_container[iZone][MESH_0][FLOW_SOL]->ProcessTaskList_DG(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], 
+  //                                                              numerics_container[iZone][MESH_0][SolContainer_Position], config_container[iZone], MESH_0);
+  //solver_container[iZone][MESH_0][FLOW_SOL]->Initiate_MPI_Communication(config_container[iZone], 0);
 
   if ((Kind_Solver == DISC_ADJ_DG_RANS) && !frozen_visc){
     // TODO: get coupling between flow and turbulent vars
@@ -2368,11 +2372,11 @@ void CFEM_DG_DiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container,
   
   /*--- Register conservative variables as output of the iteration ---*/
   
-    solver_container[iZone][MESH_0][FLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
   
   }
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
-    solver_container[iZone][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
+    solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
                                                                  config_container[iZone]);
   }
 }

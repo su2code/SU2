@@ -114,16 +114,13 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
   for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
     ii = nVar*iDOF;
     for (iVar = 0; iVar < nVar; iVar++, ii++){
-      VecSolDOFs[ii+iVar] = 1e-16;
-      VecSolDOFsNew[ii+iVar] = 1e-16;
+      VecSolDOFs[ii+iVar] = 1E-16;
+      VecSolDOFsNew[ii+iVar] = 1E-16;
     }
     for(iDim = 0; iDim < nDim; iDim++){
       VecSolDOFsSens[nDim*iDOF+iDim] = 1e-16;
     }
   }
-
-  // Store in iteration->preprocess
-  //StoreSolution_Direct();
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -191,6 +188,7 @@ void CFEM_DG_DiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   unsigned short iVar;
 
   /*--- Reset the solution to the initial (converged) solution ---*/
+  if(rank == MASTER_NODE) cout << "Reset direct solution..." << endl;
 
   direct_solver->ResetSolution_Direct(VecSolDOFsDirect);
 
@@ -274,10 +272,10 @@ void CFEM_DG_DiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *confi
   bool time_stepping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
+  if(rank == MASTER_NODE) cout << "Register solution..." << endl;
 
-  for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++) {
-    direct_solver->RegisterSolution(iDOF,true);
-  }
+  direct_solver->RegisterSolution(true);
+
   if (time_stepping) {
     for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++) {
       //direct_solver->node[iPoint]->RegisterSolution_time_n();
@@ -288,6 +286,7 @@ void CFEM_DG_DiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *confi
 void CFEM_DG_DiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
 
   /*--- Register farfield values as input ---*/
+  if(rank == MASTER_NODE) cout << "Register variables..." << endl;
 
   if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
@@ -357,10 +356,10 @@ void CFEM_DG_DiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config)
   bool time_stepping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /*--- Register output variables on the tape ---*/
+  if(rank == MASTER_NODE) cout << "Register output..." << endl;
 
-  for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++) {
-    direct_solver->RegisterSolution(iDOF,false);
-  }
+  direct_solver->RegisterSolution(false);
+
   if (time_stepping) {
     for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++) {
       //direct_solver->node[iPoint]->RegisterSolution_time_n();
@@ -395,9 +394,6 @@ void CFEM_DG_DiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case MOMENT_Z_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
-    case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
     }
 
@@ -496,6 +492,16 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
       }
     }
   }
+
+  //for(iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
+  //  for(iVar = 0; iVar < nVar; iVar++){
+  //    ii = iDOF*nVar + iVar;
+  //    residual = VecSolDOFsNew[ii] - VecSolDOFs[ii];
+
+  //    AddRes_RMS(iVar, residual*residual);
+  //    AddRes_Max(iVar, fabs(residual), globalIndex, coor);
+  //  }
+  //}
 
   /*--- Compute the root mean square residual. Note that the SetResidual_RMS
         function cannot be used, because that is for the FV solver.    ---*/
