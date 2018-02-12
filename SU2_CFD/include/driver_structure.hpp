@@ -3,20 +3,21 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 “Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
- *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +53,6 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CDriver {
 protected:
@@ -633,7 +633,6 @@ public:
  * \class CGeneralDriver
  * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CGeneralDriver : public CDriver {
 public:
@@ -696,7 +695,6 @@ public:
  * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
- * \version 5.0.0 "Raven"
  */
 class CFluidDriver : public CDriver {
 public:
@@ -799,7 +797,6 @@ public:
  * \class CTurbomachineryDriver
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
- * \version 5.0.0 "Raven"
  */
 class CTurbomachineryDriver : public CFluidDriver {
 public:
@@ -850,7 +847,6 @@ public:
  * \class CDiscAdjMultiZoneDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjFluidDriver : public CFluidDriver {
 
@@ -910,7 +906,6 @@ public:
  * \class CDiscAdjTurbomachineryDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author S. Vitale, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
 
@@ -957,7 +952,6 @@ public:
  * \class CHBDriver
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CHBDriver : public CDriver {
 
@@ -1024,7 +1018,6 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 5.0.0 "Raven"
  */
 class CFSIDriver : public CDriver {
 public:

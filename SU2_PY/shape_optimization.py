@@ -3,20 +3,21 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 “Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
-#
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -69,15 +70,14 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 5.0.0 \"Raven\"                             |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 6.0.0 \"Falcon\"                            |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| SU2 Original Developers: Dr. Francisco D. Palacios.                   |\n')
-    sys.stdout.write('|                          Dr. Thomas D. Economon.                      |\n')
-    sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| SU2 Developers:                                                       |\n')
+    sys.stdout.write('| The current SU2 release has been coordinated by the                   |\n')
+    sys.stdout.write('| SU2 International Developers Society <www.su2devsociety.org>          |\n')
+    sys.stdout.write('| with selected contributions from the open-source community:            |\n')
     sys.stdout.write('| - Prof. Juan J. Alonso\'s group at Stanford University.                |\n')
     sys.stdout.write('| - Prof. Piero Colonna\'s group at Delft University of Technology.      |\n')
     sys.stdout.write('| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. |\n')
@@ -86,7 +86,8 @@ def main():
     sys.stdout.write('| - Prof. Edwin van der Weide\' group at the University of Twente.       |\n')
     sys.stdout.write('| - Prof. Vincent Terrapon\' group at the University of Liege.           |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |\n')
+    sys.stdout.write('| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |\n')
+    sys.stdout.write('|                      Tim Albring, and the SU2 contributors.           |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')
     sys.stdout.write('| modify it under the terms of the GNU Lesser General Public            |\n')
