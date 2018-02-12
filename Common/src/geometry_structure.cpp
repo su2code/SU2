@@ -5022,24 +5022,6 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
 
   /*--- Free up memory from turbomachinery computations  ---*/
 
-  if (nSpanWiseSections != NULL) delete [] nSpanWiseSections;
-  if (nSpanSectionsByMarker != NULL) delete [] nSpanSectionsByMarker;
-  if (SpanWiseValue != NULL) {
-    for (iMarker = 0; iMarker < 2; iMarker++)
-      if (SpanWiseValue[iMarker] != NULL) delete [] SpanWiseValue[iMarker];
-    delete [] SpanWiseValue;
-  }
-  if (nVertexSpan != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (nVertexSpan[iMarker] != NULL) delete [] nVertexSpan[iMarker];
-    delete [] nVertexSpan;
-  }
-  if (nTotVertexSpan != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (nTotVertexSpan[iMarker] != NULL) delete [] nTotVertexSpan[iMarker];
-    delete [] nTotVertexSpan;
-  }
-
   unsigned short iSpan, iVertex;
   if (turbovertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -5117,6 +5099,24 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       if (MinRelAngularCoord[iMarker] != NULL) delete [] MinRelAngularCoord[iMarker];
     delete [] MinRelAngularCoord;
+  }
+
+  if (nSpanWiseSections != NULL) delete [] nSpanWiseSections;
+  if (nSpanSectionsByMarker != NULL) delete [] nSpanSectionsByMarker;
+  if (SpanWiseValue != NULL) {
+    for (iMarker = 0; iMarker < 2; iMarker++)
+      if (SpanWiseValue[iMarker] != NULL) delete [] SpanWiseValue[iMarker];
+    delete [] SpanWiseValue;
+  }
+  if (nVertexSpan != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (nVertexSpan[iMarker] != NULL) delete [] nVertexSpan[iMarker];
+    delete [] nVertexSpan;
+  }
+  if (nTotVertexSpan != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (nTotVertexSpan[iMarker] != NULL) delete [] nTotVertexSpan[iMarker];
+    delete [] nTotVertexSpan;
   }
 
 }
