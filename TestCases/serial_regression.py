@@ -685,7 +685,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.279683, -1.421869, 82.253640, 2.776473] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.265376, -1.422420, 82.253590, 2.776443] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -806,7 +806,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [-2.138976, 1.639495, -0.000831, 0.117497] #last 4 columns
+    bars_SST_2D.test_vals = [-2.138791, 1.639495, -0.000831, 0.117497] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -1066,13 +1066,13 @@ def main():
     shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
     shape_opt_euler_py.test_iter = 1
     shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
-    shape_opt_euler_py.su2_exec  = "shape_optimization.py -f"
+    shape_opt_euler_py.su2_exec  = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
 
-    # test continuous_adjoint.py, with multiple objectives
+    # Multiple functionals with the continuous adjoint
     contadj_multi_py            = TestCase('contadj_multi_py')
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
@@ -1083,7 +1083,56 @@ def main():
     contadj_multi_py.test_file  = "of_grad_combo.dat"
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
+    
+    # Optimization with multiple objectives, with gradients evaluated individually
+    # the difference in gradient value relative to combined case 
+    # is due to lack of solution file for the adjoint and small number of iterations
+    opt_multiobj_py            = TestCase('opt_multiobj_py')
+    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    opt_multiobj_py.test_iter  = 1
+    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
+    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+    opt_multiobj_py.timeout    = 1600
+    opt_multiobj_py.tol       = 0.00001
+    pass_list.append(opt_multiobj_py.run_opt())
+    test_list.append(opt_multiobj_py)
 
+    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
+    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
+    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
+    opt_multiobjcombo_py.test_iter  = 1
+    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+    opt_multiobjcombo_py.timeout    = 1600
+    opt_multiobjcombo_py.tol       = 0.00001
+    pass_list.append(opt_multiobjcombo_py.run_opt())
+    test_list.append(opt_multiobjcombo_py)
+
+    # test optimization, with multiple objectives evaluated on a single surface
+    opt_multiobj1surf_py            = TestCase('opt_multiobj1surf_py')
+    opt_multiobj1surf_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
+    opt_multiobj1surf_py.test_iter  = 1
+    opt_multiobj1surf_py.test_vals = [1, 1, 3.083034E+01, 3.789380E+00] #last 4 columns
+    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
+    opt_multiobj1surf_py.timeout    = 1600
+    opt_multiobj1surf_py.tol       = 0.00001
+    pass_list.append(opt_multiobj1surf_py.run_opt())
+    test_list.append(opt_multiobj1surf_py)
+
+    # test optimization, with a single objective evaluated on multiple surfaces
+    opt_2surf1obj_py            = TestCase('opt_2surf1obj_py')
+    opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
+    opt_2surf1obj_py.test_iter  = 1    
+    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 1.779489E-07] #last 4 columns
+    opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
+    opt_2surf1obj_py.timeout    = 1600
+    opt_2surf1obj_py.tol       = 0.00001
+    pass_list.append(opt_2surf1obj_py.run_opt())
+    test_list.append(opt_2surf1obj_py)
 
     ##########################
     ###   Python wrapper   ###
