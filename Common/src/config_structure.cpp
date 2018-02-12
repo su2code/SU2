@@ -607,7 +607,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit           = new su2double[3];
   default_htp_axis           = new su2double[2];
   default_body_force         = new su2double[3];
-  default_nacelle_location   = new su2double[6];
+  default_nacelle_location   = new su2double[5];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -768,7 +768,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
   addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
-  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, true);
+  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
@@ -1331,9 +1331,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
-  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0; default_nacelle_location[5] = 0.0;
-  /* DESCRIPTION: Definition of the nacelle location (point and axis) */
-  addDoubleArrayOption("GEO_NACELLE_LOCATION", 6, NacelleLocation, default_nacelle_location);
+  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0;
+  /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, NacelleLocation, default_nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -1349,6 +1349,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
   /* DESCRIPTION: Discrete Adjoint frozen limiter */
   addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
+  /* DESCRIPTION: Use an inconsistent (primal/dual) discrete adjoint formulation */
+  addBoolOption("INCONSISTENT_DISC", Inconsistent_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
@@ -2333,6 +2335,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       || (Kind_ActDisk == POWER))
     ActDisk_Jump = RATIO;
 
+  /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
+
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
   if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL) {
@@ -2344,23 +2348,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObjW=1;
   }
 
-  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
-
-  if (nObjW<nObj) {
-    if (Weight_ObjFunc!= NULL) {
-      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
-    }
-    Weight_ObjFunc = new su2double[nObj];
-    for (unsigned short iObj=0; iObj<nObj; iObj++)
-      Weight_ObjFunc[iObj] = 1.0;
-  }
-  /*--- Ignore weights if only one objective provided ---*/
-
-  if (nObj == 1 )
-      Weight_ObjFunc[0] = 1.0;
-
-  /*--- Maker sure that nMarker = nObj ---*/
+  /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
@@ -2373,13 +2361,43 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
+      else if(nObj==1){
+        /*--- If one objective and more than one marker: repeat objective over each marker, evenly weighted ---*/
+        unsigned int obj = Kind_ObjFunc[0];
+        su2double wt=1.0;
+        delete[] Kind_ObjFunc;
+        if (Weight_ObjFunc!=NULL){
+         wt = Weight_ObjFunc[0];
+         delete[] Weight_ObjFunc;
+        }
+        Kind_ObjFunc = new short unsigned int[nMarker_Monitoring];
+        Weight_ObjFunc = new su2double[nMarker_Monitoring];
+        for (unsigned short iObj=0; iObj<nMarker_Monitoring; iObj++){
+          Kind_ObjFunc[iObj] = obj;
+          Weight_ObjFunc[iObj] = wt;
+        }
+        nObjW = nObj;
+      }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n ") +
-                       string("For multiple surfaces per objective, list the objective multiple times. \n") +
-                       string("For multiple objectives per marker either use one marker overall or list the marker multiple times."),
+        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIORING must be the same length or length 1.\n ") +
+                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
+                       string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
+                       string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
                        CURRENT_FUNCTION);
       }
     }
+  }
+
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
+  
+  if (nObjW<nObj) {
+    if (Weight_ObjFunc!= NULL and nObjW>1) {
+      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
+                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+    }
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj] = 1.0;
   }
 
   /*--- Low memory only for ASCII Tecplot ---*/
@@ -3299,6 +3317,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
 
+  if ((DiscreteAdjoint) && (Inconsistent_Disc)) {
+    Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
+    Kind_Centered_Flow = Kind_Centered_AdjFlow;
+    Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
+    Kappa_Flow[0] = Kappa_AdjFlow[0];
+    Kappa_Flow[1] = Kappa_AdjFlow[1];
+  }
+  
   if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }

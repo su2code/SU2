@@ -59,6 +59,17 @@ def main():
     discadj_naca0012.tol       = 0.00001
     test_list.append(discadj_naca0012)
    
+    # Inviscid Cylinder 3D (multiple markers)
+    discadj_cylinder3D           = TestCase('discadj_cylinder3D')
+    discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
+    discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
+    discadj_cylinder3D.test_iter = 5
+    discadj_cylinder3D.test_vals = [-3.720476, -4.039256, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder3D.timeout   = 1600
+    discadj_cylinder3D.tol       = 0.00001
+    test_list.append(discadj_cylinder3D)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
