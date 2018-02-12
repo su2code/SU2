@@ -38,6 +38,8 @@ CSysMatrix::CSysMatrix(void) {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
   
+  ilu_fill_in       = 0;
+
   /*--- Array initialization ---*/
 
   matrix            = NULL;
