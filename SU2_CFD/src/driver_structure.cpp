@@ -442,6 +442,7 @@ void CDriver::Postprocessing() {
     for (iZone = 0; iZone < nZone; iZone++) {
       ConvHist_file[iZone].close();
     }
+    delete [] ConvHist_file;
 
   }
 
