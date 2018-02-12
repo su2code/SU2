@@ -4981,6 +4981,131 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
   
+  /*--- Free up memory from turbomachinery performance computation  ---*/
+
+  unsigned short iMarker;
+  if (TangGridVelIn != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TangGridVelIn[iMarker] != NULL) delete [] TangGridVelIn[iMarker];
+    delete [] TangGridVelIn;
+  }
+  if (SpanAreaIn != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (SpanAreaIn[iMarker] != NULL) delete [] SpanAreaIn[iMarker];
+    delete [] SpanAreaIn;
+  }
+  if (TurboRadiusIn != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TurboRadiusIn[iMarker] != NULL) delete [] TurboRadiusIn[iMarker];
+    delete [] TurboRadiusIn;
+  }
+  if (TangGridVelOut != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TangGridVelOut[iMarker] != NULL) delete [] TangGridVelOut[iMarker];
+    delete [] TangGridVelOut;
+  }
+  if (SpanAreaOut != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (SpanAreaOut[iMarker] != NULL) delete [] SpanAreaOut[iMarker];
+    delete [] SpanAreaOut;
+  }
+  if (TurboRadiusOut != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TurboRadiusOut[iMarker] != NULL) delete [] TurboRadiusOut[iMarker];
+    delete [] TurboRadiusOut;
+  }
+
+  /*--- Free up memory from turbomachinery computations  ---*/
+
+  if (nSpanWiseSections != NULL) delete [] nSpanWiseSections;
+  if (SpanWiseValue != NULL) {
+    for (iMarker = 0; iMarker < 2; iMarker++)
+      if (SpanWiseValue[iMarker] != NULL) delete [] SpanWiseValue[iMarker];
+    delete [] SpanWiseValue;
+  }
+  if (nVertexSpan != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (nVertexSpan[iMarker] != NULL) delete [] nVertexSpan[iMarker];
+    delete [] nVertexSpan;
+  }
+  if (nTotVertexSpan != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (nTotVertexSpan[iMarker] != NULL) delete [] nTotVertexSpan[iMarker];
+    delete [] nTotVertexSpan;
+  }
+
+  /*--- FIXME: turbovertex, AverageTurboNormal, AverageNormal, and
+   * AverageGridVel all need to be deallocated further, but their allocation
+   * depends on the config file.  Additional data needs to be stored during
+   * allocation to aid in deallocation. ---*/
+  if (turbovertex != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (turbovertex[iMarker] != NULL) {
+        delete [] turbovertex[iMarker];
+      }
+    delete [] turbovertex;
+  }
+  if (AverageTurboNormal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (AverageTurboNormal[iMarker] != NULL) {
+        delete [] AverageTurboNormal[iMarker];
+      }
+    delete [] AverageTurboNormal;
+  }
+  if (AverageNormal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (AverageNormal[iMarker] != NULL) {
+        delete [] AverageNormal[iMarker];
+      }
+    delete [] AverageNormal;
+  }
+  unsigned short iSpan;
+  if (AverageGridVel != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (AverageGridVel[iMarker] != NULL) {
+
+        for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++)
+          delete [] AverageGridVel[iMarker][iSpan];
+      }
+    delete [] AverageGridVel;
+  }
+
+//  turbovertex                       = new CTurboVertex***[nMarker];
+//  AverageTurboNormal                = new su2double**[nMarker];
+//  AverageNormal                     = new su2double**[nMarker];
+//  AverageGridVel                    = new su2double**[nMarker];
+
+  if (AverageTangGridVel != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (AverageTangGridVel[iMarker] != NULL) delete [] AverageTangGridVel[iMarker];
+    delete [] AverageTangGridVel;
+  }
+  if (SpanArea != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (SpanArea[iMarker] != NULL) delete [] SpanArea[iMarker];
+    delete [] SpanArea;
+  }
+  if (TurboRadius != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (TurboRadius[iMarker] != NULL) delete [] TurboRadius[iMarker];
+    delete [] TurboRadius;
+  }
+  if (MaxAngularCoord != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (MaxAngularCoord[iMarker] != NULL) delete [] MaxAngularCoord[iMarker];
+    delete [] MaxAngularCoord;
+  }
+  if (MinAngularCoord != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (MinAngularCoord[iMarker] != NULL) delete [] MinAngularCoord[iMarker];
+    delete [] MinAngularCoord;
+  }
+  if (MinRelAngularCoord != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (MinRelAngularCoord[iMarker] != NULL) delete [] MinRelAngularCoord[iMarker];
+    delete [] MinRelAngularCoord;
+  }
+
 }
 
 
