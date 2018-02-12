@@ -4850,6 +4850,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- initialize pointers for turbomachinery computations  ---*/
   nSpanWiseSections       = new unsigned short[2];
+  nSpanSectionsByMarker   = new unsigned short[nMarker];
   SpanWiseValue           = new su2double*[2];
   for (iMarker = 0; iMarker < 2; iMarker++){
     nSpanWiseSections[iMarker]      = 0;
@@ -4870,6 +4871,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   MinRelAngularCoord                = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
+    nSpanSectionsByMarker[iMarker]  = NULL;
     nVertexSpan[iMarker]            = NULL;
     nTotVertexSpan[iMarker]         = NULL;
     turbovertex[iMarker]            = NULL;
@@ -5018,6 +5020,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   /*--- Free up memory from turbomachinery computations  ---*/
 
   if (nSpanWiseSections != NULL) delete [] nSpanWiseSections;
+  if (nSpanSectionsByMarker != NULL) delete [] nSpanSectionsByMarker;
   if (SpanWiseValue != NULL) {
     for (iMarker = 0; iMarker < 2; iMarker++)
       if (SpanWiseValue[iMarker] != NULL) delete [] SpanWiseValue[iMarker];
@@ -5034,46 +5037,53 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     delete [] nTotVertexSpan;
   }
 
-  /*--- FIXME: turbovertex, AverageTurboNormal, AverageNormal, and
-   * AverageGridVel all need to be deallocated further, but their allocation
-   * depends on the config file.  Additional data needs to be stored during
-   * allocation to aid in deallocation. ---*/
+  unsigned short iSpan, iVertex;
   if (turbovertex != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (turbovertex[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++) {
+          if (turbovertex[iMarker][iSpan] != NULL) {
+            for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++)
+              if (turbovertex[iMarker][iSpan][iVertex] != NULL)
+                delete turbovertex[iMarker][iSpan][iVertex];
+            delete [] turbovertex[iMarker][iSpan];
+          }
+        }
         delete [] turbovertex[iMarker];
       }
+    }
     delete [] turbovertex;
   }
   if (AverageTurboNormal != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (AverageTurboNormal[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++)
+          delete [] AverageTurboNormal[iMarker][iSpan];
         delete [] AverageTurboNormal[iMarker];
       }
+    }
     delete [] AverageTurboNormal;
   }
   if (AverageNormal != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (AverageNormal[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++)
+          delete [] AverageNormal[iMarker][iSpan];
         delete [] AverageNormal[iMarker];
       }
+    }
     delete [] AverageNormal;
   }
-  unsigned short iSpan;
   if (AverageGridVel != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (AverageGridVel[iMarker] != NULL) {
-
-        for (iSpan= 0; iSpan < nSpanWiseSections[marker_flag-1] + 1; iSpan++)
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++)
           delete [] AverageGridVel[iMarker][iSpan];
+        delete [] AverageGridVel[iMarker];
       }
+    }
     delete [] AverageGridVel;
   }
-
-//  turbovertex                       = new CTurboVertex***[nMarker];
-//  AverageTurboNormal                = new su2double**[nMarker];
-//  AverageNormal                     = new su2double**[nMarker];
-//  AverageGridVel                    = new su2double**[nMarker];
 
   if (AverageTangGridVel != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -10574,6 +10584,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+            nSpanSectionsByMarker[iMarker]       = nSpanWiseSections[marker_flag-1];
             nVertexSpan[iMarker]                 = new long[nSpanWiseSections[marker_flag-1]];
             turbovertex[iMarker]                 = new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
             nTotVertexSpan[iMarker]              = new unsigned long [nSpanWiseSections[marker_flag-1] +1];
