@@ -1712,7 +1712,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
   
   Normal = new su2double[nDim];
@@ -1729,10 +1729,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -1808,7 +1804,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -1824,10 +1820,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Allocate the value at the outlet ---*/
       
@@ -2114,7 +2106,7 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool inlet_surface) {
   
-  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
+  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
   bool ReverseFlow;
   unsigned short iDim;
@@ -2129,7 +2121,6 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    iPoint_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
     GlobalIndex_donor = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     
@@ -3699,7 +3690,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
                               unsigned short val_marker) {
   
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
   
   Normal = new su2double[nDim];
@@ -3717,10 +3708,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -3805,7 +3792,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -3821,10 +3808,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Allocate the value at the outlet ---*/
       
