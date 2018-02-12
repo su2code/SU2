@@ -1395,6 +1395,9 @@ void CGeometry::SetCustomBoundary(CConfig *config) {
             CustomBoundaryTemperature[iMarker][iVertex] = config->GetIsothermal_Temperature(Marker_Tag);
           }
           break;
+        case INLET_FLOW:
+          // This case is handled in the solver class.
+          break;
         default:
           cout << "WARNING: Marker " << Marker_Tag << " is not customizable. Using default behavior." << endl;
           break;
@@ -1412,11 +1415,17 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
     iMGfine = iMGlevel-1;
     for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
-      if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
-        geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
-      }
-      else if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+      if(config->GetMarker_All_PyCustom(iMarker)){
+        switch(config->GetMarker_All_KindBC(iMarker)){
+          case HEAT_FLUX:
+            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+            break;
+          case ISOTHERMAL:
+            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+            break;
+          // Inlet flow handled in solver class.
+          default: break;
+        }
       }
     }
   }
