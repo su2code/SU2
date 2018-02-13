@@ -484,8 +484,10 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        su2util.write_plot('history_project.dat',output_format,results_plot)
-        
+        if output_format == 'PARAVIEW':
+          su2util.write_plot('history_project.csv',output_format,results_plot)
+        else:
+          su2util.write_plot('history_project.dat',output_format,results_plot)
         
     def save(self):
         with su2io.redirect_folder(self.folder):
