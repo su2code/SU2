@@ -2256,6 +2256,37 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	 Kind_GridMovement[0] = MOVING_HTP;
   }
 
+  /*--- Initialize the AoA and Sideslip variables for the incompressible
+   solver. This is typically unused (often internal flows). This also
+   is necessary to avoid any issues with the AoA adjustments for the
+   compressible code for fixed lift mode (including the adjoint). ---*/
+
+  if (Kind_Regime == INCOMPRESSIBLE) {
+
+    /*--- Compute x-velocity with a safegaurd for 0.0. ---*/
+
+    su2double Vx = 1e-10;
+    if (Inc_Velocity_Init[0] != 0.0) {
+      Vx = Inc_Velocity_Init[0];
+    }
+
+    /*--- Compute the angle-of-attack and sideslip. ---*/
+
+    su2double alpha = 0.0, beta = 0.0;
+    if (val_nDim == 2) {
+      alpha = atan(Inc_Velocity_Init[1]/Vx)*180.0/PI_NUMBER;
+    } else {
+      alpha = atan(Inc_Velocity_Init[2]/Vx)*180.0/PI_NUMBER;
+      beta  = atan(Inc_Velocity_Init[1]/Vx)*180.0/PI_NUMBER;
+    }
+
+    /*--- Set alpha and beta in the config class. ---*/
+
+    SetAoA(alpha);
+    SetAoS(beta);
+    
+  }
+
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
 
   if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
@@ -7126,6 +7157,73 @@ su2double CConfig::GetFlowAngleIn_BC() {
   }
 
   return alpha_in;
+}
+
+su2double CConfig::GetIncInlet_BC() {
+
+  su2double val_out = 0.0;
+
+  if (nMarker_Inlet > 0) {
+    if (Kind_Inc_Inlet[0] == VELOCITY_INLET)
+      val_out = Inlet_Ptotal[0]/Velocity_Ref;
+    else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
+      val_out = Inlet_Ptotal[0]/Pressure_Ref;
+  }
+
+  return val_out;
+}
+
+void CConfig::SetIncInlet_BC(su2double val_in) {
+
+  if (nMarker_Inlet > 0) {
+    if (Kind_Inc_Inlet[0] == VELOCITY_INLET)
+      Inlet_Ptotal[0] = val_in*Velocity_Ref;
+    else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
+      Inlet_Ptotal[0] = val_in*Pressure_Ref;
+  }
+  
+}
+
+su2double CConfig::GetIncTemperature_BC() {
+
+  su2double val_out = 0.0;
+
+  if (nMarker_Inlet > 0) {
+      val_out = Inlet_Ttotal[0]/Temperature_Ref;
+  }
+
+  return val_out;
+}
+
+void CConfig::SetIncTemperature_BC(su2double val_temperature) {
+
+  if (nMarker_Inlet > 0) {
+      Inlet_Ttotal[0] = val_temperature*Temperature_Ref;
+  }
+  
+}
+
+su2double CConfig::GetIncPressureOut_BC() {
+
+  su2double pressure_out = 0.0;
+
+  if (nMarker_FarField > 0){
+    pressure_out = Pressure_FreeStreamND;
+  } else if (nMarker_Outlet > 0) {
+    pressure_out = Outlet_Pressure[0]/Pressure_Ref;
+  }
+
+  return pressure_out;
+}
+
+void CConfig::SetIncPressureOut_BC(su2double val_pressure) {
+
+  if (nMarker_FarField > 0){
+    Pressure_FreeStreamND = val_pressure;
+  } else if (nMarker_Outlet > 0) {
+    Outlet_Pressure[0] = val_pressure*Pressure_Ref;
+  }
+
 }
 
 su2double CConfig::GetIsothermal_Temperature(string val_marker) {

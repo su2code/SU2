@@ -210,6 +210,7 @@ def get_headerMap(nZones = 1):
                  "Avg_Mach"        : "SURFACE_MACH"            ,
                  "ComboObj"        : "COMBO"                   ,
                  "Time(min)"       : "TIME"                    ,
+                 'Time(min)"\n'    : "TIME"                    , # TDE hack for paraview
                  "D(CL)"           : "D_LIFT"                  ,
                  "D(CD)"           : "D_DRAG"                  ,
                  "D(CSF)"          : "D_SIDEFORCE"             ,

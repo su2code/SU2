@@ -2905,6 +2905,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \return Value of the density sensitivity.
+   */
+  virtual su2double GetTotal_Sens_Density(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the velocity magnitude sensitivity.
    */
   virtual su2double GetTotal_Sens_ModVel(void);
@@ -3679,6 +3685,12 @@ public:
    * \param[in] Value of freestream temperature.
    */
   virtual void SetTemperature_Inf(su2double t_inf);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] Value of freestream density.
+   */
+  virtual void SetDensity_Inf(su2double rho_inf);
 
   /*!
    * \brief A virtual member.
@@ -7830,7 +7842,13 @@ public:
    * \param[in] Value of freestream temperature.
    */
   void SetTemperature_Inf(su2double t_inf);
-  
+
+  /*!
+   * \brief Set the freestream temperature.
+   * \param[in] Value of freestream temperature.
+   */
+  void SetDensity_Inf(su2double rho_inf);
+
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
@@ -11692,9 +11710,10 @@ private:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
-  su2double Total_Sens_ModVel;    /*!< \brief Total sensitivity to inlet velocity. */
+  su2double Total_Sens_Density;    /*!< \brief Total sensitivity to initial density (incompressible). */
+  su2double Total_Sens_ModVel;    /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
-  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
+  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, Density, ModVel;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
@@ -11870,6 +11889,12 @@ public:
    *         (inviscid + viscous contribution).
    */
   su2double GetTotal_Sens_BPress(void);
+
+  /*!
+   * \brief Get the total density sensitivity coefficient.
+   * \return Value of the density sensitivity.
+   */
+  su2double GetTotal_Sens_Density(void);
 
   /*!
    * \brief Get the total velocity magnitude sensitivity coefficient.
