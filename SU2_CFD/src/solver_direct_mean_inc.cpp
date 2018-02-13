@@ -1894,19 +1894,19 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     cout.precision(6);
 
     if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
-      cout << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << endl;
+      cout << "Incompressible flow: rho_ref, vel_ref, temp_ref, p_ref" << endl;
       cout << "are set to 1.0 in order to perform a dimensional calculation." << endl;
       if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
       else cout << "Force coefficients computed using initial values." << endl;
     }
     else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
-      cout << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << endl;
+      cout << "Incompressible flow: rho_ref, vel_ref, and temp_ref" << endl;
       cout << "are based on the initial values, p_ref = rho_ref*vel_ref^2." << endl;
       if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
       else cout << "Force coefficients computed using initial values." << endl;
     } 
     else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-      cout << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << endl;
+      cout << "Incompressible flow: rho_ref, vel_ref, and temp_ref" << endl;
       cout << "are user-provided reference values, p_ref = rho_ref*vel_ref^2." << endl;
       if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
       else cout << "Force coefficients computed using reference values." << endl;
