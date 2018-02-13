@@ -544,7 +544,7 @@ def header():
 
     print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 6.0.0 \'Falcon\'                             | \n'\
+          '|   / __| | | |_  )   Release 6.0.0 \'Falcon\'                            | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -552,13 +552,16 @@ def header():
           '| The current SU2 release has been coordinated by the                   | \n'\
           '| SU2 International Developers Society <www.su2devsociety.org>          | \n'\
           '| with selected contributions from the open-source community.           | \n'\
+          '------------------------------------------------------------------------- \n'\
+          '| The main research teams contributing to the current release are:      | \n'\
           '| - Prof. Juan J. Alonso\'s group at Stanford University.                | \n'\
           '| - Prof. Piero Colonna\'s group at Delft University of Technology.      | \n'\
           '| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. | \n'\
           '| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  | \n'\
           '| - Prof. Rafael Palacios\' group at Imperial College London.            | \n'\
-          '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Prof. Vincent Terrapon\'s group at the University of Liege.          | \n'\
+          '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
+          '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
           '------------------------------------------------------------------------- \n'\
           '| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       | \n'\
           '|                      Tim Albring, and the SU2 contributors.           | \n'\

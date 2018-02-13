@@ -7,13 +7,16 @@
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
  * with selected contributions from the open-source community.
+ *
+ * The main research teams contributing to the current release are:
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
  * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
@@ -316,6 +319,7 @@ COutput::~COutput(void) {
       delete [] TotalStaticEfficiency[iMarker];
       delete [] TotalTotalEfficiency [iMarker];
       delete [] KineticEnergyLoss    [iMarker];
+      delete [] TRadius              [iMarker];
       delete [] TotalPressureLoss    [iMarker];
       delete [] MassFlowIn           [iMarker];
       delete [] MassFlowOut          [iMarker];
@@ -332,6 +336,7 @@ COutput::~COutput(void) {
       delete [] FlowAngleIn_BC       [iMarker];
       delete [] EntropyIn            [iMarker];
       delete [] EntropyIn_BC         [iMarker];
+      delete [] EntropyOut           [iMarker];
       delete [] TotalEnthalpyIn_BC   [iMarker];
       delete [] DensityIn            [iMarker];
       delete [] PressureIn           [iMarker];
@@ -366,6 +371,7 @@ COutput::~COutput(void) {
     delete [] TotalStaticEfficiency;
     delete [] TotalTotalEfficiency;
     delete [] KineticEnergyLoss;
+    delete [] TRadius;
     delete [] TotalPressureLoss;
     delete [] MassFlowIn;
     delete [] MassFlowOut;
@@ -382,6 +388,7 @@ COutput::~COutput(void) {
     delete [] FlowAngleIn_BC;
     delete [] EntropyIn;
     delete [] EntropyIn_BC;
+    delete [] EntropyOut;
     delete [] TotalEnthalpyIn_BC;
     delete [] DensityIn;
     delete [] PressureIn;
@@ -398,6 +405,7 @@ COutput::~COutput(void) {
     delete [] MachOut;
     delete [] TurboVelocityIn;
     delete [] TurboVelocityOut;
+    delete [] TemperatureIn;
     delete [] TemperatureOut;
     delete [] TotalPressureIn;
     delete [] TotalPressureOut;
@@ -6464,13 +6472,16 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     Breakdown_file << "| The current SU2 release has been coordinated by the                   |" << "\n";
     Breakdown_file << "| SU2 International Developers Society <www.su2devsociety.org>          |" << "\n";
     Breakdown_file << "| with selected contributions from the open-source community            |" << "\n";
+    Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
+    Breakdown_file << "| The main research teams contributing to the current release are:      |" << "\n";
     Breakdown_file << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << "\n";
     Breakdown_file << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << "\n";
     Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << "\n";
     Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << "\n";
     Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << "\n";
-    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
     Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
+    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
+    Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
     Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";

@@ -7,13 +7,16 @@
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
  * with selected contributions from the open-source community.
+ *
+ * The main research teams contributing to the current release are:
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
  * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
@@ -119,13 +122,16 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   
   AverageVelocity            = NULL;
   AverageTurboVelocity       = NULL;
+  OldAverageTurboVelocity    = NULL;
   ExtAverageTurboVelocity    = NULL;
   AverageFlux                = NULL;
   SpanTotalFlux              = NULL;
   AveragePressure            = NULL;
+  OldAveragePressure         = NULL;
   RadialEquilibriumPressure  = NULL;
   ExtAveragePressure         = NULL;
   AverageDensity             = NULL;
+  OldAverageDensity          = NULL;
   ExtAverageDensity          = NULL;
   AverageNu                  = NULL;
   AverageKine                = NULL;
@@ -294,13 +300,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   AverageVelocity                   = NULL;
   AverageTurboVelocity              = NULL;
+  OldAverageTurboVelocity           = NULL;
   ExtAverageTurboVelocity           = NULL;
   AverageFlux                       = NULL;
   SpanTotalFlux                     = NULL;
   AveragePressure                   = NULL;
+  OldAveragePressure                = NULL;
   RadialEquilibriumPressure         = NULL;
   ExtAveragePressure                = NULL;
   AverageDensity                    = NULL;
+  OldAverageDensity                 = NULL;
   ExtAverageDensity                 = NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
@@ -1103,6 +1112,15 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] AverageTurboVelocity;
   }
 
+  if(OldAverageTurboVelocity != NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
+        delete [] OldAverageTurboVelocity[iMarker][iSpan];
+      delete  [] OldAverageTurboVelocity[iMarker];
+    }
+    delete [] OldAverageTurboVelocity;
+  }
+
   if(ExtAverageTurboVelocity !=NULL){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
@@ -1137,6 +1155,12 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] AveragePressure;
   }
 
+  if(OldAveragePressure !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] OldAveragePressure[iMarker];
+    delete [] OldAveragePressure;
+  }
+
   if(RadialEquilibriumPressure !=NULL){
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] RadialEquilibriumPressure[iMarker];
@@ -1153,6 +1177,12 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] AverageDensity[iMarker];
     delete [] AverageDensity;
+  }
+
+  if(OldAverageDensity !=NULL){
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] OldAverageDensity[iMarker];
+    delete [] OldAverageDensity;
   }
 
   if(ExtAverageDensity !=NULL){
@@ -1199,7 +1229,7 @@ CEulerSolver::~CEulerSolver(void) {
 
   if(TurboVelocityIn !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
         delete [] TurboVelocityIn[iMarker][iSpan];
       }
       delete [] TurboVelocityIn[iMarker];
@@ -1209,7 +1239,7 @@ CEulerSolver::~CEulerSolver(void) {
 
   if(TurboVelocityOut !=NULL){
     for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
         delete [] TurboVelocityOut[iMarker][iSpan];
       }
       delete [] TurboVelocityOut[iMarker];
@@ -1308,7 +1338,7 @@ CEulerSolver::~CEulerSolver(void) {
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   unsigned short iMarker, iSpan, iDim, iVar;
-  unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
+  nSpanMax    = config->GetnSpanMaxAllZones();
 
 
   /*--- Initialize quantities for the average process for internal flow ---*/
@@ -15014,13 +15044,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   AverageVelocity 				    = NULL;
   AverageTurboVelocity 				= NULL;
+  OldAverageTurboVelocity           = NULL;
   ExtAverageTurboVelocity 			= NULL;
   AverageFlux 						= NULL;
   SpanTotalFlux 					= NULL;
   AveragePressure  					= NULL;
+  OldAveragePressure                = NULL;
   RadialEquilibriumPressure         = NULL;
   ExtAveragePressure  				= NULL;
   AverageDensity   					= NULL;
+  OldAverageDensity                 = NULL;
   ExtAverageDensity   				= NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
