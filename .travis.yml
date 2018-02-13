@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - thomas.economon@gmail.com
   
 branches:
     only:
-        - develop
+        - release_v6.0.0
 
 python:
     - 2.7
@@ -84,7 +84,7 @@ before_script:
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
+    - git clone -b develop https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
