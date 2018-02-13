@@ -3,7 +3,7 @@
 ## \file SU2_CFD.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 6.0.0 “Falcon"
+#  \version 6.0.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

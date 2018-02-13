@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 6.0.0 “Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

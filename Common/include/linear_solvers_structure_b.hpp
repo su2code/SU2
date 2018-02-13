@@ -2,7 +2,7 @@
  * \file linear_solvers_structure_b.hpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring
- * \version 6.0.0 “Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
