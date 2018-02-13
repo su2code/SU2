@@ -660,8 +660,6 @@ CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : C
 
 CTurboVertex::~CTurboVertex() {
 
-	if (Normal != NULL) delete[] Normal;
-	if (Nodes != NULL) delete[] Nodes;
 	if (TurboNormal != NULL) delete [] TurboNormal;
 
 }
