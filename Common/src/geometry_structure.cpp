@@ -5042,7 +5042,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   if (AverageTurboNormal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (AverageTurboNormal[iMarker] != NULL) {
-        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++)
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageTurboNormal[iMarker][iSpan];
         delete [] AverageTurboNormal[iMarker];
       }
@@ -5052,7 +5052,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   if (AverageNormal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (AverageNormal[iMarker] != NULL) {
-        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++)
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageNormal[iMarker][iSpan];
         delete [] AverageNormal[iMarker];
       }
@@ -5062,7 +5062,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   if (AverageGridVel != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       if (AverageGridVel[iMarker] != NULL) {
-        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++)
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageGridVel[iMarker][iSpan];
         delete [] AverageGridVel[iMarker];
       }
@@ -11431,6 +11431,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           if(allocate){
+            nSpanSectionsByMarker[iMarker]            = nSpanWiseSections[marker_flag-1];
             AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
