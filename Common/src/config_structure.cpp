@@ -490,6 +490,7 @@ void CConfig::SetPointersNull(void) {
   RelaxFactorAverage       = NULL;
   RelaxFactorFourier       = NULL;
   nSpan_iZones             = NULL;
+  FinalRotation_Rate_Z     = NULL;
   ExtraRelFacGiles         = NULL;
   Mixedout_Coeff           = NULL;
   RampRotatingFrame_Coeff  = NULL;
@@ -6241,6 +6242,7 @@ CConfig::~CConfig(void) {
   if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
   if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
   if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+  if (FinalRotation_Rate_Z != NULL) delete [] FinalRotation_Rate_Z;
   if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
 
   if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
