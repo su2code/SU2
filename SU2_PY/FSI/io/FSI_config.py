@@ -3,7 +3,7 @@
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
 #  \author David Thomas
-#  \version 6.0.0 “Falcon"
+#  \version 6.0.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
