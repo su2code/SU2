@@ -222,6 +222,8 @@ def get_headerMap(nZones = 1):
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
                  "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
+                 "D(HeatFlux_Total)" : "D_HEAT"                ,
+                 "D(HeatFlux_Maximum)" : "D_HEAT_MAX"          ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
                  "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
@@ -394,6 +396,9 @@ grad_names_directdiff = ["D_LIFT",
                          "D_FORCE_Y",
                          "D_FORCE_Z",
                          "D_EFFICIENCY",
+                         "D_CUSTOM_OBJFUNC",
+                         "D_HEAT",
+                         "D_MAX_HEAT",
                          "D_TOTAL_PRESSURE_LOSS",
                          "D_TOTAL_EFFICIENCY",
                          "D_TOTAL_PRESSURE_LOSS",
@@ -429,6 +434,9 @@ grad_names_map.MOMENT_X="D_MOMENT_X"
 grad_names_map.SIDEFORCE = "D_SIDEFORCE"
 grad_names_map.ENTHALPY_OUT = "D_ENTHALPY_OUT"
 grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
+grad_names_map.CUSTOM_OBJFUNC = "D_CUSTOM_OBJFUNC"
+grad_names_map.HEAT = "D_HEAT"
+grad_names_map.MAX_HEAT = "D_MAX_HEAT"
 
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
