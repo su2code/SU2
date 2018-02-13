@@ -7,13 +7,16 @@
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
  * with selected contributions from the open-source community.
+ *
+ * The main research teams contributing to the current release are:
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
  * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
@@ -4096,13 +4099,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| The current SU2 release has been coordinated by the                   |" << endl;
   cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
   cout << "| with selected contributions from the open-source community.           |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| The main research teams contributing to the current release are:      |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
   cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
   cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
+  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+  cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
   cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
