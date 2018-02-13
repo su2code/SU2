@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 6.0.0 “Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

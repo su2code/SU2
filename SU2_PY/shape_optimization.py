@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 6.0.0 “Falcon"
+#  \version 6.0.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

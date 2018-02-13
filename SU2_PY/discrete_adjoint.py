@@ -3,7 +3,7 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 6.0.0 “Falcon"
+#  \version 6.0.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

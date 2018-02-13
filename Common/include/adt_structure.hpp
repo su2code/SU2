@@ -4,7 +4,7 @@
  *        alternating digital tree (ADT).
  *        The subroutines and functions are in the <i>adt_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 6.0.0 “Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

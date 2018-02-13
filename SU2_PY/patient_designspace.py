@@ -3,7 +3,7 @@
 ## \file patient_designspace.py
 #  \brief Python script for running multiple design configurations in multiple sessions
 #  \author T. Lukaczyk
-#  \version 6.0.0 “Falcon"
+#  \version 6.0.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

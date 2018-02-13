@@ -3,7 +3,7 @@
  * \brief Headers of the transfer structure
  *        The subroutines and functions are in the <i>transfer_structure.cpp</i> and <i>transfer_physics.cpp</i> files.
  * \author R. Sanchez
- * \version 6.0.0 “Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

@@ -2,7 +2,7 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author A. Aranake
- * \version 6.0.0 “Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
