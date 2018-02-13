@@ -911,9 +911,9 @@ def main():
     tutorial_inv_wedge.tol       = 0.00001
     test_list.append(tutorial_inv_wedge)
     
-    # Inviscid OneraM6
+    # Inviscid ONERA M6
     tutorial_inv_onera           = TestCase('inviscid_onera_tutorial')
-    tutorial_inv_onera.cfg_dir   = "../Tutorials/Inviscid_OneraM6"
+    tutorial_inv_onera.cfg_dir   = "../Tutorials/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file  = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter = 0
     tutorial_inv_onera.test_vals = [-4.618556, -4.011390, 0.211942, 0.077567] #last 4 columns
@@ -933,7 +933,7 @@ def main():
     tutorial_lam_cylinder.tol       = 0.00001
     test_list.append(tutorial_lam_cylinder)
 
-    # Laminar FlatPlate
+    # Laminar Flat Plate
     tutorial_lam_flatplate           = TestCase('laminar_flatplate_tutorial')
     tutorial_lam_flatplate.cfg_dir   = "../Tutorials/Laminar_Flat_Plate"
     tutorial_lam_flatplate.cfg_file  = "lam_flatplate.cfg"
@@ -944,7 +944,7 @@ def main():
     tutorial_lam_flatplate.tol       = 0.00001
     test_list.append(tutorial_lam_flatplate)
     
-    # Turbulent FlatPlate
+    # Turbulent Flat Plate
     tutorial_turb_flatplate           = TestCase('turbulent_flatplate_tutorial')
     tutorial_turb_flatplate.cfg_dir   = "../Tutorials/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
@@ -966,9 +966,9 @@ def main():
     tutorial_trans_flatplate.tol       = 0.00001
     test_list.append(tutorial_trans_flatplate)
 
-    # Turbulent OnetaM6
+    # Turbulent ONERA M6
     tutorial_turb_oneram6           = TestCase('turbulent_oneram6_tutorial')
-    tutorial_turb_oneram6.cfg_dir   = "../Tutorials/Turbulent_OneraM6"
+    tutorial_turb_oneram6.cfg_dir   = "../Tutorials/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter = 0
     tutorial_turb_oneram6.test_vals = [ -1.984184, -6.644689, 0.402420, 0.328288] #last 4 columns
@@ -977,27 +977,49 @@ def main():
     tutorial_turb_oneram6.tol       = 0.00001
     test_list.append(tutorial_turb_oneram6)
 
-    # Optimal Shape Design
-    tutorial_opt_shape              = TestCase('optimal_shape_design_tutorial')
-    tutorial_opt_shape.cfg_dir   = "../Tutorials/Optimal_Shape_Design"
-    tutorial_opt_shape.cfg_file  = "inv_NACA0012_basic.cfg"
-    tutorial_opt_shape.test_iter = 0
-    tutorial_opt_shape.test_vals = [-3.585391, -2.989014, 0.095581, 0.174421] #last 4 columns
-    tutorial_opt_shape.su2_exec  = "mpirun -np 2 SU2_CFD"
-    tutorial_opt_shape.timeout   = 1600
-    tutorial_opt_shape.tol       = 0.00001
-    test_list.append(tutorial_opt_shape)
-    
-    # Constrained Optimal Shape Design
-    tutorial_const_opt_shape              = TestCase('constrained_optimal_shape_design_tutorial')
-    tutorial_const_opt_shape.cfg_dir   = "../Tutorials/Constrained_Optimal_Shape_Design"
-    tutorial_const_opt_shape.cfg_file  = "inv_ONERAM6_adv.cfg"
-    tutorial_const_opt_shape.test_iter = 0
-    tutorial_const_opt_shape.test_vals = [-5.207843, -4.606508, 0.279763, 0.154207] #last 4 columns
-    tutorial_const_opt_shape.su2_exec  = "mpirun -np 2 SU2_CFD"
-    tutorial_const_opt_shape.timeout   = 1600
-    tutorial_opt_shape.tol       = 0.00001
-    test_list.append(tutorial_const_opt_shape)
+    # Inviscid NACA 0012 Design
+    tutorial_design_inv_naca0012              = TestCase('design_inv_naca0012')
+    tutorial_design_inv_naca0012.cfg_dir   = "../Tutorials/Inviscid_2D_Unconstrained_NACA0012"
+    tutorial_design_inv_naca0012.cfg_file  = "inv_NACA0012_basic.cfg"
+    tutorial_design_inv_naca0012.test_iter = 0
+    tutorial_design_inv_naca0012.test_vals = [-3.585391, -2.989014, 0.095581, 0.174421] #last 4 columns
+    tutorial_design_inv_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD"
+    tutorial_design_inv_naca0012.timeout   = 1600
+    tutorial_design_inv_naca0012.tol       = 0.00001
+    test_list.append(tutorial_design_inv_naca0012)
+
+    # Turbulent RAE 2822 Design
+    tutorial_design_turb_rae2822              = TestCase('design_turb_rae2822')
+    tutorial_design_turb_rae2822.cfg_dir   = "../Tutorials/Turbulent_2D_Constrained_RAE2822"
+    tutorial_design_turb_rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
+    tutorial_design_turb_rae2822.test_iter = 0
+    tutorial_design_turb_rae2822.test_vals = [-3.585391, -2.989014, 0.095581, 0.174421] #last 4 columns
+    tutorial_design_turb_rae2822.su2_exec  = "mpirun -np 2 SU2_CFD"
+    tutorial_design_turb_rae2822.timeout   = 1600
+    tutorial_design_turb_rae2822.tol       = 0.00001
+    test_list.append(tutorial_design_turb_rae2822)
+
+    # Inviscid 3D ONERA M6 Design
+    tutorial_design_inv_oneram6              = TestCase('design_inv_oneram6')
+    tutorial_design_inv_oneram6.cfg_dir   = "../Tutorials/Inviscid_3D_Constrained_ONERAM6"
+    tutorial_design_inv_oneram6.cfg_file  = "inv_ONERAM6_adv.cfg"
+    tutorial_design_inv_oneram6.test_iter = 0
+    tutorial_design_inv_oneram6.test_vals = [-5.207843, -4.606508, 0.279763, 0.154207] #last 4 columns
+    tutorial_design_inv_oneram6.su2_exec  = "mpirun -np 2 SU2_CFD"
+    tutorial_design_inv_oneram6.timeout   = 1600
+    tutorial_design_inv_oneram6.tol       = 0.00001
+    test_list.append(tutorial_design_inv_oneram6)
+
+    # Multi Objective Design
+    tutorial_design_multiobj              = TestCase('design_multiobj')
+    tutorial_design_multiobj.cfg_dir   = "../Tutorials/Multi_Objective_Shape_Design"
+    tutorial_design_multiobj.cfg_file  = "inv_wedge_ROE_multiobj_combo.cfg"
+    tutorial_design_multiobj.test_iter = 0
+    tutorial_design_multiobj.test_vals = [-5.207843, -4.606508, 0.279763, 0.154207] #last 4 columns
+    tutorial_design_multiobj.su2_exec  = "mpirun -np 2 SU2_CFD"
+    tutorial_design_multiobj.timeout   = 1600
+    tutorial_design_multiobj.tol       = 0.00001
+    test_list.append(tutorial_design_inv_oneram6)
 
     ######################################
     ### RUN TESTS                      ###
