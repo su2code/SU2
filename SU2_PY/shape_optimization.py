@@ -8,13 +8,16 @@
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
 # with selected contributions from the open-source community.
+#
+# The main research teams contributing to the current release are:
 #  - Prof. Juan J. Alonso's group at Stanford University.
 #  - Prof. Piero Colonna's group at Delft University of Technology.
 #  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #  - Prof. Rafael Palacios' group at Imperial College London.
-#  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
 # Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
@@ -77,14 +80,17 @@ def main():
     sys.stdout.write('-------------------------------------------------------------------------\n')
     sys.stdout.write('| The current SU2 release has been coordinated by the                   |\n')
     sys.stdout.write('| SU2 International Developers Society <www.su2devsociety.org>          |\n')
-    sys.stdout.write('| with selected contributions from the open-source community:            |\n')
+    sys.stdout.write('| with selected contributions from the open-source community.            |\n')
+    sys.stdout.write('-------------------------------------------------------------------------\n')
+    sys.stdout.write('| The main research teams contributing to the current release are:       |\n')
     sys.stdout.write('| - Prof. Juan J. Alonso\'s group at Stanford University.                |\n')
     sys.stdout.write('| - Prof. Piero Colonna\'s group at Delft University of Technology.      |\n')
     sys.stdout.write('| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. |\n')
     sys.stdout.write('| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  |\n')
     sys.stdout.write('| - Prof. Rafael Palacios\' group at Imperial College London.            |\n')
-    sys.stdout.write('| - Prof. Edwin van der Weide\' group at the University of Twente.       |\n')
     sys.stdout.write('| - Prof. Vincent Terrapon\' group at the University of Liege.           |\n')
+    sys.stdout.write('| - Prof. Edwin van der Weide\' group at the University of Twente.       |\n')
+    sys.stdout.write('| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.   |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
     sys.stdout.write('| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |\n')
     sys.stdout.write('|                      Tim Albring, and the SU2 contributors.           |\n')
