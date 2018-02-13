@@ -20,9 +20,11 @@ The primary applications are computational fluid dynamics and aerodynamic shape 
 
 You will find more information and the latest news in:
    - SU2 Home Page: https://su2code.github.io
-   - GitHub:        https://github.com/su2code
-   - CFD Online:    http://www.cfd-online.com/Forums/su2/
-   - Twitter:       https://twitter.com/su2code
+   - SU2 International Developers Society Home Page: www.su2devsociety.org
+   - GitHub repository: https://github.com/su2code
+   - CFD Online: http://www.cfd-online.com/Forums/su2/
+   - Twitter: https://twitter.com/su2code
+   - Facebook: https://www.facebook.com/su2code
 
 ---------------------------------------------------
   SU2 INSTALLATION
@@ -57,17 +59,17 @@ Thanks for building, and happy optimizing!
 
 SU2 is being developed by individuals and organized teams all around the world. 
 
-The SU2 Original Developers are:
+The current SU2 release has been coordinated by the SU2 International Developers Society <www.su2devsociety.org> with selected contributions from the open-source community.
 
-   - Dr. Francisco D. Palacios.
-   - Dr. Thomas D. Economon.
+The main research teams contributing to the current release are:
+- Prof. Juan J. Alonso's group at Stanford University.
+- Prof. Piero Colonna's group at Delft University of Technology.
+- Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology.
+- Prof. Alberto Guardone's group at Polytechnic University of Milan.
+- Prof. Rafael Palacios' group at Imperial College London.
+- Prof. Vincent Terrapon's group at the University of Liege.
+- Prof. Edwin van der Weide's group at the University of Twente.
+- Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
 
-and the most active groups developing SU2 are:
+Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
 
-   - Prof. Juan J. Alonso's group at Stanford University.
-   - Prof. Piero Colonna's group at Delft University of Technology.
-   - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-   - Prof. Alberto Guardone's group at Polytechnic University of Milan.
-   - Prof. Rafael Palacios' group at Imperial College London.
-   - Prof. Edwin van der Weide's group at the University of Twente.
-   - Prof. Vincent Terrapon's group at the University of Liege.
