@@ -118,13 +118,16 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   
   AverageVelocity            = NULL;
   AverageTurboVelocity       = NULL;
+  OldAverageTurboVelocity    = NULL;
   ExtAverageTurboVelocity    = NULL;
   AverageFlux                = NULL;
   SpanTotalFlux              = NULL;
   AveragePressure            = NULL;
+  OldAveragePressure         = NULL;
   RadialEquilibriumPressure  = NULL;
   ExtAveragePressure         = NULL;
   AverageDensity             = NULL;
+  OldAverageDensity          = NULL;
   ExtAverageDensity          = NULL;
   AverageNu                  = NULL;
   AverageKine                = NULL;
@@ -293,13 +296,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   AverageVelocity                   = NULL;
   AverageTurboVelocity              = NULL;
+  OldAverageTurboVelocity           = NULL;
   ExtAverageTurboVelocity           = NULL;
   AverageFlux                       = NULL;
   SpanTotalFlux                     = NULL;
   AveragePressure                   = NULL;
+  OldAveragePressure                = NULL;
   RadialEquilibriumPressure         = NULL;
   ExtAveragePressure                = NULL;
   AverageDensity                    = NULL;
+  OldAverageDensity                 = NULL;
   ExtAverageDensity                 = NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
@@ -1102,7 +1108,7 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] AverageTurboVelocity;
   }
 
-  if(OldAverageTurboVelocity !=NULL){
+  if(OldAverageTurboVelocity != NULL){
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++)
         delete [] OldAverageTurboVelocity[iMarker][iSpan];
@@ -15034,13 +15040,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   AverageVelocity 				    = NULL;
   AverageTurboVelocity 				= NULL;
+  OldAverageTurboVelocity           = NULL;
   ExtAverageTurboVelocity 			= NULL;
   AverageFlux 						= NULL;
   SpanTotalFlux 					= NULL;
   AveragePressure  					= NULL;
+  OldAveragePressure                = NULL;
   RadialEquilibriumPressure         = NULL;
   ExtAveragePressure  				= NULL;
   AverageDensity   					= NULL;
+  OldAverageDensity                 = NULL;
   ExtAverageDensity   				= NULL;
   AverageNu                         = NULL;
   AverageKine                       = NULL;
