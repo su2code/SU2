@@ -574,6 +574,8 @@ inline su2double CSolver::GetTotal_Sens_Temp() { return 0; }
 
 inline su2double CSolver::GetTotal_Sens_BPress() { return 0; }
 
+inline su2double CSolver::GetTotal_Sens_Density() { return 0; }
+
 inline su2double CSolver::GetTotal_Sens_ModVel() { return 0; }
 
 inline su2double CSolver::GetDensity_Inf(void) { return 0; }
@@ -984,6 +986,8 @@ inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
 inline void CSolver::SetPressure_Inf(su2double p_inf){}
 
 inline void CSolver::SetTemperature_Inf(su2double t_inf){}
+
+inline void CSolver::SetDensity_Inf(su2double rho_inf){}
 
 inline void CSolver::SetVelocity_Inf(unsigned short val_dim, su2double val_velocity) { }
 
@@ -1886,6 +1890,8 @@ inline void CIncEulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_i
 
 inline void CIncEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
 
+inline void CIncEulerSolver::SetDensity_Inf(su2double rho_inf){Density_Inf = rho_inf;}
+
 inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
 
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
@@ -2030,6 +2036,8 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_Press() { return Total_Sens_Press
 inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; }
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
+
+inline su2double CDiscAdjSolver::GetTotal_Sens_Density() { return Total_Sens_Density; }
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_ModVel() { return Total_Sens_ModVel; }
 

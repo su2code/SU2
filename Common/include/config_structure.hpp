@@ -6203,6 +6203,42 @@ public:
   void SetPressureOut_BC(su2double val_press);
 
   /*!
+   * \brief Get the inlet velocity or pressure imposed for incompressible flow.
+   * \return inlet velocity or pressure
+   */
+  su2double GetIncInlet_BC();
+
+  /*!
+   * \brief Set the inlet velocity or pressure imposed as BC for incompressible flow.
+   * \param[in] val_in - New value of the inlet velocity or pressure.
+   */
+  void SetIncInlet_BC(su2double val_in);
+
+  /*!
+   * \brief Get the inlet temperature imposed as BC for incompressible flow.
+   * \return inlet temperature
+   */
+  su2double GetIncTemperature_BC();
+
+  /*!
+   * \brief Set the inlet temperature imposed as BC for incompressible flow.
+   * \param[in] val_temperature - New value of the inlet temperature.
+   */
+  void SetIncTemperature_BC(su2double val_temperature);
+
+  /*!
+   * \brief Get the outlet pressure imposed as BC for incompressible flow.
+   * \return outlet pressure
+   */
+  su2double GetIncPressureOut_BC();
+
+  /*!
+   * \brief Set the outlet pressure imposed as BC for incompressible flow.
+   * \param[in] val_pressure - New value of the outlet pressure.
+   */
+  void SetIncPressureOut_BC(su2double val_pressure);
+
+  /*!
    * \brief Get the inlet total pressure imposed as BC for internal flow.
    * \return inlet total pressure
    */

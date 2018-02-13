@@ -434,20 +434,17 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Init total coefficients ---*/
 
-  Total_CD      = 0.0;  Total_CL           = 0.0;  Total_CSF          = 0.0;
-  Total_CMx     = 0.0;  Total_CMy          = 0.0;  Total_CMz          = 0.0;
-  Total_CoPx    = 0.0;  Total_CoPy         = 0.0;  Total_CoPz         = 0.0;
-  Total_CEff    = 0.0;
-  Total_CFx     = 0.0;  Total_CFy          = 0.0;  Total_CFz          = 0.0;
-  Total_CT      = 0.0;  Total_CQ           = 0.0;  Total_CMerit       = 0.0;
-  Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc=0.0;
-  
-  /*--- Coefficients for fixed lift mode. ---*/
-  
-  AoA_Prev = 0.0;
-  Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+  Total_CD       = 0.0;    Total_CL           = 0.0;    Total_CSF            = 0.0;
+  Total_CMx      = 0.0;    Total_CMy          = 0.0;    Total_CMz            = 0.0;
+  Total_CoPx     = 0.0;    Total_CoPy         = 0.0;    Total_CoPz           = 0.0;
+  Total_CEff     = 0.0;
+  Total_CFx      = 0.0;    Total_CFy          = 0.0;    Total_CFz            = 0.0;
+  Total_CT       = 0.0;    Total_CQ           = 0.0;    Total_CMerit         = 0.0;
+  Total_MaxHeat  = 0.0;    Total_Heat         = 0.0;    Total_ComboObj       = 0.0;
+  Total_CpDiff   = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc = 0.0;
+  AoA_Prev       = 0.0;
+  Total_CL_Prev  = 0.0;    Total_CD_Prev      = 0.0;
+  Total_CMx_Prev = 0.0;    Total_CMy_Prev     = 0.0;     Total_CMz_Prev      = 0.0;
 
   /*--- Read farfield conditions ---*/
 
@@ -1658,8 +1655,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   
   /*--- Local variables ---*/
   
-  su2double Alpha    = config->GetAoA()*PI_NUMBER/180.0;
-  su2double Beta     = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach     = config->GetMach();
   su2double Reynolds = config->GetReynolds();
   
@@ -1803,17 +1798,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     Mach = ModVel_FreeStream / FluidModel->GetSoundSpeed();   
   }
   config->SetMach(Mach);
-
-  /*--- Compute Alpha angle ---*/
-
-  Alpha = acos(config->GetVelocity_FreeStream()[0]/ModVel_FreeStream)*180.0/PI_NUMBER;
-  config->SetAoA(Alpha);
-
-  /*--- Compute Beta angle ---*/
-
-  if (nDim == 2) Beta = 0.0;
-  else Beta = asin(config->GetVelocity_FreeStream()[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
-  config->SetAoS(Beta);
 
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
   
@@ -6887,16 +6871,19 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MaxHF_Visc = new su2double[nMarker];
 
   /*--- Init total coefficients ---*/
-  
-  Total_CD   = 0.0;  Total_CL        = 0.0;  Total_CSF   = 0.0;
-  Total_CMx     = 0.0;  Total_CMy          = 0.0;  Total_CMz          = 0.0;
-  Total_CoPx        = 0.0;    Total_CoPy          = 0.0;    Total_CoPz          = 0.0;
-  Total_CEff    = 0.0;
-  Total_CFx     = 0.0;  Total_CFy          = 0.0;  Total_CFz          = 0.0;
-  Total_CT      = 0.0;  Total_CQ           = 0.0;  Total_CMerit       = 0.0;
-  Total_MaxHeat = 0.0;  Total_Heat         = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
-  
+
+  Total_CD       = 0.0;  Total_CL           = 0.0;  Total_CSF            = 0.0;
+  Total_CMx      = 0.0;  Total_CMy          = 0.0;  Total_CMz            = 0.0;
+  Total_CoPx     = 0.0;  Total_CoPy         = 0.0;  Total_CoPz           = 0.0;
+  Total_CEff     = 0.0;
+  Total_CFx      = 0.0;  Total_CFy          = 0.0;  Total_CFz            = 0.0;
+  Total_CT       = 0.0;  Total_CQ           = 0.0;  Total_CMerit         = 0.0;
+  Total_MaxHeat  = 0.0;  Total_Heat         = 0.0;  Total_ComboObj       = 0.0;
+  Total_CpDiff   = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc = 0.0;
+  AoA_Prev       = 0.0;
+  Total_CL_Prev  = 0.0;  Total_CD_Prev      = 0.0;
+  Total_CMx_Prev = 0.0;  Total_CMy_Prev     = 0.0;  Total_CMz_Prev       = 0.0;
+
   /*--- Coefficients for fixed lift mode. ---*/
   
   AoA_Prev = 0.0;
@@ -7031,6 +7018,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
+  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -7064,6 +7052,12 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output) { SetPrimitive_Limiter(geometry, config);
   }
+
+  /*--- Compute the limiter in case we need it in the turbulence model
+   or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
+      && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
   
   /*--- Update the beta value based on the maximum velocity / viscosity. ---*/
 
@@ -7088,7 +7082,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
   
@@ -7103,7 +7097,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
-    
+
     if (iMesh == MESH_0) {
       config->SetNonphysical_Points(ErrorCounter);
       solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
@@ -7302,7 +7296,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc(); //TDE check
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
