@@ -7,13 +7,16 @@
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
  * with selected contributions from the open-source community.
+ *
+ * The main research teams contributing to the current release are:
  *  - Prof. Juan J. Alonso's group at Stanford University.
  *  - Prof. Piero Colonna's group at Delft University of Technology.
  *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
  * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
@@ -291,6 +294,9 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
+  Marker_CfgFile_Turbomachinery = NULL; Marker_All_Turbomachinery = NULL;
+  Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
+  Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
   Marker_CfgFile_PyCustom     = NULL;   Marker_All_PyCustom      = NULL;
   
@@ -488,6 +494,7 @@ void CConfig::SetPointersNull(void) {
   RelaxFactorAverage       = NULL;
   RelaxFactorFourier       = NULL;
   nSpan_iZones             = NULL;
+  FinalRotation_Rate_Z     = NULL;
   ExtraRelFacGiles         = NULL;
   Mixedout_Coeff           = NULL;
   RampRotatingFrame_Coeff  = NULL;
@@ -4096,13 +4103,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| The current SU2 release has been coordinated by the                   |" << endl;
   cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
   cout << "| with selected contributions from the open-source community.           |" << endl;
+  cout <<"-------------------------------------------------------------------------" << endl;
+  cout << "| The main research teams contributing to the current release are:      |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
   cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
   cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
+  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+  cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
   cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
@@ -5933,11 +5943,19 @@ CConfig::~CConfig(void) {
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
 
   if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
-
   if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
   
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
+
+  if (Marker_CfgFile_Turbomachinery != NULL) delete [] Marker_CfgFile_Turbomachinery;
+  if (Marker_All_Turbomachinery     != NULL) delete [] Marker_All_Turbomachinery;
+
+  if (Marker_CfgFile_TurbomachineryFlag != NULL) delete [] Marker_CfgFile_TurbomachineryFlag;
+  if (Marker_All_TurbomachineryFlag     != NULL) delete [] Marker_All_TurbomachineryFlag;
+
+  if (Marker_CfgFile_MixingPlaneInterface != NULL) delete [] Marker_CfgFile_MixingPlaneInterface;
+  if (Marker_All_MixingPlaneInterface     != NULL) delete [] Marker_All_MixingPlaneInterface;
 
   if (Marker_DV!= NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
@@ -6231,6 +6249,7 @@ CConfig::~CConfig(void) {
   if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
   if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
   if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+  if (FinalRotation_Rate_Z != NULL) delete [] FinalRotation_Rate_Z;
   if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
 
   if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
