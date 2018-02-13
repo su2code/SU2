@@ -3705,7 +3705,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     if(config->GetKind_Regime() == COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. ---*/
-      for(unsigned long i=0; i<nVolElemOwned; ++i) {
+      for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
         su2double charVel2Max = 0.0;
 
@@ -3715,11 +3715,11 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           case 2: {
             /*--- 2D simulation. Loop over the DOFs of this element
                   and determine the maximum wave speed. ---*/
-            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+            for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
               const su2double *solDOF  = VecSolDOFs.data()
-                                       + nVar*(volElem[i].offsetDOFsSolLocal + j);
-              const su2double *gridVel = volElem[i].gridVelocitiesSolDOFs.data()
-                                       + j*nDim;
+                                       + nVar*(volElem[l].offsetDOFsSolLocal + i);
+              const su2double *gridVel = volElem[l].gridVelocitiesSolDOFs.data()
+                                       + i*nDim;
 
               /* Compute the velocities and the internal energy per unit mass. */
               const su2double DensityInv   = 1.0/solDOF[0];
@@ -3746,11 +3746,11 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           case 3: {
             /*--- 3D simulation. Loop over the DOFs of this element
                   and determine the maximum wave speed. ---*/
-            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+            for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
               const su2double *solDOF = VecSolDOFs.data()
-                                      + nVar*(volElem[i].offsetDOFsSolLocal + j);
-              const su2double *gridVel = volElem[i].gridVelocitiesSolDOFs.data()
-                                       + j*nDim;
+                                      + nVar*(volElem[l].offsetDOFsSolLocal + i);
+              const su2double *gridVel = volElem[l].gridVelocitiesSolDOFs.data()
+                                       + i*nDim;
 
               /* Compute the velocities and the internal energy per unit mass. */
               const su2double DensityInv   = 1.0/solDOF[0];
@@ -3782,17 +3782,18 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
               stepping into account for the minimum and maximum. Note that in
               the length scale the polynomial degree must be taken into account
               for the high order element. ---*/
-        const unsigned short ind = volElem[i].indStandardElement;
+        const unsigned short ind = volElem[l].indStandardElement;
         unsigned short nPoly = standardElementsSol[ind].GetNPoly();
         if(nPoly == 0) nPoly = 1;
 
-        const su2double lenScaleInv = nPoly/volElem[i].lenScale;
+        const su2double lenScaleInv = nPoly/volElem[l].lenScale;
         const su2double dtInv       = lenScaleInv*sqrt(charVel2Max);
 
-        VecDeltaTime[i] = CFL/dtInv;
+        VecDeltaTime[l] = CFL/dtInv;
 
-        Min_Delta_Time = min(Min_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
-        Max_Delta_Time = max(Max_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
+        const su2double dtEff = volElem[l].factTimeLevel*VecDeltaTime[l];
+        Min_Delta_Time = min(Min_Delta_Time, dtEff);
+        Max_Delta_Time = max(Max_Delta_Time, dtEff);
       }
     }
     else {
@@ -3821,8 +3822,8 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           the time step of the largest time level, a correction must be used
           for the time level when time accurate local time stepping is used. ---*/
     if (time_stepping) {
-      for(unsigned long i=0; i<nVolElemOwned; ++i)
-        VecDeltaTime[i] = Min_Delta_Time/volElem[i].factTimeLevel;
+      for(unsigned long l=0; l<nVolElemOwned; ++l)
+        VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
     }
   }
 }
@@ -6041,13 +6042,19 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
 void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
+  /* The number of bytes to copied in the memcpy calls and an initialization
+     of the argument in the calls to the timing routines. */
+  const unsigned long nBytes = nVar*sizeof(su2double);
   double tick = 0.0;
 
-  /*--- Set the pointers for the local arrays and determine the number of bytes
-        for the call to memcpy later in this function. ---*/
-  su2double *solInt  = VecTmpMemory.data();
-  su2double *solCopy = solInt + nIntegrationMax*nVar;
-  const unsigned long nBytes = nVar*sizeof(su2double);
+  /* Determine the number of faces that are treated simultaneously
+     in the matrix products to obtain good gemm performance. */
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
+  const unsigned short nFaceSimul = nPadInput/nVar;
+
+  /* Determine the minimum padded size in the matrix multiplications, which
+     corresponds to 64 byte alignment. */
+  const unsigned short nPadMin = 64/sizeof(passivedouble);
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
@@ -6138,77 +6145,168 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
         const unsigned long      nSurfElem = boundaries[iMarker].surfElem.size();
         const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
 
-        /*--- Loop over the faces of this boundary. ---*/
-        for(unsigned long l=0; l<nSurfElem; ++l) {
+        /*--- Loop over the faces of this boundary. Multiple faces are treated
+              simultaneously to improve the performance of the matrix
+              multiplications. As a consequence, the update of the counter l
+              happens at the end of this loop section. ---*/
+        for(unsigned long l=0; l<nSurfElem;) {
+
+          /* Determine the end index for this chunk of faces and the padded
+             N value in the gemm computations. */
+          unsigned long lEnd;
+          unsigned short ind, llEnd, NPad;
+
+          MetaDataChunkOfElem(surfElem, l, nSurfElem, nFaceSimul,
+                              nPadMin, lEnd, ind, llEnd, NPad);
 
           /* Get the required information from the corresponding standard face. */
-          const unsigned short ind   = surfElem[l].indStandardElement;
           const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
           const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
           const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
           const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
 
-          /* Easier storage of the DOFs of the face. */
-          const unsigned long *DOFs = surfElem[l].DOFsSolFace.data();
+          /* Set the pointers for the local work arrays. */
+          su2double *solInt    = VecTmpMemory.data();
+          su2double *workArray = solInt + NPad*nInt;
 
-          /* Copy the solution of the DOFs of the face such that it is
-             contiguous in memory. */
-          for(unsigned short i=0; i<nDOFs; ++i) {
-            const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
-            su2double       *sol    = solCopy + nVar*i;
-            memcpy(sol, solDOF, nBytes);
+          /* Loop over the faces that are treated simultaneously. */
+          for(unsigned short ll=0; ll<llEnd; ++ll) {
+            const unsigned short llNVar = ll*nVar;
+
+            /* Easier storage of the DOFs of the face. */
+            const unsigned long *DOFs = surfElem[l+ll].DOFsSolFace.data();
+
+            /* Copy the solution of the DOFs of the face such that it is
+               contiguous in memory. */
+            for(unsigned short i=0; i<nDOFs; ++i) {
+              const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+              su2double       *sol    = workArray + NPad*i + llNVar;
+              memcpy(sol, solDOF, nBytes);
+            }
           }
 
           /* Call the general function to carry out the matrix product to determine
              the solution in the integration points. */
           config->GEMM_Tick(&tick);
-          DenseMatrixProduct(nInt, nVar, nDOFs, basisFace, solCopy, solInt);
-          config->GEMM_Tock(tick, "Pressure_Forces", nInt, nVar, nDOFs);
+          DenseMatrixProduct(nInt, NPad, nDOFs, basisFace, workArray, solInt);
+          config->GEMM_Tock(tick, "Pressure_Forces", nInt, NPad, nDOFs);
 
-          /* Loop over the integration points of this surface element. */
-          for(unsigned short i=0; i<nInt; ++i) {
+          /* Make a distinction between two and three space dimensions
+             in order to have the most efficient code. */
+          switch( nDim ) {
 
-            /* Easier storage of the solution, the normals and the coordinates
-               for this integration point. */
-            const su2double *sol     = solInt + i*nVar;
-            const su2double *normals = surfElem[l].metricNormalsFace.data()
-                                     + i*(nDim+1);
-            const su2double *Coord   = surfElem[l].coorIntegrationPoints.data()
-                                     + i*nDim;
+            case 2: {
 
-            /*--- Compute the velocities and pressure in this integration point. ---*/
-            const su2double DensityInv = 1.0/sol[0];
-            su2double Velocity2 = 0.0;
-            for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-              const su2double vel = sol[iDim+1]*DensityInv;
-              Velocity2          += vel*vel;
+              /* Two dimensional simulation. Loop over the number of faces treated
+                 simultaneously. */
+              for(unsigned short ll=0; ll<llEnd; ++ll) {
+                const unsigned short llNVar = ll*nVar;
+                const unsigned long  lll    = l + ll;
+
+                /* Loop over the integration points of this surface element. */
+                for(unsigned short i=0; i<nInt; ++i) {
+
+                  /* Easier storage of the solution, the normals and the coordinates
+                     for this integration point. */
+                  const su2double *sol     = solInt + i*NPad + llNVar;
+                  const su2double *normals = surfElem[lll].metricNormalsFace.data()
+                                           + i*(nDim+1);
+                  const su2double *Coord   = surfElem[lll].coorIntegrationPoints.data()
+                                           + i*nDim;
+
+                  /*--- Compute the pressure in this integration point. ---*/
+                  const su2double DensityInv   = 1.0/sol[0];
+                  const su2double u            = sol[1]*DensityInv;
+                  const su2double v            = sol[2]*DensityInv;
+                  const su2double StaticEnergy = sol[3]*DensityInv - 0.5*(u*u + v*v);
+
+                  FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+                  const su2double Pressure = FluidModel->GetPressure();
+
+                  /*-- Compute the vector from the reference point to the integration
+                       point and update the inviscid force. Note that the normal points
+                       into the geometry, hence no minus sign. ---*/
+                  const su2double DistX = Coord[0] - Origin[0];
+                  const su2double DistY = Coord[1] - Origin[1];
+
+                  const su2double ForceMag = (Pressure - Pressure_Inf)*weights[i]
+                                           * normals[nDim]*factor;
+                  const su2double ForceX   = ForceMag*normals[0];
+                  const su2double ForceY   = ForceMag*normals[1];
+
+                  ForceInviscid[0] += ForceX;
+                  ForceInviscid[1] += ForceY;
+
+                  /*--- Update the inviscid moment. ---*/
+                  MomentInviscid[2] += (ForceY*DistX - ForceX*DistY)/RefLength;
+                }
+              }
+
+              break;
             }
 
-            su2double StaticEnergy = sol[nDim+1]*DensityInv - 0.5*Velocity2;
+            /*----------------------------------------------------------------*/
 
-            FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-            const su2double Pressure = FluidModel->GetPressure();
+            case 3: {
 
-            /*-- Compute the vector from the reference point to the integration
-                 point and update the inviscid force. Note that the normal points
-                 into the geometry, hence no minus sign. ---*/
-            su2double MomentDist[] = {0.0, 0.0, 0.0}, Force[] = {0.0, 0.0, 0.0};
-            const su2double forceMag = (Pressure - Pressure_Inf)*weights[i]
-                                     * normals[nDim]*factor;
+              /* Three dimensional simulation. Loop over the number of faces treated
+                 simultaneously. */
+              for(unsigned short ll=0; ll<llEnd; ++ll) {
+                const unsigned short llNVar = ll*nVar;
+                const unsigned long  lll    = l + ll;
 
-            for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-              MomentDist[iDim]     = Coord[iDim] - Origin[iDim];
-              Force[iDim]          = forceMag*normals[iDim];
-              ForceInviscid[iDim] += Force[iDim];
+                /* Loop over the integration points of this surface element. */
+                for(unsigned short i=0; i<nInt; ++i) {
+
+                  /* Easier storage of the solution, the normals and the coordinates
+                     for this integration point. */
+                  const su2double *sol     = solInt + i*NPad + llNVar;
+                  const su2double *normals = surfElem[lll].metricNormalsFace.data()
+                                           + i*(nDim+1);
+                  const su2double *Coord   = surfElem[lll].coorIntegrationPoints.data()
+                                           + i*nDim;
+
+                  /*--- Compute the pressure in this integration point. ---*/
+                  const su2double DensityInv   = 1.0/sol[0];
+                  const su2double u            = sol[1]*DensityInv;
+                  const su2double v            = sol[2]*DensityInv;
+                  const su2double w            = sol[3]*DensityInv;
+                  const su2double StaticEnergy = sol[4]*DensityInv - 0.5*(u*u + v*v + w*w);
+
+                  FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+                  const su2double Pressure = FluidModel->GetPressure();
+
+                  /*-- Compute the vector from the reference point to the integration
+                       point and update the inviscid force. Note that the normal points
+                       into the geometry, hence no minus sign. ---*/
+                  const su2double DistX = Coord[0] - Origin[0];
+                  const su2double DistY = Coord[1] - Origin[1];
+                  const su2double DistZ = Coord[2] - Origin[2];
+
+                  const su2double ForceMag = (Pressure - Pressure_Inf)*weights[i]
+                                           * normals[nDim]*factor;
+                  const su2double ForceX   = ForceMag*normals[0];
+                  const su2double ForceY   = ForceMag*normals[1];
+                  const su2double ForceZ   = ForceMag*normals[2];
+
+                  ForceInviscid[0] += ForceX;
+                  ForceInviscid[1] += ForceY;
+                  ForceInviscid[2] += ForceZ;
+
+                  /*--- Update the inviscid moment. ---*/
+                  MomentInviscid[0] += (ForceZ*DistY - ForceY*DistZ)/RefLength;
+                  MomentInviscid[1] += (ForceX*DistZ - ForceZ*DistX)/RefLength;
+                  MomentInviscid[2] += (ForceY*DistX - ForceX*DistY)/RefLength;
+                }
+              }
+
+              break;
             }
-
-            /*--- Update the inviscid moment. ---*/
-            if (nDim == 3) {
-              MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLength;
-              MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLength;
-            }
-            MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
           }
+
+          /* Update the value of the counter l to the end index of the
+             current chunk. */
+          l = lEnd;
         }
 
         /*--- Project forces and store the non-dimensional coefficients ---*/
@@ -9260,6 +9358,20 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
 
+  /* Determine the number of elements that are treated simultaneously
+     in the matrix products to obtain good gemm performance. */
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
+  const unsigned short nElemSimul = nPadInput/nVar;
+
+  /* Determine the minimum padded size in the matrix multiplications, which
+     corresponds to 64 byte alignment. */
+  const unsigned short nPadMin = 64/sizeof(passivedouble);
+
+  /* Initialization for the timing routines and set the number of bytes
+     that must be copied in the memcpy calls. */
+  double tick = 0.0;
+  const unsigned long nBytes = nVar*sizeof(su2double);
+
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
@@ -9278,266 +9390,328 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
 
     /*--- Loop over the owned volume elements and set the fixed dt. ---*/
-    for(unsigned long i=0; i<nVolElemOwned; ++i)
-      VecDeltaTime[i] = config->GetDelta_UnstTimeND();
+    for(unsigned long l=0; l<nVolElemOwned; ++l)
+      VecDeltaTime[l] = config->GetDelta_UnstTimeND();
 
   } else {
 
     /*--- Check for a compressible solver. ---*/
     if(config->GetKind_Regime() == COMPRESSIBLE) {
 
-      /*--- Loop over the owned volume elements. ---*/
-      for(unsigned long i=0; i<nVolElemOwned; ++i) {
+      /*--- Loop over the owned volume elements. Multiple elements are treated
+            simultaneously to improve the performance of the matrix
+            multiplications. As a consequence, the update of the counter l
+            happens at the end of this loop section. ---*/
+      for(unsigned long l=0; l<nVolElemOwned;) {
 
-        /* Determine the offset between the r-derivatives and s-derivatives, which is
-           also the offset between s- and t-derivatives, of the solution in the DOFs. */
-        const unsigned short offDerivSol = nVar*volElem[i].nDOFsSol;
+        /* Determine the end index for this chunk of elements and the padded
+           N value in the gemm computations. */
+        unsigned long lEnd;
+        unsigned short ind, llEnd, NPad;
 
-        /*--- Compute the length scale for this element. Note that in the
-              length scale the polynomial degree must be taken into account
-              for the high order element. ---*/
-        const unsigned short ind = volElem[i].indStandardElement;
+        MetaDataChunkOfElem(volElem, l, nVolElemOwned, nElemSimul, nPadMin,
+                            lEnd, ind, llEnd, NPad);
+
+        /* Get the required data from the corresponding standard element. */
+        const unsigned short nDOFs          = volElem[l].nDOFsSol;
+        const su2double *matDerBasisSolDOFs = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+
         unsigned short nPoly = standardElementsSol[ind].GetNPoly();
         if(nPoly == 0) nPoly = 1;
 
-        const su2double lenScaleInv = nPoly/volElem[i].lenScale;
-        const su2double lenScale    = 1.0/lenScaleInv;
+        /*--- Set the pointers for the local arrays. ---*/
+        su2double *solDOFs     = VecTmpMemory.data();
+        su2double *gradSolDOFs = solDOFs + nDOFs*NPad;
+
+        /* Determine the offset between the r-derivatives and s-derivatives, which is
+           also the offset between s- and t-derivatives, of the solution in the DOFs. */
+        const unsigned short offDerivSol = NPad*volElem[l].nDOFsSol;
 
         /*--- Compute the gradients of the conserved variables if a subgrid
               scale model for LES is used. ---*/
-        su2double *gradSolDOFs = VecTmpMemory.data();
         if( SGSModelUsed ) {
-          const unsigned short nDOFs          = volElem[i].nDOFsSol;
-          const su2double *matDerBasisSolDOFs = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
-          const su2double *sol                = VecSolDOFs.data() + nVar*volElem[i].offsetDOFsSolLocal;
 
-          DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+          /* Copy the solution of the DOFs into solDOFs for this chunk of elements. */
+          for(unsigned short ll=0; ll<llEnd; ++ll) {
+
+            /* Easier storage of the solution of this element. */
+            const unsigned long lInd = l + ll;
+            const su2double *sol = VecSolDOFs.data() + nVar*volElem[lInd].offsetDOFsSolLocal;
+
+            /* Loop over the DOFs and copy the data. */
+            const unsigned short llNVar = ll*nVar;
+            for(unsigned short i=0; i<nDOFs; ++i)
+              memcpy(solDOFs+i*NPad+llNVar, sol+i*nVar, nBytes);
+          }
+
+           /* Call the general function to carry out the matrix product to determine
+              the gradients in the DOFs of this chunk of elements. */
+           config->GEMM_Tick(&tick);
+           DenseMatrixProduct(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs,
+                              solDOFs, gradSolDOFs);
+           config->GEMM_Tock(tick, "SetTime_Step", nDOFs*nDim, NPad, nDOFs);
         }
-
-        su2double charVel2Max = 0.0, radViscMax = 0.0;
 
         /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
         switch( nDim ) {
 
           case 2: {
-            /*--- 2D simulation. Loop over the DOFs of this element
-                  and determine the maximum wave speed and the maximum
-                  value of the viscous spectral radius. ---*/
-            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-              const su2double *solDOF  = VecSolDOFs.data()
-                                       + nVar*(volElem[i].offsetDOFsSolLocal + j);
-              const su2double *gridVel = volElem[i].gridVelocitiesSolDOFs.data()
-                                       + j*nDim;
 
-              /* Compute the velocities and the internal energy per unit mass. */
-              const su2double DensityInv   = 1.0/solDOF[0];
-              const su2double u            = DensityInv*solDOF[1];
-              const su2double v            = DensityInv*solDOF[2];
-              const su2double StaticEnergy = DensityInv*solDOF[3] - 0.5*(u*u + v*v);
+            /*--- 2D simulation. Loop over the chunk of elements. ---*/
+            for(unsigned short ll=0; ll<llEnd; ++ll) {
+              const unsigned short llNVar = ll*nVar;
+              const unsigned long  lInd   = l + ll;
 
-              /*--- Compute the maximum value of the wave speed. This is a rather
-                    conservative estimate. ---*/
-              FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-              const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-              const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+              /* Compute the length scale of this element and initialize the
+                 inviscid and viscous spectral radii to zero. */
+              const su2double lenScaleInv = nPoly/volElem[lInd].lenScale;
+              const su2double lenScale    = 1.0/lenScaleInv;
 
-              const su2double radx     = fabs(u-gridVel[0]) + SoundSpeed;
-              const su2double rady     = fabs(v-gridVel[1]) + SoundSpeed;
-              const su2double charVel2 = radx*radx + rady*rady;
+              su2double charVel2Max = 0.0, radViscMax = 0.0;
 
-              charVel2Max = max(charVel2Max, charVel2);
+              /* Loop over the DOFs of the element to determine the time step. */
+              for(unsigned short i=0; i<nDOFs; ++i) {
+                const su2double *solDOF  = VecSolDOFs.data()
+                                         + nVar*(volElem[lInd].offsetDOFsSolLocal + i);
+                const su2double *gridVel = volElem[lInd].gridVelocitiesSolDOFs.data()
+                                         + i*nDim;
 
-              /* Compute the laminar kinematic viscosity and check if an eddy
-                 viscosity must be determined. */
-              const su2double muLam = FluidModel->GetLaminarViscosity();
-              su2double muTurb      = 0.0;
+                /* Compute the velocities and the internal energy per unit mass. */
+                const su2double DensityInv   = 1.0/solDOF[0];
+                const su2double u            = DensityInv*solDOF[1];
+                const su2double v            = DensityInv*solDOF[2];
+                const su2double StaticEnergy = DensityInv*solDOF[3] - 0.5*(u*u + v*v);
 
-              if( SGSModelUsed ) {
+                /*--- Compute the maximum value of the wave speed. This is a rather
+                      conservative estimate. ---*/
+                FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+                const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+                const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
 
-                /* Set the pointers to the locations where the gradients
-                   of this DOF start. */
-                const su2double *solDOFDr = gradSolDOFs + j*nVar;
-                const su2double *solDOFDs = solDOFDr    + offDerivSol;
+                const su2double radx     = fabs(u-gridVel[0]) + SoundSpeed;
+                const su2double rady     = fabs(v-gridVel[1]) + SoundSpeed;
+                const su2double charVel2 = radx*radx + rady*rady;
 
-                /* Compute the true value of the metric terms in this DOF. Note that in
-                   metricTerms the metric terms scaled by the Jacobian are stored. */
-                const su2double *metricTerms = volElem[i].metricTermsSolDOFs.data()
-                                             + j*nMetricPerPoint;
-                const su2double JacInv       = 1.0/metricTerms[0];
+                charVel2Max = max(charVel2Max, charVel2);
 
-                const su2double drdx = JacInv*metricTerms[1];
-                const su2double drdy = JacInv*metricTerms[2];
+                /* Compute the laminar kinematic viscosity and check if an eddy
+                   viscosity must be determined. */
+                const su2double muLam = FluidModel->GetLaminarViscosity();
+                su2double muTurb      = 0.0;
 
-                const su2double dsdx = JacInv*metricTerms[3];
-                const su2double dsdy = JacInv*metricTerms[4];
+                if( SGSModelUsed ) {
 
-                /*--- Compute the Cartesian gradients of the independent solution
-                      variables from the gradients in parametric coordinates and the metric
-                      terms in this DOF. ---*/
-                su2double solGradCart[3][2];
+                  /* Set the pointers to the locations where the gradients
+                     of this DOF start. */
+                  const su2double *solDOFDr = gradSolDOFs + i*NPad + llNVar;
+                  const su2double *solDOFDs = solDOFDr    + offDerivSol;
 
-                solGradCart[0][0] = solDOFDr[0]*drdx + solDOFDs[0]*dsdx;
-                solGradCart[1][0] = solDOFDr[1]*drdx + solDOFDs[1]*dsdx;
-                solGradCart[2][0] = solDOFDr[2]*drdx + solDOFDs[2]*dsdx;
+                  /* Compute the true value of the metric terms in this DOF. Note that in
+                     metricTerms the metric terms scaled by the Jacobian are stored. */
+                  const su2double *metricTerms = volElem[lInd].metricTermsSolDOFs.data()
+                                               + i*nMetricPerPoint;
+                  const su2double JacInv       = 1.0/metricTerms[0];
 
-                solGradCart[0][1] = solDOFDr[0]*drdy + solDOFDs[0]*dsdy;
-                solGradCart[1][1] = solDOFDr[1]*drdy + solDOFDs[1]*dsdy;
-                solGradCart[2][1] = solDOFDr[2]*drdy + solDOFDs[2]*dsdy;
+                  const su2double drdx = JacInv*metricTerms[1];
+                  const su2double drdy = JacInv*metricTerms[2];
 
-                /*--- Compute the Cartesian gradients of the velocities. ---*/
-                const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
-                const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
-                const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
-                const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+                  const su2double dsdx = JacInv*metricTerms[3];
+                  const su2double dsdy = JacInv*metricTerms[4];
 
-                /* Compute the eddy viscosity. */
-                const su2double dist = volElem[i].wallDistanceSolDOFs[j];
-                muTurb = SGSModel->ComputeEddyViscosity_2D(solDOF[0], dudx, dudy,
-                                                           dvdx, dvdy, lenScale,
-                                                           dist);
+                  /*--- Compute the Cartesian gradients of the independent solution
+                        variables from the gradients in parametric coordinates and the metric
+                        terms in this DOF. ---*/
+                  const su2double drhodx = solDOFDr[0]*drdx + solDOFDs[0]*dsdx;
+                  const su2double drudx  = solDOFDr[1]*drdx + solDOFDs[1]*dsdx;
+                  const su2double drvdx  = solDOFDr[2]*drdx + solDOFDs[2]*dsdx;
+
+                  const su2double drhody = solDOFDr[0]*drdy + solDOFDs[0]*dsdy;
+                  const su2double drudy  = solDOFDr[1]*drdy + solDOFDs[1]*dsdy;
+                  const su2double drvdy  = solDOFDr[2]*drdy + solDOFDs[2]*dsdy;
+
+                  /*--- Compute the Cartesian gradients of the velocities. ---*/
+                  const su2double dudx = DensityInv*(drudx - u*drhodx);
+                  const su2double dvdx = DensityInv*(drvdx - v*drhodx);
+                  const su2double dudy = DensityInv*(drudy - u*drhody);
+                  const su2double dvdy = DensityInv*(drvdy - v*drhody);
+
+                  /* Compute the eddy viscosity. */
+                  const su2double dist = volElem[lInd].wallDistanceSolDOFs[i];
+                  muTurb = SGSModel->ComputeEddyViscosity_2D(solDOF[0], dudx, dudy,
+                                                             dvdx, dvdy, lenScale,
+                                                             dist);
+                }
+
+                /*--- Determine the viscous spectral radius. ---*/
+                const su2double mu           = muLam + muTurb;
+                const su2double kOverCv      = muLam*factHeatFlux_Lam
+                                             + muTurb*factHeatFlux_Turb;
+                const su2double factHeatFlux = kOverCv/mu;
+
+                const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+
+                /* Update the maximum value of the viscous spectral radius. */
+                radViscMax = max(radViscMax, radVisc);
               }
 
-              /*--- Determine the viscous spectral radius. ---*/
-              const su2double mu           = muLam + muTurb;
-              const su2double kOverCv      = muLam*factHeatFlux_Lam
-                                           + muTurb*factHeatFlux_Turb;
-              const su2double factHeatFlux = kOverCv/mu;
+              /*--- Compute the time step for the element and update the minimum and
+                    maximum value. Take the factor for time accurate local time
+                    stepping into account for the minimum and maximum. ---*/
+              const su2double dtInv = lenScaleInv*(sqrt(charVel2Max) + radViscMax*lenScaleInv);
 
-              const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+              VecDeltaTime[lInd] = CFL/dtInv;
 
-              /* Update the maximum value of the viscous spectral radius. */
-              radViscMax = max(radViscMax, radVisc);
+              const su2double dtEff = volElem[lInd].factTimeLevel*VecDeltaTime[lInd];
+              Min_Delta_Time = min(Min_Delta_Time, dtEff);
+              Max_Delta_Time = max(Max_Delta_Time, dtEff);
             }
 
             break;
           }
 
+          /*------------------------------------------------------------------*/
+
           case 3: {
-            /*--- 3D simulation. Loop over the DOFs of this element
-                  and determine the maximum wave speed and the maximum
-                  value of the viscous spectral radius. ---*/
-            for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-              const su2double *solDOF  = VecSolDOFs.data()
-                                       + nVar*(volElem[i].offsetDOFsSolLocal + j);
-              const su2double *gridVel = volElem[i].gridVelocitiesSolDOFs.data()
-                                       + j*nDim;
 
-              /* Compute the velocities and the internal energy per unit mass. */
-              const su2double DensityInv   = 1.0/solDOF[0];
-              const su2double u            = DensityInv*solDOF[1];
-              const su2double v            = DensityInv*solDOF[2];
-              const su2double w            = DensityInv*solDOF[3];
-              const su2double StaticEnergy = DensityInv*solDOF[4] - 0.5*(u*u + v*v + w*w);
+            /*--- 3D simulation. Loop over the chunk of elements. ---*/
+            for(unsigned short ll=0; ll<llEnd; ++ll) {
+              const unsigned short llNVar = ll*nVar;
+              const unsigned long  lInd   = l + ll;
 
-              /*--- Compute the maximum value of the wave speed. This is a rather
-                    conservative estimate. ---*/
-              FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-              const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-              const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+              /* Compute the length scale of this element and initialize the
+                 inviscid and viscous spectral radii to zero. */
+              const su2double lenScaleInv = nPoly/volElem[lInd].lenScale;
+              const su2double lenScale    = 1.0/lenScaleInv;
 
-              const su2double radx     = fabs(u-gridVel[0]) + SoundSpeed;
-              const su2double rady     = fabs(v-gridVel[1]) + SoundSpeed;
-              const su2double radz     = fabs(w-gridVel[2]) + SoundSpeed;
-              const su2double charVel2 = radx*radx + rady*rady + radz*radz;
+              su2double charVel2Max = 0.0, radViscMax = 0.0;
 
-              charVel2Max = max(charVel2Max, charVel2);
+              /* Loop over the DOFs of the element to determine the time step. */
+              for(unsigned short i=0; i<nDOFs; ++i) {
+                const su2double *solDOF  = VecSolDOFs.data()
+                                         + nVar*(volElem[lInd].offsetDOFsSolLocal + i);
+                const su2double *gridVel = volElem[lInd].gridVelocitiesSolDOFs.data()
+                                         + i*nDim;
 
-              /* Compute the laminar kinematic viscosity and check if an eddy
-                 viscosity must be determined. */
-              const su2double muLam = FluidModel->GetLaminarViscosity();
-              su2double muTurb      = 0.0;
+                /* Compute the velocities and the internal energy per unit mass. */
+                const su2double DensityInv   = 1.0/solDOF[0];
+                const su2double u            = DensityInv*solDOF[1];
+                const su2double v            = DensityInv*solDOF[2];
+                const su2double w            = DensityInv*solDOF[3];
+                const su2double StaticEnergy = DensityInv*solDOF[4] - 0.5*(u*u + v*v + w*w);
 
-              if( SGSModelUsed ) {
+                /*--- Compute the maximum value of the wave speed. This is a rather
+                      conservative estimate. ---*/
+                FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+                const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+                const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
 
-                /* Set the pointers to the locations where the gradients
-                   of this DOF start. */
-                const su2double *solDOFDr = gradSolDOFs + j*nVar;
-                const su2double *solDOFDs = solDOFDr    + offDerivSol;
-                const su2double *solDOFDt = solDOFDs    + offDerivSol;
+                const su2double radx     = fabs(u-gridVel[0]) + SoundSpeed;
+                const su2double rady     = fabs(v-gridVel[1]) + SoundSpeed;
+                const su2double radz     = fabs(w-gridVel[2]) + SoundSpeed;
+                const su2double charVel2 = radx*radx + rady*rady + radz*radz;
 
-                /* Compute the true value of the metric terms in this DOF. Note that in
-                   metricTerms the metric terms scaled by the Jacobian are stored. */
-                const su2double *metricTerms = volElem[i].metricTermsSolDOFs.data()
-                                             + j*nMetricPerPoint;
-                const su2double JacInv       = 1.0/metricTerms[0];
+                charVel2Max = max(charVel2Max, charVel2);
 
-                const su2double drdx = JacInv*metricTerms[1];
-                const su2double drdy = JacInv*metricTerms[2];
-                const su2double drdz = JacInv*metricTerms[3];
+                /* Compute the laminar kinematic viscosity and check if an eddy
+                   viscosity must be determined. */
+                const su2double muLam = FluidModel->GetLaminarViscosity();
+                su2double muTurb      = 0.0;
 
-                const su2double dsdx = JacInv*metricTerms[4];
-                const su2double dsdy = JacInv*metricTerms[5];
-                const su2double dsdz = JacInv*metricTerms[6];
+                if( SGSModelUsed ) {
 
-                const su2double dtdx = JacInv*metricTerms[7];
-                const su2double dtdy = JacInv*metricTerms[8];
-                const su2double dtdz = JacInv*metricTerms[9];
+                  /* Set the pointers to the locations where the gradients
+                     of this DOF start. */
+                  const su2double *solDOFDr = gradSolDOFs + i*NPad + llNVar;
+                  const su2double *solDOFDs = solDOFDr    + offDerivSol;
+                  const su2double *solDOFDt = solDOFDs    + offDerivSol;
 
-                /*--- Compute the Cartesian gradients of the independent solution
-                      variables from the gradients in parametric coordinates and the metric
-                      terms in this DOF. ---*/
-                su2double solGradCart[4][3];
+                  /* Compute the true value of the metric terms in this DOF. Note that in
+                     metricTerms the metric terms scaled by the Jacobian are stored. */
+                  const su2double *metricTerms = volElem[lInd].metricTermsSolDOFs.data()
+                                               + i*nMetricPerPoint;
+                  const su2double JacInv       = 1.0/metricTerms[0];
 
-                solGradCart[0][0] = solDOFDr[0]*drdx + solDOFDs[0]*dsdx + solDOFDt[0]*dtdx;
-                solGradCart[1][0] = solDOFDr[1]*drdx + solDOFDs[1]*dsdx + solDOFDt[1]*dtdx;
-                solGradCart[2][0] = solDOFDr[2]*drdx + solDOFDs[2]*dsdx + solDOFDt[2]*dtdx;
-                solGradCart[3][0] = solDOFDr[3]*drdx + solDOFDs[3]*dsdx + solDOFDt[3]*dtdx;
+                  const su2double drdx = JacInv*metricTerms[1];
+                  const su2double drdy = JacInv*metricTerms[2];
+                  const su2double drdz = JacInv*metricTerms[3];
 
-                solGradCart[0][1] = solDOFDr[0]*drdy + solDOFDs[0]*dsdy + solDOFDt[0]*dtdy;
-                solGradCart[1][1] = solDOFDr[1]*drdy + solDOFDs[1]*dsdy + solDOFDt[1]*dtdy;
-                solGradCart[2][1] = solDOFDr[2]*drdy + solDOFDs[2]*dsdy + solDOFDt[2]*dtdy;
-                solGradCart[3][1] = solDOFDr[3]*drdy + solDOFDs[3]*dsdy + solDOFDt[3]*dtdy;
+                  const su2double dsdx = JacInv*metricTerms[4];
+                  const su2double dsdy = JacInv*metricTerms[5];
+                  const su2double dsdz = JacInv*metricTerms[6];
 
-                solGradCart[0][2] = solDOFDr[0]*drdz + solDOFDs[0]*dsdz + solDOFDt[0]*dtdz;
-                solGradCart[1][2] = solDOFDr[1]*drdz + solDOFDs[1]*dsdz + solDOFDt[1]*dtdz;
-                solGradCart[2][2] = solDOFDr[2]*drdz + solDOFDs[2]*dsdz + solDOFDt[2]*dtdz;
-                solGradCart[3][2] = solDOFDr[3]*drdz + solDOFDs[3]*dsdz + solDOFDt[3]*dtdz;
+                  const su2double dtdx = JacInv*metricTerms[7];
+                  const su2double dtdy = JacInv*metricTerms[8];
+                  const su2double dtdz = JacInv*metricTerms[9];
 
-                /*--- Compute the Cartesian gradients of the velocities. ---*/
-                const su2double dudx = DensityInv*(solGradCart[1][0] - u*solGradCart[0][0]);
-                const su2double dudy = DensityInv*(solGradCart[1][1] - u*solGradCart[0][1]);
-                const su2double dudz = DensityInv*(solGradCart[1][2] - u*solGradCart[0][2]);
+                  /*--- Compute the Cartesian gradients of the independent solution
+                        variables from the gradients in parametric coordinates and the metric
+                        terms in this DOF. ---*/
+                  const su2double drhodx = solDOFDr[0]*drdx + solDOFDs[0]*dsdx + solDOFDt[0]*dtdx;
+                  const su2double drux   = solDOFDr[1]*drdx + solDOFDs[1]*dsdx + solDOFDt[1]*dtdx;
+                  const su2double drvx   = solDOFDr[2]*drdx + solDOFDs[2]*dsdx + solDOFDt[2]*dtdx;
+                  const su2double drwx   = solDOFDr[3]*drdx + solDOFDs[3]*dsdx + solDOFDt[3]*dtdx;
 
-                const su2double dvdx = DensityInv*(solGradCart[2][0] - v*solGradCart[0][0]);
-                const su2double dvdy = DensityInv*(solGradCart[2][1] - v*solGradCart[0][1]);
-                const su2double dvdz = DensityInv*(solGradCart[2][2] - v*solGradCart[0][2]);
+                  const su2double drhody = solDOFDr[0]*drdy + solDOFDs[0]*dsdy + solDOFDt[0]*dtdy;
+                  const su2double druy   = solDOFDr[1]*drdy + solDOFDs[1]*dsdy + solDOFDt[1]*dtdy;
+                  const su2double drvy   = solDOFDr[2]*drdy + solDOFDs[2]*dsdy + solDOFDt[2]*dtdy;
+                  const su2double drwy   = solDOFDr[3]*drdy + solDOFDs[3]*dsdy + solDOFDt[3]*dtdy;
 
-                const su2double dwdx = DensityInv*(solGradCart[3][0] - w*solGradCart[0][0]);
-                const su2double dwdy = DensityInv*(solGradCart[3][1] - w*solGradCart[0][1]);
-                const su2double dwdz = DensityInv*(solGradCart[3][2] - w*solGradCart[0][2]);
+                  const su2double drhodz = solDOFDr[0]*drdz + solDOFDs[0]*dsdz + solDOFDt[0]*dtdz;
+                  const su2double druz   = solDOFDr[1]*drdz + solDOFDs[1]*dsdz + solDOFDt[1]*dtdz;
+                  const su2double drvz   = solDOFDr[2]*drdz + solDOFDs[2]*dsdz + solDOFDt[2]*dtdz;
+                  const su2double drwz   = solDOFDr[3]*drdz + solDOFDs[3]*dsdz + solDOFDt[3]*dtdz;
 
-                /* Compute the eddy viscosity. */
-                const su2double dist = volElem[i].wallDistanceSolDOFs[j];
-                muTurb = SGSModel->ComputeEddyViscosity_3D(solDOF[0], dudx, dudy, dudz,
-                                                           dvdx, dvdy, dvdz, dwdx, dwdy,
-                                                           dwdz, lenScale, dist);
+                  /*--- Compute the Cartesian gradients of the velocities. ---*/
+                  const su2double dudx = DensityInv*(drux - u*drhodx);
+                  const su2double dudy = DensityInv*(druy - u*drhody);
+                  const su2double dudz = DensityInv*(druz - u*drhodz);
+
+                  const su2double dvdx = DensityInv*(drvx - v*drhodx);
+                  const su2double dvdy = DensityInv*(drvy - v*drhody);
+                  const su2double dvdz = DensityInv*(drvz - v*drhodz);
+
+                  const su2double dwdx = DensityInv*(drwx - w*drhodx);
+                  const su2double dwdy = DensityInv*(drwy - w*drhody);
+                  const su2double dwdz = DensityInv*(drwz - w*drhodz);
+
+                  /* Compute the eddy viscosity. */
+                  const su2double dist = volElem[lInd].wallDistanceSolDOFs[i];
+                  muTurb = SGSModel->ComputeEddyViscosity_3D(solDOF[0], dudx, dudy, dudz,
+                                                             dvdx, dvdy, dvdz, dwdx, dwdy,
+                                                             dwdz, lenScale, dist);
+                }
+
+                /*--- Determine the viscous spectral radius. ---*/
+                const su2double mu           = muLam + muTurb;
+                const su2double kOverCv      = muLam*factHeatFlux_Lam
+                                             + muTurb*factHeatFlux_Turb;
+                const su2double factHeatFlux = kOverCv/mu;
+
+                const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+
+                /* Update the maximum value of the viscous spectral radius. */
+                radViscMax = max(radViscMax, radVisc);
               }
 
-              /*--- Determine the viscous spectral radius. ---*/
-              const su2double mu           = muLam + muTurb;
-              const su2double kOverCv      = muLam*factHeatFlux_Lam
-                                           + muTurb*factHeatFlux_Turb;
-              const su2double factHeatFlux = kOverCv/mu;
+              /*--- Compute the time step for the element and update the minimum and
+                    maximum value. Take the factor for time accurate local time
+                    stepping into account for the minimum and maximum. ---*/
+              const su2double dtInv = lenScaleInv*(sqrt(charVel2Max) + radViscMax*lenScaleInv);
 
-              const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+              VecDeltaTime[lInd] = CFL/dtInv;
 
-              /* Update the maximum value of the viscous spectral radius. */
-              radViscMax = max(radViscMax, radVisc);
+              const su2double dtEff = volElem[lInd].factTimeLevel*VecDeltaTime[lInd];
+              Min_Delta_Time = min(Min_Delta_Time, dtEff);
+              Max_Delta_Time = max(Max_Delta_Time, dtEff);
             }
 
             break;
           }
         }
 
-        /*--- Compute the time step for the element and update the minimum and
-              maximum value. Take the factor for time accurate local time
-              stepping into account for the minimum and maximum. ---*/
-        const su2double dtInv = lenScaleInv*(sqrt(charVel2Max) + radViscMax*lenScaleInv);
-
-        VecDeltaTime[i] = CFL/dtInv;
-
-        Min_Delta_Time = min(Min_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
-        Max_Delta_Time = max(Max_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
+        /* Update the value of the counter l to the end index of the
+           current chunk. */
+        l = lEnd;
       }
     }
     else {
@@ -9548,7 +9722,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     }
 
     /*--- Compute the max and the min dt (in parallel). Note that we only
-     so this for steady calculations if the high verbosity is set, but we
+     do this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
      limit is used to set the global time step. ---*/
     if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
@@ -9566,8 +9740,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
           the time step of the largest time level, a correction must be used
           for the time level when time accurate local time stepping is used. ---*/
     if (time_stepping) {
-      for(unsigned long i=0; i<nVolElemOwned; ++i)
-        VecDeltaTime[i] = Min_Delta_Time/volElem[i].factTimeLevel;
+      for(unsigned long l=0; l<nVolElemOwned; ++l)
+        VecDeltaTime[l] = Min_Delta_Time/volElem[l].factTimeLevel;
     }
   }
 }
@@ -13532,7 +13706,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
-     corresponds to 64 byte alignment. */ 
+     corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
   /*--- Loop over the requested range of surface faces. Multiple faces
@@ -13540,30 +13714,30 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
         multiplications. As a consequence, the update of the counter l
         happens at the end of this loop section. ---*/
   for(unsigned long l=surfElemBeg; l<surfElemEnd;) {
-    
+
     /* Determine the end index for this chunk of faces and the padded
        N value in the gemm computations. */
-    unsigned long lEnd; 
+    unsigned long lEnd;
     unsigned short ind, llEnd, NPad;
 
     MetaDataChunkOfElem(surfElem, l, surfElemEnd, nFaceSimul,
                         nPadMin, lEnd, ind, llEnd, NPad);
-    
+
     /*--- Get the information from the standard element, which is the same
           for all the faces in the chunks considered. ---*/
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-    
+
     /*--- Set the pointers for the local arrays. ---*/
     su2double *solIntL   = VecTmpMemory.data();
     su2double *solIntR   = solIntL      + NPad*nInt;
     su2double *workArray = solIntR + NPad*nInt;
-    
+
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             workArray, solIntL);
-    
+
     /* Compute the right state by applying the subsonic outlet BC's. */
     BoundaryStates_Outlet(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
 
@@ -13607,7 +13781,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
-     corresponds to 64 byte alignment. */ 
+     corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
   /*--- Loop over the requested range of surface faces. Multiple faces
@@ -13615,30 +13789,30 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
         multiplications. As a consequence, the update of the counter l
         happens at the end of this loop section. ---*/
   for(unsigned long l=surfElemBeg; l<surfElemEnd;) {
-    
+
     /* Determine the end index for this chunk of faces and the padded
        N value in the gemm computations. */
-    unsigned long lEnd; 
+    unsigned long lEnd;
     unsigned short ind, llEnd, NPad;
 
     MetaDataChunkOfElem(surfElem, l, surfElemEnd, nFaceSimul,
                         nPadMin, lEnd, ind, llEnd, NPad);
-    
+
     /*--- Get the information from the standard element, which is the same
           for all the faces in the chunks considered. ---*/
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
-    
+
     /*--- Set the pointers for the local arrays. ---*/
     su2double *solIntL   = VecTmpMemory.data();
     su2double *solIntR   = solIntL      + NPad*nInt;
     su2double *workArray = solIntR + NPad*nInt;
-    
+
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             workArray, solIntL);
-    
+
     /*--- Loop over the number of faces in this chunk and the number of
           integration points and apply the heat flux wall boundary conditions
           to compute the right state. There are two options. Either the velocity
@@ -13790,7 +13964,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
     /* Update the value of the counter l to the end index of the
        current chunk. */
     l = lEnd;
-  }    
+  }
 }
 
 void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
