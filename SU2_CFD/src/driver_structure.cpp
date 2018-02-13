@@ -2835,7 +2835,7 @@ void CDriver::TurbomachineryPreprocessing(){
 
   /*--- Create turbovertex structure ---*/
   if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone-fsi; iZone++) {
     if (config_container[iZone]->GetBoolTurbomachinery()){
       geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
       geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
@@ -2852,7 +2852,7 @@ void CDriver::TurbomachineryPreprocessing(){
   }
 
   /*--- Set maximum number of Span among all zones ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone-fsi; iZone++) {
     if (config_container[iZone]->GetBoolTurbomachinery()){
       config_container[iZone]->SetnSpanMaxAllZones(nSpanMax);
     }
@@ -2861,13 +2861,13 @@ void CDriver::TurbomachineryPreprocessing(){
 
 
   if (rank == MASTER_NODE) cout<<"Initialize solver containers for average and performance quantities." << endl;
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone-fsi; iZone++) {
     solver_container[iZone][MESH_0][FLOW_SOL]->InitTurboContainers(geometry_container[iZone][MESH_0],config_container[iZone]);
   }
 
 //TODO(turbo) make it general for turbo HB
   if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone-fsi; iZone++) {
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
@@ -2886,18 +2886,18 @@ void CDriver::TurbomachineryPreprocessing(){
   }
 
   if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
-  for (iZone = 1; iZone < nZone; iZone++) {
+  for (iZone = 1; iZone < nZone-fsi; iZone++) {
     transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
   }
 
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
-  for (iZone = 1; iZone < nZone; iZone++) {
+  for (iZone = 1; iZone < nZone-fsi; iZone++) {
     nBlades = config_container[iZone]->GetnBlades(iZone);
     config_container[ZONE_0]->SetnBlades(iZone, nBlades);
   }
 
   if (rank == MASTER_NODE){
-    for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nZone-fsi; iZone++) {
     areaIn  = geometry_container[iZone][MESH_0]->GetSpanAreaIn(iZone, config_container[iZone]->GetnSpanWiseSections());
     areaOut = geometry_container[iZone][MESH_0]->GetSpanAreaOut(iZone, config_container[iZone]->GetnSpanWiseSections());
     nBlades = config_container[iZone]->GetnBlades(iZone);
@@ -2926,13 +2926,13 @@ void CDriver::TurbomachineryPreprocessing(){
 
   if(!restart && !discrete_adjoint){
     if (rank == MASTER_NODE) cout<<"Initialize turbomachinery solution quantities." << endl;
-    for(iZone = 0; iZone < nZone; iZone++) {
+    for(iZone = 0; iZone < nZone-fsi; iZone++) {
       solver_container[iZone][MESH_0][FLOW_SOL]->SetFreeStream_TurboSolution(config_container[iZone]);
     }
   }
 
   if (rank == MASTER_NODE) cout<<"Initialize inflow and outflow average solution quantities." << endl;
-  for(iZone = 0; iZone < nZone; iZone++) {
+  for(iZone = 0; iZone < nZone-fsi; iZone++) {
     solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
     solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
     solver_container[iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
@@ -4653,7 +4653,6 @@ void CFSIDriver::Run() {
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
-
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool stat_fsi = ((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == STEADY) && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == STATIC));
   bool dyn_fsi = (((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND))
@@ -4689,7 +4688,6 @@ void CFSIDriver::Run() {
   /*-----------------------------------------------------------------*/
 
   Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
-
   while (FSIIter < nFSIIter) {
 
     /*-----------------------------------------------------------------*/
