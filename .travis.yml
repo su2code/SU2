@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - thomas.economon@gmail.com
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - release_v6.0.0
+        - develop
 
 python:
     - 2.7
