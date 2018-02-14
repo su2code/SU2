@@ -215,7 +215,7 @@ def main():
     tutorial_design_inv_oneram6.cfg_dir    = "../Tutorials/Inviscid_3D_Constrained_ONERAM6"
     tutorial_design_inv_oneram6.cfg_file   = "inv_ONERAM6_adv.cfg"
     tutorial_design_inv_oneram6.no_restart = True
-    tutorial_design_inv_oneram6.test_iter  = 0
+    tutorial_design_inv_oneram6.test_iter  = 1
     tutorial_design_inv_oneram6.test_vals  = [-5.207843, -4.606508, 0.279763, 0.154207] #last 4 columns
     tutorial_design_inv_oneram6.su2_exec   = "parallel_computation.py -f"
     tutorial_design_inv_oneram6.timeout    = 1600

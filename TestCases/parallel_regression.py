@@ -1002,7 +1002,7 @@ def main():
     tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/Turbulent_2D_Constrained_RAE2822"
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
-    tutorial_design_turb_rae2822.test_vals  = [-3.585391, -2.989014, 0.095581, 0.174421] #last 4 columns
+    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.931315, 0.293884, 0.331019] #last 4 columns
     tutorial_design_turb_rae2822.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_turb_rae2822.timeout    = 1600
     tutorial_design_turb_rae2822.tol        = 0.00001
@@ -1014,7 +1014,7 @@ def main():
     tutorial_design_multiobj.cfg_dir    = "../Tutorials/Multi_Objective_Shape_Design"
     tutorial_design_multiobj.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
     tutorial_design_multiobj.test_iter  = 0
-    tutorial_design_multiobj.test_vals  = [-5.207843, -4.606508, 0.279763, 0.154207] #last 4 columns
+    tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 324840.000000, 0.000000] #last 4 columns
     tutorial_design_multiobj.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_multiobj.timeout    = 1600
     tutorial_design_multiobj.tol        = 0.00001
