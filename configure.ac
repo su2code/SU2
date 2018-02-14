@@ -45,7 +45,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [5.0.0], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [6.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -561,7 +561,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 6.0.0 'Falcon'                             |
+|   / __| | | |_  )   Release 6.0.0 'Falcon'                            |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
