@@ -4878,7 +4878,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   MinRelAngularCoord                = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-    nSpanSectionsByMarker[iMarker]  = NULL;
+    nSpanSectionsByMarker[iMarker]  = 0;
     nVertexSpan[iMarker]            = NULL;
     nTotVertexSpan[iMarker]         = NULL;
     turbovertex[iMarker]            = NULL;
@@ -5024,12 +5024,15 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     delete [] TurboRadiusOut;
   }
 
-  /*--- Free up memory from turbomachinery computations  ---*/
+  /*--- Free up memory from turbomachinery computations
+   * If there are send/receive boundaries, nMarker isn't the same number
+   * as in the constructor. There must be an explicit check to ensure
+   * that iMarker doesn't point us to memory that was never allocated. ---*/
 
   unsigned short iSpan, iVertex;
   if (turbovertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (turbovertex[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && turbovertex[iMarker] != NULL) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++) {
           if (turbovertex[iMarker][iSpan] != NULL) {
             for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++)
@@ -5045,7 +5048,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   }
   if (AverageTurboNormal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (AverageTurboNormal[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageTurboNormal[iMarker] != NULL) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageTurboNormal[iMarker][iSpan];
         delete [] AverageTurboNormal[iMarker];
@@ -5055,7 +5058,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   }
   if (AverageNormal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (AverageNormal[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageNormal[iMarker] != NULL) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageNormal[iMarker][iSpan];
         delete [] AverageNormal[iMarker];
@@ -5065,7 +5068,7 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   }
   if (AverageGridVel != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (AverageGridVel[iMarker] != NULL) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageGridVel[iMarker] != NULL) {
         for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
           delete [] AverageGridVel[iMarker][iSpan];
         delete [] AverageGridVel[iMarker];
@@ -5076,32 +5079,38 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
 
   if (AverageTangGridVel != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (AverageTangGridVel[iMarker] != NULL) delete [] AverageTangGridVel[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageTangGridVel[iMarker] != NULL)
+        delete [] AverageTangGridVel[iMarker];
     delete [] AverageTangGridVel;
   }
   if (SpanArea != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (SpanArea[iMarker] != NULL) delete [] SpanArea[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && SpanArea[iMarker] != NULL)
+        delete [] SpanArea[iMarker];
     delete [] SpanArea;
   }
   if (TurboRadius != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (TurboRadius[iMarker] != NULL) delete [] TurboRadius[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && TurboRadius[iMarker] != NULL)
+        delete [] TurboRadius[iMarker];
     delete [] TurboRadius;
   }
   if (MaxAngularCoord != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (MaxAngularCoord[iMarker] != NULL) delete [] MaxAngularCoord[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && MaxAngularCoord[iMarker] != NULL)
+        delete [] MaxAngularCoord[iMarker];
     delete [] MaxAngularCoord;
   }
   if (MinAngularCoord != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (MinAngularCoord[iMarker] != NULL) delete [] MinAngularCoord[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && MinAngularCoord[iMarker] != NULL)
+        delete [] MinAngularCoord[iMarker];
     delete [] MinAngularCoord;
   }
   if (MinRelAngularCoord != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (MinRelAngularCoord[iMarker] != NULL) delete [] MinRelAngularCoord[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && MinRelAngularCoord[iMarker] != NULL)
+        delete [] MinRelAngularCoord[iMarker];
     delete [] MinRelAngularCoord;
   }
 
@@ -5109,17 +5118,20 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   if (nSpanSectionsByMarker != NULL) delete [] nSpanSectionsByMarker;
   if (SpanWiseValue != NULL) {
     for (iMarker = 0; iMarker < 2; iMarker++)
-      if (SpanWiseValue[iMarker] != NULL) delete [] SpanWiseValue[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && SpanWiseValue[iMarker] != NULL)
+        delete [] SpanWiseValue[iMarker];
     delete [] SpanWiseValue;
   }
   if (nVertexSpan != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (nVertexSpan[iMarker] != NULL) delete [] nVertexSpan[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && nVertexSpan[iMarker] != NULL)
+        delete [] nVertexSpan[iMarker];
     delete [] nVertexSpan;
   }
   if (nTotVertexSpan != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (nTotVertexSpan[iMarker] != NULL) delete [] nTotVertexSpan[iMarker];
+      if (Marker_All_SendRecv[iMarker] == 0 && nTotVertexSpan[iMarker] != NULL)
+        delete [] nTotVertexSpan[iMarker];
     delete [] nTotVertexSpan;
   }
 
