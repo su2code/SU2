@@ -15205,7 +15205,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
       field_buf.append("\"");
-      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
