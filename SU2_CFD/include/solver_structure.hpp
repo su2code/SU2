@@ -4369,6 +4369,7 @@ protected:
   bool AoA_FD_Change;
   unsigned long BCThrust_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
+  unsigned short nSpanMax; /*!< \brief Max number of maximum span-wise sections for all zones */
   unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
