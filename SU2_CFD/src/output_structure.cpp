@@ -319,7 +319,6 @@ COutput::~COutput(void) {
       delete [] TotalStaticEfficiency[iMarker];
       delete [] TotalTotalEfficiency [iMarker];
       delete [] KineticEnergyLoss    [iMarker];
-      delete [] TRadius              [iMarker];
       delete [] TotalPressureLoss    [iMarker];
       delete [] MassFlowIn           [iMarker];
       delete [] MassFlowOut          [iMarker];
@@ -336,7 +335,6 @@ COutput::~COutput(void) {
       delete [] FlowAngleIn_BC       [iMarker];
       delete [] EntropyIn            [iMarker];
       delete [] EntropyIn_BC         [iMarker];
-      delete [] EntropyOut           [iMarker];
       delete [] TotalEnthalpyIn_BC   [iMarker];
       delete [] DensityIn            [iMarker];
       delete [] PressureIn           [iMarker];
@@ -371,7 +369,6 @@ COutput::~COutput(void) {
     delete [] TotalStaticEfficiency;
     delete [] TotalTotalEfficiency;
     delete [] KineticEnergyLoss;
-    delete [] TRadius;
     delete [] TotalPressureLoss;
     delete [] MassFlowIn;
     delete [] MassFlowOut;
@@ -388,7 +385,6 @@ COutput::~COutput(void) {
     delete [] FlowAngleIn_BC;
     delete [] EntropyIn;
     delete [] EntropyIn_BC;
-    delete [] EntropyOut;
     delete [] TotalEnthalpyIn_BC;
     delete [] DensityIn;
     delete [] PressureIn;
@@ -405,7 +401,6 @@ COutput::~COutput(void) {
     delete [] MachOut;
     delete [] TurboVelocityIn;
     delete [] TurboVelocityOut;
-    delete [] TemperatureIn;
     delete [] TemperatureOut;
     delete [] TotalPressureIn;
     delete [] TotalPressureOut;
