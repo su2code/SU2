@@ -204,8 +204,24 @@ def main():
     discadj_fsi.su2_exec  = "parallel_computation.py -f"
     discadj_fsi.timeout   = 1600
     discadj_fsi.tol       = 0.00001
-    test_list.append(discadj_fsi)   
-    
+    test_list.append(discadj_fsi)
+
+    ######################################
+    ### RUN TUTORIAL CASES             ###
+    ######################################
+
+    # Inviscid 3D ONERA M6 Design
+    tutorial_design_inv_oneram6              = TestCase('design_inv_oneram6')
+    tutorial_design_inv_oneram6.cfg_dir    = "../Tutorials/Inviscid_3D_Constrained_ONERAM6"
+    tutorial_design_inv_oneram6.cfg_file   = "inv_ONERAM6_adv.cfg"
+    tutorial_design_inv_oneram6.no_restart = True
+    tutorial_design_inv_oneram6.test_iter  = 0
+    tutorial_design_inv_oneram6.test_vals  = [-5.207843, -4.606508, 0.279763, 0.154207] #last 4 columns
+    tutorial_design_inv_oneram6.su2_exec   = "parallel_computation.py -f"
+    tutorial_design_inv_oneram6.timeout    = 1600
+    tutorial_design_inv_oneram6.tol        = 0.00001
+    test_list.append(tutorial_design_inv_oneram6)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
