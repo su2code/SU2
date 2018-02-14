@@ -129,8 +129,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
-  unsigned short *nSpanSectionsByMarker; /*! <\brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
+  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
   unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
   su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
   long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
