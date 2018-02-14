@@ -12,7 +12,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu 
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
@@ -84,7 +84,7 @@ before_script:
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
+    - git clone -b master https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
