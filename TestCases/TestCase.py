@@ -93,7 +93,7 @@ class TestCase:
         # Check for disabling the restart
         if self.no_restart:
             self.disable_restart()
-        
+
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
 
@@ -716,7 +716,7 @@ class TestCase:
             if not line.startswith("RESTART_SOL"):
                 file_out.write(line)
             else:
-                file_out.write("OPT_ITERATIONS= NO\n")
+                file_out.write("RESTART_SOL= NO\n")
         file_out.close()
         os.chdir(workdir)
 
