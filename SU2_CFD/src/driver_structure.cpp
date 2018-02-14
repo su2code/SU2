@@ -446,7 +446,6 @@ void CDriver::Postprocessing() {
     for (iZone = 0; iZone < nZone; iZone++) {
       ConvHist_file[iZone].close();
     }
-    delete [] ConvHist_file;
 
   }
 
@@ -497,12 +496,8 @@ void CDriver::Postprocessing() {
   
   if (transfer_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (transfer_container[iZone] != NULL) {
-        for (unsigned short jZone = 0; jZone < nZone; jZone++)
-          if (transfer_container[iZone][jZone] != NULL)
-            delete transfer_container[iZone][jZone];
-        delete [] transfer_container[iZone];
-      }
+        if (transfer_container[iZone] != NULL)
+          delete [] transfer_container[iZone];
     }
     delete [] transfer_container;
     if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
