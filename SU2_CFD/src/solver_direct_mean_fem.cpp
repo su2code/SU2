@@ -8942,21 +8942,28 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
-  /*--- The assumption is made that the eddy viscosity is zero for viscous ---*/
-  /*--- walls. This is true for an integration to the wall, but is this    ---*/
-  /*--- also true when wall functions are used?                            ---*/
+  /*--- The skin friction is computed using the laminar viscosity and      ---*/
+  /*--- velocity gradients. This is correct when integration to the wall   ---*/
+  /*--- is performed, but not when wall functions are used. Hence, this    ---*/
+  /*--- function must be modified when wall functions are implemented.     ---*/
   /*--------------------------------------------------------------------------*/
+
+  /* The number of bytes to copied in the memcpy calls and an initialization
+     of the argument in the calls to the timing routines. */
+  const unsigned long nBytes = nVar*sizeof(su2double);
+  double tick = 0.0;
+
+  /* Determine the number of faces that are treated simultaneously
+     in the matrix products to obtain good gemm performance. */
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
+  const unsigned short nFaceSimul = nPadInput/nVar;
+
+  /* Determine the minimum padded size in the matrix multiplications, which
+     corresponds to 64 byte alignment. */
+  const unsigned short nPadMin = 64/sizeof(passivedouble);
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam = Gamma/Prandtl_Lam;
-  double tick = 0.0;
-
-  /*--- Set the pointers for the local arrays and determine the number
-        of bytes for the call to memcpy later in this function. ---*/
-  su2double *solInt     = VecTmpMemory.data();
-  su2double *gradSolInt = solInt     + nIntegrationMax*nVar;
-  su2double *solCopy    = gradSolInt + nIntegrationMax*nVar*nDim;
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
@@ -8964,10 +8971,10 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin         = config->GetRefOriginMoment(0);
-  const bool grid_movement        = config->GetGrid_Movement();
+  const su2double *Origin      = config->GetRefOriginMoment(0);
+  const bool grid_movement     = config->GetGrid_Movement();
 
-  /*--- Evaluate reference values for non-dimensionalization.
+/*--- Evaluate reference values for non-dimensionalization.
         For dynamic meshes, use the motion Mach number as a reference value
         for computing the force coefficients. Otherwise, use the freestream
         values, which is the standard convention. ---*/
@@ -9030,7 +9037,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         CMx_Visc[iMarker] = 0.0; CMy_Visc[iMarker] = 0.0; CMz_Visc[iMarker] = 0.0;
         CFx_Visc[iMarker] = 0.0; CFy_Visc[iMarker] = 0.0; CFz_Visc[iMarker] = 0.0;
 
-        Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0; CEff_Visc[iMarker]       = 0.0;
+        Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0; CEff_Visc[iMarker] = 0.0;
 
         for(unsigned short iDim=0; iDim<nDim; ++iDim)
           ForceViscous[iDim] = MomentViscous[iDim] = 0.0;
@@ -9039,11 +9046,21 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         const unsigned long      nSurfElem = boundaries[iMarker].surfElem.size();
         const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
 
-        /*--- Loop over the faces of this boundary. ---*/
-        for(unsigned long l=0; l<nSurfElem; ++l) {
+        /*--- Loop over the faces of this boundary. Multiple faces are treated
+              simultaneously to improve the performance of the matrix
+              multiplications. As a consequence, the update of the counter l
+              happens at the end of this loop section. ---*/
+        for(unsigned long l=0; l<nSurfElem;) {
+
+          /* Determine the end index for this chunk of faces and the padded
+             N value in the gemm computations. */
+          unsigned long lEnd;
+          unsigned short ind, llEnd, NPad;
+
+          MetaDataChunkOfElem(surfElem, l, nSurfElem, nFaceSimul,
+                              nPadMin, lEnd, ind, llEnd, NPad);
 
           /* Get the required information from the corresponding standard face. */
-          const unsigned short ind       = surfElem[l].indStandardElement;
           const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
           const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
           const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
@@ -9051,138 +9068,318 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           const su2double *derBasisElem  = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
           const su2double *weights       = standardBoundaryFacesSol[ind].GetWeightsIntegration();
 
-          /* Copy the solution of the DOFs of the face such that it is
-             contiguous in memory. */
-          for(unsigned short i=0; i<nDOFsFace; ++i) {
-            const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolFace[i];
-            su2double       *sol    = solCopy + nVar*i;
-            memcpy(sol, solDOF, nBytes);
+          /* Set the pointers for the local work arrays. */
+          su2double *solInt     = VecTmpMemory.data();
+          su2double *gradSolInt = solInt     + NPad*nInt;
+          su2double *solCopy    = gradSolInt + NPad*nInt*nDim;
+
+          /* Loop over the faces that are treated simultaneously. */
+          for(unsigned short ll=0; ll<llEnd; ++ll) {
+            const unsigned short llNVar = ll*nVar;
+
+            /* Easier storage of the DOFs of the face. */
+            const unsigned long *DOFs = surfElem[l+ll].DOFsSolFace.data();
+
+            /* Copy the solution of the DOFs of the face such that it is
+               contiguous in memory. */
+            for(unsigned short i=0; i<nDOFsFace; ++i) {
+              const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+              su2double       *sol    = solCopy + NPad*i + llNVar;
+              memcpy(sol, solDOF, nBytes);
+            }
           }
 
           /* Call the general function to carry out the matrix product to determine
              the solution in the integration points. */
           config->GEMM_Tick(&tick);
-          DenseMatrixProduct(nInt, nVar, nDOFsFace, basisFace, solCopy, solInt);
-          config->GEMM_Tock(tick, "Friction_Forces", nInt, nVar, nDOFsFace);
+          DenseMatrixProduct(nInt, NPad, nDOFsFace, basisFace, solCopy, solInt);
+          config->GEMM_Tock(tick, "Friction_Forces_1", nInt, NPad, nDOFsFace);
 
-          /*--- Store the solution of the DOFs of the adjacent element in contiguous
+          /*--- Store the solution of the DOFs of the adjacent elements in contiguous
                 memory such that the function DenseMatrixProduct can be used to compute
                 the gradients solution variables in the integration points of the face. ---*/
-          for(unsigned short i=0; i<nDOFsElem; ++i) {
-            const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
-            su2double       *sol    = solCopy + nVar*i;
-            memcpy(sol, solDOF, nBytes);
+          for(unsigned short ll=0; ll<llEnd; ++ll) {
+            const unsigned short llNVar = ll*nVar;
+            const unsigned long  lll    = l + ll;
+
+            for(unsigned short i=0; i<nDOFsElem; ++i) {
+              const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[lll].DOFsSolElement[i];
+              su2double       *sol    = solCopy + NPad*i + llNVar;
+              memcpy(sol, solDOF, nBytes);
+            }
           }
 
           /* Compute the gradients in the integration points. Call the general function to
              carry out the matrix product. */
           config->GEMM_Tick(&tick);
-          DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solCopy, gradSolInt);
-          config->GEMM_Tock(tick, "Friction_Forces", nInt*nDim, nVar, nDOFsElem);
+          DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem, derBasisElem, solCopy, gradSolInt);
+          config->GEMM_Tock(tick, "Friction_Forces_2", nInt*nDim, NPad, nDOFsElem);
 
           /* Determine the offset between r- and -s-derivatives, which is also the
              offset between s- and t-derivatives. */
-          const unsigned short offDeriv = nVar*nInt;
+          const unsigned short offDeriv = NPad*nInt;
 
-          /* Loop over the integration points of this surface element. */
-          for(unsigned short i=0; i<nInt; ++i) {
+          /* Make a distinction between two and three space dimensions
+             in order to have the most efficient code. */
+          switch( nDim ) {
 
-            /* Easier storage of the solution, its gradients, the normals, the
-               metric terms and the coordinates for this integration point. */
-            const su2double *sol         = solInt     + i*nVar;
-            const su2double *gradSol     = gradSolInt + nVar*i;
-            const su2double *normals     = surfElem[l].metricNormalsFace.data()
-                                         + i*(nDim+1);
-            const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
-                                         + i*nDim*nDim;
-            const su2double *Coord       = surfElem[l].coorIntegrationPoints.data()
-                                         + i*nDim;
+            case 2: {
 
-            /*--- Compute the Cartesian gradients of the solution. ---*/
-            su2double solGradCart[5][3];
-            for(unsigned short k=0; k<nDim; ++k) {
-              for(unsigned short j=0; j<nVar; ++j) {
-                solGradCart[j][k] = 0.0;
-                for(unsigned short l=0; l<nDim; ++l)
-                  solGradCart[j][k] += gradSol[j+l*offDeriv]*metricTerms[k+l*nDim];
+              /* Two dimensional simulation. Loop over the number of faces treated
+                 simultaneously. */
+              for(unsigned short ll=0; ll<llEnd; ++ll) {
+                const unsigned short llNVar = ll*nVar;
+                const unsigned long  lll    = l + ll;
+
+                /* Loop over the integration points of this surface element. */
+                for(unsigned short i=0; i<nInt; ++i) {
+
+                  /* Easier storage of the solution, its gradients, the normals,
+                     the metric terms and the coordinates of this integration point. */
+                  const su2double *sol         = solInt     + i*NPad + llNVar;
+                  const su2double *solDOFDr    = gradSolInt + i*NPad + llNVar;
+                  const su2double *solDOFDs    = solDOFDr   + offDeriv;
+                  const su2double *normals     = surfElem[lll].metricNormalsFace.data()
+                                               + i*(nDim+1);
+                  const su2double *metricTerms = surfElem[lll].metricCoorDerivFace.data()
+                                               + i*nDim*nDim;
+                  const su2double *Coord       = surfElem[lll].coorIntegrationPoints.data()
+                                               + i*nDim;
+
+                  /* Easier storage of the metric terms. */
+                  const su2double drdx = metricTerms[0];
+                  const su2double drdy = metricTerms[1];
+                  const su2double dsdx = metricTerms[2];
+                  const su2double dsdy = metricTerms[3];
+
+                  /* Compute the Cartesian gradients of the solution. */
+                  const su2double drhodx = solDOFDr[0]*drdx + solDOFDs[0]*dsdx;
+                  const su2double drudx  = solDOFDr[1]*drdx + solDOFDs[1]*dsdx;
+                  const su2double drvdx  = solDOFDr[2]*drdx + solDOFDs[2]*dsdx;
+                  const su2double drEdx  = solDOFDr[3]*drdx + solDOFDs[3]*dsdx;
+
+                  const su2double drhody = solDOFDr[0]*drdy + solDOFDs[0]*dsdy;
+                  const su2double drudy  = solDOFDr[1]*drdy + solDOFDs[1]*dsdy;
+                  const su2double drvdy  = solDOFDr[2]*drdy + solDOFDs[2]*dsdy;
+                  const su2double drEdy  = solDOFDr[3]*drdy + solDOFDs[3]*dsdy;
+
+                  /* Compute the velocities and static energy in this
+                     integration point. */
+                  const su2double DensityInv   = 1.0/sol[0];
+                  const su2double u            = DensityInv*sol[1];
+                  const su2double v            = DensityInv*sol[2];
+                  const su2double TotalEnergy  = DensityInv*sol[3];
+                  const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v);
+
+                  /* Compute the Cartesian gradients of the velocities and
+                     static energy in this integration point and also the
+                     divergence of the velocity. */
+                  const su2double dudx = DensityInv*(drudx - u*drhodx);
+                  const su2double dudy = DensityInv*(drudy - u*drhody);
+
+                  const su2double dvdx = DensityInv*(drvdx - v*drhodx);
+                  const su2double dvdy = DensityInv*(drvdy - v*drhody);
+
+                  const su2double dStaticEnergydx = DensityInv*(drEdx - TotalEnergy*drhodx)
+                                                  - u*dudx - v*dvdx;
+                  const su2double dStaticEnergydy = DensityInv*(drEdy - TotalEnergy*drhody)
+                                                  - u*dudy - v*dvdy;
+                  const su2double divVel = dudx + dvdy;
+
+                  /* Compute the laminar viscosity. */
+                  FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+                  const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+                  /* Set the value of the second viscosity and compute the
+                     divergence term in the viscous normal stresses. */
+                  const su2double lambda     = -TWO3*ViscosityLam;
+                  const su2double lamDivTerm =  lambda*divVel;
+
+                  /* Compute the viscous stress tensor and the normal flux.
+                     Note that there is a plus sign for the heat flux, because
+                     the normal points into the geometry. */
+                  const su2double tauxx = 2.0*ViscosityLam*dudx + lamDivTerm;
+                  const su2double tauyy = 2.0*ViscosityLam*dvdy + lamDivTerm;
+                  const su2double tauxy = ViscosityLam*(dudy + dvdx);
+
+                  const su2double qHeatNorm = ViscosityLam*factHeatFlux_Lam
+                                            * (dStaticEnergydx*normals[0]
+                                            +  dStaticEnergydy*normals[1]);
+
+                  /* Update the viscous force and moment. Note that the normal
+                     points into the geometry, hence the minus sign for the stress. */
+                  const su2double scaleFac =  weights[i]*normals[nDim]*factor;
+                  const su2double Fx       = -scaleFac*(tauxx*normals[0] + tauxy*normals[1]);
+                  const su2double Fy       = -scaleFac*(tauxy*normals[0] + tauyy*normals[1]);
+
+                  ForceViscous[0] += Fx;
+                  ForceViscous[1] += Fy;
+
+                  const su2double dx = Coord[0] - Origin[0];
+                  const su2double dy = Coord[1] - Origin[1];
+
+                  MomentViscous[2] += (Fy*dx - Fx*dy)/RefLength;
+
+                  /* Update the heat flux and maximum heat flux for this marker. */
+                  Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
+                  MaxHeatFlux_Visc[iMarker] = max(MaxHeatFlux_Visc[iMarker], fabs(qHeatNorm));
+                }
               }
+
+              break;
             }
 
-            /*--- Compute the velocities and static energy in this integration point. ---*/
-            const su2double DensityInv = 1.0/sol[0];
-            su2double vel[3], Velocity2 = 0.0;
-            for(unsigned short j=0; j<nDim; ++j) {
-              vel[j]     = sol[j+1]*DensityInv;
-              Velocity2 += vel[j]*vel[j];
-            }
+            /*------------------------------------------------------------------*/
 
-            const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
-            const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+            case 3: {
 
-            /*--- Compute the Cartesian gradients of the velocities and static energy
-                  in this integration point and also the divergence of the velocity. ---*/
-            su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
-            for(unsigned short k=0; k<nDim; ++k) {
-              StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
-                                  -             TotalEnergy*solGradCart[0][k]);
-              for(unsigned short j=0; j<nDim; ++j) {
-                velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
-                                     -      vel[j]*solGradCart[0][k]);
-                StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
+              /* Three dimensional simulation. Loop over the number of faces treated
+                 simultaneously. */
+              for(unsigned short ll=0; ll<llEnd; ++ll) {
+                const unsigned short llNVar = ll*nVar;
+                const unsigned long  lll    = l + ll;
+
+                /* Loop over the integration points of this surface element. */
+                for(unsigned short i=0; i<nInt; ++i) {
+
+                  /* Easier storage of the solution, its gradients, the normals,
+                     the metric terms and the coordinates of this integration point. */
+                  const su2double *sol         = solInt     + i*NPad + llNVar;
+                  const su2double *solDOFDr    = gradSolInt + i*NPad + llNVar;
+                  const su2double *solDOFDs    = solDOFDr   + offDeriv;
+                  const su2double *solDOFDt    = solDOFDt   + offDeriv;
+                  const su2double *normals     = surfElem[lll].metricNormalsFace.data()
+                                               + i*(nDim+1);
+                  const su2double *metricTerms = surfElem[lll].metricCoorDerivFace.data()
+                                               + i*nDim*nDim;
+                  const su2double *Coord       = surfElem[lll].coorIntegrationPoints.data()
+                                               + i*nDim;
+
+                  /* Easier storage of the metric terms. */
+                  const su2double drdx = metricTerms[0];
+                  const su2double drdy = metricTerms[1];
+                  const su2double drdz = metricTerms[2];
+
+                  const su2double dsdx = metricTerms[3];
+                  const su2double dsdy = metricTerms[4];
+                  const su2double dsdz = metricTerms[5];
+
+                  const su2double dtdx = metricTerms[6];
+                  const su2double dtdy = metricTerms[7];
+                  const su2double dtdz = metricTerms[8];
+
+                  /* Compute the Cartesian gradients of the solution. */
+                  const su2double drhodx = solDOFDr[0]*drdx + solDOFDs[0]*dsdx + solDOFDt[0]*dtdx;
+                  const su2double drudx  = solDOFDr[1]*drdx + solDOFDs[1]*dsdx + solDOFDt[1]*dtdx;
+                  const su2double drvdx  = solDOFDr[2]*drdx + solDOFDs[2]*dsdx + solDOFDt[2]*dtdx;
+                  const su2double drwdx  = solDOFDr[3]*drdx + solDOFDs[3]*dsdx + solDOFDt[3]*dtdx;
+                  const su2double drEdx  = solDOFDr[4]*drdx + solDOFDs[4]*dsdx + solDOFDt[4]*dtdx;
+
+                  const su2double drhody = solDOFDr[0]*drdy + solDOFDs[0]*dsdy + solDOFDt[0]*dtdy;
+                  const su2double drudy  = solDOFDr[1]*drdy + solDOFDs[1]*dsdy + solDOFDt[1]*dtdy;
+                  const su2double drvdy  = solDOFDr[2]*drdy + solDOFDs[2]*dsdy + solDOFDt[2]*dtdy;
+                  const su2double drwdy  = solDOFDr[3]*drdy + solDOFDs[3]*dsdy + solDOFDt[3]*dtdy;
+                  const su2double drEdy  = solDOFDr[4]*drdy + solDOFDs[4]*dsdy + solDOFDt[4]*dtdy;
+
+                  const su2double drhodz = solDOFDr[0]*drdz + solDOFDs[0]*dsdz + solDOFDt[0]*dtdz;
+                  const su2double drudz  = solDOFDr[1]*drdz + solDOFDs[1]*dsdz + solDOFDt[1]*dtdz;
+                  const su2double drvdz  = solDOFDr[2]*drdz + solDOFDs[2]*dsdz + solDOFDt[2]*dtdz;
+                  const su2double drwdz  = solDOFDr[3]*drdz + solDOFDs[3]*dsdz + solDOFDt[3]*dtdz;
+                  const su2double drEdz  = solDOFDr[4]*drdz + solDOFDs[4]*dsdz + solDOFDt[4]*dtdz;
+
+                  /* Compute the velocities and static energy in this
+                     integration point. */
+                  const su2double DensityInv   = 1.0/sol[0];
+                  const su2double u            = DensityInv*sol[1];
+                  const su2double v            = DensityInv*sol[2];
+                  const su2double w            = DensityInv*sol[3];
+                  const su2double TotalEnergy  = DensityInv*sol[4];
+                  const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v + w*w);
+
+                  /* Compute the Cartesian gradients of the velocities and
+                     static energy in this integration point and also the
+                     divergence of the velocity. */
+                  const su2double dudx = DensityInv*(drudx - u*drhodx);
+                  const su2double dudy = DensityInv*(drudy - u*drhody);
+                  const su2double dudz = DensityInv*(drudz - u*drhodz);
+
+                  const su2double dvdx = DensityInv*(drvdx - v*drhodx);
+                  const su2double dvdy = DensityInv*(drvdy - v*drhody);
+                  const su2double dvdz = DensityInv*(drvdz - v*drhodz);
+
+                  const su2double dwdx = DensityInv*(drwdx - w*drhodx);
+                  const su2double dwdy = DensityInv*(drwdy - w*drhody);
+                  const su2double dwdz = DensityInv*(drwdz - w*drhodz);
+
+                  const su2double dStaticEnergydx = DensityInv*(drEdx - TotalEnergy*drhodx)
+                                                  - u*dudx - v*dvdx - w*dwdx;
+                  const su2double dStaticEnergydy = DensityInv*(drEdy - TotalEnergy*drhody)
+                                                  - u*dudy - v*dvdy - w*dwdy;
+                  const su2double dStaticEnergydz = DensityInv*(drEdz - TotalEnergy*drhodz)
+                                                  - u*dudz - v*dvdz - w*dwdz;
+                  const su2double divVel = dudx + dvdy + dwdz;
+
+                  /* Compute the laminar viscosity. */
+                  FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+                  const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+                  /* Set the value of the second viscosity and compute the
+                     divergence term in the viscous normal stresses. */
+                  const su2double lambda     = -TWO3*ViscosityLam;
+                  const su2double lamDivTerm =  lambda*divVel;
+
+                  /* Compute the viscous stress tensor and the normal flux.
+                     Note that there is a plus sign for the heat flux, because
+                     the normal points into the geometry. */
+                  const su2double tauxx = 2.0*ViscosityLam*dudx + lamDivTerm;
+                  const su2double tauyy = 2.0*ViscosityLam*dvdy + lamDivTerm;
+                  const su2double tauzz = 2.0*ViscosityLam*dwdz + lamDivTerm;
+
+                  const su2double tauxy = ViscosityLam*(dudy + dvdx);
+                  const su2double tauxz = ViscosityLam*(dudz + dwdx);
+                  const su2double tauyz = ViscosityLam*(dvdz + dwdy);
+
+                  const su2double qHeatNorm = ViscosityLam*factHeatFlux_Lam
+                                            * (dStaticEnergydx*normals[0]
+                                            +  dStaticEnergydy*normals[1]
+                                            +  dStaticEnergydz*normals[2]);
+
+                  /* Update the viscous force and moment. Note that the normal
+                     points into the geometry, hence the minus sign for the stress. */
+                  const su2double scaleFac =  weights[i]*normals[nDim]*factor;
+
+                  const su2double Fx = -scaleFac*(tauxx*normals[0] + tauxy*normals[1]
+                                     +            tauxz*normals[2]);
+                  const su2double Fy = -scaleFac*(tauxy*normals[0] + tauyy*normals[1]
+                                     +            tauyz*normals[2]);
+                  const su2double Fz = -scaleFac*(tauxz*normals[0] + tauyz*normals[1]
+                                     +            tauzz*normals[2]);
+
+                  ForceViscous[0] += Fx;
+                  ForceViscous[1] += Fy;
+                  ForceViscous[2] += Fz;
+
+                  const su2double dx = Coord[0] - Origin[0];
+                  const su2double dy = Coord[1] - Origin[1];
+                  const su2double dz = Coord[2] - Origin[2];
+
+                  MomentViscous[0] += (Fz*dy - Fy*dz)/RefLength;
+                  MomentViscous[1] += (Fx*dz - Fz*dx)/RefLength;
+                  MomentViscous[2] += (Fy*dx - Fx*dy)/RefLength;
+
+                  /* Update the heat flux and maximum heat flux for this marker. */
+                  Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
+                  MaxHeatFlux_Visc[iMarker] = max(MaxHeatFlux_Visc[iMarker], fabs(qHeatNorm));
+                }
               }
-              divVel += velGrad[k][k];
+
+              break;
             }
-
-            /*--- Compute the laminar viscosity. ---*/
-            FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-            const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
-
-            /*--- Set the value of the second viscosity and compute the divergence
-                  term in the viscous normal stresses. ---*/
-            const su2double lambda     = -TWO3*ViscosityLam;
-            const su2double lamDivTerm =  lambda*divVel;
-
-            /*--- Compute the viscous stress tensor and the normal flux. Note that
-                  there is a plus sign for the heat flux, because the normal
-                  points into the geometry. ---*/
-            su2double tauVis[3][3], qHeatNorm = 0.0;
-            for(unsigned short k=0; k<nDim; ++k) {
-              tauVis[k][k] = 2.0*ViscosityLam*velGrad[k][k] + lamDivTerm;    // Normal stress
-              for(unsigned short j=(k+1); j<nDim; ++j) {
-                tauVis[j][k] = ViscosityLam*(velGrad[j][k] + velGrad[k][j]); // Shear stress
-                tauVis[k][j] = tauVis[j][k];
-              }
-
-              qHeatNorm += ViscosityLam*factHeatFlux_Lam*StaticEnergyGrad[k]*normals[k];
-            }
-
-            /*-- Compute the vector from the reference point to the integration
-                 point and update the viscous force. Note that the normal points
-                 into the geometry, hence the minus sign for the stress. ---*/
-            su2double MomentDist[3], Force[3];
-            const su2double scaleFac = weights[i]*normals[nDim]*factor;
-
-            for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-              Force[iDim] = 0.0;
-              for(unsigned short jDim=0; jDim<nDim; ++jDim)
-                Force[iDim] -= tauVis[iDim][jDim]*normals[jDim];
-
-              MomentDist[iDim]    = Coord[iDim] - Origin[iDim];
-              Force[iDim]        *= scaleFac;
-              ForceViscous[iDim] += Force[iDim];
-            }
-
-            /*--- Update the viscous moment. ---*/
-            if (nDim == 3) {
-              MomentViscous[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLength;
-              MomentViscous[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLength;
-            }
-            MomentViscous[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
-
-            /* Update the heat flux and maximum heat flux for this marker. */
-            Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
-            MaxHeatFlux_Visc[iMarker] = max(MaxHeatFlux_Visc[iMarker], fabs(qHeatNorm));
           }
+
+          /* Update the value of the counter l to the end index of the
+             current chunk. */
+          l = lEnd;
         }
 
         /*--- Project forces and store the non-dimensional coefficients ---*/
