@@ -2,20 +2,24 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2446,7 +2450,7 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
   su2double TotalDisp;
 
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl;
+  su2double ModAmpl = 1.0;
 
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
@@ -2755,7 +2759,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   su2double TotalLoad = 0.0;
   
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl;
+  su2double ModAmpl = 1.0;
   
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
@@ -3095,7 +3099,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   su2double TotalLoad;
   
   su2double CurrentTime=config->GetCurrent_DynTime();
-  su2double ModAmpl;
+  su2double ModAmpl = 1.0;
   
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
