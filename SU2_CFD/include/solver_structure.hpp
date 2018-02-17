@@ -5,20 +5,24 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +70,6 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSolver {
 protected:
@@ -2724,52 +2727,76 @@ public:
   virtual void SetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex, su2double val_deltat);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
+   * \return Value of the total temperature
    */
   virtual su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
    */
   virtual su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
    */
   virtual su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total temperature is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
+   * \param[in] val_ttotal - Value of the total temperature
    */
   virtual void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the total pressure is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
+   * \param[in] val_ptotal - Value of the total pressure
    */
   virtual void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal);
   
   /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A virtual member
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
   virtual void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  virtual void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetInlet(CConfig *config);
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \param geometry_container - Geometrical definition.
+   * \param config - Definition of the particular problem.
+   */
+  virtual void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -4041,7 +4068,6 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 5.0.0 "Raven"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -4111,7 +4137,6 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -6013,52 +6038,67 @@ public:
   void SetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex, su2double val_deltat);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Value of the total temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
+   * \return Value of the total temperature
    */
   su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
    */
   su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
    */
   su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Set the value of the total temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total temperature is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
+   * \param[in] val_ttotal - Value of the total temperature
    */
   void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Set the value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
+   * \param[in] val_ptotal - Value of the total pressure
    */
   void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal);
   
   /*!
-   * \brief Value of the characteristic global index at the boundaries.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
+   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
+
+  /*!
+   * \brief Setup the inlet per the config file and stores the result
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetInlet(CConfig *config);
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \param geometry_container - Geometrical definition.
+   * \param config - Definition of the particular problem.
+   */
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -7734,7 +7774,6 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -8158,7 +8197,6 @@ public:
  * \brief Main class for defining the incompressible Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CIncNSSolver : public CIncEulerSolver {
 private:
@@ -8536,7 +8574,6 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -8546,6 +8583,7 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
+  su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
   
@@ -8568,9 +8606,10 @@ public:
   
   /*!
    * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSolver(CConfig *config);
+  CTurbSolver(CGeometry* geometry, CConfig *config);
   
   /*!
    * \brief Impose the send-receive boundary condition.
@@ -8748,6 +8787,15 @@ public:
    * \param[in] val_vertex - vertex index
    */
   int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set custom turbulence variables at the vertex of an inlet.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
 };
 
 /*!
@@ -8755,7 +8803,6 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -9017,6 +9064,12 @@ public:
    */
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Setup the inlet per the config file and stores the result
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetInlet(CConfig *config);
+
 };
 
 /*!
@@ -9024,7 +9077,6 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -9203,6 +9255,12 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
   
+  /*!
+   * \brief Setup the inlet per the config file and stores the result
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetInlet(CConfig *config);
+  
 };
 
 /*!
@@ -9210,7 +9268,6 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 5.0.0 "Raven"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -9386,7 +9443,6 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -10425,7 +10481,6 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -10534,7 +10589,6 @@ public:
  * \brief Main class for defining the incompressible Navier-Stokes adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CAdjIncNSSolver : public CAdjIncEulerSolver {
 public:
@@ -10643,7 +10697,6 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -10789,7 +10842,6 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -10921,7 +10973,6 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -11071,7 +11122,6 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -11192,7 +11242,6 @@ public:
 /*! \class CFEM_ElasticitySolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.
  *  \author R. Sanchez.
- *  \version 5.0.0 "Raven"
  *  \date July 10, 2015.
  */
 class CFEM_ElasticitySolver : public CSolver {
@@ -11859,7 +11908,6 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -12067,7 +12115,6 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjSolver : public CSolver {
 private:
@@ -12333,7 +12380,6 @@ public:
  * \brief Main class for defining the discrete adjoint solver for FE structural problems.
  * \ingroup Discrete_Adjoint
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjFEASolver : public CSolver {
 private:
