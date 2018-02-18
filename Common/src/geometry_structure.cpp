@@ -4986,12 +4986,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag) {
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  /*--- Get rank and size. ---*/
+
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
 
   /*--- Initialize several class data members for later. ---*/
 
@@ -5006,29 +5004,29 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
   npoint_procs  = NULL;
   nPoint_Linear = NULL;
 
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
-  nSpanWiseSections       = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
+  nSpanWiseSections  = NULL;
+  SpanWiseValue      = NULL;
+  nVertexSpan        = NULL;
+  nTotVertexSpan     = NULL;
+  turbovertex        = NULL;
+  AverageTurboNormal = NULL;
+  AverageNormal      = NULL;
+  AverageGridVel     = NULL;
+  AverageTangGridVel = NULL;
+  SpanArea           = NULL;
+  TurboRadius        = NULL;
+  MaxAngularCoord    = NULL;
+  MinAngularCoord    = NULL;
+  MinRelAngularCoord = NULL;
 
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
+  TangGridVelIn  = NULL;
+  SpanAreaIn     = NULL;
+  TurboRadiusIn  = NULL;
+  TangGridVelOut = NULL;
+  SpanAreaOut    = NULL;
+  TurboRadiusOut = NULL;
 
   /*--- Initialize counters for the points/elements local to a rank. ---*/
 
@@ -5103,7 +5101,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
 
   DistributeColoring(config, geometry);
 
-  /*--- Distribute the points to all ranks based on the coloring. ---*/
+  /*--- Redistribute the points to all ranks based on the coloring. ---*/
 
   if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
     cout <<"Rebalancing vertices." << endl;
@@ -5237,11 +5235,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    We need to complete the coloring information such that the repeated
    points on each rank also have their color values. ---*/
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   SU2_MPI::Request *send_req, *recv_req;
   SU2_MPI::Status status;
   int ind;
@@ -5266,6 +5260,16 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
   sort(LocalPoints.begin(), LocalPoints.end());
   it = unique(LocalPoints.begin(), LocalPoints.end());
   LocalPoints.resize(it - LocalPoints.begin());
+
+  /*--- Error check to ensure that the number of points found for this
+   rank matches the number in the mesh file (in serial). ---*/
+
+  if ((size == SINGLE_NODE) && (LocalPoints.size() < geometry->GetnPoint())) {
+    SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
+                   +string(" listed in mesh file.\n")
+                   +string("Please check the mesh file for correctness.\n"),
+                   CURRENT_FUNCTION);
+  }
 
   /*--- Create a global to local mapping that includes the unowned points. ---*/
 
@@ -5321,11 +5325,6 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    points. The colors of all owned points will be communicated to any ranks
    that will require them, which is due to the repeated points/elements
    that were needed to perform the coloring. ---*/
-
-  if ((size == SINGLE_NODE) && (LocalPoints.size() < geometry->GetnPoint())) {
-    SU2_MPI::Error(string("Mismatch between NPOIN and number of points listed in mesh file.\n")
-                   +string("Please check the mesh file for correctness.\n"), CURRENT_FUNCTION);
-  }
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     for (iNeighbor = 0; iNeighbor < Neighbors[iPoint].size(); iNeighbor++) {
@@ -5575,7 +5574,9 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
 
 }
 
-void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
+                                                     CGeometry *geometry,
+                                                     unsigned short Elem_Type) {
 
   unsigned short NODES_PER_ELEMENT = 0;
 
@@ -5584,11 +5585,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config, CGeometry 
   unsigned long *Conn_Elem  = NULL;
   unsigned long *ID_Elems   = NULL;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   SU2_MPI::Request *send_req, *recv_req;
   SU2_MPI::Status status;
   int ind;
@@ -5980,11 +5977,7 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
    to all other ranks, including coordinates and coloring info, so that the
    receivers will be able to sort the data. ---*/
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   SU2_MPI::Request *send_req, *recv_req;
   SU2_MPI::Status status;
   int ind;
@@ -6318,7 +6311,9 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   
 }
 
-void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
+                                                     CGeometry *geometry,
+                                                     unsigned short Elem_Type) {
 
   /*--- We begin with all marker information residing on the master rank,
    as the master currently stores all marker info when reading the grid.
@@ -6329,7 +6324,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
    correct coloring distributed by the linear partitions, which we would
    like to reuse when partitioning the markers. Plus, the markers should
    truly be linearly partitioned upon reading the mesh, which we will
-   change soon. ---*/
+   change eventually. ---*/
 
   unsigned short NODES_PER_ELEMENT = 0;
 
@@ -6340,11 +6335,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   unsigned long *Linear_Markers = NULL;
   unsigned long *ID_SurfElem    = NULL;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   SU2_MPI::Request *send_req, *recv_req;
   SU2_MPI::Status status;
   int ind;
@@ -6722,7 +6713,6 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   delete [] recv_req;
 #endif
 
-
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate
    appropriate amount of memory for this section. ---*/
@@ -6803,7 +6793,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config, CGeometry 
   
 }
 
-void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
+                                                      CGeometry *geometry,
+                                                      unsigned short Elem_Type) {
 
   unsigned short NODES_PER_ELEMENT = 0;
 
@@ -7239,11 +7231,6 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
   char str_buf[MAX_STRING_SIZE];
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- The master node will communicate the entire list of marker tags
    (in global ordering) so that it will be simple for each rank to grab
    the string name for each marker. ---*/
@@ -7295,13 +7282,6 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
   unsigned long iPoint, jPoint, iOwned, iPeriodic, iGhost;
-
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
 
   /*--- Create the basic point structures before storing the points. ---*/
 
@@ -7401,7 +7381,9 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
 void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry) {
 
-  unsigned long iElem, jElem, iNode, Local_Elem;
+  unsigned short NODES_PER_ELEMENT;
+
+  unsigned long iElem, jElem, iNode, Local_Elem, iGlobal_Index;
   unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
   
   unsigned long iElemTria = 0;
@@ -7420,15 +7402,6 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   vector<unsigned long> Pris_List;
   vector<unsigned long> Pyra_List;
   vector<unsigned long>::iterator it;
-
-  unsigned short NODES_PER_ELEMENT;
-
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- It is possible that we have repeated elements during the previous
    communications, as we mostly focus on the grid points and their colors.
@@ -7500,14 +7473,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   for (iElem = 0; iElem < nLocal_Tria; iElem++) {
 
-    if (find(Tria_List.begin(), Tria_List.end(), ID_Tria[iElem]) == Tria_List.end()) {
+    if (find(Tria_List.begin(), Tria_List.end(),
+             ID_Tria[iElem]) == Tria_List.end()) {
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Tria[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_Tria[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the element object. ---*/
 
@@ -7528,14 +7504,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   for (iElem = 0; iElem < nLocal_Quad; iElem++) {
 
-    if (find(Quad_List.begin(), Quad_List.end(), ID_Quad[iElem]) == Quad_List.end()) {
+    if (find(Quad_List.begin(), Quad_List.end(),
+             ID_Quad[iElem]) == Quad_List.end()) {
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Quad[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_Quad[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the element object. ---*/
 
@@ -7557,14 +7536,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   for (iElem = 0; iElem < nLocal_Tetr; iElem++) {
 
-    if (find(Tetr_List.begin(), Tetr_List.end(), ID_Tetr[iElem]) == Tetr_List.end()) {
+    if (find(Tetr_List.begin(), Tetr_List.end(),
+             ID_Tetr[iElem]) == Tetr_List.end()) {
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Tetr[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_Tetr[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the element object. ---*/
 
@@ -7586,14 +7568,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   for (iElem = 0; iElem < nLocal_Hexa; iElem++) {
 
-    if (find(Hexa_List.begin(), Hexa_List.end(), ID_Hexa[iElem]) == Hexa_List.end()) {
+    if (find(Hexa_List.begin(), Hexa_List.end(),
+             ID_Hexa[iElem]) == Hexa_List.end()) {
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Hexa[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_Hexa[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the element object. ---*/
 
@@ -7619,14 +7604,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   for (iElem = 0; iElem < nLocal_Pris; iElem++) {
 
-    if (find(Pris_List.begin(), Pris_List.end(), ID_Pris[iElem]) == Pris_List.end()) {
+    if (find(Pris_List.begin(), Pris_List.end(),
+             ID_Pris[iElem]) == Pris_List.end()) {
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_PRISM;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Pris[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_Pris[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the element object. ---*/
 
@@ -7650,14 +7638,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   for (iElem = 0; iElem < nLocal_Pyra; iElem++) {
 
-    if (find(Pyra_List.begin(), Pyra_List.end(), ID_Pyra[iElem]) == Pyra_List.end()) {
+    if (find(Pyra_List.begin(), Pyra_List.end(),
+             ID_Pyra[iElem]) == Pyra_List.end()) {
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_PYRAMID;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Pyra[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_Pyra[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the element object. ---*/
       
@@ -7691,7 +7682,8 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
 
-  /*--- Set the value of Global_nElemDomain (stored in the geometry container that is passed in) ---*/
+  /*--- Set the value of Global_nElemDomain (stored in the geometry 
+   container that is passed in). ---*/
 
   Global_nElemDomain = geometry->GetGlobal_nElemDomain();
 
@@ -7712,6 +7704,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   unsigned long Local_nElemHex     = nelem_hexa;
   unsigned long Local_nElemPrism   = nelem_prism;
   unsigned long Local_nElemPyramid = nelem_pyramid;
+
   SU2_MPI::Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1,
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1,
@@ -7736,12 +7729,18 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   /*--- Print information about the elements to the console ---*/
 
   if (rank == MASTER_NODE) {
-    if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles."      << endl;
-    if (Global_nelem_quad > 0)      cout << Global_nelem_quad     << " quadrilaterals." << endl;
-    if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra    << " tetrahedra."     << endl;
-    if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa     << " hexahedra."      << endl;
-    if (Global_nelem_prism > 0)     cout << Global_nelem_prism    << " prisms."         << endl;
-    if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid  << " pyramids."       << endl;
+    if (Global_nelem_triangle > 0)
+      cout << Global_nelem_triangle << " triangles."      << endl;
+    if (Global_nelem_quad     > 0)
+      cout << Global_nelem_quad     << " quadrilaterals." << endl;
+    if (Global_nelem_tetra    > 0)
+      cout << Global_nelem_tetra    << " tetrahedra."     << endl;
+    if (Global_nelem_hexa     > 0)
+      cout << Global_nelem_hexa     << " hexahedra."      << endl;
+    if (Global_nelem_prism    > 0)
+      cout << Global_nelem_prism    << " prisms."         << endl;
+    if (Global_nelem_pyramid  > 0)
+      cout << Global_nelem_pyramid  << " pyramids."       << endl;
   }
 
 }
@@ -7751,7 +7750,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   unsigned short NODES_PER_ELEMENT;
   unsigned short iNode, nMarker_Max = config->GetnMarker_Max();
 
-  unsigned long iElem, iMarker, Global_Marker;
+  unsigned long iElem, iMarker, Global_Marker, iGlobal_Index;
 
   unsigned long iElem_Line = 0;
   unsigned long iElem_Tria = 0;
@@ -7766,40 +7765,36 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   vector<unsigned long> Marker_Local;
   vector<unsigned long>::iterator it;
 
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Compute how many markers we have local to this rank by looping
    through the global marker numbers of each local surface element and 
    counting the unique set. ---*/
 
   for (iElem = 0; iElem < nLocal_Line; iElem++) {
-    if (find(Marker_Local.begin(), Marker_Local.end(), ID_Line[iElem]) ==
-        Marker_Local.end()) {
+    if (find(Marker_Local.begin(), Marker_Local.end(),
+             ID_Line[iElem]) == Marker_Local.end()) {
       Marker_Local.push_back(ID_Line[iElem]);
     }
   }
 
   for (iElem = 0; iElem < nLocal_BoundTria; iElem++) {
-    if (find(Marker_Local.begin(), Marker_Local.end(), ID_BoundTria[iElem]) ==
-        Marker_Local.end()) {
+    if (find(Marker_Local.begin(), Marker_Local.end(),
+             ID_BoundTria[iElem]) == Marker_Local.end()) {
       Marker_Local.push_back(ID_BoundTria[iElem]);
     }
   }
 
   for (iElem = 0; iElem < nLocal_BoundQuad; iElem++) {
-    if (find(Marker_Local.begin(), Marker_Local.end(), ID_BoundQuad[iElem]) ==
-        Marker_Local.end()) {
+    if (find(Marker_Local.begin(), Marker_Local.end(),
+             ID_BoundQuad[iElem]) == Marker_Local.end()) {
       Marker_Local.push_back(ID_BoundQuad[iElem]);
     }
   }
 
-  /*--- Create a mapping from the global to local marker ID (and vice-versa). ---*/
+  /*--- Create a mapping from global to local marker ID (and vice-versa). ---*/
 
   map<unsigned long, unsigned long> Marker_Global_to_Local;
   map<unsigned long, unsigned long> Marker_Local_to_Global;
+
   for (iMarker = 0; iMarker < Marker_Local.size(); iMarker++) {
     Marker_Global_to_Local[Marker_Local[iMarker]] = iMarker;
     Marker_Local_to_Global[iMarker] = Marker_Local[iMarker];
@@ -7851,10 +7846,10 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
    with nMarkerMax here, but come back and compute size we need. Same for
    OVERHEAD - this can precomputed. ---*/
 
-  nMarker                = Marker_Local.size();
-  nElem_Bound            = new unsigned long[nMarker_Max];
-  Tag_to_Marker          = new string[nMarker_Max];
-  Marker_All_SendRecv    = new short[nMarker_Max];
+  nMarker             = Marker_Local.size();
+  nElem_Bound         = new unsigned long[nMarker_Max];
+  Tag_to_Marker       = new string[nMarker_Max];
+  Marker_All_SendRecv = new short[nMarker_Max];
 
   /*--- Allocate space for the elements on each marker ---*/
 
@@ -7901,7 +7896,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
       NODES_PER_ELEMENT = N_POINTS_LINE;
       for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_Line[iElem*NODES_PER_ELEMENT+iNode]];
+        iGlobal_Index      = Conn_Line[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
       }
 
       /*--- Create the geometry object for this element. ---*/
@@ -7931,8 +7927,10 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_BoundTria[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_BoundTria[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the geometry object for this element. ---*/
 
@@ -7962,8 +7960,10 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
        to local values on this rank. ---*/
 
       NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++)
-        Local_Nodes[iNode] = Global_to_Local_Point[Conn_BoundQuad[iElem*NODES_PER_ELEMENT+iNode]];
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        iGlobal_Index      = Conn_BoundQuad[iElem*NODES_PER_ELEMENT+iNode];
+        Local_Nodes[iNode] = Global_to_Local_Point[iGlobal_Index];
+      }
 
       /*--- Create the geometry object for this element. ---*/
 
