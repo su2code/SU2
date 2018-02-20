@@ -9247,7 +9247,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                   const su2double *sol         = solInt     + i*NPad + llNVar;
                   const su2double *solDOFDr    = gradSolInt + i*NPad + llNVar;
                   const su2double *solDOFDs    = solDOFDr   + offDeriv;
-                  const su2double *solDOFDt    = solDOFDt   + offDeriv;
+                  const su2double *solDOFDt    = solDOFDs   + offDeriv;
                   const su2double *normals     = surfElem[lll].metricNormalsFace.data()
                                                + i*(nDim+1);
                   const su2double *metricTerms = surfElem[lll].metricCoorDerivFace.data()
