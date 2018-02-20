@@ -105,8 +105,8 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
 
   /*--- Allocate solution vectors ---*/
 
-  VecSolDOFsAdj.resize(nVar*nDOFsLocOwned);
-  VecSolDOFsAdjNew.resize(nVar*nDOFsLocOwned);
+  VecSolDOFs.resize(nVar*nDOFsLocOwned);
+  VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
   VecSolDOFsDirect.resize(nVar*nDOFsLocOwned);
   VecSolDOFsSens.resize(nDim*nDOFsLocOwned);
 
@@ -114,8 +114,8 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
   for (iDOF = 0; iDOF < nDOFsLocOwned; iDOF++){
     ii = nVar*iDOF;
     for (iVar = 0; iVar < nVar; iVar++, ii++){
-      VecSolDOFsAdj[ii+iVar] = 0.0;
-      VecSolDOFsAdjNew[ii+iVar] = 0.0;
+      VecSolDOFs[ii+iVar] = 0.0;
+      VecSolDOFsNew[ii+iVar] = 0.0;
     }
     for(iDim = 0; iDim < nDim; iDim++){
       VecSolDOFsSens[nDim*iDOF+iDim] = 1e-16;
@@ -452,11 +452,11 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
 
   /*--- Set the old solution ---*/
 
-  memcpy(VecSolDOFsAdj.data(), VecSolDOFsAdjNew.data(), VecSolDOFsAdjNew.size()*sizeof(su2double));
+  memcpy(VecSolDOFs.data(), VecSolDOFsNew.data(), VecSolDOFsNew.size()*sizeof(su2double));
 
   /*--- Extract the adjoint solution ---*/
 
-  direct_solver->GetAdjointSolution(VecSolDOFsAdjNew);
+  direct_solver->GetAdjointSolution(VecSolDOFsNew);
 
   if (time_stepping) {
     // TODO: code for unsteady
@@ -473,8 +473,8 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig
 
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
-    const su2double *solDOFsOld = VecSolDOFsAdj.data() + offset;
-    const su2double *solDOFsNew = VecSolDOFsAdjNew.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFs.data() + offset;
+    const su2double *solDOFsNew = VecSolDOFsNew.data() + offset;
 
     unsigned int i = 0;
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
@@ -615,7 +615,7 @@ void CFEM_DG_DiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfi
 void CFEM_DG_DiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
 
-  direct_solver->SetAdjointSolution(VecSolDOFsAdjNew);
+  direct_solver->SetAdjointSolution(VecSolDOFsNew);
 
 }
 
@@ -823,7 +823,7 @@ void CFEM_DG_DiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) {
-        VecSolDOFsAdj[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
+        VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
       /*--- Update the local counter nDOF_Read. ---*/
       ++nDOF_Read;

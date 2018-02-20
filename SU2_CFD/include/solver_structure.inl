@@ -2232,6 +2232,8 @@ inline void CSolver::RegisterSolution(bool input) { }
 
 inline void CSolver::Initiate_MPI_Communication(CConfig *config, const unsigned short timeLevel) { };
 
+inline su2double* CFEM_DG_DiscAdjSolver::GetVecSolDOFs(void) {return VecSolDOFs.data();}
+
 inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 
 inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Mach() { return Total_Sens_Mach; }

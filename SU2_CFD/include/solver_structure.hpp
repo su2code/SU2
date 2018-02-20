@@ -12568,8 +12568,8 @@ private:
 
   CBoundaryFEM *boundaries;                          /*!< \brief Array of the boundaries of the FEM mesh. */
 
-  vector<su2double> VecSolDOFsAdj;    /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
-  vector<su2double> VecSolDOFsAdjNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs. */
+  vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
+  vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsDirect; /*!< \brief Vector, which stores the direct solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsSens;   /*!< \brief Vector, which stores the mesh sensitivity variables in the owned DOFs. */
   
@@ -12603,6 +12603,12 @@ public:
    * \brief Destructor of the class.
    */
   ~CFEM_DG_DiscAdjSolver(void);
+
+  /*!
+   * \brief Get a pointer to the vector of the solution degrees of freedom.
+   * \return Pointer to the vector of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFs(void);
 
   /*!
    * \brief Stores the direct solution in the discrete adjoint solver so it can be

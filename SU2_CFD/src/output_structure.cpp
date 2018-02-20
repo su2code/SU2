@@ -8843,7 +8843,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
         
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      case DISC_ADJ_DG_EULER : case DISC_ADJ_DG_NS : case DISC_ADJ_DG_RANS :
+      //case DISC_ADJ_DG_EULER : case DISC_ADJ_DG_NS : case DISC_ADJ_DG_RANS :
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
         break;
         
@@ -12721,7 +12721,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
+      //case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0],
                                            solver_container[iZone][MESH_0][ADJFLOW_SOL],
                                            solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
@@ -14610,11 +14610,13 @@ void COutput::LoadLocalData_FEM_AdjFlow(CConfig *config, CGeometry *geometry, CS
   /*--- For the discrete adjoint, we have the full field of sensitivity
    in each coordinate direction. ---*/
 
-  nVar_Par += nDim;
+  //TODO: Get mesh sensitivities
+  /*nVar_Par += nDim;
   Variable_Names.push_back("Sensitivity_x");
   Variable_Names.push_back("Sensitivity_y");
   if (geometry->GetnDim()== 3)
     Variable_Names.push_back("Sensitivity_z");
+  */
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -14689,7 +14691,8 @@ void COutput::LoadLocalData_FEM_AdjFlow(CConfig *config, CGeometry *geometry, CS
     
     /*--- All adjoint solvers write the surface sensitivity. ---*/
     
-    nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
+    //TODO: Get surface sensitivities
+    //nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
     
     /*--- New variables get registered here before the end of the loop. ---*/
     
