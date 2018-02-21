@@ -449,7 +449,7 @@ void CFluidIteration::Iterate(COutput *output,
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
       config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
       
-    case TWO_PHASE_NAVIER_STOKES:
+    case TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:
           config_container[val_iZone]->SetGlobalParam(TWO_PHASE_NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
 
     case RANS: case DISC_ADJ_RANS:
@@ -466,7 +466,8 @@ void CFluidIteration::Iterate(COutput *output,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
   
   
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) || (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_EULER) ||
+	  (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)) {
 
     /*--- Solve the 2phase model ---*/
 
@@ -477,7 +478,8 @@ void CFluidIteration::Iterate(COutput *output,
 
   }
 
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) || (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
+	  (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES)) {
 
     /*--- Solve the 2phase model ---*/
 
@@ -488,7 +490,8 @@ void CFluidIteration::Iterate(COutput *output,
 
   }
 
-  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) || (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS)) {
+  if ((config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||
+	  (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS)) {
 
     /*--- Solve the 2phase model ---*/
 
@@ -1838,10 +1841,11 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
       for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
         solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetSolution());
         solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetS2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetMassSource());
-        solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetR2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetPrimitive(6));
+        solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetR2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6));
         solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->node[iPoint]->SetH2phase_Direct(solver_container[val_iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy());
       }
     }
+
   }
 
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
@@ -1892,7 +1896,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_contain
       }
       if (two_phase) {
         solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
-        solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->Postprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh);
+//        solver_container[val_iZone][iMesh][TWO_PHASE_SOL]->Postprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh);
       }
     }
   }
@@ -1925,7 +1929,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)
-      || two_phase) {
+      || (Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+	  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) || (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)) {
 
     solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
 
@@ -1943,7 +1948,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                                                               config_container[val_iZone]);
   }
 
-  if(two_phase){
+  if((Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) || (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)){
     solver_container[val_iZone][MESH_0][ADJTWO_PHASE_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
                                                                                   config_container[val_iZone]);
   }
@@ -1960,18 +1966,21 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGe
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
-  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
+  if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)
+	      || (Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) || (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)) {
 // this if is always executed by definition???? why is there an if here
     solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                   config_container[iZone]);
   }
 
-  if (turbulent && !frozen_visc) {
+  if (((Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) || (Kind_Solver == DISC_ADJ_RANS))  && !frozen_visc) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
         config_container[iZone]);
   }
 
-  if (two_phase){
+  if ((Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+		  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) || (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)){
     solver_container[iZone][MESH_0][ADJTWO_PHASE_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0], config_container[iZone]);
   }
 }
@@ -1987,7 +1996,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
     
     /*--- Register flow and turbulent variables as input ---*/
     
-    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) || two_phase) {
+    if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER) ||
+    		(Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+    		  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) || (Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)) {
     	// this if is always executed by definition???? why is there an if here
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
 

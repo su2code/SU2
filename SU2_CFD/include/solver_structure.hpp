@@ -12225,7 +12225,10 @@ private:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
-  su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
+//  su2double Total_Sens_S;    /*!< \brief Total farfield sensitivity to Source S. (two phase only) */
+//  su2double Total_Sens_Rc;    /*!< \brief Total farfield sensitivity to Rc. (two phase only)*/
+//  su2double Total_Sens_H;    /*!< \brief Total farfield sensitivity to Enthalpy. */
+  su2double ObjFunc_Value;        /*!< \brief Value of the objective function.(two phase only) */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   

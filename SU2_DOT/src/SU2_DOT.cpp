@@ -362,7 +362,6 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
       
       /*--- Read the FFD information in the first iteration ---*/
-      
       if (iDV == 0) {
         
         if (rank == MASTER_NODE)
@@ -501,11 +500,9 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         (config->GetDesign_Variable(iDV) != FFD_ANGLE_OF_ATTACK)) {
       
       /*--- If the Angle of attack is not involved, reset the value of the gradient ---*/
-      
       my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
       
       if (MoveSurface) {
-        
         delta_eps = config->GetDV_Value(iDV);
         
         for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
@@ -521,7 +518,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
                 Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
                 VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
                 Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
-                
+
                 dS = 0.0;
                 for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                   dS += Normal[iDim]*Normal[iDim];
@@ -645,10 +642,11 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
-    
+
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else

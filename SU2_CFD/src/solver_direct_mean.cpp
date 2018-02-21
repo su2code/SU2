@@ -5167,14 +5167,14 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool harmonic_balance    = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust            = config->GetWind_Gust();
   bool body_force          = config->GetBody_Force();
-  unsigned short two_phase = (config->GetKind_Solver()== TWO_PHASE_EULER ||
-		                      config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
-							  config->GetKind_Solver()== TWO_PHASE_RANS ||
-							  config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_EULER ||
-							  config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_NAVIER_STOKES ||
-							  config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_RANS);
+  unsigned short two_phase      = (config->GetKind_Solver()== TWO_PHASE_EULER ||
+		                           config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
+							       config->GetKind_Solver()== TWO_PHASE_RANS);
+  unsigned short two_phase_adj = (config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_EULER ||
+  		                           config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_NAVIER_STOKES ||
+  							       config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_RANS);
 
-  su2double S, h, R, Y;
+  su2double S, h;
 
 /*
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5336,7 +5336,7 @@ getchar();
     }
   }
 
- if (two_phase) {
+ if (two_phase || two_phase_adj) {
 
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5347,14 +5347,16 @@ getchar();
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-      S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
-
-      h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
-
-      Y = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
+      if (two_phase) {
+		  S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
+		  h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
+      } else {
+		  S = solver_container[ADJTWO_PHASE_SOL]->node[iPoint]->GetS2phase_Direct();
+		  h = solver_container[ADJTWO_PHASE_SOL]->node[iPoint]->GetH2phase_Direct();
+      }
 
       /*--- Compute the 2-phase source residual ---*/
-      numerics->ComputeResidual_HeatMassTransfer(S, h, Y, Residual, Jacobian_i);
+      numerics->ComputeResidual_HeatMassTransfer(S, h, NULL, Residual, Jacobian_i);
 
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
@@ -15137,7 +15139,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  su2double S, H;
+  su2double S, H, Rc;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -15237,9 +15239,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
           }
           S = Restart_Data[index+nVar];
           H = Restart_Data[index+nVar+1];
+          Rc = Restart_Data[index+nVar+2];
          }
         solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
         solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
+        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetCriticalRadius(Rc);
       }
 
       iPoint_Global_Local++;

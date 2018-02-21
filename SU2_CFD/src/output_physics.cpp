@@ -45,11 +45,15 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2;
   relVel = new su2double[nDim];
   su2double muLam, kine, omega, nu;
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+		            (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   bool menter_sst = (config->GetKind_Turb_Model() == SST);
   bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) ||
 		             (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-					 (config->GetKind_Solver() == TWO_PHASE_RANS));
+					 (config->GetKind_Solver() == TWO_PHASE_RANS) ||
+					 (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) ||
+					 (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+					 (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
 
   unsigned short nBladesRow, nStages;
 
@@ -255,13 +259,17 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
 
       /*--- TURBO-PERFORMANCE---*/
-      if (two_phase) {
-          EntropyGen[iMarkerTP][iSpan] = (MassFlowOut[iMarkerTP][iSpan]*EntropyOut[iMarkerTP][iSpan] - MassFlowIn[iMarkerTP][iSpan]*EntropyIn[iMarkerTP][iSpan])
-        		  /abs(MassFlowIn[iMarkerTP][iSpan]*EntropyIn_BC[iMarkerTP][iSpan] + 1);
-      }
-      else {
+//      if (two_phase) {
+//          EntropyGen[iMarkerTP][iSpan] = (MassFlowOut[iMarkerTP][iSpan]*EntropyOut[iMarkerTP][iSpan] - MassFlowIn[iMarkerTP][iSpan]*EntropyIn[iMarkerTP][iSpan])
+//       		  /abs(MassFlowIn[iMarkerTP][iSpan]*EntropyIn_BC[iMarkerTP][iSpan] + 1);
+      //    FORMULA HAS TO BE IMPROVED TO INCLUDE 1) NON CONDENSING CASES AND 2) EQUILIBRIUM EXPANSIONS
+//      }
+//      else {
           EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
-      }
+//      }
+
+//      cout << EntropyGen[iMarkerTP][iSpan] << " " << endl;
+
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
       KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;

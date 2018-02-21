@@ -772,13 +772,13 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       
       break;
 
-    case RUNTIME_2PHASE_SYS:
+//    case RUNTIME_2PHASE_SYS:
 //        if (config->GetConvCriteria() == RESIDUAL) {
-            if (solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0) != 0)
-          	  (*monitor) = log10(solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0));
-            else
-          	  (*monitor) = -32;
-            break;
+//            if (solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0) != 0)
+//          	  (*monitor) = log10(solver_container[FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(0));
+//            else
+//          	  (*monitor) = -32;
+//            break;
 /*        } else {
         	cout << "Warning: convergence criteria can be only RESIDUAL for two phase flow solver" << endl;
         	cout << "Modify config file options"
@@ -786,24 +786,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
         }
         */
 
-
-
-    case RUNTIME_ADJTWO_PHASE_SYS:
-//        if (config->GetConvCriteria() == RESIDUAL) {
-        if (config->GetConvCriteria() == RESIDUAL) {
-            if (solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0) != 0)
-          	  (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-            else
-          	  (*monitor) = -32;
-
-        }
-/*        } else {
-			cout << "Warning: convergence criteria can be only RESIDUAL for two phase flow solver" << endl;
-			cout << "Modify config file options"
-			exit ()
-		}
-		*/
-    break;
   }
   
 }

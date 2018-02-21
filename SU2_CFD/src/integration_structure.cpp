@@ -318,7 +318,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       }
       
     }
-  } /* else if ( ( (RunTime_EqSystem == RUNTIME_ADJTWO_PHASE_SYS) && (Iteration == 0) ) ) {
+  }  else if ( ( (RunTime_EqSystem == RUNTIME_ADJTWO_PHASE_SYS) && (Iteration == 0) ) ) {
 	    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
 
 	      //--- Set the time step in all the MG levels ---//
@@ -336,7 +336,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 
 	    }
 	  }
-  */
+
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

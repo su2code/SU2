@@ -280,9 +280,9 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if (KindDirect_Solver == RUNTIME_2PHASE_SYS) {
 	  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	    direct_solver->node[iPoint]->SetSource(node[iPoint]->GetS2phase_Direct());
+	    //direct_solver->node[iPoint]->SetSource(node[iPoint]->GetS2phase_Direct());
 	    direct_solver->node[iPoint]->SetCriticalRadius(node[iPoint]->GetR2phase_Direct());
-	    direct_solver->node[iPoint]->SetLiqEnthalpy(node[iPoint]->GetH2phase_Direct());
+	    //direct_solver->node[iPoint]->SetLiqEnthalpy(node[iPoint]->GetH2phase_Direct());
 	  }
   }
 
@@ -626,12 +626,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_2PHASE_SYS) {
     if (compressible) {
-      if (nDim == 2) skipVars += 4;
-      if (nDim == 3) skipVars += 5;
+    	skipVars += nDim + 2;
     }
     if (incompressible) {
-      if (nDim == 2) skipVars += 3;
-      if (nDim == 3) skipVars += 4;
+    	skipVars += nDim + 1;
     }
     if (config->GetKind_Turb_Model() != NONE) {
       if (config->GetKind_Turb_Model() == SST)
@@ -691,6 +689,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. ---*/
 
+  int run_index = ADJFLOW_SOL;
+
+//  if (KindDirect_Solver == RUNTIME_TURB_SYS) run_index = ADJTURB_SOL;
+//  if (KindDirect_Solver == RUNTIME_2PHASE_SYS) run_index = ADJTWO_PHASE_SOL;
+
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -698,15 +701,15 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
         Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
         Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution();
+        Solution_Fine = solver[iMesh-1][run_index]->node[Point_Fine]->GetSolution();
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
         }
       }
-      solver[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(Solution);
+      solver[iMesh][run_index]->node[iPoint]->SetSolution(Solution);
     }
   }
-
+//???????????????????????
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   if (Restart_Vars != NULL) delete [] Restart_Vars;

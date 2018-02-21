@@ -2500,7 +2500,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     if (config->GetExtraOutput()) {
-      if (Kind_Solver == RANS) {
+      if (Kind_Solver == RANS || Kind_Solver == TWO_PHASE_RANS) {
         iVar_Extra  = nVar_Total; nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables(); nVar_Total += nVar_Extra;
       }
     }
@@ -3725,7 +3725,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             
             /*--- Get this variable into the temporary send buffer. ---*/
             
-            if (Kind_Solver == RANS) {
+            if (Kind_Solver == RANS || Kind_Solver == TWO_PHASE_RANS) {
               Buffer_Send_Var[jPoint] = solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
             }
             jPoint++;
@@ -4524,7 +4524,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       if (!turbo) ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
       else ConvHist_file[0] << begin << adj_turbo_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
-      if ((two_phase) && (!frozen_visc)) ConvHist_file[0] << adj_2phase_resid;
+//      if ((two_phase) && (!frozen_visc)) ConvHist_file[0] << adj_2phase_resid;
       ConvHist_file[0] << end;
       break;
       
@@ -6109,8 +6109,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
-            if (two_phase)
-              ConvHist_file[0] << adj_2phase_resid;
+//            if (two_phase)
+//              ConvHist_file[0] << adj_2phase_resid;
 
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -6161,8 +6161,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
               ConvHist_file[0] << adj_turb_resid;
-            if (two_phase)
-              ConvHist_file[0] << adj_2phase_resid;
+//            if (two_phase)  ConvHist_file[0] << adj_2phase_resid;
 
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -7719,6 +7718,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_RANS:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
         break;
         
@@ -8028,9 +8028,9 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
       if (Wrt_Vol || Wrt_Srf)
         DeallocateSolution(config[iZone], geometry[iZone]);
     }
-
-
     
+
+
     /*--- Final broadcast (informing other procs that the base output
      file was written). ---*/
     
@@ -10474,7 +10474,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     nPoint = geometry[iZone]->GetnPoint();
     nDim   = geometry[iZone]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
-    nVar = nDim + 1;
+    nVar = nDim+1;
 
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
@@ -10500,8 +10500,10 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
       }
       for (iVar = 0; iVar < nDim; iVar++) {
         solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
-      }
+      }//???????????????????
+      //solver[iZone]->node[iPoint]->SetSolution(2*nDim, 0);
     }
+
 
     /*--- Compute the sensitivity in normal direction ---*/
 
@@ -10537,15 +10539,24 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
           Sens = Prod/Area;
 
-          solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);
+          solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);     //????????
 
         }
       }
     }
   }
-
-  /*--- Merge the information and write the output files ---*/
-
+/*
+  iPoint = 0;
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Local_Data[iPoint][iDim] = geometry[iZone]->node[iPoint]->GetCoord(iDim);
+      }
+      for (iVar = 0; iVar < nDim; iVar++) {
+    	  Local_Data[iPoint][iVar + nDim] = geometry[iZone]->GetSensitivity(iPoint, iVar);
+      }//???????????????????
+      Local_Data[iPoint][2*nDim] = solver[iZone]->node[iPoint]->GetSolution(2*nDim);
+    }
+*/
   SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
 }
@@ -12044,7 +12055,8 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   switch (config->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
     case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
-    case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL; break;
+    case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL;
+    break;
     case TWO_PHASE_RANS : FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL; ThirdIndex = TURB_SOL; break;
     default: SecondIndex = NONE; break;
   }
@@ -12121,24 +12133,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
       /*--- S-A variants ---*/
       Variable_Names.push_back("Nu_Tilde");
     }
-  }
-
-
-
-  /*--- For the discrete adjoint, we have the full field of sensitivity
-   in each coordinate direction. ---*/
-
-  if (( Kind_Solver == DISC_ADJ_EULER)                   ||
-      ( Kind_Solver == DISC_ADJ_NAVIER_STOKES)           ||
-      ( Kind_Solver == DISC_ADJ_RANS)                    ||
-	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_EULER)         ||
-	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
-	  ( Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
-    nVar_Par += nDim;
-    Variable_Names.push_back("Sensitivity_x");
-    Variable_Names.push_back("Sensitivity_y");
-    if (geometry->GetnDim()== 3)
-      Variable_Names.push_back("Sensitivity_z");
   }
 
   /*--- If requested, register the limiter and residuals for all of the
@@ -12454,14 +12448,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         }
       }
       if (ThirdIndex != NONE) {
-        if (ThirdIndex == TWO_PHASE_SOL) {
-            Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetMassSource();
-            iVar++;
-            Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLiquidEnthalpy();
-            iVar++;
-            Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLiquidPrim(6);
-            iVar++;
-          }
+
         for (jVar = 0; jVar < nVar_Third; jVar++) {
           Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar);
           iVar++;
@@ -12656,9 +12643,11 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc_Cont()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE;  break;
     case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTURB_SOL;  break;
-    case DISC_ADJ_TWO_PHASE_EULER: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL;  break;
+    case DISC_ADJ_TWO_PHASE_EULER: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL;
+    break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL;  break;
-    case DISC_ADJ_TWO_PHASE_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL; ThirdIndex = ADJTURB_SOL;  break;
+    case DISC_ADJ_TWO_PHASE_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTWO_PHASE_SOL;
+    ThirdIndex = ADJTURB_SOL;  break;
   }
   
   /* NOTE: when existent, ADJTWO_PHASE_SOL is always index 2, ADJTURB_SOL always follows ADJTWO_PHASE_SOL */

@@ -3966,7 +3966,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER:
+      case EULER: case DISC_ADJ_EULER: case TWO_PHASE_EULER: case DISC_ADJ_TWO_PHASE_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         switch (Kind_2phase_Model) {
@@ -3974,7 +3974,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                   case HILL_RUS:     cout << "Hill's method of moments, Rusanov flux" << endl; break;
                 }
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case TWO_PHASE_NAVIER_STOKES: case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         switch (Kind_2phase_Model) {
@@ -3982,7 +3982,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                   case HILL_RUS:     cout << "Hill's method of moments, Rusanov flux" << endl; break;
                 }
         break;
-      case RANS: case DISC_ADJ_RANS:
+      case RANS: case DISC_ADJ_RANS: case TWO_PHASE_RANS: case DISC_ADJ_TWO_PHASE_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";

@@ -981,9 +981,6 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
     }
   }
 
-  /*--- Skip source terms (S,h) ---*/
-
-//  skipVars += 2;
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -1061,13 +1058,16 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   Set_MPI_Solution(geometry[MESH_0], config);
 //  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+  /*  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
     Rc = solver[MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6);
 
     Sol = node[iPoint]->SetLiquidPrim(solver[MESH_0][FLOW_SOL]->node[iPoint]->GetPrimitive(),
         node[iPoint]->GetSolution(), Rc,
         solver[MESH_0][FLOW_SOL]->GetFluidModel(), config);
+
+    node[iPoint]->SetLiquidPrimZero();
   }
+  */
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -1088,14 +1088,16 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
     Set_MPI_Solution(geometry[iMesh], config);
 //    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
-
+    /*
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Rc = node[iPoint]->GetLiquidPrim(6);
+     Rc = node[iPoint]->GetLiquidPrim(6);
       Sol = node[iPoint]->SetLiquidPrim(solver[iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(),
           node[iPoint]->GetSolution(), Rc,
           solver[iMesh][FLOW_SOL]->GetFluidModel(), config);
-    }
 
+      node[iPoint]->SetLiquidPrimZero();
+    }
+*/
   }
 
 
@@ -1544,13 +1546,13 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   unsigned long iPoint;
   unsigned short iVar, jVar;
 
-
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
 	Prim_vec      = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 	Two_phase_sol = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution();
 
 	Liquid_vec = node[iPoint]->GetLiquidPrim();
+
 	Liquid_vec = node[iPoint]->SetLiquidPrim(Prim_vec, Two_phase_sol, Liquid_vec[6], solver_container[FLOW_SOL]->GetFluidModel(), config);
 
 	numerics->Set2phaseVar(Two_phase_sol, NULL);

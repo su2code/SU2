@@ -4964,11 +4964,11 @@ void CHBDriver::ResetConvergence() {
     		  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS))
         integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
       break;
-/*      if( (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+      if( (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
     	(config_container[iZone]->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) )
         integration_container[iZone][ADJTWO_PHASE_SOL]->SetConvergence(false);
       break;
- */   }
+   }
   }
 
 }
