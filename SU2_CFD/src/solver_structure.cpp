@@ -3700,7 +3700,12 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
   /*--- Retrieve filename from config ---*/
 
-  filename = config->GetSolution_FlowFileName();
+  if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
+    filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else {
+    filename = config->GetSolution_FlowFileName();
+  }
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
@@ -3911,10 +3916,18 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short iVar;
   unsigned long index;
 
+  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
+
   string UnstExt, text_line;
   ifstream restart_file;
+  string restart_filename;
 
-  string restart_filename = config->GetSolution_FlowFileName();
+  if (adjoint) {
+    restart_filename = config->GetSolution_AdjFileName();
+    restart_filename = config->GetObjFunc_Extension(restart_filename);
+  } else {
+    restart_filename = config->GetSolution_FlowFileName();
+  }
 
   if (config->GetWrt_Unsteady()) {
     restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter));

@@ -823,7 +823,7 @@ void CFEM_DG_DiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) {
-        VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
+        VecSolDOFsNew[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
       /*--- Update the local counter nDOF_Read. ---*/
       ++nDOF_Read;
