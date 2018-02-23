@@ -395,6 +395,10 @@ void CConfig::SetPointersNull(void) {
   Surface_Temperature      = NULL;   Surface_Pressure         = NULL;  Surface_Density          = NULL;   Surface_Enthalpy          = NULL;
   Surface_NormalVelocity   = NULL;   Surface_TotalTemperature = NULL;  Surface_TotalPressure    = NULL;
   Surface_DC60             = NULL;    Surface_IDC = NULL;
+
+  Surface_StreamwiseUniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondaryOverStream = NULL;
+  Surface_MomentumDistortion = NULL;
+
   Surface_IDC_Mach        = NULL;    Surface_IDR            = NULL;    ActDisk_Mach             = NULL;
   ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
   
@@ -3777,6 +3781,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Surface_Density = new su2double[nMarker_Analyze];
   Surface_Enthalpy = new su2double[nMarker_Analyze];
   Surface_NormalVelocity = new su2double[nMarker_Analyze];
+  Surface_StreamwiseUniformity = new su2double[nMarker_Analyze];
+  Surface_SecondaryStrength = new su2double[nMarker_Analyze];
+  Surface_SecondaryOverStream = new su2double[nMarker_Analyze];
+  Surface_MomentumDistortion = new su2double[nMarker_Analyze];
   Surface_TotalTemperature = new su2double[nMarker_Analyze];
   Surface_TotalPressure = new su2double[nMarker_Analyze];
   Surface_DC60 = new su2double[nMarker_Analyze];
@@ -3791,6 +3799,10 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Surface_Density[iMarker_Analyze] = 0.0;
     Surface_Enthalpy[iMarker_Analyze] = 0.0;
     Surface_NormalVelocity[iMarker_Analyze] = 0.0;
+    Surface_StreamwiseUniformity[iMarker_Analyze] = 0.0;
+    Surface_SecondaryStrength[iMarker_Analyze] = 0.0;
+    Surface_SecondaryOverStream[iMarker_Analyze] = 0.0;
+    Surface_MomentumDistortion[iMarker_Analyze] = 0.0;
     Surface_TotalTemperature[iMarker_Analyze] = 0.0;
     Surface_TotalPressure[iMarker_Analyze] = 0.0;
     Surface_DC60[iMarker_Analyze] = 0.0;
@@ -6241,6 +6253,10 @@ CConfig::~CConfig(void) {
   if (Surface_Density != NULL)    delete[]  Surface_Density;
   if (Surface_Enthalpy != NULL)    delete[]  Surface_Enthalpy;
   if (Surface_NormalVelocity != NULL)    delete[]  Surface_NormalVelocity;
+  if (Surface_StreamwiseUniformity != NULL)    delete[]  Surface_StreamwiseUniformity;
+  if (Surface_SecondaryStrength != NULL)    delete[]  Surface_SecondaryStrength;
+  if (Surface_SecondaryOverStream != NULL)    delete[]  Surface_SecondaryOverStream;
+  if (Surface_MomentumDistortion != NULL)    delete[]  Surface_MomentumDistortion;
   if (Surface_TotalTemperature != NULL)    delete[]  Surface_TotalTemperature;
   if (Surface_TotalPressure!= NULL)    delete[]  Surface_TotalPressure;
   if (Surface_DC60 != NULL)    delete[]  Surface_DC60;

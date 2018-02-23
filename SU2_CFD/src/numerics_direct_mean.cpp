@@ -5142,40 +5142,43 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
       val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
       val_residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
       val_residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
+
+      if (implicit) {
+        Jacobian_i[0][0] = 0.0;
+        Jacobian_i[0][1] = 0.0;
+        Jacobian_i[0][2] = 1.0;
+        Jacobian_i[0][3] = 0.0;
+
+        Jacobian_i[1][0] = -U_i[1]*U_i[2]/(U_i[0]*U_i[0]);
+        Jacobian_i[1][1] = U_i[2]/U_i[0];
+        Jacobian_i[1][2] = U_i[1]/U_i[0];
+        Jacobian_i[1][3] = 0.0;
+
+        Jacobian_i[2][0] = -U_i[2]*U_i[2]/(U_i[0]*U_i[0]);
+        Jacobian_i[2][1] = 0.0;
+        Jacobian_i[2][2] = 2*U_i[2]/U_i[0];
+        Jacobian_i[2][3] = 0.0;
+
+        Jacobian_i[3][0] = -Gamma*U_i[2]*U_i[3]/(U_i[0]*U_i[0]) + (Gamma-1)*U_i[2]*(U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]*U_i[0]);
+        Jacobian_i[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
+        Jacobian_i[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
+        Jacobian_i[3][3] = Gamma*U_i[2]/U_i[0];
+
+        for (iVar=0; iVar < nVar; iVar++)
+          for (jVar=0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] *= yinv*Volume;
+        
+      }
+
     }
     
     if (incompressible) {
-      val_residual[0] = yinv*Volume*U_i[2]*BetaInc2_i;
-      val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/DensityInc_i;
-      val_residual[2] = yinv*Volume*U_i[2]*U_i[2]/DensityInc_i;
+      val_residual[0] = yinv*Volume*U_i[2]*DensityInc_i;
+      val_residual[1] = yinv*Volume*U_i[1]*U_i[2]*DensityInc_i;
+      val_residual[2] = yinv*Volume*U_i[2]*U_i[2]*DensityInc_i;
+      val_residual[3] = 0.0;//yinv*Volume*U_i[2]*U_i[2]*DensityInc_i;
     }
-    
-    if (implicit) {
-      Jacobian_i[0][0] = 0.0;
-      Jacobian_i[0][1] = 0.0;
-      Jacobian_i[0][2] = 1.0;
-      Jacobian_i[0][3] = 0.0;
-      
-      Jacobian_i[1][0] = -U_i[1]*U_i[2]/(U_i[0]*U_i[0]);
-      Jacobian_i[1][1] = U_i[2]/U_i[0];
-      Jacobian_i[1][2] = U_i[1]/U_i[0];
-      Jacobian_i[1][3] = 0.0;
-      
-      Jacobian_i[2][0] = -U_i[2]*U_i[2]/(U_i[0]*U_i[0]);
-      Jacobian_i[2][1] = 0.0;
-      Jacobian_i[2][2] = 2*U_i[2]/U_i[0];
-      Jacobian_i[2][3] = 0.0;
-      
-      Jacobian_i[3][0] = -Gamma*U_i[2]*U_i[3]/(U_i[0]*U_i[0]) + (Gamma-1)*U_i[2]*(U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]*U_i[0]);
-      Jacobian_i[3][1] = -(Gamma-1)*U_i[2]*U_i[1]/(U_i[0]*U_i[0]);
-      Jacobian_i[3][2] = Gamma*U_i[3]/U_i[0] - 1/2*(Gamma-1)*( (U_i[1]*U_i[1]+U_i[2]*U_i[2])/(U_i[0]*U_i[0]) + 2*U_i[2]*U_i[2]/(U_i[0]*U_i[0]) );
-      Jacobian_i[3][3] = Gamma*U_i[2]/U_i[0];
-      
-      for (iVar=0; iVar < nVar; iVar++)
-      for (jVar=0; jVar < nVar; jVar++)
-      Jacobian_i[iVar][jVar] *= yinv*Volume;
-      
-    }
+
   }
   
   else {
