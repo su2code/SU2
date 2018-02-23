@@ -5,20 +5,24 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,7 +58,6 @@ using namespace std;
  * \class CNumerics
  * \brief Class for defining the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CNumerics {
 protected:
@@ -1540,7 +1543,6 @@ public:
  * \brief Class for centered scheme - CUSP.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CUpwCUSP_Flow : public CNumerics {
   
@@ -1590,7 +1592,6 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author A. Bueno, F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
@@ -1638,7 +1639,6 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
  * \ingroup ConvDiscr
  * \author S.Vitale, G.Gori, M.Pini
- * \version 5.0.0 "Raven"
  */
 class CUpwGeneralRoe_Flow : public CNumerics {
 private:
@@ -1790,7 +1790,6 @@ public:
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author S. Copeland
- * \version 5.0.0 "Raven"
  */
 class CUpwMSW_Flow : public CNumerics {
 private:
@@ -1835,7 +1834,6 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
  * \author A. K. Lonkar
- * \version 5.0.0 "Raven"
  */
 class CUpwTurkel_Flow : public CNumerics {
 private:
@@ -1890,7 +1888,6 @@ public:
  * \brief Class for solving an upwind method for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CUpwArtComp_Flow : public CNumerics {
 private:
@@ -1942,7 +1939,6 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CUpwRoe_AdjFlow : public CNumerics {
 private:
@@ -1992,7 +1988,6 @@ public:
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CUpwAUSM_Flow : public CNumerics {
 private:
@@ -2039,7 +2034,6 @@ public:
  * \brief Class for solving the Low-Dissipation AUSM.
  * \ingroup ConvDiscr
  * \author E. Molina
- * \version 5.0.0 "Raven"
  */
 class CUpwSLAU_Flow : public CNumerics {
 private:
@@ -2087,7 +2081,6 @@ public:
  * \brief Class for solving the Simple Low-Dissipation AUSM 2.
  * \ingroup ConvDiscr
  * \author E. Molina
- * \version 5.0.0 "Raven"
  */
 class CUpwSLAU2_Flow : public CNumerics {
 private:
@@ -2245,7 +2238,6 @@ public:
  * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
  * \ingroup ConvDiscr
  * \author A. Aranake
- * \version 5.0.0 "Raven"
  */
 class CUpwLin_TransLM : public CNumerics {
 private:
@@ -2285,7 +2277,6 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CUpwLin_AdjTurb : public CNumerics {
 private:
@@ -2329,7 +2320,6 @@ public:
  *   the pure virtual functions with model-specific behavior.
  * \ingroup ConvDiscr
  * \author C. Pederson, A. Bueno., and A. Campos.
- * \version 5.0.0 "Raven"
  */
 class CUpwScalar : public CNumerics {
 private:
@@ -2390,7 +2380,6 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CUpwSca_TurbSA : public CUpwScalar {
 private:
@@ -2431,7 +2420,6 @@ public:
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Campos.
- * \version 5.0.0 "Raven"
  */
 class CUpwSca_TurbSST : public CUpwScalar {
 private:
@@ -2472,7 +2460,6 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
  * \ingroup ConvDiscr
  * \author A. Aranake.
- * \version 5.0.0 "Raven"
  */
 class CUpwSca_TransLM : public CNumerics {
 private:
@@ -2511,7 +2498,6 @@ public:
  * \brief Class for doing a scalar upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CUpwSca_AdjTurb : public CNumerics {
 private:
@@ -2551,7 +2537,6 @@ public:
  * \brief Class for centered shceme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CCentJST_KE_Flow : public CNumerics {
   
@@ -2605,7 +2590,6 @@ public:
  * \brief Class for centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CCentJST_Flow : public CNumerics {
   
@@ -2659,7 +2643,6 @@ public:
  * \brief Class for centered scheme - JST (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CCentJSTArtComp_Flow : public CNumerics {
   
@@ -2713,7 +2696,6 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CCentJST_AdjFlow : public CNumerics {
 private:
@@ -2763,7 +2745,6 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CCentLax_Flow : public CNumerics {
 private:
@@ -2815,7 +2796,6 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CCentLaxArtComp_Flow : public CNumerics {
 private:
@@ -2868,7 +2848,6 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CCentLax_AdjFlow : public CNumerics {
 private:
@@ -2918,7 +2897,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_Flow : public CNumerics {
 private:
@@ -3010,7 +2988,6 @@ public:
  * \brief Class for computing viscous term using an average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
@@ -3060,7 +3037,6 @@ public:
  *   the pure virtual functions with model-specific behavior.
  * \ingroup ViscDiscr
  * \author C. Pederson, A. Bueno, and F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_Scalar : public CNumerics {
  private:
@@ -3125,7 +3101,6 @@ class CAvgGrad_Scalar : public CNumerics {
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_TurbSA : public CAvgGrad_Scalar {
 private:
@@ -3170,7 +3145,6 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_TurbSA_Neg : public CAvgGrad_Scalar {
 private:
@@ -3217,7 +3191,6 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_TransLM : public CNumerics {
 private:
@@ -3260,7 +3233,6 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_AdjFlow : public CNumerics {
 private:
@@ -3302,7 +3274,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAvgGradCorrected_Flow : public CNumerics {
 private:
@@ -3396,7 +3367,6 @@ public:
  * \brief Class for computing viscous term using an average of gradients with correction (artificial compresibility).
  * \ingroup ViscDiscr
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
@@ -3441,7 +3411,6 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAvgGradCorrected_TransLM : public CNumerics {
 private:
@@ -3481,7 +3450,6 @@ public:
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_TurbSST : public CAvgGrad_Scalar {
 private:
@@ -3540,7 +3508,6 @@ public:
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAvgGradCorrected_AdjFlow : public CNumerics {
 private:
@@ -3588,7 +3555,6 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAvgGradCorrected_AdjTurb : public CNumerics {
 private:
@@ -3640,7 +3606,6 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAvgGrad_AdjTurb : public CNumerics {
 private:
@@ -3692,7 +3657,6 @@ public:
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CGalerkin_Flow : public CNumerics {
 public:
@@ -4124,7 +4088,6 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSourceNothing : public CNumerics {
 public:
@@ -4148,7 +4111,6 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CSourcePieceWise_TurbSA : public CNumerics {
 private:
@@ -4543,7 +4505,6 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSourcePieceWise_TurbSA_Neg : public CNumerics {
 private:
@@ -4638,7 +4599,6 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
@@ -4703,7 +4663,6 @@ public:
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  * \ingroup SourceDiscr
  * \author A. Campos.
- * \version 5.0.0 "Raven"
  */
 class CSourcePieceWise_TurbSST : public CNumerics {
 private:
@@ -4777,7 +4736,6 @@ public:
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSourceGravity : public CNumerics {
   su2double Froude;
@@ -4810,7 +4768,6 @@ public:
  * \brief Class for the source term integration of a body force.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CSourceBodyForce : public CNumerics {
   su2double *Body_Force_Vector;
@@ -4910,7 +4867,6 @@ public:
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSourceViscous_AdjFlow : public CNumerics {
 private:
@@ -4946,7 +4902,6 @@ public:
  * \brief Class for source term integration of the adjoint turbulent equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CSourcePieceWise_AdjTurb : public CNumerics {
 private:
@@ -5010,7 +4965,6 @@ public:
  * \brief Class for source term integration in adjoint turbulent problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CSourceConservative_AdjTurb : public CNumerics {
 public:
@@ -5043,7 +4997,6 @@ public:
  * \brief Class for a rotating frame source term.
  * \ingroup SourceDiscr
  * \author F. Palacios, T. Economon.
- * \version 5.0.0 "Raven"
  */
 class CSourceRotatingFrame_Flow : public CNumerics {
 public:
@@ -5075,7 +5028,6 @@ public:
  * \brief Source term class for rotating frame adjoint.
  * \ingroup SourceDiscr
  * \author T. Economon.
- * \version 5.0.0 "Raven"
  */
 class CSourceRotatingFrame_AdjFlow : public CNumerics {
 public:
@@ -5107,7 +5059,6 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
 public:
@@ -5139,7 +5090,6 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CSourceAxisymmetric_AdjFlow : public CNumerics {
 public:
@@ -5170,7 +5120,6 @@ public:
  * \brief Class for a source term due to a wind gust.
  * \ingroup SourceDiscr
  * \author S. Padrón
- * \version 5.0.0 "Raven"
  */
 class CSourceWindGust : public CNumerics {
 public:
@@ -5202,7 +5151,6 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author A. Lonkar.
- * \version 5.0.0 "Raven"
  */
 class CSource_Template : public CNumerics {
 public:
@@ -5236,7 +5184,6 @@ public:
  * \brief Class for setting up new method for spatial discretization of convective terms in flow Equations
  * \ingroup ConvDiscr
  * \author A. Lonkar
- * \version 5.0.0 "Raven"
  */
 class CConvective_Template : public CNumerics {
 private:
@@ -5284,7 +5231,6 @@ public:
  * \brief Class for computing viscous term using average of gradients.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CViscous_Template : public CNumerics {
 private:

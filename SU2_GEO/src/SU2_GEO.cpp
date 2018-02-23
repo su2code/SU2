@@ -2,20 +2,24 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -242,6 +246,29 @@ int main(int argc, char *argv[]) {
         Plane_Normal[iPlane][0] = 0.0;
         Plane_Normal[iPlane][1] = -sin(config_container[ZONE_0]->GetLocationStations(iPlane)*PI_NUMBER/180.0);
         Plane_Normal[iPlane][2] = cos(config_container[ZONE_0]->GetLocationStations(iPlane)*PI_NUMBER/180.0);
+        
+        /*--- Apply tilt angle to the plane ---*/
+        
+        su2double Tilt_Angle = config_container[ZONE_0]->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt = Plane_Normal[iPlane][0]*cos(Tilt_Angle) + Plane_Normal[iPlane][2]*sin(Tilt_Angle);
+        su2double Plane_NormalY_Tilt = Plane_Normal[iPlane][1];
+        su2double Plane_NormalZ_Tilt = Plane_Normal[iPlane][2]*cos(Tilt_Angle) - Plane_Normal[iPlane][0]*sin(Tilt_Angle);
+        
+        /*--- Apply toe angle to the plane ---*/
+        
+        su2double Toe_Angle = config_container[ZONE_0]->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+        su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+        su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+        
+        /*--- Update normal vector ---*/
+        
+        Plane_Normal[iPlane][0] = Plane_NormalX_Tilt_Toe;
+        Plane_Normal[iPlane][1] = Plane_NormalY_Tilt_Toe;
+        Plane_Normal[iPlane][2] = Plane_NormalZ_Tilt_Toe;
+        
+        /*--- Point in the plane ---*/
+        
         Plane_P0[iPlane][0] = config_container[ZONE_0]->GetNacelleLocation(0);
         Plane_P0[iPlane][1] = config_container[ZONE_0]->GetNacelleLocation(1);
         Plane_P0[iPlane][2] = config_container[ZONE_0]->GetNacelleLocation(2);
