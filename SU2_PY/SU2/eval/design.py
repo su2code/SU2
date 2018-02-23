@@ -3,20 +3,24 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -258,7 +262,7 @@ def obj_p(config,state,this_obj,def_objs):
     # This code, and obj_dp, must be changed to use a non-quadratic penalty function
     funcval = su2func(this_obj,config,state)
     constraint = float(def_objs[this_obj]['VALUE'])
-              
+    penalty = 0.0
     if (def_objs[this_obj]['OBJTYPE']=='=' or \
         (def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint) or \
         (def_objs[this_obj]['OBJTYPE']=='<' and funcval > constraint )):
@@ -276,7 +280,7 @@ def obj_dp(config,state,this_obj,def_objs):
     # This code, and obj_p, must be changed to use a non-quadratic penalty function
     funcval = su2func(this_obj,config,state)
     constraint = float(def_objs[this_obj]['VALUE'])
-    
+    dpenalty=0.0
 
     # Inequalities will be 0 or a positive value
     if ((def_objs[this_obj]['OBJTYPE']=='>' and funcval < constraint)  or\
@@ -286,7 +290,7 @@ def obj_dp(config,state,this_obj,def_objs):
     elif (def_objs[this_obj]['OBJTYPE']=='='):
         dpenalty=2.0*(funcval -constraint)
     # If 'DEFAULT' objtype, this will return 1.0
-    else:
+    elif (def_objs[this_obj]['OBJTYPE']=='DEFAULT'):
         dpenalty = 1.0
     
 
@@ -329,47 +333,51 @@ def obj_df(dvs,config,state=None):
         # Evaluate objectives all-at-once; for adjoint methods this results in a 
         # single, combined objective.
         scale = [1.0]*n_obj
+        obj_list=['DRAG']*n_obj	
         for i_obj,this_obj in enumerate(objectives):
+            obj_list[i_obj]=this_obj
             scale[i_obj] = def_objs[this_obj]['SCALE']
             if def_objs[this_obj]['OBJTYPE']== 'DEFAULT':
                 # Standard case
                 sign = su2io.get_objectiveSign(this_obj)
-                global_factor = float(config['OPT_GRADIENT_FACTOR'])
-                scale[i_obj] *= sign * global_factor
+                scale[i_obj] *= sign 
             else:
                 # For a penalty function, the term is scaled by the partial derivative
                 # d p(j) / dx = (dj / dx) * ( dp / dj)  
                 scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
-            
+
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
-        
-        grad= su2grad(objectives,grad_method,config,state)
-        # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
+        grad= su2grad(obj_list,grad_method,config,state)
+        # scaling : obj scale  and sign are accounted for in combo gradient, dv scale now applied
+        global_factor = float(config['OPT_GRADIENT_FACTOR'])            
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] / dv_scl
+                grad[k] = grad[k]*global_factor / dv_scl 
                 k = k + 1
 
         vals_out.append(grad)
     else:
         # Evaluate objectives one-by-one
         marker_monitored = config['MARKER_MONITORING']
-        for i_obj,this_obj in enumerate(objectives):
+        for i_obj,this_obj in enumerate(objectives): 
+            # For multiple objectives are evaluated one-by-one rather than combined
+            # MARKER_MONITORING should be updated to only include the marker for i_obj
+            # For single objectives, multiple markers can be used 
+            config['MARKER_MONITORING'] = marker_monitored[i_obj]
             scale = def_objs[this_obj]['SCALE']
             global_factor = float(config['OPT_GRADIENT_FACTOR'])
             sign  = su2io.get_objectiveSign(this_obj)
-  
-            if n_obj>1 and len(marker_monitored)>1:
-                # For multiple objectives are evaluated one-by-one rather than combined
-                # MARKER_MONITORING should be updated to only include the marker for i_obj
-                # For single objectives, multiple markers can be used 
-                config['MARKER_MONITORING'] = marker_monitored[i_obj]
-
-            
+            if def_objs[this_obj]['OBJTYPE']!= 'DEFAULT':
+                # For a penalty function, the term is scaled by the partial derivative
+                # and the sign is always positive 
+                # d p(j) / dx = (dj / dx) * ( dp / dj)  
+                scale*=obj_dp(config, state, this_obj, def_objs)
+                sign = 1.0
+                        
             # Evaluate Objective Gradient
             grad = su2grad(this_obj,grad_method,config,state)
-            
+           
             # scaling and sign
             k = 0
             for i_dv,dv_scl in enumerate(dv_scales):
