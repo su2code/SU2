@@ -3,20 +3,24 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -181,7 +185,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.514966, 4.910923, 0.825022, 0.052675] #last 4 columns
+    rae2822_sst.test_vals = [-0.510826, 4.909749, 0.825022, 0.052675] #last 4 columns
     rae2822_sst.su2_exec  = "SU2_CFD"
     rae2822_sst.timeout   = 1600
     rae2822_sst.tol       = 0.00001
@@ -263,7 +267,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 50
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.459421, -4.595755, 1.201830, -0.007146, 0.080516] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-6.459444, -4.595710, 1.201844, -0.007146, 0.080517] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
@@ -512,7 +516,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.166406,0.076804,1.398548,2.197047] #last 4 columns
+    square_cylinder.test_vals = [-1.166421, 0.076804, 1.398548, 2.197047] #last 4 columns
     square_cylinder.su2_exec  = "SU2_CFD"
     square_cylinder.timeout   = 1600
     square_cylinder.tol       = 0.00001
@@ -602,7 +606,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.351599, 0.407111, 82.840290, 0.882243] #last 4 columns
+    Jones_tc.test_vals = [-5.362540, 0.406893, 82.840290, 0.882243] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -613,7 +617,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.279683, -1.421869, 82.253640, 2.776473] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.265376, -1.422420, 82.253590, 2.776443] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -624,7 +628,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [ -1.836926, 5.787277, 73.679940, 0.888933] #last 4 columns
+    axial_stage2D.test_vals = [-1.837052, 5.787278, 73.679940, 0.888933] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.timeout   = 1600
     axial_stage2D.tol       = 0.00001
@@ -635,7 +639,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-1.109571, 6.120397, 67.101450, 0.070037] #last 4 columns
+    transonic_stator.test_vals = [-1.111211, 6.120416, 67.101490, 0.070037] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.timeout   = 1600
     transonic_stator.tol       = 0.00001
@@ -646,7 +650,7 @@ def main():
     transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
     transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-0.487766, 4.460510, 6.456515, 0.004009] #last 4 columns
+    transonic_stator_rst.test_vals = [-0.487105, 4.460638, 6.456525, 0.004009] #last 4 columns
     transonic_stator_rst.su2_exec  = "SU2_CFD"
     transonic_stator_rst.timeout   = 1600
     transonic_stator_rst.tol       = 0.00001
@@ -734,7 +738,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [-2.138976, 1.639495, -0.000831, 0.117497] #last 4 columns
+    bars_SST_2D.test_vals = [-2.138791, 1.639495, -0.000831, 0.117497] #last 4 columns
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
@@ -994,13 +998,13 @@ def main():
     shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
     shape_opt_euler_py.test_iter = 1
     shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
-    shape_opt_euler_py.su2_exec  = "shape_optimization.py -f"
+    shape_opt_euler_py.su2_exec  = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
 
-    # test continuous_adjoint.py, with multiple objectives
+    # Multiple functionals with the continuous adjoint
     contadj_multi_py            = TestCase('contadj_multi_py')
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
@@ -1011,7 +1015,56 @@ def main():
     contadj_multi_py.test_file  = "of_grad_combo.dat"
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
+    
+    # Optimization with multiple objectives, with gradients evaluated individually
+    # the difference in gradient value relative to combined case 
+    # is due to lack of solution file for the adjoint and small number of iterations
+    opt_multiobj_py            = TestCase('opt_multiobj_py')
+    opt_multiobj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobj_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    opt_multiobj_py.test_iter  = 1
+    opt_multiobj_py.test_vals = [1, 1, 1.084701E+02, 3.799222E+00] #last 4 columns
+    opt_multiobj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+    opt_multiobj_py.timeout    = 1600
+    opt_multiobj_py.tol       = 0.00001
+    pass_list.append(opt_multiobj_py.run_opt())
+    test_list.append(opt_multiobj_py)
 
+    # test optimization, with multiple objectives and gradient evaluated as 'combo' 
+    opt_multiobjcombo_py            = TestCase('opt_multiobjcombo_py')
+    opt_multiobjcombo_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobjcombo_py.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
+    opt_multiobjcombo_py.test_iter  = 1
+    opt_multiobjcombo_py.test_vals = [1, 1, 1.084701E+02, 3.789322E+00] #last 4 columns
+    opt_multiobjcombo_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT -f"
+    opt_multiobjcombo_py.timeout    = 1600
+    opt_multiobjcombo_py.tol       = 0.00001
+    pass_list.append(opt_multiobjcombo_py.run_opt())
+    test_list.append(opt_multiobjcombo_py)
+
+    # test optimization, with multiple objectives evaluated on a single surface
+    opt_multiobj1surf_py            = TestCase('opt_multiobj1surf_py')
+    opt_multiobj1surf_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
+    opt_multiobj1surf_py.test_iter  = 1
+    opt_multiobj1surf_py.test_vals = [1, 1, 3.083034E+01, 3.789380E+00] #last 4 columns
+    opt_multiobj1surf_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
+    opt_multiobj1surf_py.timeout    = 1600
+    opt_multiobj1surf_py.tol       = 0.00001
+    pass_list.append(opt_multiobj1surf_py.run_opt())
+    test_list.append(opt_multiobj1surf_py)
+
+    # test optimization, with a single objective evaluated on multiple surfaces
+    opt_2surf1obj_py            = TestCase('opt_2surf1obj_py')
+    opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
+    opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
+    opt_2surf1obj_py.test_iter  = 1    
+    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 1.779489E-07] #last 4 columns
+    opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
+    opt_2surf1obj_py.timeout    = 1600
+    opt_2surf1obj_py.tol       = 0.00001
+    pass_list.append(opt_2surf1obj_py.run_opt())
+    test_list.append(opt_2surf1obj_py)
 
     ##########################
     ###   Python wrapper   ###
@@ -1046,7 +1099,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
-    pywrapper_square_cylinder.test_vals = [-1.166406,0.076804,1.398548,2.197047] #last 4 columns
+    pywrapper_square_cylinder.test_vals = [-1.166421, 0.076804, 1.398548, 2.197047] #last 4 columns
     pywrapper_square_cylinder.su2_exec  = "SU2_CFD.py -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
@@ -1084,7 +1137,7 @@ def main():
     pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
     pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
     pywrapper_unsteadyCHT.test_iter     = 5
-    pywrapper_unsteadyCHT.test_vals     = [-1.607237, 2.263302, 0.001077, 0.145817] #last 4 columns
+    pywrapper_unsteadyCHT.test_vals     = [-1.598116, 2.263309, 0.001077, 0.145818] #last 4 columns
     pywrapper_unsteadyCHT.su2_exec      = "python launch_unsteady_CHT_FlatPlate.py -f"
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
@@ -1097,7 +1150,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.607237, 2.259664, -0.040621, 0.144133] #last 4 columns
+    pywrapper_rigidMotion.test_vals     = [-1.598116, 2.259671, -0.040621, 0.144134] #last 4 columns
     pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001

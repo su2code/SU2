@@ -3,20 +3,24 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,7 +66,6 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 
 class CConfig {
@@ -135,6 +138,7 @@ private:
   Frozen_Visc_Cont,			/*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
   Frozen_Limiter_Disc,			/*!< \brief Flag for disc. adjoint problem with/without frozen limiter. */
+  Inconsistent_Disc,      /*!< \brief Use an inconsistent (primal/dual) discrete adjoint formulation. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
@@ -4184,6 +4188,12 @@ public:
    * \return <code>FALSE</code> means that the adjoint turbulence equations will be used.
    */
   bool GetFrozen_Visc_Disc(void);
+  
+  /*!
+   * \brief Provides information about using an inconsistent (primal/dual) discrete adjoint formulation
+   * \return <code>FALSE</code> means that the adjoint use the same numerical methods than the primal problem.
+   */
+  bool GetInconsistent_Disc(void);
 
   /*!
    * \brief Provides information about the way in which the limiter will be treated by the

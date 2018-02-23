@@ -3,20 +3,24 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -46,9 +50,10 @@ from ..util import which
 
 SU2_RUN = os.environ['SU2_RUN'] 
 sys.path.append( SU2_RUN )
+quote = '"' if sys.platform == 'win32' else ''
 
 # SU2 suite run command template
-base_Command = os.path.join(SU2_RUN,'%s')
+base_Command = os.path.join(SU2_RUN, '%s')
 
 # check for slurm
 slurm_job = 'SLURM_JOBID' in os.environ
@@ -95,7 +100,7 @@ def CFD(config):
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
+        the_Command = 'SU2_CFD_DIRECTDIFF%s %s' % (quote, tempname)
 
     elif auto_diff:
         tempname = 'config_CFD_AD.cfg'
@@ -103,7 +108,7 @@ def CFD(config):
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_CFD_AD ' + tempname
+        the_Command = 'SU2_CFD_AD%s %s' % (quote, tempname)
 
     else:
         tempname = 'config_CFD.cfg'
@@ -111,9 +116,9 @@ def CFD(config):
     
         processes = konfig['NUMBER_PART']
     
-        the_Command = 'SU2_CFD ' + tempname
+        the_Command = 'SU2_CFD%s %s' % (quote, tempname)
 
-    the_Command = build_command( the_Command , processes )
+    the_Command = build_command( the_Command, processes )
     run_command( the_Command )
     
     #os.remove(tempname)
@@ -134,7 +139,7 @@ def MSH(config):
     processes = konfig['NUMBER_PART']
     processes = min([1,processes])    
     
-    the_Command = 'SU2_MSH ' + tempname
+    the_Command = 'SU2_MSH%s %s' % (quote, tempname)
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -155,8 +160,8 @@ def DEF(config):
     # must run with rank 1
     processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_DEF ' + tempname
-    the_Command = build_command( the_Command , processes )
+    the_Command = 'SU2_DEF%s %s' % (quote, tempname)
+    the_Command = build_command( the_Command, processes )
     run_command( the_Command )
     
     #os.remove(tempname)
@@ -178,7 +183,7 @@ def DOT(config):
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_DOT_AD ' + tempname
+        the_Command = 'SU2_DOT_AD%s %s' % (quote, tempname)
     else:
     
         tempname = 'config_DOT.cfg'
@@ -186,9 +191,9 @@ def DOT(config):
     
         processes = konfig['NUMBER_PART']
     
-        the_Command = 'SU2_DOT ' + tempname
+        the_Command = 'SU2_DOT%s %s' % (quote, tempname)
 
-    the_Command = build_command( the_Command , processes )
+    the_Command = build_command( the_Command, processes )
     run_command( the_Command )
     
     #os.remove(tempname)
@@ -265,7 +270,7 @@ def SOL_FSI(config):
 
 def build_command( the_Command , processes=0 ):
     """ builds an mpi command for given number of processes """
-    the_Command = base_Command % the_Command
+    the_Command = quote + (base_Command % the_Command)
     if processes > 1:
         if not mpi_Command:
             raise RuntimeError('could not find an mpi interface')
