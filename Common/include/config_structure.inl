@@ -121,6 +121,14 @@ inline void CConfig::SetSurface_Enthalpy(unsigned short val_imarker, su2double v
 
 inline void CConfig::SetSurface_NormalVelocity(unsigned short val_imarker, su2double val_surface_normalvelocity) { Surface_NormalVelocity[val_imarker] = val_surface_normalvelocity; }
 
+inline void CConfig::SetSurface_StreamwiseUniformity(unsigned short val_imarker, su2double val_surface_streamwiseuniformity) { Surface_StreamwiseUniformity[val_imarker] = val_surface_streamwiseuniformity; }
+
+inline void CConfig::SetSurface_SecondaryStrength(unsigned short val_imarker, su2double val_surface_secondarystrength) { Surface_SecondaryStrength[val_imarker] = val_surface_secondarystrength; }
+
+inline void CConfig::SetSurface_SecondaryOverStream(unsigned short val_imarker, su2double val_surface_secondaryoverstream) { Surface_SecondaryOverStream[val_imarker] = val_surface_secondaryoverstream; }
+
+inline void CConfig::SetSurface_MomentumDistortion(unsigned short val_imarker, su2double val_surface_momentumdistortion) { Surface_MomentumDistortion[val_imarker] = val_surface_momentumdistortion; }
+
 inline void CConfig::SetSurface_TotalTemperature(unsigned short val_imarker, su2double val_surface_totaltemperature) { Surface_TotalTemperature[val_imarker] = val_surface_totaltemperature; }
 
 inline void CConfig::SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure) { Surface_TotalPressure[val_imarker] = val_surface_totalpressure; }
@@ -186,6 +194,14 @@ inline su2double CConfig::GetSurface_Density(unsigned short val_imarker) { retur
 inline su2double CConfig::GetSurface_Enthalpy(unsigned short val_imarker) { return Surface_Enthalpy[val_imarker]; }
 
 inline su2double CConfig::GetSurface_NormalVelocity(unsigned short val_imarker) { return Surface_NormalVelocity[val_imarker]; }
+
+inline su2double CConfig::GetSurface_StreamwiseUniformity(unsigned short val_imarker) { return Surface_StreamwiseUniformity[val_imarker]; }
+
+inline su2double CConfig::GetSurface_SecondaryStrength(unsigned short val_imarker) { return Surface_SecondaryStrength[val_imarker]; }
+
+inline su2double CConfig::GetSurface_SecondaryOverStream(unsigned short val_imarker) { return Surface_SecondaryOverStream[val_imarker]; }
+
+inline su2double CConfig::GetSurface_MomentumDistortion(unsigned short val_imarker) { return Surface_MomentumDistortion[val_imarker]; }
 
 inline su2double CConfig::GetSurface_TotalTemperature(unsigned short val_imarker) { return Surface_TotalTemperature[val_imarker]; }
 
