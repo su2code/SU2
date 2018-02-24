@@ -4835,6 +4835,18 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case SURFACE_MASSFLOW:
         Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
         break;
+      case SURFACE_UNIFORMITY:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+        break;
+      case SURFACE_SECONDARY:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+        break;
+      case SURFACE_MOM_DISTORTION:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+        break;
+      case SURFACE_SECOND_OVER_UNIFORM:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+        break;
       case CUSTOM_OBJFUNC:
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
         break;
