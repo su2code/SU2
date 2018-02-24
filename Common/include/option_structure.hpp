@@ -1187,6 +1187,10 @@ enum ENUM_OBJECTIVE {
   SURFACE_STATIC_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,           /*!< \brief Mach number objective function definition. */
+  SURFACE_UNIFORMITY = 52,           /*!< \brief Flow uniformity objective function definition. */
+  SURFACE_SECONDARY = 53,           /*!< \brief Secondary flow strength objective function definition. */
+  SURFACE_MOM_DISTORTION = 54,           /*!< \brief Momentum distortion objective function definition. */
+  SURFACE_SECOND_OVER_UNIFORM = 55,   /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
   CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
@@ -1228,6 +1232,10 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
 ("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
 ("SURFACE_MACH", SURFACE_MACH)
+("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
+("SURFACE_SECONDARY", SURFACE_SECONDARY)
+("SURFACE_MOM_DISTORTION", SURFACE_MOM_DISTORTION)
+("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
 ("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)

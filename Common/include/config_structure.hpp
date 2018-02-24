@@ -353,9 +353,9 @@ private:
   su2double *Surface_Density;    /*!< \brief Density at the boundaries. */
   su2double *Surface_Enthalpy;    /*!< \brief Enthalpy at the boundaries. */
   su2double *Surface_NormalVelocity;    /*!< \brief Normal velocity at the boundaries. */
-  su2double *Surface_StreamwiseUniformity;  /*!< \brief Integral measure of the streamwise uniformity (absolute) at the boundaries (non-dim). */
+  su2double *Surface_Uniformity;  /*!< \brief Integral measure of the streamwise uniformity (absolute) at the boundaries (non-dim). */
   su2double *Surface_SecondaryStrength;     /*!< \brief Integral measure of the strength of secondary flows (absolute) at the boundaries (non-dim). */
-  su2double *Surface_SecondaryOverStream;   /*!< \brief Integral measure of the strength of secondary flows (relative to streamwise) at the boundaries (non-dim). */
+  su2double *Surface_SecondOverUniform;   /*!< \brief Integral measure of the strength of secondary flows (relative to streamwise) at the boundaries (non-dim). */
   su2double *Surface_MomentumDistortion;    /*!< \brief Integral measure of the streamwise uniformity (relative to plug flow) at the boundaries (non-dim). */
   su2double *Surface_TotalTemperature;   /*!< \brief Total temperature at the boundaries. */
   su2double *Surface_TotalPressure;    /*!< \brief Total pressure at the boundaries. */
@@ -6977,7 +6977,7 @@ public:
    * \param[in] val_imarker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_streamwiseuniformity - Value of the streamwise flow uniformity.
    */
-  void SetSurface_StreamwiseUniformity(unsigned short val_imarker, su2double val_surface_streamwiseuniformity);
+  void SetSurface_Uniformity(unsigned short val_imarker, su2double val_surface_streamwiseuniformity);
 
   /*!
    * \brief Set the secondary flow strength at the surface.
@@ -6991,7 +6991,7 @@ public:
    * \param[in] val_imarker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_secondaryoverstream - Value of the relative seondary flow strength.
    */
-  void SetSurface_SecondaryOverStream(unsigned short val_imarker, su2double val_surface_secondaryoverstream);
+  void SetSurface_SecondOverUniform(unsigned short val_imarker, su2double val_surface_secondaryoverstream);
 
   /*!
    * \brief Set the momentum distortion at the surface.
@@ -7236,7 +7236,7 @@ public:
    * \param[in] val_imarker - Index corresponding to the outlet boundary.
    * \return The streamwise flow uniformity.
    */
-  su2double GetSurface_StreamwiseUniformity(unsigned short val_imarker);
+  su2double GetSurface_Uniformity(unsigned short val_imarker);
 
   /*!
    * \brief Get the secondary flow strength at the surface.
@@ -7250,7 +7250,7 @@ public:
    * \param[in] val_imarker - Index corresponding to the outlet boundary.
    * \return The relative seondary flow strength.
    */
-  su2double GetSurface_SecondaryOverStream(unsigned short val_imarker);
+  su2double GetSurface_SecondOverUniform(unsigned short val_imarker);
 
   /*!
    * \brief Get the momentum distortion at the surface.
