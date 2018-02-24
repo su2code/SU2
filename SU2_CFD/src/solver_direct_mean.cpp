@@ -4620,7 +4620,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol  = true;
   unsigned short two_phase = config->GetKind_2phase_Model();
-  
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -5169,8 +5168,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool body_force          = config->GetBody_Force();
   unsigned short two_phase      = (config->GetKind_Solver()== TWO_PHASE_EULER ||
 		                           config->GetKind_Solver()== TWO_PHASE_NAVIER_STOKES ||
-							       config->GetKind_Solver()== TWO_PHASE_RANS);
-  unsigned short two_phase_adj = (config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_EULER ||
+							       config->GetKind_Solver()== TWO_PHASE_RANS ||
+                                   config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_EULER ||
   		                           config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_NAVIER_STOKES ||
   							       config->GetKind_Solver()== DISC_ADJ_TWO_PHASE_RANS);
 
@@ -5336,7 +5335,7 @@ getchar();
     }
   }
 
- if (two_phase || two_phase_adj) {
+ if (two_phase) {
 
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5347,13 +5346,8 @@ getchar();
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-      if (two_phase) {
-		  S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
-		  h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
-      } else {
-		  S = solver_container[ADJTWO_PHASE_SOL]->node[iPoint]->GetS2phase_Direct();
-		  h = solver_container[ADJTWO_PHASE_SOL]->node[iPoint]->GetH2phase_Direct();
-      }
+	  S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
+	  h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
 
       /*--- Compute the 2-phase source residual ---*/
       numerics->ComputeResidual_HeatMassTransfer(S, h, NULL, Residual, Jacobian_i);
@@ -15177,7 +15171,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
-  
+
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
   unsigned short skipVarsTurb;
 
@@ -15230,19 +15224,14 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       /*--- load source data for two-phase simulation ---*/
       if (two_phase) {
         if (Old_Solution_1Ph) {
-          S = 0.0;
-          H = 0.0;
+        	Rc = 0;
         }
         else {
           if (Old_Solution_Turb) {
             index += skipVarsTurb;
           }
-          S = Restart_Data[index+nVar];
-          H = Restart_Data[index+nVar+1];
-          Rc = Restart_Data[index+nVar+2];
+          Rc = Restart_Data[index+nVar];
          }
-        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetSource(S);
-        solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetLiqEnthalpy(H);
         solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetCriticalRadius(Rc);
       }
 

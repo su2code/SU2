@@ -577,7 +577,7 @@ void C2phaseSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
-    Delta = solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() / Vol;
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
 
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
@@ -640,7 +640,8 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     Vol = geometry->node[iPoint]->GetVolume();
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    Delta = Vol / (config->GetCFLRedCoeff_2phase()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta = Vol / (config->GetCFLRedCoeff_2phase()*node[iPoint]->GetDelta_Time());
+
     Jacobian.AddVal2Diag(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -654,7 +655,6 @@ void C2phaseSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     }
   }
   
-
 
   /*--- Initialize residual and solution at the ghost points ---*/
   
@@ -937,6 +937,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+
   /*--- Modify file name for multizone problems ---*/
   if (nZone >1)
     restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
@@ -1000,22 +1001,15 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
       if (!Old_Solution_1Ph) {
         index = counter*Restart_Vars[1] + skipVars;
-        S = Restart_Data[index];
-        H = Restart_Data[index+1];
-
-        node[iPoint_Local]->SetSource(S);
-        node[iPoint_Local]->SetLiqEnthalpy(H);
-
-        node[iPoint_Local]->SetCriticalRadius(Restart_Data[index+2]);
+        node[iPoint_Local]->SetCriticalRadius(Restart_Data[index]);
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] = Restart_Data[index+iVar+3];
+          Solution[iVar] = Restart_Data[index+iVar+1];
         }
       }
       else {
-        S = 0.0;
-        H = 0.0;
         node[iPoint_Local]->SetCriticalRadius(0);
+
         for (iVar = 0; iVar < nVar; iVar++) {
           Solution[iVar] = 0.0;
         }
@@ -1056,18 +1050,6 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 
 
   Set_MPI_Solution(geometry[MESH_0], config);
-//  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-
-  /*  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-    Rc = solver[MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6);
-
-    Sol = node[iPoint]->SetLiquidPrim(solver[MESH_0][FLOW_SOL]->node[iPoint]->GetPrimitive(),
-        node[iPoint]->GetSolution(), Rc,
-        solver[MESH_0][FLOW_SOL]->GetFluidModel(), config);
-
-    node[iPoint]->SetLiquidPrimZero();
-  }
-  */
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -1086,18 +1068,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
       node[iPoint]->SetSolution(Solution);
     }
     Set_MPI_Solution(geometry[iMesh], config);
-//    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
-    /*
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-     Rc = node[iPoint]->GetLiquidPrim(6);
-      Sol = node[iPoint]->SetLiquidPrim(solver[iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(),
-          node[iPoint]->GetSolution(), Rc,
-          solver[iMesh][FLOW_SOL]->GetFluidModel(), config);
-
-      node[iPoint]->SetLiquidPrimZero();
-    }
-*/
   }
 
 
@@ -1109,6 +1080,196 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   Restart_Vars = NULL; Restart_Data = NULL;
 }
 
+
+
+void C2phaseSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                  unsigned short iMesh, unsigned long Iteration) {
+
+	su2double time;
+
+	if (config->GetKind_Solver() == TWO_PHASE_EULER || config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) {
+
+		  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time,
+		  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
+		  unsigned long iEdge, iVertex, iPoint, jPoint;
+		  unsigned short iDim, iMarker;
+
+		  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+		  bool grid_movement = config->GetGrid_Movement();
+		    bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+		  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+		                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+		  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+
+		  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+
+		  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+			  solver_container[FLOW_SOL]->node[iPoint]->SetMax_Lambda_Inv(0.0);
+
+		  /*--- Loop interior edges ---*/
+		  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+		    /*--- Point identification, Normal vector and area ---*/
+
+		    iPoint = geometry->edge[iEdge]->GetNode(0);
+		    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+		    Normal = geometry->edge[iEdge]->GetNormal();
+		    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+		    /*--- Mean Values ---*/
+
+		    Mean_ProjVel = 0.5 * (solver_container[FLOW_SOL]->node[iPoint]->GetProjVel(Normal) + solver_container[FLOW_SOL]->node[jPoint]->GetProjVel(Normal));
+		    Mean_SoundSpeed = 0.5 * (solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed() + solver_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed()) * Area;
+
+		    /*--- Adjustment for grid movement ---*/
+
+		    if (grid_movement) {
+		      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+		      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+		      ProjVel_i = 0.0; ProjVel_j = 0.0;
+		      for (iDim = 0; iDim < nDim; iDim++) {
+		        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
+		        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
+		      }
+		      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+		    }
+
+		    /*--- Inviscid contribution ---*/
+
+		    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+		    if (geometry->node[iPoint]->GetDomain()) solver_container[FLOW_SOL]->node[iPoint]->AddMax_Lambda_Inv(Lambda);
+		    if (geometry->node[jPoint]->GetDomain()) solver_container[FLOW_SOL]->node[jPoint]->AddMax_Lambda_Inv(Lambda);
+
+		  }
+
+		  /*--- Loop boundary edges ---*/
+
+		  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+		    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+		    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+		      /*--- Point identification, Normal vector and area ---*/
+
+		      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+		      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+		      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+		      /*--- Mean Values ---*/
+		      Mean_ProjVel = solver_container[FLOW_SOL]->node[iPoint]->GetProjVel(Normal);
+		      Mean_SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed() * Area;
+
+		      /*--- Adjustment for grid movement ---*/
+
+		      if (grid_movement) {
+		        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+		        ProjVel = 0.0;
+		        for (iDim = 0; iDim < nDim; iDim++)
+		          ProjVel += GridVel[iDim]*Normal[iDim];
+		        Mean_ProjVel -= ProjVel;
+		      }
+
+		      /*--- Inviscid contribution ---*/
+		      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+		      if (geometry->node[iPoint]->GetDomain()) {
+		    	  solver_container[FLOW_SOL]->node[iPoint]->AddMax_Lambda_Inv(Lambda);
+		      }
+
+		    }
+		  }
+		  /*--- Each element uses their own speed, steady state simulation ---*/
+
+		  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+		    Vol = geometry->node[iPoint]->GetVolume();
+
+		    if (Vol != 0.0) {
+		      Local_Delta_Time = config->GetCFL(iMesh)*Vol / solver_container[FLOW_SOL]->node[iPoint]->GetMax_Lambda_Inv();
+		      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+		      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+		      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+		      if (Local_Delta_Time > config->GetMax_DeltaTime())
+		        Local_Delta_Time = config->GetMax_DeltaTime();
+		      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+		    }
+		    else {
+		      node[iPoint]->SetDelta_Time(0.0);
+		    }
+
+		  }
+
+
+		  /*--- Compute the max and the min dt (in parallel) ---*/
+		  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+		#ifdef HAVE_MPI
+		    su2double rbuf_time, sbuf_time;
+		    sbuf_time = Min_Delta_Time;
+		    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+		    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		    Min_Delta_Time = rbuf_time;
+
+		    sbuf_time = Max_Delta_Time;
+		    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+		    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		    Max_Delta_Time = rbuf_time;
+		#endif
+		  }
+
+		  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+
+		  if (time_steping) {
+		#ifdef HAVE_MPI
+		    su2double rbuf_time, sbuf_time;
+		    sbuf_time = Global_Delta_Time;
+		    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+		    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		    Global_Delta_Time = rbuf_time;
+		#endif
+		    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+		            /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+		            config->SetCFL(iMesh,config->GetUnst_CFL());
+
+		            /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+		             it computes the time step based on the unsteady CFL ---*/
+		            if (config->GetCFL(iMesh) == 0.0) {
+		                node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+		            } else {
+		                node[iPoint]->SetDelta_Time(Global_Delta_Time);
+		            }
+		        }
+		  }
+
+		  /*--- Recompute the unsteady time step for the dual time strategy
+		   if the unsteady CFL is diferent from 0 ---*/
+
+		  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+		    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+
+		#ifdef HAVE_MPI
+		    su2double rbuf_time, sbuf_time;
+		    sbuf_time = Global_Delta_UnstTimeND;
+		    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+		    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		    Global_Delta_UnstTimeND = rbuf_time;
+		#endif
+		    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+		  }
+
+		  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+
+		  if (dual_time)
+		    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+		      if (!implicit) {
+		        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
+		        node[iPoint]->SetDelta_Time(Local_Delta_Time);
+		      }
+		    }
+
+		}
+
+}
 
 C2phase_HillSolver::C2phase_HillSolver(void) : C2phaseSolver() {
   
@@ -1530,8 +1691,12 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
      node[iPoint]->SetRadius(r);
      node[iPoint]->SetLiquidFrac(y);
      node[iPoint]->SetMixtureDensity(rho_m);
-    
+
   }
+
+//     cout << "Here I am in the post processing of the 2phase - source is updating here" << endl;
+//     getchar();
+
 }
 
 
@@ -1545,6 +1710,7 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   su2double *Two_phase_sol, *Prim_vec, *Liquid_vec;
   unsigned long iPoint;
   unsigned short iVar, jVar;
+
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -1566,7 +1732,6 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     node[iPoint]->SetLiquidPrim(Liquid_vec);
 
     /*--- Subtract residual and the Jacobian ---*/
-
     LinSysRes.SubtractBlock(iPoint, Residual);
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -1777,10 +1942,8 @@ void C2phase_HillSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Jacobian contribution for implicit integration ---*/
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
     }
   }
-
 
   /*--- Free locally allocated memory ---*/
   delete[] Normal;
@@ -1808,8 +1971,7 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
+//     V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       V_outlet = V_domain;
 
       /*--- Set various quantities in the solver class ---*/

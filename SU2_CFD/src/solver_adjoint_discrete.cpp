@@ -279,10 +279,9 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
      * extracted in the ExtractAdjointVariables routine. ---*/
 
   if (KindDirect_Solver == RUNTIME_2PHASE_SYS) {
+
 	  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	    //direct_solver->node[iPoint]->SetSource(node[iPoint]->GetS2phase_Direct());
 	    direct_solver->node[iPoint]->SetCriticalRadius(node[iPoint]->GetR2phase_Direct());
-	    //direct_solver->node[iPoint]->SetLiqEnthalpy(node[iPoint]->GetH2phase_Direct());
 	  }
   }
 

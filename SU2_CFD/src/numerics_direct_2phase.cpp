@@ -158,6 +158,7 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
   k     = V_i[nDim+7];
   CpoCv = V_i[nDim+9];
 
+
   // compute the nucleation rate and the growth rate
 
   if (val_liquid_i[4] > T) {
@@ -196,13 +197,13 @@ void CSourcePieceWise_Hill::ComputeResidual(su2double *val_Residual, su2double *
         val_Jacobian_i[iVar][jVar] = 0.0;
       }
     }
-
+/*
     if (val_liquid_i[4] > T) {
       val_Jacobian_i[1][0] =      Growth_rate* Volume;
       val_Jacobian_i[2][1] = 2.0* Growth_rate* Volume;
       val_Jacobian_i[3][2] = 3.0* Growth_rate* Volume;
     }
-
+*/
   }
 }
 

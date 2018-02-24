@@ -11669,14 +11669,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Pressure");
     }
     
-    nVar_Par += 4;
+    nVar_Par += 3;
     Variable_Names.push_back("Temperature");
 		if (config->GetOutput_FileFormat() == PARAVIEW){
 			Variable_Names.push_back("Pressure_Coefficient");
 		} else {
 			Variable_Names.push_back("C<sub>p</sub>");
 		}
-	Variable_Names.push_back("Gamma");
+	//Variable_Names.push_back("Gamma");
     Variable_Names.push_back("Mach");
     
     /*--- Add Entropy, Total Pressure and Isentropic Mach Number---*/
@@ -12052,9 +12052,8 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   /*--- Use a switch statement to decide how many solver containers we have
    in this zone for output. ---*/
 
+
   switch (config->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
     case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL;
     break;
     case TWO_PHASE_RANS : FirstIndex = FLOW_SOL; SecondIndex = TWO_PHASE_SOL; ThirdIndex = TURB_SOL; break;
@@ -12062,8 +12061,10 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   }
 
   nVar_First = solver[FirstIndex]->GetnVar();
-  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
+
+  nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
+
   if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
     nVar_Consv_Par = nVar_First + nVar_Second + nVar_Third;
 
@@ -12088,7 +12089,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
 
-  nVar_Par += nVar_Consv_Par+3;
+  nVar_Par += nVar_Consv_Par+1;
 
   /*--- For now, leave the names as "Conservative_", etc., in order
    to avoid confusion with the serial version, which still prints these
@@ -12108,8 +12109,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
     Variable_Names.push_back("Energy");
   }
   if (SecondIndex == TWO_PHASE_SOL) {
-      Variable_Names.push_back("S");
-      Variable_Names.push_back("h_liquid");
       Variable_Names.push_back("Rc");
       Variable_Names.push_back("mom0");
       Variable_Names.push_back("mom1");
@@ -12255,8 +12254,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
 
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-    		(Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS)) {
+    if ((Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS)) {
 			if (config->GetOutput_FileFormat() == PARAVIEW){
 				nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
 				nVar_Par += 2;
@@ -12284,7 +12282,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
     /*--- Add Eddy Viscosity. ---*/
 
-    if (Kind_Solver == RANS || Kind_Solver == TWO_PHASE_RANS) {
+    if (Kind_Solver == TWO_PHASE_RANS) {
       nVar_Par += 1;
 			if (config->GetOutput_FileFormat() == PARAVIEW){
 				Variable_Names.push_back("Eddy_Viscosity");
@@ -12306,7 +12304,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
 
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == TWO_PHASE_NAVIER_STOKES)
+  if ((Kind_Solver == TWO_PHASE_NAVIER_STOKES)
 		  || (Kind_Solver == TWO_PHASE_RANS)) {
     Aux_Frict_x = new su2double[geometry->GetnPoint()];
     Aux_Frict_y = new su2double[geometry->GetnPoint()];
@@ -12342,7 +12340,6 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
   // add rho_liquid and nucleation rate for 2-phase simulations
 
-  if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
   	nVar_Par += 1;
   	Variable_Names.push_back("J (1/kg/s)");
 
@@ -12357,9 +12354,8 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
   		Variable_Names.push_back("Tsat");
   		Variable_Names.push_back("Gamma");
   		Variable_Names.push_back("G");
-
   	}
-  }
+
 
   /*--- Allocate the local data structure now that we know how many
    variables are in the output. ---*/
@@ -12433,21 +12429,15 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         iVar++;
       }
 
-      if (SecondIndex != NONE) {
-        if (SecondIndex == TWO_PHASE_SOL) {
-            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetMassSource();
-            iVar++;
-            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLiquidEnthalpy();
-            iVar++;
-            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLiquidPrim(6);
-            iVar++;
-          }
-        for (jVar = 0; jVar < nVar_Second; jVar++) {
-          Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
-          iVar++;
-        }
+	  Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLiquidPrim(6);
+	  iVar++;
+
+      for (jVar = 0; jVar < nVar_Second; jVar++) {
+         Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
+         iVar++;
       }
-      if (ThirdIndex != NONE) {
+
+      if (ThirdIndex == TURB_SOL) {
 
         for (jVar = 0; jVar < nVar_Third; jVar++) {
           Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar);
@@ -12461,13 +12451,13 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
             Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
             iVar++;
           }
-          if (SecondIndex != NONE) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
-              iVar++;
-            }
+
+          for (jVar = 0; jVar < nVar_Second; jVar++) {
+            Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+            iVar++;
           }
-          if (ThirdIndex != NONE) {
+
+          if (ThirdIndex == TURB_SOL) {
             for (jVar = 0; jVar < nVar_Third; jVar++) {
               Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
               iVar++;
@@ -12480,13 +12470,12 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
             iVar++;
           }
 
-          if (SecondIndex != NONE) {
-              for (jVar = 0; jVar < nVar_Second; jVar++) {
-                Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
-                iVar++;
-              }
-          }
-          if (ThirdIndex != NONE) {
+		  for (jVar = 0; jVar < nVar_Second; jVar++) {
+			Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+			iVar++;
+		  }
+
+		  if (ThirdIndex == TURB_SOL) {
               for (jVar = 0; jVar < nVar_Third; jVar++) {
                 Local_Data[jPoint][iVar] = solver[ThirdIndex]->LinSysRes.GetBlock(iPoint, jVar);
                 iVar++;
@@ -12527,8 +12516,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
         }
 
 
-        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-        		(Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS)) {
+        if ((Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS)) {
 
           /*--- Load data for the laminar viscosity. ---*/
 
@@ -12549,7 +12537,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
         /*--- Load data for the Eddy viscosity for RANS. ---*/
 
-        if (Kind_Solver == RANS || Kind_Solver == TWO_PHASE_RANS) {
+        if (Kind_Solver == TWO_PHASE_RANS) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
 
@@ -12559,28 +12547,27 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
         }
 
-        if (SecondIndex == TWO_PHASE_SOL || ThirdIndex == TWO_PHASE_SOL) {
-          Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(10)); iVar++;
+        Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(10)); iVar++;
 
-        	if (liquid_props == true) {
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8)); iVar++;
-   				if (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9) > 0)
-   	        		Local_Data[jPoint][iVar] = solver[TWO_PHASE_SOL]->node[iPoint]->GetMassSource()*
-					solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(7)/3/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8)
-					/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9);
-   				else
-   					Local_Data[jPoint][iVar] = 0;
-   				iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(5)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim + 9)); iVar++;
-        		Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9)); iVar++;
+		if (liquid_props == true) {
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1)); iVar++;
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0)); iVar++;
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(6)); iVar++;
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8)); iVar++;
+			if (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9) > 0)
+				Local_Data[jPoint][iVar] = solver[TWO_PHASE_SOL]->node[iPoint]->GetMassSource()*
+				solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(7)/3/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8)
+				/solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9);
+			else
+				Local_Data[jPoint][iVar] = 0;
+			iVar++;
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(5)); iVar++;
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(4)); iVar++;
+			Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPrimitive(nDim + 9)); iVar++;
+			Local_Data[jPoint][iVar] = (solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(9)); iVar++;
 
-        	}
-        }
+		}
+
 
 
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -12599,8 +12586,7 @@ void COutput::LoadLocalData_2phase(CConfig *config, CGeometry *geometry, CSolver
 
   /*--- Free memory for auxiliary vectors. ---*/
 
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-		  (Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS) ) {
+  if ((Kind_Solver == TWO_PHASE_NAVIER_STOKES) || (Kind_Solver == TWO_PHASE_RANS) ) {
     delete [] Aux_Frict_x;
     delete [] Aux_Frict_y;
     delete [] Aux_Frict_z;
@@ -12734,11 +12720,11 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 	  (Kind_Solver == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
 	  (Kind_Solver == DISC_ADJ_TWO_PHASE_RANS)) {
 
-	  Variable_Names.push_back("Sensit.0");
-	  Variable_Names.push_back("Sensit.1");
+	  Variable_Names.push_back("Sensit.x");
+	  Variable_Names.push_back("Sensit.y");
 	  nVar_Par += 2;
       if (geometry->GetnDim()== 3) {
-        Variable_Names.push_back("Sensit.2");
+        Variable_Names.push_back("Sensit.z");
         nVar_Par +=1;
     }
   }
