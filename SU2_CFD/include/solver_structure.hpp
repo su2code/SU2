@@ -2785,15 +2785,6 @@ public:
    */
   virtual void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
 
-  /*!
-   * \brief A virtual member
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \return True if successful, false if an error occurred
-   */
-  virtual bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
-
   virtual void SetUniformInlet(CConfig* config, unsigned short iMarker);
 
   virtual void SetInletAtVertex(CSolver** solver, vector<su2double> values,
@@ -6097,15 +6088,6 @@ public:
    */
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
 
-  /*!
-   * \brief Setup the inlet per the config file and stores the result
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \return True if successful, false if an error occurred
-   */
-  bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
-
   bool ValidateInletValues(vector<su2double> inlet_values);
 
   void SetUniformInlet(CConfig* config, unsigned short iMarker);
@@ -9083,15 +9065,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Setup the inlet per the config file and stores the result
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \return True if successful, false if an error occurred
-   */
-  bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
+
+  void SetInletAtVertex(CSolver** solver, vector<su2double> values,
+                        unsigned short iMarker, unsigned long iVertex);
+
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
 };
 
 /*!
@@ -9277,14 +9256,12 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
   
-  /*!
-   * \brief Setup the inlet per the config file and stores the result
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \return True if successful, false if an error occurred
-   */
-  bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
+
+  void SetInletAtVertex(CSolver** solver, vector<su2double> values,
+                        unsigned short iMarker, unsigned long iVertex);
+
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
 };
 
 /*!

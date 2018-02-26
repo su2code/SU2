@@ -892,20 +892,174 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   /*--- Setup the inlet profiles ---*/
 
   if (euler || ns) {
-    bool successful = solver_container[MESH_0][FLOW_SOL]->SetInlet(geometry, solver_container, config);
-    if (successful) {
-      successful = solver_container[MESH_0][TURB_SOL]->SetInlet(geometry, solver_container, config);
+    SetupInlets(solver_container, geometry, config);
+  }
+
+}
+
+void CDriver::SetupInlets(CSolver ***solver_container, CGeometry **geometry, CConfig* config) {
+
+  bool turbulent = (config->GetKind_Solver() == RANS ||
+                    config->GetKind_Solver() == ADJ_RANS ||
+                    config->GetKind_Solver() == DISC_ADJ_RANS);
+
+  if (config->Inlet_Profile_From_File()) {
+
+    /*--- Multigrid not currently supported. Only use mesh 0 ---*/
+    if (config->GetnMGLevels() > 0) {
+      SU2_MPI::Error("Specified inlet profiles are not yet implemented for multigrid.",
+                     CURRENT_FUNCTION);
     }
-    if (not(successful)) {
-      if (config->Inlet_Profile_From_File()) {
-        /*--- Output has not been set up yet.  Create a temporary output. ---*/
+
+    unsigned short iMesh = MESH_0;
+
+    /*--- Open the input file ---*/
+
+    string profile_filename = config->GetInlet_FileName();
+    if (rank == MASTER_NODE) {
+      cout << endl;
+      cout << "Reading flow inlet profile from file:\t" << profile_filename << endl;
+    }
+
+    ifstream profile_file(profile_filename.c_str());
+    if (profile_file.fail()) {
+      ostringstream error_msg;
+      error_msg << "Could not find the input file for the inlet profile!" << endl;
+      error_msg << "Looked for: " << profile_filename;
+      OutputInletNodes(geometry, config);
+      SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+    }
+
+    /*--- Read in and store variables for later sorting and interpolating
+     * The structure within the input file should be:
+     *
+     * x  y  z  T  p  u_x  u_y  u_z  [variables for extra solvers]
+     *
+     * where:
+     *   x, y, z are the coordinates (only x, y necessary for 2D)
+     *   T, p are state variables.
+     *      For TOTAL_CONDITIONS, they are total T and total p
+     *      For MASS_FLOW, they are the density and velocity magnitude
+     *   u_x, u_y, and u_z are components of a unit vector indicating
+     *     the direction of the inlet velocity (only u_x, u_y expected for 2D)
+     * ---*/
+
+    /*--- Since we're only doing this at startup, we're ok with using vectors
+     * instead of C-style arrays ---*/
+    vector<vector<su2double> > profile;
+
+    string text_line;
+    getline(profile_file, text_line); /*--- First line (header) is skipped ---*/
+    while (getline(profile_file, text_line)) {
+
+      /*--- Set up the vector of values for this point ---*/
+      vector<su2double> values;
+
+      /*--- Get inlet variables and flow direction from the input file. ---*/
+      istringstream point_line(text_line);
+      su2double value;
+      while (point_line >> value) values.push_back(value);
+
+      bool valid = solver_container[iMesh][FLOW_SOL]->ValidateInletValues(values);
+      if (valid && turbulent) {
+        valid = solver_container[iMesh][TURB_SOL]->ValidateInletValues(values);
+      }
+
+      if (not(valid)) {
         OutputInletNodes(geometry, config);
-        SU2_MPI::Barrier(config->GetMPICommunicator());
-        SU2_MPI::Error("Failed to load the inlet profile from the specified file.",
-                        CURRENT_FUNCTION);
-      } else {
-        SU2_MPI::Error("Failed to set the inlet boundary condition(s).",
-                       CURRENT_FUNCTION);
+        SU2_MPI::Error("Failed to load the inlet profile from the specified file.", CURRENT_FUNCTION);
+      }
+
+      profile.push_back(values);
+    }
+
+    profile_file.close();
+
+    /*--- Exiting upon error is tricky for two reasons:
+     * 1. Not all MPI tasks will have nodes on the inlets.
+     * 2. We want to print out an example inlet file if something goes wrong.
+     * So we need to check for errors among all processors, then print
+     * the inlet file if any processor gets an error.  ---*/
+    bool global_failure, local_failure = false;
+    ostringstream error_msg;
+
+    const su2double tolerance = 1e-6;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        for (unsigned long iVertex = 0;
+             iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+
+          unsigned long jPoint =
+              geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          su2double* coords = geometry[iMesh]->node[jPoint]->GetCoord();
+          su2double min_dist = 1e16;
+          std::vector<vector<su2double> >::iterator closest_point = profile.begin();
+
+          /*--- Find the distance to the closest point ---*/
+
+          for (std::vector<vector<su2double> >::iterator it = profile.begin();
+               it != profile.end(); ++it) {
+            vector<su2double> values = *it;
+            su2double dist = 0;
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              dist += pow(values[iDim] - coords[iDim], 2);
+            dist = sqrt(dist);
+            if (dist < min_dist) {
+              min_dist = dist;
+              closest_point = it;
+            }
+          }
+
+          /*--- If the diff is less than the tolerance, match the two ---*/
+          if (min_dist < tolerance) {
+
+            solver_container[iMesh][FLOW_SOL]->SetInletAtVertex(solver_container[iMesh], *closest_point, iMarker, iVertex);
+            if (turbulent) {
+              solver_container[iMesh][TURB_SOL]->SetInletAtVertex(solver_container[iMesh], *closest_point, iMarker, iVertex);
+            }
+
+          } else {
+
+            unsigned long GlobalIndex = geometry[iMesh]->node[jPoint]->GetGlobalIndex();
+            error_msg << "Did not find a match between the points in the inlet file" << endl;
+            error_msg << "and point " << GlobalIndex;
+            error_msg << std::scientific;
+            error_msg << " at location: [" << coords[0] << ", " << coords[1];
+            if (nDim ==3) error_msg << ", " << coords[2];
+            error_msg << "]" << endl;
+            error_msg << "  Distance to closest point: " << min_dist << endl;
+            local_failure = true;
+            break;
+          }
+        }
+      }
+      if (local_failure) break;
+    }
+
+    global_failure = local_failure;
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI::BOOL, MPI_LOR,
+                       MPI_COMM_WORLD);
+#endif
+
+    if (global_failure) {
+      OutputInletNodes(geometry, config);
+      SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+    }
+
+  } else { /*--- Uniform inlets or python-customized inlets ---*/
+
+    /* --- Initialize quantities for inlet boundary
+     * This routine does not check if they python wrapper is being used to
+     * set custom boundary conditions.  This is intentional; the
+     * default values for python custom BCs are initialized with the default
+     * values specified in the config (avoiding non physical values) --- */
+    for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        solver_container[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
+        if (turbulent) {
+          solver_container[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        }
       }
     }
   }
@@ -3216,6 +3370,22 @@ void CDriver::OutputInletNodes(CGeometry **geometry, CConfig *config) {
   const unsigned short nDim = geometry[MESH_0]->GetnDim();
   const unsigned int nGlobalPoint = geometry[MESH_0]->GetGlobal_nPoint();
 
+  bool turbulent = (config->GetKind_Solver() == RANS ||
+                    config->GetKind_Solver() == ADJ_RANS ||
+                    config->GetKind_Solver() == DISC_ADJ_RANS);
+
+  unsigned short nVar_Turb = 0;
+  if (turbulent)
+    switch (config->GetKind_Turb_Model()) {
+      case SA:         nVar_Turb = 1;     break;
+      case SA_NEG:     nVar_Turb = 1;     break;
+      case SST:        nVar_Turb = 2;     break;
+      case SA_E:       nVar_Turb = 1;     break;
+      case SA_COMP:    nVar_Turb = 1;     break;
+      case SA_E_COMP:  nVar_Turb = 1;     break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
+    }
+
   /*--- This function could be moved to COutput. But currently in the code,
    * the inlet nodes are set up before the COutput object is initialized.
    * So we can't use the COutput object when inlet setup fails. ---*/
@@ -3235,8 +3405,10 @@ void CDriver::OutputInletNodes(CGeometry **geometry, CConfig *config) {
 
   /*--- Get the local node information ---*/
 
+  unsigned short example_inlet;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      example_inlet = iMarker;  // Store the marker as an example inlet
       for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
         unsigned long jPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
         unsigned long GlobalIndex = geometry[MESH_0]->node[jPoint]->GetGlobalIndex();
@@ -3274,17 +3446,38 @@ void CDriver::OutputInletNodes(CGeometry **geometry, CConfig *config) {
 
   /*--- Output to file ---*/
 
+  string Marker_Tag = config->GetMarker_All_TagBound(example_inlet);
+  su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
+  su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
+  su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+
   if (rank == MASTER_NODE) {
     ofstream node_file("inlet_example.dat");
-    node_file << "x\t\t\ty";
-    if (nDim == 3) node_file << "\t\t\tz";
+    /*--- Header ---*/
+    node_file << "# x\t\t\ty\t\t\t";
+    if (nDim == 3) node_file << "z\t\t\t";
+    node_file << "T_total\t\t\tP_total\t\t\tu_x\t\t\tu_y\t\t\t";
+    if (nDim == 3) node_file << "u_z\t\t\t";
+    if (turbulent) {
+      for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
+        node_file << "TurbVar[" << iVar << "]\t\t";
+      }
+    }
     node_file << endl;
+
     node_file << setprecision(15);
     for (iPoint = 0; iPoint < nGlobalPoint; iPoint++) {
       if (Inlet_Flag_Global[iPoint]) {
         node_file << std::scientific;
         for (iDim = 0; iDim < nDim; iDim++) {
-          node_file << "\t" << Inlet_Coords_Global[iDim][iPoint];
+          node_file << Inlet_Coords_Global[iDim][iPoint] << ",\t";
+        }
+        node_file << p_total << ",\t" << t_total;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          node_file << ",\t" << flow_dir[iDim];
+        }
+        for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
+          node_file << ",\t" << 0.0;
         }
         node_file << endl;
       }
@@ -3293,6 +3486,7 @@ void CDriver::OutputInletNodes(CGeometry **geometry, CConfig *config) {
   }
 
   if (rank == MASTER_NODE) {
+    cout << endl;
     cout << "Created an example inlet specification with node coordinates" << endl;
     cout << "  and solver variables at `inlet_example.dat`." << endl;
     cout << "  You can use this file as a guide for making your own inlet" << endl;
