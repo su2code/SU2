@@ -592,10 +592,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
   }
 
-  /*--- Set up inlet profiles, if necessary ---*/
-
-  SetInlet(config);
-
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
   CPressure = new su2double* [nMarker];
@@ -8627,31 +8623,219 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CEulerSolver::SetInlet(CConfig *config) {
+bool CEulerSolver::SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config) {
 
-  unsigned short iMarker, iDim;
-  unsigned long iVertex;
-  string Marker_Tag;
+  if (config->Inlet_Profile_From_File()) {
 
-  /* --- Initialize quantities for inlet boundary
-   * This routine does not check if the inlet boundaries are set to custom
-   * values (available through the py wrapper). This is intentional; the
-   * default values for these custom BCs are initialized with the default
-   * values specified in the config (avoiding non physical values) --- */
-  for(iMarker=0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
-      su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
-      su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    /*--- Multigrid not currently supported. Only use mesh 0 ---*/
+    if (config->GetnMGLevels() > 0) {
+      SU2_MPI::Error("Specified inlet profiles are not yet implemented for multigrid.",
+                     CURRENT_FUNCTION);
+    }
 
-      for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_Ttotal[iMarker][iVertex] = t_total;
-        Inlet_Ptotal[iMarker][iVertex] = p_total;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+    unsigned short iMesh = MESH_0;
+
+    /*--- Open the input file ---*/
+
+    string profile_filename = config->GetInlet_FileName();
+    if (rank == MASTER_NODE) {
+      cout << endl;
+      cout << "Reading flow inlet profile from file:\t" << profile_filename << endl;
+    }
+    ifstream profile_file(profile_filename.c_str());
+    if (profile_file.fail()) {
+      stringstream error_msg;
+      error_msg << "Could not find the input file for the inlet profile!" << endl;
+      error_msg << "Looked for: " << profile_filename << endl;
+      SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+    }
+
+    /*--- Read in and store variables for later sorting and interpolating
+     * The structure within the input file should be:
+     *
+     * x  y  z  T  p  u_x  u_y  u_z  [variables for extra solvers]
+     *
+     * where:
+     *   x, y, z are the coordinates (only x, y necessary for 2D)
+     *   T, p are state variables.
+     *      For TOTAL_CONDITIONS, they are total T and total p
+     *      For MASS_FLOW, they are the density and velocity magnitude
+     *   u_x, u_y, and u_z are components of a unit vector indicating
+     *     the direction of the inlet velocity (only u_x, u_y expected for 2D)
+     * ---*/
+
+    /*--- Since we're only doing this at startup, we're ok with using vectors
+     * instead of C-style arrays ---*/
+    vector<vector<su2double> > profile;
+
+    /*--- First line (the header) is skipped) ---*/
+    string text_line;
+    getline(profile_file, text_line);
+    while (getline(profile_file, text_line)) {
+
+      /*--- Set up the vector of values for this point ---*/
+      vector<su2double> values;
+
+      /*--- Get inlet variables and flow direction from the input file. ---*/
+      istringstream point_line(text_line);
+      su2double value;
+      while (point_line >> value) values.push_back(value);
+
+      /*--- Perform a check on the inputs
+       * Don't error-exit immediately. We want to output an example
+       * inlet profile specification file before calling SU2_MPI::Error. ---*/
+
+      bool valid = ValidateInletValues(values);
+      if (not(valid)) return false;
+
+      profile.push_back(values);
+    }
+
+    profile_file.close();
+
+    /*--- Store the results for later reuse.
+     * We don't want to load the file at every iteration. ---*/
+
+    const su2double tolerance = 1e-6;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        for (unsigned long iVertex = 0;
+             iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+
+          unsigned long jPoint =
+              geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          su2double* coords = geometry[iMesh]->node[jPoint]->GetCoord();
+          su2double min_dist = 1e16;
+          std::vector<vector<su2double> >::iterator closest_point = profile.begin();
+
+          /*--- Find the distance to the closest point ---*/
+
+          for (std::vector<vector<su2double> >::iterator it = profile.begin();
+               it != profile.end(); ++it) {
+            vector<su2double> values = *it;
+            su2double dist = 0;
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              dist += pow(values[iDim] - coords[iDim], 2);
+            dist = sqrt(dist);
+            if (dist < min_dist) {
+              min_dist = dist;
+              closest_point = it;
+            }
+          }
+
+          /*--- If the diff is less than the tolerance, match the two ---*/
+          if (min_dist < tolerance) {
+
+            SetInletAtVertex(solver[iMesh], *closest_point, iMarker, iVertex);
+
+          } else {
+
+            unsigned long GlobalIndex = geometry[iMesh]->node[jPoint]->GetGlobalIndex();
+            stringstream error_msg;
+            error_msg << "Did not find a match for point " << GlobalIndex << endl;
+            error_msg << std::scientific;
+            error_msg << "  at location: [" << coords[0] << ", " << coords[1];
+            if (nDim ==3) error_msg << ", " << coords[2];
+            error_msg << "]" << endl;
+            error_msg << "  and any of the points in the inlet file." << endl;
+            error_msg << "  Distance to closest point: " << min_dist << endl;
+            error_msg << endl;
+            /*--- Write all at once to avoid overlapping writes from different
+             * MPI tasks ---*/
+            cout << error_msg.str();
+            /*--- Don't error-exit immediately
+             * We want to output an example inlet profile specification file
+             * before calling SU2_MPI::Error. ---*/
+            return false;
+
+          }
+        }
       }
     }
+
+  } else { /*--- Uniform inlets or python-customized inlets ---*/
+
+    /* --- Initialize quantities for inlet boundary
+     * This routine does not check if they python wrapper is being used to
+     * set custom boundary conditions.  This is intentional; the
+     * default values for python custom BCs are initialized with the default
+     * values specified in the config (avoiding non physical values) --- */
+    for(unsigned short iMarker=0; iMarker < nMarker; iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        SetUniformInlet(config, iMarker);
+      }
+    }
+  }
+
+  return true;
+
+}
+
+bool CEulerSolver::ValidateInletValues(vector<su2double> inlet_values) {
+
+  /*--- Alias position to be more readable and avoid redundancy ---*/
+  unsigned short FlowDir_position = nDim+2;
+
+  su2double norm = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    norm += pow(inlet_values[FlowDir_position + iDim], 2);
+  }
+  norm = sqrt(norm);
+
+  /*--- The tolerance here needs to be loose.  When adding a very
+   * small number (1e-10 or smaller) to a number close to 1.0, floating
+   * point roundoff errors can occur. ---*/
+  if (abs(norm - 1.0) > 1e-6) {
+    if (rank == MASTER_NODE) {
+      cout << "ERROR: Found these values in columns ";
+      cout << FlowDir_position << " - ";
+      cout << FlowDir_position + nDim - 1 << endl;
+      cout << std::scientific;
+      cout << "  [" << inlet_values[FlowDir_position];
+      cout << ", " << inlet_values[FlowDir_position + 1];
+      if (nDim == 3) cout << ", " << inlet_values[FlowDir_position + 2];
+      cout << "]" << endl;
+      cout << "  These values **should** be components of a unit vector for velocity." << endl;
+      cout << "  But their magnitude is: " << norm << endl;
+    }
+    return false;
+
+  } else {
+
+    return true;
+  }
+}
+
+void CEulerSolver::SetInletAtVertex(CSolver** solver, vector<su2double> values,
+                                    unsigned short iMarker,
+                                    unsigned long iVertex) {
+
+  /*--- Alias positions within inlet file to be more readable ---*/
+  unsigned short T_position = nDim;
+  unsigned short P_position = nDim+1;
+  unsigned short FlowDir_position = nDim+2;
+
+  solver[FLOW_SOL]->SetInlet_Ttotal(iMarker, iVertex, values[T_position]);
+  solver[FLOW_SOL]->SetInlet_Ptotal(iMarker, iVertex, values[P_position]);
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    solver[FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, iDim,
+                                       values[FlowDir_position + iDim]);
+  }
+
+}
+
+void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+
+  string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
+  su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
+  su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+
+  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    Inlet_Ttotal[iMarker][iVertex] = t_total;
+    Inlet_Ptotal[iMarker][iVertex] = p_total;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
   }
 
 }
@@ -15306,10 +15490,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Inlet_FlowDir[iMarker] = NULL;
     }
   }
-
-  /*--- Set up inlet profiles, if necessary ---*/
-
-  SetInlet(config);
 
   /*--- Inviscid force definition and coefficient in all the markers ---*/
   

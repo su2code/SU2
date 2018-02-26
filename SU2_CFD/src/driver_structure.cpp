@@ -889,6 +889,27 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
   Solver_Restart(solver_container, geometry, config, update_geo);
 
+  /*--- Setup the inlet profiles ---*/
+
+  if (euler || ns) {
+    bool successful = solver_container[MESH_0][FLOW_SOL]->SetInlet(geometry, solver_container, config);
+    if (successful) {
+      successful = solver_container[MESH_0][TURB_SOL]->SetInlet(geometry, solver_container, config);
+    }
+    if (not(successful)) {
+      if (config->Inlet_Profile_From_File()) {
+        /*--- Output has not been set up yet.  Create a temporary output. ---*/
+        OutputInletNodes(geometry, config);
+        SU2_MPI::Barrier(config->GetMPICommunicator());
+        SU2_MPI::Error("Failed to load the inlet profile from the specified file.",
+                        CURRENT_FUNCTION);
+      } else {
+        SU2_MPI::Error("Failed to set the inlet boundary condition(s).",
+                       CURRENT_FUNCTION);
+      }
+    }
+  }
+
 }
 
 void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
@@ -3184,6 +3205,110 @@ void CDriver::Output(unsigned long ExtIter) {
   /*--- When calculate mean/fluctuation option will be available, delete the following part ---*/
   if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0)) {
       output->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0);}
+
+}
+
+void CDriver::OutputInletNodes(CGeometry **geometry, CConfig *config) {
+
+  unsigned short iMarker, iVertex, iDim;
+  unsigned long iPoint;
+
+  const unsigned short nDim = geometry[MESH_0]->GetnDim();
+  const unsigned int nGlobalPoint = geometry[MESH_0]->GetGlobal_nPoint();
+
+  /*--- This function could be moved to COutput. But currently in the code,
+   * the inlet nodes are set up before the COutput object is initialized.
+   * So we can't use the COutput object when inlet setup fails. ---*/
+
+  bool* Inlet_Flag_Local = new bool[nGlobalPoint];
+  bool* Inlet_Flag_Global = new bool[nGlobalPoint];
+  for (iPoint = 0; iPoint < nGlobalPoint; iPoint++) {
+    Inlet_Flag_Local[iPoint] = false;
+    Inlet_Flag_Global[iPoint] = false;
+  }
+  su2double** Inlet_Coords_Local = new su2double*[nDim];
+  su2double** Inlet_Coords_Global = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Inlet_Coords_Local[iDim] = new su2double[nGlobalPoint];
+    Inlet_Coords_Global[iDim] = new su2double[nGlobalPoint];
+  }
+
+  /*--- Get the local node information ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+        unsigned long jPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        unsigned long GlobalIndex = geometry[MESH_0]->node[jPoint]->GetGlobalIndex();
+        Inlet_Flag_Local[GlobalIndex] = true;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Inlet_Coords_Local[iDim][GlobalIndex] =
+              geometry[MESH_0]->node[jPoint]->GetCoord(iDim);
+        }
+      }
+    }
+  }
+
+  /*--- Perform MPI reduction ---*/
+
+#ifdef HAVE_MPI
+
+  SU2_MPI::Reduce(Inlet_Flag_Local, Inlet_Flag_Global, nGlobalPoint, MPI::BOOL,
+                  MPI_LOR, MASTER_NODE, MPI_COMM_WORLD);
+  for (iDim = 0; iDim < nDim; iDim++) {
+    SU2_MPI::Reduce(Inlet_Coords_Local[iDim], Inlet_Coords_Global[iDim],
+                    nGlobalPoint, MPI_DOUBLE, MPI_SUM, MASTER_NODE,
+                    MPI_COMM_WORLD);
+  }
+
+#else
+
+  for (iPoint = 0; iPoint < nGlobalPoint; iPoint++) {
+    Inlet_Flag_Global[iPoint] = Inlet_Flag_Local[iPoint];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Inlet_Coords_Global[iDim][iPoint] = Inlet_Coords_Local[iDim][iPoint];
+    }
+  }
+
+#endif
+
+  /*--- Output to file ---*/
+
+  if (rank == MASTER_NODE) {
+    ofstream node_file("inlet_example.dat");
+    node_file << "x\t\t\ty";
+    if (nDim == 3) node_file << "\t\t\tz";
+    node_file << endl;
+    node_file << setprecision(15);
+    for (iPoint = 0; iPoint < nGlobalPoint; iPoint++) {
+      if (Inlet_Flag_Global[iPoint]) {
+        node_file << std::scientific;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          node_file << "\t" << Inlet_Coords_Global[iDim][iPoint];
+        }
+        node_file << endl;
+      }
+    }
+    node_file.close();
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "Created an example inlet specification with node coordinates" << endl;
+    cout << "  and solver variables at `inlet_example.dat`." << endl;
+    cout << "  You can use this file as a guide for making your own inlet" << endl;
+    cout << "  specification." << endl;
+  }
+
+  /*--- Cleanup ---*/
+
+  delete [] Inlet_Flag_Local;
+  delete [] Inlet_Flag_Global;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    delete [] Inlet_Coords_Local[iDim];
+    delete [] Inlet_Coords_Global[iDim];
+  }
+  delete [] Inlet_Coords_Local;
+  delete [] Inlet_Coords_Global;
 
 }
 

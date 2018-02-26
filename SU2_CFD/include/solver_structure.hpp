@@ -2787,9 +2787,19 @@ public:
 
   /*!
    * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
+   * \return True if successful, false if an error occurred
    */
-  virtual void SetInlet(CConfig *config);
+  virtual bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
+
+  virtual void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  virtual void SetInletAtVertex(CSolver** solver, vector<su2double> values,
+                                unsigned short iMarker, unsigned long iVertex);
+
+  virtual bool ValidateInletValues(vector<su2double> inlet_values);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -6089,9 +6099,19 @@ public:
 
   /*!
    * \brief Setup the inlet per the config file and stores the result
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
+   * \return True if successful, false if an error occurred
    */
-  void SetInlet(CConfig *config);
+  bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
+
+  bool ValidateInletValues(vector<su2double> inlet_values);
+
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  void SetInletAtVertex(CSolver** solver, vector<su2double> values,
+                        unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -9066,10 +9086,12 @@ public:
   
   /*!
    * \brief Setup the inlet per the config file and stores the result
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
+   * \return True if successful, false if an error occurred
    */
-  void SetInlet(CConfig *config);
-
+  bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
 };
 
 /*!
@@ -9257,10 +9279,12 @@ public:
   
   /*!
    * \brief Setup the inlet per the config file and stores the result
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
+   * \return True if successful, false if an error occurred
    */
-  void SetInlet(CConfig *config);
-  
+  bool SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config);
 };
 
 /*!

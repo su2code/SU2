@@ -1389,10 +1389,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
   }
 
-  /*--- Set up inlet profiles, if necessary ---*/
-
-  SetInlet(config);
-
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -3180,7 +3176,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInlet(CConfig* config) {
+bool CTurbSASolver::SetInlet(CGeometry **geometry, CSolver ***solver,
+                             CConfig *config) {
 
   /*-- Allocation has to happen in derived classes (not CTurbSolver),
    * due to arbitrary number of turbulence variables ---*/
@@ -3201,6 +3198,8 @@ void CTurbSASolver::SetInlet(CConfig* config) {
       Inlet_TurbVars[iMarker] = NULL;
     }
   }
+
+  return true;
 
 }
 
@@ -3395,10 +3394,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     }
   }
-
-  /*--- Set up inlet profiles, if necessary ---*/
-
-  SetInlet(config);
 
 }
 
@@ -4329,8 +4324,8 @@ su2double* CTurbSSTSolver::GetConstants() {
   return constants;
 }
 
-
-void CTurbSSTSolver::SetInlet(CConfig* config) {
+bool CTurbSSTSolver::SetInlet(CGeometry **geometry, CSolver ***solver,
+                              CConfig *config) {
 
   /*-- Allocation has to happen in derived classes (not CTurbSolver),
    * due to arbitrary number of turbulence variables ---*/
@@ -4352,5 +4347,7 @@ void CTurbSSTSolver::SetInlet(CConfig* config) {
       Inlet_TurbVars[iMarker] = NULL;
     }
   }
+
+  return true;
 
 }

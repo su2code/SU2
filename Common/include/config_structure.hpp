@@ -226,6 +226,8 @@ private:
   nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
                              (note that using parallel computation this number can be different
                              from nMarker_All). */
+  bool Inlet_From_File; /*!< \brief True if the inlet profile is to be loaded from a file. */
+  string Inlet_Filename; /*!< \brief Filename specifying an inlet profile. */
   string *Marker_Euler,			/*!< \brief Euler wall markers. */
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
@@ -4022,6 +4024,18 @@ public:
    * \return Kind of inlet boundary condition.
    */
   unsigned short GetKind_Inlet(void);
+  
+  /*!
+   * \brief Check if the inlet profile(s) are specified in an input file
+   * \return True if an input file is to be used for the inlet profile(s)
+   */
+  bool Inlet_Profile_From_File(void);
+
+  /*!
+   * \brief Get name of the input file for the specified inlet profile.
+   * \return Name of the input file for the specified inlet profile.
+   */
+  string GetInlet_FileName(void);
   
   
   /*!
