@@ -587,6 +587,14 @@ public:
   su2double GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
 
   /*!
+   * \brief Write the positions for all the inlet nodes
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   */
+  void OutputInletNodes(CGeometry **geometry, CConfig *config);
+
+  /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.

@@ -1025,6 +1025,10 @@ inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline bool CConfig::Inlet_Profile_From_File(void) { return Inlet_From_File; }
+
+inline string CConfig::GetInlet_FileName(void) { return Inlet_Filename; }
+
 inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_Inflow; }
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
