@@ -2081,7 +2081,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_TWO_PHASE_EULER: euler = true; two_phase= true; break;
     case DISC_ADJ_TWO_PHASE_NAVIER_STOKES: ns = true; two_phase= true; break;
-    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; adj_ns = true; break;
+    case DISC_ADJ_TWO_PHASE_RANS: ns = true; turbulent = true; two_phase= true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/

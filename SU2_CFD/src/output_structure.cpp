@@ -4502,6 +4502,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (two_phase) ConvHist_file[0] << two_phase_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -4524,7 +4525,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       if (!turbo) ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
       else ConvHist_file[0] << begin << adj_turbo_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
-//      if ((two_phase) && (!frozen_visc)) ConvHist_file[0] << adj_2phase_resid;
+      if ((two_phase) && (!frozen_visc)) ConvHist_file[0] << adj_2phase_resid;
       ConvHist_file[0] << end;
       break;
       
@@ -4969,6 +4970,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             residual_turbulent[iVar] = solver_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
         
+        /*--- Two_phase residual ---*/
+
         if (two_phase) {
           for (iVar = 0; iVar < nVar_2phase; iVar++) {
             residual_2phase[iVar] = solver_container[val_iZone][FinestMesh][TWO_PHASE_SOL]->GetRes_RMS(iVar);
@@ -5591,7 +5594,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
-            if (two_phase) cout << "      Res[N]" << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
+            if (two_phase) cout << "      Res[N]" ;
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
             case SA:     cout << "       Res[nu]"; break;
@@ -5721,6 +5724,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 if (incompressible) cout << "   Res[Psi_Velx]";
                 else cout << "     Res[Psi_E]";
               }
+
+              if (two_phase) {
+                cout << "     Res[Psi_N]" ;
+              }
+
               if (disc_adj) {
                 if (!turbo){
                   cout << "    Sens_Press" << "      Sens_AoA" << endl;
@@ -5910,9 +5918,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case TWO_PHASE_EULER : case TWO_PHASE_NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;            
+            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << two_phase_resid;
+            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << two_phase_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << two_phase_resid;
             //            if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -5970,8 +5978,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case TWO_PHASE_RANS :
           
           if (!DualTime_Iteration) {
-            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
-            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid<< two_phase_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid << two_phase_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -6109,8 +6117,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
-//            if (two_phase)
-//              ConvHist_file[0] << adj_2phase_resid;
+            if (two_phase)
+              ConvHist_file[0] << adj_2phase_resid;
 
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -6161,7 +6169,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
               ConvHist_file[0] << adj_turb_resid;
-//            if (two_phase)  ConvHist_file[0] << adj_2phase_resid;
+            if (two_phase)  ConvHist_file[0] << adj_2phase_resid;
 
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -6176,7 +6184,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout.width(17); cout << log10(residual_adjturbulent[0]);
               }
               if (two_phase) {
-                cout.width(17); cout << log10(max(residual_adjtwophase[0], 1e-40)) << log10(max(residual_adjtwophase[3], 1e-40));
+                cout.width(17); cout << log10(max(residual_adjtwophase[0], 1e-40));
               }
             } else {
               if (compressible) {
@@ -6186,6 +6194,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible) {
                 cout.width(15); cout << log10(residual_adjflow[1]);
               }
+
+              if (!frozen_visc) {
+                cout.width(17); cout << log10(residual_adjturbulent[0]);
+              }
+
               if (two_phase) {
                 cout.width(15); cout << log10(max(residual_adjtwophase[0], 1e-40));
                 cout.width(15); cout << log10(max(residual_adjtwophase[3], 1e-40));
