@@ -586,6 +586,9 @@ public:
    */
   su2double GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
 
+  void SetupInlets(CSolver ***solver_container, CGeometry **geometry,
+                   CConfig* config);
+
   /*!
    * \brief Write the positions for all the inlet nodes
    * \param[in] geometry - Geometrical definition of the problem.

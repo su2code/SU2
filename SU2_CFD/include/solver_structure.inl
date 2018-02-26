@@ -538,8 +538,6 @@ inline void CSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned long v
 
 inline void CSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) { }
 
-inline bool CSolver::SetInlet(CGeometry **geometry, CSolver ***solver, CConfig *config) { return false; }
-
 inline bool CSolver::ValidateInletValues(vector<su2double> inlet_values) { return true; }
 
 inline void CSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {};
