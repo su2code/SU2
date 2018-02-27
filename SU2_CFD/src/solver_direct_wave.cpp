@@ -72,20 +72,28 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
   }
   
   /*--- Initialization of matrix structures ---*/
+  
+  System.Initialize_System(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(nVar, 
+                                  config->GetKind_Linear_Solver(), 
+                                  config->GetKind_Linear_Solver_Prec(),
+                                  config->GetLinear_Solver_Iter(), 
+                                  config->GetLinear_Solver_Error(), 
+                                  geometry, config);  
   StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+//  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
-  
+//  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+//      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+//    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+//    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+//  }
+
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
+
   /* Wave strength coefficient for all of the markers */
   
   CWave = new su2double[config->GetnMarker_All()];
@@ -175,7 +183,7 @@ void CWaveSolver::Preprocessing(CGeometry *geometry,
   
   StiffMatrixSpace.SetValZero();
   StiffMatrixTime.SetValZero();
-  Jacobian.SetValZero();
+  System.SetValZero_Matrix();
   
 }
 
@@ -224,39 +232,39 @@ void CWaveSolver::Source_Residual(CGeometry *geometry,
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] =  1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] =  1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
-    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
     
   }
   
@@ -300,39 +308,39 @@ void CWaveSolver::Viscous_Residual(CGeometry *geometry,
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][1]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][1]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][1]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-    StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+    StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
     
   }
   
@@ -345,7 +353,7 @@ void CWaveSolver::Viscous_Residual(CGeometry *geometry,
       LinSysRes[total_index] = 0.0;
     }
   
-  StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
+//  StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -399,11 +407,11 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
     }
     node[iPoint]->SetSolution(Solution);
     node[iPoint]->SetSolution_Old(Solution);
-    LinSysRes.SetBlock(iPoint, Residual);
-    LinSysRes.SetBlock(iPoint, Residual);
+//    LinSysRes.SetBlock(iPoint, Residual);
+//    LinSysRes.SetBlock(iPoint, Residual);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      Jacobian.DeleteValsRowi(total_index);
+      System.DeleteValsRowi(total_index);
     }
   }
   
@@ -521,19 +529,19 @@ void CWaveSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     /*--- Diagonal value ---*/
       StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local*TimeJac);
 
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
     
     /*--- Off Diagonal value ---*/
       StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local*TimeJac);
 
-    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
 
     
   }
@@ -610,10 +618,10 @@ void CWaveSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   
   /*--- Solve or smooth the linear system ---*/
-  
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  
+
+
+    System.Solve_System(LinSysRes, LinSysSol);  
+
   /*--- Update solution (system written in terms of increments) ---*/
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -661,39 +669,39 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][1]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][1]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][1]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
-//    StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+//    StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
 //    
 //  }
   

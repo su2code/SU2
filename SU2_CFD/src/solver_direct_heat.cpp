@@ -70,16 +70,23 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   /*--- Initialization of matrix structures ---*/
   
-  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Linear Elasticity)." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  System.Initialize_System(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(nVar, 
+                                  config->GetKind_Linear_Solver(), 
+                                  config->GetKind_Linear_Solver_Prec(),
+                                  config->GetLinear_Solver_Iter(), 
+                                  config->GetLinear_Solver_Error(), 
+                                  geometry, config);  
+//  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+//  StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+//  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Linear Elasticity)." << endl;
+//  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
+//  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+//      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+//    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+//    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+//  }
   
   /*--- Initialization of linear solver structures ---*/
   
@@ -175,11 +182,11 @@ void CHeatSolver::Preprocessing(CGeometry *geometry,
     LinSysAux.SetBlock_Zero(iPoint);
     LinSysRes.SetBlock_Zero(iPoint);
   }
-  
+ 
   /*--- Zero out the entries in the various matrices ---*/
   StiffMatrixSpace.SetValZero();
   StiffMatrixTime.SetValZero();
-  Jacobian.SetValZero();
+  System.SetValZero_Matrix();
   
 }
 
@@ -239,27 +246,27 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
       
       if (nDim == 2) { StiffMatrix_Node[0][0] = (2.0/12.0)*(Area_Local/Time_Num); }
       else { StiffMatrix_Node[0][0] = (2.0/20.0)*(Volume_Local/Time_Num); }
-      Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-      if (nDim == 3) Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
+      if (nDim == 3) System.AddBlock_Matrix(Point_3, Point_3, StiffMatrix_Node);
       
       if (nDim == 2) { StiffMatrix_Node[0][0] = (1.0/12.0)*(Area_Local/Time_Num); }
       else { StiffMatrix_Node[0][0] = (1.0/20.0)*(Volume_Local/Time_Num); }
       
-      Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
       if (nDim == 3) {
-        Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-        Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node);
+        System.AddBlock_Matrix(Point_0, Point_3, StiffMatrix_Node);
+        System.AddBlock_Matrix(Point_1, Point_3, StiffMatrix_Node);
+        System.AddBlock_Matrix(Point_2, Point_3, StiffMatrix_Node);
+        System.AddBlock_Matrix(Point_3, Point_0, StiffMatrix_Node);
+        System.AddBlock_Matrix(Point_3, Point_1, StiffMatrix_Node);
+        System.AddBlock_Matrix(Point_3, Point_2, StiffMatrix_Node);
       }
       
     }
@@ -285,15 +292,15 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetCoord(Coord_0, Coord_1, Coord_2);
       numerics->ComputeResidual(StiffMatrix_Elem, config);
       
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
       
     }
   }
@@ -310,42 +317,42 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetCoord(Coord_0, Coord_1, Coord_2, Coord_3);
       numerics->ComputeResidual(StiffMatrix_Elem, config);
       
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrixSpace.AddBlock(Point_0, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrixSpace.AddBlock(Point_1, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrixSpace.AddBlock(Point_2, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrixSpace.AddBlock(Point_3, Point_0, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrixSpace.AddBlock(Point_3, Point_1, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrixSpace.AddBlock(Point_3, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrixSpace.AddBlock(Point_3, Point_3, StiffMatrix_Node); Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrixSpace.AddBlock(Point_0, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrixSpace.AddBlock(Point_0, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrixSpace.AddBlock(Point_0, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrixSpace.AddBlock(Point_0, Point_3, StiffMatrix_Node); System.AddBlock_Matrix(Point_0, Point_3, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrixSpace.AddBlock(Point_1, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrixSpace.AddBlock(Point_1, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrixSpace.AddBlock(Point_1, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrixSpace.AddBlock(Point_1, Point_3, StiffMatrix_Node); System.AddBlock_Matrix(Point_1, Point_3, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrixSpace.AddBlock(Point_2, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrixSpace.AddBlock(Point_2, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrixSpace.AddBlock(Point_2, Point_3, StiffMatrix_Node); System.AddBlock_Matrix(Point_2, Point_3, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrixSpace.AddBlock(Point_3, Point_0, StiffMatrix_Node); System.AddBlock_Matrix(Point_3, Point_0, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrixSpace.AddBlock(Point_3, Point_1, StiffMatrix_Node); System.AddBlock_Matrix(Point_3, Point_1, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrixSpace.AddBlock(Point_3, Point_2, StiffMatrix_Node); System.AddBlock_Matrix(Point_3, Point_2, StiffMatrix_Node);
+      StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrixSpace.AddBlock(Point_3, Point_3, StiffMatrix_Node); System.AddBlock_Matrix(Point_3, Point_3, StiffMatrix_Node);
       
     }
   }
   
-  if (config->GetUnsteady_Simulation() != STEADY) {
+//  if (config->GetUnsteady_Simulation() != STEADY) {
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      total_index = iPoint*nVar;
-      LinSysSol[total_index] = node[iPoint]->GetSolution(0);
-      LinSysAux[total_index] = 0.0;
-    }
+//    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//      total_index = iPoint*nVar;
+//      LinSysSol[total_index] = node[iPoint]->GetSolution(0);
+//      LinSysAux[total_index] = 0.0;
+//    }
     
-    StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysAux);
+//    StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysAux);
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      total_index = iPoint*nVar;
-      Residual[0] = LinSysAux[total_index];
-      LinSysRes.SubtractBlock(iPoint, Residual);
-    }
-  }
+//    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//      total_index = iPoint*nVar;
+//      Residual[0] = LinSysAux[total_index];
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//    }
+//  }
   
 }
 
@@ -381,7 +388,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
     LinSysSol.SetBlock(iPoint, Residual);
 
     total_index = iPoint*nVar;
-    Jacobian.DeleteValsRowi(total_index);
+    System.DeleteValsRowi(total_index);
     
   }
   
@@ -441,27 +448,27 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     if (nDim == 2) { StiffMatrix_Node[0][0] = (2.0/12.0)*(Area_Local*TimeJac); }
     else { StiffMatrix_Node[0][0] = (2.0/20.0)*(Volume_Local*TimeJac); }
     
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-    if (nDim == 3) { Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node); }
+    System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+    if (nDim == 3) { System.AddBlock_Matrix(Point_3, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node); }
       
     if (nDim == 2) { StiffMatrix_Node[0][0] = (1.0/12.0)*(Area_Local*TimeJac); }
     else { StiffMatrix_Node[0][0] = (1.0/20.0)*(Volume_Local*TimeJac); }
     
-    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+    System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
     if (nDim == 3) {
-      Jacobian.AddBlock(Point_0, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_1, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_2, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_3, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_3, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-      Jacobian.AddBlock(Point_3, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_2, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_0, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_3, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_1, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_3, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_2, Point_3, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_3, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_3, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_0, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_3, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_1, StiffMatrix_Node);
+      System.AddBlock_Matrix(Point_3, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_3, Point_2, StiffMatrix_Node);
     }
     
   }
@@ -532,8 +539,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+   System.Solve_System(LinSysRes, LinSysSol);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
@@ -550,7 +556,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*---  Compute the residual Ax-f ---*/
   
-  Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+//  System.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
   
   /*--- Set maximum residual to zero ---*/
   

@@ -88,19 +88,25 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     Jacobian_jj[iVar] = new su2double [nVar];
   }
   
-  /*--- Initialization of the structure of the whole Jacobian ---*/
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+//  /*--- Initialization of the structure of the whole Jacobian ---*/
+//  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
-  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
+//  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+//      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+//    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+//    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+//  }
   
-  Jacobian.SetValZero();
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);	
+ System.Initialize_System(nVar, true, geometry, config);
+ System.Initialize_Linear_Solver(nVar, 
+                                 config->GetKind_Linear_Solver(), 
+                                 config->GetKind_Linear_Solver_Prec(),
+                                 config->GetLinear_Solver_Iter(), 
+                                 config->GetLinear_Solver_Error(), 
+                                 geometry, config);
+ 
   /*--- Computation of gradients by least squares ---*/
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
@@ -492,7 +498,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint);
+      System.DeleteValsRowi(iPoint);
       
     }
   }
@@ -516,7 +522,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       LinSysRes.SetBlock_Zero(iPoint);
       
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint);
+      System.DeleteValsRowi(iPoint);
       
     }
   }
@@ -544,7 +550,7 @@ void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
     /*--- Add Residuals and Jacobians ---*/
     conv_numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
     LinSysRes.AddBlock(iPoint, Residual);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_ii);
     
   }
   
@@ -562,7 +568,7 @@ void CAdjTurbSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   
     /*--- Initialize the Jacobian matrices ---*/
-  Jacobian.SetValZero();
+  System.SetValZero_Matrix();
   
   /*--- Gradient of the adjoint turbulent variables ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
@@ -664,10 +670,10 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Add and Subtract Residual ---*/
     LinSysRes.AddBlock(iPoint, Residual_i);
     LinSysRes.AddBlock(jPoint, Residual_j);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_ii);
+    System.AddBlock_Matrix(iPoint, jPoint, Jacobian_ij);
+    System.AddBlock_Matrix(jPoint, iPoint, Jacobian_ji);
+    System.AddBlock_Matrix(jPoint, jPoint, Jacobian_jj);
     
   }
   
@@ -710,10 +716,10 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.AddBlock(iPoint, Residual_i);
     LinSysRes.AddBlock(jPoint, Residual_j);
     
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_ii);
+    System.AddBlock_Matrix(iPoint, jPoint, Jacobian_ij);
+    System.AddBlock_Matrix(jPoint, iPoint, Jacobian_ji);
+    System.AddBlock_Matrix(jPoint, jPoint, Jacobian_jj);
     
   }
   
@@ -762,7 +768,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Add and Subtract Residual ---*/
     numerics->ComputeResidual(Residual, Jacobian_ii, NULL, config);
     LinSysRes.AddBlock(iPoint, Residual);
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_ii);
     
   }
   
@@ -793,10 +799,10 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //    second_numerics->ComputeResidual(Residual, Jacobian_ii, Jacobian_jj, config);
 //    LinSysRes.AddBlock(iPoint, Residual);
 //    LinSysRes.SubtractBlock(jPoint, Residual);
-//    Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
-//    Jacobian.AddBlock(iPoint, jPoint, Jacobian_jj);
-//    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ii);
-//    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
+//    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_ii);
+//    System.AddBlock_Matrix(iPoint, jPoint, Jacobian_jj);
+//    System.SubtractBlock_Matrix(jPoint, iPoint, Jacobian_ii);
+//    System.SubtractBlock_Matrix(jPoint, jPoint, Jacobian_jj);
 //    
 //  }
   
@@ -827,7 +833,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     
     Delta = Vol / (config->GetCFLRedCoeff_AdjTurb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
     
-    Jacobian.AddVal2Diag(iPoint, Delta);
+    System.SetVal2Diag_Matrix(iPoint, Delta);    
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     
@@ -853,15 +859,14 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  
+  System.Solve_System(LinSysRes, LinSysSol);
+
   /*--- Update solution (system written in terms of increments) ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++)
       node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-  }
+    }
   
   /*--- MPI solution ---*/
   

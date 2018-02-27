@@ -182,7 +182,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
 
-  direct_solver->Jacobian.SetValZero();
+  direct_solver->System.SetValZero_Matrix();
 
   /*--- Set indices to zero ---*/
 
@@ -677,7 +677,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }

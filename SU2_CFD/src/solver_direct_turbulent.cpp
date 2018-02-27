@@ -536,10 +536,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     /*--- Implicit part ---*/
     
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+    System.AddBlock_Matrix(iPoint, jPoint, Jacobian_j);
+    System.SubtractBlock_Matrix(jPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(jPoint, jPoint, Jacobian_j);
     
   }
   
@@ -585,10 +585,10 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(iPoint, jPoint, Jacobian_j);
+    System.AddBlock_Matrix(jPoint, iPoint, Jacobian_i);
+    System.AddBlock_Matrix(jPoint, jPoint, Jacobian_j);
     
   }
   
@@ -690,7 +690,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
     Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
-    Jacobian.AddVal2Diag(iPoint, Delta);
+    System.AddVal2Diag_Matrix(iPoint, Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     
@@ -715,9 +715,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  
+  System.Solve_System(LinSysRes, LinSysSol);
+
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
@@ -860,7 +859,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       }
     }
     
@@ -1031,7 +1030,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       }
     }
   }
@@ -1241,20 +1240,29 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       Jacobian_i[iVar] = new su2double [nVar];
       Jacobian_j[iVar] = new su2double [nVar];
     }
-    
+
     /*--- Initialization of the structure of the whole Jacobian ---*/
-    
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-    
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-    
+
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    System.Initialize_System(nVar, true, geometry, config);
+    System.Initialize_Linear_Solver(nVar, 
+                                    config->GetKind_Linear_Solver(), 
+                                    config->GetKind_Linear_Solver_Prec(),
+                                    config->GetLinear_Solver_Iter(), 
+                                    config->GetLinear_Solver_Error(), 
+                                    geometry, config);        
+//    /*--- Initialization of the structure of the whole Jacobian ---*/
+    
+//    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
+//    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    
+//    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+//        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+//      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+//      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+//    }
     
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
@@ -1413,7 +1421,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  Jacobian.SetValZero();
+  System.SetValZero_Matrix();
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -1554,7 +1562,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     LinSysRes.SubtractBlock(iPoint, Residual);
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
     
   }
   
@@ -1613,7 +1621,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       
       /*--- includes 1 in the diagonal ---*/
       
-      Jacobian.DeleteValsRowi(iPoint);
+      System.DeleteValsRowi(iPoint);
     }
   }
   
@@ -1640,7 +1648,7 @@ void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
       
       /*--- Includes 1 in the diagonal ---*/
       
-      Jacobian.DeleteValsRowi(iPoint);
+      System.DeleteValsRowi(iPoint);
     }
   }
   
@@ -1700,7 +1708,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       /*--- Add residuals and Jacobians ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1773,7 +1781,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       /*--- Jacobian contribution for implicit integration ---*/
       
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
       
@@ -1796,7 +1804,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1871,7 +1879,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Jacobian contribution for implicit integration ---*/
       
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -1893,7 +1901,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1954,7 +1962,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
       
       /*--- Jacobian contribution for implicit integration ---*/
       
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
       
@@ -1977,7 +1985,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -2043,7 +2051,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Jacobian contribution for implicit integration ---*/
       
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
       
@@ -2066,7 +2074,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -2208,7 +2216,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         /*--- Jacobian contribution for implicit integration ---*/
         
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
         
         /*--- Viscous contribution ---*/
         
@@ -2233,7 +2241,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         /*--- Subtract residual, and update Jacobians ---*/
         
         //        LinSysRes.SubtractBlock(iPoint, Residual);
-        //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        //        System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
         
       }
     }
@@ -2320,7 +2328,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
 
@@ -2343,7 +2351,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
       /*--- Subtract residual, and update Jacobians ---*/
 
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
     }
   }
@@ -2438,7 +2446,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
 
@@ -2461,7 +2469,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       /*--- Subtract residual, and update Jacobians ---*/
 
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
     }
   }
@@ -2518,7 +2526,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //        /*--- Add Residuals and Jacobians ---*/
   //        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
   //        LinSysRes.AddBlock(iPoint, Residual);
-  //        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  //        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
   //
   //      }
   //    }
@@ -2619,7 +2627,7 @@ void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
   //        LinSysRes.AddBlock(iPoint, Residual);
-  //        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  //        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
   //
   //      }
   //    }
@@ -2715,7 +2723,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
           /*--- Set the normal vector and the coordinates ---*/
 
@@ -2740,7 +2748,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           /*--- Jacobian contribution for implicit integration ---*/
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
         }
       }
@@ -2803,7 +2811,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //        /*--- Add Residuals and Jacobians ---*/
   //        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
   //        LinSysRes.AddBlock(iPoint, Residual);
-  //        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  //        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
   //
   //      }
   //    }
@@ -2904,7 +2912,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
   //        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
   //        LinSysRes.AddBlock(iPoint, Residual);
-  //        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  //        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
   //
   //      }
   //    }
@@ -3209,18 +3217,25 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       Jacobian_i[iVar] = new su2double [nVar];
       Jacobian_j[iVar] = new su2double [nVar];
     }
+
+    System.Initialize_System(nVar, true, geometry, config);
+    System.Initialize_Linear_Solver(nVar, 
+                                    config->GetKind_Linear_Solver(), 
+                                    config->GetKind_Linear_Solver_Prec(),
+                                    config->GetLinear_Solver_Iter(), 
+                                    config->GetLinear_Solver_Error(), 
+                                    geometry, config);    
+//    /*--- Initialization of the structure of the whole Jacobian ---*/
     
-    /*--- Initialization of the structure of the whole Jacobian ---*/
+//    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
+//    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-    
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-    
+//    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+//        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+//      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+//      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+//    }
+
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   }
@@ -3372,7 +3387,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  Jacobian.SetValZero();
+  System.SetValZero_Matrix();
 
   /*--- Upwind second order reconstruction ---*/
   
@@ -3489,7 +3504,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract residual and the Jacobian ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
     
   }
   
@@ -3547,7 +3562,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        System.DeleteValsRowi(total_index);
       }
       
     }
@@ -3603,7 +3618,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        System.DeleteValsRowi(total_index);
       }
       
     }
@@ -3668,7 +3683,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Add residuals and Jacobians ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -3736,7 +3751,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -3757,7 +3772,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -3822,7 +3837,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -3843,7 +3858,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -3927,7 +3942,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -3948,7 +3963,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
     }
   }
@@ -4055,7 +4070,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
       /*--- Viscous contribution ---*/
       visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
@@ -4076,7 +4091,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
     }
   }
@@ -4170,7 +4185,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
           /*--- Set the normal vector and the coordinates ---*/
 
@@ -4195,7 +4210,7 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           /*--- Jacobian contribution for implicit integration ---*/
 
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
         }
       }

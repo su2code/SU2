@@ -536,7 +536,7 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
    * when running the discrete adjoint solver. ---*/
 
-  direct_solver->Jacobian.SetValZero();
+  direct_solver->System.SetValZero_Matrix();
 
   /*--- Set indices to zero ---*/
 

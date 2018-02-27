@@ -88,10 +88,14 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
     StiffMatrix_Node[iVar] = new su2double [1];
   }
   
-  /*--- Initialization of the structure of the whole Jacobian ---*/
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Poisson equation)." << endl;
-  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  
+  System.Initialize_System(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(nVar, 
+                                  config->GetKind_Linear_Solver(), 
+                                  config->GetKind_Linear_Solver_Prec(),
+                                  config->GetLinear_Solver_Iter(), 
+                                  config->GetLinear_Solver_Error(), 
+                                  geometry, config);
+
   /*--- Solution and residual vectors ---*/
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -146,7 +150,7 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
     LinSysRes.SetBlock_Zero(iPoint);
   
-  StiffMatrix.SetValZero();
+  System.SetValZero_Matrix();
   
 }
 
@@ -162,7 +166,7 @@ void CPoissonSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysSol[iPoint] = node[iPoint]->GetSolution(iVar);
   }
   
-  StiffMatrix.MatrixVectorProduct(LinSysSol, LinSysRes);
+//  System.MatrixVectorProduct();
   
   /*--- Update residual ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -349,7 +353,7 @@ void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution,
       E_field[iDim] = -1.0*neg_EFvalue;
     }
   }
-};
+}
 
 /*!
  * \method Galerkin_Method
@@ -404,52 +408,52 @@ void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 void CPoissonSolver::AddStiffMatrix(su2double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) {
   
   if (nDim == 2 ) {
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
   }
   if (nDim == 3) {
     
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; StiffMatrix.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; StiffMatrix.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; StiffMatrix.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; StiffMatrix.AddBlock(Point_0, Point_3, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; StiffMatrix.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; StiffMatrix.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; StiffMatrix.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; StiffMatrix.AddBlock(Point_1, Point_3, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; StiffMatrix.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; StiffMatrix.AddBlock(Point_2, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; StiffMatrix.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; StiffMatrix.AddBlock(Point_2, Point_3, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; StiffMatrix.AddBlock(Point_3, Point_0, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; StiffMatrix.AddBlock(Point_3, Point_1, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; StiffMatrix.AddBlock(Point_3, Point_2, StiffMatrix_Node);
-    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; StiffMatrix.AddBlock(Point_3, Point_3, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0]; System.AddBlock_Matrix(Point_0, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][1]; System.AddBlock_Matrix(Point_0, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][2]; System.AddBlock_Matrix(Point_0, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3]; System.AddBlock_Matrix(Point_0, Point_3, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][0]; System.AddBlock_Matrix(Point_1, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][1]; System.AddBlock_Matrix(Point_1, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][2]; System.AddBlock_Matrix(Point_1, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[1][3]; System.AddBlock_Matrix(Point_1, Point_3, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][0]; System.AddBlock_Matrix(Point_2, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][1]; System.AddBlock_Matrix(Point_2, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][2]; System.AddBlock_Matrix(Point_2, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[2][3]; System.AddBlock_Matrix(Point_2, Point_3, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0]; System.AddBlock_Matrix(Point_3, Point_0, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][1]; System.AddBlock_Matrix(Point_3, Point_1, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][2]; System.AddBlock_Matrix(Point_3, Point_2, StiffMatrix_Node);
+    StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3]; System.AddBlock_Matrix(Point_3, Point_3, StiffMatrix_Node);
     
   }
 }
 
 void CPoissonSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                   CConfig *config, unsigned short val_marker) {
-  unsigned long Point, iVertex;
+  unsigned long iPoint, iVertex;
   
   /*--- Identify if a boundary is Dirichlet or Neumman ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    Point = geometry->vertex[val_marker][iVertex]->GetNode();
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     Solution[0]= 10.0;
-    node[Point]->SetSolution(Solution);
+    node[iPoint]->SetSolution(Solution);
 
-    LinSysRes.SetBlock(Point, Solution);
-    LinSysSol.SetBlock(Point, Solution);
+    LinSysRes.SetBlock(iPoint, Solution);
+    LinSysSol.SetBlock(iPoint, Solution);
 
-    StiffMatrix.DeleteValsRowi(Point); // & includes 1 in the diagonal
+    System.DeleteValsRowi(iPoint); // & includes 1 in the diagonal
   }
   
 }
@@ -486,8 +490,7 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+  System.Solve_System(LinSysRes, LinSysSol);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
@@ -503,7 +506,7 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   /*---  Compute the residual Ax-f ---*/
   
-  StiffMatrix.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+//  StiffMatrix.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
   
   /*--- Set maximum residual to zero ---*/
   

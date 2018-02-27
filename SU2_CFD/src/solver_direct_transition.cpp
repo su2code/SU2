@@ -88,7 +88,13 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
         
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    
+    System.Initialize_System(nVar, true, geometry, config);
+    System.Initialize_Linear_Solver(nVar, 
+                                    config->GetKind_Linear_Solver(), 
+                                    config->GetKind_Linear_Solver_Prec(),
+                                    config->GetLinear_Solver_Iter(), 
+                                    config->GetLinear_Solver_Error(), 
+                                    geometry, config);    
     /*--- Jacobians and vector structures for implicit computations ---*/
     if (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT) {
 
@@ -99,14 +105,14 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
         Jacobian_i[iVar] = new su2double [nVar];
         Jacobian_j[iVar] = new su2double [nVar];
       }
-      /*--- Initialization of the structure of the whole Jacobian ---*/
-      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+//      /*--- Initialization of the structure of the whole Jacobian ---*/
+//      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
-      if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-          (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-        nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-        if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-      }
+//      if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+//          (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+//        nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+//        if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+//      }
       
     }
   
@@ -189,7 +195,7 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
     LinSysRes.SetBlock_Zero(iPoint);
-  Jacobian.SetValZero();
+  System.SetValZero_Matrix();
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -225,7 +231,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     
     Delta_flow = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
     Delta = Delta_flow;
-    Jacobian.AddVal2Diag(iPoint, Delta);
+    System.AddVal2Diag_Matrix(iPoint, Delta);
     
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
@@ -251,8 +257,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   
   /*--- Solve or smooth the linear system ---*/
   
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve_System(LinSysRes, LinSysSol);
   
   /*--- Update solution (system written in terms of increments) ---*/
   
@@ -298,10 +303,10 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(jPoint, Residual);
 
     /*--- Implicit part ---*/
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+    System.AddBlock_Matrix(iPoint, jPoint, Jacobian_j);
+    System.SubtractBlock_Matrix(jPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(jPoint, jPoint, Jacobian_j);
 
   }
 
@@ -350,10 +355,10 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
     LinSysRes.SubtractBlock(iPoint, Residual);
     LinSysRes.AddBlock(jPoint, Residual);
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(iPoint, jPoint, Jacobian_j);
+    System.AddBlock_Matrix(jPoint, iPoint, Jacobian_i);
+    System.AddBlock_Matrix(jPoint, jPoint, Jacobian_j);
     
   }
 }
@@ -405,7 +410,7 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract residual and the Jacobian ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
 
   }
 }
@@ -460,7 +465,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      cout << "Implicit part -AA" << endl;
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit) {
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       }
     }
   }
@@ -481,7 +486,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      /*--- includes 1 in the diagonal ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) {
 //        total_index = iPoint*nVar+iVar;
-//        Jacobian.DeleteValsRowi(total_index);
+//        System.DeleteValsRowi(total_index);
 //      }
 //    }
 //  }
@@ -514,7 +519,7 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- includes 1 in the diagonal ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        System.DeleteValsRowi(total_index);
       }
     }
   }

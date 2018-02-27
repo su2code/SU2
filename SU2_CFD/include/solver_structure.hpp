@@ -124,11 +124,10 @@ protected:
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
 public:
-  
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  TCSysSolve<passivedouble, su2double> System;
   
   CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
@@ -11263,6 +11262,7 @@ private:
   
 public:
   
+  CSysMatrix Jacobian;
   CSysVector TimeRes_Aux;      /*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
   CSysVector TimeRes;        /*!< \brief Vector for adding mass and damping contributions to the residual */
   CSysVector LinSysReact;      /*!< \brief Vector to store the residual before applying the BCs */

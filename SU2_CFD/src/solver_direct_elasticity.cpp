@@ -1692,9 +1692,9 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
           }
         }
         
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
-        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
-        if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
+        System.AddBlock_Matrix(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
+        System.AddBlock_Matrix(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
+        if (incompressible) System.AddBlock_Matrix(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
         
         /*--- Retrieve the electric contribution to the Jacobian ---*/
         if (de_effects){
@@ -1705,7 +1705,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
             Jacobian_s_ij[iVar][iVar] = Ks_ab_DE;
           }
           
-          Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
+          System.AddBlock_Matrix(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
         }
         
       }
@@ -2524,7 +2524,7 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
       for (jPoint = 0; jPoint < nPoint; jPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
+        valJacobian_ij_00 = System.GetBlock_Matrix(iNode, jPoint,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           if (iNode != jPoint) {
@@ -2541,7 +2541,7 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
       for (iPoint = 0; iPoint < nPoint; iPoint++){
 
         /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
+        valJacobian_ij_00 = System.GetBlock_Matrix(iPoint,iNode,0,0);
 
         /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
         if (valJacobian_ij_00 != 0.0 ){
@@ -2549,7 +2549,7 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
           /*--- Retrieve the Jacobian term ---*/
           for (iDim = 0; iDim < nDim; iDim++){
             for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
+              auxJacobian_ij[iDim][jDim] = System.GetBlock_Matrix(iPoint,iNode,iDim,jDim);
             }
           }
 
@@ -3405,7 +3405,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
               Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
             }
           }
-          Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
+          System.AddBlock_Matrix(iPoint, jPoint, Jacobian_ij);
         }
       }
     }
@@ -3730,7 +3730,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
               Jacobian_ij[iVar][jVar] = a_dt[0] * MassMatrix.GetBlock(iPoint, jPoint, iVar, jVar);
             }
           }
-          Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
+          System.AddBlock_Matrix(iPoint, jPoint, Jacobian_ij);
         }
       }
     }
@@ -3954,8 +3954,7 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
     
   }
   
-  CSysSolve femSystem;
-  IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve_System(LinSysRes, LinSysSol);
   
   /*--- The the number of iterations of the linear solver ---*/
   
