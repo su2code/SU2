@@ -46,7 +46,9 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   Gradient_Primitive = NULL;
   
   Limiter_Primitive = NULL;
-  
+
+  Grad_AuxVar = NULL;
+
   WindGust    = NULL;
   WindGustDer = NULL;
 
@@ -64,9 +66,11 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool windgust = config->GetWind_Gust();
+  bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool windgust     = config->GetWind_Gust();
+  bool viscous      = config->GetViscous();
+  bool axisymmetric = config->GetAxisymmetric();
   
   /*--- Array initialization ---*/
   
@@ -75,6 +79,8 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   Gradient_Primitive = NULL;
   
   Limiter_Primitive = NULL;
+
+  Grad_AuxVar = NULL;
   
   WindGust    = NULL;
   WindGustDer = NULL;
@@ -178,15 +184,23 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
+
+  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
+
+  if (axisymmetric && viscous)
+    Grad_AuxVar = new su2double [nDim];
+
 }
 
 CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool windgust = config->GetWind_Gust();
-  
+  bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool windgust     = config->GetWind_Gust();
+  bool viscous      = config->GetViscous();
+  bool axisymmetric = config->GetAxisymmetric();
+
   /*--- Array initialization ---*/
   
   Primitive = NULL;
@@ -194,6 +208,8 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   Gradient_Primitive = NULL;
   
   Limiter_Primitive = NULL;
+
+  Grad_AuxVar = NULL;
   
   WindGust    = NULL;
   WindGustDer = NULL;
@@ -290,7 +306,12 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
-  
+
+  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
+
+  if (axisymmetric && viscous)
+    Grad_AuxVar = new su2double[nDim];
+
 }
 
 CIncEulerVariable::~CIncEulerVariable(void) {
@@ -308,7 +329,7 @@ CIncEulerVariable::~CIncEulerVariable(void) {
   }
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
-  
+
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {

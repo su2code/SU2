@@ -4863,6 +4863,41 @@ public:
 };
 
 /*!
+ * \class CSourceIncAxisymmetric_Flow
+ * \brief Class for source term for solving incompressible axisymmetric problems.
+ * \ingroup SourceDiscr
+ * \author T. Economon
+ */
+class CSourceIncAxisymmetric_Flow : public CNumerics {
+  bool implicit, /*!< \brief Implicit calculation. */
+  viscous, /*!< \brief Viscous incompressible flows. */
+  energy; /*!< \brief computation with the energy equation. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceIncAxisymmetric_Flow(void);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+
+};
+
+/*!
  * \class CSourceViscous_AdjFlow
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
