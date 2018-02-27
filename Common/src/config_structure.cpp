@@ -6499,46 +6499,52 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
   if (ContinuousAdjoint || DiscreteAdjoint) {
 
     /*--- Remove filename extension (.dat) ---*/
+
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
+
     if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
-      case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
-      case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
-      case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
-      case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress"; break;
-      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat";  break;
-      case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx";      break;
-      case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy";      break;
-      case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz";      break;
-      case EFFICIENCY:              AdjExt = "_eff";      break;
-      case EQUIVALENT_AREA:         AdjExt = "_ea";       break;
-      case NEARFIELD_PRESSURE:      AdjExt = "_nfp";      break;
-      case FORCE_X_COEFFICIENT:     AdjExt = "_cfx";      break;
-      case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy";      break;
-      case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz";      break;
-      case THRUST_COEFFICIENT:      AdjExt = "_ct";       break;
-      case TORQUE_COEFFICIENT:      AdjExt = "_cq";       break;
-      case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
-      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
-      case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
-      case SURFACE_TOTAL_PRESSURE:  AdjExt = "_pt";       break;
-      case SURFACE_STATIC_PRESSURE: AdjExt = "_pe";       break;
-      case SURFACE_MASSFLOW:        AdjExt = "_mfr";      break;
-      case SURFACE_MACH:            AdjExt = "_mach";     break;
-      case CUSTOM_OBJFUNC:        		AdjExt = "_custom";   break;
-      case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
-      case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
-      case FLOW_ANGLE_OUT:          AdjExt = "_fao";       break;
-      case FLOW_ANGLE_IN:           AdjExt = "_fai";       break;
-      case TOTAL_EFFICIENCY:        AdjExt = "_teff";      break;
-      case TOTAL_STATIC_EFFICIENCY: AdjExt = "_tseff";     break;
-      case EULERIAN_WORK:           AdjExt = "_ew";        break;
-      case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
-      case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
-      case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
-      case REFERENCE_GEOMETRY:      AdjExt = "_refgeom";       break;
-      case REFERENCE_NODE:          AdjExt = "_refnode";       break;
+        case DRAG_COEFFICIENT:            AdjExt = "_cd";       break;
+        case LIFT_COEFFICIENT:            AdjExt = "_cl";       break;
+        case SIDEFORCE_COEFFICIENT:       AdjExt = "_csf";      break;
+        case INVERSE_DESIGN_PRESSURE:     AdjExt = "_invpress"; break;
+        case INVERSE_DESIGN_HEATFLUX:     AdjExt = "_invheat";  break;
+        case MOMENT_X_COEFFICIENT:        AdjExt = "_cmx";      break;
+        case MOMENT_Y_COEFFICIENT:        AdjExt = "_cmy";      break;
+        case MOMENT_Z_COEFFICIENT:        AdjExt = "_cmz";      break;
+        case EFFICIENCY:                  AdjExt = "_eff";      break;
+        case EQUIVALENT_AREA:             AdjExt = "_ea";       break;
+        case NEARFIELD_PRESSURE:          AdjExt = "_nfp";      break;
+        case FORCE_X_COEFFICIENT:         AdjExt = "_cfx";      break;
+        case FORCE_Y_COEFFICIENT:         AdjExt = "_cfy";      break;
+        case FORCE_Z_COEFFICIENT:         AdjExt = "_cfz";      break;
+        case THRUST_COEFFICIENT:          AdjExt = "_ct";       break;
+        case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
+        case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
+        case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
+        case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
+        case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
+        case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
+        case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
+        case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
+        case SURFACE_SECONDARY:           AdjExt = "_second";   break;
+        case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
+        case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
+        case SURFACE_MACH:                AdjExt = "_mach";     break;
+        case CUSTOM_OBJFUNC:        		  AdjExt = "_custom";   break;
+        case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
+        case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
+        case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;
+        case FLOW_ANGLE_IN:               AdjExt = "_fai";      break;
+        case TOTAL_EFFICIENCY:            AdjExt = "_teff";     break;
+        case TOTAL_STATIC_EFFICIENCY:     AdjExt = "_tseff";    break;
+        case EULERIAN_WORK:               AdjExt = "_ew";       break;
+        case MASS_FLOW_IN:                AdjExt = "_mfi";      break;
+        case MASS_FLOW_OUT:               AdjExt = "_mfo";      break;
+        case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
+        case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
+        case REFERENCE_NODE:              AdjExt = "_refnode";  break;
       }
     }
     else{
