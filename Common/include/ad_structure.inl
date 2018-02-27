@@ -168,7 +168,7 @@ namespace AD{
   }
   
   inline void InitExtFunc(bool storePrimalInput, bool storePrimalOutput){
-    FuncHelper = new ExtFuncHelper();
+    FuncHelper = new ExtFuncHelper(true);
     if (!storePrimalInput){
       FuncHelper->disableInputPrimalStore();
     }
