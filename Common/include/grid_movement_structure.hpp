@@ -960,7 +960,8 @@ public:
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
-
+  
+  TCSysSolve<passivedouble, su2double> System;
 	unsigned short nDim;		/*!< \brief Number of dimensions. */
 	unsigned short nVar;		/*!< \brief Number of variables. */
   
@@ -970,11 +971,12 @@ protected:
 	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
   CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+
+  
 
 public:
-
+  CSysVector LinSysSol;
+  CSysVector LinSysRes;
   /*!
    * \brief Constructor of the class.
    */
@@ -1312,6 +1314,7 @@ public:
  */
 class CElasticityMovement : public CVolumetricMovement {
 protected:
+  TCSysSolve<su2double, su2double> System;
 
   unsigned short nDim;    /*!< \brief Number of dimensions. */
   unsigned short nVar;    /*!< \brief Number of variables. */

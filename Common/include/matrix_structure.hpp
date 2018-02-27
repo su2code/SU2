@@ -48,7 +48,6 @@ using namespace std;
 
 const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
 
-
 /*!
  * \class CSysMatrix
  * \brief Main class for defining sparse matrices-by-blocks

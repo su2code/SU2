@@ -66,7 +66,14 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
 	  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-	  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+	  System.Initialize_System(nVar, false, geometry, config);
+    
+   System.Initialize_Linear_Solver(nVar, 
+                                   config->GetKind_Deform_Linear_Solver(), 
+                                   config->GetKind_Deform_Linear_Solver_Prec(), 
+                                   config->GetDeform_Linear_Solver_Iter(), 
+                                   config->GetDeform_Linear_Solver_Error(),
+                                   geometry, config);
 
 }
 
@@ -158,7 +165,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
-    StiffMatrix.SetValZero();
+    System.SetValZero_Matrix();
     
     /*--- Compute the stiffness matrix entries for all nodes/elements in the
      mesh. FEA uses a finite element method discretization of the linear
@@ -184,136 +191,15 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     if (Derivative) { SetBoundaryDerivatives(geometry, config); }
     
-    CMatrixVectorProduct* mat_vec = NULL;
-    CPreconditioner* precond = NULL;
-
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
 
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-
-    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
-
-    /*--- If we want no derivatives or the direct derivatives,
-     * we solve the system using the normal matrix vector product and preconditioner.
-     * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
-     * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
-
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# LU_SGS preconditioner." << endl;
-    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    		precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
-    		StiffMatrix.BuildILUPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
-    		StiffMatrix.BuildJacobiPreconditioner();
-    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-    	}
-
-    } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
-
-    	/*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
-
-    	if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
-    			(config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU preconditioner." << endl;
-    		StiffMatrix.BuildILUPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
-    	}
-    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
-        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
-    		StiffMatrix.BuildJacobiPreconditioner(true);
-    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-    	}
-
-    }
-
-    CSysSolve *system  = new CSysSolve();
+    LinSysSol.SendReceive(geometry, config);
+    LinSysRes.SendReceive(geometry, config);
     
-    if (LinSysRes.norm() != 0.0){
-      switch (config->GetKind_Deform_Linear_Solver()) {
-        
-        /*--- Solve the linear system (GMRES with restart) ---*/
-        
-        case RESTARTED_FGMRES:
+    System.Solve_System(LinSysRes, LinSysSol);
 
-          Tot_Iter = 0; MaxIter = RestartIter;
-
-          system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
-
-          if ((rank == MASTER_NODE) && Screen_Output) {
-            cout << "\n# FGMRES (with restart) residual history" << endl;
-            cout << "# Residual tolerance target = " << NumError << endl;
-            cout << "# Initial residual norm     = " << Residual_Init << endl;
-          }
-
-          if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-
-          while (Tot_Iter < Smoothing_Iter) {
-
-            if (IterLinSol + RestartIter > Smoothing_Iter)
-              MaxIter = Smoothing_Iter - IterLinSol;
-
-            IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
-            Tot_Iter += IterLinSol;
-
-            if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-
-            if (Residual < Residual_Init*NumError) { break; }
-
-          }
-
-          if ((rank == MASTER_NODE) && Screen_Output) {
-            cout << "# FGMRES (with restart) final (true) residual:" << endl;
-            cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-          }
-
-          break;
-
-          /*--- Solve the linear system (GMRES) ---*/
-
-        case FGMRES:
-
-          Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-
-          break;
-
-          /*--- Solve the linear system (BCGSTAB) ---*/
-
-        case BCGSTAB:
-
-          Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-
-          break;
-
-
-        case CONJUGATE_GRADIENT:
-
-          Tot_Iter = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-
-          break;
-
-      }
-    }
-    
-    /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    
-    delete system;
-    delete mat_vec;
-    delete precond;
-    
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
 
@@ -1598,7 +1484,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix(CGeometry *geometry, su2double **St
         }
       }
 
-      StiffMatrix.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
+      System.AddBlock_Matrix(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
       
     }
   }
@@ -1643,7 +1529,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
           total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = 0.0;
           LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          System.DeleteValsRowi(total_index);
         }
       }
     }
@@ -1677,7 +1563,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
         total_index = iPoint*nDim + axis;
         LinSysRes[total_index] = 0.0;
         LinSysSol[total_index] = 0.0;
-        StiffMatrix.DeleteValsRowi(total_index);
+        System.DeleteValsRowi(total_index);
       }
     }
   }
@@ -1695,9 +1581,9 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
         for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
+          LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
+          System.DeleteValsRowi(total_index);
         }
       }
     }
@@ -1713,7 +1599,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
           total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = 0.0;
           LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          System.DeleteValsRowi(total_index);
         }
       }
     }
@@ -1730,7 +1616,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
           total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
           LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
+          System.DeleteValsRowi(total_index);
         }
       }
     }
@@ -1846,7 +1732,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
           total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = 0.0;
           LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          System.DeleteValsRowi(total_index);
         }
       }
     }
@@ -1866,7 +1752,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
           total_index = iPoint*nDim + iDim;
           LinSysRes[total_index] = 0.0;
           LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          System.DeleteValsRowi(total_index);
         }
       }
     }
@@ -9006,7 +8892,7 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+    System.Initialize_System(nVar, false, geometry, config);
 
     /*--- Matrices to impose boundary conditions ---*/
 
@@ -9172,7 +9058,7 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     /*--- Initialize vector and sparse matrix ---*/
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
-    StiffMatrix.SetValZero();
+    System.SetValZero_Matrix();
 
     /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
@@ -9343,16 +9229,16 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
       for (jPoint = 0; jPoint < nPoint; jPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
+        valJacobian_ij_00 = System.GetBlock_Matrix(iNode, jPoint,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != jPoint) {
-            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
+            System.SetBlock_Matrix(iNode,jPoint,matrixZeros);
           }
           /*--- And the diagonal to 1.0 ---*/
           else{
-            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
+            System.SetBlock_Matrix(iNode,jPoint,matrixId);
           }
         }
       }
@@ -9361,12 +9247,12 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
       for (iPoint = 0; iPoint < nPoint; iPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint, iNode,0,0);
+        valJacobian_ij_00 = System.GetBlock_Matrix(iPoint, iNode,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != iPoint) {
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
+            System.SetBlock_Matrix(iPoint,iNode,matrixZeros);
           }
         }
       }
@@ -9422,16 +9308,16 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
       for (jPoint = 0; jPoint < nPoint; jPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
+        valJacobian_ij_00 = System.GetBlock_Matrix(iNode, jPoint,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != jPoint) {
-            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
+            System.SetBlock_Matrix(iNode,jPoint,matrixZeros);
           }
           /*--- And the diagonal to 1.0 ---*/
           else{
-            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
+            System.SetBlock_Matrix(iNode,jPoint,matrixId);
           }
         }
       }
@@ -9441,7 +9327,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
       for (iPoint = 0; iPoint < nPoint; iPoint++){
 
         /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
+        valJacobian_ij_00 = System.GetBlock_Matrix(iPoint,iNode,0,0);
 
         /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
         if (valJacobian_ij_00 != 0.0 ){
@@ -9449,7 +9335,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
           /*--- Retrieve the Jacobian term ---*/
           for (iDim = 0; iDim < nDim; iDim++){
             for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
+              auxJacobian_ij[iDim][jDim] = System.GetBlock_Matrix(iPoint,iNode,iDim,jDim);
             }
           }
 
@@ -9466,7 +9352,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
             /*--- The term is substracted from the residual (right hand side) ---*/
             LinSysRes.SubtractBlock(iPoint, Residual);
             /*--- The Jacobian term is now set to 0 ---*/
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
+            System.SetBlock_Matrix(iPoint,iNode,matrixZeros);
           }
         }
       }
@@ -9477,130 +9363,130 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
 void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
-  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
+//  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
 
-  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual = 1.0;
+//  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual = 1.0;
 
-  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
-  unsigned long IterLinSol = 0;
+//  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
+//  unsigned long IterLinSol = 0;
 
-  bool Screen_Output= config->GetDeform_Output();
+//  bool Screen_Output= config->GetDeform_Output();
 
-  /*--- Initialize the structures to solve the system ---*/
+//  /*--- Initialize the structures to solve the system ---*/
 
-  CMatrixVectorProduct* mat_vec = NULL;
-  CSysSolve *system  = new CSysSolve();
+//  CMatrixVectorProduct* mat_vec = NULL;
+////  CSysSolve *system  = new CSysSolve();
 
-  bool TapeActive = NO;
+//  bool TapeActive = NO;
 
-  if (config->GetDiscrete_Adjoint()){
-#ifdef CODI_REVERSE_TYPE
+//  if (config->GetDiscrete_Adjoint()){
+//#ifdef CODI_REVERSE_TYPE
 
-    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
+//    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
 
-    TapeActive = AD::globalTape.isActive();
+//    TapeActive = AD::globalTape.isActive();
 
 
-    /*--- Stop the recording for the linear solver ---*/
+//    /*--- Stop the recording for the linear solver ---*/
 
-    AD::StopRecording();
-#endif
-  }
+//    AD::StopRecording();
+//#endif
+//  }
 
-  /*--- Communicate any prescribed boundary displacements via MPI,
-   so that all nodes have the same solution and r.h.s. entries
-   across all partitions. ---*/
+//  /*--- Communicate any prescribed boundary displacements via MPI,
+//   so that all nodes have the same solution and r.h.s. entries
+//   across all partitions. ---*/
 
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+//  System.SendReceive_Solution(LinSysSol, geometry, config);
+//  System.SendReceive_Solution(LinSysRes, geometry, config);
 
-  /*--- Solve the linear system using a Krylov subspace method ---*/
+//  /*--- Solve the linear system using a Krylov subspace method ---*/
 
-  if (config->GetKind_Deform_Linear_Solver() == BCGSTAB ||
-      config->GetKind_Deform_Linear_Solver() == FGMRES ||
-      config->GetKind_Deform_Linear_Solver() == RESTARTED_FGMRES ||
-      config->GetKind_Deform_Linear_Solver() == CONJUGATE_GRADIENT) {
+//  if (config->GetKind_Deform_Linear_Solver() == BCGSTAB ||
+//      config->GetKind_Deform_Linear_Solver() == FGMRES ||
+//      config->GetKind_Deform_Linear_Solver() == RESTARTED_FGMRES ||
+//      config->GetKind_Deform_Linear_Solver() == CONJUGATE_GRADIENT) {
 
-    /*--- Independently of whether we are using or not derivatives,
-     *--- as the matrix is now symmetric, the matrix-vector product
-     *--- can be done in the same way in the forward and the reverse mode
-     */
+//    /*--- Independently of whether we are using or not derivatives,
+//     *--- as the matrix is now symmetric, the matrix-vector product
+//     *--- can be done in the same way in the forward and the reverse mode
+//     */
 
-    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
-    mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    CPreconditioner* precond = NULL;
+//    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
+//    mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+//    CPreconditioner* precond = NULL;
 
-    switch (config->GetKind_Deform_Linear_Solver_Prec()) {
-    case JACOBI:
-      StiffMatrix.BuildJacobiPreconditioner();
-      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-      break;
-    case ILU:
-      StiffMatrix.BuildILUPreconditioner();
-      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
-      break;
-    case LU_SGS:
-      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-      break;
-    case LINELET:
-      StiffMatrix.BuildJacobiPreconditioner();
-      precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
-      break;
-    default:
-      StiffMatrix.BuildJacobiPreconditioner();
-      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-      break;
-    }
+//    switch (config->GetKind_Deform_Linear_Solver_Prec()) {
+//    case JACOBI:
+//      System.BuildJacobiPreconditioner();
+//      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+//      break;
+//    case ILU:
+//      System.BuildILUPreconditioner();
+//      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+//      break;
+//    case LU_SGS:
+//      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+//      break;
+//    case LINELET:
+//      System.BuildJacobiPreconditioner();
+//      precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
+//      break;
+//    default:
+//      System.BuildJacobiPreconditioner();
+//      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+//      break;
+//    }
 
-    switch (config->GetKind_Deform_Linear_Solver()) {
-    case BCGSTAB:
-      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-      break;
-    case FGMRES:
-      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-      break;
-    case CONJUGATE_GRADIENT:
-      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-      break;
-    case RESTARTED_FGMRES:
-      IterLinSol = 0;
-      while (IterLinSol < config->GetLinear_Solver_Iter()) {
-        if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-          MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-        if (LinSysRes.norm() < SolverTol) break;
-        SolverTol = SolverTol*(1.0/LinSysRes.norm());
-      }
-      break;
-    }
+////    switch (config->GetKind_Deform_Linear_Solver()) {
+////    case BCGSTAB:
+////      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+////      break;
+////    case FGMRES:
+////      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+////      break;
+////    case CONJUGATE_GRADIENT:
+////      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+////      break;
+////    case RESTARTED_FGMRES:
+////      IterLinSol = 0;
+////      while (IterLinSol < config->GetLinear_Solver_Iter()) {
+////        if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+////          MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+////        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+////        if (LinSysRes.norm() < SolverTol) break;
+////        SolverTol = SolverTol*(1.0/LinSysRes.norm());
+////      }
+////      break;
+////    }
 
-    /*--- Dealocate memory of the Krylov subspace method ---*/
+//    /*--- Dealocate memory of the Krylov subspace method ---*/
 
-    delete mat_vec;
-    delete precond;
+//    delete mat_vec;
+//    delete precond;
 
-  }
+//  }
 
-  if(TapeActive){
-    /*--- Start recording if it was stopped for the linear solver ---*/
+//  if(TapeActive){
+//    /*--- Start recording if it was stopped for the linear solver ---*/
 
-    AD::StartRecording();
+//    AD::StartRecording();
 
-    /*--- Prepare the externally differentiated linear solver ---*/
+//    /*--- Prepare the externally differentiated linear solver ---*/
 
-    system->SetExternalSolve_Mesh(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+////    system->SetExternalSolve_Mesh(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
-  }
+//  }
 
-  delete system;
+////  delete system;
 
-  /*--- Set number of iterations in the mesh update. ---*/
+//  /*--- Set number of iterations in the mesh update. ---*/
 
-  nIterMesh = IterLinSol;
+//  nIterMesh = IterLinSol;
 
-  /*--- Store the value of the residual. ---*/
+//  /*--- Store the value of the residual. ---*/
 
-  valResidual = System_Residual;
+//  valResidual = System_Residual;
 
 
 }
@@ -9752,7 +9638,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
           }
         }
 
-        StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+        System.AddBlock_Matrix(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
       }
 
