@@ -35,6 +35,8 @@
 #pragma once
 
 #include "./mpi_structure.hpp"
+#include "../include/geometry_structure.hpp"
+#include "../include/config_structure.hpp"
 
 #include <climits>
 #include <cmath>
@@ -342,6 +344,10 @@ public:
    */
   template<class T>
   friend T dotProd(const TCSysVector<T> & u, const TCSysVector<T> & v);
+  
+  
+  void SendReceive(CGeometry *geometry, CConfig *config);
+  void SendReceive_Reverse(CGeometry *geometry, CConfig *config);
   
 };
 

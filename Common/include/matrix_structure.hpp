@@ -113,30 +113,7 @@ public:
    */
   void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
                   bool EdgeConnect, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Assigns values to the sparse-matrix structure.
-   * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
-   * \param[in] val_nVar - Number of nVar x nVar variables in each subblock of the matrix-by-block structure.
-   * \param[in] val_nEq - Number of nEqn x nVar variables in each subblock of the matrix-by-block structure.
-   * \param[in] val_row_ptr - Pointers to the first element in each row.
-   * \param[in] val_col_ind - Column index for each of the elements in val().
-   * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config);
-  
-  /*!
-   * \brief Assigns values to the sparse-matrix structure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] iPoint - Base point to compute neighbours.
-   * \param[in] deep_level - Deep level for the recursive algorithm.
-   * \param[in] fill_level - ILU fill in level.
-   * \param[in] EdgeConnect - There is (or not) an edge structure).
-   * \param[in] vneighs - Storage the neighbours points to iPoint.
-   */
-  void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
-  
+
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
@@ -189,38 +166,6 @@ public:
   void SubtractBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block);
   
   /*!
-   * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   */
-  CalcType *GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
-  
-  /*!
-   * \brief Set the value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
-   */
-  void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block);
-  
-  
-  /*!
-   * \brief Set the transposed value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
-   */
-  void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block);
-  
-  /*!
-   * \brief Subtracts the specified block to the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to subtract to A(i, j).
-   */
-  void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block);
-  
-  /*!
    * \brief Adds the specified value to the diagonal of the (i, i) subblock
    *        of the matrix-by-blocks structure.
    * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
@@ -233,204 +178,15 @@ public:
    *        of the matrix-by-blocks structure.
    * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
-   */
+   */     
   void SetVal2Diag(unsigned long block_i, CalcType val_matrix);
-  
-  /*!
-   * \brief Calculates the matrix-vector product
-   * \param[in] matrix
-   * \param[in] vector
-   * \param[out] product
-   */
-  void MatrixVectorProduct(CalcType *matrix, CalcType *vector, CalcType *product);
-  
-  /*!
-   * \brief Calculates the matrix-matrix product
-   * \param[in] matrix_a
-   * \param[in] matrix_b
-   * \param[out] product
-   */
-  void MatrixMatrixProduct(CalcType *matrix_a, CalcType *matrix_b, CalcType *product);
   
   /*!
    * \brief Deletes the values of the row i of the sparse matrix.
    * \param[in] i - Index of the row.
    */
-  void DeleteValsRowi(unsigned long i);
-  
-  /*!
-   * \brief Recursive definition of determinate using expansion by minors. Written by Paul Bourke
-   * \param[in] a - Matrix to compute the determinant.
-   * \param[in] n - Size of the quare matrix.
-   * \return Value of the determinant.
-   */
-  CalcType MatrixDeterminant(CalcType **a, unsigned long n);
-  
-  /*!
-   * \brief Find the cofactor matrix of a square matrix. Written by Paul Bourke
-   * \param[in] a - Matrix to compute the determinant.
-   * \param[in] n - Size of the quare matrix.
-   * \param[out] b - cofactor matrix
-   */
-  void MatrixCoFactor(CalcType **a, unsigned long n, CalcType **b) ;
-  
-  /*!
-   * \brief Transpose of a square matrix, do it in place. Written by Paul Bourke
-   * \param[in] a - Matrix to compute the determinant.
-   * \param[in] n - Size of the quare matrix.
-   */
-  void MatrixTranspose(CalcType **a, unsigned long n) ;
-  
-  /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
-   * \param[in] rhs - Right-hand-side of the linear system.
-   * \param[in] transposed - If true the transposed of the block is used (default = false).
-   * \return Solution of the linear system (overwritten on rhs).
-   */
-  void Gauss_Elimination(unsigned long block_i, CalcType* rhs, bool transposed = false);
-  
-  /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] Block - matrix-by-blocks structure.
-   * \param[in] rhs - Right-hand-side of the linear system.
-   * \return Solution of the linear system (overwritten on rhs).
-   */
-  void Gauss_Elimination(CalcType* Block, CalcType* rhs);
-  
-  /*!
-   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
-   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
-   * \param[in] rhs - Right-hand-side of the linear system.
-   * \return Solution of the linear system (overwritten on rhs).
-   */
-  void Gauss_Elimination_ILUMatrix(unsigned long block_i, CalcType* rhs);
-  
-  /*!
-   * \fn void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, CalcType* vec);
-   * \brief Performs the product of the block (i, j) by vector vec.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] vec - Vector to be multiplied by the block (i, j) of the sparse matrix A.
-   * \return Product of A(i, j) by vector *vec (stored at *prod_block_vector).
-   */
-  void ProdBlockVector(unsigned long block_i, unsigned long block_j, const TCSysVector<CalcType> & vec);
-  
-  /*!
-   * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
-   */
-  void UpperProduct(TCSysVector<CalcType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
-   */
-  void LowerProduct(TCSysVector<CalcType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
-   */
-  void DiagonalProduct(TCSysVector<CalcType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Send receive the solution using MPI.
-   * \param[in] x - Solution..
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SendReceive_Solution(TCSysVector<CalcType> & x, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Send receive the solution using MPI and the transposed structure of the matrix.
-   * \param[in] x - Solution..
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SendReceive_SolutionTransposed(TCSysVector<CalcType> & x, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Performs the product of i-th row of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
-   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
-   * \return Result of the product (stored at *prod_row_vector).
-   */
-  void RowProduct(const TCSysVector<CalcType> & vec, unsigned long row_i);
-  
-  /*!
-   * \brief Performs the product of a sparse matrix by a vector.
-   * \param[in] vec - Vector to be multiplied by the sparse matrix A.
-   * \param[out] prod - Result of the product.
-   * \return Result of the product A*vec.
-   */
-  void MatrixVectorProduct(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod);
-  
-  /*!
-   * \brief Performs the product of a sparse matrix by a CSysVector.
-   * \param[in] vec - TCSysVector<CalcType> to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void MatrixVectorProduct(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Performs the product of a sparse matrix by a CSysVector.
-   * \param[in] vec - TCSysVector<CalcType> to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void MatrixVectorProductTransposed(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Performs the product of two block matrices.
-   */
-  void GetMultBlockBlock(CalcType *c, CalcType *a, CalcType *b);
-  
-  /*!
-   * \brief Performs the product of a block matrices by a vector.
-   */
-  void GetMultBlockVector(CalcType *c, CalcType *a, CalcType *b);
-  
-  /*!
-   * \brief Performs the subtraction of two matrices.
-   */
-  void GetSubsBlock(CalcType *c, CalcType *a, CalcType *b);
-  
-  /*!
-   * \brief Performs the subtraction of two vectors.
-   */
-  void GetSubsVector(CalcType *c, CalcType *a, CalcType *b);
-  
-  /*!
-   * \brief Inverse diagonal block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[out] invBlock - Inverse block.
-   */
-  void InverseDiagonalBlock(unsigned long block_i, CalcType *invBlock, bool transpose = false);
-  
- 	/*!
-   * \brief Inverse diagonal block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[out] invBlock - Inverse block.
-   */
-  void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, CalcType *invBlock);
-  
-  /*!
-   * \brief Inverse a block.
-   * \param[in] Block - block matrix.
-   * \param[out] invBlock - Inverse block.
-   */
-  void InverseBlock(CalcType *Block, CalcType *invBlock);
-  
+  void DeleteValsRowi(unsigned long i);  
+
   /*!
    * \brief Build the Jacobi preconditioner.
    */
@@ -525,6 +281,32 @@ public:
    * \param[out] prod - Result of the product A*vec.
    */
   void ComputeLineletPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Performs the product of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the sparse matrix A.
+   * \param[out] prod - Result of the product.
+   * \return Result of the product A*vec.
+   */
+  void MatrixVectorProduct(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod);
+  
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - TCSysVector<CalcType> to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void MatrixVectorProduct(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - TCSysVector<CalcType> to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void MatrixVectorProductTransposed(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the residual Ax-b
@@ -533,6 +315,214 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const TCSysVector<CalcType> & sol, const TCSysVector<CalcType> & f, TCSysVector<CalcType> & res);
+  
+private:
+  /*!
+   * \brief Assigns values to the sparse-matrix structure.
+   * \param[in] val_nPoint - Number of points in the nPoint x nPoint block structure
+   * \param[in] val_nVar - Number of nVar x nVar variables in each subblock of the matrix-by-block structure.
+   * \param[in] val_nEq - Number of nEqn x nVar variables in each subblock of the matrix-by-block structure.
+   * \param[in] val_row_ptr - Pointers to the first element in each row.
+   * \param[in] val_col_ind - Column index for each of the elements in val().
+   * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config);
+  
+  /*!
+   * \brief Assigns values to the sparse-matrix structure.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Base point to compute neighbours.
+   * \param[in] deep_level - Deep level for the recursive algorithm.
+   * \param[in] fill_level - ILU fill in level.
+   * \param[in] EdgeConnect - There is (or not) an edge structure).
+   * \param[in] vneighs - Storage the neighbours points to iPoint.
+   */
+  void SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level, bool EdgeConnect, vector<unsigned long> & vneighs);
+  
+  
+  /*!
+   * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   */
+  CalcType *GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
+  
+  /*!
+   * \brief Set the value of a block in the sparse matrix.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] **val_block - Block to set to A(i, j).
+   */
+  void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block);
+  
+  
+  /*!
+   * \brief Set the transposed value of a block in the sparse matrix.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] **val_block - Block to set to A(i, j).
+   */
+  void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block);
+  
+  /*!
+   * \brief Subtracts the specified block to the sparse matrix.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] **val_block - Block to subtract to A(i, j).
+   */
+  void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, CalcType *val_block);
+
+  /*!
+   * \brief Calculates the matrix-vector product
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[out] product
+   */
+  void MatrixVectorProduct(CalcType *matrix, CalcType *vector, CalcType *product);
+  
+  /*!
+   * \brief Calculates the matrix-matrix product
+   * \param[in] matrix_a
+   * \param[in] matrix_b
+   * \param[out] product
+   */
+  void MatrixMatrixProduct(CalcType *matrix_a, CalcType *matrix_b, CalcType *product);
+
+  /*!
+   * \brief Recursive definition of determinate using expansion by minors. Written by Paul Bourke
+   * \param[in] a - Matrix to compute the determinant.
+   * \param[in] n - Size of the quare matrix.
+   * \return Value of the determinant.
+   */
+  CalcType MatrixDeterminant(CalcType **a, unsigned long n);
+  
+  /*!
+   * \brief Find the cofactor matrix of a square matrix. Written by Paul Bourke
+   * \param[in] a - Matrix to compute the determinant.
+   * \param[in] n - Size of the quare matrix.
+   * \param[out] b - cofactor matrix
+   */
+  void MatrixCoFactor(CalcType **a, unsigned long n, CalcType **b) ;
+  
+  /*!
+   * \brief Transpose of a square matrix, do it in place. Written by Paul Bourke
+   * \param[in] a - Matrix to compute the determinant.
+   * \param[in] n - Size of the quare matrix.
+   */
+  void MatrixTranspose(CalcType **a, unsigned long n) ;
+  
+  /*!
+   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
+   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
+   * \param[in] rhs - Right-hand-side of the linear system.
+   * \param[in] transposed - If true the transposed of the block is used (default = false).
+   * \return Solution of the linear system (overwritten on rhs).
+   */
+  void Gauss_Elimination(unsigned long block_i, CalcType* rhs, bool transposed = false);
+  
+  /*!
+   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
+   * \param[in] Block - matrix-by-blocks structure.
+   * \param[in] rhs - Right-hand-side of the linear system.
+   * \return Solution of the linear system (overwritten on rhs).
+   */
+  void Gauss_Elimination(CalcType* Block, CalcType* rhs);
+  
+  /*!
+   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
+   * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.
+   * \param[in] rhs - Right-hand-side of the linear system.
+   * \return Solution of the linear system (overwritten on rhs).
+   */
+  void Gauss_Elimination_ILUMatrix(unsigned long block_i, CalcType* rhs);
+  
+  /*!
+   * \fn void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, CalcType* vec);
+   * \brief Performs the product of the block (i, j) by vector vec.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \param[in] vec - Vector to be multiplied by the block (i, j) of the sparse matrix A.
+   * \return Product of A(i, j) by vector *vec (stored at *prod_block_vector).
+   */
+  void ProdBlockVector(unsigned long block_i, unsigned long block_j, const TCSysVector<CalcType> & vec);
+  
+  /*!
+   * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product U(A)*vec (stored at *prod_row_vector).
+   */
+  void UpperProduct(TCSysVector<CalcType> & vec, unsigned long row_i);
+  
+  /*!
+   * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product L(A)*vec (stored at *prod_row_vector).
+   */
+  void LowerProduct(TCSysVector<CalcType> & vec, unsigned long row_i);
+  
+  /*!
+   * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
+   */
+  void DiagonalProduct(TCSysVector<CalcType> & vec, unsigned long row_i);
+  
+  /*!
+   * \brief Performs the product of i-th row of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return Result of the product (stored at *prod_row_vector).
+   */
+  void RowProduct(const TCSysVector<CalcType> & vec, unsigned long row_i);
+  
+
+  /*!
+   * \brief Performs the product of two block matrices.
+   */
+  void GetMultBlockBlock(CalcType *c, CalcType *a, CalcType *b);
+  
+  /*!
+   * \brief Performs the product of a block matrices by a vector.
+   */
+  void GetMultBlockVector(CalcType *c, CalcType *a, CalcType *b);
+  
+  /*!
+   * \brief Performs the subtraction of two matrices.
+   */
+  void GetSubsBlock(CalcType *c, CalcType *a, CalcType *b);
+  
+  /*!
+   * \brief Performs the subtraction of two vectors.
+   */
+  void GetSubsVector(CalcType *c, CalcType *a, CalcType *b);
+  
+  /*!
+   * \brief Inverse diagonal block.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[out] invBlock - Inverse block.
+   */
+  void InverseDiagonalBlock(unsigned long block_i, CalcType *invBlock, bool transpose = false);
+  
+ 	/*!
+   * \brief Inverse diagonal block.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[out] invBlock - Inverse block.
+   */
+  void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, CalcType *invBlock);
+  
+  /*!
+   * \brief Inverse a block.
+   * \param[in] Block - block matrix.
+   * \param[out] invBlock - Inverse block.
+   */
+  void InverseBlock(CalcType *Block, CalcType *invBlock);
+
+  template<class BaseType>
+  friend class TCSysMatrix;
   
 };
 

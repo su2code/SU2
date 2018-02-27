@@ -70,6 +70,7 @@ TCSysMatrix<CalcType>::TCSysMatrix(void) {
   LyVector        = NULL;
   FzVector        = NULL;
   max_nElem       = 0;
+  ilu_fill_in = 0;
   
 }
 
@@ -364,7 +365,7 @@ void TCSysMatrix<CalcType>::SetIndexes(unsigned long val_nPoint, unsigned long v
     	((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
-      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI) ||
+      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == JACOBI) ||
       (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == JACOBI))   {
     
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
@@ -933,366 +934,6 @@ void TCSysMatrix<CalcType>::DiagonalProduct(TCSysVector<CalcType> & vec, unsigne
   
 }
 
-template<>
-void TCSysMatrix<su2double>::SendReceive_Solution(TCSysVector<su2double> & x, CGeometry *geometry, CConfig *config) {
-  
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-      
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      
-      Buffer_Receive = new su2double [nBufferR_Vector];
-      Buffer_Send = new su2double[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
-      }
-      
-#ifdef HAVE_MPI
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      
-      SU2_MPI::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++)
-          x[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      
-      delete [] Buffer_Receive;
-      
-    }
-    
-  }
-  
-}
-
-#ifdef CODI_REVERSE_TYPE
-template<>
-void TCSysMatrix<passivedouble>::SendReceive_Solution(TCSysVector<passivedouble> & x, CGeometry *geometry, CConfig *config) {
-  
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  passivedouble *Buffer_Receive = NULL, *Buffer_Send = NULL;
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-      
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      
-      Buffer_Receive = new passivedouble [nBufferR_Vector];
-      Buffer_Send = new passivedouble[nBufferS_Vector];
-      
-      /*--- Copy the solution that should be sended ---*/
-      
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
-      }
-      
-#ifdef HAVE_MPI
-      
-      /*--- Send/Receive information using Sendrecv ---*/
-      
-      CBaseMPIWrapper::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-      
-#else
-      
-      /*--- Receive information without MPI ---*/
-      
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      
-      delete [] Buffer_Send;
-      
-      /*--- Do the coordinate transformation ---*/
-      
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++)
-          x[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      
-      delete [] Buffer_Receive;
-      
-    }
-    
-  }
-  
-}
-#endif
-
-template<>
-void TCSysMatrix<su2double>::SendReceive_SolutionTransposed(TCSysVector<su2double> & x, CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker + 1;  MarkerR = iMarker;
-
-#ifdef HAVE_MPI
-
-      receive_from = config->GetMarker_All_SendRecv(MarkerR)-1;
-      send_to = abs(config->GetMarker_All_SendRecv(MarkerS))-1;
-
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-
-      Buffer_Receive = new su2double [nBufferR_Vector];
-      Buffer_Send = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution that should be sended ---*/
-
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-
-      SU2_MPI::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-
-      delete [] Buffer_Send;
-
-      /*--- Do the coordinate transformation ---*/
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-
-        for (iVar = 0; iVar < nVar; iVar++)
-          x[iPoint*nVar+iVar] += Buffer_Receive[iVertex*nVar+iVar];
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-
-      delete [] Buffer_Receive;
-
-    }
-
-  }
-
-}
-
-#ifdef CODI_REVERSE_TYPE
-template<>
-void TCSysMatrix<passivedouble>::SendReceive_SolutionTransposed(TCSysVector<passivedouble> & x, CGeometry *geometry, CConfig *config) {
-
-  unsigned short iVar, iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  passivedouble *Buffer_Receive = NULL, *Buffer_Send = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker + 1;  MarkerR = iMarker;
-
-#ifdef HAVE_MPI
-
-      receive_from = config->GetMarker_All_SendRecv(MarkerR)-1;
-      send_to = abs(config->GetMarker_All_SendRecv(MarkerS))-1;
-
-#endif
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-
-      Buffer_Receive = new passivedouble [nBufferR_Vector];
-      Buffer_Send = new passivedouble[nBufferS_Vector];
-
-      /*--- Copy the solution that should be sended ---*/
-
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
-      }
-
-#ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-
-      CBaseMPIWrapper::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-#else
-
-      /*--- Receive information without MPI ---*/
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-
-      delete [] Buffer_Send;
-
-      /*--- Do the coordinate transformation ---*/
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
-
-        for (iVar = 0; iVar < nVar; iVar++)
-          x[iPoint*nVar+iVar] += Buffer_Receive[iVertex*nVar+iVar];
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-
-      delete [] Buffer_Receive;
-
-    }
-
-  }
-
-}
-
-#endif
 
 template<class CalcType>
 void TCSysMatrix<CalcType>::RowProduct(const TCSysVector<CalcType> & vec, unsigned long row_i) {
@@ -1355,7 +996,7 @@ void TCSysMatrix<CalcType>::MatrixVectorProduct(const TCSysVector<CalcType> & ve
   }
   
   /*--- MPI Parallelization ---*/
-  SendReceive_Solution(prod, geometry, config);
+  prod.SendReceive(geometry, config);
   
 }
 
@@ -1387,7 +1028,8 @@ void TCSysMatrix<CalcType>::MatrixVectorProductTransposed(const TCSysVector<Calc
   }
 
   /*--- MPI Parallelization ---*/
-  SendReceive_SolutionTransposed(prod, geometry, config);
+  
+  prod.SendReceive_Reverse(geometry, config);
 
 }
 
@@ -1597,7 +1239,7 @@ void TCSysMatrix<CalcType>::ComputeJacobiPreconditioner(const TCSysVector<CalcTy
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  prod.SendReceive(geometry, config);
   
 }
 
@@ -1665,7 +1307,7 @@ unsigned long TCSysMatrix<CalcType>::Jacobi_Smoother(const TCSysVector<CalcType>
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    x.SendReceive(geometry, config);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -1837,7 +1479,7 @@ void TCSysMatrix<CalcType>::ComputeILUPreconditioner(const TCSysVector<CalcType>
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  prod.SendReceive(geometry, config);
   
 }
 
@@ -1959,7 +1601,7 @@ unsigned long TCSysMatrix<CalcType>::ILU_Smoother(const TCSysVector<CalcType> & 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    x.SendReceive(geometry, config);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -2003,7 +1645,7 @@ void TCSysMatrix<CalcType>::ComputeLU_SGSPreconditioner(const TCSysVector<CalcTy
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  prod.SendReceive(geometry, config);
   
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
@@ -2021,7 +1663,7 @@ void TCSysMatrix<CalcType>::ComputeLU_SGSPreconditioner(const TCSysVector<CalcTy
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  prod.SendReceive(geometry, config);
   
 }
 
@@ -2090,7 +1732,7 @@ unsigned long TCSysMatrix<CalcType>::LU_SGS_Smoother(const TCSysVector<CalcType>
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(xStar, geometry, config);
+    xStar.SendReceive(geometry, config);
     
     /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
     
@@ -2114,7 +1756,7 @@ unsigned long TCSysMatrix<CalcType>::LU_SGS_Smoother(const TCSysVector<CalcType>
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    x.SendReceive(geometry, config);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -2361,7 +2003,7 @@ void TCSysMatrix<CalcType>::ComputeLineletPreconditioner(const TCSysVector<CalcT
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(prod, geometry, config);
+    prod.SendReceive(geometry, config);
     
     /*--- Solve linelet using a Thomas' algorithm ---*/
     
@@ -2431,7 +2073,7 @@ void TCSysMatrix<CalcType>::ComputeLineletPreconditioner(const TCSysVector<CalcT
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(prod, geometry, config);
+    prod.SendReceive(geometry, config);
     
   }
   else {
