@@ -3,20 +3,24 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +56,6 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CDriver {
 protected:
@@ -610,6 +613,12 @@ public:
   vector<string> GetAllCHTMarkersTag();
 
   /*!
+   * \brief Get all the (subsonic) inlet boundary markers tags.
+   * \return List of inlet boundary markers tags.
+   */
+  vector<string> GetAllInletMarkersTag();
+
+  /*!
    * \brief Get all the boundary markers tags with their associated indices.
    * \return List of boundary markers tags with their indices.
    */
@@ -627,7 +636,6 @@ public:
  * \class CGeneralDriver
  * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CGeneralDriver : public CDriver {
 public:
@@ -690,7 +698,6 @@ public:
  * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
- * \version 5.0.0 "Raven"
  */
 class CFluidDriver : public CDriver {
 public:
@@ -751,6 +758,41 @@ public:
    * \brief Transfer data among different zones (multiple zone).
    */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Set the total temperature of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_Ttotal - Value of the total (stagnation) temperature.
+   */
+  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal);
+
+  /*!
+   * \brief Set the total pressure of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_Ptotal - Value of the total (stagnation) pressure.
+   */
+  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal);
+
+  /*!
+   * \brief Set the flow direction of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the flow direction unit vector
+   * \param[in] val_FlowDir - Component of a unit vector representing the flow direction
+   */
+  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir);
+
+  /*!
+   * \brief Set a turbulence variable on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_tub_var);
+
 };
 
 
@@ -758,7 +800,6 @@ public:
  * \class CTurbomachineryDriver
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
- * \version 5.0.0 "Raven"
  */
 class CTurbomachineryDriver : public CFluidDriver {
 public:
@@ -809,7 +850,6 @@ public:
  * \class CDiscAdjMultiZoneDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjFluidDriver : public CFluidDriver {
 
@@ -869,7 +909,6 @@ public:
  * \class CDiscAdjTurbomachineryDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author S. Vitale, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
 
@@ -916,7 +955,6 @@ public:
  * \class CHBDriver
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CHBDriver : public CDriver {
 
@@ -983,7 +1021,6 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 5.0.0 "Raven"
  */
 class CFSIDriver : public CDriver {
 public:

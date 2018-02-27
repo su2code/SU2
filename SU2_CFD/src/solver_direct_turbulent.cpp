@@ -2,20 +2,24 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,10 +45,11 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   upperlimit    = NULL;
   nVertex       = NULL;
   nMarker       = 0;
+  Inlet_TurbVars = NULL;
   
 }
 
-CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
+CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -53,17 +58,36 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
+  nMarker       = config->GetnMarker_All();
+  
+  /*--- Store the number of vertices on each marker for deallocation later ---*/
+  nVertex = new unsigned long[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+    nVertex[iMarker] = geometry->nVertex[iMarker];
   
 }
 
 CTurbSolver::~CTurbSolver(void) {
-  
+
+  if (Inlet_TurbVars != NULL) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (Inlet_TurbVars[iMarker] != NULL) {
+        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          delete [] Inlet_TurbVars[iMarker][iVertex];
+        }
+        delete [] Inlet_TurbVars[iMarker];
+      }
+    }
+    delete [] Inlet_TurbVars;
+  }
+
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
   if (nVertex != NULL) delete [] nVertex;
   
+
 }
 
 void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -1171,9 +1195,14 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 }
 
-CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
+CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 
-CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
+  Inlet_TurbVars = NULL;
+
+}
+
+CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
+    : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
@@ -1342,7 +1371,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  unsigned long iMarker,  nMarker = config->GetnMarker_All();
+  unsigned long iMarker;
 
   SlidingState       = new su2double*** [nMarker];
   SlidingStateNodes  = new int*         [nMarker];
@@ -1367,6 +1396,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     }
   }
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
 
 }
 
@@ -1397,6 +1430,7 @@ CTurbSASolver::~CTurbSASolver(void) {
     }
     delete [] SlidingStateNodes;
   }
+
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1720,8 +1754,9 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
+  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
   Normal = new su2double[nDim];
   
@@ -1737,10 +1772,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -1762,7 +1793,13 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       
       Solution_i[0] = node[iPoint]->GetSolution(0);
-      Solution_j[0] = nu_tilde_Inf;
+
+      if (isCustomizable) {
+        /*--- Only use the array version of the inlet BC when necessary ---*/
+        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      } else {
+        Solution_j[0] = nu_tilde_Inf;
+      }
       
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
@@ -1783,28 +1820,28 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_inlet);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_inlet);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1816,7 +1853,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -1832,10 +1869,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Allocate the value at the outlet ---*/
       
@@ -1881,27 +1914,28 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       
       System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_outlet);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_outlet);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1918,6 +1952,8 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
   unsigned short iDim;
   su2double *V_inflow, *V_domain, *Normal;
   
+  bool grid_movement  = config->GetGrid_Movement();
+
   Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -1955,6 +1991,12 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
         Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
       
+      /*--- Set grid movement ---*/
+      
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
+
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -1964,30 +2006,31 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
       
       System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_inflow);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_inflow);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//      visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+
     }
+
   }
   
   /*--- Free locally allocated memory ---*/
@@ -2004,6 +2047,8 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
   
   Normal = new su2double[nDim];
   
+  bool grid_movement  = config->GetGrid_Movement();
+
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -2043,6 +2088,12 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       /*--- Set various other quantities in the conv_numerics class ---*/
       
       conv_numerics->SetNormal(Normal);
+
+      /*--- Set grid movement ---*/
+      
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
       
       /*--- Compute the residual using an upwind scheme ---*/
       
@@ -2053,28 +2104,28 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
       
       System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      
-      visc_numerics->SetPrimitive(V_domain, V_exhaust);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_exhaust);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -2104,7 +2155,7 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool inlet_surface) {
   
-  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex, iPoint_Normal;
+  unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
   bool ReverseFlow;
   unsigned short iDim;
@@ -2119,7 +2170,6 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    iPoint_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
     GlobalIndex_donor = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
     
@@ -2218,30 +2268,30 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
         
-        /*--- Viscous contribution ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
-        
-        /*--- Conservative variables w/o reconstruction ---*/
-        
-        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
-        else visc_numerics->SetPrimitive(V_domain, V_outlet);
-        
-        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-        
-        visc_numerics->SetTurbVar(Solution_i, Solution_j);
-        
-        visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-        
-        /*--- Compute residual, and Jacobians ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        /*--- Subtract residual, and update Jacobians ---*/
-        
-        //        LinSysRes.SubtractBlock(iPoint, Residual);
-        //        System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+//        /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+//
+//        /*--- Conservative variables w/o reconstruction ---*/
+//
+//        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        else visc_numerics->SetPrimitive(V_domain, V_outlet);
+//
+//        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//        visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//
+//        visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//        /*--- Compute residual, and Jacobians ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//        /*--- Subtract residual, and update Jacobians ---*/
+//
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//        System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
         
       }
     }
@@ -2940,10 +2990,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   
   su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0,
       deltaDDES = 0.0, deltaAuxDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
-      aux_ln = 0.0, f_kh = 0.0, deltaMin = 0.0, deltaw = 0.0, alpha2 = 0.0, f_b = 0.0, f_d_tilde = 0.0;
+      aux_ln = 0.0, f_kh = 0.0;
   
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
-  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5, cw_iddes = 0.15;
+  su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
   su2double *coord_i = NULL, *coord_j = NULL, **primVarGrad = NULL, *vorticity = NULL, delta[3] = {0.0,0.0,0.0},
@@ -3138,14 +3188,40 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
+void CTurbSASolver::SetInlet(CConfig* config) {
+
+  /*-- Allocation has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
+  Inlet_TurbVars = new su2double**[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if (isCustomizable && isInlet) {
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        /*--- The default values for these custom BCs are initialized with
+         * the freestream values to avoid nonphysical values at unspecified
+         * points ---*/
+        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+      }
+    } else {
+      Inlet_TurbVars[iMarker] = NULL;
+    }
+  }
+
+}
+
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
   
   /*--- Array initialization ---*/
   constants = NULL;
+  Inlet_TurbVars = NULL;
   
 }
 
-CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+    : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
@@ -3309,7 +3385,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  unsigned long iMarker,  nMarker = config->GetnMarker_All();
+  unsigned long iMarker;
 
   SlidingState       = new su2double*** [nMarker];
   SlidingStateNodes  = new int*         [nMarker];
@@ -3334,7 +3410,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     }
   }
-  
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
+
 }
 
 CTurbSSTSolver::~CTurbSSTSolver(void) {
@@ -3366,6 +3446,7 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
     }
     delete [] SlidingStateNodes;
   }
+
 }
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -3696,8 +3777,9 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
                               unsigned short val_marker) {
   
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
+  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
   Normal = new su2double[nDim];
   
@@ -3706,40 +3788,51 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Index of the closest interior node ---*/
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
       /*--- Allocate the value at the inlet ---*/
+      
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
+      
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
+      
       conv_numerics->SetPrimitive(V_domain, V_inlet);
       
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
+      
       for (iVar = 0; iVar < nVar; iVar++)
       Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
       
-      Solution_j[0]= kine_Inf;
-      Solution_j[1]= omega_Inf;
+      if (isCustomizable) {
+        /*--- Only use the array version of the inlet BC when necessary ---*/
+        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+        Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
+      } else {
+        Solution_j[0] = kine_Inf;
+        Solution_j[1] = omega_Inf;
+      }
       
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set various other quantities in the solver class ---*/
+      
       conv_numerics->SetNormal(Normal);
       
       if (grid_movement)
@@ -3747,34 +3840,43 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
                                 geometry->node[iPoint]->GetGridVel());
       
       /*--- Compute the residual using an upwind scheme ---*/
+      
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
+      
       System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_inlet);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_inlet);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//     visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Menter's first blending function ---*/
+//
+//      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+
     }
+      
   }
   
   /*--- Free locally allocated memory ---*/
@@ -3784,7 +3886,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
   su2double *V_outlet, *V_domain, *Normal;
   
@@ -3793,22 +3895,24 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Index of the closest interior node ---*/
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
       /*--- Allocate the value at the outlet ---*/
+      
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
+      
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
+      
       conv_numerics->SetPrimitive(V_domain, V_outlet);
       
       /*--- Set the turbulent variables. Here we use a Neumann BC such
@@ -3816,6 +3920,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
        domain to the outlet before computing the residual.
        Solution_i --> TurbVar_internal,
        Solution_j --> TurbVar_outlet ---*/
+      
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
         Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
@@ -3823,6 +3928,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set Normal (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] = -Normal[iDim];
@@ -3833,32 +3939,40 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
                                 geometry->node[iPoint]->GetGridVel());
       
       /*--- Compute the residual using an upwind scheme ---*/
+      
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
+      
       System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
-      /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-      visc_numerics->SetNormal(Normal);
-      
-      /*--- Conservative variables w/o reconstruction ---*/
-      visc_numerics->SetPrimitive(V_domain, V_outlet);
-      
-      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-      
-      /*--- Menter's first blending function ---*/
-      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-      
-      /*--- Compute residual, and Jacobians ---*/
-      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
-      /*--- Subtract residual, and update Jacobians ---*/
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//      visc_numerics->SetNormal(Normal);
+//
+//      /*--- Conservative variables w/o reconstruction ---*/
+//
+//      visc_numerics->SetPrimitive(V_domain, V_outlet);
+//
+//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+//
+//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//
+//      /*--- Menter's first blending function ---*/
+//
+//      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+//
+//      /*--- Compute residual, and Jacobians ---*/
+//
+//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//      /*--- Subtract residual, and update Jacobians ---*/
+//
+//      LinSysRes.SubtractBlock(iPoint, Residual);
+//      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -4228,4 +4342,30 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
 su2double* CTurbSSTSolver::GetConstants() {
   return constants;
+}
+
+
+void CTurbSSTSolver::SetInlet(CConfig* config) {
+
+  /*-- Allocation has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
+  Inlet_TurbVars = new su2double**[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if (isCustomizable && isInlet) {
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        /*--- The default values for these custom BCs are initialized with
+         * the freestream values to avoid nonphysical values at unspecified
+         * points ---*/
+        Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+        Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+      }
+    } else {
+      Inlet_TurbVars[iMarker] = NULL;
+    }
+  }
+
 }
