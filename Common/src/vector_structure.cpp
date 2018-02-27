@@ -232,15 +232,14 @@ TCSysVector<CalcType> & TCSysVector<CalcType>::operator=(const TCSysVector<CalcT
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if (this == &u) return *this;
   
-  delete [] vec_val; // in case the size is different
-  nElm = u.nElm;
-  nElmDomain = u.nElmDomain;
+  if (nElm != u.nElm){
+    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
+  }
   
   nBlk = u.nBlk;
 	nBlkDomain = u.nBlkDomain;
   
   nVar = u.nVar;
-  vec_val = new CalcType[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
@@ -440,3 +439,364 @@ CalcType dotProd(const TCSysVector<CalcType> & u, const TCSysVector<CalcType> & 
   
   return prod;
 }
+
+template<>
+void TCSysVector<su2double>::SendReceive(CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+      
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      
+      Buffer_Receive = new su2double [nBufferR_Vector];
+      Buffer_Send = new su2double[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sended ---*/
+      
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = vec_val[iPoint*nVar+iVar];
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      
+      SU2_MPI::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      
+      delete [] Buffer_Send;
+      
+      /*--- Do the coordinate transformation ---*/
+      
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          vec_val[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      
+      delete [] Buffer_Receive;
+      
+    }
+    
+  }
+  
+}
+
+
+template<>
+void TCSysVector<su2double>::SendReceive_Reverse(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker + 1;  MarkerR = iMarker;
+
+#ifdef HAVE_MPI
+
+      receive_from = config->GetMarker_All_SendRecv(MarkerR)-1;
+      send_to = abs(config->GetMarker_All_SendRecv(MarkerS))-1;
+
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive = new su2double [nBufferR_Vector];
+      Buffer_Send = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution that should be sended ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = vec_val[iPoint*nVar+iVar];
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+
+      SU2_MPI::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send;
+
+      /*--- Do the coordinate transformation ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          vec_val[iPoint*nVar+iVar] += Buffer_Receive[iVertex*nVar+iVar];
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+
+      delete [] Buffer_Receive;
+
+    }
+
+  }
+
+}
+
+#ifdef CODI_REVERSE_TYPE
+template<>
+void TCSysVector<passivedouble>::SendReceive(CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  passivedouble *Buffer_Receive = NULL, *Buffer_Send = NULL;
+  
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+#ifdef HAVE_MPI
+
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+      
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      
+      Buffer_Receive = new passivedouble [nBufferR_Vector];
+      Buffer_Send = new passivedouble[nBufferS_Vector];
+      
+      /*--- Copy the solution that should be sended ---*/
+      
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = vec_val[iPoint*nVar+iVar];
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      
+      CBaseMPIWrapper::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      
+      delete [] Buffer_Send;
+      
+      /*--- Do the coordinate transformation ---*/
+      
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          vec_val[iPoint*nVar+iVar] = Buffer_Receive[iVertex*nVar+iVar];
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      
+      delete [] Buffer_Receive;
+      
+    }
+    
+  }
+  
+}
+
+
+
+template<>
+void TCSysVector<passivedouble>::SendReceive_Reverse(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  passivedouble *Buffer_Receive = NULL, *Buffer_Send = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker + 1;  MarkerR = iMarker;
+
+#ifdef HAVE_MPI
+
+      receive_from = config->GetMarker_All_SendRecv(MarkerR)-1;
+      send_to = abs(config->GetMarker_All_SendRecv(MarkerS))-1;
+
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive = new passivedouble [nBufferR_Vector];
+      Buffer_Send = new passivedouble[nBufferS_Vector];
+
+      /*--- Copy the solution that should be sended ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send[iVertex*nVar+iVar] = vec_val[iPoint*nVar+iVar];
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+
+      CBaseMPIWrapper::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive[iVar*nVertexR+iVertex] = Buffer_Send[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send;
+
+      /*--- Do the coordinate transformation ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          vec_val[iPoint*nVar+iVar] += Buffer_Receive[iVertex*nVar+iVar];
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+
+      delete [] Buffer_Receive;
+
+    }
+
+  }
+
+}
+#endif
