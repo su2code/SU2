@@ -32,9 +32,11 @@
  */
 
 #pragma once
+#include "linear_solvers_structure.hpp"
+
 
 template<class CalcType>
-inline CalcType TCSysSolve<CalcType>::Sign(const CalcType & x, const CalcType & y) const {
+inline CalcType TCLinSolver_FGMRES<CalcType>::Sign(const CalcType & x, const CalcType & y) const {
   if (y == 0.0)
     return 0.0;
   else {
@@ -43,3 +45,143 @@ inline CalcType TCSysSolve<CalcType>::Sign(const CalcType & x, const CalcType & 
     else return fabs(x);
   }
 }
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SetValZero_Matrix(){
+  Matrix.SetValZero();
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SetValZero_Rhs(){
+  LinSysRes.SetValZero();
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SetValZero_Sol(){
+  LinSysSol.SetValZero();
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::DeleteValsRowi(unsigned long i){
+  Matrix.DeleteValsRowi(i);
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SetVal2Diag_Matrix(unsigned long iPoint, BaseType val){
+  Matrix.SetVal2Diag(iPoint, convert.ToCalcType(val));
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::AddVal2Diag_Matrix(unsigned long iPoint, BaseType val){
+  Matrix.AddVal2Diag(iPoint,convert.ToCalcType(val));
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::AddBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType** block){
+  Matrix.AddBlock(iPoint, jPoint, convert.ToCalcType(block, BlockSize, BlockSize));
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SubtractBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType** block){
+  Matrix.SubtractBlock(iPoint, jPoint,  convert.ToCalcType(block, BlockSize, BlockSize));
+}
+
+template<class CalcType, class BaseType>
+inline BaseType* TCSysSolve<CalcType, BaseType>::GetBlock_Matrix(unsigned long iPoint, unsigned long jPoint){
+  return convert.ToBaseType(Matrix.GetBlock(iPoint, jPoint), BlockSize*BlockSize);
+}
+
+template<class CalcType, class BaseType>
+inline BaseType TCSysSolve<CalcType, BaseType>::GetBlock_Matrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){
+ return convert.ToBaseType(Matrix.GetBlock(iPoint, jPoint, iVar, jVar));
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SetBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType* block){
+  Matrix.SetBlock(iPoint, jPoint, convert.ToCalcType(block, BlockSize*BlockSize));
+}
+
+template<class CalcType, class BaseType>
+inline void TCSysSolve<CalcType, BaseType>::SetBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType** block){
+  Matrix.SetBlock(iPoint, jPoint, convert.ToCalcType(block, BlockSize, BlockSize));
+}
+
+
+template<>
+inline su2double** Convert<su2double, su2double>::ToBaseType(su2double **block, unsigned short BlockSizeI, unsigned short BlockSizeJ){
+  return block;
+}
+
+template<>
+inline su2double** Convert<su2double, su2double>::ToCalcType(su2double **block, unsigned short BlockSizeI, unsigned short BlockSizeJ){
+  return block;
+}
+
+template<>
+inline su2double* Convert<su2double, su2double>::ToBaseType(su2double *block, unsigned short BlockSize){
+  return block;
+}
+
+template<>
+inline su2double* Convert<su2double, su2double>::ToCalcType(su2double *block, unsigned short BlockSize){
+  return block;
+}
+
+template<>
+inline su2double Convert<su2double, su2double>::ToBaseType(su2double val){
+  return val;
+}
+
+template<>
+inline su2double Convert<su2double, su2double>::ToCalcType(su2double val){
+  return val;
+}
+
+#ifdef CODI_REVERSE_TYPE
+template<>
+inline su2double** Convert<passivedouble, su2double>::ToBaseType(passivedouble **block, unsigned short BlockSizeI, unsigned short BlockSizeJ){
+  for (unsigned short i = 0; i < BlockSizeI; i++){
+    for (unsigned short j = 0; j< BlockSizeJ; j++){    
+    Block_BaseType[i][j] = su2double(block[i][j]);
+    }
+  }
+  return Block_BaseType;
+}
+
+template<>
+inline passivedouble** Convert<passivedouble, su2double>::ToCalcType(su2double **block, unsigned short BlockSizeI, unsigned short BlockSizeJ){
+  for (unsigned short i = 0; i < BlockSizeI; i++){
+    for (unsigned short j = 0; j< BlockSizeJ; j++){    
+    Block_CalcType[i][j] = SU2_TYPE::GetValue(block[i][j]);
+    }
+  }
+  return Block_CalcType;
+}
+
+template<>
+inline su2double* Convert<passivedouble, su2double>::ToBaseType(passivedouble *block, unsigned short BlockSize){
+  for (unsigned short i = 0; i < BlockSize; i++){
+    BlockLin_BaseType[i] = su2double(block[i]);
+  }
+  return BlockLin_BaseType;
+}
+
+template<>
+inline passivedouble* Convert<passivedouble, su2double>::ToCalcType(su2double *block, unsigned short BlockSize){
+  for (unsigned short i = 0; i < BlockSize; i++){
+    BlockLin_CalcType[i] = SU2_TYPE::GetValue(block[i]);
+  }
+  return BlockLin_CalcType;
+}
+
+template<>
+inline su2double Convert<passivedouble, su2double>::ToBaseType(passivedouble val){
+  return su2double(val);
+}
+
+template<>
+inline passivedouble Convert<passivedouble, su2double>::ToCalcType(su2double val){
+  return  SU2_TYPE::GetValue(val);
+}
+#endif
+

@@ -34,8 +34,379 @@
 #include "../include/linear_solvers_structure.hpp"
 #include "../include/linear_solvers_structure_b.hpp"
 
+template<class CalcType, class BaseType>
+Convert<CalcType, BaseType>::Convert(){
+  
+
+}
+
+template<class CalcType, class BaseType>
+Convert<CalcType, BaseType>::~Convert(){
+  
+}
+
+template<class CalcType, class BaseType>
+void Convert<CalcType, BaseType>::Initialize(unsigned short MaxSize){
+
+  Block_CalcType = new CalcType*[MaxSize];
+  Block_BaseType = new BaseType*[MaxSize];
+
+  for (unsigned short i=0; i < MaxSize; i++){
+    Block_CalcType[i] = new CalcType[MaxSize];
+    Block_BaseType[i] = new BaseType[MaxSize];
+  } 
+  BlockLin_CalcType = new CalcType[MaxSize];
+  BlockLin_BaseType = new BaseType[MaxSize];
+  
+}
+
+
 template<class CalcType>
-void TCSysSolve<CalcType>::ApplyGivens(const CalcType & s, const CalcType & c, CalcType & h1, CalcType & h2) {
+TCLinSolver<CalcType>::TCLinSolver(unsigned short blocksize, unsigned long elem, unsigned long elemdomain, CalcType tol, unsigned long m, bool monitoring){
+  
+  SubSpaceSize = m;
+  Output       = monitoring;
+  Tolerance    = tol;
+  nElem        = elem;
+  nElemDomain  = elemdomain;
+  Residual     = 0.0;
+  BlockSize = blocksize;
+  
+}
+
+template<class CalcType>
+TCLinSolver<CalcType>::~TCLinSolver(){}
+
+template<class CalcType>
+void TCLinSolver<CalcType>::WriteHeader(const string & solver, const CalcType & restol, const CalcType & resinit) {
+  
+  cout << "\n# " << solver << " residual history" << endl;
+  cout << "# Residual TCLinSolverBase::Tolerance target = " << restol << endl;
+  cout << "# Initial residual norm     = " << resinit << endl;
+  
+}
+
+template<class CalcType>
+void TCLinSolver<CalcType>::WriteHistory(const int & iter, const CalcType & res, const CalcType & resinit) {
+  
+  cout << "     " << iter << "     " << res/resinit << endl;
+  
+}
+
+template<class CalcType>
+unsigned long TCLinSolver<CalcType>::Solve(const TCSysVector<CalcType> &b, TCSysVector<CalcType> &x, TCMatrixVectorProduct<CalcType> &mat_vec, TCPreconditioner<CalcType> &precond){
+  
+  return 0;
+}
+
+template<class CalcType>
+TCLinSolver_CG<CalcType>::TCLinSolver_CG(unsigned short blocksize, unsigned long elem, unsigned long elemdomain, CalcType tol, unsigned long m, bool monitoring) : TCLinSolver<CalcType>(blocksize, elem, elemdomain, tol, m, monitoring){
+    
+  /*--- Check the subspace size ---*/
+  
+  if (TCLinSolverBase::SubSpaceSize < 1) {
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", TCLinSolverBase::SubSpaceSize );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+  }
+  
+  /*--- Initialize vector structures ---*/
+  
+  r.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  A_p.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  z.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  p.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  
+  /*--- Initialize variables ---*/
+  
+  norm_r = 0.0;
+  norm0  = 0.0;
+  alpha  = 0.0;
+  beta   = 0.0;
+  r_dot_z = 0.0;
+  
+}
+
+template<class CalcType>
+TCLinSolver_CG<CalcType>::~TCLinSolver_CG(){}
+
+template<class CalcType>
+unsigned long TCLinSolver_CG<CalcType>::Solve(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec,
+                                              TCPreconditioner<CalcType> & precond) {
+
+  int rank = SU2_MPI::GetRank();
+
+  r   = b;
+  A_p = b;
+  
+  /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
+  
+  mat_vec(x, A_p);
+  
+  r -= A_p; // recall, r holds b initially
+  norm_r = r.norm();
+  norm0 = b.norm();
+  if ( (norm_r < TCLinSolverBase::Tolerance*norm0) || (norm_r < eps) ) {
+    if (rank == MASTER_NODE) cout << "TCSysSolve<CalcType>::ConjugateGradient(): system solved by initial guess." << endl;
+    return 0;
+  }
+  
+  z = r;
+  precond(r, z);
+  p = z;
+  
+  /*--- Set the norm to the initial initial residual value ---*/
+  
+  norm0 = norm_r;
+  
+  /*--- TCLinSolverBase::Output header information including initial residual ---*/
+  
+  int i = 0;
+  if ((TCLinSolverBase::Output) && (rank == MASTER_NODE)) {
+    TCLinSolverBase::WriteHeader("CG", TCLinSolverBase::Tolerance, norm_r);
+    TCLinSolverBase::WriteHistory(i, norm_r, norm0);
+  }
+  
+  /*---  Loop over all search directions ---*/
+  
+  for (i = 0; i < (int)TCLinSolverBase::SubSpaceSize; i++) {
+    
+    /*--- Apply matrix to p to build Krylov subspace ---*/
+    
+    mat_vec(p, A_p);
+    
+    /*--- Calculate step-length alpha ---*/
+    
+    r_dot_z = dotProd(r, z);
+    alpha = dotProd(A_p, p);
+    alpha = r_dot_z / alpha;
+    
+    /*--- Update solution and residual: ---*/
+    
+    x.Plus_AX(alpha, p);
+    r.Plus_AX(-alpha, A_p);
+    
+    /*--- Check if solution has converged, else TCLinSolverBase::Output the relative residual if necessary ---*/
+    
+    norm_r = r.norm();
+    if (norm_r < TCLinSolverBase::Tolerance*norm0) break;
+    if (((TCLinSolverBase::Output) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) TCLinSolverBase::WriteHistory(i+1, norm_r, norm0);
+    
+    precond(r, z);
+    
+    /*--- Calculate Gram-Schmidt coefficient beta,
+		 beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
+    
+    beta = 1.0 / r_dot_z;
+    r_dot_z = dotProd(r, z);
+    beta *= r_dot_z;
+    
+    /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
+    
+    p.Equals_AX_Plus_BY(beta, p, 1.0, z);
+    
+  }
+  
+  if ((TCLinSolverBase::Output) && (rank == MASTER_NODE)) {
+    cout << "# Conjugate Gradient final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
+  }
+  
+  /*--- Recalculate final residual (this should be optional) ---*/
+  
+  if (TCLinSolverBase::Output) {
+    
+    mat_vec(x, A_p);
+    r = b;
+    r -= A_p;
+    CalcType true_res = r.norm();
+    
+    if (fabs(true_res - norm_r) > TCLinSolverBase::Tolerance*10.0) {
+      if (rank == MASTER_NODE) {
+        cout << "# WARNING in TCSysSolve<CalcType>::CG_LinSolver(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << TCLinSolverBase::Tolerance*10 <<"."<< endl;
+        cout << "# true_res - calc_res = " << true_res - norm_r << endl;
+      }
+    }
+    
+  }
+
+  
+  TCLinSolverBase::Residual = norm_r;
+	return (unsigned long) i;
+  
+}
+
+template<class CalcType>
+TCLinSolver_FGMRES<CalcType>::TCLinSolver_FGMRES(unsigned short blocksize, unsigned long elem, unsigned long elemdomain, CalcType tol, unsigned long m, bool monitoring) : TCLinSolver<CalcType>(blocksize, elem, elemdomain, tol, m, monitoring){
+    
+  /*---  Check the subspace size ---*/
+  
+  if (TCLinSolverBase::SubSpaceSize < 1) {
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", TCLinSolverBase::SubSpaceSize );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+  }
+
+  /*---  Check the subspace size ---*/
+  
+  if (TCLinSolverBase::SubSpaceSize > 1000) {
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", TCLinSolverBase::SubSpaceSize );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
+  }
+  
+  /*--- Initialize arrays ---*/
+  
+  w.resize(TCLinSolverBase::SubSpaceSize+1, TCSysVector<CalcType>(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain,TCLinSolverBase::BlockSize, 0.0));
+  z.resize(TCLinSolverBase::SubSpaceSize,   TCSysVector<CalcType>(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain,TCLinSolverBase::BlockSize, 0.0));
+  g.resize(TCLinSolverBase::SubSpaceSize+1, 0.0);
+  sn.resize(TCLinSolverBase::SubSpaceSize+1, 0.0);
+  cs.resize(TCLinSolverBase::SubSpaceSize+1, 0.0);
+  y.resize(TCLinSolverBase::SubSpaceSize, 0.0);
+  H.resize(TCLinSolverBase::SubSpaceSize+1, vector<CalcType>(TCLinSolverBase::SubSpaceSize, 0.0));
+  
+  /*--- Initialize variables ---*/
+  
+  norm0 = 0.0;
+  beta  = 0.0;
+}
+
+template<class CalcType>
+TCLinSolver_FGMRES<CalcType>::~TCLinSolver_FGMRES(){}
+
+
+template<class CalcType>
+unsigned long TCLinSolver_FGMRES<CalcType>::Solve(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec,
+                                                  TCPreconditioner<CalcType> & precond) {
+	
+  int rank = SU2_MPI::GetRank();
+  int i = 0;
+ 
+  /*--- Initialize all vectors with 0 ---*/
+  
+  std::fill(g.begin(), g.end(), 0.0);
+  std::fill(sn.begin(), sn.end(), 0.0);
+  std::fill(cs.begin(), cs.end(), 0.0);
+  std::fill(y.begin(), y.end(), 0.0);
+
+  /*---  Calculate the norm of the rhs vector ---*/
+  
+  norm0 = b.norm();
+  
+  /*---  Calculate the initial residual (actually the negative residual)
+	 and compute its norm ---*/
+  
+  mat_vec(x, w[0]);
+  w[0] -= b;
+  
+  beta = w[0].norm();
+  
+  if ( (beta < TCLinSolverBase::Tolerance*norm0) || (beta < eps) ) {
+    
+    /*---  System is already solved ---*/
+    
+    if (rank == MASTER_NODE) cout << "TCSysSolve<CalcType>::FGMRES(): system solved by initial guess." << endl;
+    return 0;
+  }
+  
+  /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
+	 holds the negative residual, as mentioned above) ---*/
+  
+  w[0] /= -beta;
+  
+  /*---  Initialize the RHS of the reduced system ---*/
+  
+  g[0] = beta;
+  
+  /*--- Set the norm to the initial residual value ---*/
+  
+  norm0 = beta;
+
+  /*---  TCLinSolverBase::Output header information including initial residual ---*/
+  
+  if ((TCLinSolverBase::Output) && (rank == MASTER_NODE)) {
+    TCLinSolverBase::WriteHeader("FGMRES", TCLinSolverBase::Tolerance, beta);
+    TCLinSolverBase::WriteHistory(i, beta, norm0);
+  }
+  
+  /*---  Loop over all search directions ---*/
+  
+  for (i = 0; i < (int)TCLinSolverBase::SubSpaceSize; i++) {
+    
+    /*---  Check if solution has converged ---*/
+    
+    if (beta < TCLinSolverBase::Tolerance*norm0) break;
+    
+    /*---  Precondition the TCSysVector w[i] and store result in z[i] ---*/
+    
+    precond(w[i], z[i]);
+    
+    /*---  Add to Krylov subspace ---*/
+    
+    mat_vec(z[i], w[i+1]);
+    
+    /*---  Modified Gram-Schmidt orthogonalization ---*/
+    
+    ModGramSchmidt(i, H, w);
+    
+    /*---  Apply old Givens rotations to new column of the Hessenberg matrix
+		 then generate the new Givens rotation matrix and apply it to
+		 the last two elements of H[:][i] and g ---*/
+    
+    for (int k = 0; k < i; k++)
+      ApplyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
+    GenerateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
+    ApplyGivens(sn[i], cs[i], g[i], g[i+1]);
+    
+    /*---  Set L2 norm of residual and check if solution has converged ---*/
+    
+    beta = fabs(g[i+1]);
+    
+    /*---  TCLinSolverBase::Output the relative residual if necessary ---*/
+    
+    if ((((TCLinSolverBase::Output) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) && (rank == MASTER_NODE)) TCLinSolverBase::WriteHistory(i+1, beta, norm0);
+    
+  }
+
+  /*---  Solve the least-squares system and update solution ---*/
+  
+  SolveReduced(i, H, g, y);
+  for (int k = 0; k < i; k++) {
+    x.Plus_AX(y[k], z[k]);
+  }
+  
+  if ((TCLinSolverBase::Output) && (rank == MASTER_NODE)) {
+    cout << "# FGMRES final (true) residual:" << endl;
+    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
+  }
+  
+  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
+  
+  if (TCLinSolverBase::Output) {
+    mat_vec(x, w[0]);
+    w[0] -= b;
+    CalcType res = w[0].norm();
+    
+    if (fabs(res - beta) > TCLinSolverBase::Tolerance*10) {
+      if (rank == MASTER_NODE) {
+        cout << "# WARNING in TCSysSolve<CalcType>::FGMRES_LinSolver(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# res = " << res <<", beta = " << beta <<", tol = " << TCLinSolverBase::Tolerance*10 <<"."<< endl;
+        cout << "# res - beta = " << res - beta << endl << endl;
+      }
+    }
+  }
+  
+ TCLinSolverBase::Residual = beta;
+  return (unsigned long) i;
+  
+}
+
+
+template<class CalcType>
+void TCLinSolver_FGMRES<CalcType>::ApplyGivens(const CalcType & s, const CalcType & c, CalcType & h1, CalcType & h2) {
   
   CalcType temp = c*h1 + s*h2;
   h2 = c*h2 - s*h1;
@@ -43,7 +414,7 @@ void TCSysSolve<CalcType>::ApplyGivens(const CalcType & s, const CalcType & c, C
 }
 
 template<class CalcType>
-void TCSysSolve<CalcType>::GenerateGivens(CalcType & dx, CalcType & dy, CalcType & s, CalcType & c) {
+void TCLinSolver_FGMRES<CalcType>::GenerateGivens(CalcType & dx, CalcType & dy, CalcType & s, CalcType & c) {
   
   if ( (dx == 0.0) && (dy == 0.0) ) {
     c = 1.0;
@@ -73,7 +444,7 @@ void TCSysSolve<CalcType>::GenerateGivens(CalcType & dx, CalcType & dy, CalcType
 }
 
 template<class CalcType>
-void TCSysSolve<CalcType>::SolveReduced(const int & n, const vector<vector<CalcType> > & Hsbg,
+void TCLinSolver_FGMRES<CalcType>::SolveReduced(const int & n, const vector<vector<CalcType> > & Hsbg,
                              const vector<CalcType> & rhs, vector<CalcType> & x) {
   // initialize...
   for (int i = 0; i < n; i++)
@@ -88,7 +459,7 @@ void TCSysSolve<CalcType>::SolveReduced(const int & n, const vector<vector<CalcT
 }
 
 template<class CalcType>
-void TCSysSolve<CalcType>::ModGramSchmidt(int i, vector<vector<CalcType> > & Hsbg, vector<TCSysVector<CalcType> > & w) {
+void TCLinSolver_FGMRES<CalcType>::ModGramSchmidt(int i, vector<vector<CalcType> > & Hsbg, vector<TCSysVector<CalcType> > & w) {
   
   bool Convergence = true;
   int rank = SU2_MPI::GetRank();
@@ -140,7 +511,7 @@ void TCSysSolve<CalcType>::ModGramSchmidt(int i, vector<vector<CalcType> > & Hsb
 #endif
   
   if (!Convergence) {
-    SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+    SU2_MPI::Error("Divergence of linear solver.", CURRENT_FUNCTION);
   }
   
   /*--- Begin main Gram-Schmidt loop ---*/
@@ -177,293 +548,7 @@ void TCSysSolve<CalcType>::ModGramSchmidt(int i, vector<vector<CalcType> > & Hsb
 }
 
 template<class CalcType>
-void TCSysSolve<CalcType>::WriteHeader(const string & solver, const CalcType & restol, const CalcType & resinit) {
-  
-  cout << "\n# " << solver << " residual history" << endl;
-  cout << "# Residual tolerance target = " << restol << endl;
-  cout << "# Initial residual norm     = " << resinit << endl;
-  
-}
-
-template<class CalcType>
-void TCSysSolve<CalcType>::WriteHistory(const int & iter, const CalcType & res, const CalcType & resinit) {
-  
-  cout << "     " << iter << "     " << res/resinit << endl;
-  
-}
-
-template<class CalcType>
-unsigned long TCSysSolve<CalcType>::CG_LinSolver(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec,
-                                           TCPreconditioner<CalcType> & precond, CalcType tol, unsigned long m, CalcType *residual, bool monitoring) {
-
-  int rank = SU2_MPI::GetRank();
-
-  /*--- Check the subspace size ---*/
-  
-  if (m < 1) {
-    char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-  
-  TCSysVector<CalcType> r(b);
-  TCSysVector<CalcType> A_p(b);
-  
-  /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  
-  mat_vec(x, A_p);
-  
-  r -= A_p; // recall, r holds b initially
-  CalcType norm_r = r.norm();
-  CalcType norm0 = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "TCSysSolve<CalcType>::ConjugateGradient(): system solved by initial guess." << endl;
-    return 0;
-  }
-  
-  CalcType alpha, beta, r_dot_z;
-  TCSysVector<CalcType> z(r);
-  precond(r, z);
-  TCSysVector<CalcType> p(z);
-  
-  /*--- Set the norm to the initial initial residual value ---*/
-  
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    WriteHeader("CG", tol, norm_r);
-    WriteHistory(i, norm_r, norm0);
-  }
-  
-  /*---  Loop over all search directions ---*/
-  
-  for (i = 0; i < (int)m; i++) {
-    
-    /*--- Apply matrix to p to build Krylov subspace ---*/
-    
-    mat_vec(p, A_p);
-    
-    /*--- Calculate step-length alpha ---*/
-    
-    r_dot_z = dotProd(r, z);
-    alpha = dotProd(A_p, p);
-    alpha = r_dot_z / alpha;
-    
-    /*--- Update solution and residual: ---*/
-    
-    x.Plus_AX(alpha, p);
-    r.Plus_AX(-alpha, A_p);
-    
-    /*--- Check if solution has converged, else output the relative residual if necessary ---*/
-    
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) WriteHistory(i+1, norm_r, norm0);
-    
-    precond(r, z);
-    
-    /*--- Calculate Gram-Schmidt coefficient beta,
-		 beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
-    
-    beta = 1.0 / r_dot_z;
-    r_dot_z = dotProd(r, z);
-    beta *= r_dot_z;
-    
-    /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
-    
-    p.Equals_AX_Plus_BY(beta, p, 1.0, z);
-    
-  }
-  
-
-  
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "# Conjugate Gradient final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
-  }
-  
-  /*--- Recalculate final residual (this should be optional) ---*/
-  
-  if (monitoring) {
-    
-    mat_vec(x, A_p);
-    r = b;
-    r -= A_p;
-    CalcType true_res = r.norm();
-    
-    if (fabs(true_res - norm_r) > tol*10.0) {
-      if (rank == MASTER_NODE) {
-        cout << "# WARNING in TCSysSolve<CalcType>::CG_LinSolver(): " << endl;
-        cout << "# true residual norm and calculated residual norm do not agree." << endl;
-        cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
-        cout << "# true_res - calc_res = " << true_res - norm_r << endl;
-      }
-    }
-    
-  }
-
-  
-  (*residual) = norm_r;
-	return (unsigned long) i;
-  
-}
-
-template<class CalcType>
-unsigned long TCSysSolve<CalcType>::FGMRES_LinSolver(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec,
-                               TCPreconditioner<CalcType> & precond, CalcType tol, unsigned long m, CalcType *residual, bool monitoring) {
-	
-  int rank = SU2_MPI::GetRank();
-  
-  /*---  Check the subspace size ---*/
-  
-  if (m < 1) {
-    char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-
-  /*---  Check the subspace size ---*/
-  
-  if (m > 1000) {
-    char buf[100];
-    SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", m );
-    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
-  }
-  
-  /*---  Define various arrays
-	 Note: elements in w and z are initialized to x to avoid creating
-	 a temporary TCSysVector object for the copy constructor ---*/
-  
-  vector<TCSysVector<CalcType> > w(m+1, x);
-  vector<TCSysVector<CalcType >> z(m+1, x);
-  vector<CalcType> g(m+1, 0.0);
-  vector<CalcType> sn(m+1, 0.0);
-  vector<CalcType> cs(m+1, 0.0);
-  vector<CalcType> y(m, 0.0);
-  vector<vector<CalcType> > H(m+1, vector<CalcType>(m, 0.0));
-  
-  /*---  Calculate the norm of the rhs vector ---*/
-  
-  CalcType norm0 = b.norm();
-  
-  /*---  Calculate the initial residual (actually the negative residual)
-	 and compute its norm ---*/
-  
-  mat_vec(x, w[0]);
-  w[0] -= b;
-  
-  CalcType beta = w[0].norm();
-  
-  if ( (beta < tol*norm0) || (beta < eps) ) {
-    
-    /*---  System is already solved ---*/
-    
-    if (rank == MASTER_NODE) cout << "TCSysSolve<CalcType>::FGMRES(): system solved by initial guess." << endl;
-    return 0;
-  }
-  
-  /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
-	 holds the negative residual, as mentioned above) ---*/
-  
-  w[0] /= -beta;
-  
-  /*---  Initialize the RHS of the reduced system ---*/
-  
-  g[0] = beta;
-  
-  /*--- Set the norm to the initial residual value ---*/
-  
-  norm0 = beta;
-
-  /*---  Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    WriteHeader("FGMRES", tol, beta);
-    WriteHistory(i, beta, norm0);
-  }
-  
-  /*---  Loop over all search directions ---*/
-  
-  for (i = 0; i < (int)m; i++) {
-    
-    /*---  Check if solution has converged ---*/
-    
-    if (beta < tol*norm0) break;
-    
-    /*---  Precondition the TCSysVector w[i] and store result in z[i] ---*/
-    
-    precond(w[i], z[i]);
-    
-    /*---  Add to Krylov subspace ---*/
-    
-    mat_vec(z[i], w[i+1]);
-    
-    /*---  Modified Gram-Schmidt orthogonalization ---*/
-    
-    ModGramSchmidt(i, H, w);
-    
-    /*---  Apply old Givens rotations to new column of the Hessenberg matrix
-		 then generate the new Givens rotation matrix and apply it to
-		 the last two elements of H[:][i] and g ---*/
-    
-    for (int k = 0; k < i; k++)
-      ApplyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
-    GenerateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
-    ApplyGivens(sn[i], cs[i], g[i], g[i+1]);
-    
-    /*---  Set L2 norm of residual and check if solution has converged ---*/
-    
-    beta = fabs(g[i+1]);
-    
-    /*---  Output the relative residual if necessary ---*/
-    
-    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
-    
-  }
-
-  /*---  Solve the least-squares system and update solution ---*/
-  
-  SolveReduced(i, H, g, y);
-  for (int k = 0; k < i; k++) {
-    x.Plus_AX(y[k], z[k]);
-  }
-  
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "# FGMRES final (true) residual:" << endl;
-    cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
-  }
-  
-  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
-  
-  if (monitoring) {
-    mat_vec(x, w[0]);
-    w[0] -= b;
-    CalcType res = w[0].norm();
-    
-    if (fabs(res - beta) > tol*10) {
-      if (rank == MASTER_NODE) {
-        cout << "# WARNING in TCSysSolve<CalcType>::FGMRES_LinSolver(): " << endl;
-        cout << "# true residual norm and calculated residual norm do not agree." << endl;
-        cout << "# res = " << res <<", beta = " << beta <<", tol = " << tol*10 <<"."<< endl;
-        cout << "# res - beta = " << res - beta << endl << endl;
-      }
-    }
-  }
-  
-  (*residual) = beta;
-  return (unsigned long) i;
-  
-}
-
-template<class CalcType>
-unsigned long TCSysSolve<CalcType>::BCGSTAB_LinSolver(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec,
-                                           TCPreconditioner<CalcType> & precond, CalcType tol, unsigned long m, CalcType *residual, bool monitoring) {
-  
-  int rank = SU2_MPI::GetRank();
+TCLinSolver_BCGSTAB<CalcType>::TCLinSolver_BCGSTAB(unsigned short blocksize, unsigned long elem, unsigned long elemdomain, CalcType tol, unsigned long m, bool monitoring): TCLinSolver<CalcType>(blocksize, elem, elemdomain, tol, m, monitoring){
   
   /*--- Check the subspace size ---*/
   
@@ -473,46 +558,69 @@ unsigned long TCSysSolve<CalcType>::BCGSTAB_LinSolver(const TCSysVector<CalcType
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
-  TCSysVector<CalcType> r(b);
-  TCSysVector<CalcType> r_0(b);
-  TCSysVector<CalcType> p(b);
-  TCSysVector<CalcType> v(b);
-  TCSysVector<CalcType> s(b);
-  TCSysVector<CalcType> t(b);
-  TCSysVector<CalcType> phat(b);
-  TCSysVector<CalcType> shat(b);
-  TCSysVector<CalcType> A_x(b);
+  r.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  r_0.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  p.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  v.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  s.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  t.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  phat.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  shat.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  A_x.Initialize(TCLinSolverBase::nElem, TCLinSolverBase::nElemDomain, TCLinSolverBase::BlockSize, 0.0);
+  
+  norm_r = 0.0;
+  norm0 = 0.0;
+  alpha = 0.0;
+  beta = 0.0;
+  omega = 0.0;
+  rho = 0.0;
+  rho_prime = 0.0;
+  beta_omega = 0.0;
+  r_0_v = 0.0;
+
+}
+
+template<class CalcType>
+TCLinSolver_BCGSTAB<CalcType>::~TCLinSolver_BCGSTAB(){}
+
+template<class CalcType>
+unsigned long TCLinSolver_BCGSTAB<CalcType>::Solve(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec,
+                                                   TCPreconditioner<CalcType> & precond) {
+  
+  int rank = SU2_MPI::GetRank();
+  
+  r = b;
   
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
   
   mat_vec(x, A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
-  CalcType norm_r = r.norm();
-  CalcType norm0 = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+  norm_r = r.norm();
+  norm0 = b.norm();
+  if ( (norm_r < TCLinSolverBase::Tolerance*norm0) || (norm_r < eps) ) {
     if (rank == MASTER_NODE) cout << "TCSysSolve<CalcType>::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }
   
   /*--- Initialization ---*/
   
-  CalcType alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
   
   /*--- Set the norm to the initial initial residual value ---*/
   
   norm0 = norm_r;
   
-  /*--- Output header information including initial residual ---*/
+  /*--- TCLinSolverBase::Output header information including initial residual ---*/
   
   int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    WriteHeader("BCGSTAB", tol, norm_r);
-    WriteHistory(i, norm_r, norm0);
+  if ((TCLinSolverBase::Output) && (rank == MASTER_NODE)) {
+    TCLinSolverBase::WriteHeader("BCGSTAB", TCLinSolverBase::Tolerance, norm_r);
+    TCLinSolverBase::WriteHistory(i, norm_r, norm0);
   }
   
   /*---  Loop over all search directions ---*/
   
-  for (i = 0; i < (int)m; i++) {
+  for (i = 0; i < (int)TCLinSolverBase::SubSpaceSize; i++) {
     
     /*--- Compute rho_prime ---*/
     
@@ -528,7 +636,7 @@ unsigned long TCSysSolve<CalcType>::BCGSTAB_LinSolver(const TCSysVector<CalcType
     
     /*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
     
-    CalcType beta_omega = -beta*omega;
+    beta_omega = -beta*omega;
     p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
     p.Plus_AX(1.0, r);
     
@@ -539,7 +647,7 @@ unsigned long TCSysSolve<CalcType>::BCGSTAB_LinSolver(const TCSysVector<CalcType
     
     /*--- Calculate step-length alpha ---*/
     
-    CalcType r_0_v = dotProd(r_0, v);
+    r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
     
     /*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
@@ -560,360 +668,254 @@ unsigned long TCSysSolve<CalcType>::BCGSTAB_LinSolver(const TCSysVector<CalcType
     x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
     r.Equals_AX_Plus_BY(1.0, s, -omega, t);
     
-    /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+    /*--- Check if solution has converged, else TCLinSolverBase::Output the relative residual if necessary ---*/
     
     norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
+    if (norm_r < TCLinSolverBase::Tolerance*norm0) break;
+    if (((TCLinSolverBase::Output) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0) && (rank == MASTER_NODE)) TCLinSolverBase::WriteHistory(i+1, norm_r, norm0);
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((TCLinSolverBase::Output) && (rank == MASTER_NODE)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
     /*--- Recalculate final residual (this should be optional) ---*/
-  if (monitoring) {
+  if (TCLinSolverBase::Output) {
     mat_vec(x, A_x);
     r = b; r -= A_x;
     CalcType true_res = r.norm();
     
-    if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
+    if ((fabs(true_res - norm_r) > TCLinSolverBase::Tolerance*10.0) && (rank == MASTER_NODE)) {
       cout << "# WARNING in TCSysSolve<CalcType>::BCGSTAB_LinSolver(): " << endl;
       cout << "# true residual norm and calculated residual norm do not agree." << endl;
-      cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
+      cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << TCLinSolverBase::Tolerance*10 <<"."<< endl;
       cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
     }
   }
   
-  (*residual) = norm_r;
+  TCLinSolverBase::Residual = norm_r;
   return (unsigned long) i;
+}
+template<class CalcType, class BaseType>
+TCSysSolve<CalcType, BaseType>::TCSysSolve(){
+  
+}
+
+template<class CalcType, class BaseType>
+TCSysSolve<CalcType, BaseType>::~TCSysSolve(){
+  
+//  delete LinSolver;
+//  delete MatVec;
+//  delete MatVec_b;
+//  delete Precond;
+//  delete Precond_b;
+  
+}
+template<>
+void TCSysSolve<su2double, su2double>::Initialize_System_Adjoint(unsigned short BlockSize, CGeometry *geometry, CConfig *config){
+  
+}
+template<class CalcType, class BaseType>
+void TCSysSolve<CalcType, BaseType>::Initialize_System(unsigned short blocksize, bool edgeconnect, CGeometry *geometry, CConfig *config){
+  
+  nPoint       = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  BlockSize    = blocksize;
+  
+  /*--- Create Matrix structure ---*/
+  
+  Matrix.Initialize(nPoint, nPointDomain, BlockSize, BlockSize, edgeconnect, geometry, config);
+  
+  convert.Initialize(BlockSize);
+  
+  Initialize_System_Adjoint(blocksize, geometry, config);
+  
+}
+
+
+template<>
+void TCSysSolve<su2double, su2double>::Initialize_Linear_Solver_Adjoint(unsigned short blocksize,
+                                                                        unsigned short kind_solver, 
+                                                                        unsigned short kind_preconditioner, 
+                                                                        unsigned long max_iter,
+                                                                        su2double solver_error, 
+                                                                        CGeometry *geometry, 
+                                                                        CConfig *config){
+
+}
+
+template<class CalcType, class BaseType>
+void TCSysSolve<CalcType, BaseType>::Initialize_Linear_Solver(unsigned short blocksize,
+                                                                unsigned short kind_solver, 
+                                                                unsigned short kind_preconditioner, 
+                                                                unsigned long max_iter,
+                                                                BaseType solver_error, 
+                                                                CGeometry *geometry, 
+                                                                CConfig *config){
+  
+  nPoint       = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+  BlockSize    = blocksize;
+  
+  CalcType SolverTol    = convert.ToCalcType(solver_error);
+  
+  kind_prec = kind_preconditioner;
+  
+  /*--- Solve the linear system using a Krylov subspace method ---*/
+  
+  MatVec = new TCSysMatrixVectorProduct<CalcType>(Matrix, geometry, config);
+  
+  switch (kind_preconditioner) {
+  case JACOBI:
+    Precond = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);
+    break;
+  case ILU:
+    Precond = new TCILUPreconditioner<CalcType>(Matrix, geometry, config);
+    break;
+  case LU_SGS:
+    Precond = new TCLU_SGSPreconditioner<CalcType>(Matrix, geometry, config);
+    break;
+  case LINELET:
+    Precond = new TCLineletPreconditioner<CalcType>(Matrix, geometry, config);
+    break;
+  default:
+    Precond = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);
+    break;
+  }
+  switch (kind_solver) {
+  case BCGSTAB:
+    LinSolver = new TCLinSolver_BCGSTAB<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, false);
+    break;
+  case FGMRES: case RESTARTED_FGMRES:
+    LinSolver = new TCLinSolver_FGMRES<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, true);
+    break;
+  case CONJUGATE_GRADIENT:
+    LinSolver = new TCLinSolver_CG<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, false);
+    break;
+  default:
+    LinSolver = new TCLinSolver_FGMRES<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, false);
+    break;
+  }
+  
+
+  
+  Initialize_Linear_Solver_Adjoint(blocksize, kind_solver, kind_preconditioner, max_iter, solver_error, geometry, config);
+  
+}
+
+
+template<class CalcType, class BaseType>
+void TCSysSolve<CalcType, BaseType>::Build_Preconditioner(unsigned short kind_prec, bool transpose){
+  switch (kind_prec) {
+    case JACOBI:
+      Matrix.BuildJacobiPreconditioner(transpose);
+      break;
+    case ILU:
+      Matrix.BuildILUPreconditioner(transpose);
+      break;
+    case LU_SGS:
+      break;
+    default:
+      Matrix.BuildJacobiPreconditioner(transpose);
+      break;
+  }
 }
 
 template<>
-unsigned long TCSysSolve<su2double>::Solve(TCSysMatrix<su2double> & Jacobian, TCSysVector<su2double> & LinSysRes, TCSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
+void TCSysSolve<su2double, su2double>::Solve_System(TCSysVector<su2double>& Rhs, TCSysVector<su2double>& Sol){
+  Build_Preconditioner(kind_prec, false);  
+  LinSolver->Solve(Rhs, Sol, *MatVec, *Precond);
+}
+#ifdef CODI_REVERSE_TYPE
+template<>
+void TCSysSolve<passivedouble, su2double>::Initialize_System_Adjoint(unsigned short blocksize, CGeometry *geometry, CConfig *config){
   
-  su2double SolverTol = config->GetLinear_Solver_Error(), Residual;
-  unsigned long MaxIter = config->GetLinear_Solver_Iter();
-  unsigned long IterLinSol = 0;
-  TCMatrixVectorProduct<su2double> *mat_vec;
+  LinSysRes_calc.Initialize(nPoint, nPointDomain, BlockSize, 0.0);
+  LinSysSol_calc.Initialize(nPoint, nPointDomain, BlockSize, 0.0);
+  
+}
+template<>
+void TCSysSolve<passivedouble, su2double>::Initialize_Linear_Solver_Adjoint(unsigned short blocksize,
+                                                                        unsigned short kind_solver, 
+                                                                        unsigned short kind_preconditioner, 
+                                                                        unsigned long max_iter,
+                                                                        su2double solver_error, 
+                                                                        CGeometry *geometry, 
+                                                                        CConfig *config){
 
+  kind_prec_b = ILU;
+  
+  MatVec_b = new TCSysMatrixVectorProductTransposed<passivedouble>(Matrix, geometry, config);
+  Precond_b = new TCILUPreconditioner<passivedouble>(Matrix, geometry, config);
+  
+}
+
+template<>
+void TCSysSolve<passivedouble, su2double>::Solve_System(TCSysVector<su2double> &Rhs, TCSysVector<su2double> &Sol){
+  
   bool TapeActive = NO;
+  unsigned long iPoint;
   
-  if (config->GetDiscrete_Adjoint()) {
-    
-    
-    TapeActive = AD::globalTape.isActive();
-
+  TapeActive = AD::globalTape.isActive();
+  
+  if (TapeActive){
     /*--- Initialize the external function helper with storage of primal input and output disabled  ---*/
     
     AD::InitExtFunc(false, false);
     
     /*--- Set the right-hand side of the linear system as input of the external function ---*/
     
-    AD::SetExtFuncIn(LinSysRes.vec_val, LinSysRes.GetLocSize());
-
-
+    AD::SetExtFuncIn(Rhs.vec_val, Rhs.GetLocSize());
+    
+    /*--- Stop the recording ---*/
+    
     AD::StopRecording();
-  }
-
-  /*--- Solve the linear system using a Krylov subspace method ---*/
-  
-  if (config->GetKind_Linear_Solver() == BCGSTAB ||
-      config->GetKind_Linear_Solver() == FGMRES ||
-      config->GetKind_Linear_Solver() == RESTARTED_FGMRES ||
-      config->GetKind_Linear_Solver() == CONJUGATE_GRADIENT) {
-    
-    mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-    TCPreconditioner<su2double>* precond = NULL;
-    
-    switch (config->GetKind_Linear_Solver_Prec()) {
-      case JACOBI:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new TCJacobiPreconditioner<su2double>(Jacobian, geometry, config);
-        break;
-      case ILU:
-        Jacobian.BuildILUPreconditioner();
-        precond = new TCILUPreconditioner<su2double>(Jacobian, geometry, config);
-        break;
-      case LU_SGS:
-        precond = new TCLU_SGSPreconditioner<su2double>(Jacobian, geometry, config);
-        break;
-      case LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new TCLineletPreconditioner<su2double>(Jacobian, geometry, config);
-        break;
-      default:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new TCJacobiPreconditioner<su2double>(Jacobian, geometry, config);
-        break;
-    }
-    
-    switch (config->GetKind_Linear_Solver()) {
-      case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-        break;
-      case FGMRES:
-        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-        break;
-      case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-        break;
-      case RESTARTED_FGMRES:
-        IterLinSol = 0;
-        while (IterLinSol < config->GetLinear_Solver_Iter()) {
-          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-          if (LinSysRes.norm() < SolverTol) break;
-          SolverTol = SolverTol*(1.0/LinSysRes.norm());
-        }
-        break;
-    }
-    
-    /*--- Dealocate memory of the Krylov subspace method ---*/
-    
-    delete mat_vec;
-    delete precond;
     
   }
   
-  /*--- Smooth the linear system. ---*/
+  /*--- Convert data from the basetype to the calc type---*/
   
-  else {
-    switch (config->GetKind_Linear_Solver()) {
-      case SMOOTHER_LUSGS:
-        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-        IterLinSol = Jacobian.LU_SGS_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
-        delete mat_vec;
-        break;
-      case SMOOTHER_JACOBI:
-        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-        Jacobian.BuildJacobiPreconditioner();
-        IterLinSol = Jacobian.Jacobi_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
-        delete mat_vec;
-        break;
-      case SMOOTHER_ILU:
-        mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-        Jacobian.BuildILUPreconditioner();
-        IterLinSol = Jacobian.ILU_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
-        delete mat_vec;
-        break;
-      case SMOOTHER_LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        IterLinSol = 1;
-        break;
-    }
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    LinSysSol_calc.SetBlock(iPoint, convert.ToCalcType(Rhs.GetBlock(iPoint), BlockSize));
+    LinSysRes_calc.SetBlock(iPoint, convert.ToCalcType(Sol.GetBlock(iPoint), BlockSize));
   }
-
-
+  
+  Build_Preconditioner(kind_prec, false);
+  LinSolver->Solve(LinSysRes_calc, LinSysSol_calc, *MatVec, *Precond);
+  
+  /*--- Convert data back from the calc type to the base type---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    Rhs.SetBlock(iPoint, convert.ToBaseType(LinSysSol_calc.GetBlock(iPoint), BlockSize));
+    Sol.SetBlock(iPoint, convert.ToBaseType(LinSysRes_calc.GetBlock(iPoint), BlockSize));
+  }
+  
   if(TapeActive) {
     
     AD::StartRecording();
+    
+    /*--- Set the solution of the linear system as input of the external function ---*/
+    
+    AD::SetExtFuncOut(Sol.vec_val, Sol.GetLocSize());
 
-    AD::SetExtFuncOut(LinSysSol.vec_val, LinSysSol.GetLocSize());
+    /*--- Add some pointers to additional data that is required in the reverse sweep ---*/
     
-    TCSysVector<passivedouble>* LinSysRes_b = new TCSysVector<passivedouble>(LinSysRes.GetNBlk(), LinSysRes.GetNBlkDomain(), LinSysRes.GetNVar(), 0.0);
-    TCSysVector<passivedouble>* LinSysSol_b = new TCSysVector<passivedouble>(LinSysSol.GetNBlk(), LinSysSol.GetNBlkDomain(), LinSysSol.GetNVar(), 0.0);
+    AD::FuncHelper->addUserData(&LinSysRes_calc);
+    AD::FuncHelper->addUserData(&LinSysSol_calc);
+    AD::FuncHelper->addUserData(MatVec_b);
+    AD::FuncHelper->addUserData(Precond_b);
+    AD::FuncHelper->addUserData(LinSolver);
+    AD::FuncHelper->addToTape(CSysSolve_b::Solve_b<passivedouble>);    
     
-    TCSysMatrix<passivedouble>* Jacobian_b = new TCSysMatrix<passivedouble>();
-    Jacobian_b->Initialize(geometry->GetnPoint(), geometry->GetnPointDomain(), LinSysRes.GetNVar(), LinSysRes.GetNVar(), true, geometry, config );
-    unsigned short nVar = LinSysRes.GetNVar();
+    /*--- Build the preconditioner for the transposed system ---*/
     
-    unsigned long iPoint, jPoint;
-    su2double* Block_i, *Block_j, *Block_ii, *Block_jj;
-    passivedouble* Block_i_p, *Block_j_p, *Block_ii_p, *Block_jj_p;
-    Block_i_p = new passivedouble[nVar*nVar];
-    Block_j_p = new passivedouble[nVar*nVar];
-    Block_ii_p = new passivedouble[nVar*nVar];
-    Block_jj_p = new passivedouble[nVar*nVar];
-    
-    for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-      iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
-      
-      Block_i = Jacobian.GetBlock(iPoint,jPoint);
-      Block_j = Jacobian.GetBlock(jPoint, iPoint);
-      Block_ii = Jacobian.GetBlock(iPoint, iPoint);
-      Block_jj = Jacobian.GetBlock(jPoint, jPoint);
-      
-      for (unsigned short iVar = 0; iVar < nVar; iVar++){
-        for (unsigned short jVar = 0; jVar < nVar; jVar++){
-          
-          Block_i_p[iVar*nVar+jVar] = SU2_TYPE::GetValue(Block_i[iVar*nVar+jVar]);
-          Block_j_p[iVar*nVar+jVar] = SU2_TYPE::GetValue(Block_j[iVar*nVar+jVar]);
-          Block_ii_p[iVar*nVar+jVar] = SU2_TYPE::GetValue(Block_ii[iVar*nVar+jVar]);
-          Block_jj_p[iVar*nVar+jVar] = SU2_TYPE::GetValue(Block_jj[iVar*nVar+jVar]);
-          
-        }
-      }      
-      Jacobian_b->SetBlock(iPoint, jPoint, Block_i_p);
-      Jacobian_b->SetBlock(jPoint, iPoint, Block_j_p);
-      Jacobian_b->SetBlock(iPoint, iPoint, Block_ii_p);
-      Jacobian_b->SetBlock(iPoint, iPoint, Block_jj_p);
-    }
-    
-#ifdef CODI_REVERSE_TYPE
-    AD::FuncHelper->addUserData(LinSysRes_b);
-    AD::FuncHelper->addUserData(LinSysSol_b);
-    AD::FuncHelper->addUserData(Jacobian_b);
-    AD::FuncHelper->addUserData(geometry);
-    AD::FuncHelper->addUserData(config);
-    
-    AD::FuncHelper->addToTape(CSysSolve_b::Solve_b);
+    Build_Preconditioner(kind_prec_b, true);
     
     delete AD::FuncHelper;
+  }
+  
+}
+
 #endif
-
-  }
-
-  return IterLinSol;
-  
-}
-
-template<>
-unsigned long TCSysSolve<passivedouble>::Solve(TCSysMatrix<passivedouble> & Jacobian, TCSysVector<passivedouble> & LinSysRes, TCSysVector<passivedouble> & LinSysSol, CGeometry *geometry, CConfig *config) {
-    
-  }
-
-template<class CalcType>
-void TCSysSolve<CalcType>::SetExternalSolve(TCSysMatrix<CalcType> & Jacobian, TCSysVector<CalcType> & LinSysRes, TCSysVector<CalcType> & LinSysSol, CGeometry *geometry, CConfig *config) {
-
-//#ifdef CODI_REVERSE_TYPE
-  
-//  unsigned long size = LinSysRes.GetLocSize();
-//  unsigned long i, nBlk = LinSysRes.GetNBlk(),
-//                nVar = LinSysRes.GetNVar(),
-//                nBlkDomain = LinSysRes.GetNBlkDomain();
-
-//  /*--- Arrays to store the indices of the input/output of the linear solver.
-//     * Note: They will be deleted in the TCSysSolve<CalcType>_b::Delete_b routine. ---*/
-
-//  CalcType::GradientData *LinSysRes_Indices = new CalcType::GradientData[size];
-//  CalcType::GradientData *LinSysSol_Indices = new CalcType::GradientData[size];
-//#if CODI_PRIMAL_INDEX_TAPE
-//  CalcType::Real *oldValues = new CalcType::Real[size];
-//#endif
-
-//  for (i = 0; i < size; i++) {
-
-//    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
-
-//    if (!LinSysSol[i].isActive()) {
-//#if CODI_PRIMAL_INDEX_TAPE
-//      oldValues[i] = AD::globalTape.registerExtFunctionOutput(LinSysSol[i]);
-//#else
-//      AD::globalTape.registerInput(LinSysSol[i]);
-//#endif
-//    }
-
-//    /*--- Store the indices ---*/
-
-//    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
-//    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
-//  }
-
-//  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
-
-//  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
-
-//  dataHandler->addData(LinSysRes_Indices);
-//  dataHandler->addData(LinSysSol_Indices);
-//#if CODI_PRIMAL_INDEX_TAPE
-//  dataHandler->addData(oldValues);
-//#endif
-//  dataHandler->addData(size);
-//  dataHandler->addData(nBlk);
-//  dataHandler->addData(nVar);
-//  dataHandler->addData(nBlkDomain);
-//  dataHandler->addData(&Jacobian);
-//  dataHandler->addData(geometry);
-//  dataHandler->addData(config);
-
-//  /*--- Build preconditioner for the transposed Jacobian ---*/
-
-//  switch(config->GetKind_DiscAdj_Linear_Prec()) {
-//    case ILU:
-//      Jacobian.BuildILUPreconditioner(true);
-//      break;
-//    case JACOBI:
-//      Jacobian.BuildJacobiPreconditioner(true);
-//      break;
-//    default:
-//      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-//      break;
-//  }
-
-//  /*--- Push the external function to the AD tape ---*/
-
-//  AD::globalTape.pushExternalFunctionHandle(&TCSysSolve<CalcType>_b::Solve_b, dataHandler, &TCSysSolve<CalcType>_b::Delete_b);
-
-//#endif
-}
-
-template<class CalcType>
-void TCSysSolve<CalcType>::SetExternalSolve_Mesh(TCSysMatrix<CalcType> & Jacobian, TCSysVector<CalcType> & LinSysRes, TCSysVector<CalcType> & LinSysSol, CGeometry *geometry, CConfig *config){
-
-//#ifdef CODI_REVERSE_TYPE
-
-//  unsigned long size = LinSysRes.GetLocSize();
-//  unsigned long i, nBlk = LinSysRes.GetNBlk(),
-//                nVar = LinSysRes.GetNVar(),
-//                nBlkDomain = LinSysRes.GetNBlkDomain();
-
-//  /*--- Arrays to store the indices of the input/output of the linear solver.
-//     * Note: They will be deleted in the TCSysSolve<CalcType>_b::Delete_b routine. ---*/
-
-//  CalcType::GradientData *LinSysRes_Indices = new CalcType::GradientData[size];
-//  CalcType::GradientData *LinSysSol_Indices = new CalcType::GradientData[size];
-
-//  for (i = 0; i < size; i++){
-
-//    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
-
-//    if (!LinSysSol[i].isActive()){
-//      AD::globalTape.registerInput(LinSysSol[i]);
-//    }
-
-//    /*--- Store the indices ---*/
-
-//    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
-//    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
-//  }
-
-//  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
-
-//  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
-
-//  dataHandler->addData(LinSysRes_Indices);
-//  dataHandler->addData(LinSysSol_Indices);
-//  dataHandler->addData(size);
-//  dataHandler->addData(nBlk);
-//  dataHandler->addData(nVar);
-//  dataHandler->addData(nBlkDomain);
-//  dataHandler->addData(&Jacobian);
-//  dataHandler->addData(geometry);
-//  dataHandler->addData(config);
-
-//  /*--- Build preconditioner for the transposed Jacobian ---*/
-
-//  switch(config->GetKind_DiscAdj_Linear_Prec()){
-//    case ILU:
-//      Jacobian.BuildILUPreconditioner(false);
-//      break;
-//    case JACOBI:
-//      Jacobian.BuildJacobiPreconditioner(false);
-//      break;
-//    default:
-//      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-//      break;
-//  }
-
-//  /*--- Push the external function to the AD tape ---*/
-
-//  AD::globalTape.pushExternalFunctionHandle(&TCSysSolve<CalcType>_b::Solve_g, dataHandler, &TCSysSolve<CalcType>_b::Delete_b);
-
-//#endif
-}
