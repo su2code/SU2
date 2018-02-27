@@ -192,22 +192,16 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundSensitivity(config_container[iZone]);
     } else {
       if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
+//      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
       geometry_container[iZone]->SetSensitivity(config_container[iZone]);
 
-      if (rank == MASTER_NODE)
-        cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
-      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false, true);
+//      if (rank == MASTER_NODE)
+//        cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
+//      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false, true);
 
     }
   }
 
-   if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
-     if (rank == MASTER_NODE)
-       cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
-     COutput *output = new COutput(config_container[ZONE_0]);
-     output->SetSensitivity_Files(geometry_container, config_container, nZone);
-   }
 
    if (config_container[ZONE_0]->GetDesign_Variable(0) != NONE){
 
@@ -253,6 +247,14 @@ int main(int argc, char *argv[]) {
        }else{
          SetProjection_FD(geometry_container[iZone], config_container[iZone], surface_movement[iZone] , Gradient);
        }
+     }
+     
+     
+     if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+       if (rank == MASTER_NODE)
+         cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
+       COutput *output = new COutput(config_container[ZONE_0]);
+       output->SetSensitivity_Files(geometry_container, config_container, nZone);
      }
 
      /*--- Print gradients to screen and file ---*/
@@ -551,7 +553,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
 
-  su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
+  su2double DV_Value, *Coord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
   
@@ -561,7 +563,12 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
   
-  VarCoord = NULL;
+  Coord = NULL;
+  
+  CVolumetricMovement *grid_movement = new CVolumetricMovement(geometry, config);
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
 
   /*--- Discrete adjoint gradient computation ---*/
   
@@ -592,58 +599,53 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       config->SetDV_Value(iDV, iDV_Value, DV_Value);
     }
   }
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (config->GetMarker_All_DV(iMarker) == YES) {
+      
+//      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+//        Coord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        for (iDim = 0; iDim < nDim; iDim++){
+//          AD::RegisterInput(grid_movement->LinSysRes[iPoint*nDim+iDim]);    
+//        }
+//      }
+      
+//    }
+//  }
+
+//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+//    Coord    = geometry->node[iPoint]->GetCoord();
+//    for (iDim = 0; iDim < nDim; iDim++){
+//      AD::RegisterInput(Coord[iDim]);    
+//    }
+//  }
   
   /*--- Call the surface deformation routine ---*/
   
   surface_movement->SetSurface_Deformation(geometry, config);
   
+  grid_movement->SetVolume_Deformation(geometry, config, false);
+  
+  
   /*--- Stop the recording --- */
   
   AD::StopRecording();
-  
-  /*--- Create a structure to identify points that have been already visited. 
-   * We need that to make sure to set the sensitivity of surface points only once
-   *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
-  
-  bool* visited = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-    visited[iPoint] = false;
-  }
-  
+
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      nVertex = geometry->nVertex[iMarker];
-      for (iVertex = 0; iVertex <nVertex; iVertex++) {
-        iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (!visited[iPoint]){
-          VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-          Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
-          
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++){
-            Area += Normal[iDim]*Normal[iDim];
-          }
-          Area = sqrt(Area);
-          
-          for (iDim = 0; iDim < nDim; iDim++){
-            if (config->GetDiscrete_Adjoint()){
-              Sensitivity = geometry->GetSensitivity(iPoint, iDim);
-            } else {
-              Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
-            }
-            SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
-          }
-          visited[iPoint] = true;
-        }
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    Coord    = geometry->node[iPoint]->GetCoord();
+    
+      for (iDim = 0; iDim < nDim; iDim++){
+        
+        Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+        
+        SU2_TYPE::SetDerivative(Coord[iDim], SU2_TYPE::GetValue(Sensitivity));
+        
       }
-    }
   }
-  
-  delete [] visited;
-  
+    
   /*--- Compute derivatives and extract gradient ---*/
   
   AD::ComputeAdjoint();
@@ -670,8 +672,28 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       Gradient[iDV][iDV_Value] += localGradient;
     }
   }
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim = 0; iDim < nDim; iDim++){
+    
+//        Sensitivity = grid_movement->LinSysRes[iPoint*nDim+iDim].getGradient();
+        
+        geometry->SetSensitivity(iPoint, iDim, Sensitivity);
+        
+        }
+      }
+      
+    }
+  }
 
   AD::Reset();
+  
+  
 
 }
 

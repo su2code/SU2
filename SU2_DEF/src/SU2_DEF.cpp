@@ -229,8 +229,10 @@ int main(int argc, char *argv[]) {
       allmoving = true;
       /*--- Loop over markers, set flag to false if any are not moving ---*/
       for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++){
-        if (config_container[iZone]->GetMarker_All_DV(iMarker) == NO)
+        if (config_container[iZone]->GetMarker_All_DV(iMarker) == NO &&
+            config_container[iZone]->GetMarker_All_SendRecv(iMarker) == NO){
           allmoving = false;
+        }
       }
       
       
