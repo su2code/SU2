@@ -6206,11 +6206,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
               if (disc_adj) {
                 if (!turbo){
-                  cout.width(14); cout << Total_Sens_Press;
-                  cout.width(14); cout << Total_Sens_AoA;
+                  cout.width(14); cout << std::scientific << Total_Sens_Press;
+                  cout.width(14); cout << std::scientific << Total_Sens_AoA;
                 } else {
-                  cout.width(14); cout << Total_Sens_BPressure;
-                  cout.width(15); cout << Total_Sens_Temp;
+                  cout.precision(4);
+                  cout.width(14); cout <<  std::scientific << Total_Sens_BPressure;
+                  cout.width(15); cout <<  std::scientific << Total_Sens_Temp;
                 }
               }else {
                 cout.precision(4);
