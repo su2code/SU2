@@ -37,75 +37,41 @@
 #include "../include/matrix_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
+template<class CalcType>
 void CSysSolve_b::Solve_b(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m, const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n, codi::DataStore* d){
   
-  TCSysVector<passivedouble>* LinSysRes_b = NULL;
+  TCSysVector<CalcType>* LinSysRes_b = NULL;
   d->getData(LinSysRes_b);
   
-  TCSysVector<passivedouble>* LinSysSol_b = NULL;
+  TCSysVector<CalcType>* LinSysSol_b = NULL;
   d->getData(LinSysSol_b);
   
-  TCSysMatrix<passivedouble> *Jacobian_b = NULL;
-  d->getData(Jacobian_b);
+  TCSysMatrixVectorProduct<CalcType> *MatVec = NULL;
+  d->getData(MatVec);
   
-  CGeometry *geometry = NULL;
-  d->getData(geometry);
+  TCPreconditioner<CalcType> *Precond = NULL;
+  d->getData(Precond);
   
-  CConfig* config = NULL;
-  d->getData(config);
-  
-  unsigned long MaxIter = SU2_TYPE::GetValue(config->GetLinear_Solver_Iter());
-  passivedouble SolverTol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+  TCLinSolver<CalcType> *LinSolver = NULL;
+  d->getData(LinSolver);
 
-  passivedouble Residual;
-  
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
   for (unsigned long i = 0; i < n; i ++) {
-    LinSysRes_b->operator[](i) = y_b[i];
-    LinSysSol_b->operator[](i) = y_b[i];
-  }
-  
-  cout << LinSysRes_b->norm() << endl;
-  /*--- Set up preconditioner and matrix-vector product ---*/
-
-  TCPreconditioner<passivedouble>* precond  = NULL;
-
-  switch(config->GetKind_DiscAdj_Linear_Prec()) {
-    case ILU:
-      precond = new TCILUPreconditioner<passivedouble>(*Jacobian_b, geometry, config);
-      break;
-    case JACOBI:
-      precond = new TCJacobiPreconditioner<passivedouble>(*Jacobian_b, geometry, config);
-      break;
+    (*LinSysRes_b)[i] = y_b[i];
+    (*LinSysSol_b)[i] = 0.0;
   }
 
-  TCMatrixVectorProduct<passivedouble>* mat_vec = new TCSysMatrixVectorProductTransposed<passivedouble>(*Jacobian_b, geometry, config);
-
-  TCSysSolve<passivedouble> *solver = new TCSysSolve<passivedouble>();
-
-  /*--- Solve the system ---*/
-
-  switch(config->GetKind_DiscAdj_Linear_Solver()) {
-    case FGMRES:
-      solver->FGMRES_LinSolver(*LinSysRes_b, *LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
-      break;
-    case BCGSTAB:
-      solver->BCGSTAB_LinSolver(*LinSysRes_b, *LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
-      break;
-    case CONJUGATE_GRADIENT:
-      solver->CG_LinSolver(*LinSysRes_b, *LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-      break;
-  }
+  LinSolver->Solve(*LinSysRes_b, *LinSysSol_b, *MatVec, *Precond);
 
   for (unsigned long i = 0; i < n; i ++) {
-    x_b[i] = LinSysSol_b->operator [](i);
+    x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
   }
   
-  delete mat_vec;
-  delete precond;
-  delete solver;
 }
+
+template void CSysSolve_b::Solve_b<su2double>(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m, const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n, codi::DataStore* d);
+template void CSysSolve_b::Solve_b<passivedouble>(const codi::RealReverse::Real* x, codi::RealReverse::Real* x_b, size_t m, const codi::RealReverse::Real* y, const codi::RealReverse::Real* y_b, size_t n, codi::DataStore* d);
 
 #endif
 //void CSysSolve_b::Solve_g(AD::Tape* tape, AD::CheckpointHandler* data, void* ra){
