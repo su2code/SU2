@@ -8662,7 +8662,7 @@ bool CEulerSolver::ValidateInletValues(vector<su2double> inlet_values) {
 
 }
 
-void CEulerSolver::SetInletAtVertex(CSolver** solver, vector<su2double> values,
+void CEulerSolver::SetInletAtVertex(vector<su2double> values,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
 

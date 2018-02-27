@@ -2785,11 +2785,44 @@ public:
    */
   virtual void SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var);
 
+  /*!
+   * \brief A virtual member
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
   virtual void SetUniformInlet(CConfig* config, unsigned short iMarker);
 
-  virtual void SetInletAtVertex(CSolver** solver, vector<su2double> values,
+  /*!
+   * \brief A virtual member
+   *
+   * This function serves as a wrapper for other inlet setters. The values
+   * correspond to a row from the inlet specification file, with the
+   * physical coordinates and all the flow/turbulence variables.  Each solver
+   * can implement its own inlet setup, pulling the right values from the
+   * row of the table. For example, the CEulerSolver will use
+   * SetInletAtVertex to set Ttotal, Ptotal, and FlowDir.
+   *
+   * \param[in] values - Vector of values matching a line from the input file
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  virtual void SetInletAtVertex(vector<su2double> values,
                                 unsigned short iMarker, unsigned long iVertex);
 
+  /*!
+   * \brief A virtual member
+   *
+   * As the inlet values are read in from a file, each solver can check to see
+   * if the inputs are valid.  By overriding this function and calling it
+   * from CDriver, the solver can raise an error if the inlet file doesn't
+   * contain valid data.
+   *
+   * If this function is not overriden, the default implementation is
+   * to return "True", meaning "Valid Input".
+   *
+   * \param[in] inlet_values - Vector of values matching a line from the input file
+   * \return True if the inputs are valid, false otherwise.
+   */
   virtual bool ValidateInletValues(vector<su2double> inlet_values);
 
   /*!
@@ -6088,12 +6121,37 @@ public:
    */
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
 
+  /*!
+   * \brief Check if the values specified in the inlet file are valid.
+   *
+   * \param[in] inlet_values - Vector of values matching a line from the input file
+   * \return True if the inputs are valid, false otherwise.
+   */
   bool ValidateInletValues(vector<su2double> inlet_values);
 
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
   void SetUniformInlet(CConfig* config, unsigned short iMarker);
 
-  void SetInletAtVertex(CSolver** solver, vector<su2double> values,
-                        unsigned short iMarker, unsigned long iVertex);
+  /*!
+   * \brief Read in a row of inlet values and set the inlet values
+   *
+   * This function serves as a wrapper for other inlet setters, setting
+   * Ttotal, Ptotal, and FlowDir.
+   *
+   * \param[in] values - Vector of values matching a line from the input file
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(vector<su2double> values, unsigned short iMarker,
+                        unsigned long iVertex);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -9066,10 +9124,17 @@ public:
    */
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
-  void SetInletAtVertex(CSolver** solver, vector<su2double> values,
+  /*!
+   * \brief Read in a row of inlet values and set the turb variables
+   *
+   * This function serves as a wrapper for other inlet setters.
+   *
+   * \param[in] values - Vector of values matching a line from the input file
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(vector<su2double> values,
                         unsigned short iMarker, unsigned long iVertex);
-
-  void SetUniformInlet(CConfig* config, unsigned short iMarker);
 
 };
 
@@ -9256,11 +9321,17 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
   
-
-  void SetInletAtVertex(CSolver** solver, vector<su2double> values,
-                        unsigned short iMarker, unsigned long iVertex);
-
-  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  /*!
+   * \brief Read in a row of inlet values and set the turb variables
+   *
+   * This function serves as a wrapper for other inlet setters.
+   *
+   * \param[in] values - Vector of values matching a line from the input file
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(vector<su2double> values, unsigned short iMarker,
+                        unsigned long iVertex);
 
 };
 

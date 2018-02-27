@@ -542,7 +542,7 @@ inline bool CSolver::ValidateInletValues(vector<su2double> inlet_values) { retur
 
 inline void CSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {};
 
-inline void CSolver::SetInletAtVertex(CSolver** solver, vector<su2double> values, unsigned short iMarker, unsigned long iVertex) { };
+inline void CSolver::SetInletAtVertex(vector<su2double> values, unsigned short iMarker, unsigned long iVertex) { };
 
 inline void CSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) { }
 
