@@ -33,18 +33,16 @@ public:
 
   /*---Atmosphere variables---*/
   su2double atm_g, atm_R, atm_cp;
-
   su2double T_inf, a_inf, p_inf, rho_inf;
-
-  /*---Scale factors---*/
-  su2double scale_L, scale_T, scale_p, scale_z;
-  su2double *z, *sigma, *a_of_z, *p_of_z, *rho_of_z;
 
   /*---Ray variables---*/
   unsigned short ray_N_phi;	// Number of rays
   su2double ray_r0;			// Initial ray distance
   su2double ray_t0;			// Initial ray time
   su2double *ray_phi;		// Ray angles
+  su2double *ray_x, *ray_y, ray_z, ray_A;
+  su2double ray_lambda, *ray_gamma, *ray_theta;
+  bool ground_flag;     // Whether or not we've propagated to the ground
 
   /*---ABE variables---*/
   su2double p0, 			// Reference pressure
@@ -52,6 +50,8 @@ public:
   			rho0,			// Ambient density (function of altitude)
   			c0,				// Ambient sound speed (function of altitude)
   			dsigma,			// Step size
+        dz,       // Change in altitude
+        dtau,     // Grid spacing
   			xbar,			// Shock formation distance of plane wave
   			beta,			// Coefficient of nonlinearity
   			C_nu_O2,		// Dispersion parameter for O2 (dimensionless)
@@ -66,13 +66,7 @@ public:
   			delta,			// Diffusivity of sound
   			Gamma,			// Thermoviscous parameter (dimensionless)
   			mu,				// Viscosity
-  			kappa,			// Thermal conduction coefficient
-  			mu0,			// Reference viscosity
-  			kappa0,			// Reference thermal conduction coefficient
-  			T0,				// Reference temperature
-  			Ts,				// Reference temperature
-  			Ta,				// Reference temperature
-  			Tb;				// Reference temperature
+  			kappa;			// Thermal conduction coefficient
 
   /*---Sensitivity---*/
   unsigned short nDim;
@@ -93,8 +87,18 @@ public:
   /*---Signal class for storing pressure signal---*/
   class Signal{
     public:
-      unsigned long *len;
-      su2double **x, *t, *t_prime, *tau, **p_prime, *P;
+      unsigned long *len;   // signal length
+      su2double **x,        // x-coordinates for every azimuth
+                *t,         // time for signal points at a single azimuth
+                *t_prime,   // retarded time
+                *tau,       // retarded time (dimensionless)
+                *taud,      // distorted time
+                **p_prime,  // pressure signal for every azimuth
+                *P,         // pressure signal (dimensionless)
+                *dP_att,    // change in pressure (Attenuation)
+                *dP_rel,    // change in pressure (Relaxation)
+                *dP_spr,    // change in pressure (Spreading)
+                *dP_str;    // change in pressure (Stratification)
   };
 
   Signal signal;
@@ -111,14 +115,11 @@ public:
   bool InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1);
   int Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1);
   int Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *p1);
-  void ConditionAtmosphericData();
-  void ScaleFactors();
-  void InitialWaveNormals();
-  void RayTracer(unsigned short iPhi);
-  void RayTubeArea(unsigned short iPhi);
 
   void PropagateSignal(unsigned short iPhi);
   void Preprocessing(unsigned short iPhi, unsigned long iIter);
+  void CreateUniformGridSignal(unsigned short iPhi);
+  void CreateInitialRayTube(unsigned short iPhi);
   void Nonlinearity(unsigned short iPhi);
   void Attenuation(unsigned short iPhi);
   void Relaxation(unsigned short iPhi);
@@ -126,15 +127,7 @@ public:
   void Stratification(unsigned short iPhi);
   void Iterate(unsigned short iPhi);
 
-  void Sph2Cart(su2double& nx, su2double& ny, su2double& nz, su2double az, su2double elev,
-                  su2double r);
-  su2double *rk4(su2double x0, int m, su2double y0[], su2double dx, RayData data,
-              su2double *f(su2double x, int m, su2double y[], RayData data));
-  su2double *SplineGetDerivs(su2double x[], su2double y[], int N);
-  su2double matchr(int j, su2double h_L, su2double r0);
-
 };
 
 void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                 su2double& rho, su2double& g);
-su2double *derivs(su2double x, int m, su2double y[], CBoom_AugBurgers::RayData data);
