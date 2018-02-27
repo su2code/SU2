@@ -903,7 +903,7 @@ void CDriver::SetupInlets(CSolver ***solver_container, CGeometry **geometry, CCo
                     config->GetKind_Solver() == ADJ_RANS ||
                     config->GetKind_Solver() == DISC_ADJ_RANS);
 
-  if (config->Inlet_Profile_From_File()) {
+  if (config->GetInlet_Profile_From_File()) {
 
     /*--- Multigrid not currently supported. Only use mesh 0 ---*/
     if (config->GetnMGLevels() > 0) {
@@ -976,14 +976,15 @@ void CDriver::SetupInlets(CSolver ***solver_container, CGeometry **geometry, CCo
     profile_file.close();
 
     /*--- Exiting upon error is tricky for two reasons:
-     * 1. Not all MPI tasks will have nodes on the inlets.
+     * 1. Not all MPI tasks will have nodes on the inlets (even rank 0).
      * 2. We want to print out an example inlet file if something goes wrong.
      * So we need to check for errors among all processors, then print
      * the inlet file if any processor gets an error.  ---*/
+
     bool global_failure, local_failure = false;
     ostringstream error_msg;
 
-    const su2double tolerance = 1e-6;
+    const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
         for (unsigned long iVertex = 0;
@@ -1013,9 +1014,9 @@ void CDriver::SetupInlets(CSolver ***solver_container, CGeometry **geometry, CCo
           /*--- If the diff is less than the tolerance, match the two ---*/
           if (min_dist < tolerance) {
 
-            solver_container[iMesh][FLOW_SOL]->SetInletAtVertex(solver_container[iMesh], *closest_point, iMarker, iVertex);
+            solver_container[iMesh][FLOW_SOL]->SetInletAtVertex(*closest_point, iMarker, iVertex);
             if (turbulent) {
-              solver_container[iMesh][TURB_SOL]->SetInletAtVertex(solver_container[iMesh], *closest_point, iMarker, iVertex);
+              solver_container[iMesh][TURB_SOL]->SetInletAtVertex(*closest_point, iMarker, iVertex);
             }
 
           } else {
@@ -1027,7 +1028,7 @@ void CDriver::SetupInlets(CSolver ***solver_container, CGeometry **geometry, CCo
             error_msg << " at location: [" << coords[0] << ", " << coords[1];
             if (nDim ==3) error_msg << ", " << coords[2];
             error_msg << "]" << endl;
-            error_msg << "  Distance to closest point: " << min_dist << endl;
+            error_msg << "Distance to closest point: " << min_dist << endl;
             local_failure = true;
             break;
           }
@@ -1054,12 +1055,11 @@ void CDriver::SetupInlets(CSolver ***solver_container, CGeometry **geometry, CCo
      * set custom boundary conditions.  This is intentional; the
      * default values for python custom BCs are initialized with the default
      * values specified in the config (avoiding non physical values) --- */
+
     for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
         solver_container[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
-        if (turbulent) {
-          solver_container[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
-        }
+        /*--- The turbulence solver doesn't need setup for uniform inlets ---*/
       }
     }
   }

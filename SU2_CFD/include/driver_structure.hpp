@@ -586,6 +586,12 @@ public:
    */
   su2double GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
 
+	/*!
+	 * \brief Setup the inlets for all solvers
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetupInlets(CSolver ***solver_container, CGeometry **geometry,
                    CConfig* config);
 

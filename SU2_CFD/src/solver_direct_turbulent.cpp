@@ -1396,11 +1396,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     bool isPythonCustomizable = config->GetMarker_All_PyCustom(iMarker);
     bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-    bool hasInletFile = (config->Inlet_Profile_From_File());
+    bool hasInletFile = (config->GetInlet_Profile_From_File());
     if (isInlet && (isPythonCustomizable || hasInletFile)) {
       Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
       for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
         Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
       }
     } else {
       Inlet_TurbVars[iMarker] = NULL;
@@ -1763,7 +1764,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
   bool isCustomInlet = (config->GetMarker_All_PyCustom(val_marker) ||
-                        config->Inlet_Profile_From_File());
+                        config->GetInlet_Profile_From_File());
   
   Normal = new su2double[nDim];
   
@@ -3195,19 +3196,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInletAtVertex(CSolver** solver, vector<su2double> values,
+void CTurbSASolver::SetInletAtVertex(vector<su2double> values,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
 
   Inlet_TurbVars[iMarker][iVertex][0] = values[nDim+2+nDim];
-
-}
-
-void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
-  }
 
 }
 
@@ -3410,11 +3403,13 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     bool isPythonCustomizable = config->GetMarker_All_PyCustom(iMarker);
     bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-    bool hasInletFile = (config->Inlet_Profile_From_File());
+    bool hasInletFile = (config->GetInlet_Profile_From_File());
     if (isInlet && (isPythonCustomizable || hasInletFile)) {
       Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
       for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
         Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+        Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
       }
     } else {
       Inlet_TurbVars[iMarker] = NULL;
@@ -3786,7 +3781,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
   bool isCustomInlet = (config->GetMarker_All_PyCustom(val_marker) ||
-                        config->Inlet_Profile_From_File());
+                        config->GetInlet_Profile_From_File());
   
   Normal = new su2double[nDim];
   
@@ -4351,20 +4346,11 @@ su2double* CTurbSSTSolver::GetConstants() {
   return constants;
 }
 
-void CTurbSSTSolver::SetInletAtVertex(CSolver** solver, vector<su2double> values,
+void CTurbSSTSolver::SetInletAtVertex(vector<su2double> values,
                                       unsigned short iMarker,
                                       unsigned long iVertex) {
 
   Inlet_TurbVars[iMarker][iVertex][0] = values[nDim+2+nDim];
   Inlet_TurbVars[iMarker][iVertex][1] = values[nDim+2+nDim+1];
-
-}
-
-void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
-
-  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-    Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
-  }
 
 }

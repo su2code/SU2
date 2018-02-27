@@ -228,6 +228,7 @@ private:
                              from nMarker_All). */
   bool Inlet_From_File; /*!< \brief True if the inlet profile is to be loaded from a file. */
   string Inlet_Filename; /*!< \brief Filename specifying an inlet profile. */
+  su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string *Marker_Euler,			/*!< \brief Euler wall markers. */
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
@@ -4029,14 +4030,19 @@ public:
    * \brief Check if the inlet profile(s) are specified in an input file
    * \return True if an input file is to be used for the inlet profile(s)
    */
-  bool Inlet_Profile_From_File(void);
+  bool GetInlet_Profile_From_File(void);
 
   /*!
    * \brief Get name of the input file for the specified inlet profile.
    * \return Name of the input file for the specified inlet profile.
    */
   string GetInlet_FileName(void);
-  
+
+  /*!
+   * \brief Get the tolerance used for matching two points on a specified inlet
+   * \return Tolerance used for matching a point to a specified inlet
+   */
+  su2double GetInlet_Profile_Matching_Tolerance(void);
   
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
