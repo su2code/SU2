@@ -178,8 +178,8 @@ COutput::COutput(CConfig *config) {
     NuFactorOut                   = new su2double*[nMarkerTurboPerf];
     DropletNumberIn               = new su2double*[nMarkerTurboPerf];
     DropletNumberOut              = new su2double*[nMarkerTurboPerf];
-    LiquidMassIn                  = new su2double*[nMarkerTurboPerf];
-    LiquidMassOut                 = new su2double*[nMarkerTurboPerf];
+    LiqVolumeIn                   = new su2double*[nMarkerTurboPerf];
+    LiqVolumeOut                  = new su2double*[nMarkerTurboPerf];
     LiquidFractionIn              = new su2double*[nMarkerTurboPerf];
     LiquidFractionOut             = new su2double*[nMarkerTurboPerf];
 
@@ -235,8 +235,8 @@ COutput::COutput(CConfig *config) {
       NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
       DropletNumberIn         [iMarker] = new su2double [nSpanWiseSections + 1];
       DropletNumberOut        [iMarker] = new su2double [nSpanWiseSections + 1];
-      LiquidMassIn            [iMarker] = new su2double [nSpanWiseSections + 1];
-      LiquidMassOut           [iMarker] = new su2double [nSpanWiseSections + 1];
+      LiqVolumeIn             [iMarker] = new su2double [nSpanWiseSections + 1];
+      LiqVolumeOut            [iMarker] = new su2double [nSpanWiseSections + 1];
       LiquidFractionIn        [iMarker] = new su2double [nSpanWiseSections + 1];
       LiquidFractionOut       [iMarker] = new su2double [nSpanWiseSections + 1];
 
@@ -294,8 +294,8 @@ COutput::COutput(CConfig *config) {
         NuFactorOut             [iMarker][iSpan] = 0.0;
         DropletNumberIn         [iMarker][iSpan] = 0.0;
         DropletNumberOut        [iMarker][iSpan] = 0.0;
-        LiquidMassIn            [iMarker][iSpan] = 0.0;
-        LiquidMassOut           [iMarker][iSpan] = 0.0;
+        LiqVolumeIn             [iMarker][iSpan] = 0.0;
+        LiqVolumeOut            [iMarker][iSpan] = 0.0;
         LiquidFractionIn        [iMarker][iSpan] = 0.0;
         LiquidFractionOut       [iMarker][iSpan] = 0.0;
         MachIn                  [iMarker][iSpan] = new su2double[4];
@@ -381,8 +381,8 @@ COutput::~COutput(void) {
       delete [] NuFactorOut          [iMarker];
       delete [] DropletNumberIn      [iMarker];
       delete [] DropletNumberOut     [iMarker];
-      delete [] LiquidMassIn         [iMarker];
-      delete [] LiquidMassOut        [iMarker];
+      delete [] LiqVolumeIn          [iMarker];
+      delete [] LiqVolumeOut         [iMarker];
       delete [] LiquidFractionIn     [iMarker];
       delete [] LiquidFractionOut    [iMarker];
 
@@ -436,8 +436,8 @@ COutput::~COutput(void) {
     delete [] NuFactorOut;
     delete [] DropletNumberIn;
     delete [] DropletNumberOut;
-    delete [] LiquidMassIn;
-    delete [] LiquidMassOut;
+    delete [] LiqVolumeIn;
+    delete [] LiqVolumeOut;
     delete [] LiquidFractionIn;
     delete [] LiquidFractionOut;
   }

@@ -160,7 +160,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       /*--- Compute Two-phase inflow quantities ---*/
       if (two_phase) {
           DropletNumberIn[iMarkerTP][iSpan] = solver_container->GetMom0In(iMarkerTP, iSpan);
-          LiquidMassIn[iMarkerTP][iSpan] = solver_container->GetMom3In(iMarkerTP, iSpan);
+          LiqVolumeIn[iMarkerTP][iSpan] = solver_container->GetLiqVolFractionIn(iMarkerTP, iSpan);
           LiquidFractionIn[iMarkerTP][iSpan] = 0.0;
       }
 
@@ -254,19 +254,22 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
       if (two_phase) {
           DropletNumberOut[iMarkerTP][iSpan] = solver_container->GetMom0Out(iMarkerTP, iSpan);
-          LiquidMassOut[iMarkerTP][iSpan] = solver_container->GetMom3Out(iMarkerTP, iSpan);
+          LiqVolumeOut[iMarkerTP][iSpan] = solver_container->GetLiqVolFractionOut(iMarkerTP, iSpan);
           LiquidFractionOut[iMarkerTP][iSpan] = 0.0;
       }
 
       /*--- TURBO-PERFORMANCE---*/
-//      if (two_phase) {
+      if (two_phase) {
 //          EntropyGen[iMarkerTP][iSpan] = (MassFlowOut[iMarkerTP][iSpan]*EntropyOut[iMarkerTP][iSpan] - MassFlowIn[iMarkerTP][iSpan]*EntropyIn[iMarkerTP][iSpan])
 //       		  /abs(MassFlowIn[iMarkerTP][iSpan]*EntropyIn_BC[iMarkerTP][iSpan] + 1);
       //    FORMULA HAS TO BE IMPROVED TO INCLUDE 1) NON CONDENSING CASES AND 2) EQUILIBRIUM EXPANSIONS
-//      }
-//      else {
+      // preliminary attempt, imposed liquid volume fraction at component outlet //
+
+    	  EntropyGen[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan];
+
+      } else {
           EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
-//      }
+      }
 
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);

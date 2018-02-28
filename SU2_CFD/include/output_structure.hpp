@@ -180,10 +180,10 @@ class COutput {
         **Turb2LamViscRatioOut,
         **NuFactorIn,
         **NuFactorOut,
-        **LiquidMassIn,
+        **LiqVolumeIn,
         **LiquidFractionIn,
   	  	**DropletNumberIn,
-        **LiquidMassOut,
+        **LiqVolumeOut,
   	    **DropletNumberOut,
   	    **LiquidFractionOut;
 

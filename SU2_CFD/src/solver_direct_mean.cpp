@@ -145,9 +145,9 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   OmegaOut                      = NULL;
   NuOut                         = NULL;
   Mom0In                        = NULL;
-  Mom3In                        = NULL;
+  LiqVolFractionIn              = NULL;
   Mom0Out                       = NULL;
-  Mom3Out                       = NULL;
+  LiqVolFractionOut             = NULL;
 
 
   /*--- Initialize quantities for Giles BC---*/
@@ -307,7 +307,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;
   AverageMom0                       = NULL;
-  AverageMom3                       = NULL;
+  AverageLiqVolFraction             = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -325,9 +325,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   OmegaOut                      = NULL;
   NuOut                         = NULL;
   Mom0In                        = NULL;
-  Mom3In                        = NULL;
+  LiqVolFractionIn              = NULL;
   Mom0Out                       = NULL;
-  Mom3Out                       = NULL;
+  LiqVolFractionOut             = NULL;
 
 
   /*--- Initialize quantities for Giles BC---*/
@@ -1253,7 +1253,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   AverageKine                           = new su2double* [nMarker];
   AverageOmega                          = new su2double* [nMarker];
   AverageMom0                           = new su2double* [nMarker];
-  AverageMom3                           = new su2double* [nMarker];
+  AverageLiqVolFraction                 = new su2double* [nMarker];
   ExtAverageNu                          = new su2double* [nMarker];
   ExtAverageKine                        = new su2double* [nMarker];
   ExtAverageOmega                       = new su2double* [nMarker];
@@ -1276,7 +1276,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     AverageKine[iMarker]                    = new su2double [nSpanWiseSections + 1];
     AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
     AverageMom0[iMarker]                    = new su2double [nSpanWiseSections + 1];
-    AverageMom3[iMarker]                    = new su2double [nSpanWiseSections + 1];
+    AverageLiqVolFraction[iMarker]          = new su2double [nSpanWiseSections + 1];
     ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
     ExtAverageKine[iMarker]                 = new su2double [nSpanWiseSections + 1];
     ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
@@ -1299,7 +1299,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       AverageKine[iMarker][iSpan]               = 0.0;
       AverageOmega[iMarker][iSpan]              = 0.0;
       AverageMom0[iMarker][iSpan]               = 0.0;
-      AverageMom3[iMarker][iSpan]               = 0.0;
+      AverageLiqVolFraction[iMarker][iSpan]     = 0.0;
       ExtAverageNu[iMarker][iSpan]              = 0.0;
       ExtAverageKine[iMarker][iSpan]            = 0.0;
       ExtAverageOmega[iMarker][iSpan]           = 0.0;
@@ -1337,8 +1337,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   NuOut                         = new su2double*[nMarkerTurboPerf];
   Mom0In                        = new su2double*[nMarkerTurboPerf];
   Mom0Out                       = new su2double*[nMarkerTurboPerf];
-  Mom3In                        = new su2double*[nMarkerTurboPerf];
-  Mom3Out                       = new su2double*[nMarkerTurboPerf];
+  LiqVolFractionIn              = new su2double*[nMarkerTurboPerf];
+  LiqVolFractionOut             = new su2double*[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
     DensityIn[iMarker]          = new su2double [nSpanMax + 1];
@@ -1355,8 +1355,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     NuOut[iMarker]              = new su2double [nSpanMax + 1];
     Mom0In[iMarker]             = new su2double [nSpanMax + 1];
     Mom0Out[iMarker]            = new su2double [nSpanMax + 1];
-    Mom3In[iMarker]             = new su2double [nSpanMax + 1];
-    Mom3Out[iMarker]            = new su2double [nSpanMax + 1];
+    LiqVolFractionIn[iMarker]   = new su2double [nSpanMax + 1];
+    LiqVolFractionOut[iMarker]  = new su2double [nSpanMax + 1];
 
 
     for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
@@ -1374,8 +1374,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       NuOut[iMarker][iSpan]              = 0.0;
       Mom0In[iMarker][iSpan]             = 0.0;
       Mom0Out[iMarker][iSpan]            = 0.0;
-      Mom3In[iMarker][iSpan]             = 0.0;
-      Mom3Out[iMarker][iSpan]            = 0.0;
+      LiqVolFractionIn[iMarker][iSpan]   = 0.0;
+      LiqVolFractionOut[iMarker][iSpan]  = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++){
         TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
@@ -15625,9 +15625,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   unsigned short  iZone     = config->GetiZone();
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *TotalFluxes;
   su2double TotalNu, TotalOmega, TotalKine, TotalMassNu, TotalMassOmega, TotalMassKine, TotalAreaNu, TotalAreaOmega, TotalAreaKine;
-  su2double TotalMom0, TotalMom3, TotalAreaMom0, TotalAreaMom3, TotalMassMom0, TotalMassMom3;
+  su2double TotalMom0, TotalLiqVolFraction, TotalAreaMom0, TotalAreaLiqVolFraction, TotalMassMom0, TotalMassLiqVolFraction;
   su2double Nu, Kine, Omega;
-  su2double y, rho_v, rho_m, Mom0, Mom3;
+  su2double y, rho_v, rho_m, Mom0, LiqVolFraction;
   su2double MachTest, soundSpeed;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
@@ -15651,7 +15651,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double avgDensity, *avgVelocity, avgPressure, avgKine, avgOmega, avgNu, avgAreaDensity, *avgAreaVelocity, avgAreaPressure,
   avgAreaKine, avgAreaOmega, avgAreaNu, avgMassDensity, *avgMassVelocity, avgMassPressure, avgMassKine, avgMassOmega, avgMassNu,
   avgMixDensity, *avgMixVelocity, *avgMixTurboVelocity, avgMixPressure, avgMixKine, avgMixOmega, avgMixNu,
-  avgMom0, avgMom3, avgAreaMom0, avgAreaMom3, avgMassMom0, avgMassMom3, avgMixMom0, avgMixMom3;
+  avgMom0, avgLiqVolFraction, avgAreaMom0, avgAreaLiqVolFraction, avgMassMom0, avgMassLiqVolFraction, avgMixMom0, avgMixLiqVolFraction;
 
   avgVelocity         = new su2double[nDim];
   avgAreaVelocity     = new su2double[nDim];
@@ -15664,7 +15664,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
   su2double MyTotalNu, MyTotalKine, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKine, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKine, MyTotalMassOmega;
-  su2double MyTotalMom0, MyTotalMom3, MyTotalAreaMom0, MyTotalAreaMom3, MyTotalMassMom0, MyTotalMassMom3;
+  su2double MyTotalMom0, MyTotalLiqVolFraction, MyTotalAreaMom0, MyTotalAreaLiqVolFraction, MyTotalMassMom0, MyTotalMassLiqVolFraction;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -15681,33 +15681,33 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       TotalMassVelocity[iDim] = 0.0;
     }
 
-    TotalDensity      = 0.0;
-    TotalPressure     = 0.0;
-    TotalAreaPressure = 0.0;
-    TotalAreaDensity  = 0.0;
-    TotalMassPressure = 0.0;
-    TotalMassDensity  = 0.0;
-    TotalNu           = 0.0;
-    TotalOmega        = 0.0;
-    TotalKine         = 0.0;
-    TotalMassNu       = 0.0;
-    TotalMassOmega    = 0.0;
-    TotalMassKine     = 0.0;
-    TotalAreaNu       = 0.0;
-    TotalAreaOmega    = 0.0;
-    TotalAreaKine     = 0.0;
-    TotalMom0         = 0.0;
-    TotalMom3         = 0.0;
-    TotalAreaMom0     = 0.0;
-    TotalAreaMom3     = 0.0;
-    TotalMassMom0     = 0.0;
-    TotalMassMom3     = 0.0;
+    TotalDensity            = 0.0;
+    TotalPressure           = 0.0;
+    TotalAreaPressure       = 0.0;
+    TotalAreaDensity        = 0.0;
+    TotalMassPressure       = 0.0;
+    TotalMassDensity        = 0.0;
+    TotalNu                 = 0.0;
+    TotalOmega              = 0.0;
+    TotalKine               = 0.0;
+    TotalMassNu             = 0.0;
+    TotalMassOmega          = 0.0;
+    TotalMassKine           = 0.0;
+    TotalAreaNu             = 0.0;
+    TotalAreaOmega          = 0.0;
+    TotalAreaKine           = 0.0;
+    TotalMom0               = 0.0;
+    TotalLiqVolFraction     = 0.0;
+    TotalAreaMom0           = 0.0;
+    TotalAreaLiqVolFraction = 0.0;
+    TotalMassMom0           = 0.0;
+    TotalMassLiqVolFraction = 0.0;
 
-    Nu    = 0.0;
-    Omega = 0.0;
-    Kine  = 0.0;
-    Mom0  = 0.0;
-    Mom3  = 0.0;
+    Nu              = 0.0;
+    Omega           = 0.0;
+    Kine            = 0.0;
+    Mom0            = 0.0;
+    LiqVolFraction  = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -15811,22 +15811,22 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   //	s_gen = liquid_mass_rate*volume*deltaH_ev*(dt_subcooling/(vapor_temp*liquid_temp));
 
                   Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
-                  Mom3 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
+                  LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
+                  LiqVolFraction *=  solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
 
                   y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
                   rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
 
                   Mom0 = Mom0/rho_m;
-                  Mom3 = Mom3/rho_m;
 
                   TotalMom0 += Mom0;
-                  TotalMom3 += Mom3;
+                  TotalLiqVolFraction += LiqVolFraction;
 
                   TotalAreaMom0  += Area*Mom0;
-                  TotalAreaMom3  += Area*Mom3;
+                  TotalAreaLiqVolFraction  += Area*LiqVolFraction;
 
                   TotalMassMom0  += Area*(Density*TurboVelocity[0] )*Mom0;
-                  TotalMassMom3  += Area*(Density*TurboVelocity[0] )*Mom3;
+                  TotalMassLiqVolFraction  += Area*(Density*TurboVelocity[0] )*LiqVolFraction;
 
                 }
               }
@@ -15918,22 +15918,22 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   if (two_phase) {
 
                     Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
-                    Mom3 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3);
+                    LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
+                    LiqVolFraction *= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
 
                     y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
                     rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
 
                     Mom0 = Mom0/rho_m;
-                    Mom3 = Mom3/rho_m;
 
                     TotalMom0 += Mom0;
-                    TotalMom3 += Mom3;
+                    TotalLiqVolFraction += LiqVolFraction;
 
                     TotalAreaMom0  += Area*Mom0;
-                    TotalAreaMom3  += Area*Mom3;
+                    TotalAreaLiqVolFraction  += Area*LiqVolFraction;
 
                     TotalMassMom0  += Area*(Density*TurboVelocity[0] )*Mom0;
-                    TotalMassMom3  += Area*(Density*TurboVelocity[0] )*Mom3;
+                    TotalMassLiqVolFraction  += Area*(Density*TurboVelocity[0] )*LiqVolFraction;
 
                   }
                 }
@@ -15966,12 +15966,12 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     MyTotalMassKine      = TotalMassKine;             TotalMassKine        = 0;
     MyTotalMassOmega     = TotalMassOmega;            TotalMassOmega       = 0;
 
-    MyTotalMom0          = TotalMom0;                 TotalMom0            = 0;
-    MyTotalMom3          = TotalMom3;                 TotalMom3            = 0;
-    MyTotalAreaMom0      = TotalAreaMom0;             TotalAreaMom0        = 0;
-    MyTotalAreaMom3      = TotalAreaMom3;             TotalAreaMom3        = 0;
-    MyTotalMassMom0      = TotalMassMom0;             TotalMassMom0        = 0;
-    MyTotalMassMom3      = TotalMassMom3;             TotalMassMom3        = 0;
+    MyTotalMom0                    = TotalMom0;                           TotalMom0                      = 0;
+    MyTotalLiqVolFraction          = TotalLiqVolFraction;                 TotalLiqVolFraction            = 0;
+    MyTotalAreaMom0                = TotalAreaMom0;                       TotalAreaMom0                  = 0;
+    MyTotalAreaLiqVolFraction      = TotalAreaLiqVolFraction;             TotalAreaLiqVolFraction        = 0;
+    MyTotalMassMom0                = TotalMassMom0;                       TotalMassMom0                  = 0;
+    MyTotalMassLiqVolFraction      = TotalMassLiqVolFraction;             TotalMassLiqVolFraction        = 0;
 
 
 
@@ -15992,11 +15992,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     SU2_MPI::Allreduce(&MyTotalMom0, &TotalMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMom3, &TotalMom3, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalLiqVolFraction, &TotalLiqVolFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalAreaMom0, &TotalAreaMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalAreaMom3, &TotalAreaMom3, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaLiqVolFraction, &TotalAreaLiqVolFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassMom0, &TotalMassMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalMassMom3, &TotalMassMom3, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassLiqVolFraction, &TotalMassLiqVolFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
     MyTotalFluxes          = new su2double[nVar];
@@ -16055,37 +16055,37 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             avgOmega          = TotalOmega/nVert;
             avgNu             = TotalNu/nVert;
             avgMom0           = TotalMom0/nVert;
-            avgMom3           = TotalMom3/nVert;
+            avgLiqVolFraction = TotalLiqVolFraction/nVert;
 
             /*--- compute area average ---*/
-            avgAreaDensity     = TotalAreaDensity / TotalArea;
-            avgAreaPressure    = TotalAreaPressure / TotalArea;
+            avgAreaDensity       = TotalAreaDensity / TotalArea;
+            avgAreaPressure      = TotalAreaPressure / TotalArea;
             for (iDim = 0; iDim < nDim; iDim++) avgAreaVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-            avgAreaKine        = TotalAreaKine / TotalArea;
-            avgAreaOmega       = TotalAreaOmega / TotalArea;
-            avgAreaNu          = TotalAreaNu / TotalArea;
-            avgAreaMom0        = TotalAreaMom0 / TotalArea;
-            avgAreaMom3        = TotalAreaMom3 / TotalArea;
+            avgAreaKine          = TotalAreaKine / TotalArea;
+            avgAreaOmega         = TotalAreaOmega / TotalArea;
+            avgAreaNu            = TotalAreaNu / TotalArea;
+            avgAreaMom0          = TotalAreaMom0 / TotalArea;
+            avgAreaLiqVolFraction= TotalAreaLiqVolFraction / TotalArea;
 
             /*--- compute mass-flow average ---*/
             if (abs(MachTest)< config->GetAverageMachLimit()) {
               avgMassDensity   = avgAreaDensity;
               avgMassPressure  = avgAreaPressure;
               for (iDim = 0; iDim < nDim; iDim++) avgMassVelocity[iDim] = avgAreaVelocity[iDim];
-              avgMassKine      = avgAreaKine;
-              avgMassOmega     = avgAreaOmega;
-              avgMassNu        = avgAreaNu;
-              avgMassMom0      = avgAreaMom0;
-              avgMassMom3      = avgAreaMom3;
+              avgMassKine           = avgAreaKine;
+              avgMassOmega          = avgAreaOmega;
+              avgMassNu             = avgAreaNu;
+              avgMassMom0           = avgAreaMom0;
+              avgMassLiqVolFraction = avgAreaLiqVolFraction;
             }else{
               avgMassDensity     = TotalMassDensity / TotalFluxes[0];
               avgMassPressure    = TotalMassPressure / TotalFluxes[0];
               for (iDim = 0; iDim < nDim; iDim++) avgMassVelocity[iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-              avgMassKine        = TotalMassKine / TotalFluxes[0];
-              avgMassOmega       = TotalMassOmega / TotalFluxes[0];
-              avgMassNu          = TotalMassNu / TotalFluxes[0];
-              avgMassMom0        = TotalMassMom0 / TotalFluxes[0];
-              avgMassMom3        = TotalMassMom3 / TotalFluxes[0];
+              avgMassKine           = TotalMassKine / TotalFluxes[0];
+              avgMassOmega          = TotalMassOmega / TotalFluxes[0];
+              avgMassNu             = TotalMassNu / TotalFluxes[0];
+              avgMassMom0           = TotalMassMom0 / TotalFluxes[0];
+              avgMassLiqVolFraction = TotalMassLiqVolFraction / TotalFluxes[0];
             }
             /*--- compute mixed-out average ---*/
             for (iVar = 0; iVar<nVar; iVar++){
@@ -16100,11 +16100,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               for (iDim = 0; iDim < nDim; iDim++)
                 avgMixVelocity[iDim] = avgAreaVelocity[iDim];
               ComputeTurboVelocity(avgMixVelocity, AverageTurboNormal , avgMixTurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
-              avgMixKine       = avgAreaKine;
-              avgMixOmega      = avgAreaOmega;
-              avgMixNu         = avgAreaNu;
-              avgMixMom0       = avgAreaMom0;
-              avgMixMom3       = avgAreaMom3;
+              avgMixKine           = avgAreaKine;
+              avgMixOmega          = avgAreaOmega;
+              avgMixNu             = avgAreaNu;
+              avgMixMom0           = avgAreaMom0;
+              avgMixLiqVolFraction = avgAreaLiqVolFraction;
             }else {
               MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
               avgMixTurboVelocity[0]         = ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
@@ -16118,11 +16118,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 for (iDim = 2; iDim < nDim +1;iDim++)
                   avgMixTurboVelocity[iDim-1]   = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
               }
-              avgMixKine       = avgMassKine;
-              avgMixOmega      = avgMassOmega;
-              avgMixNu         = avgMassNu;
-              avgMixMom0       = avgMassMom0;
-              avgMixMom3       = avgMassMom3;
+              avgMixKine           = avgMassKine;
+              avgMixOmega          = avgMassOmega;
+              avgMixNu             = avgMassNu;
+              avgMixMom0           = avgMassMom0;
+              avgMixLiqVolFraction = avgMassLiqVolFraction;
             }
 
             /*--- Store averaged value for the selected average method ---*/
@@ -16131,44 +16131,44 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageDensity[iMarker][iSpan]  = avgDensity;
               AveragePressure[iMarker][iSpan] = avgPressure;
               ComputeTurboVelocity(avgVelocity, AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-              AverageKine[iMarker][iSpan]     = avgKine;
-              AverageOmega[iMarker][iSpan]    = avgOmega;
-              AverageNu[iMarker][iSpan]       = avgNu;
-              AverageMom0[iMarker][iSpan]     = avgMom0;
-              AverageMom3[iMarker][iSpan]     = avgMom3;
+              AverageKine[iMarker][iSpan]           = avgKine;
+              AverageOmega[iMarker][iSpan]          = avgOmega;
+              AverageNu[iMarker][iSpan]             = avgNu;
+              AverageMom0[iMarker][iSpan]           = avgMom0;
+              AverageLiqVolFraction[iMarker][iSpan] = avgLiqVolFraction;
               break;
 
             case AREA:
               AverageDensity[iMarker][iSpan]  = avgAreaDensity;
               AveragePressure[iMarker][iSpan] = avgAreaPressure;
               ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-              AverageKine[iMarker][iSpan]     = avgAreaKine;
-              AverageOmega[iMarker][iSpan]    = avgAreaOmega;
-              AverageNu[iMarker][iSpan]       = avgAreaNu;
-              AverageMom0[iMarker][iSpan]     = avgAreaMom0;
-              AverageMom3[iMarker][iSpan]     = avgAreaMom3;
+              AverageKine[iMarker][iSpan]           = avgAreaKine;
+              AverageOmega[iMarker][iSpan]          = avgAreaOmega;
+              AverageNu[iMarker][iSpan]             = avgAreaNu;
+              AverageMom0[iMarker][iSpan]           = avgAreaMom0;
+              AverageLiqVolFraction[iMarker][iSpan] = avgAreaLiqVolFraction;
               break;
 
             case MASSFLUX:
               AverageDensity[iMarker][iSpan]  = avgMassDensity;
               AveragePressure[iMarker][iSpan] = avgMassPressure;
               ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-              AverageKine[iMarker][iSpan]     = avgMassKine;
-              AverageOmega[iMarker][iSpan]    = avgMassOmega;
-              AverageNu[iMarker][iSpan]       = avgMassNu;
-              AverageMom0[iMarker][iSpan]     = avgMassMom0;
-              AverageMom3[iMarker][iSpan]     = avgMassMom3;
+              AverageKine[iMarker][iSpan]           = avgMassKine;
+              AverageOmega[iMarker][iSpan]          = avgMassOmega;
+              AverageNu[iMarker][iSpan]             = avgMassNu;
+              AverageMom0[iMarker][iSpan]           = avgMassMom0;
+              AverageLiqVolFraction[iMarker][iSpan] = avgMassLiqVolFraction;
               break;
 
             case MIXEDOUT:
               AverageDensity[iMarker][iSpan] = avgMixDensity;
               AveragePressure[iMarker][iSpan] = avgMixPressure;
               for (iDim = 0; iDim < nDim; iDim++) AverageTurboVelocity[iMarker][iSpan][iDim] = avgMixTurboVelocity[iDim];
-              AverageKine[iMarker][iSpan]     = avgMixKine;
-              AverageOmega[iMarker][iSpan]    = avgMixOmega;
-              AverageNu[iMarker][iSpan]       = avgMixNu;
-              AverageMom0[iMarker][iSpan]  = avgMixMom0;
-              AverageMom3[iMarker][iSpan]  = avgMixMom3;
+              AverageKine[iMarker][iSpan]           = avgMixKine;
+              AverageOmega[iMarker][iSpan]          = avgMixOmega;
+              AverageNu[iMarker][iSpan]             = avgMixNu;
+              AverageMom0[iMarker][iSpan]           = avgMixMom0;
+              AverageLiqVolFraction[iMarker][iSpan] = avgMixLiqVolFraction;
               break;
 
             default:
@@ -16217,21 +16217,21 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 DensityIn[iMarkerTP - 1][iSpan]   = avgDensity;
                 PressureIn[iMarkerTP - 1][iSpan]  = avgPressure;
                 ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-                KineIn[iMarkerTP - 1][iSpan]      = avgKine;
-                OmegaIn[iMarkerTP - 1][iSpan]     = avgOmega;
-                NuIn[iMarkerTP - 1][iSpan]        = avgNu;
-                Mom0In[iMarkerTP - 1][iSpan]      = avgMom0;
-                Mom3In[iMarkerTP - 1][iSpan]      = avgMom3;
+                KineIn[iMarkerTP - 1][iSpan]           = avgKine;
+                OmegaIn[iMarkerTP - 1][iSpan]          = avgOmega;
+                NuIn[iMarkerTP - 1][iSpan]             = avgNu;
+                Mom0In[iMarkerTP - 1][iSpan]           = avgMom0;
+                LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgLiqVolFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgDensity;
                 PressureOut[iMarkerTP - 1][iSpan] = avgPressure;
                 ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-                KineOut[iMarkerTP - 1][iSpan]     = avgKine;
-                OmegaOut[iMarkerTP - 1][iSpan]    = avgOmega;
-                NuOut[iMarkerTP - 1][iSpan]       = avgNu;
-                Mom0Out[iMarkerTP - 1][iSpan]     = avgMom0;
-                Mom3Out[iMarkerTP - 1][iSpan]     = avgMom3;
+                KineOut[iMarkerTP - 1][iSpan]           = avgKine;
+                OmegaOut[iMarkerTP - 1][iSpan]          = avgOmega;
+                NuOut[iMarkerTP - 1][iSpan]             = avgNu;
+                Mom0Out[iMarkerTP - 1][iSpan]           = avgMom0;
+                LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgLiqVolFraction;
               }
 
               break;
@@ -16240,21 +16240,21 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 DensityIn[iMarkerTP - 1][iSpan]   = avgAreaDensity;
                 PressureIn[iMarkerTP - 1][iSpan]  = avgAreaPressure;
                 ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-                KineIn[iMarkerTP - 1][iSpan]      = avgAreaKine;
-                OmegaIn[iMarkerTP - 1][iSpan]     = avgAreaOmega;
-                NuIn[iMarkerTP - 1][iSpan]        = avgAreaNu;
-                Mom0In[iMarkerTP - 1][iSpan]      = avgAreaMom0;
-                Mom3In[iMarkerTP - 1][iSpan]      = avgAreaMom3;
+                KineIn[iMarkerTP - 1][iSpan]           = avgAreaKine;
+                OmegaIn[iMarkerTP - 1][iSpan]          = avgAreaOmega;
+                NuIn[iMarkerTP - 1][iSpan]             = avgAreaNu;
+                Mom0In[iMarkerTP - 1][iSpan]           = avgAreaMom0;
+                LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgAreaLiqVolFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgAreaDensity;
                 PressureOut[iMarkerTP - 1][iSpan] = avgAreaPressure;
                 ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-                KineOut[iMarkerTP - 1][iSpan]     = avgAreaKine;
-                OmegaOut[iMarkerTP - 1][iSpan]    = avgAreaOmega;
-                NuOut[iMarkerTP - 1][iSpan]       = avgAreaNu/TotalArea;
-                Mom0Out[iMarkerTP - 1][iSpan]     = avgAreaMom0;
-                Mom3Out[iMarkerTP - 1][iSpan]     = avgAreaMom3;
+                KineOut[iMarkerTP - 1][iSpan]           = avgAreaKine;
+                OmegaOut[iMarkerTP - 1][iSpan]          = avgAreaOmega;
+                NuOut[iMarkerTP - 1][iSpan]             = avgAreaNu/TotalArea;
+                Mom0Out[iMarkerTP - 1][iSpan]           = avgAreaMom0;
+                LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgAreaLiqVolFraction;
               }
               break;
 
@@ -16263,21 +16263,21 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 DensityIn[iMarkerTP - 1][iSpan]   = avgMassDensity;
                 PressureIn[iMarkerTP - 1][iSpan]  = avgMassPressure;
                 ComputeTurboVelocity(avgMassVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-                KineIn[iMarkerTP - 1][iSpan]      = avgMassKine;
-                OmegaIn[iMarkerTP - 1][iSpan]     = avgMassOmega;
-                NuIn[iMarkerTP - 1][iSpan]        = avgMassNu;
-                Mom0In[iMarkerTP - 1][iSpan]      = avgMassMom0;
-                Mom3In[iMarkerTP - 1][iSpan]      = avgMassMom3;
+                KineIn[iMarkerTP - 1][iSpan]           = avgMassKine;
+                OmegaIn[iMarkerTP - 1][iSpan]          = avgMassOmega;
+                NuIn[iMarkerTP - 1][iSpan]             = avgMassNu;
+                Mom0In[iMarkerTP - 1][iSpan]           = avgMassMom0;
+                LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgMassLiqVolFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgMassDensity;
                 PressureOut[iMarkerTP - 1][iSpan] = avgMassPressure;
                 ComputeTurboVelocity(avgMassVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-                KineOut[iMarkerTP - 1][iSpan]     = avgMassKine;
-                OmegaOut[iMarkerTP - 1][iSpan]    = avgMassOmega;
-                NuOut[iMarkerTP - 1][iSpan]       = avgMassNu;
-                Mom0Out[iMarkerTP - 1][iSpan]  = avgMassMom0;
-                Mom3Out[iMarkerTP - 1][iSpan]  = avgMassMom3;
+                KineOut[iMarkerTP - 1][iSpan]           = avgMassKine;
+                OmegaOut[iMarkerTP - 1][iSpan]          = avgMassOmega;
+                NuOut[iMarkerTP - 1][iSpan]             = avgMassNu;
+                Mom0Out[iMarkerTP - 1][iSpan]           = avgMassMom0;
+                LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgMassLiqVolFraction;
               }
 
               break;
@@ -16287,21 +16287,21 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 DensityIn[iMarkerTP - 1][iSpan]  = avgMixDensity;
                 PressureIn[iMarkerTP - 1][iSpan] = avgMixPressure;
                 for (iDim = 0; iDim < nDim; iDim++) TurboVelocityIn[iMarkerTP -1][iSpan][iDim] = avgMixTurboVelocity[iDim];
-                KineIn[iMarkerTP - 1][iSpan]     = avgMixKine;
-                OmegaIn[iMarkerTP - 1][iSpan]    = avgMixOmega;
-                NuIn[iMarkerTP - 1][iSpan]       = avgMixNu;
-                Mom0In[iMarkerTP - 1][iSpan]     = avgMixMom0;
-                Mom3In[iMarkerTP - 1][iSpan]     = avgMixMom3;
+                KineIn[iMarkerTP - 1][iSpan]           = avgMixKine;
+                OmegaIn[iMarkerTP - 1][iSpan]          = avgMixOmega;
+                NuIn[iMarkerTP - 1][iSpan]             = avgMixNu;
+                Mom0In[iMarkerTP - 1][iSpan]           = avgMixMom0;
+                LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgMixLiqVolFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgMixDensity;
                 PressureOut[iMarkerTP - 1][iSpan] = avgMixPressure;
                 for (iDim = 0; iDim < nDim; iDim++) TurboVelocityOut[iMarkerTP -1][iSpan][iDim] = avgMixTurboVelocity[iDim];
-                KineOut[iMarkerTP - 1][iSpan]     = avgMixKine;
-                OmegaOut[iMarkerTP - 1][iSpan]    = avgMixOmega;
-                NuOut[iMarkerTP - 1][iSpan]       = avgMixNu;
-                Mom0Out[iMarkerTP - 1][iSpan]     = avgMixMom0;
-                Mom3Out[iMarkerTP - 1][iSpan]     = avgMixMom3;
+                KineOut[iMarkerTP - 1][iSpan]           = avgMixKine;
+                OmegaOut[iMarkerTP - 1][iSpan]          = avgMixOmega;
+                NuOut[iMarkerTP - 1][iSpan]             = avgMixNu;
+                Mom0Out[iMarkerTP - 1][iSpan]           = avgMixMom0;
+                LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgMixLiqVolFraction;
               }
               break;
 
@@ -16454,7 +16454,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   int markerTP;
   su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
   su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
-  su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut, mom0In, mom3In, mom0Out, mom3Out;
+  su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut, mom0In, liqVolFractionIn, mom0Out, liqVolFractionOut;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
@@ -16496,9 +16496,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     omegaOut             = -1.0;
     nuOut                = -1.0;
     mom0In               = -1.0;
-    mom3In               = -1.0;
+    liqVolFractionIn     = -1.0;
     mom0Out              = -1.0;
-    mom3Out              = -1.0;
+    liqVolFractionOut    = -1.0;
 
 
     markerTP             = -1;
@@ -16519,7 +16519,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
             nuIn                = NuIn[iMarkerTP -1][iSpan];
             mom0In              = Mom0In[iMarkerTP -1][iSpan];
-            mom3In              = Mom3In[iMarkerTP -1][iSpan];
+            liqVolFractionIn    = LiqVolFractionIn[iMarkerTP -1][iSpan];
 
 
 #ifdef HAVE_MPI
@@ -16532,7 +16532,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfIn[6]  = omegaIn;
             TurbPerfIn[7]  = nuIn;
             TurbPerfIn[8]  = mom0In;
-            TurbPerfIn[9]  = mom3In;
+            TurbPerfIn[9]  = liqVolFractionIn;
 #endif
           }
 
@@ -16549,7 +16549,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
             nuOut                = NuOut[iMarkerTP -1][iSpan];
             mom0Out              = Mom0Out[iMarkerTP -1][iSpan];
-            mom3Out              = Mom3Out[iMarkerTP -1][iSpan];
+            liqVolFractionOut    = LiqVolFractionOut[iMarkerTP -1][iSpan];
 
 
 
@@ -16563,7 +16563,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfOut[6]  = omegaOut;
             TurbPerfOut[7]  = nuOut;
             TurbPerfOut[8]  = mom0Out;
-            TurbPerfOut[9]  = mom3Out;
+            TurbPerfOut[9]  = liqVolFractionOut;
 #endif
           }
         }
@@ -16611,8 +16611,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           nuIn             = TotTurbPerfIn[n1*i+7];
           mom0In           = 0.0;
           mom0In           = TotTurbPerfIn[n1*i+8];
-          mom3In           = 0.0;
-          mom3In           = TotTurbPerfIn[n1*i+9];
+          liqVolFractionIn = 0.0;
+          liqVolFractionIn = TotTurbPerfIn[n1*i+9];
 
           markerTP         = -1;
           markerTP         = TotMarkerTP[i];
@@ -16637,8 +16637,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           nuOut             = TotTurbPerfOut[n1*i+7];
           mom0Out           = 0.0;
           mom0Out           = TotTurbPerfOut[n1*i+8];
-          mom3Out           = 0.0;
-          mom3Out           = TotTurbPerfOut[n1*i+9];
+          liqVolFractionOut = 0.0;
+          liqVolFractionOut = TotTurbPerfOut[n1*i+9];
         }
       }
 
@@ -16659,7 +16659,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       OmegaIn[markerTP -1][iSpan]                = omegaIn;
       NuIn[markerTP -1][iSpan]                   = nuIn;
       Mom0In[markerTP -1][iSpan]                 = mom0In;
-      Mom3In[markerTP -1][iSpan]                 = mom3In;
+      LiqVolFractionIn[markerTP -1][iSpan]       = liqVolFractionIn;
 
       DensityOut[markerTP -1][iSpan]             = densityOut;
       PressureOut[markerTP -1][iSpan]            = pressureOut;
@@ -16671,7 +16671,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       OmegaOut[markerTP -1][iSpan]               = omegaOut;
       NuOut[markerTP -1][iSpan]                  = nuOut;
       Mom0Out[markerTP -1][iSpan]                = mom0Out;
-      Mom3Out[markerTP -1][iSpan]                = mom3Out;
+      LiqVolFractionOut[markerTP -1][iSpan]      = liqVolFractionOut;
 
     }
   }
@@ -16794,7 +16794,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AverageKine                       = NULL;
   AverageOmega                      = NULL;
   AverageMom0                       = NULL;
-  AverageMom3                       = NULL;
+  AverageLiqVolFraction             = NULL;
   ExtAverageNu                      = NULL;
   ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;
