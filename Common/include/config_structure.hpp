@@ -7488,7 +7488,7 @@ public:
    */
   bool GetQCR(void);
 
-  bool GetBoom_flag(void);
+  unsigned short GetBoom_flag(void);
   unsigned long GetBoom_N_prof(void);
   unsigned short GetBoom_N_phi(void);
   su2double *GetBoom_phi(void);

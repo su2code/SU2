@@ -863,6 +863,12 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
     iIter++;
   }
 
+  int rank = 0;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   if(rank == MASTER_NODE)
     cout << "Signal propagated in " << iIter << "iterations." << endl;
 }
