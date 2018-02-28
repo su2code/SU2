@@ -2430,9 +2430,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == ZONE_SPECIFIC) {
 
-    if (nZone != nZoneSpecified) {
-      SU2_MPI::Error("Number of zones in mesh file does not agree with number of specified zones.", CURRENT_FUNCTION);
-    }
     ZoneSpecific_Problem = true;
     Kind_Solver = Kind_Solver_PerZone[val_izone];
   }
