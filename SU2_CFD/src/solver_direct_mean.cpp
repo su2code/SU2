@@ -2,20 +2,24 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -547,9 +551,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ttotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ttotal[iMarker] = NULL;
     }
   }
 
@@ -557,9 +565,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ptotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ptotal[iMarker] = NULL;
     }
   }
 
@@ -567,14 +579,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+        }
       }
+    } else {
+      Inlet_FlowDir[iMarker] = NULL;
     }
   }
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
 
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
@@ -1018,21 +1038,25 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (Inlet_Ttotal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] Inlet_Ttotal[iMarker];
+      if (Inlet_Ttotal[iMarker] != NULL)
+        delete [] Inlet_Ttotal[iMarker];
     delete [] Inlet_Ttotal;
   }
 
   if (Inlet_Ptotal != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] Inlet_Ptotal[iMarker];
+      if (Inlet_Ptotal[iMarker] != NULL)
+        delete [] Inlet_Ptotal[iMarker];
     delete [] Inlet_Ptotal;
   }
 
   if (Inlet_FlowDir != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] Inlet_FlowDir[iMarker][iVertex];
-      delete [] Inlet_FlowDir[iMarker];
+      if (Inlet_FlowDir[iMarker] != NULL) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] Inlet_FlowDir[iMarker][iVertex];
+        delete [] Inlet_FlowDir[iMarker];
+      }
     }
     delete [] Inlet_FlowDir;
   }
@@ -8603,6 +8627,51 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 }
 
+void CEulerSolver::SetInlet(CConfig *config) {
+
+  unsigned short iMarker, iDim;
+  unsigned long iVertex;
+  string Marker_Tag;
+
+  /* --- Initialize quantities for inlet boundary
+   * This routine does not check if the inlet boundaries are set to custom
+   * values (available through the py wrapper). This is intentional; the
+   * default values for these custom BCs are initialized with the default
+   * values specified in the config (avoiding non physical values) --- */
+  for(iMarker=0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
+      su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
+      su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+
+      for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_Ttotal[iMarker][iVertex] = t_total;
+        Inlet_Ptotal[iMarker][iVertex] = p_total;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+      }
+    }
+  }
+
+}
+
+void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
+
+  unsigned short nMGlevel, iMarker;
+
+  // TODO: Update the fluid boundary conditions for MG
+  nMGlevel = config->GetnMGLevels();
+  if (nMGlevel > 1) {
+    for (iMarker=0; iMarker < nMarker; iMarker++) {
+      bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
+      bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+      if (isCustomizable && isInlet)
+        SU2_MPI::Error("Custom inlet BCs are not currently compatible with multigrid.", CURRENT_FUNCTION);
+    }
+  }
+}
+
 void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
   
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
@@ -11098,10 +11167,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
-          if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
-          else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-          T_Total  = config->GetInlet_Ttotal(Marker_Tag);
-          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+          if (gravity) P_Total = Inlet_Ptotal[val_marker][iVertex] - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+          else P_Total  = Inlet_Ptotal[val_marker][iVertex];
+          T_Total  = Inlet_Ttotal[val_marker][iVertex];
+          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -11206,9 +11275,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified mass flow for the inlet. ---*/
 
-          Density  = config->GetInlet_Ttotal(Marker_Tag);
-          Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+          Density  = Inlet_Ttotal[val_marker][iVertex];
+          Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -14861,6 +14930,11 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   /*--- Rotorcraft simulation array initialization ---*/
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+
+  /*--- Inlet Variables ---*/
+  Inlet_Ttotal = NULL;
+  Inlet_Ptotal = NULL;
+  Inlet_FlowDir = NULL;
   
   SlidingState      = NULL;
   SlidingStateNodes = NULL;
@@ -15210,9 +15284,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ttotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ttotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ttotal[iMarker] = NULL;
     }
   }
   
@@ -15220,9 +15298,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_Ptotal[iMarker][iVertex] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_Ptotal[iMarker][iVertex] = 0;
+      }
+    } else {
+      Inlet_Ptotal[iMarker] = NULL;
     }
   }
   
@@ -15230,14 +15312,22 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+        }
       }
+    } else {
+      Inlet_FlowDir[iMarker] = NULL;
     }
   }
+
+  /*--- Set up inlet profiles, if necessary ---*/
+
+  SetInlet(config);
 
   /*--- Inviscid force definition and coefficient in all the markers ---*/
   
