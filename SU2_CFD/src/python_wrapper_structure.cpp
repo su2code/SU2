@@ -2,20 +2,24 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +52,7 @@ void CDriver::PythonInterface_Preprocessing(){
       geometry_container[iZone][iMesh]->SetCustomBoundary(config_container[iZone]);
     }
     geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+    solver_container[iZone][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
   }
   /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
   PyWrapVarCoord[0] = 0.0;
@@ -707,6 +712,26 @@ vector<string> CDriver::GetAllCHTMarkersTag(){
   return CHTBoundariesTagList;
 }
 
+vector<string> CDriver::GetAllInletMarkersTag(){
+
+  vector<string> BoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_All();
+
+  for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
+    bool isCustomizable = config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker);
+    bool isInlet = (config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
+    if(isCustomizable && isInlet) {
+      Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+      BoundariesTagList.push_back(Marker_Tag);
+    }
+  }
+
+  return BoundariesTagList;
+}
+
 map<string, int> CDriver::GetAllBoundaryMarkers(){
 
   map<string, int>  allBoundariesMap;
@@ -935,6 +960,36 @@ void CFluidDriver::SetInitialMesh() {
     }
   }
   //}
+}
+
+void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ttotal(iMarker, iVertex, val_Ttotal);
+
+}
+
+void CFluidDriver::SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_Ptotal(iMarker, iVertex, val_Ptotal);
+
+}
+
+void CFluidDriver::SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir){
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, iDim, val_FlowDir);
+
+}
+
+void CFluidDriver::SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_turb_var){
+
+  if (solver_container[ZONE_0] == NULL ||
+      solver_container[ZONE_0][MESH_0] ==  NULL) {
+    SU2_MPI::Error("Could not find an appropriate solver.", CURRENT_FUNCTION);
+  } else if (solver_container[ZONE_0][MESH_0][TURB_SOL] == NULL) {
+    SU2_MPI::Error("Tried to set turbulence variables without a turbulence solver.", CURRENT_FUNCTION);
+  }
+  solver_container[ZONE_0][MESH_0][TURB_SOL]->SetInlet_TurbVar(iMarker, iVertex, iDim, val_turb_var);
+
 }
 
 void CFluidDriver::BoundaryConditionsUpdate(){

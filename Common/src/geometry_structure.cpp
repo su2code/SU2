@@ -2,20 +2,24 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -742,7 +746,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               
             }
             
-            if ((jPoint > iPoint)
+            if ((jPoint > iPoint) && (CrossProduct >= 0.0)
                 && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))
                 && ((node[iPoint]->GetCoord(1) > MinYCoord) && (node[iPoint]->GetCoord(1) < MaxYCoord))
                 && ((node[iPoint]->GetCoord(2) > MinZCoord) && (node[iPoint]->GetCoord(2) < MaxZCoord))) {
@@ -1395,6 +1399,9 @@ void CGeometry::SetCustomBoundary(CConfig *config) {
             CustomBoundaryTemperature[iMarker][iVertex] = config->GetIsothermal_Temperature(Marker_Tag);
           }
           break;
+        case INLET_FLOW:
+          // This case is handled in the solver class.
+          break;
         default:
           cout << "WARNING: Marker " << Marker_Tag << " is not customizable. Using default behavior." << endl;
           break;
@@ -1412,11 +1419,17 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
     iMGfine = iMGlevel-1;
     for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
-      if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
-        geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
-      }
-      else if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+      if(config->GetMarker_All_PyCustom(iMarker)){
+        switch(config->GetMarker_All_KindBC(iMarker)){
+          case HEAT_FLUX:
+            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+            break;
+          case ISOTHERMAL:
+            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+            break;
+          // Inlet flow handled in solver class.
+          default: break;
+        }
       }
     }
   }
@@ -15192,7 +15205,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
       field_buf.append("\"");
-      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
@@ -16631,7 +16644,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, SemiSpan;
+  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Nacelle_File, Section_File;
   
@@ -16639,7 +16652,6 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   /*--- Make a large number of section cuts for approximating volume ---*/
   
   nPlane = config->GetnWingStations();
-  SemiSpan = config->GetSemiSpan();
   
   /*--- Allocate memory for the section cutting ---*/
   
