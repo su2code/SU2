@@ -1109,12 +1109,12 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 /*!
  * \brief different sonic boom modes
  */
-enum ENUM_REGIME {
+enum ENUM_BOOM {
   NOBOOM = 0,   /*!< \brief No sonic boom propagation. */
   SUBOOM = 1,   /*!< \brief Sonic boom propagation via SUBoom (Thomas algorithm). */
   ABBOOM = 2    /*!> \brief Sonic boom propagation via Augmented Burgers Equation. */
 };
-static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
+static const map<string, ENUM_BOOM> Boom_Map = CCreateMap<string, ENUM_BOOM>
 ("NONE", NOBOOM)
 ("SUBOOM", SUBOOM)
 ("ABBOOM", ABBOOM);
