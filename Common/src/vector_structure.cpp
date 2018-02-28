@@ -806,6 +806,8 @@ void TCSysVector<passivedouble>::SendReceive_Reverse(CGeometry *geometry, CConfi
 #endif
 
 template class TCSysVector<su2double>;
+template su2double dotProd<su2double>(const TCSysVector<su2double> & u, const TCSysVector<su2double> & v);
+
 #ifdef CODI_REVERSE_TYPE
 template class TCSysVector<passivedouble>;
 #endif
