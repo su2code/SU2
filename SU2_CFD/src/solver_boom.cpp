@@ -862,11 +862,13 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
   	Iterate(iPhi);
     iIter++;
   }
+
+  if(rank == MASTER_NODE)
+    cout << "Signal propagated in " << iIter << "iterations." << endl;
 }
 
 void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   
-  unsigned long i_prop = n_prop-iIter-1; // Current index (since we iterate from N-1 to 0)
   su2double R = 287.058,         // Gas constant
             mu0 = 1.846E-5,      // Reference viscosity
             kappa0 = 2.624E-2,   // Reference thermal conduction coefficient
@@ -1245,6 +1247,117 @@ void CBoom_AugBurgers::Iterate(unsigned short iPhi){
   ray_z -= dz;
 
   delete [] Ptmp;
+
+}
+
+void CBoom_AugBurgers::WriteSensitivities(){
+  unsigned long iVar, iSig, Max_nPointID, nVar, Global_Index, Total_Index;
+  ofstream Boom_AdjointFile;
+
+  int rank, iProcessor, nProcessor;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  unsigned long Buffer_Send_nPointID[1], *Buffer_Recv_nPointID = NULL;
+
+  if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];
+
+    if(rank == MASTER_NODE){
+      Boom_AdjointFile.precision(15);
+      Boom_AdjointFile.open("Adj_Boom.dat", ios::out);
+    }
+
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+
+    Buffer_Send_nPointID[0]=nPointID[iPhi]; 
+#ifdef HAVE_MPI
+    SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+    SU2_MPI::Allreduce(&nPointID[iPhi],&Max_nPointID,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+#endif
+
+    nVar = nDim+3;
+
+    /* pack sensitivity values in each processor and send to root */
+    su2double *Buffer_Send_dJdU = new su2double [Max_nPointID*nVar];
+    unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPointID];
+    /*---Zero send buffers---*/
+    for (unsigned int i=0; i <Max_nPointID*nVar; i++){
+      Buffer_Send_dJdU[i]=0.0;
+    }
+    for (unsigned int i=0; i <Max_nPointID; i++){
+      Buffer_Send_GlobalIndex[i]=0;
+    }
+    su2double *Buffer_Recv_dJdU = NULL;
+    unsigned long *Buffer_Recv_GlobalIndex = NULL;
+
+    if (rank == MASTER_NODE) {
+      Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPointID*nVar];
+      Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPointID];
+    }
+
+    /*---Fill send buffers with dJ/dU---*/
+    for (iVar=0; iVar<nVar; iVar++){
+        for(iSig=0; iSig<nPointID[iPhi]; iSig++){
+            Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdU[iPhi][iVar][iSig];
+          }
+      }
+
+    for (iSig=0; iSig<nPointID[iPhi]; iSig++){
+       Buffer_Send_GlobalIndex[iSig] = PointID[iPhi][iSig];
+    }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPointID*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPointID*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+    if (rank == MASTER_NODE){
+
+      /*--- Loop through all of the collected data and write each node's values ---*/
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
+          Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
+          /*--- Check dJdU[][iVar==0] and only write if greater than some tolerance ---*/
+          Boom_AdjointFile  << scientific << Global_Index << "\t";
+
+          for (iVar = 0; iVar < nVar; iVar++){
+            /*--- Current index position and global index ---*/
+            Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
+
+            /*--- Write to file---*/
+            Boom_AdjointFile << scientific <<  Buffer_Recv_dJdU[Total_Index]   << "\t";
+          }
+          Boom_AdjointFile  << endl;
+
+        }
+      }
+
+      delete [] Buffer_Recv_dJdU;
+      delete [] Buffer_Recv_GlobalIndex;
+    }
+
+  delete [] Buffer_Send_dJdU;
+  delete [] Buffer_Send_GlobalIndex;
+
+  }
+
+  if(rank == MASTER_NODE)
+    Boom_AdjointFile.close();
+
+  /*---Clear up  memory from dJdU---*/
+  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    for (unsigned short i=0; i<nDim+3; i++){
+      delete [] dJdU[iPhi][i];
+    }
+    delete [] dJdU[iPhi];
+    delete [] PointID[iPhi];
+
+  }
+  delete [] dJdU;
+  delete [] PointID;
+  delete [] nPointID;
+
+  if (rank == MASTER_NODE)
+    cout << "\nFinished writing boom adjoint file." << endl;
 
 }
 

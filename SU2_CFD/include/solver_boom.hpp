@@ -126,6 +126,7 @@ public:
   void Spreading(unsigned short iPhi);
   void Stratification(unsigned short iPhi);
   void Iterate(unsigned short iPhi);
+  void WriteSensitivities();
 
 };
 

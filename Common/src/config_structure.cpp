@@ -1896,7 +1896,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- options related to the SUBoom propagation code ---*/
   /*!\brief BOOM
    *  \n DESCRIPTION: Evaluate sonic boom \ingroup Config*/
-  addBoolOption("BOOM", Boom_flag, false);
+  addEnumOption("BOOM", Boom_flag, Boom_Map, NOBOOM);
 
   /*!\brief BOOM_N_PROF
    *  \n DESCRIPTION: Number of points used in atmospheric profile for RK4 integration.  \ingroup Config*/

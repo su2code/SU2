@@ -895,7 +895,7 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
 
-  bool Boom_flag;             /*!< \brief Evaluate sonic boom. */
+  unsigned short Boom_flag;   /*!< \brief Evaluate sonic boom. */
   unsigned long Boom_N_prof;  /*!< \brief Number of points used in atmospheric profile for RK4 integration. */
   unsigned short Boom_N_phi;  /*!< \brief Number of azimuth angles to evaluate boom. */
   su2double *Boom_phi,        /*!< \brief Azimuth angles to evaluate boom. */

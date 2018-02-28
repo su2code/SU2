@@ -1107,6 +1107,18 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("BOOM", BOOM);
 
 /*!
+ * \brief different sonic boom modes
+ */
+enum ENUM_REGIME {
+  NOBOOM = 0,   /*!< \brief No sonic boom propagation. */
+  SUBOOM = 1,   /*!< \brief Sonic boom propagation via SUBoom (Thomas algorithm). */
+  ABBOOM = 2    /*!> \brief Sonic boom propagation via Augmented Burgers Equation. */
+};
+static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
+("NONE", NOBOOM)
+("SUBOOM", SUBOOM)
+("ABBOOM", ABBOOM);
+/*!
  * \brief types of residual criteria equations
  */
 

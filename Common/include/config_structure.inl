@@ -1650,7 +1650,7 @@ inline bool CConfig::GetZonal_DES(void) {return Zonal_DES;}
 
 inline bool CConfig::GetQCR(void) {return QCR;}
 
-inline bool CConfig::GetBoom_flag(void) {return Boom_flag;}
+inline unsigned short CConfig::GetBoom_flag(void) {return Boom_flag;}
 
 inline unsigned long CConfig::GetBoom_N_prof(void) {return Boom_N_prof;}
 
