@@ -81,7 +81,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   /*---Perform search on domain to determine where line intersects boundary---*/
   if(rank == MASTER_NODE)
     cout << "Search for start of line." << endl;
-  SearchLinear(config, geometry, ray_r0, ray_phi, ray_N_phi);
+  SearchLinear(config, geometry, ray_r0, ray_phi);
 
   /*---Walk through neighbors to determine all points containing line---*/
   if(rank == MASTER_NODE)
@@ -906,7 +906,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   		signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(a_inf);
   		signal.t_prime[i] = signal.t[i] - signal.x[iPhi][i]/a_inf;
   	}
-    w0 = 2*M_PI/signal.t[iPhi][signal.len[iPhi]];
+    w0 = 2*M_PI/signal.t[signal.len[iPhi]-1];
     beta = 1. + (atm_g - 1.)/2.;
     p0 = p_inf;
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
@@ -1203,8 +1203,8 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
 void CBoom_AugBurgers::Stratification(unsigned short iPhi){
 
   /*---Compute atmospheric properties at sigma+dsigma---*/
-  su2double Tp1, cp1, pp1, rhop1;
-  AtmosISA(ray_z-dz, Tp1, cp1, pp1, rhop1, atm_g);
+  su2double Tp1, cp1, pp1, rhop1, z_new = ray_z - dz;
+  AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
 
   /*---Compute change in pressure from exact solution to stratification eqn---*/
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){

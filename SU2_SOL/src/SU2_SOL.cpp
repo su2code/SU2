@@ -588,15 +588,13 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               AD::StartRecording();
               CBoom_AugBurgers boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
-              if(rank == MASTER_NODE)
+              if(rank == MASTER_NODE){
                 cout << "ABE initialized." << endl;
 
-              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-
-                if(rank == MASTER_NODE)
+                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
                   cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". ";
-
-                boom.PropagateSignal(iPhi);
+                  boom.PropagateSignal(iPhi);
+                }
               }
 
               cout << "Propagation complete." << endl;
@@ -709,15 +707,13 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 
               CBoom_AugBurgers boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
-              if(rank == MASTER_NODE)
+              if(rank == MASTER_NODE){
                 cout << "ABE initialized." << endl;
 
-              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-
-                if(rank == MASTER_NODE)
+                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
                   cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". ";
-
-                boom.PropagateSignal(iPhi);
+                  boom.PropagateSignal(iPhi);
+                }
               }
 
               cout << "Propagation complete." << endl;
