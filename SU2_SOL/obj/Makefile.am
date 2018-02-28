@@ -62,6 +62,7 @@ su2_sol_ldadd += \
   ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-postprocessing_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-solver_boom.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-SUBoom.$(OBJEXT) \
   ../../Common/lib/libSU2.a
 endif
@@ -77,6 +78,7 @@ su2_sol_ldadd += \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-postprocessing_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_boom.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
    ../../Common/lib/libSU2_AD.a
 endif

@@ -73,6 +73,7 @@ libSU2Core_sources = \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
+  ../include/solver_boom.hpp \
   ../include/SUBoom.hpp \
   ../include/transport_model.hpp \
   ../include/transport_model.inl \
@@ -127,6 +128,7 @@ libSU2Core_sources = \
   ../src/solver_error_estimate.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
+  ../src/solver_boom.cpp \
   ../src/SUBoom.cpp \
   ../src/transfer_physics.cpp \
   ../src/transfer_structure.cpp \
