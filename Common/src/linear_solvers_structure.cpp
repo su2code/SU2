@@ -923,3 +923,12 @@ void TCSysSolve<passivedouble, su2double>::Solve_System(TCSysVector<su2double> &
 }
 
 #endif
+
+template class TCSysSolve<passivedouble, su2double>;
+template class TCLinSolver<passivedouble>;
+template class TCLinSolver_BCGSTAB<passivedouble>;
+template class TCLinSolver_CG<passivedouble>;
+template class TCLinSolver_FGMRES<passivedouble>;
+#ifdef CODI_REVERSE_TYPE
+template class TCSysSolve<su2double, su2double>;
+#endif
