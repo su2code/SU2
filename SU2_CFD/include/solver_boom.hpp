@@ -15,6 +15,7 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
+#include "../../SU2_CFD/include/SUBoom.hpp"  // For things like mergesort, AtmosISA...
 
 using namespace std;
 
@@ -115,6 +116,9 @@ public:
   int Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1);
   int Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *p1);
 
+  void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
+                su2double& rho, su2double& g);
+  
   void PropagateSignal(unsigned short iPhi);
   void Preprocessing(unsigned short iPhi, unsigned long iIter);
   void CreateUniformGridSignal(unsigned short iPhi);
@@ -128,6 +132,3 @@ public:
   void WriteSensitivities();
 
 };
-
-void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
-                su2double& rho, su2double& g);

@@ -795,7 +795,7 @@ int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2do
 
 }
 
-void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
+void CBoom_AugBurgers::AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                       su2double& rho, su2double& g){
   /*---Calculate temperature, speed of sound, pressure, and density at a given
        altitude using standard atmosphere---*/
@@ -1017,15 +1017,15 @@ void CBoom_AugBurgers::CreateInitialRayTube(unsigned short iPhi){
   ray_y[2] = ray_y[3] = ray_r0*sin(ray_phi[iPhi]+1.0E-3);
 
   ray_lambda = pow(flt_M*flt_M-1.,-0.5);
-  ray_gamma[0]  = asin(ray_lambda*sin(ray_phi[iPhi])*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi],2)), -0.5));
-  ray_gamma[1]  = asin(ray_lambda*sin(ray_phi[iPhi]+1.0E-3)*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]+1.0E-3,2)), -0.5));
+  ray_gamma[0]  = asin(ray_lambda*sin(ray_phi[iPhi])*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]),2), -0.5));
+  ray_gamma[1]  = asin(ray_lambda*sin(ray_phi[iPhi]+1.0E-3)*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]+1.0E-3),2), -0.5));
   ray_theta[0]  = acos(-1./(flt_M*cos(ray_gamma[0])));
   ray_theta[1]  = acos(-1./(flt_M*cos(ray_gamma[1])));
 
   su2double u[2] = {ray_x[2]-ray_x[0], ray_y[2]-ray_y[0]};
   su2double v[2] = {ray_x[3]-ray_x[1], ray_y[3]-ray_y[1]};
   su2double c    = u[0]*v[1] - u[1]*v[0];
-  su2double Ah   = 0.5*sqrt(pow(c,2));
+  su2double A_h   = 0.5*sqrt(pow(c,2));
 
   ray_A = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
 }
@@ -1103,7 +1103,7 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
 
 void CBoom_AugBurgers::Relaxation(unsigned short iPhi){
 
-  su2double lambda[2] = {dsgima*C_nu_O2/pow(dtau,2), dsgima*C_nu_O2/pow(dtau,2)},
+  su2double lambda[2] = {dsigma*C_nu_O2/pow(dtau,2), dsigma*C_nu_N2/pow(dtau,2)},
             mu[2] = {theta_nu_O2/(2.*dtau), theta_nu_N2/(2.*dtau)},
             alpha = 0.5,
             alpha_p = 1.-alpha;
@@ -1182,7 +1182,7 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
   su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
   su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
   su2double c    = u[0]*v[1] - u[1]*v[0];
-  su2double Ah   = 0.5*sqrt(pow(c,2));
+  su2double A_h   = 0.5*sqrt(pow(c,2));
 
   A_new = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
 
