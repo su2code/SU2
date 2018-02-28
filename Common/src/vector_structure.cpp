@@ -804,3 +804,8 @@ void TCSysVector<passivedouble>::SendReceive_Reverse(CGeometry *geometry, CConfi
 
 }
 #endif
+
+template class TCSysVector<su2double>;
+#ifdef CODI_REVERSE_TYPE
+template class TCSysVector<passivedouble>;
+#endif

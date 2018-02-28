@@ -404,8 +404,4 @@ inline TCPreconditioner<CalcType>::~TCPreconditioner() {}
 
 typedef TCPreconditioner<su2double> CPreconditioner;
 
-template class TCSysVector<su2double>;
-#ifdef CODI_REVERSE_TYPE
-template class TCSysVector<passivedouble>;
-#endif
 #include "vector_structure.inl"

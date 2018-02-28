@@ -2099,3 +2099,9 @@ void TCSysMatrix<CalcType>::ComputeResidual(const TCSysVector<CalcType> & sol, c
   }
   
 }
+
+
+template class TCSysMatrix<su2double>;
+#ifdef CODI_REVERSE_TYPE
+template class TCSysMatrix<passivedouble>;
+#endif
