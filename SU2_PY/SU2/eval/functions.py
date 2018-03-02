@@ -723,13 +723,17 @@ def update_mesh(config,state=None):
     # redundancy check
     deform_set  = config['DV_KIND'] == config['DEFINITION_DV']['KIND']
     deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
+
+    
     if deform_set and deform_todo:
     
         # files to pull
         pull = []
         link = config['MESH_FILENAME']
         link = su2io.expand_part(link,config)
-        
+
+        link.append(config["MOTION_FILENAME"])
+    
         # output redirection
         with redirect_folder('DEFORM',pull,link) as push:
             with redirect_output(log_deform):

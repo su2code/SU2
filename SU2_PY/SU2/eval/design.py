@@ -208,7 +208,46 @@ class Design(object):
 # ----------------------------------------------------------------------
 #  Optimization Interface Functions
 # ----------------------------------------------------------------------
-        
+
+
+def f (dvs, function_list, update_design, config, state=None):
+    
+    dvs = [0.0]
+
+
+    config.OPT_OBJECTIVE = {}
+
+    for function in function_list:
+        config.OPT_OBJECTIVE[function] =  {'SCALE' : 1.0, 'OBJTYPE' : 'DEFAULT', 'VALUE' : 0.0, 'MARKER' : 'airfoil'}
+
+
+    if update_design:
+        dvs                    = [1.0]
+        config['DV_VALUE_NEW'] = 1.0
+        config['DV_VALUE_OLD'] = 0.0
+    else: 
+        dvs                    = [0.0]
+        config['DV_VALUE_NEW'] = 0.0
+        config['DV_VALUE_OLD'] = 0.0
+
+    # unpack config and state 
+    config.unpack_dvs(dvs)
+    state = su2io.State(state)
+    
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    vals_out = []
+    for i_obj,this_obj in enumerate(objectives):
+        scale = def_objs[this_obj]['SCALE']
+
+        func = su2func(this_obj,config,state)*scale
+        vals_out.append(func)
+
+         
+    return vals_out
+
+
+
 def obj_f(dvs,config,state=None):
     """ val = SU2.eval.obj_f(dvs,config,state=None)
     
