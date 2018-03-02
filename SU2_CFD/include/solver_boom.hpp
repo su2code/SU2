@@ -118,17 +118,19 @@ public:
 
   void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                 su2double& rho, su2double& g);
-  
+
   void PropagateSignal(unsigned short iPhi);
   void Preprocessing(unsigned short iPhi, unsigned long iIter);
   void CreateUniformGridSignal(unsigned short iPhi);
   void CreateInitialRayTube(unsigned short iPhi);
+  void DetermineStepSize(unsigned short iPhi);
   void Nonlinearity(unsigned short iPhi);
   void Attenuation(unsigned short iPhi);
   void Relaxation(unsigned short iPhi);
   void Spreading(unsigned short iPhi);
   void Stratification(unsigned short iPhi);
   void Iterate(unsigned short iPhi);
+  void WriteGroundPressure(unsigned short iPhi, unsigned long iIter);
   void WriteSensitivities();
 
 };
