@@ -133,6 +133,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       Tecplot_File << config->fields[iField];
     }
     Tecplot_File << endl;
+    Tecplot_File << "\"NodeID\"";
     
   } else {
     
@@ -306,7 +307,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         /*--- Loop over the vars/residuals and write the values to file ---*/
         for (iVar = 0; iVar < nVar_Total; iVar++)
         Tecplot_File << scientific << Data[iVar][iPoint] << "\t";
-        
+        Tecplot_File << iPoint;
         Tecplot_File << endl;
         
       }
