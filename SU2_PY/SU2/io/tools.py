@@ -69,6 +69,36 @@ def read_gradients( Grad_filename , scale = 1.0):
 
 #: def read_gradients()
 
+def read_surface_gradients( Grad_filename , scale = 1.0):
+    """ reads the raw gradients from the gradient file
+        returns a list of floats
+    """
+        
+    # open file and skip first three lines
+    gradfile = open(Grad_filename)
+    gradfile.readline()
+    gradfile.readline()
+    header = gradfile.readline()
+    header = header.split("=")
+    nNodes = int(header[1].split(",")[0])
+
+    
+    # read values
+    grad_vals = {}
+    Node = 0
+    for line in gradfile:
+        line = line.split()
+
+        if Node == nNodes:
+            break
+        #print (line)
+        grad_vals[int(line[5])] = [float(line[2]), float(line[3])];
+        Node = Node+1    
+    #: for each line
+    
+    return grad_vals
+
+#: def read_gradients()
 
 # -------------------------------------------------------------------
 #  Read All Data from a Plot File
@@ -681,7 +711,8 @@ def get_dvMap():
                50  : "CUSTOM"                ,
                51  : "CST"                   ,
                101 : "ANGLE_OF_ATTACK"       ,
-               102 : "FFD_ANGLE_OF_ATTACK"                    }
+               102 : "FFD_ANGLE_OF_ATTACK"   ,
+               100 : "SURFACE_FILE"               }
     
     return dv_map
 

@@ -103,17 +103,21 @@ def projection( config, state={}, step = 1e-3 ):
     SU2_DOT(konfig)
     
     # read raw gradients
-    raw_gradients = su2io.read_gradients(grad_filename)
-    os.remove(grad_filename)
+    if config["DV_KIND"][0] == "SURFACE_FILE":
+        raw_gradients = su2io.read_surface_gradients("surface_sens.dat")
+    else:
+        raw_gradients = su2io.read_gradients(grad_filename)
+        os.remove(grad_filename)
+        # Write Gradients
+        data_plot = su2util.ordered_bunch()
+        data_plot['VARIABLE']     = range(len(raw_gradients)) 
+        data_plot['GRADIENT']     = raw_gradients             
+        data_plot['FINDIFF_STEP'] = step
+        su2util.write_plot(grad_plotname,output_format,data_plot)
     
     info = su2io.State()
        
-    # Write Gradients
-    data_plot = su2util.ordered_bunch()
-    data_plot['VARIABLE']     = range(len(raw_gradients)) 
-    data_plot['GRADIENT']     = raw_gradients             
-    data_plot['FINDIFF_STEP'] = step
-    su2util.write_plot(grad_plotname,output_format,data_plot)
+
 
     # gradient output dictionary
     objective = objective.split(',')

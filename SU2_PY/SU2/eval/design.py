@@ -212,7 +212,7 @@ class Design(object):
 
 def f (dvs, function_list, update_design, config, state=None):
     
-    dvs = [0.0]
+   # dvs = [0.0]
 
 
     config.OPT_OBJECTIVE = {}
@@ -222,12 +222,12 @@ def f (dvs, function_list, update_design, config, state=None):
 
 
     if update_design:
-        dvs                    = [1.0]
-        config['DV_VALUE_NEW'] = 1.0
+        #dvs                    = [1.0]
+        config['DV_VALUE_NEW'] = dvs
         config['DV_VALUE_OLD'] = 0.0
     else: 
-        dvs                    = [0.0]
-        config['DV_VALUE_NEW'] = 0.0
+        #dvs                    = [0.0]
+        config['DV_VALUE_NEW'] = dvs
         config['DV_VALUE_OLD'] = 0.0
 
     # unpack config and state 
@@ -246,7 +246,55 @@ def f (dvs, function_list, update_design, config, state=None):
          
     return vals_out
 
+def df(dvs, function_list, update_design, config, state=None):
+    """ vals = SU2.eval.obj_df(dvs,config,state=None)
+    
+        Evaluates SU2 Objective Gradients
+        Wraps SU2.eval.grad()
+        
+        Takes a design vector for input as a list (shape n) 
+        or numpy array (shape n or nx1 or 1xn), a config
+        and optionally a state.
+        
+        Outputs a list of gradients.
+    """    
+    config.OPT_OBJECTIVE = {}
 
+    for function in function_list:
+        config.OPT_OBJECTIVE[function] =  {'SCALE' : 1.0, 'OBJTYPE' : 'DEFAULT', 'VALUE' : 0.0, 'MARKER' : 'airfoil'}
+
+
+    if update_design:
+        #dvs                    = [1.0]
+        config['DV_VALUE_NEW'] = dvs
+        config['DV_VALUE_OLD'] = 0.0
+    else: 
+        #dvs                    = [0.0]
+        config['DV_VALUE_NEW'] = dvs
+        config['DV_VALUE_OLD'] = 0.0
+
+    config.unpack_dvs(dvs)
+    state = su2io.State(state)
+    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
+    
+    def_objs    = config['OPT_OBJECTIVE']
+    objectives  = def_objs.keys()
+
+    vals_out = []
+
+    marker_monitored = config['MARKER_MONITORING']
+    for i_obj,this_obj in enumerate(objectives): 
+
+        config['MARKER_MONITORING'] = marker_monitored[i_obj]
+
+        grad = su2grad(this_obj,grad_method,config,state)
+        
+        vals_out.append(grad)
+    
+ 
+    return vals_out
+
+#: def obj_df()
 
 def obj_f(dvs,config,state=None):
     """ val = SU2.eval.obj_f(dvs,config,state=None)

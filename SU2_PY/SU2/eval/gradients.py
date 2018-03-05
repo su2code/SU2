@@ -244,6 +244,9 @@ def adjoint( func_name, config, state=None ):
     name = su2io.expand_time(name,config)
     link.extend(name)
 
+    if config['DV_KIND'][0] == 'SURFACE_FILE':
+        link.append(config['MOTION_FILENAME'])
+
     # files: adjoint solution
     if ADJ_NAME in files:
         name = files[ADJ_NAME]

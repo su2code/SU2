@@ -232,13 +232,31 @@ class Project(object):
             self.config['DV_VALUE_NEW'] = design_number
             self.config['DV_VALUE_OLD'] = 0.0
         else: 
-            dvs                    = [0.0]
-            self.config['DV_VALUE_NEW'] = 0.0
-            self.config['DV_VALUE_OLD'] = 0.0
+            dvs                    = [design_number]
+            self.config['DV_VALUE_NEW'] = design_number
+            self.config['DV_VALUE_OLD'] = design_number
 
         func = su2eval.f
         konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func, dvs, function_list, update_design)
+
+    def df (self, function_list, update_design=False, design_number=0):
+            
+        dvs = [0.0]
+
+        if update_design:
+            dvs                    = [design_number]
+            self.config['DV_VALUE_NEW'] = design_number
+            self.config['DV_VALUE_OLD'] = 0.0
+        else: 
+            dvs                    = [design_number]
+            self.config['DV_VALUE_NEW'] = design_number
+            self.config['DV_VALUE_OLD'] = design_number
+
+        func = su2eval.df
+        konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(konfig, func,dvs, function_list, update_design)
+    
 
     def unpack_dvs(self,dvs):
         dvs = copy.deepcopy(dvs)
