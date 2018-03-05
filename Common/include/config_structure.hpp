@@ -600,6 +600,7 @@ private:
   Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Ringleb_Findiff; /*!< \brief Perturb Ringleb BCs. */
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -4639,6 +4640,12 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void);
+
+  /*!
+   * \brief Flag for whether to perturb Ringleb BCs.
+   * \return Flag for whether to perturb Ringleb BCs, if <code>TRUE</code> then the code will perturb the solution.
+   */
+  bool GetRingleb_Findiff(void);
 
   /*!
    * \brief Provides the number of varaibles.

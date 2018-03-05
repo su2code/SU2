@@ -8096,6 +8096,11 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
   }
 
   /* Compute the speed of sound, density and pressure. */
+  if(config->GetRingleb_FinDiff()){
+    if((abs(q - 0.5) < 1.0E-8) && y > 0.0){ // Perturb inflow if requested
+      q += 1.0E-5;
+    }
+  }
   const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);
   const su2double rho = pow(a,tovgm1);
   const su2double p   = pow(a,tgovgm1)/Gamma;
