@@ -655,6 +655,13 @@ void CFEM_DG_DiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config)
   SetSurface_Sensitivity(geometry, config);
 }
 
+void CFEM_DG_DiscAdjSolver::SetSensitivityRingleb(){
+
+  Sens_Ringleb = SU2_TYPE::GetDerivative(direct_solver->GetRinglebQ());
+
+  cout << "Sensitivity to Ringleb q0: " << Sens_Ringleb << "." << endl;
+}
+
 void CFEM_DG_DiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;

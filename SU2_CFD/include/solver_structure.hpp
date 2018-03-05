@@ -3625,6 +3625,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
+
+   /*!
+   * \brief A virtual member.
+   */
+  virtual void SetSensitivityRingleb(void);
   
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
@@ -3844,6 +3849,21 @@ public:
    * \brief A virtual member.
    */
   virtual unsigned long GetnDOFsGlobal(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRinglebQ(su2double val);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetRinglebQ(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterRinglebQ(void);
 
   /*!
    * \brief A virtual member.
@@ -12547,6 +12567,7 @@ private:
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
+  su2double Sens_Ringleb;       /*!< \brief Sensitivity of cost function to inflow q0. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nDOFsLocTot;    /*!< \brief Total number of local DOFs, including halos. */
@@ -12634,6 +12655,12 @@ public:
   void RegisterOutput(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Performs the preprocessing of the adjoint AD-based solver.
+   *        Registers q0 for the Ringleb inflow.
+   */
+  void RegisterRinglebQ(void);
+
+  /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
    *         before evaluation of the tape.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -12668,6 +12695,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Extract and set the sensitivity to the Ringleb inflow.
+   */
+  void SetSensitivityRingleb(void);
 
   /*!
    * \brief Set the objective function.
@@ -13156,6 +13188,8 @@ protected:
   Pressure_Inf,	       /*!< \brief Pressure at infinity. */
   *Velocity_Inf;       /*!< \brief Flow velocity vector at infinity. */
 
+  su2double Ringleb_Q0;   /*!< \brief Value of Q0 for Ringleb inflow. */
+
   vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
                                         conservative variables. */
   su2double
@@ -13427,6 +13461,16 @@ public:
    * \return Global number of solution degrees of freedom
    */
   unsigned long GetnDOFsGlobal(void);
+
+  /*!
+   * \brief Set the value of Q0 for the Ringleb solution (for discrete adjoint).
+   */
+  void SetRinglebQ(su2double val);
+
+  /*!
+   * \brief Get the value of Q0 for the Ringleb solution (for discrete adjoint).
+   */
+  su2double GetRinglebQ(void);
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -13936,10 +13980,12 @@ public:
 #ifdef RINGLEB
   /*!
    * \brief Compute the exact solution of the Ringleb flow for the given coordinates.
-   * \param[in]  coor - Coordinates for which the solution must be computed.
-   * \param[out] sol  - Conservative variables to be computed.
+   * \param[in]  config - Definition of the particular problem.
+   * \param[in]  coor   - Coordinates for which the solution must be computed.
+   * \param[out] sol    - Conservative variables to be computed.
    */
-  void RinglebSolution(const su2double *coor,
+  void RinglebSolution(CConfig *config,
+                       const su2double *coor,
                        su2double *sol);
 #endif
 

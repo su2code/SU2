@@ -2329,6 +2329,10 @@ void CFEM_DG_DiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, 
     
   }
 
+  if(kind_recording == RINGLEB_Q){
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterRinglebQ();
+  }
+
 }
 
 void CFEM_DG_DiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){

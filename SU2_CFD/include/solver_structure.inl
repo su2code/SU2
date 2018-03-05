@@ -1006,6 +1006,8 @@ inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
 inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::SetSensitivityRingleb(void){}
+
 inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
@@ -1794,6 +1796,14 @@ inline void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig                  *co
                                                     CNumerics                *conv_numerics,
                                                     unsigned short           val_marker) {}
 
+inline void CSolver::SetRinglebQ(su2double val) { }
+
+inline su2double CSolver::GetRinglebQ(void) { return 0.0; }
+
+inline void CFEM_DG_EulerSolver::SetRinglebQ(su2double val) { Ringleb_Q0 = val; }
+
+inline su2double CFEM_DG_EulerSolver::GetRinglebQ(void) { return Ringleb_Q0; }
+
 inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CFEM_DG_NSSolver::GetTke_Inf(void) { return Tke_Inf; }
@@ -2233,6 +2243,13 @@ inline void CSolver::RegisterSolution(bool input) { }
 inline void CSolver::Initiate_MPI_Communication(CConfig *config, const unsigned short timeLevel) { };
 
 inline su2double* CFEM_DG_DiscAdjSolver::GetVecSolDOFs(void) {return VecSolDOFs.data();}
+
+inline void CSolver::RegisterRinglebQ(void) {}
+
+inline void CFEM_DG_DiscAdjSolver::RegisterRinglebQ(void){
+	direct_solver->SetRinglebQ(0.5);
+	AD::RegisterInput(direct_solver->GetRinglebQ());
+}
 
 inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 

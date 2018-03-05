@@ -3160,7 +3160,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
       /* Compute the conservative flow variables of the Ringleb solution for the
          given coordinates. Note that it is possible to run this case in both 2D
          and 3D, where the z-direction is assumed to be the inactive direction. */
-      RinglebSolution(coor, solDOF);
+      RinglebSolution(config, coor, solDOF);
     }
   }
 
@@ -7430,7 +7430,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
       const su2double *coor = surfElem[l].coorIntegrationPoints.data() + i*nDim;
             su2double *UR   = solIntR + i*nVar;
 
-      RinglebSolution(coor, UR);
+      RinglebSolution(config, coor, UR);
 
 #else
       /* No compiler directive specified. Write an error message and exit. */
@@ -8022,7 +8022,8 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
 
 #ifdef RINGLEB
 
-void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
+void CFEM_DG_EulerSolver::RinglebSolution(CConfig *config,
+                                          const su2double *coor,
                                                 su2double *sol) {
 
   /* Compute several expononts involving Gamma. */
@@ -8096,10 +8097,14 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
   }
 
   /* Compute the speed of sound, density and pressure. */
-  if(config->GetRingleb_FinDiff()){
+  if(config->GetRingleb_Findiff()){
     if((abs(q - 0.5) < 1.0E-8) && y > 0.0){ // Perturb inflow if requested
       q += 1.0E-5;
     }
+  }
+
+  if(config->GetDiscrete_Adjoint() && (abs(q - 0.5) < 1.0E-8) && (y > 0.0)){
+    q = GetRinglebQ(); // Only want single q as input, so extract the q that's already been recorded
   }
   const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);
   const su2double rho = pow(a,tovgm1);
