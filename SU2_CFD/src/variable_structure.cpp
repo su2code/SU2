@@ -2,20 +2,24 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +55,7 @@ CVariable::CVariable(void) {
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
+  Solution_Adj_Old = NULL;
   
 }
 
@@ -70,7 +75,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
-  
+  Solution_Adj_Old = NULL;
+
   /*--- Initialize the number of solution variables. This version
    of the constructor will be used primarily for converting the
    restart files into solution files (SU2_SOL). ---*/
@@ -103,6 +109,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Res_TruncError = NULL;
   Residual_Old = NULL;
   Residual_Sum = NULL;
+  Solution_Adj_Old = NULL;
   
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
@@ -131,6 +138,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution_time_n1 = new su2double [nVar];
   }
   
+	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
+	  Solution_Adj_Old = new su2double [nVar];
+	}
+  
 }
 
 CVariable::~CVariable(void) {
@@ -148,6 +159,7 @@ CVariable::~CVariable(void) {
   if (Res_TruncError      != NULL) delete [] Res_TruncError;
   if (Residual_Old        != NULL) delete [] Residual_Old;
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
+  if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
   
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
@@ -197,6 +209,14 @@ void CVariable::Set_OldSolution(void) {
     Solution_Old[iVar] = Solution[iVar];
   
 }
+
+void CVariable::Set_OldSolution_Adj(void) {
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_Adj_Old[iVar] = Solution[iVar];
+
+}
+
 
 void CVariable::AddSolution(unsigned short val_var, su2double val_solution) {
   

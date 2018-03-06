@@ -3,20 +3,24 @@
 ## \file SolidSolverTester.py
 #  \brief Structural solver tester (one or two degree of freedom) used for testing the Py wrapper for external FSI coupling.
 #  \author David Thomas
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -29,7 +33,7 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with SU2. If not, see <http://www.gnu.org/licenses/>. 
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -307,19 +311,19 @@ class Solver:
 		if not int(nodes[1]) in self.markers[markerTag]:
 		   self.markers[markerTag].append(int(nodes[1]))
 	      else:
-		print "Element type {} is not recognized !!".format(elemType)
+		print("Element type {} is not recognized !!".format(elemType))
 	    continue
 	  else:
 	    continue
 
-    print ("Number of dimensions: {}".format(self.nDim))
-    print ("Number of elements: {}".format(self.nElem))
-    print ("Number of point: {}".format(self.nPoint))
-    print ("Number of markers: {}".format(self.nMarker))
+    print("Number of dimensions: {}".format(self.nDim))
+    print("Number of elements: {}".format(self.nElem))
+    print("Number of point: {}".format(self.nPoint))
+    print("Number of markers: {}".format(self.nMarker))
     if len(self.markers) > 0:
-      print ("Moving marker(s):")
+      print("Moving marker(s):")
       for mark in self.markers.keys():
-        print mark
+        print(mark)
 
   def __setStructuralMatrices(self):
     """ Descriptions. """
@@ -454,9 +458,9 @@ class Solver:
 	rotCoord = rotMatrix.dot(r)
 
         newCoord = newCenter + rotCoord
-        newVel[0] = psidot*(newCoord[1]-newCenter[1])
-	newVel[1] = -psidot*(newCoord[0]-newCenter[0])
-	newVel[2] = 0.0
+        newVel[0] = Centerdot[0]+psidot*(newCoord[1]-newCenter[1])
+	newVel[1] = Centerdot[1]-psidot*(newCoord[0]-newCenter[0])
+	newVel[2] = Centerdot[2]+0.0
 
         self.node[iPoint].SetCoord((newCoord[0], newCoord[1], newCoord[2]))
         self.node[iPoint].SetVel((newVel[0], newVel[1], newVel[2]))
@@ -592,9 +596,11 @@ class Solver:
 
     self.centerOfRotation_n = np.copy(self.centerOfRotation)
 
-  def applyload(self, iPoint, fx, fy, fz):
+  def applyload(self, iVertex, fx, fy, fz, time):
     """ Description """
 
+    makerID = self.markers.keys()[0]
+    iPoint = self.getInterfaceNodeGlobalIndex(makerID, iVertex)
     self.node[iPoint].SetForce((fx,fy,fz))
 
   def getFSIMarkerID(self):

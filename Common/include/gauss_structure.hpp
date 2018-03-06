@@ -3,20 +3,24 @@
  * \brief Headers of the Finite Element structure (gaussian points)
  *        The subroutines and functions are in the <i>gauss_structure.cpp</i> file.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +54,6 @@ using namespace std;
  * \class CGaussVariable
  * \brief Main class for defining the gaussian points.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 class CGaussVariable {
 protected:
@@ -113,6 +116,50 @@ public:
 
 	unsigned short Get_iGauss(void);
 
+};
+
+
+/*!
+ * \class CElementProperty
+ * \brief Main class for defining the element properties.
+ * \author R. Sanchez
+ * \version 4.3.0 "Cardinal"
+ */
+class CElementProperty {
+protected:
+
+  unsigned long iMat_Mod;               /*!< \brief Index of the material model used. */
+  unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
+  unsigned long iElectric_Prop;         /*!< \brief Index of the electric properties (Em) for the structural model used. */
+  unsigned long iDV;                    /*!< \brief Index of the group of design variables to which the element belongs. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CElementProperty(void);
+
+   /*!
+    * \overload
+    * \param[in] val_iGauss - ID of the Gaussian Point
+    * \param[in] val_nDim - Number of dimensions of the problem.
+    * \param[in] config - Definition of the particular problem.
+  */
+  CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CElementProperty(void);
+
+  unsigned long GetMat_Mod(void);
+
+  unsigned long GetMat_Prop(void);
+
+  unsigned long GetElectric_Prop(void);
+
+  unsigned long GetDV(void);
 };
 
 

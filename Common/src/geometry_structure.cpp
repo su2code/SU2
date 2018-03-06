@@ -2,20 +2,24 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,6 +64,9 @@
 
 CGeometry::CGeometry(void) {
   
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
   nEdge      = 0;
   nPoint     = 0;
   nPointNode = 0;
@@ -94,7 +101,12 @@ CGeometry::CGeometry(void) {
   ending_node   = NULL;
   npoint_procs  = NULL;
   nPoint_Linear = NULL;
-  
+
+  /*--- Containers for customized boundary conditions ---*/
+
+  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
+  CustomBoundaryTemperature = NULL;   //Customized temperature wall
+
 }
 
 CGeometry::~CGeometry(void) {
@@ -167,7 +179,21 @@ CGeometry::~CGeometry(void) {
   if (ending_node   != NULL) delete [] ending_node;
   if (npoint_procs  != NULL) delete [] npoint_procs;
   if (nPoint_Linear != NULL) delete [] nPoint_Linear;
-  
+
+  if(CustomBoundaryHeatFlux != NULL){
+    for(iMarker=0; iMarker < nMarker; iMarker++){
+      if (CustomBoundaryHeatFlux[iMarker] != NULL) delete [] CustomBoundaryHeatFlux[iMarker];
+    }
+    delete [] CustomBoundaryHeatFlux;
+  }
+
+  if(CustomBoundaryTemperature != NULL){
+    for(iMarker=0; iMarker < nMarker; iMarker++){
+      if(CustomBoundaryTemperature[iMarker] != NULL) delete [] CustomBoundaryTemperature[iMarker];
+    }
+    delete [] CustomBoundaryTemperature;
+  }
+
 }
 
 su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord) {
@@ -204,10 +230,10 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
   
   if (iPoint == second_point) return node[first_point]->GetEdge(iNode);
   else {
-    cout << "\n\n   !!! Error !!!\n" << endl;
-    cout <<"Can't find the edge that connects "<< first_point <<" and "<< second_point <<"."<< endl;
-    exit(EXIT_FAILURE);
-    return -1;
+    char buf[100];
+    SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+    SU2_MPI::Error(buf, CURRENT_FUNCTION);
+    return 0;
   }
 }
 
@@ -396,17 +422,18 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
 bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
                                                            su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
+  su2double epsilon = 1E-6; // An epsilon is added to eliminate, as much as possible, the posibility of a line that intersects a point
   unsigned short iDim;
   
   for (iDim = 0; iDim < 3; iDim++) {
     u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
-    v[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
+    v[iDim] = (Plane_P0[iDim]+epsilon) - Segment_P0[iDim];
   }
   
   ModU = sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
   
-  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
-  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
+  Numerator = (Plane_Normal[0]+epsilon)*v[0] + (Plane_Normal[1]+epsilon)*v[1] + (Plane_Normal[2]+epsilon)*v[2];
+  Denominator = (Plane_Normal[0]+epsilon)*u[0] + (Plane_Normal[1]+epsilon)*u[1] + (Plane_Normal[2]+epsilon)*u[2];
   
   if (fabs(Denominator) <= 0.0) return (false); // No intersection.
   
@@ -427,8 +454,8 @@ bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment
   
   Variable_Interp = Variable_P0 + (Variable_P1 - Variable_P0)*sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2])/ModU;
   
-  Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
-  Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
+  Denominator = (Plane_Normal[0]+epsilon)*u[0] + (Plane_Normal[1]+epsilon)*u[1] + (Plane_Normal[2]+epsilon)*u[2];
+  Numerator = (Plane_Normal[0]+epsilon)*v[0] + (Plane_Normal[1]+epsilon)*v[1] + (Plane_Normal[2]+epsilon)*v[2];
   
   Aux = Numerator * Denominator;
   
@@ -583,37 +610,48 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
 }
 
 void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-                                       su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
+                                       su2double MinXCoord, su2double MaxXCoord,
+                                       su2double MinYCoord, su2double MaxYCoord,
+                                       su2double MinZCoord, su2double MaxZCoord,
+                                       su2double *FlowVariable,
                                        vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
   
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
-  long MinDist_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, PointIndex, jVertex;
+  long Next_Edge = 0;
+  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, iEdge, PointIndex, jEdge;
   su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
-  *VarCoord = NULL, Variable_Interp;
-  passivedouble MinDist_Value, Dist_Value, Segment[3] = {0.0, 0.0, 0.0}, Tolerance = 1E-10;
+  *VarCoord = NULL, Variable_Interp, v1[3] = {0.0, 0.0, 0.0}, v3[3] = {0.0, 0.0, 0.0}, CrossProduct = 1.0;
+  bool Found_Edge;
+  passivedouble Dist_Value;
   vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
+  vector<unsigned long> IGlobalID_Index0, JGlobalID_Index0, IGlobalID_Index1, JGlobalID_Index1, IGlobalID_Airfoil, JGlobalID_Airfoil;
   vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
-  int rank = MASTER_NODE;
   su2double **Coord_Variation = NULL;
+  vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
+  vector<unsigned long> IGlobalIDExtra, JGlobalIDExtra;
+  vector<bool> AddExtra;
+  unsigned long EdgeDonor;
+  bool FoundEdge;
   
 #ifdef HAVE_MPI
-  unsigned long nLocalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+  unsigned long nLocalEdge, MaxLocalEdge, *Buffer_Send_nEdge, *Buffer_Receive_nEdge, nBuffer_Coord, nBuffer_Variable, nBuffer_GlobalID;
   int nProcessor, iProcessor;
-  
   su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  su2double *Buffer_Send_Variable, *Buffer_Receive_Variable;
+  unsigned long *Buffer_Send_GlobalID, *Buffer_Receive_GlobalID;
 #endif
   
   Xcoord_Airfoil.clear();
   Ycoord_Airfoil.clear();
   Zcoord_Airfoil.clear();
   Variable_Airfoil.clear();
+  IGlobalID_Airfoil.clear();
+  JGlobalID_Airfoil.clear();
   
   /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
   
@@ -622,14 +660,14 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
   }
   
-  /*--- the grid variation is stored using a vertices information,
+  /*--- Grid movement is stored using a vertices information,
    we should go from vertex to points ---*/
   
   if (original_surface == false) {
     
     Coord_Variation = new su2double *[nPoint];
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-    Coord_Variation[iPoint] = new su2double [nDim];
+      Coord_Variation[iPoint] = new su2double [nDim];
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_GeoEval(iMarker) == YES) {
@@ -637,7 +675,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
           iPoint = vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < nDim; iDim++)
-          Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
         }
       }
     }
@@ -656,7 +694,65 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
             jPoint = bound[iMarker][iElem]->GetNode(jNode);
             
-            if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
+            CrossProduct = 1.0;
+            if (config->GetGeo_Description() == NACELLE) {
+              v1[0] = node[iPoint]->GetCoord(0) - node[iPoint]->GetCoord(0);
+              v1[1] = node[iPoint]->GetCoord(1) - 0.0;
+              v1[2] = node[iPoint]->GetCoord(2) - 0.0;
+              v3[0] = v1[1]*Plane_Normal[2]-v1[2]*Plane_Normal[1];
+              v3[1] = v1[2]*Plane_Normal[0]-v1[0]*Plane_Normal[2];
+              v3[2] = v1[0]*Plane_Normal[1]-v1[1]*Plane_Normal[0];
+              
+              su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+              su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+              
+              /*--- Translate to the origin ---*/
+              
+              su2double XCoord_Trans = node[iPoint]->GetCoord(0) - config->GetNacelleLocation(0);
+              su2double YCoord_Trans = node[iPoint]->GetCoord(1) - config->GetNacelleLocation(1);
+              su2double ZCoord_Trans = node[iPoint]->GetCoord(2) - config->GetNacelleLocation(2);
+              
+              /*--- Apply tilt angle ---*/
+              
+              su2double XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+              su2double YCoord_Trans_Tilt = YCoord_Trans;
+              su2double ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+              
+              /*--- Apply toe angle ---*/
+              
+ //             su2double XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+              su2double YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+              su2double ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+              
+              /*--- Undo plane rotation, we have already rotated the nacelle ---*/
+              
+              /*--- Undo tilt angle ---*/
+              
+              su2double XPlane_Normal_Tilt = Plane_Normal[0]*cos(-Tilt_Angle) + Plane_Normal[2]*sin(-Tilt_Angle);
+              su2double YPlane_Normal_Tilt = Plane_Normal[1];
+              su2double ZPlane_Normal_Tilt = Plane_Normal[2]*cos(-Tilt_Angle) - Plane_Normal[0]*sin(-Tilt_Angle);
+              
+              /*--- Undo toe angle ---*/
+              
+              su2double XPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*cos(-Toe_Angle) - YPlane_Normal_Tilt*sin(-Toe_Angle);
+              su2double YPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*sin(-Toe_Angle) + YPlane_Normal_Tilt*cos(-Toe_Angle);
+              su2double ZPlane_Normal_Tilt_Toe = ZPlane_Normal_Tilt;
+              
+              
+              v1[0] = 0.0;
+              v1[1] = YCoord_Trans_Tilt_Toe;
+              v1[2] = ZCoord_Trans_Tilt_Toe;
+              v3[0] = v1[1]*ZPlane_Normal_Tilt_Toe-v1[2]*YPlane_Normal_Tilt_Toe;
+              v3[1] = v1[2]*XPlane_Normal_Tilt_Toe-v1[0]*ZPlane_Normal_Tilt_Toe;
+              v3[2] = v1[0]*YPlane_Normal_Tilt_Toe-v1[1]*XPlane_Normal_Tilt_Toe;
+              CrossProduct = v3[0] * 1.0 + v3[1] * 0.0 + v3[2] * 0.0;
+              
+            }
+            
+            if ((jPoint > iPoint) && (CrossProduct >= 0.0)
+                && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))
+                && ((node[iPoint]->GetCoord(1) > MinYCoord) && (node[iPoint]->GetCoord(1) < MaxYCoord))
+                && ((node[iPoint]->GetCoord(2) > MinZCoord) && (node[iPoint]->GetCoord(2) < MaxZCoord))) {
               
               Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
               Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
@@ -680,90 +776,104 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
               
               if (nDim == 2) {
-                
-                Xcoord_Index0.push_back(Segment_P0[0]);    Xcoord_Index1.push_back(Segment_P1[0]);
-                Ycoord_Index0.push_back(Segment_P0[2]);    Ycoord_Index1.push_back(Segment_P1[2]);
-                Zcoord_Index0.push_back(Segment_P0[1]);    Zcoord_Index1.push_back(Segment_P1[1]);
-                Variable_Index0.push_back(Variable_P0);    Variable_Index1.push_back(Variable_P1);
+                Xcoord_Index0.push_back(Segment_P0[0]);                     Xcoord_Index1.push_back(Segment_P1[0]);
+                Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
+                Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
+                Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
+                IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+                JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
                 PointIndex++;
-                
               }
+              
               /*--- In 3D compute the intersection ---*/
               
               else if (nDim == 3) {
-                
                 intersect = SegmentIntersectsPlane(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
-                
                 if (intersect == true) {
-                  
                   if (PointIndex == 0) {
                     Xcoord_Index0.push_back(Intersection[0]);
                     Ycoord_Index0.push_back(Intersection[1]);
                     Zcoord_Index0.push_back(Intersection[2]);
                     Variable_Index0.push_back(Variable_Interp);
+                    IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
+                    JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
                   }
                   if (PointIndex == 1) {
                     Xcoord_Index1.push_back(Intersection[0]);
                     Ycoord_Index1.push_back(Intersection[1]);
                     Zcoord_Index1.push_back(Intersection[2]);
                     Variable_Index1.push_back(Variable_Interp);
+                    IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
+                    JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
                   }
                   PointIndex++;
                 }
               }
               
             }
-            
           }
         }
-        
-        
         
       }
     }
   }
   
   if (original_surface == false) {
-    
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-    delete [] Coord_Variation[iPoint];
+      delete [] Coord_Variation[iPoint];
     delete [] Coord_Variation;
-    
   }
   
 #ifdef HAVE_MPI
   
   /*--- Copy the coordinates of all the points in the plane to the master node ---*/
   
-  nLocalVertex = 0, MaxLocalVertex = 0;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  nLocalEdge = 0, MaxLocalEdge = 0;
+  nProcessor = size;
   
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  Buffer_Send_nEdge = new unsigned long [1];
+  Buffer_Receive_nEdge = new unsigned long [nProcessor];
   
-  nLocalVertex = Xcoord_Index0.size();
+  nLocalEdge = Xcoord_Index0.size();
   
-  Buffer_Send_nVertex[0] = nLocalVertex;
+  Buffer_Send_nEdge[0] = nLocalEdge;
   
-  SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalEdge, &MaxLocalEdge, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nEdge, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nEdge, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
-  Buffer_Send_Coord = new su2double [MaxLocalVertex*8];
-  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex*8];
-  nBuffer = MaxLocalVertex*8;
+  Buffer_Send_Coord    = new su2double [MaxLocalEdge*6];
+  Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalEdge*6];
   
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*8 + 0] = Xcoord_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 1] = Ycoord_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 2] = Zcoord_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 3] = Variable_Index0[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 4] = Xcoord_Index1[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 5] = Ycoord_Index1[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 6] = Zcoord_Index1[iVertex];
-    Buffer_Send_Coord[iVertex*8 + 7] = Variable_Index1[iVertex];
+  Buffer_Send_Variable    = new su2double [MaxLocalEdge*2];
+  Buffer_Receive_Variable = new su2double [nProcessor*MaxLocalEdge*2];
+  
+  Buffer_Send_GlobalID    = new unsigned long [MaxLocalEdge*4];
+  Buffer_Receive_GlobalID = new unsigned long [nProcessor*MaxLocalEdge*4];
+  
+  nBuffer_Coord    = MaxLocalEdge*6;
+  nBuffer_Variable = MaxLocalEdge*2;
+  nBuffer_GlobalID = MaxLocalEdge*4;
+  
+  for (iEdge = 0; iEdge < nLocalEdge; iEdge++) {
+    Buffer_Send_Coord[iEdge*6 + 0] = Xcoord_Index0[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 1] = Ycoord_Index0[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 2] = Zcoord_Index0[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 3] = Xcoord_Index1[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 4] = Ycoord_Index1[iEdge];
+    Buffer_Send_Coord[iEdge*6 + 5] = Zcoord_Index1[iEdge];
+    
+    Buffer_Send_Variable[iEdge*2 + 0] = Variable_Index0[iEdge];
+    Buffer_Send_Variable[iEdge*2 + 1] = Variable_Index1[iEdge];
+    
+    Buffer_Send_GlobalID[iEdge*4 + 0] = IGlobalID_Index0[iEdge];
+    Buffer_Send_GlobalID[iEdge*4 + 1] = JGlobalID_Index0[iEdge];
+    Buffer_Send_GlobalID[iEdge*4 + 2] = IGlobalID_Index1[iEdge];
+    Buffer_Send_GlobalID[iEdge*4 + 3] = JGlobalID_Index1[iEdge];
   }
   
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_Variable, nBuffer_Variable, MPI_DOUBLE, Buffer_Receive_Variable, nBuffer_Variable, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_GlobalID, nBuffer_GlobalID, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalID, nBuffer_GlobalID, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
   /*--- Clean the vectors before adding the new vertices only to the master node ---*/
   
@@ -771,164 +881,126 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   Ycoord_Index0.clear();     Ycoord_Index1.clear();
   Zcoord_Index0.clear();     Zcoord_Index1.clear();
   Variable_Index0.clear();   Variable_Index1.clear();
+  IGlobalID_Index0.clear();  IGlobalID_Index1.clear();
+  JGlobalID_Index0.clear();  JGlobalID_Index1.clear();
   
   /*--- Copy the boundary to the master node vectors ---*/
   
   if (rank == MASTER_NODE) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 0] );
-        Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 1] );
-        Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 2] );
-        Variable_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 3] );
-        Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 4] );
-        Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 5] );
-        Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 6] );
-        Variable_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*8 + iVertex*8 + 7] );
+      for (iEdge = 0; iEdge < Buffer_Receive_nEdge[iProcessor]; iEdge++) {
+        Xcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 0] );
+        Ycoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 1] );
+        Zcoord_Index0.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 2] );
+        Xcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 3] );
+        Ycoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 4] );
+        Zcoord_Index1.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalEdge*6 + iEdge*6 + 5] );
+        
+        Variable_Index0.push_back( Buffer_Receive_Variable[ iProcessor*MaxLocalEdge*2 + iEdge*2 + 0] );
+        Variable_Index1.push_back( Buffer_Receive_Variable[ iProcessor*MaxLocalEdge*2 + iEdge*2 + 1] );
+        
+        IGlobalID_Index0.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 0] );
+        JGlobalID_Index0.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 1] );
+        IGlobalID_Index1.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 2] );
+        JGlobalID_Index1.push_back( Buffer_Receive_GlobalID[ iProcessor*MaxLocalEdge*4 + iEdge*4 + 3] );
+        
       }
     }
   }
   
-  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
+  delete[] Buffer_Send_Coord;      delete[] Buffer_Receive_Coord;
+  delete[] Buffer_Send_Variable;   delete[] Buffer_Receive_Variable;
+  delete[] Buffer_Send_GlobalID;   delete[] Buffer_Receive_GlobalID;
+  delete[] Buffer_Send_nEdge;    delete[] Buffer_Receive_nEdge;
   
 #endif
   
-  
-  
   if ((rank == MASTER_NODE) && (Xcoord_Index0.size() != 0)) {
     
-    /*--- Remove edges with zero length ---*/
+    /*--- Remove singular edges ---*/
     
     bool Remove;
     
-    do {
-      
-      Remove = false;
-      
-      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+    do { Remove = false;
+      for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
         
-        Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[iVertex]);
-        Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[iVertex]);
-        Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[iVertex]);
-        
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        
-        if (Dist_Value <= Tolerance) {
+        if (((IGlobalID_Index0[iEdge] == IGlobalID_Index1[iEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index1[iEdge])) ||
+            ((IGlobalID_Index0[iEdge] == JGlobalID_Index1[iEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index1[iEdge]))) {
           
-          /*--- Remove edge with repeated points ---*/
+          Xcoord_Index0.erase (Xcoord_Index0.begin() + iEdge);
+          Ycoord_Index0.erase (Ycoord_Index0.begin() + iEdge);
+          Zcoord_Index0.erase (Zcoord_Index0.begin() + iEdge);
+          Variable_Index0.erase (Variable_Index0.begin() + iEdge);
+          IGlobalID_Index0.erase (IGlobalID_Index0.begin() + iEdge);
+          JGlobalID_Index0.erase (JGlobalID_Index0.begin() + iEdge);
           
-          Xcoord_Index0.erase (Xcoord_Index0.begin() + iVertex);
-          Ycoord_Index0.erase (Ycoord_Index0.begin() + iVertex);
-          Zcoord_Index0.erase (Zcoord_Index0.begin() + iVertex);
-          Variable_Index0.erase (Variable_Index0.begin() + iVertex);
-          
-          Xcoord_Index1.erase (Xcoord_Index1.begin() + iVertex);
-          Ycoord_Index1.erase (Ycoord_Index1.begin() + iVertex);
-          Zcoord_Index1.erase (Zcoord_Index1.begin() + iVertex);
-          Variable_Index1.erase (Variable_Index1.begin() + iVertex);
+          Xcoord_Index1.erase (Xcoord_Index1.begin() + iEdge);
+          Ycoord_Index1.erase (Ycoord_Index1.begin() + iEdge);
+          Zcoord_Index1.erase (Zcoord_Index1.begin() + iEdge);
+          Variable_Index1.erase (Variable_Index1.begin() + iEdge);
+          IGlobalID_Index1.erase (IGlobalID_Index1.begin() + iEdge);
+          JGlobalID_Index1.erase (JGlobalID_Index1.begin() + iEdge);
           
           Remove = true; break;
-          
         }
-        
         if (Remove) break;
-        
       }
-      
     } while (Remove == true);
     
+    /*--- Remove repeated edges computing distance, this could happend because the MPI ---*/
     
-    /*--- Remove repeated edges computing distance ---*/
-    
-    do {
-      
-      Remove = false;
-      
-      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
-        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+    do { Remove = false;
+      for (iEdge = 0; iEdge < Xcoord_Index0.size()-1; iEdge++) {
+        for (jEdge = iEdge+1; jEdge < Xcoord_Index0.size(); jEdge++) {
           
-          /*--- First check ---*/
+          /*--- Edges with the same orientation ---*/
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
+          if ((((IGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge])) ||
+               ((IGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge]))) &&
+              (((IGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge])) ||
+               ((IGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge])))) {
+                
+                Xcoord_Index0.erase (Xcoord_Index0.begin() + jEdge);
+                Ycoord_Index0.erase (Ycoord_Index0.begin() + jEdge);
+                Zcoord_Index0.erase (Zcoord_Index0.begin() + jEdge);
+                Variable_Index0.erase (Variable_Index0.begin() + jEdge);
+                IGlobalID_Index0.erase (IGlobalID_Index0.begin() + jEdge);
+                JGlobalID_Index0.erase (JGlobalID_Index0.begin() + jEdge);
+                
+                Xcoord_Index1.erase (Xcoord_Index1.begin() + jEdge);
+                Ycoord_Index1.erase (Ycoord_Index1.begin() + jEdge);
+                Zcoord_Index1.erase (Zcoord_Index1.begin() + jEdge);
+                Variable_Index1.erase (Variable_Index1.begin() + jEdge);
+                IGlobalID_Index1.erase (IGlobalID_Index1.begin() + jEdge);
+                JGlobalID_Index1.erase (JGlobalID_Index1.begin() + jEdge);
+                
+                Remove = true; break;
+                
+              }
           
-          /*--- Compute the distance to each point ---*/
+          /*--- Edges with oposite orientation ---*/
           
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          
-          /*--- Check the second point ---*/
-          
-          if (Dist_Value <= Tolerance) {
-            
-            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-            
-            /*--- Compute the distance to each point ---*/
-            
-            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-            
-            if (Dist_Value <= Tolerance) {
-              
-              /*--- Remove repeated point ---*/
-              
-              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
-              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
-              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
-              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
-              
-              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
-              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
-              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
-              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
-              
-              Remove = true; break;
-              
-            }
-            
-          }
-          
-          /*--- Second check ---*/
-          
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-          
-          /*--- Compute the distance to each point ---*/
-          
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          
-          /*--- Check the second point ---*/
-          
-          if (Dist_Value <= Tolerance) {
-            
-            Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-            Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-            Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-            
-            /*--- Compute the distance to each point ---*/
-            
-            Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-            
-            if (Dist_Value <= Tolerance) {
-              
-              /*--- Remove repeated point ---*/
-              
-              Xcoord_Index0.erase (Xcoord_Index0.begin() + jVertex);
-              Ycoord_Index0.erase (Ycoord_Index0.begin() + jVertex);
-              Zcoord_Index0.erase (Zcoord_Index0.begin() + jVertex);
-              Variable_Index0.erase (Variable_Index0.begin() + jVertex);
-              
-              Xcoord_Index1.erase (Xcoord_Index1.begin() + jVertex);
-              Ycoord_Index1.erase (Ycoord_Index1.begin() + jVertex);
-              Zcoord_Index1.erase (Zcoord_Index1.begin() + jVertex);
-              Variable_Index1.erase (Variable_Index1.begin() + jVertex);
-              
-              Remove = true; break;
-            }
-          }
+          if ((((IGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge])) ||
+               ((IGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge]))) &&
+              (((IGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge])) ||
+               ((IGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge])))) {
+                
+                Xcoord_Index0.erase (Xcoord_Index0.begin() + jEdge);
+                Ycoord_Index0.erase (Ycoord_Index0.begin() + jEdge);
+                Zcoord_Index0.erase (Zcoord_Index0.begin() + jEdge);
+                Variable_Index0.erase (Variable_Index0.begin() + jEdge);
+                IGlobalID_Index0.erase (IGlobalID_Index0.begin() + jEdge);
+                JGlobalID_Index0.erase (JGlobalID_Index0.begin() + jEdge);
+                
+                Xcoord_Index1.erase (Xcoord_Index1.begin() + jEdge);
+                Ycoord_Index1.erase (Ycoord_Index1.begin() + jEdge);
+                Zcoord_Index1.erase (Zcoord_Index1.begin() + jEdge);
+                Variable_Index1.erase (Variable_Index1.begin() + jEdge);
+                IGlobalID_Index1.erase (IGlobalID_Index1.begin() + jEdge);
+                JGlobalID_Index1.erase (JGlobalID_Index1.begin() + jEdge);
+                
+                Remove = true; break;
+              }
           if (Remove) break;
         }
         if (Remove) break;
@@ -938,132 +1010,193 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     
     if (Xcoord_Index0.size() != 1) {
       
+      /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
+      
       if (config->GetGeo_Description() == FUSELAGE) {
-        
-        /*--- Rotate from the Y-Z plane to the X-Z plane to reuse the rest of subroutines  ---*/
-        
         su2double Angle = -0.5*PI_NUMBER;
+        for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+          su2double XCoord = Xcoord_Index0[iEdge]*cos(Angle) - Ycoord_Index0[iEdge]*sin(Angle);
+          su2double YCoord = Ycoord_Index0[iEdge]*cos(Angle) + Xcoord_Index0[iEdge]*sin(Angle);
+          su2double ZCoord = Zcoord_Index0[iEdge];
+          Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
+          XCoord = Xcoord_Index1[iEdge]*cos(Angle) - Ycoord_Index1[iEdge]*sin(Angle);
+          YCoord = Ycoord_Index1[iEdge]*cos(Angle) + Xcoord_Index1[iEdge]*sin(Angle);
+          ZCoord = Zcoord_Index1[iEdge];
+          Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
+        }
+      }
+      
+      /*--- Rotate nacelle secction to a X-Z plane to reuse the rest of subroutines  ---*/
+      
+      
+      if (config->GetGeo_Description() == NACELLE) {
         
-        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+        su2double Roll_Angle = 0.5*PI_NUMBER - Theta_deg*PI_NUMBER/180;
+
+        su2double XCoord_Trans, YCoord_Trans, ZCoord_Trans, XCoord_Trans_Tilt, YCoord_Trans_Tilt, ZCoord_Trans_Tilt,
+        XCoord_Trans_Tilt_Toe, YCoord_Trans_Tilt_Toe, ZCoord_Trans_Tilt_Toe, XCoord, YCoord, ZCoord;
+        
+        for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
           
-          su2double XCoord = Xcoord_Index0[iVertex]*cos(Angle) - Ycoord_Index0[iVertex]*sin(Angle);
-          su2double YCoord = Ycoord_Index0[iVertex]*cos(Angle) + Xcoord_Index0[iVertex]*sin(Angle);
-          su2double ZCoord = Zcoord_Index0[iVertex];
+          /*--- First point of the edge ---*/
+
+          /*--- Translate to the origin ---*/
+
+          XCoord_Trans = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
           
-          Xcoord_Index0[iVertex] = XCoord;
-          Ycoord_Index0[iVertex] = YCoord;
-          Zcoord_Index0[iVertex] = ZCoord;
+          /*--- Apply tilt angle ---*/
+
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+
+          /*--- Apply toe angle ---*/
           
-          XCoord = Xcoord_Index1[iVertex]*cos(Angle) - Ycoord_Index1[iVertex]*sin(Angle);
-          YCoord = Ycoord_Index1[iVertex]*cos(Angle) + Xcoord_Index1[iVertex]*sin(Angle);
-          ZCoord = Zcoord_Index1[iVertex];
-          Xcoord_Index1[iVertex] = XCoord;
-          Ycoord_Index1[iVertex] = YCoord;
-          Zcoord_Index1[iVertex] = ZCoord;
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+
+          /*--- Rotate to X-Z plane (roll) ---*/
+
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
+          Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
+          
+          /*--- Second point of the edge ---*/
+          
+          /*--- Translate to the origin ---*/
+          
+          XCoord_Trans = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          
+          /*--- Apply tilt angle ---*/
+          
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+          
+          /*--- Rotate to X-Z plane (roll) ---*/
+          
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
+          Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
           
         }
-        
       }
+      
       
       /*--- Identify the extreme of the curve and close it ---*/
       
       Conection_Index0.reserve(Xcoord_Index0.size()+1);
       Conection_Index1.reserve(Xcoord_Index0.size()+1);
       
-      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-        Conection_Index0[iVertex] = 0;
-        Conection_Index1[iVertex] = 0;
+      for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+        Conection_Index0[iEdge] = 0;
+        Conection_Index1[iEdge] = 0;
       }
       
-      for (iVertex = 0; iVertex < Xcoord_Index0.size()-1; iVertex++) {
-        for (jVertex = iVertex+1; jVertex < Xcoord_Index0.size(); jVertex++) {
+      for (iEdge = 0; iEdge < Xcoord_Index0.size()-1; iEdge++) {
+        for (jEdge = iEdge+1; jEdge < Xcoord_Index0.size(); jEdge++) {
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index0[jVertex]++; }
+          if (((IGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge])) ||
+              ((IGlobalID_Index0[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index0[jEdge])))
+          { Conection_Index0[iEdge]++; Conection_Index0[jEdge]++; }
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index0[iVertex]++; Conection_Index1[jVertex]++; }
+          if (((IGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge])) ||
+              ((IGlobalID_Index0[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index0[iEdge] == IGlobalID_Index1[jEdge])))
+          { Conection_Index0[iEdge]++; Conection_Index1[jEdge]++; }
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index0[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index0[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index0[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index0[jVertex]++; }
+          if (((IGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge])) ||
+              ((IGlobalID_Index1[iEdge] == JGlobalID_Index0[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index0[jEdge])))
+          { Conection_Index1[iEdge]++; Conection_Index0[jEdge]++; }
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Index1[jVertex]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Index1[jVertex]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Index1[jVertex]);
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= Tolerance) { Conection_Index1[iVertex]++; Conection_Index1[jVertex]++; }
+          if (((IGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge])) ||
+              ((IGlobalID_Index1[iEdge] == JGlobalID_Index1[jEdge]) && (JGlobalID_Index1[iEdge] == IGlobalID_Index1[jEdge])))
+          { Conection_Index1[iEdge]++; Conection_Index1[jEdge]++; }
           
         }
       }
       
       /*--- Connect extremes of the curves ---*/
       
-      vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
-      vector<bool> AddExtra;
-      unsigned long VertexDonor;
-      bool FoundVertex;
+      /*--- First: Identify the extremes of the curve in the extra vector  ---*/
       
-      for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
-        if (Conection_Index0[iVertex] == 0) {
-          XcoordExtra.push_back(Xcoord_Index0[iVertex]);
-          YcoordExtra.push_back(Ycoord_Index0[iVertex]);
-          ZcoordExtra.push_back(Zcoord_Index0[iVertex]);
-          VariableExtra.push_back(Variable_Index0[iVertex]);
+      for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
+        if (Conection_Index0[iEdge] == 0) {
+          XcoordExtra.push_back(Xcoord_Index0[iEdge]);
+          YcoordExtra.push_back(Ycoord_Index0[iEdge]);
+          ZcoordExtra.push_back(Zcoord_Index0[iEdge]);
+          VariableExtra.push_back(Variable_Index0[iEdge]);
+          IGlobalIDExtra.push_back(IGlobalID_Index0[iEdge]);
+          JGlobalIDExtra.push_back(JGlobalID_Index0[iEdge]);
           AddExtra.push_back(true);
         }
-        if (Conection_Index1[iVertex] == 0) {
-          XcoordExtra.push_back(Xcoord_Index1[iVertex]);
-          YcoordExtra.push_back(Ycoord_Index1[iVertex]);
-          ZcoordExtra.push_back(Zcoord_Index1[iVertex]);
-          VariableExtra.push_back(Variable_Index1[iVertex]);
+        if (Conection_Index1[iEdge] == 0) {
+          XcoordExtra.push_back(Xcoord_Index1[iEdge]);
+          YcoordExtra.push_back(Ycoord_Index1[iEdge]);
+          ZcoordExtra.push_back(Zcoord_Index1[iEdge]);
+          VariableExtra.push_back(Variable_Index1[iEdge]);
+          IGlobalIDExtra.push_back(IGlobalID_Index1[iEdge]);
+          JGlobalIDExtra.push_back(JGlobalID_Index1[iEdge]);
           AddExtra.push_back(true);
         }
       }
       
-      /*---Compute min distance from the points ---*/
+      /*--- Second, if it is an open curve then find the closest point to an extreme to close it  ---*/
       
       if (XcoordExtra.size() > 1) {
         
-        for (iVertex = 0; iVertex < XcoordExtra.size()-1; iVertex++) {
+        for (iEdge = 0; iEdge < XcoordExtra.size()-1; iEdge++) {
           
-          su2double MinDist = 1E6;
-          FoundVertex = false;
-          VertexDonor = 0;
-          
-          for (jVertex = iVertex+1; jVertex <XcoordExtra.size(); jVertex++) {
-            Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iVertex])-SU2_TYPE::GetValue(XcoordExtra[jVertex]), 2.0));
-            if ((Dist_Value < MinDist) && (AddExtra[iVertex]) && (AddExtra[jVertex])) {
-              VertexDonor = jVertex;
-              FoundVertex = true;
+          su2double MinDist = 1E6; FoundEdge = false; EdgeDonor = 0;
+          for (jEdge = iEdge+1; jEdge < XcoordExtra.size(); jEdge++) {
+            Dist_Value = sqrt(pow(SU2_TYPE::GetValue(XcoordExtra[iEdge])-SU2_TYPE::GetValue(XcoordExtra[jEdge]), 2.0));
+            if ((Dist_Value < MinDist) && (AddExtra[iEdge]) && (AddExtra[jEdge])) {
+              EdgeDonor = jEdge; FoundEdge = true;
             }
           }
           
-          if (FoundVertex) {
+          if (FoundEdge) {
             
             /*--- Add first point of the new edge ---*/
             
-            Xcoord_Index0.push_back (XcoordExtra[iVertex]);
-            Ycoord_Index0.push_back (YcoordExtra[iVertex]);
-            Zcoord_Index0.push_back (ZcoordExtra[iVertex]);
-            Variable_Index0.push_back (VariableExtra[iVertex]);
-            AddExtra[iVertex] = false;
+            Xcoord_Index0.push_back (XcoordExtra[iEdge]);
+            Ycoord_Index0.push_back (YcoordExtra[iEdge]);
+            Zcoord_Index0.push_back (ZcoordExtra[iEdge]);
+            Variable_Index0.push_back (VariableExtra[iEdge]);
+            IGlobalID_Index0.push_back (IGlobalIDExtra[iEdge]);
+            JGlobalID_Index0.push_back (JGlobalIDExtra[iEdge]);
+            AddExtra[iEdge] = false;
             
             /*--- Add second (closest)  point of the new edge ---*/
             
-            Xcoord_Index1.push_back (XcoordExtra[VertexDonor]);
-            Ycoord_Index1.push_back (YcoordExtra[VertexDonor]);
-            Zcoord_Index1.push_back (ZcoordExtra[VertexDonor]);
-            Variable_Index1.push_back (VariableExtra[VertexDonor]);
-            AddExtra[VertexDonor] = false;
+            Xcoord_Index1.push_back (XcoordExtra[EdgeDonor]);
+            Ycoord_Index1.push_back (YcoordExtra[EdgeDonor]);
+            Zcoord_Index1.push_back (ZcoordExtra[EdgeDonor]);
+            Variable_Index1.push_back (VariableExtra[EdgeDonor]);
+            IGlobalID_Index1.push_back (IGlobalIDExtra[EdgeDonor]);
+            JGlobalID_Index1.push_back (JGlobalIDExtra[EdgeDonor]);
+            AddExtra[EdgeDonor] = false;
             
           }
           
@@ -1075,36 +1208,46 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         cout <<"There cutting system has failed, there is an incomplete curve (not used)." << endl;
       }
       
+      /*--- Find and add the trailing edge to to the list
+       and the contect the first point to the trailing edge ---*/
+      
       Trailing_Point = 0; Trailing_Coord = Xcoord_Index0[0];
-      for (iVertex = 1; iVertex < Xcoord_Index0.size(); iVertex++) {
-        if (Xcoord_Index0[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex; Trailing_Coord = Xcoord_Index0[iVertex];
+      for (iEdge = 1; iEdge < Xcoord_Index0.size(); iEdge++) {
+        if (Xcoord_Index0[iEdge] > Trailing_Coord) {
+          Trailing_Point = iEdge; Trailing_Coord = Xcoord_Index0[iEdge];
         }
       }
-      
-      /*--- Add the trailing edge to the list and the contect points to the trailing edge and remove from the original list ---*/
       
       Xcoord_Airfoil.push_back(Xcoord_Index0[Trailing_Point]);
       Ycoord_Airfoil.push_back(Ycoord_Index0[Trailing_Point]);
       Zcoord_Airfoil.push_back(Zcoord_Index0[Trailing_Point]);
       Variable_Airfoil.push_back(Variable_Index0[Trailing_Point]);
+      IGlobalID_Airfoil.push_back(IGlobalID_Index0[Trailing_Point]);
+      JGlobalID_Airfoil.push_back(JGlobalID_Index0[Trailing_Point]);
       
       Xcoord_Airfoil.push_back(Xcoord_Index1[Trailing_Point]);
       Ycoord_Airfoil.push_back(Ycoord_Index1[Trailing_Point]);
       Zcoord_Airfoil.push_back(Zcoord_Index1[Trailing_Point]);
       Variable_Airfoil.push_back(Variable_Index1[Trailing_Point]);
+      IGlobalID_Airfoil.push_back(IGlobalID_Index1[Trailing_Point]);
+      JGlobalID_Airfoil.push_back(JGlobalID_Index1[Trailing_Point]);
       
       Xcoord_Index0.erase (Xcoord_Index0.begin() + Trailing_Point);
       Ycoord_Index0.erase (Ycoord_Index0.begin() + Trailing_Point);
       Zcoord_Index0.erase (Zcoord_Index0.begin() + Trailing_Point);
       Variable_Index0.erase (Variable_Index0.begin() + Trailing_Point);
+      IGlobalID_Index0.erase (IGlobalID_Index0.begin() + Trailing_Point);
+      JGlobalID_Index0.erase (JGlobalID_Index0.begin() + Trailing_Point);
       
       Xcoord_Index1.erase (Xcoord_Index1.begin() + Trailing_Point);
       Ycoord_Index1.erase (Ycoord_Index1.begin() + Trailing_Point);
       Zcoord_Index1.erase (Zcoord_Index1.begin() + Trailing_Point);
       Variable_Index1.erase (Variable_Index1.begin() + Trailing_Point);
+      IGlobalID_Index1.erase (IGlobalID_Index1.begin() + Trailing_Point);
+      JGlobalID_Index1.erase (JGlobalID_Index1.begin() + Trailing_Point);
       
-      /*--- Algorithm for the rest of the points ---*/
+      
+      /*--- Algorithm for adding the rest of the points ---*/
       
       do {
         
@@ -1114,70 +1257,57 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         
         /*--- Find the closest point  ---*/
         
-        MinDist_Value = 1E6;
-        MinDist_Point = -1;
+        Found_Edge = false;
         
-        for (iVertex = 0; iVertex < Xcoord_Index0.size(); iVertex++) {
+        for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
           
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index0[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index0[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
-          
-          /*--- Compute the distance to each point ---*/
-          
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= MinDist_Value) {
-            MinDist_Point = iVertex;
-            MinDist_Value = Dist_Value;
-            Index = 0;
+          if (((IGlobalID_Index0[iEdge] == IGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index0[iEdge] == JGlobalID_Airfoil[Airfoil_Point])) ||
+              ((IGlobalID_Index0[iEdge] == JGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index0[iEdge] == IGlobalID_Airfoil[Airfoil_Point]))) {
+            Next_Edge = iEdge; Found_Edge = true; Index = 0; break;
           }
           
-          /*--- Same with the second index  ---*/
-          
-          Segment[0] = SU2_TYPE::GetValue(Xcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Xcoord_Airfoil[Airfoil_Point]);
-          Segment[1] = SU2_TYPE::GetValue(Ycoord_Index1[iVertex]) - SU2_TYPE::GetValue(Ycoord_Airfoil[Airfoil_Point]);
-          Segment[2] = SU2_TYPE::GetValue(Zcoord_Index1[iVertex]) - SU2_TYPE::GetValue(Zcoord_Airfoil[Airfoil_Point]);
-          
-          /*--- Compute the distance to each point ---*/
-          
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          if (Dist_Value <= MinDist_Value) {
-            MinDist_Point = iVertex;
-            MinDist_Value = Dist_Value;
-            Index = 1;
+          if (((IGlobalID_Index1[iEdge] == IGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index1[iEdge] == JGlobalID_Airfoil[Airfoil_Point])) ||
+              ((IGlobalID_Index1[iEdge] == JGlobalID_Airfoil[Airfoil_Point]) && (JGlobalID_Index1[iEdge] == IGlobalID_Airfoil[Airfoil_Point]))) {
+            Next_Edge = iEdge; Found_Edge = true; Index = 1; break;
           }
           
         }
         
-        /*--- Add and remove the min distance to the list and the next point in the edge ---*/
+        /*--- Add and remove the next point to the list and the next point in the edge ---*/
         
-        if (MinDist_Value < Tolerance) {
+        if (Found_Edge) {
           
           if (Index == 0) {
-            
-            Xcoord_Airfoil.push_back(Xcoord_Index1[MinDist_Point]);
-            Ycoord_Airfoil.push_back(Ycoord_Index1[MinDist_Point]);
-            Zcoord_Airfoil.push_back(Zcoord_Index1[MinDist_Point]);
-            Variable_Airfoil.push_back(Variable_Index1[MinDist_Point]);
+            Xcoord_Airfoil.push_back(Xcoord_Index1[Next_Edge]);
+            Ycoord_Airfoil.push_back(Ycoord_Index1[Next_Edge]);
+            Zcoord_Airfoil.push_back(Zcoord_Index1[Next_Edge]);
+            Variable_Airfoil.push_back(Variable_Index1[Next_Edge]);
+            IGlobalID_Airfoil.push_back(IGlobalID_Index1[Next_Edge]);
+            JGlobalID_Airfoil.push_back(JGlobalID_Index1[Next_Edge]);
           }
           
           if (Index == 1) {
-            
-            Xcoord_Airfoil.push_back(Xcoord_Index0[MinDist_Point]);
-            Ycoord_Airfoil.push_back(Ycoord_Index0[MinDist_Point]);
-            Zcoord_Airfoil.push_back(Zcoord_Index0[MinDist_Point]);
-            Variable_Airfoil.push_back(Variable_Index0[MinDist_Point]);
+            Xcoord_Airfoil.push_back(Xcoord_Index0[Next_Edge]);
+            Ycoord_Airfoil.push_back(Ycoord_Index0[Next_Edge]);
+            Zcoord_Airfoil.push_back(Zcoord_Index0[Next_Edge]);
+            Variable_Airfoil.push_back(Variable_Index0[Next_Edge]);
+            IGlobalID_Airfoil.push_back(IGlobalID_Index0[Next_Edge]);
+            JGlobalID_Airfoil.push_back(JGlobalID_Index0[Next_Edge]);
           }
           
-          Xcoord_Index0.erase(Xcoord_Index0.begin() + MinDist_Point);
-          Ycoord_Index0.erase(Ycoord_Index0.begin() + MinDist_Point);
-          Zcoord_Index0.erase(Zcoord_Index0.begin() + MinDist_Point);
-          Variable_Index0.erase(Variable_Index0.begin() + MinDist_Point);
+          Xcoord_Index0.erase(Xcoord_Index0.begin() + Next_Edge);
+          Ycoord_Index0.erase(Ycoord_Index0.begin() + Next_Edge);
+          Zcoord_Index0.erase(Zcoord_Index0.begin() + Next_Edge);
+          Variable_Index0.erase(Variable_Index0.begin() + Next_Edge);
+          IGlobalID_Index0.erase(IGlobalID_Index0.begin() + Next_Edge);
+          JGlobalID_Index0.erase(JGlobalID_Index0.begin() + Next_Edge);
           
-          Xcoord_Index1.erase(Xcoord_Index1.begin() + MinDist_Point);
-          Ycoord_Index1.erase(Ycoord_Index1.begin() + MinDist_Point);
-          Zcoord_Index1.erase(Zcoord_Index1.begin() + MinDist_Point);
-          Variable_Index1.erase(Variable_Index1.begin() + MinDist_Point);
+          Xcoord_Index1.erase(Xcoord_Index1.begin() + Next_Edge);
+          Ycoord_Index1.erase(Ycoord_Index1.begin() + Next_Edge);
+          Zcoord_Index1.erase(Zcoord_Index1.begin() + Next_Edge);
+          Variable_Index1.erase(Variable_Index1.begin() + Next_Edge);
+          IGlobalID_Index1.erase(IGlobalID_Index1.begin() + Next_Edge);
+          JGlobalID_Index1.erase(JGlobalID_Index1.begin() + Next_Edge);
           
         }
         else { break; }
@@ -1186,8 +1316,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
       
       /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
       
-      Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();
-      Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();
+      Xcoord_Index0.clear(); Ycoord_Index0.clear(); Zcoord_Index0.clear(); Variable_Index0.clear();  IGlobalID_Index0.clear();  JGlobalID_Index0.clear();
+      Xcoord_Index1.clear(); Ycoord_Index1.clear(); Zcoord_Index1.clear(); Variable_Index1.clear();  IGlobalID_Index1.clear();  JGlobalID_Index1.clear();
       
     }
     
@@ -1202,6 +1332,17 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+    }
+  }
+}
+
+void CGeometry::RegisterOutput_Coordinates(CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
     }
   }
 }
@@ -1232,6 +1373,71 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   
 }
 
+void CGeometry::SetCustomBoundary(CConfig *config) {
+
+  unsigned short iMarker;
+  unsigned long iVertex;
+  string Marker_Tag;
+
+  /* --- Initialize quantities for customized boundary conditions.
+   * Custom values are initialized with the default values specified in the config (avoiding non physical values) --- */
+  CustomBoundaryTemperature = new su2double*[nMarker];
+  CustomBoundaryHeatFlux = new su2double*[nMarker];
+
+  for(iMarker=0; iMarker < nMarker; iMarker++){
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    CustomBoundaryHeatFlux[iMarker] = NULL;
+    CustomBoundaryTemperature[iMarker] = NULL;
+    if(config->GetMarker_All_PyCustom(iMarker)){
+      switch(config->GetMarker_All_KindBC(iMarker)){
+        case HEAT_FLUX:
+          CustomBoundaryHeatFlux[iMarker] = new su2double[nVertex[iMarker]];
+          for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+            CustomBoundaryHeatFlux[iMarker][iVertex] = config->GetWall_HeatFlux(Marker_Tag);
+          }
+          break;
+        case ISOTHERMAL:
+          CustomBoundaryTemperature[iMarker] = new su2double[nVertex[iMarker]];
+          for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+            CustomBoundaryTemperature[iMarker][iVertex] = config->GetIsothermal_Temperature(Marker_Tag);
+          }
+          break;
+        case INLET_FLOW:
+          // This case is handled in the solver class.
+          break;
+        default:
+          cout << "WARNING: Marker " << Marker_Tag << " is not customizable. Using default behavior." << endl;
+          break;
+      }
+    }
+  }
+
+}
+
+void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
+
+  unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
+
+  nMGlevel = config->GetnMGLevels();
+  for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
+    iMGfine = iMGlevel-1;
+    for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
+      if(config->GetMarker_All_PyCustom(iMarker)){
+        switch(config->GetMarker_All_KindBC(iMarker)){
+          case HEAT_FLUX:
+            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+            break;
+          case ISOTHERMAL:
+            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+            break;
+          // Inlet flow handled in solver class.
+          default: break;
+        }
+      }
+    }
+  }
+}
+
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
@@ -1240,13 +1446,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long>::iterator it;
   su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
-  int rank;
-  
-#ifndef HAVE_MPI
-  rank = MASTER_NODE;
-#else
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -1368,7 +1567,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               
               W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
               
-              Length_U = 0.0, Length_V = 0.0, Length_W = 0.0, CosValue = 0.0;
+              Length_U = 0.0; Length_V = 0.0; Length_W = 0.0; CosValue = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { Length_U += U[iDim]*U[iDim]; Length_V += V[iDim]*V[iDim]; Length_W += W[iDim]*W[iDim]; }
               Length_U = sqrt(Length_U); Length_V = sqrt(Length_V); Length_W = sqrt(Length_W);
               for (iDim = 0; iDim < nDim; iDim++) { U[iDim] /= Length_U; V[iDim] /= Length_V; CosValue += U[iDim]*V[iDim]; }
@@ -1536,7 +1735,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   /*--- Variables and buffers needed for MPI ---*/
   
 #ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = 1;
 #endif
@@ -1631,6 +1830,9 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 }
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();  
 
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
@@ -1668,6 +1870,9 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();  
   
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
@@ -1710,11 +1915,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   nZone = val_nZone;
   ofstream boundary_file;
   string Grid_Marker;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   string val_mesh_filename  = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
@@ -1732,14 +1932,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     default:
-      if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
       break;
   }
 
@@ -1886,8 +2079,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   short *Marker_All_SendRecv_Copy = NULL;
   string *Marker_All_TagBound_Copy = NULL;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   unsigned short nMarker_Max = config->GetnMarker_Max();
   
    
@@ -1910,23 +2103,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  /*--- MPI initialization ---*/
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
-  MPI_Status status, status2;
+  SU2_MPI::Status status, status2;
   unsigned long source;
   int recv_count=0;
   
   int offset = 17;
-  MPI_Status *send_stat = new MPI_Status[offset+size];
-  MPI_Status *recv_stat = new MPI_Status[offset+size];
+  SU2_MPI::Status *send_stat = new SU2_MPI::Status[offset+size];
+  SU2_MPI::Status *recv_stat = new SU2_MPI::Status[offset+size];
   
-  MPI_Request *send_req = new MPI_Request[offset+size];
-  MPI_Request *recv_req = new MPI_Request[offset+size];
+  SU2_MPI::Request *send_req = new SU2_MPI::Request[offset+size];
+  SU2_MPI::Request *recv_req = new SU2_MPI::Request[offset+size];
   
 #endif
   
@@ -2154,7 +2342,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   for (iDomain=0; iDomain < (unsigned long)size-1; iDomain++) {
     MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
-    MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+    SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
     SU2_MPI::Recv(&local_colour_values[geometry->starting_node[source]], recv_count,
                   MPI_UNSIGNED_LONG, source, rank, MPI_COMM_WORLD, &status2);
   }
@@ -2171,7 +2359,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] local_colour_temp;
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- This loop gets the array sizes of points, elements, etc. for each
@@ -2531,7 +2719,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     
 #ifdef HAVE_MPI
     if ((unsigned long)rank != iDomain) SU2_MPI::Waitall(13, send_req, send_stat);
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
     
   }
@@ -2872,7 +3060,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- The next section begins the recv of all data for the interior
@@ -2917,19 +3105,19 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       MPI_Probe(iDomain, rank*16+0, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_DOUBLE, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_DOUBLE, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Coord, recv_count , MPI_DOUBLE,
                     source, rank*16+0, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+1, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_GlobalPointIndex, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+1, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+2, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Color, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+2, MPI_COMM_WORLD, &status2);
       
@@ -3123,7 +3311,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   /*--- Recv all of the element data. First decide which elements we need to own on each proc ---*/
   
@@ -3147,42 +3335,42 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       MPI_Probe(iDomain, rank*16+10, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Triangle_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+10, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+11, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Quadrilateral_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+11, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+12, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Tetrahedron_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+12, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+13, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Hexahedron_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+13, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+14, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Prism_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+14, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+15, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Pyramid_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+15, MPI_COMM_WORLD, &status2);
@@ -3295,7 +3483,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- iElem now contains the number of elements that this processor needs in
@@ -3345,43 +3533,43 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       MPI_Probe(iDomain, rank*16+3, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Triangle, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+3, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+4, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Quadrilateral, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+4, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+5, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Tetrahedron, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+5, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+6, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Hexahedron, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+6, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+7, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Prism, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+7, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+8, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Pyramid, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+8, MPI_COMM_WORLD, &status2);
       
       MPI_Probe(iDomain, rank*16+9, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
-      MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
+      SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_GlobElem, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+9, MPI_COMM_WORLD, &status2);
       
@@ -3620,7 +3808,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   for (iDomain = 0; iDomain < (unsigned long)size; iDomain++) {
     if ((unsigned long)rank != iDomain) SU2_MPI::Waitall(16, send_req, send_stat);
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- Free all of the memory used for communicating points and elements ---*/
@@ -4067,57 +4255,57 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
         
         MPI_Probe(MASTER_NODE, 0, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nBoundLineTotal, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 0, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 1, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nBoundTriangleTotal, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 1, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nBoundQuadrilateralTotal, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_SHORT, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_SHORT, &recv_count);
         SU2_MPI::Recv(&nMarkerDomain, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 3, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 4, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nVertexDomain, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 4, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 5, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nBoundLine, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 5, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 6, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nBoundTriangle, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 6, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nBoundQuadrilateral, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 7, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_SHORT, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_SHORT, &recv_count);
         SU2_MPI::Recv(Marker_All_SendRecv, recv_count, MPI_SHORT,
                       MASTER_NODE, 8, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_CHAR, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_CHAR, &recv_count);
         SU2_MPI::Recv(Marker_All_TagBound, recv_count, MPI_CHAR,
                       MASTER_NODE, 9, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 10, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_SHORT, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_SHORT, &recv_count);
         SU2_MPI::Recv(&nPeriodic, recv_count, MPI_UNSIGNED_SHORT,
                       MASTER_NODE, 10, MPI_COMM_WORLD, &status);
         
@@ -4143,37 +4331,37 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
         
         MPI_Probe(MASTER_NODE, 11, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_DOUBLE, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_DOUBLE, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Center, recv_count, MPI_DOUBLE,
                       MASTER_NODE, 11, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 12, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_DOUBLE, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_DOUBLE, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Rotation, recv_count, MPI_DOUBLE,
                       MASTER_NODE, 12, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 13, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_DOUBLE, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_DOUBLE, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Translate, recv_count, MPI_DOUBLE,
                       MASTER_NODE, 13, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 14, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nTotalSendDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 14, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 15, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nTotalReceivedDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 15, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 16, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nSendDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 16, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 17, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nReceivedDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 17, MPI_COMM_WORLD, &status);
         
@@ -4446,52 +4634,52 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
         
         MPI_Probe(MASTER_NODE, 0, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_BoundLine, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 0, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 1, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_BoundTriangle, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 1, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_BoundQuadrilateral, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Local2Global_Marker, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 3, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 4, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_SendDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 4, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 5, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_SendDomain_PeriodicTrans, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 5, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 6, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_SendDomain_PeriodicReceptor, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 6, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_ReceivedDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 7, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 8, MPI_COMM_WORLD, &status);
         
         MPI_Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
-        MPI_Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
+        SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_ReceivedDomain_PeriodicDonor, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 9, MPI_COMM_WORLD, &status);
         
@@ -7923,15 +8111,6 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  /*--- MPI initialization ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   if (rank == MASTER_NODE && size > SINGLE_NODE)
     cout << "Establishing MPI communication patterns." << endl;
 
@@ -8102,13 +8281,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   CPrimalGrid*** bound_Copy;
   short *Marker_All_SendRecv_Copy;
   bool CheckStart;
-  
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  /*--- MPI initialization ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   nDomain = size+1;
   
@@ -8335,6 +8507,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
 	    config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
@@ -8354,6 +8527,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   	  config->SetMarker_All_ZoneInterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
+      config->SetMarker_All_PyCustom(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
@@ -8411,7 +8585,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   char cstr[200];
   su2double Coord_2D[2], Coord_3D[3], AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
   string::size_type position;
-  int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
   bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
@@ -8435,8 +8608,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Initialize counters for local/global points & elements ---*/
   
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   unsigned long LocalIndex, j;
 #endif
   
@@ -8469,14 +8640,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     /*--- Check the grid ---*/
     
     if (mesh_file.fail()) {
-      cout << "There is no mesh file (CPhysicalGeometry)!! " << cstr << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("There is no mesh file!!", CURRENT_FUNCTION);
     }
     
     /*--- Read grid file with format SU2 ---*/
@@ -8964,14 +9128,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Check the grid ---*/
   
   if (mesh_file.fail()) {
-    cout << "There is no mesh file (CPhysicalGeometry)!! " << cstr << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error("There is no mesh file!!", CURRENT_FUNCTION);
   }
   
   /*--- If more than one, find the zone in the mesh file ---*/
@@ -9112,14 +9269,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         }
       }
       else {
-        cout << "NPOIN improperly specified!!" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+        SU2_MPI::Error("NPOIN improperly specified", CURRENT_FUNCTION);
       }
       
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
@@ -10209,14 +10359,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 case LINE:
                   
                   if (nDim == 3) {
-                    cout << "Please remove line boundary conditions from the mesh file!" << endl;
-#ifndef HAVE_MPI
-                    exit(EXIT_FAILURE);
-#else
-                    MPI_Barrier(MPI_COMM_WORLD);
-                    MPI_Abort(MPI_COMM_WORLD,1);
-                    MPI_Finalize();
-#endif
+                    SU2_MPI::Error("Please remove line boundary conditions from the mesh file!", CURRENT_FUNCTION);
                   }
                   
                   bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
@@ -10279,6 +10422,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+            config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
@@ -10297,6 +10441,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               config->SetMarker_All_ZoneInterface(iMarker+1, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag_Duplicate));
               config->SetMarker_All_DV(iMarker+1, config->GetMarker_CfgFile_DV(Marker_Tag_Duplicate));
               config->SetMarker_All_Moving(iMarker+1, config->GetMarker_CfgFile_Moving(Marker_Tag_Duplicate));
+              config->SetMarker_All_PyCustom(iMarker+1, config->GetMarker_CfgFile_PyCustom(Marker_Tag_Duplicate));
               config->SetMarker_All_PerBound(iMarker+1, config->GetMarker_CfgFile_PerBound(Marker_Tag_Duplicate));
               config->SetMarker_All_SendRecv(iMarker+1, NONE);
 
@@ -10370,14 +10515,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           if (position != string::npos) {
             text_line.erase (0,15); iIndex = atoi(text_line.c_str());
             if (iIndex != iPeriodic) {
-              cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-#ifndef HAVE_MPI
-              exit(EXIT_FAILURE);
-#else
-              MPI_Barrier(MPI_COMM_WORLD);
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
-#endif
+              SU2_MPI::Error("PERIODIC_INDEX out of order in SU2 file!!", CURRENT_FUNCTION);
             }
           }
           su2double* center    = new su2double[3];
@@ -10489,17 +10627,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   char*** sectionNames = NULL;
   
   /*--- Initialize counters for local/global points & elements ---*/
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  MPI_Request *send_req, *recv_req;
-  MPI_Status  status;
+  SU2_MPI::Request *send_req, *recv_req;
+  SU2_MPI::Status  status;
   int ind;
 #endif
   
@@ -10546,18 +10680,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
-    if (rank == MASTER_NODE) {
-    printf( "\n\n   !!! Error !!!\n" );
-    printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
-    printf( " Now exiting...\n\n");
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file."), CURRENT_FUNCTION);
   }
   
   /*--- Open the CGNS file for reading. The value of fn returned
@@ -10582,18 +10705,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
    only handle one database. ---*/
   
   if ( nbases > 1 ) {
-    if (rank == MASTER_NODE) {
-    printf("\n\n   !!! Error !!!\n" );
-    printf("CGNS reader currently incapable of handling more than 1 database.");
-    printf("Now exiting...\n\n");
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database.", CURRENT_FUNCTION);
   }
   
   /*--- Read the databases. Note that the CGNS indexing starts at 1. ---*/
@@ -10616,18 +10728,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
      only handle one zone. This could be extended in the future. ---*/
     
     if ( nzones > 1 ) {
-      if (rank == MASTER_NODE) {
-      printf("\n\n   !!! Error !!!\n" );
-      printf("CGNS reader currently incapable of handling more than 1 zone.");
-      printf("Now exiting...\n\n");
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 zone.", CURRENT_FUNCTION);
     }
     
     /*--- Initialize some data structures for  all zones. ---*/
@@ -10694,18 +10795,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       
       if (cg_ngrids(fn, i, j, &ngrids)) cg_error_exit();
       if (ngrids > 1) {
-        if (rank == MASTER_NODE) {
-          printf("\n\n   !!! Error !!!\n" );
-          printf("CGNS reader currently handles only 1 grid per zone.");
-          printf("Now exiting...\n\n");
-        }
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+        SU2_MPI::Error("CGNS reader currently handles only 1 grid per zone.", CURRENT_FUNCTION);
       }
       
       /*--- Check the number of coordinate arrays stored in this zone.
@@ -10789,16 +10879,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         /*--- Always retrieve the grid coords in su2double precision. ---*/
         
         if (datatype != RealDouble) {
-          printf("\n\n   !!! Error !!!\n" );
-          printf(" CGNS coordinates are not su2double precision.\n");
-          printf(" Now exiting...\n\n");
-#ifndef HAVE_MPI
-          exit(EXIT_FAILURE);
-#else
-          MPI_Barrier(MPI_COMM_WORLD);
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#endif
+          SU2_MPI::Error("CGNS coordinates are not double precision.", CURRENT_FUNCTION);
         }
         if ( cg_coord_read(fn, i, j, coordname, datatype, &range_min,
                            &range_max, coordArray[j-1]) ) cg_error_exit();
@@ -10966,6 +11047,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
            VTK identifier for that element. SU2 recognizes elements by
            their VTK number. ---*/
           
+          char buf1[100], buf2[100], buf3[100];          
+          
           switch (elmt_type) {
             case NODE:
               currentElem   = "Vertex";
@@ -11004,35 +11087,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               elemTypes[ii] = 14;
               break;
             case HEXA_20:
-              if (rank == MASTER_NODE) {
-                printf("\n\n   !!! Error !!!\n" );
-                printf(" HEXA-20 element type not supported\n");
-                printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
-                printf(" Now exiting...\n\n");
-              }
-#ifndef HAVE_MPI
-              exit(EXIT_FAILURE);
-#else
-              MPI_Barrier(MPI_COMM_WORLD);
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
-#endif
+              SPRINTF(buf1, "Section %d, npe=%d\n", s, npe);
+              SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
+              SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
+                             string(buf1) + string(buf2), CURRENT_FUNCTION);
               break;
             default:
-              if (rank == MASTER_NODE) {
-                printf("\n\n   !!! Error !!!\n" );
-                printf(" Unknown elem: (type %d, npe=%d)\n", elemType, npe);
-                printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
-                printf(" Now exiting...\n\n");
-              }
-#ifndef HAVE_MPI
-              exit(EXIT_FAILURE);
-#else
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
-#endif
+              SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
+              SPRINTF(buf2, "Section %d\n", s);
+              SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
+              SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3), CURRENT_FUNCTION);
               break;
           }
           
@@ -11139,6 +11203,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
              specify the VTK identifier for that element.
              SU2 recognizes elements by their VTK number. ---*/
             
+            char buf1[100], buf2[100], buf3[100];
+            
             switch (elemType) {
               case NODE:
                 elemTypeVTK[j-1][s-1] = 1;
@@ -11168,35 +11234,20 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 elemTypeVTK[j-1][s-1] = 14;
                 break;
               case HEXA_20:
-                printf( "\n\n   !!! Error !!!\n" );
-                printf( " HEXA-20 element type not supported\n");
-                printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
-                printf( " Now exiting...\n\n");
-#ifndef HAVE_MPI
-                exit(EXIT_FAILURE);
-#else
-                MPI_Barrier(MPI_COMM_WORLD);
-                MPI_Abort(MPI_COMM_WORLD,1);
-                MPI_Finalize();
-#endif
+                SPRINTF(buf1, "Section %d, npe=%d\n", s, npe);
+                SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
+                SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
+                               string(buf1) + string(buf2), CURRENT_FUNCTION);
                 break;
               case MIXED:
                 currentElem = "Mixed";
                 elemTypeVTK[j-1][s-1] = -1;
                 break;
               default:
-                printf( "\n\n   !!! Error !!!\n" );
-                printf( " Unknown elem: (type %d, npe=%d)\n", elemType, npe);
-                printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
-                printf( " Now exiting...\n\n");
-#ifndef HAVE_MPI
-                exit(EXIT_FAILURE);
-#else
-                MPI_Abort(MPI_COMM_WORLD,1);
-                MPI_Finalize();
-#endif
+                SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
+                SPRINTF(buf2, "Section %d\n", s);
+                SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
+                SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3), CURRENT_FUNCTION);
                 break;
             }
             
@@ -11432,8 +11483,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             connRecv[ii] = 0;
             
 #ifdef HAVE_MPI
-          send_req = new MPI_Request[nSends];
-          recv_req = new MPI_Request[nRecvs];
+          send_req = new SU2_MPI::Request[nSends];
+          recv_req = new SU2_MPI::Request[nRecvs];
           unsigned long iMessage = 0;
           for (int ii=0; ii<size; ii++) {
             if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
@@ -11756,15 +11807,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               break;
               
             default:
-              if (rank == MASTER_NODE)
-                cout << "Element type not suppported!" << endl;
-#ifndef HAVE_MPI
-              exit(EXIT_FAILURE);
-#else
-              MPI_Barrier(MPI_COMM_WORLD);
-              MPI_Abort(MPI_COMM_WORLD,1);
-              MPI_Finalize();
-#endif
+              SU2_MPI::Error("Element type not supported!", CURRENT_FUNCTION);
               break;
           }
         }
@@ -11945,14 +11988,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                   case PENTA_6: VTK_Type = 13; break;
                   case PYRA_5:  VTK_Type = 14; break;
                   default:
-                    cout << "Kind of element not suppported!" << endl;
-#ifndef HAVE_MPI
-                    exit(EXIT_FAILURE);
-#else
-                    MPI_Barrier(MPI_COMM_WORLD);
-                    MPI_Abort(MPI_COMM_WORLD,1);
-                    MPI_Finalize();
-#endif
+                    SU2_MPI::Error("Kind of element not suppported!", CURRENT_FUNCTION);
                     break;
                 }
                 
@@ -11981,17 +12017,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               switch(VTK_Type) {
                 case LINE:
                   if (nDim == 3) {
-                    if (rank == MASTER_NODE) {
-                      printf( "\n\n   !!! Error !!!\n" );
-                      printf( "Remove line boundary elems from the mesh.");
-                    }
-#ifndef HAVE_MPI
-                    exit(EXIT_FAILURE);
-#else
-                    MPI_Barrier(MPI_COMM_WORLD);
-                    MPI_Abort(MPI_COMM_WORLD,1);
-                    MPI_Finalize();
-#endif
+                    SU2_MPI::Error("Remove line boundary elems from the mesh.", CURRENT_FUNCTION);
                   }
                   bound[iMarker][ielem] = new CLine(vnodes_cgns[0], vnodes_cgns[1],2);
                   ielem++; nelem_edge_bound++; break;
@@ -12017,6 +12043,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+            config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
@@ -12110,11 +12137,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete [] cgsize;
 
 #else
-  cout << "SU2 built without CGNS support!!" << endl;
-  cout << "To use CGNS, remove the -DNO_CGNS directive ";
-  cout << "from the makefile and supply the correct path";
-  cout << " to the CGNS library." << endl;
-  exit(EXIT_FAILURE);
+  SU2_MPI::Error(string("SU2 built without CGNS support!!\n") + 
+                 string("To use CGNS, remove the -DNO_CGNS directive ") +
+                 string("from the makefile and supply the correct path ") + 
+                 string("to the CGNS library."), CURRENT_FUNCTION);
 #endif
   
 }
@@ -12127,11 +12153,6 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
   su2double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
   *Coord_5, *Coord_6, a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, test;
   unsigned short iDim;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Loop over all the elements ---*/
   
@@ -12412,11 +12433,6 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
   unsigned short iDim, iMarker, iNode_Domain, iNode_Surface;
   bool find;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) {
@@ -12646,11 +12662,6 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   PositiveXArea = 0.0;
   PositiveYArea = 0.0;
@@ -12734,16 +12745,19 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   /*--- Set a reference area if no value is provided ---*/
   
   if (config->GetRefArea() == 0.0) {
+    
     if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
     else config->SetRefArea(TotalPositiveYArea);
     
-    if (nDim == 3) {
-      cout << "Reference area = "<< TotalPositiveZArea;
-      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
-    }
-    else {
-      cout << "Reference length = "<< TotalPositiveYArea;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+    if (rank == MASTER_NODE) {
+      if (nDim == 3) {
+        cout << "Reference area = "<< TotalPositiveZArea;
+        if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
+      }
+      else {
+        cout << "Reference length = "<< TotalPositiveYArea;
+        if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+      }
     }
     
   }
@@ -12755,10 +12769,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (nDim == 3) config->SetSemiSpan(fabs(TotalMaxCoordY));
     else config->SetSemiSpan(1.0);
     
-    if (nDim == 3) {
+    if ((nDim == 3) && (rank == MASTER_NODE)) {
       cout << "Semi-span length = "<< TotalMaxCoordY;
       if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
-      
     }
     
   }
@@ -13108,8 +13121,9 @@ void CPhysicalGeometry::SetBoundVolume(void) {
         }
       }
       if (!CheckVol) {
-        cout << "The surface element ("<< iMarker <<", "<< iElem_Surface << ") doesn't have an associated volume element." << endl;
-        exit(EXIT_FAILURE);
+        char buf[100];
+        SPRINTF(buf,"The surface element (%u, %lu) doesn't have an associated volume element", iMarker, iElem_Surface );
+        SU2_MPI::Error(buf, CURRENT_FUNCTION);
       }
     }
 }
@@ -13187,16 +13201,13 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   long jVertex;
   int nSpan, nSpan_loc;
   su2double *coord, *valueSpan, min, max, radius, delta;
-  int rank = MASTER_NODE;
   short SendRecv;
   bool isPeriodic;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
   
 #ifdef HAVE_MPI
   unsigned short iSize;
-  int size, nSpan_max;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int nSpan_max;
   int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
   su2double MyMin, MyMax, *MyTotValueSpan =NULL,*MyValueSpan =NULL;
 #endif
@@ -13483,11 +13494,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
     if(marker_flag == OUTFLOW){
       if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
-        if(rank == MASTER_NODE){
-          cout << " At the moment only turbomachinery with the same amount of span-wise section can be simulated" << endl;
-          cout <<"nSpan inflow "<< nSpanWiseSections[INFLOW] << " nSpan outflow " << nSpanWiseSections[OUTFLOW]<<endl;
-        }
-        exit(EXIT_FAILURE);
+        char buf[100];
+        SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW], nSpanWiseSections[OUTFLOW]);
+        SU2_MPI::Error(string(" At the moment only turbomachinery with the same amount of span-wise section can be simulated\n") + buf, CURRENT_FUNCTION);
       }
       else{
         config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW -1]);
@@ -13504,7 +13513,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   unsigned long nVert, nVertMax;
   unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
   su2double min, minInt, max, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
-  int rank = MASTER_NODE;
   bool **checkAssign;
   min    =  10.0E+06;
   minInt =  10.0E+06;
@@ -13518,9 +13526,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   int       **rank_loc;
 #ifdef HAVE_MPI
   unsigned short iSize, kSize = 0, jSize;
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double MyMin,MyIntMin, MyMax;
   su2double *x_gb = NULL, *y_gb = NULL, *z_gb = NULL, *angCoord_gb = NULL, *deltaAngCoord_gb = NULL;
   bool *checkAssign_gb =NULL;
@@ -14270,6 +14275,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   delete [] rank_loc;
   delete [] minAngPitch;
   delete [] maxAngPitch;
+  delete [] minIntAngPitch;
 
 }
 
@@ -14402,10 +14408,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
   bool grid_movement        = config->GetGrid_Movement();
 #ifdef HAVE_MPI
-  int rank, size;
   su2double MyTotalArea, MyTotalRadius, *MyTotalTurboNormal= NULL, *MyTotalNormal= NULL, *MyTotalGridVel= NULL;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   /*--- Intialization of the vector for the interested boundary ---*/
@@ -14574,8 +14577,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
                 break;
 
               default:
-                cout << "Tang grid velocity NOT IMPLEMENTED YET for this configuration"<<endl;
-                exit(EXIT_FAILURE);
+                  SU2_MPI::Error("Tang grid velocity NOT IMPLEMENTED YET for this configuration", CURRENT_FUNCTION);
                 break;
               }
             }
@@ -14630,7 +14632,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
   unsigned short iMarker, iMarkerTP;
   unsigned short iSpan, iDim;
-  int rank = MASTER_NODE;
   int markerTP;
   su2double nBlades;
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
@@ -14667,13 +14668,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
 #ifdef HAVE_MPI
     unsigned short i, n1, n2, n1t,n2t;
-    int size;
     su2double *TurbGeoIn= NULL,*TurbGeoOut= NULL;
     su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
     int *TotMarkerTP;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     n1          = 6;
     n2          = 3;
@@ -14995,16 +14992,8 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
     int iProcessor, pProcessor = 0;
     unsigned long nLocalVertex_Interface = 0, MaxLocalVertex_Interface = 0;
-    int rank, nProcessor;
-    
-#ifndef HAVE_MPI
-    rank = MASTER_NODE;
-    nProcessor = SINGLE_NODE;
-#else
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
-    
+    int nProcessor = size;
+
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
@@ -15176,6 +15165,14 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     
     delete[] Buffer_Send_nVertex;
     delete[] Buffer_Receive_nVertex;
+
+    delete [] Buffer_Send_GlobalIndex;
+    delete [] Buffer_Send_Vertex;
+    delete [] Buffer_Send_Marker;
+
+    delete [] Buffer_Receive_GlobalIndex;
+    delete [] Buffer_Receive_Vertex;
+    delete [] Buffer_Receive_Marker;
     
   }
   
@@ -15194,15 +15191,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
     int iProcessor, pProcessor = 0;
     unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-    int rank, nProcessor;
-    
-#ifndef HAVE_MPI
-    rank = MASTER_NODE;
-    nProcessor = SINGLE_NODE;
-#else
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+    int nProcessor = size;
     
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -15375,6 +15364,14 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     
     delete[] Buffer_Send_nVertex;
     delete[] Buffer_Receive_nVertex;
+
+    delete [] Buffer_Send_GlobalIndex;
+    delete [] Buffer_Send_Vertex;
+    delete [] Buffer_Send_Marker;
+
+    delete [] Buffer_Receive_GlobalIndex;
+    delete [] Buffer_Receive_Vertex;
+    delete [] Buffer_Receive_Marker;
     
   }
   
@@ -15393,7 +15390,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
     su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local = 0.0, maxdist_global = 0.0;
     int iProcessor, pProcessor = 0;
     unsigned long nLocalVertex_ActDisk = 0, MaxLocalVertex_ActDisk = 0;
-    int rank, nProcessor;
+    int nProcessor = size;
     unsigned short Beneficiary = 0, Donor = 0, iBC;
     bool Perimeter;
     
@@ -15401,14 +15398,6 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       
       if (iBC == 0) { Beneficiary = ACTDISK_INLET; Donor = ACTDISK_OUTLET; }
       if (iBC == 1) { Beneficiary = ACTDISK_OUTLET; Donor = ACTDISK_INLET; }
-      
-#ifndef HAVE_MPI
-      rank = MASTER_NODE;
-      nProcessor = SINGLE_NODE;
-#else
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
       
       unsigned long *Buffer_Send_nVertex = new unsigned long [1];
       unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -15600,6 +15589,14 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       
       delete[] Buffer_Send_nVertex;
       delete[] Buffer_Receive_nVertex;
+
+      delete [] Buffer_Send_GlobalIndex;
+      delete [] Buffer_Send_Vertex;
+      delete [] Buffer_Send_Marker;
+
+      delete [] Buffer_Receive_GlobalIndex;
+      delete [] Buffer_Receive_Vertex;
+      delete [] Buffer_Receive_Marker;
       
     }
   }
@@ -15647,10 +15644,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
   int iProcessor, pProcessor = 0;
   unsigned long nLocalVertex_Zone = 0, nGlobalVertex_Zone = 0, MaxLocalVertex_Zone = 0;
-  int rank, nProcessor;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  int nProcessor = size;
   
   unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
@@ -15771,14 +15765,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
   Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
   bool change_face_orientation;
-  int rank;
-  
-#ifndef HAVE_MPI
-  rank = MASTER_NODE;
-#else
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
+
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
     for (iEdge = 0; iEdge < (long)nEdge; iEdge++)
@@ -16516,11 +16503,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron;
   idx_t ne = 0, nn, *elmnts = NULL, *epart = NULL, *npart = NULL, nparts, edgecut, *eptr;
-  int rank, size;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  
+
   if (size != SINGLE_ZONE)
     cout << endl <<"---------------------------- Grid partitioning --------------------------" << endl;
   
@@ -16694,11 +16677,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 #ifdef HAVE_PARMETIS
   
   unsigned long iPoint;
-  int rank, size;
   MPI_Comm comm = MPI_COMM_WORLD;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  
+
   /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
   
   if (size > SINGLE_NODE) {
@@ -16743,7 +16723,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
-      cout << " coloring complete (";
+      cout << " graph partitioning complete (";
       cout << edgecut << " edge cuts)." << endl;
     }
     
@@ -16825,11 +16805,6 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
   unsigned long iPoint;
   su2double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Center of rotation & angular velocity vector from config ---*/
   
   Center[0] = config->GetMotion_Origin_X(val_iZone);
@@ -16910,11 +16885,6 @@ void CPhysicalGeometry::SetTranslationalVelocity(CConfig *config, unsigned short
   unsigned long iPoint;
   su2double xDot[3] = {0.0,0.0,0.0};
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Get the translational velocity vector from config ---*/
   
   xDot[0] = config->GetTranslation_Rate_X(val_iZone)/config->GetVelocity_Ref();
@@ -16992,7 +16962,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -17125,7 +17095,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -17256,7 +17226,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -18004,13 +17974,6 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   su2double Sensitivity;
   bool *PointInDomain;
   
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   nPointLocal = nPoint;
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -18161,10 +18124,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   }else {
     nExtIter = 1;
   }
-    int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
  
   if (rank == MASTER_NODE)
     cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
@@ -18219,27 +18178,29 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + fname, CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points. ---*/
 
-    fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+    ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+    if (ret != (unsigned long)nRestart_Vars) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (Restart_Vars[0] != 535532) {
-      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     /*--- Store the number of fields for simplicity. ---*/
@@ -18253,7 +18214,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
-      fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      if (ret != (unsigned long)CGNS_STRING_SIZE) {
+        SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+      }
       config->fields.push_back(str_buf);
     }
 
@@ -18263,7 +18227,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
+    ret = fread(Restart_Data, sizeof(passivedouble), nFields*GetnPointDomain(), fhw);
+    if (ret != (unsigned long)nFields*GetnPointDomain()) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
@@ -18271,12 +18238,18 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the external iteration. ---*/
 
-    fread(&Restart_Iter, 1, sizeof(int), fhw);
+    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
-    
+    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    if (ret != 8) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
+
     /*--- Close the file. ---*/
 
     fclose(fhw);
@@ -18286,15 +18259,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    MPI_Status status;
+    SU2_MPI::Status status;
     MPI_Datatype etype, filetype;
     MPI_Offset disp;
     unsigned long iPoint_Global, iChar;
     string field_buf;
 
-    int rank = MASTER_NODE, ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
+    int ierr;
+    
     /*--- All ranks open the file using MPI. ---*/
 
     ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
@@ -18302,11 +18274,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      if (rank == MASTER_NODE)
-        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
@@ -18324,15 +18292,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (Restart_Vars[0] != 535532) {
-      if (rank == MASTER_NODE) {
-        cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-        cout << " SU2 reads/writes binary restart files by default." << endl;
-        cout << " Note that backward compatibility for ASCII restart files is" << endl;
-        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") + 
+                     string("Note that backward compatibility for ASCII restart files is\n") + 
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     /*--- Store the number of fields for simplicity. ---*/
@@ -18362,7 +18326,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
       field_buf.append("\"");
-      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
@@ -18405,7 +18369,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Set the view for the MPI file write, i.e., describe the location in
      the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-    MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+    MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -18421,7 +18385,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Reset the file view before writing the metadata. ---*/
 
-    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, (char*)"native", MPI_INFO_NULL);
 
     /*--- Access the metadata. ---*/
 
@@ -18502,27 +18466,29 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     fclose(fhw);
@@ -18533,7 +18499,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     MPI_File fhw;
     int ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
@@ -18542,11 +18507,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      if (rank == MASTER_NODE)
-        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Have the master attempt to read the magic number. ---*/
@@ -18562,15 +18523,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      if (rank == MASTER_NODE) {
-        cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-        cout << " SU2 reads/writes binary restart files by default." << endl;
-        cout << " Note that backward compatibility for ASCII restart files is" << endl;
-        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") + 
+                     string("Note that backward compatibility for ASCII restart files is\n") + 
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
     
     MPI_File_close(&fhw);
@@ -18579,14 +18536,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
-    if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("There is no adjoint restart file ") + filename, CURRENT_FUNCTION);
   }
   
   /*--- The first line is the header ---*/
@@ -18637,11 +18587,6 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   bool isPeriodic = false;
   unsigned long iVertex;
   unsigned short iMarker, RotationKind, nPeriodicR = 0, nPeriodicS = 0;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Check for the presence of any periodic BCs ---*/
   
@@ -19243,12 +19188,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  
   /*--- Make a large number of section cuts for approximating volume ---*/
   
   nPlane = config->GetnWingStations();
@@ -19289,11 +19228,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
 
-    if (config->GetGeo_Description() == FUSELAGE) {
-      Plane_Normal[iPlane][0] = 1.0;
-      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
-    }
-
     if (config->GetGeo_Description() == WING) {
       Plane_Normal[iPlane][1] = 1.0;
       Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
@@ -19303,7 +19237,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       Plane_Normal[iPlane][2] = 1.0;
       Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
     }
-
+    
   }
   
   /*--- Allocate some vectors for storing airfoil coordinates ---*/
@@ -19318,7 +19252,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
 
@@ -19331,7 +19265,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Write an output file---*/
 
     if (config->GetOutput_FileFormat() == PARAVIEW) {
-      Wing_File.open("wing_distribution.csv", ios::out);
+      Wing_File.open("wing_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
       else
@@ -19423,16 +19357,13 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() > 1) {
     		if (config->GetOutput_FileFormat() == PARAVIEW) {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
     			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
     			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
     			           <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
-
-
-
     		}
     		else  {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< MaxThickness[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
     			           <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
     			           <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
     			           <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
@@ -19563,12 +19494,6 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Fuselage_File, Section_File;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-
   /*--- Make a large number of section cuts for approximating volume ---*/
 
   nPlane = config->GetnWingStations();
@@ -19606,20 +19531,8 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
 
-    if (config->GetGeo_Description() == FUSELAGE) {
-      Plane_Normal[iPlane][0] = 1.0;
-      Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
-    }
-
-    if (config->GetGeo_Description() == WING) {
-      Plane_Normal[iPlane][1] = 1.0;
-      Plane_P0[iPlane][1] = MinPlane + iPlane*dPlane;
-    }
-
-    if (config->GetGeo_Description() == TWOD_AIRFOIL) {
-      Plane_Normal[iPlane][2] = 1.0;
-      Plane_P0[iPlane][2] = MinPlane + iPlane*dPlane;
-    }
+    Plane_Normal[iPlane][0] = 1.0;
+    Plane_P0[iPlane][0] = MinPlane + iPlane*dPlane;
 
   }
 
@@ -19635,7 +19548,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
   }
@@ -19843,6 +19756,305 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
 }
 
+void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
+                                        su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness,
+                                        su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                                        su2double &Nacelle_MaxMaxThickness, su2double &Nacelle_MinLERadius,
+                                        su2double &Nacelle_MaxLERadius, su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                                        su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) {
+
+  unsigned short iPlane, iDim, nPlane = 0;
+  unsigned long iVertex;
+  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist;
+  vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  ofstream Nacelle_File, Section_File;
+  
+  
+  /*--- Make a large number of section cuts for approximating volume ---*/
+  
+  nPlane = config->GetnWingStations();
+  
+  /*--- Allocate memory for the section cutting ---*/
+  
+  Area = new su2double [nPlane];
+  MaxThickness = new su2double [nPlane];
+  Chord = new su2double [nPlane];
+  LERadius = new su2double [nPlane];
+  ToC = new su2double [nPlane];
+  Twist = new su2double [nPlane];
+  
+  su2double **LeadingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    LeadingEdge[iPlane] = new su2double[nDim];
+  
+  su2double **TrailingEdge = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    TrailingEdge[iPlane] = new su2double[nDim];
+  
+  su2double **Plane_P0 = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_P0[iPlane] = new su2double[nDim];
+  
+  su2double **Plane_Normal = new su2double*[nPlane];
+  for (iPlane = 0; iPlane < nPlane; iPlane++ )
+    Plane_Normal[iPlane] = new su2double[nDim];
+  
+  MinAngle = config->GetStations_Bounds(0); MaxAngle = config->GetStations_Bounds(1);
+  dAngle = fabs((MaxAngle - MinAngle)/su2double(nPlane-1));
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+    Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
+    Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+    
+    /*--- Apply roll to cut the nacelle ---*/
+
+    Angle = iPlane*dAngle*PI_NUMBER/180.0;
+    Plane_Normal[iPlane][0] = 0.0;
+    Plane_Normal[iPlane][1] = -sin(Angle);
+    Plane_Normal[iPlane][2] = cos(Angle);
+    
+    /*--- Apply tilt angle to the plane ---*/
+    
+    su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+    su2double Plane_NormalX_Tilt = Plane_Normal[iPlane][0]*cos(Tilt_Angle) + Plane_Normal[iPlane][2]*sin(Tilt_Angle);
+    su2double Plane_NormalY_Tilt = Plane_Normal[iPlane][1];
+    su2double Plane_NormalZ_Tilt = Plane_Normal[iPlane][2]*cos(Tilt_Angle) - Plane_Normal[iPlane][0]*sin(Tilt_Angle);
+    
+    /*--- Apply toe angle to the plane ---*/
+    
+    su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+    su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+    su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+    su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+    
+    /*--- Update normal vector ---*/
+    
+    Plane_Normal[iPlane][0] = Plane_NormalX_Tilt_Toe;
+    Plane_Normal[iPlane][1] = Plane_NormalY_Tilt_Toe;
+    Plane_Normal[iPlane][2] = Plane_NormalZ_Tilt_Toe;
+    
+    /*--- Point in the plane ---*/
+    
+    Plane_P0[iPlane][0] = config->GetNacelleLocation(0);
+    Plane_P0[iPlane][1] = config->GetNacelleLocation(1);
+    Plane_P0[iPlane][2] = config->GetNacelleLocation(2);
+    
+  }
+  
+  /*--- Allocate some vectors for storing airfoil coordinates ---*/
+  
+  Xcoord_Airfoil   = new vector<su2double>[nPlane];
+  Ycoord_Airfoil   = new vector<su2double>[nPlane];
+  Zcoord_Airfoil   = new vector<su2double>[nPlane];
+  Variable_Airfoil = new vector<su2double>[nPlane];
+  
+  /*--- Create the section slices through the geometry ---*/
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    
+    ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
+                           -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
+                           Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                           Variable_Airfoil[iPlane], original_surface, config);
+    
+  }
+  
+  /*--- Compute airfoil characteristic only in the master node ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Write an output file---*/
+    
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      Nacelle_File.open("nacelle_description.csv", ios::out);
+      if (config->GetSystemMeasurements() == US)
+        Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
+      else
+        Nacelle_File << "\"Theta (deg)\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
+    }
+    else {
+      Nacelle_File.open("nacelle_description.dat", ios::out);
+      Nacelle_File << "TITLE = \"Nacelle description\"" << endl;
+      if (config->GetSystemMeasurements() == US)
+        Nacelle_File << "VARIABLES = \"<greek>q</greek> (deg)\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
+      else
+        Nacelle_File << "VARIABLES = \"<greek>q</greek> (deg)\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"Leading Edge Radius (1/m)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
+      Nacelle_File << "ZONE T= \"Baseline nacelle\"" << endl;
+    }
+    
+    
+    /*--- Evaluate  geometrical quatities that do not require any kind of filter, local to each point ---*/
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        LeadingEdge[iPlane][iDim]  = 0.0;
+        TrailingEdge[iPlane][iDim] = 0.0;
+      }
+      
+      Area[iPlane]                = 0.0;
+      MaxThickness[iPlane]        = 0.0;
+      Chord[iPlane]               = 0.0;
+      LERadius[iPlane]            = 0.0;
+      ToC[iPlane]                 = 0.0;
+      Twist[iPlane]               = 0.0;
+      
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        
+        Compute_Wing_LeadingTrailing(LeadingEdge[iPlane], TrailingEdge[iPlane], Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        MaxThickness[iPlane] = Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        Twist[iPlane] = Compute_Twist(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+        
+        ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
+        
+        
+      }
+      
+    }
+    
+    /*--- Plot the geometrical quatities ---*/
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      
+      su2double theta_deg = atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180;
+      
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        if (config->GetOutput_FileFormat() == PARAVIEW) {
+          Nacelle_File  << theta_deg <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+          <<", "<< Twist[iPlane] <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][2]
+          <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][2] << endl;
+        }
+        else  {
+          Nacelle_File  << theta_deg <<" "<< Area[iPlane] <<" "<< MaxThickness[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+          <<" "<< Twist[iPlane] <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][2]
+          <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][2] << endl;
+          
+        }
+      }
+      
+    }
+    
+    Nacelle_File.close();
+    
+    Section_File.open("nacelle_slices.dat", ios::out);
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      
+      if (iPlane == 0) {
+        Section_File << "TITLE = \"Nacelle Slices\"" << endl;
+        if (config->GetSystemMeasurements() == US)
+          Section_File << "VARIABLES = \"x (in)\", \"y (in)\", \"z (in)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
+        else Section_File << "VARIABLES = \"x (m)\", \"y (m)\", \"z (m)\", \"x<sub>2D</sub>/c\", \"y<sub>2D</sub>/c\"" << endl;
+      }
+      
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        
+        su2double theta_deg = atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180;
+        su2double Angle = theta_deg*PI_NUMBER/180 - 0.5*PI_NUMBER;
+
+        Section_File << "ZONE T=\"<greek>q</greek> = " << theta_deg << " deg\", I= " << Xcoord_Airfoil[iPlane].size() << ", F=POINT" << endl;
+        
+        for (iVertex = 0; iVertex < Xcoord_Airfoil[iPlane].size(); iVertex++) {
+          
+          /*--- Move to the origin  ---*/
+          
+          su2double XValue_ = Xcoord_Airfoil[iPlane][iVertex] - LeadingEdge[iPlane][0];
+          su2double ZValue_ = Zcoord_Airfoil[iPlane][iVertex] - LeadingEdge[iPlane][2];
+          
+          /*--- Rotate the airfoil and divide by the chord ---*/
+          
+          su2double ValCos = cos(Twist[iPlane]*PI_NUMBER/180.0);
+          su2double ValSin = sin(Twist[iPlane]*PI_NUMBER/180.0);
+          
+          su2double XValue = (XValue_*ValCos - ZValue_*ValSin) / Chord[iPlane];
+          su2double ZValue = (ZValue_*ValCos + XValue_*ValSin) / Chord[iPlane];
+          
+          su2double XCoord = Xcoord_Airfoil[iPlane][iVertex] + config->GetNacelleLocation(0);
+          su2double YCoord = (Ycoord_Airfoil[iPlane][iVertex]*cos(Angle) - Zcoord_Airfoil[iPlane][iVertex]*sin(Angle)) + config->GetNacelleLocation(1);
+          su2double ZCoord = (Zcoord_Airfoil[iPlane][iVertex]*cos(Angle) + Ycoord_Airfoil[iPlane][iVertex]*sin(Angle)) + config->GetNacelleLocation(2);
+
+          /*--- Write the file ---*/
+          
+          Section_File  << XCoord << " " << YCoord << " " << ZCoord << " " << XValue  << " " << ZValue << endl;
+        }
+      }
+      
+    }
+    
+    Section_File.close();
+    
+    
+    /*--- Compute the wing volume using a composite Simpson's rule ---*/
+    
+    Nacelle_Volume = 0.0;
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        Nacelle_Volume += (1.0/3.0)*dAngle*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+      }
+    }
+    
+    /*--- Evaluate Max and Min quantities ---*/
+    
+    Nacelle_MaxMaxThickness = -1E6; Nacelle_MinMaxThickness = 1E6; Nacelle_MinChord = 1E6; Nacelle_MaxChord = -1E6;
+    Nacelle_MinLERadius = 1E6; Nacelle_MaxLERadius = -1E6; Nacelle_MinToC = 1E6; Nacelle_MaxToC = -1E6;
+    Nacelle_MaxTwist = -1E6;
+    
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      if (MaxThickness[iPlane] != 0.0) Nacelle_MinMaxThickness = min(Nacelle_MinMaxThickness, MaxThickness[iPlane]);
+      Nacelle_MaxMaxThickness = max(Nacelle_MaxMaxThickness, MaxThickness[iPlane]);
+      if (Chord[iPlane] != 0.0) Nacelle_MinChord = min(Nacelle_MinChord, Chord[iPlane]);
+      Nacelle_MaxChord = max(Nacelle_MaxChord, Chord[iPlane]);
+      if (LERadius[iPlane] != 0.0) Nacelle_MinLERadius = min(Nacelle_MinLERadius, LERadius[iPlane]);
+      Nacelle_MaxLERadius = max(Nacelle_MaxLERadius, LERadius[iPlane]);
+      if (ToC[iPlane] != 0.0) Nacelle_MinToC = min(Nacelle_MinToC, ToC[iPlane]);
+      Nacelle_MaxToC = max(Nacelle_MaxToC, ToC[iPlane]);
+      Nacelle_ObjFun_MinToC = sqrt((Nacelle_MinToC - 0.07)*(Nacelle_MinToC - 0.07));
+      Nacelle_MaxTwist = max(Nacelle_MaxTwist, fabs(Twist[iPlane]));
+    }
+    
+  }
+  
+  /*--- Free memory for the section cuts ---*/
+  
+  delete [] Xcoord_Airfoil;
+  delete [] Ycoord_Airfoil;
+  delete [] Zcoord_Airfoil;
+  delete [] Variable_Airfoil;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] LeadingEdge[iPlane];
+  delete [] LeadingEdge;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] TrailingEdge[iPlane];
+  delete [] TrailingEdge;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_P0[iPlane];
+  delete [] Plane_P0;
+  
+  for (iPlane = 0; iPlane < nPlane; iPlane++)
+    delete [] Plane_Normal[iPlane];
+  delete [] Plane_Normal;
+  
+  delete [] Area;
+  delete [] MaxThickness;
+  delete [] Chord;
+  delete [] LERadius;
+  delete [] ToC;
+  delete [] Twist;
+  
+}
+
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
@@ -19859,18 +20071,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   unsigned short nChildren, iNode, counter, iMarker, jMarker, priority, MarkerS, MarkerR, *nChildren_MPI;
   vector<unsigned long> Suitable_Indirect_Neighbors, Aux_Parent;
   vector<unsigned long>::iterator it;
-  int rank;
 
   unsigned short nMarker_Max = config->GetnMarker_Max();
 
   unsigned short *copy_marker = new unsigned short [nMarker_Max];
   
-#ifndef HAVE_MPI
-  rank = MASTER_NODE;
-#else
+#ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   nDim = fine_grid->GetnDim(); // Write the number of dimensions of the coarse grid.
@@ -20834,14 +21042,8 @@ void CMultiGridGeometry::MatchNearField(CConfig *config) {
   
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  int iProcessor;
-  
-#ifndef HAVE_MPI
-  iProcessor = MASTER_NODE;
-#else
-  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
-#endif
-  
+  int iProcessor = size;
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -20859,14 +21061,8 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
   
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  int iProcessor;
-  
-#ifndef HAVE_MPI
-  iProcessor = MASTER_NODE;
-#else
-  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
-#endif
-  
+  int iProcessor = size;
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
         (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
@@ -20885,13 +21081,7 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
   
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  int iProcessor;
-  
-#ifndef HAVE_MPI
-  iProcessor = MASTER_NODE;
-#else
-  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
-#endif
+  int iProcessor = size;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
@@ -21033,6 +21223,98 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
       node[Point_Coarse]->SetCoord(iDim, Coordinates[iDim]);
   }
   delete[] Coordinates;
+}
+
+void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
+
+  unsigned long Point_Fine, Point_Coarse, iVertex;
+  unsigned short iChildren;
+  long Vertex_Fine;
+  su2double Area_Parent, Area_Children;
+  su2double WallHeatFlux_Fine, WallHeatFlux_Coarse;
+  bool isVertex;
+  int numberVertexChildren;
+
+  for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
+    Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+    if (node[Point_Coarse]->GetDomain()){
+      Area_Parent = 0.0;
+      WallHeatFlux_Coarse = 0.0;
+      numberVertexChildren = 0;
+      /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        if (isVertex){
+          numberVertexChildren += 1;
+          Area_Parent += geometry->node[Point_Fine]->GetVolume();
+        }
+      }
+
+      /*--- Loop again and propagate values to the coarser level ---*/
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        Vertex_Fine = geometry->node[Point_Fine]->GetVertex(val_marker);
+        isVertex = (node[Point_Fine]->GetDomain() && Vertex_Fine != -1);
+        if(isVertex){
+          Area_Children = geometry->node[Point_Fine]->GetVolume();
+          //Get the customized BC values on fine level and compute the values at coarse level
+          WallHeatFlux_Fine = geometry->GetCustomBoundaryHeatFlux(val_marker, Vertex_Fine);
+          WallHeatFlux_Coarse += WallHeatFlux_Fine*Area_Children/Area_Parent;
+        }
+
+      }
+      //Set the customized BC values at coarse level
+      CustomBoundaryHeatFlux[val_marker][iVertex] = WallHeatFlux_Coarse;
+    }
+  }
+
+}
+
+void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){
+
+  unsigned long Point_Fine, Point_Coarse, iVertex;
+  unsigned short iChildren;
+  long Vertex_Fine;
+  su2double Area_Parent, Area_Children;
+  su2double WallTemperature_Fine, WallTemperature_Coarse;
+  bool isVertex;
+  int numberVertexChildren;
+
+  for(iVertex=0; iVertex < nVertex[val_marker]; iVertex++){
+    Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+    if (node[Point_Coarse]->GetDomain()){
+      Area_Parent = 0.0;
+      WallTemperature_Coarse = 0.0;
+      numberVertexChildren = 0;
+      /*--- Compute area parent by taking into account only volumes that are on the marker ---*/
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        isVertex = (node[Point_Fine]->GetDomain() && geometry->node[Point_Fine]->GetVertex(val_marker) != -1);
+        if (isVertex){
+          numberVertexChildren += 1;
+          Area_Parent += geometry->node[Point_Fine]->GetVolume();
+        }
+      }
+
+      /*--- Loop again and propagate values to the coarser level ---*/
+      for(iChildren=0; iChildren < node[Point_Coarse]->GetnChildren_CV(); iChildren++){
+        Point_Fine = node[Point_Coarse]->GetChildren_CV(iChildren);
+        Vertex_Fine = geometry->node[Point_Fine]->GetVertex(val_marker);
+        isVertex = (node[Point_Fine]->GetDomain() && Vertex_Fine != -1);
+        if(isVertex){
+          Area_Children = geometry->node[Point_Fine]->GetVolume();
+          //Get the customized BC values on fine level and compute the values at coarse level
+          WallTemperature_Fine = geometry->GetCustomBoundaryTemperature(val_marker, Vertex_Fine);
+          WallTemperature_Coarse += WallTemperature_Fine*Area_Children/Area_Parent;
+        }
+
+      }
+      //Set the customized BC values at coarse level
+      CustomBoundaryTemperature[val_marker][iVertex] = WallTemperature_Coarse;
+    }
+  }
+
 }
 
 void CMultiGridGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print) {
@@ -21763,30 +22045,55 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   /*--- Ghost points, look at the nodes in the send receive ---*/
   iMarkerReceive = nMarker - 1;
   GhostPoints = nElem_Bound[iMarkerReceive];
-  
+
   /*--- Change the numbering to guarantee that the all the receive
-   points are at the end of the file ---*/
-  unsigned long OldnPoint = geometry->GetnPoint();
-  unsigned long *NewSort = new unsigned long[nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    NewSort[iPoint] = iPoint;
-  }
-  
-  unsigned long Index = OldnPoint-1;
+   points are at the end of the file. ---*/
+  std::vector<unsigned long> receive_nodes;
+  std::vector<unsigned long> send_nodes;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       if (config->GetMarker_All_SendRecv(iMarker) < 0) {
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          if (bound[iMarker][iElem_Bound]->GetNode(0) < geometry->GetnPoint()) {
-            NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] = Index;
-            NewSort[Index] = bound[iMarker][iElem_Bound]->GetNode(0);
-            Index--;
+          if (bound[iMarker][iElem_Bound]->GetRotation_Type() == 1) {
+            receive_nodes.push_back(bound[iMarker][iElem_Bound]->GetNode(0));
+          } else {
+            send_nodes.push_back(bound[iMarker][iElem_Bound]->GetNode(0));
           }
         }
       }
     }
   }
+
+  /*--- Build the sorted lists of node numbers with receive/send at the end
+   * NewSort[i] = j maps the new number (i) to the old number (j)
+   * ReverseSort[j] = i maps the old number (j) to the new number (i) ---*/
+  std::vector<unsigned long> NewSort;
+  std::vector<unsigned long> ReverseSort;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    bool isReceive = (find(receive_nodes.begin(), receive_nodes.end(), iPoint)
+                      != receive_nodes.end());
+    bool isSend = (find(send_nodes.begin(), send_nodes.end(), iPoint)
+                   != send_nodes.end());
+    if (!isSend && !isReceive) {
+      NewSort.push_back(iPoint);
+    }
+  }
+  NewSort.insert(NewSort.end(), receive_nodes.begin(), receive_nodes.end());
+  NewSort.insert(NewSort.end(), send_nodes.begin(), send_nodes.end());
   
+  ReverseSort.resize(NewSort.size());
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    unsigned long jPoint;
+    for (jPoint = 0; jPoint < nPoint; jPoint++) {
+      if (NewSort[iPoint] == jPoint) {
+        ReverseSort[jPoint] = iPoint;
+        break;
+      }
+    }
+    if (jPoint == nPoint) { // Loop fell through without break
+      SU2_MPI::Error("Remapping of periodic nodes failed.", CURRENT_FUNCTION);
+    }
+  }
   
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
@@ -21794,14 +22101,16 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   for (iElem = 0; iElem < nElem; iElem++) {
     output_file << elem[iElem]->GetVTK_Type();
     for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-      output_file << "\t" << NewSort[elem[iElem]->GetNode(iNodes)];
+      output_file << "\t" << ReverseSort[elem[iElem]->GetNode(iNodes)];
     output_file << "\t"<<iElem<< endl;
   }
   
   output_file << "NPOIN= " << nPoint << "\t" << nPoint - GhostPoints << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      output_file << scientific;
+      output_file << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
+    }
     output_file << "\t" << iPoint << endl;
   }
   
@@ -21816,9 +22125,9 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
         for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes()-1; iNodes++)
-          output_file << NewSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
+          output_file << ReverseSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
         iNodes = bound[iMarker][iElem_Bound]->GetnNodes()-1;
-        output_file << NewSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
+        output_file << ReverseSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
       }
       
       /*--- Write any new elements at the end of the list. ---*/
@@ -21826,9 +22135,9 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
         for (iElem_Bound = 0; iElem_Bound < nNewElem_BoundPer[iMarker]; iElem_Bound++) {
           output_file << newBoundPer[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < newBoundPer[iMarker][iElem_Bound]->GetnNodes()-1; iNodes++)
-            output_file << NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
+            output_file << ReverseSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
           iNodes = newBoundPer[iMarker][iElem_Bound]->GetnNodes()-1;
-          output_file << NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
+          output_file << ReverseSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
         }
       }
       
@@ -21842,7 +22151,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
-        NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] << "\t" <<
+        ReverseSort[bound[iMarker][iElem_Bound]->GetNode(0)] << "\t" <<
         bound[iMarker][iElem_Bound]->GetRotation_Type()  << endl;
       }
     }
@@ -21880,10 +22189,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
   
   output_file.close();
-  
-  /*--- Free memory ---*/
-  delete [] NewSort;
-  
 }
 
 void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {
@@ -21985,8 +22290,7 @@ void CMultiGridQueue::AddCV(unsigned long val_new_point, unsigned short val_numb
   
   /*--- Basic check ---*/
   if (val_new_point > nPoint) {
-    cout << "The index of the CV is greater than the size of the priority list." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("The index of the CV is greater than the size of the priority list.", CURRENT_FUNCTION);
   }
   
   /*--- Resize the list ---*/
@@ -22011,15 +22315,15 @@ void CMultiGridQueue::RemoveCV(unsigned long val_remove_point) {
   
   /*--- Basic check ---*/
   if (val_remove_point > nPoint) {
-    cout << "The index of the CV is greater than the size of the priority list." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("The index of the CV is greater than the size of the priority list." , CURRENT_FUNCTION);
   }
   
   /*--- Find priority of the Control Volume ---*/
   short Number_Neighbors = Priority[val_remove_point];
   if (Number_Neighbors == -1) {
-    cout << "The CV "<< val_remove_point <<" is not in the priority list. (RemoveCV)" << endl;
-    exit(EXIT_FAILURE);
+    char buf[200];
+    SPRINTF(buf, "The CV %lu is not in the priority list.", val_remove_point);
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Find the point in the queue ---*/
@@ -22066,8 +22370,9 @@ void CMultiGridQueue::IncrPriorityCV(unsigned long val_incr_point) {
   /*--- Find the priority list ---*/
   short Number_Neighbors = Priority[val_incr_point];
   if (Number_Neighbors == -1) {
-    cout << "The CV "<< val_incr_point <<" is not in the priority list. (IncrPriorityCV)" << endl;
-    exit(EXIT_FAILURE);
+    char buf[200];
+    SPRINTF(buf, "The CV %lu is not in the priority list.", val_incr_point);
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Remove the control volume ---*/
@@ -22083,8 +22388,9 @@ void CMultiGridQueue::RedPriorityCV(unsigned long val_red_point) {
   /*--- Find the priority list ---*/
   short Number_Neighbors = Priority[val_red_point];
   if (Number_Neighbors == -1) {
-    cout << "The CV "<< val_red_point <<" is not in the priority list. (RedPriorityCV)" << endl;
-    exit(EXIT_FAILURE);
+    char buf[200];
+    SPRINTF(buf, "The CV %lu is not in the priority list.", val_red_point);
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   if (Number_Neighbors != 0) {
