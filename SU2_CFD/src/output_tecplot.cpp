@@ -132,9 +132,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       Tecplot_File << config->fields[iField];
     }
-    Tecplot_File << endl;
     Tecplot_File << "\"NodeID\"";
-    
+    Tecplot_File << endl;
+
   } else {
     
     if (nDim == 2) {
