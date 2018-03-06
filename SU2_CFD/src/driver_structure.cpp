@@ -3260,7 +3260,6 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   }
 }
 
-
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
@@ -3645,7 +3644,7 @@ CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
                                                                                     val_nDim,
                                                                                     val_periodic,
                                                                                     MPICommunicator) {
-  
+
   RecordingState = NONE;
   unsigned short iZone;
 
@@ -5104,14 +5103,14 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
 
 CFSIStatDriver::CFSIStatDriver(char* confFile,
-                               unsigned short val_nZone,
-                               unsigned short val_nDim,
-                               bool val_periodic,
-                               SU2_Comm MPICommunicator) : CFSIDriver(confFile,
-                                                                      val_nZone,
-                                                                      val_nDim,
-                                                                      val_periodic,
-                                                                      MPICommunicator) { }
+                                   unsigned short val_nZone,
+                                   unsigned short val_nDim,
+                                   bool val_periodic,
+                                   SU2_Comm MPICommunicator) : CFSIDriver(confFile,
+                                                                           val_nZone,
+                                                                           val_nDim,
+                                                                           val_periodic,
+                                                                           MPICommunicator) { }
 
 CFSIStatDriver::~CFSIStatDriver(void) { }
 
@@ -5289,15 +5288,14 @@ void CFSIStatDriver::Run() {
 
 
 CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
-                                             unsigned short val_nZone,
-                                             unsigned short val_nDim,
-                                             bool val_periodic,
-
-                                             SU2_Comm MPICommunicator) : CFSIStatDriver(confFile,
-                                                                                        val_nZone,
-                                                                                        val_nDim,
-                                                                                        val_periodic,
-                                                                                        MPICommunicator) {
+                                                   unsigned short val_nZone,
+                                                   unsigned short val_nDim,
+                                                   bool val_periodic,
+                                                   SU2_Comm MPICommunicator) : CFSIStatDriver(confFile,
+                                                                                               val_nZone,
+                                                                                               val_nDim,
+                                                                                               val_periodic,
+                                                                                               MPICommunicator) { 
 
 
   unsigned short iVar;
