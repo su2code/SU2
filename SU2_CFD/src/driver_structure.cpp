@@ -391,7 +391,7 @@ CDriver::CDriver(char* confFile,
 
 
   if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
-  PythonInterface_Preprocessing();
+  //PythonInterface_Preprocessing();
 
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -836,7 +836,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
     }
     if (poisson) {
-      solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
+		solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[iMGlevel], config);
+	  //FEM solver will be deleted soon 
+      //solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
     }
     if (wave) {
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
@@ -1702,11 +1704,20 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (poisson) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
+    numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CAvgGradCorrected_Poisson(nDim, nVar_Poisson, config);
+    numerics_container[MESH_0][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+    numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+    //numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
     numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+    
+    /*--------------------FVM discretizations will be deleted soon---------------------*/
+    //numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
+    
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    //numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+    //numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
     
   }
   

@@ -141,3 +141,221 @@ void CGalerkin_Flow::ComputeResidual(su2double **val_stiffmatrix_elem, CConfig *
     
   }
 }
+
+
+
+
+CAvgGradCorrected_Poisson::CAvgGradCorrected_Poisson(unsigned short val_nDim, unsigned short val_nVar,
+                                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  implicit = false;
+  implicit = (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT);
+
+  
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradPoissonVar_Edge = new su2double [nVar];
+  Proj_Mean_GradPoissonVar_Kappa = new su2double [nVar];
+  Proj_Mean_GradPoissonVar_Corrected = new su2double [nVar];
+  Mean_GradPoissonVar = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Mean_GradPoissonVar[iVar] = new su2double [nDim];
+
+  ConsVar_Grad_i = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    ConsVar_Grad_i[iVar] = new su2double [nDim];
+  
+  ConsVar_Grad_j = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    ConsVar_Grad_j[iVar] = new su2double [nDim];
+
+  Poisson_Coeff_i = 1.0;
+  Poisson_Coeff_j = 1.0;
+
+}
+
+
+CAvgGradCorrected_Poisson::~CAvgGradCorrected_Poisson(void) {
+
+	delete [] Edge_Vector;
+	delete [] Proj_Mean_GradPoissonVar_Edge;
+	delete [] Proj_Mean_GradPoissonVar_Kappa;
+	delete [] Proj_Mean_GradPoissonVar_Corrected;
+	
+	for (iVar = 0; iVar < nVar; iVar++) 
+       delete [] Mean_GradPoissonVar[iVar];
+    delete [] Mean_GradPoissonVar;
+    
+    /*for (iVar = 0; iVar < nVar; iVar++) 
+       if (ConsVar_Grad_i[iVar] != NULL) delete [] ConsVar_Grad_i[iVar];
+    if (ConsVar_Grad_i != NULL) delete [] ConsVar_Grad_i;*/
+    
+    /*for (iVar = 0; iVar < nVar; iVar++)
+       delete [] ConsVar_Grad_j[iVar];
+    delete [] ConsVar_Grad_j;*/
+
+
+}
+
+void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+
+  /*AD::StartPreacc();
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
+  AD::SetPreaccIn(ConsVar_Grad_i[0],nDim); AD::SetPreaccIn(ConsVar_Grad_j[0],nDim);
+  AD::SetPreaccIn(Poisson_Coeff_i); AD::SetPreaccIn(Poisson_Coeff_j);*/
+
+  Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
+
+  /*--- Compute vector going from iPoint to jPoint ---*/
+
+  dist_ij_2 = 0; proj_vector_ij = 0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+  }
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+  /*--- Mean gradient approximation. Projection of the mean gradient
+   in the direction of the edge ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Mean_GradPoissonVar_Edge[iVar] = 0.0;
+    Proj_Mean_GradPoissonVar_Kappa[iVar] = 0.0;
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
+      Proj_Mean_GradPoissonVar_Kappa[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim];
+      Proj_Mean_GradPoissonVar_Edge[iVar] += Mean_GradPoissonVar[iVar][iDim]*Edge_Vector[iDim];
+    }
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = (Poissonval_j-Poissonval_i)*proj_vector_ij;
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Corrected[iVar] + Proj_Mean_GradPoissonVar_Kappa[iVar] ;
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Corrected[iVar] - Proj_Mean_GradPoissonVar_Edge[iVar]*proj_vector_ij;
+  }
+
+  val_residual[0] = Poisson_Coeff_Mean*Proj_Mean_GradPoissonVar_Corrected[0];
+
+  /*--- Jacobians for implicit scheme ---*/
+
+  if (implicit) {
+    Jacobian_i[0][0] = -Poisson_Coeff_Mean*proj_vector_ij;
+    Jacobian_j[0][0] = Poisson_Coeff_Mean*proj_vector_ij;
+  }
+
+  /*AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();*/
+}
+
+CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_nVar,
+                                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  implicit = false;
+  implicit = (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT);
+   
+  Edge_Vector = new su2double [nDim];
+  Proj_Mean_GradPoissonVar_Normal = new su2double [nVar];
+  Proj_Mean_GradPoissonVar_Corrected = new su2double [nVar];
+  Mean_GradPoissonVar = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+   Mean_GradPoissonVar[iVar] = new su2double [nDim];
+
+  ConsVar_Grad_i = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    ConsVar_Grad_i[iVar] = new su2double [nDim];
+  
+  ConsVar_Grad_j = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    ConsVar_Grad_j[iVar] = new su2double [nDim];
+
+  Poisson_Coeff_i = 1.0;
+  Poisson_Coeff_j = 1.0;
+}
+
+
+CAvgGrad_Poisson::~CAvgGrad_Poisson(void) {
+	
+	unsigned int iDim;
+	delete [] Edge_Vector;
+	delete [] Proj_Mean_GradPoissonVar_Normal;
+	delete [] Proj_Mean_GradPoissonVar_Corrected;
+	
+	for (iDim = 0; iVar < nVar; iVar++) {
+    delete [] Mean_GradPoissonVar[iVar];
+    //delete [] ConsVar_Grad_i[iVar];
+    //delete [] ConsVar_Grad_j[iVar];
+    }
+    delete [] Mean_GradPoissonVar;
+    //delete [] ConsVar_Grad_i;
+    //delete [] ConsVar_Grad_j;	
+
+}
+
+void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+
+  /*AD::StartPreacc();
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
+  AD::SetPreaccIn(ConsVar_Grad_i[0],nDim); AD::SetPreaccIn(ConsVar_Grad_j[0],nDim);
+  AD::SetPreaccIn(Poisson_Coeff_i); AD::SetPreaccIn(Poisson_Coeff_j);*/
+
+  Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
+
+  /*--- Compute vector going from iPoint to jPoint ---*/
+
+  dist_ij_2 = 0; proj_vector_ij = 0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+  }
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+  /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Mean_GradPoissonVar_Normal[iVar] = 0.0;
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
+      
+      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim];
+    }
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
+  }
+
+  val_residual[0] = Poisson_Coeff_Mean*Proj_Mean_GradPoissonVar_Corrected[0];
+  /*--- Jacobians for implicit scheme ---*/
+  if (implicit) {
+    Jacobian_i[0][0] = -Poisson_Coeff_Mean*proj_vector_ij;
+    Jacobian_j[0][0] = Poisson_Coeff_Mean*proj_vector_ij;
+  }
+
+  /*AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();*/
+
+
+
+}
+
+
+CSource_PoissonFVM::CSource_PoissonFVM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+}
+
+CSource_PoissonFVM::~CSource_PoissonFVM(void) { }
+
+void CSource_PoissonFVM::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
+  unsigned short iVar;
+  su2double src_term;
+
+
+ src_term = 10.0; //analytical solution, u = 1+2x^2+3y^2
+ for (iVar = 0; iVar < nVar; iVar++)    
+      val_residual[iVar] = src_term*Volume;
+    
+}
+
+

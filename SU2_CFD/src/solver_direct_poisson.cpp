@@ -37,6 +37,908 @@
 
 #include "../include/solver_structure.hpp"
 
+CPoissonSolverFVM::CPoissonSolverFVM(void) : CSolver() { }
+
+CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSolver() {
+  
+  unsigned long  iPoint;
+  unsigned short iVar, iDim;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  nDim =          geometry->GetnDim();
+  nPoint =        geometry->GetnPoint();
+  nPointDomain =  geometry->GetnPointDomain();
+  nVar =          1;
+  node =          new CVariable*[nPoint];
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
+  
+  Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+  Solution = new su2double[nVar];
+  Residual_Max = new su2double[nVar];
+  
+
+  /*--- Define some structures for locating max residuals ---*/
+  
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+  
+  
+  
+  /*--- Define some auxiliar vector related with the solution ---*/
+
+  Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+
+  /*--- Define some auxiliary vectors related to the geometry ---*/
+
+  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
+  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
+  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+
+  
+ 
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
+  
+  
+  /*--- Initialization of the structure of the whole Jacobian ---*/
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Poisson equation)." << endl;
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+
+  
+  /*--- Solution and residual vectors ---*/
+  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+
+  /*--- Computation of gradients by least squares ---*/
+  
+  Smatrix = new su2double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
+  for (iDim = 0; iDim < nDim; iDim++)
+    Smatrix[iDim] = new su2double [nDim];
+  
+  Cvector = new su2double* [nVar]; // c vector := transpose(WA)*(Wb)
+  for (iVar = 0; iVar < nVar; iVar++)
+    Cvector[iVar] = new su2double [nDim];
+  
+  /*--- Always instantiate and initialize the variable to a zero value. ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+}
+
+CPoissonSolverFVM::~CPoissonSolverFVM(void) {
+  
+  unsigned int iVar;
+  iVar = 1;
+}
+
+
+void CPoissonSolverFVM::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh) {
+}
+
+
+void CPoissonSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_container,
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  unsigned long iPoint;
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Initialize the residual vector ---*/
+
+    LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  /*--- Initialize the Jacobian matrices ---*/
+
+  Jacobian.SetValZero();
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  
+}
+
+
+
+
+void CPoissonSolverFVM:: SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+
+
+  unsigned long iPoint, jPoint, iEdge;
+  su2double *Diff;
+  unsigned short iVar;
+  bool boundary_i, boundary_j;
+
+  Diff = new su2double[nVar];
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    node[iPoint]->SetUnd_LaplZero();
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- Solution differences ---*/
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      Diff[iVar] = node[iPoint]->GetSolution(iVar) - node[jPoint]->GetSolution(iVar);
+
+    boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+
+    /*--- Both points inside the domain, or both in the boundary ---*/
+
+    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
+      if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
+    }
+
+    /*--- iPoint inside the domain, jPoint on the boundary ---*/
+
+    if (!boundary_i && boundary_j)
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SubtractUnd_Lapl(Diff);
+
+    /*--- jPoint inside the domain, iPoint on the boundary ---*/
+
+    if (boundary_i && !boundary_j)
+      if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
+
+  }
+
+  /*--- MPI parallelization ---*/
+
+  Set_MPI_Undivided_Laplacian(geometry, config);
+
+delete [] Diff;
+
+}
+
+
+void CPoissonSolverFVM:: Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
+
+
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_Undivided_Laplacian = new su2double [nBufferR_Vector];
+      Buffer_Send_Undivided_Laplacian = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution old that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex] = Buffer_Send_Undivided_Laplacian[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_Undivided_Laplacian;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+        /*--- Only copy conserved variables - no transformation necessary. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          Solution[iVar] = Buffer_Receive_Undivided_Laplacian[iVar*nVertexR+iVertex];
+
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetUndivided_Laplacian(iVar, Solution[iVar]);
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_Undivided_Laplacian;
+
+    }
+
+  }
+
+
+}
+
+
+void CPoissonSolverFVM:: Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+        }
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+
+    }
+
+}
+
+}
+
+void CPoissonSolverFVM:: Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
+
+
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution old that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution_Old(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+
+    }
+
+  }
+
+
+}
+
+void CPoissonSolverFVM:: Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config){
+
+
+  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
+
+  su2double **Gradient = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Gradient[iVar] = new su2double[nDim];
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nVar*nDim;        nBufferR_Vector = nVertexR*nVar*nDim;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
+      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution old that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_Gradient;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
+
+        /*--- Retrieve the supplied periodic information. ---*/
+        angles = config->GetPeriodicRotation(iPeriodic_Index);
+
+        /*--- Store angles separately for clarity. ---*/
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis,
+         then z-axis. Note that this is the transpose of the matrix
+         used during the preprocessing stage. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        /*--- Copy conserved variables before performing transformation. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nVar*nVertexR+iVar*nVertexR+iVertex];
+
+        /*--- Need to rotate the gradients for all conserved variables. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (nDim == 2) {
+            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
+            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex];
+          }
+          else {
+            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nVar*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nVar*nVertexR+iVar*nVertexR+iVertex];
+          }
+        }
+
+        /*--- Store the received information ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            node[iPoint]->SetGradient(iVar, iDim, Gradient[iVar][iDim]);
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_Gradient;
+
+    }
+
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Gradient[iVar];
+  
+  delete [] Gradient;
+
+
+
+
+}
+
+void CPoissonSolverFVM:: LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo){
+
+}
+
+void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+										 
+su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j;
+unsigned long iEdge, iPoint, jPoint;
+
+ for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- Points coordinates, and normal vector ---*/
+
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[jPoint]->GetCoord());
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+    Poisson_Coeff_i = 1.0;//config->GetPoisson_Coeff();
+    Poisson_Coeff_j = 1.0;//config->GetPoisson_Coeff();
+    
+    Sol_i_Grad = node[iPoint]->GetGradient();
+    Sol_j_Grad = node[jPoint]->GetGradient();
+    
+   numerics->SetConsVarGradient(Sol_i_Grad, Sol_j_Grad);
+   
+       /*--- Primitive variables w/o reconstruction ---*/
+    Poissonval_i = node[iPoint]->GetSolution(0);
+    Poissonval_j = node[jPoint]->GetSolution(0);
+    
+    numerics->SetPoissonval(Poissonval_i,Poissonval_j);
+    
+   //numerics->SetPoisson_Coeff(Poisson_Coeff_i,Poisson_Coeff_j);
+
+    /*--- Compute residual, and Jacobians ---*/
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+    /*--- Add and subtract residual, and update Jacobians ---*/
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.AddBlock(jPoint, Residual);
+
+
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+ }
+}
+
+void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                        unsigned short iMesh){}
+
+void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  /*--- Initialize the source residual to zero ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+	  Residual[iVar] = 0.0;
+  }
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Load the volume of the dual mesh cell ---*/
+
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+    /*--- Compute the source residual ---*/
+    
+    numerics->ComputeResidual(Residual, Jacobian_i, config);
+
+    /*--- Add the source residual to the total ---*/
+
+    LinSysRes.AddBlock(iPoint, Residual);
+    
+    //Source term is constant ==> jacobian is zero
+  }
+}
+
+
+
+
+void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  
+  unsigned long iPoint, total_index;
+  unsigned short iVar;
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  
+	/*--- Build implicit system ---*/
+  
+
+	/*--- Set maximum residual to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+}
+  
+	/*--- Initialize residual and solution at the ghost points ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+	/*--- Read the volume ---*/
+
+    Vol = geometry->node[iPoint]->GetVolume();
+
+	/*--- Modify matrix diagonal to assure diagonal dominance ---*/
+
+    if (node[iPoint]->GetDelta_Time() != 0.0) {
+      Delta = Vol / node[iPoint]->GetDelta_Time();
+      Jacobian.AddVal2Diag(iPoint, Delta);
+     }
+    else {
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
+    }
+
+ 
+	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      LinSysRes[total_index] = - (LinSysRes[total_index] );
+      LinSysSol[total_index] = 0.0;
+      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+    }
+  }
+  
+	/*--- Initialize residual and solution at the ghost points ---*/
+   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
+    }
+  }
+  
+  
+  
+  
+  /*--- Solve or smooth the linear system ---*/
+  
+  CSysSolve system;
+  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+    }
+  }
+
+
+  /*--- MPI solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+
+  SetResidual_RMS(geometry, config);
+  
+}
+
+
+void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  bool adjoint = false;//config->GetContinuous_Adjoint();
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Update the solution ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	Vol = geometry->node[iPoint]->GetVolume();
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
+    //local_Res_TruncError[0] = 0.0;//node[iPoint]->GetResTruncError();
+    local_Residual = LinSysRes.GetBlock(iPoint);
+
+    if (!adjoint) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res = local_Residual[iVar] ;//+ local_Res_TruncError[iVar];
+        node[iPoint]->AddSolution(iVar, -Res*Delta);
+        AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      }
+    }
+  }
+
+  /*--- MPI solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+
+  SetResidual_RMS(geometry, config);
+
+}
+
+
+
+
+void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                        unsigned short iMesh, unsigned long Iteration){
+							
+   unsigned short iDim, iMarker;
+   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
+   su2double *Normal, Area, Poisson_Coeff, Lambda;
+   su2double Global_Delta_Time, Local_Delta_Time,Vol, CFL_Reduction;
+   
+   
+   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;Global_Delta_Time = 1.E6;
+   //CFL_Reduction = config->GetCFLRedCoeff_Heat();	//*******************//
+   
+   
+   /*---------Compute eigen value-------------*/
+   
+   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+       node[iPoint]->SetMax_Lambda_Visc(0.0);
+   }
+   
+   
+   /*--- Loop interior edges ---*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- get the edge's normal vector to compute the edge's area ---*/
+    Normal = geometry->edge[iEdge]->GetNormal();
+    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    
+    Poisson_Coeff = 1.0;//config->GetPoisson_Coeff
+    Lambda = Poisson_Coeff*Area*Area;
+    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+    
+   }
+   
+    /*--- Loop boundary edges ---*/
+   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+      /*--- Point identification, Normal vector and area ---*/
+
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      
+      Poisson_Coeff = 1.0;//config->GetPoisson_Coeff
+      Lambda = Poisson_Coeff*Area*Area;
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+      
+      
+    }
+   }
+
+   /*--- Each element uses their own speed, steady state simulation ---*/
+
+   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    Vol = geometry->node[iPoint]->GetVolume();
+
+	if (Vol != 0.0) {
+		Local_Delta_Time = config->GetCFL_Poisson()*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc() ;
+		
+		/*--- Min-Max-Logic ---*/
+		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+		Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+		if (Local_Delta_Time > config->GetMax_DeltaTime())
+			Local_Delta_Time = config->GetMax_DeltaTime();
+			node[iPoint]->SetDelta_Time(Local_Delta_Time);
+		}
+		else {
+			node[iPoint]->SetDelta_Time(0.0);
+		}
+
+   }
+
+
+}
+
+
+void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
+                                  CConfig *config, unsigned short val_marker) {
+  unsigned long Point, iVertex;
+  su2double val_res,pi;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  
+  pi = 4.0*atan(1.0);
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    Point = geometry->vertex[val_marker][iVertex]->GetNode();
+   
+    Solution[0] = 1+2*(geometry->node[Point]->GetCoord(0))*(geometry->node[Point]->GetCoord(0))+3*(geometry->node[Point]->GetCoord(1))*(geometry->node[Point]->GetCoord(1));
+    //cos(geometry->node[Point]->GetCoord(0))*cosh(geometry->node[Point]->GetCoord(1));
+    
+    
+ /*--- Assign the dirichlet BC value to the solution ---*/
+    node[Point]->SetSolution(Solution);
+    node[Point]->Set_OldSolution();
+       
+    LinSysRes.SetBlock_Zero(Point, 0);
+    LinSysSol.SetBlock(Point, Solution);
+  }
+  
+}
+
+void CPoissonSolverFVM::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                unsigned short val_marker) { 
+									
+									
+  unsigned short iDim;
+  unsigned long iVertex, iPoint;
+  su2double NeumannFlux, Area, *Normal,*Res_Visc;
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  NeumannFlux = 0.0;
+
+  Res_Visc = new su2double[nVar];
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      Res_Visc[0] = NeumannFlux * Area;
+
+      /*--- Viscous contribution to the residual at the wall ---*/
+
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+    }
+
+   }
+}
+
+
+/*-----------------------------------------------------------------------------------------------*/
+/*---------------------------Finite Element Solver (will be deleted soon)------------------------*/
+/*-----------------------------------------------------------------------------------------------*/
 CPoissonSolver::CPoissonSolver(void) : CSolver() { }
 
 CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver() {

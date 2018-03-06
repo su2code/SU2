@@ -5647,8 +5647,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
           if (!Unsteady) {
-            cout.width(5); cout << iExtIter + ExtIter_OffSet;
-            cout.width(11); cout << timeiter;
+            //cout.width(5); cout << iExtIter + ExtIter_OffSet;
+            //cout.width(11); cout << timeiter;
 
           } else if (Unsteady && DualTime_Iteration) {
             cout.width(8); cout << iIntIter;
