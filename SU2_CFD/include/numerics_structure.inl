@@ -2,20 +2,24 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,6 +76,69 @@ inline void CNumerics::Compute_Plane_Stress_Term(CElement *element_container, CC
 inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
 inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
+
+inline su2double CFEM_NonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
+	if (iVar == jVar) return 1.0; else return 0.0;
+}
+
+inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
+
+inline void CNumerics::ReadDV(CConfig *config){ }
+
+inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
+
+inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
+
+inline void CFEM_Elasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
+
+inline su2double CFEM_Elasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+
+inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CNumerics::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CFEM_Elasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+
+inline void CFEM_Elasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+
+inline void CFEM_NonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
+  EField_Ref_Mod[i_DV] = val_EField; }
+
+inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
+
+inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ }
+
+inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
+
+inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
+  E_i[0] = val_Young; 
+}
+
+inline void CFEM_NonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+  E_i[0] = val_Young; 
+}
+
+inline void CFEM_Elasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
+}
+
+inline void CFEM_NonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
+}
+
+inline void CFEM_Elasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
+
+inline void CFEM_NonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
 
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
@@ -394,6 +461,15 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
+inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {
+  Dissipation_i = diss_i;
+  Dissipation_j = diss_j;
+}
+
+inline su2double CNumerics::GetDissipation(){
+  return Dissipation_ij;
+}
+
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 
   F1_j = val_F1_j;
@@ -424,6 +500,48 @@ inline su2double CSourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
 inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
+
+inline void CSourcePieceWise_TurbSA_E::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TurbSA_E::SetProduction(su2double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA_E::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA_E::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline su2double CSourcePieceWise_TurbSA_E::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA_E::GetDestruction(void) { return Destruction; }
+
+inline su2double CSourcePieceWise_TurbSA_E::GetCrossProduction(void) { return CrossProduction; }
+
+inline void CSourcePieceWise_TurbSA_E_COMP::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TurbSA_E_COMP::SetProduction(su2double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA_E_COMP::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA_E_COMP::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline su2double CSourcePieceWise_TurbSA_E_COMP::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA_E_COMP::GetDestruction(void) { return Destruction; }
+
+inline su2double CSourcePieceWise_TurbSA_E_COMP::GetCrossProduction(void) { return CrossProduction; }
+
+inline void CSourcePieceWise_TurbSA_COMP::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TurbSA_COMP::SetProduction(su2double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbSA_COMP::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbSA_COMP::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline su2double CSourcePieceWise_TurbSA_COMP::GetProduction(void) { return Production; }
+
+inline su2double CSourcePieceWise_TurbSA_COMP::GetDestruction(void) { return Destruction; }
+
+inline su2double CSourcePieceWise_TurbSA_COMP::GetCrossProduction(void) { return CrossProduction; }
 
 inline void CSourcePieceWise_TurbSA_Neg::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 

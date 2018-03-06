@@ -2,20 +2,24 @@
  * \file element_structure.cpp
  * \brief Definition of the Finite Element structure (elements)
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,6 +69,9 @@ CElement::CElement(void) {
   
   FDL_a = NULL;
   
+  iDe = 0;
+  iDV = 0;
+  iProp = 0;
 }
 
 
@@ -101,6 +108,10 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
   
   FDL_a = NULL;
   
+  iDe = 0;
+  iDV = 0;
+  iProp = 0;
+
 }
 
 CElement::~CElement(void) {
@@ -247,9 +258,11 @@ void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned s
   
   unsigned short iDim, jDim;
   
+  /*--- TODO: The incompressible implementation needs further work ---*/
+
   for(iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
-      Kk_ab[nodeA][nodeB][iDim*nDim+jDim] += val_Kk_ab[iDim][jDim];
+      Kk_ab[nodeA][nodeB][iDim*nDim+jDim] = val_Kk_ab[iDim][jDim];
     }
   }
 }
@@ -309,5 +322,15 @@ void CElement::clearStress(void) {
     }
   }
   
+}
+
+void CElement::Set_ElProperties(CElementProperty *input_element) {
+
+  /*--- Set the properties local to the element ---*/
+
+  iDV = input_element->GetDV();
+  iProp = input_element->GetMat_Prop();
+  iDe = input_element->GetElectric_Prop();
+
 }
 

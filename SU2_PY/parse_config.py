@@ -3,20 +3,24 @@
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
 #  \author A. Aranake, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,6 +34,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
 
 import os,sys,xlwt
 
@@ -53,13 +60,13 @@ class config_option:
     self.option_description = description
 
   def print_data(self):
-    print 'Option Name: %s '%        self.option_name
-    print 'Option Type: %s '%        self.option_type
-    print 'Option Category: %s '%    self.option_category
-    print 'Option values: ',         self.option_values
-    print 'Option default: %s'%      self.option_default
-    print 'Option description: %s '% self.option_description
-    print ''
+    print('Option Name: %s '%        self.option_name)
+    print('Option Type: %s '%        self.option_type)
+    print('Option Category: %s '%    self.option_category)
+    print('Option values: ',         self.option_values)
+    print('Option default: %s'%      self.option_default)
+    print('Option description: %s '% self.option_description)
+    print('')
 
 def parse_config(config_cpp, config_hpp):
 
@@ -116,7 +123,7 @@ def parse_config(config_cpp, config_hpp):
     # Check for a category description
     if line.find('CONFIG_CATEGORY')>-1:
       present_category = line.split(':')[1].strip().strip('*/').strip()
-      print present_category
+      print(present_category)
 
     # Check for an option type
     for option_type in option_types:
@@ -131,12 +138,12 @@ def parse_config(config_cpp, config_hpp):
             enum_mapname = line.split(',')[2].strip()
             values = enum_options[enum_mapname]
           except KeyError:
-            print "KeyError, key=%s"%enum_mapname 
-            print "enum_options: ",enum_options
+            print("KeyError, key=%s"%enum_mapname)
+            print("enum_options: ",enum_options)
             sys.exit(1)
           except TypeError:
-            print "TypeError, key=%s"%enum_mapname 
-            print "enum_options: ",enum_options
+            print("TypeError, key=%s"%enum_mapname)
+            print("enum_options: ",enum_options)
             sys.exit(1)
         elif option_type=='AddMathProblem':
           values = ['DIRECT','CONTINUOUS_ADJOINT','LINEARIZED']
@@ -150,7 +157,7 @@ def parse_config(config_cpp, config_hpp):
           values = ['List']
         elif option_type == 'AddConvectOption':
           values = scheme_list
-          print "Convect Option: ", name
+          print("Convect Option: ", name)
         elif option_type == 'AddEnumListOption':
           values = ['Enum list'] 
         elif option_type == 'AddDVParamOption':

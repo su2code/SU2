@@ -2,20 +2,24 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -217,6 +221,14 @@ inline su2double CVolumetricMovement::Determinant_3x3(su2double A00, su2double A
 inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
+
+inline void CVolumetricMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {  }
+
+inline void CVolumetricMovement::Boundary_Dependencies(CGeometry **geometry, CConfig *config) {  }
+
+inline void CElasticityMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
+
+inline unsigned long CElasticityMovement::Get_nIterMesh() { return nIterMesh; }
 
 inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
   for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
