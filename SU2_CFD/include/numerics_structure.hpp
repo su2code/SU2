@@ -90,6 +90,8 @@ public:
   Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
+  su2double Poisson_Coeff_i, /*!< \brief Poisson coefficient at point i. */
+  Poisson_Coeff_j; /*!< \brief Poisson coefficient at point j. */
   su2double Cp_i, /*!< \brief Cp at point i. */
   Cp_j;         /*!< \brief Cp at point j. */
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
@@ -119,6 +121,8 @@ public:
   dist_j;      /*!< \brief Distance of point j to the nearest wall. */
   su2double Temp_i,  /*!< \brief Temperature at point i. */
   Temp_j;      /*!< \brief Temperature at point j. */
+  su2double Poissonval_i,  /*!< \brief Temperature at point i. */
+  Poissonval_j; /*!< \brief Temperature at point j. */
   su2double *Temp_tr_i, /*!< \brief Temperature transl-rot at point i. */
   *Temp_tr_j;/*!< \brief Temperature transl-rot at point j. */
   su2double *Temp_vib_i, /*!< \brief Temperature vibrational at point i. */
@@ -722,6 +726,20 @@ public:
   void SetDissipation(su2double diss_i, su2double diss_j);
   
   /*!
+   * \brief Set the Poisson coefficient 
+   * \param[in] val_Poisson coefficient_i - Value of the Poisson coefficient at point i.
+   * \param[in] val_Poisson coefficient_j - Value of the Poisson coefficient at point j.
+   */
+  void SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j);
+  
+  /*!
+   * \brief Set the Poisson value 
+   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
+   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
+   */
+  void SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j); 
+  
+  /*!
   * \brief Get the final Roe dissipation factor.
   */
   su2double GetDissipation();
@@ -809,7 +827,7 @@ public:
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
     
-  /*
+  /*!
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
@@ -3835,6 +3853,87 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_Poisson
+ * \brief Class for computing viscous term using average of gradients without correction (Poisson equation).
+ * \ingroup ViscDiscr
+ */
+class CAvgGrad_Poisson : public CNumerics {
+private:
+
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double **Mean_GradPoissonVar;
+  su2double *Proj_Mean_GradPoissonVar_Normal, *Proj_Mean_GradPoissonVar_Corrected;
+  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean ;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Poisson(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGradCorrected_Poisson
+ * \brief Class for computing viscous term using average of gradients with correction (Poisson equation).
+ * \ingroup ViscDiscr
+ */
+
+class CAvgGradCorrected_Poisson : public CNumerics {
+private:
+
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double **Mean_GradPoissonVar;
+  su2double *Proj_Mean_GradPoissonVar_Kappa, *Proj_Mean_GradPoissonVar_Edge, *Proj_Mean_GradPoissonVar_Corrected;
+  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_Poisson(void);
+
+  /*!
+   * \brief Compute the viscous residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
  * \class CGalerkin_Flow
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
@@ -5293,6 +5392,38 @@ public:
    * \brief Destructor of the class.
    */
   ~CSource_Template(void);
+};
+
+/*!
+ * \class CSource_Poisson
+ * \brief Class for source term of the Poisson equation.
+ * \ingroup SourceDiscr
+ */
+class CSource_PoissonFVM : public CNumerics {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config -  Name of the input config file
+   *
+   */
+  CSource_PoissonFVM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSource_PoissonFVM(void);
 };
 
 /*!

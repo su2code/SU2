@@ -283,6 +283,17 @@ inline void CNumerics::SetEddyViscosity(su2double val_eddy_viscosity_i, su2doubl
   Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
+
+inline void CNumerics::SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j) {
+  Poisson_Coeff_i = val_Poisson_Coeff_i;
+  Poisson_Coeff_j = val_Poisson_Coeff_j;
+}
+
+inline void CNumerics::SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j) {
+  Poissonval_i = val_Poisson_i;
+  Poissonval_j = val_Poisson_j;
+}
+
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
 
 inline void CNumerics::SetProduction(su2double val_production) { }
