@@ -3,20 +3,24 @@
 ## \file data.py
 #  \brief python package for data utility functions 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -36,8 +40,15 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-import cPickle as pickle
-from filelock import filelock
+if sys.version_info[0] > 2:
+    # Py3 pickle now manage both accelerated cPickle and pure python pickle
+    # See https://docs.python.org/3/whatsnew/3.0.html#library-changes, 4th item.
+    import pickle
+else:
+    import cPickle as pickle
+
+
+from .filelock import filelock
 
 # -------------------------------------------------------------------
 #  Load a Dictionary of Data
@@ -73,7 +84,7 @@ def load_data( file_name, var_names=None   ,
         scipy_loaded = False    
         
     if not os.path.exists(file_name):
-        raise Exception , 'File does not exist: %s' % file_name
+        raise Exception('File does not exist: %s' % file_name)
     
     # process file format
     if file_format == 'infer':
@@ -179,7 +190,7 @@ def save_data( file_name, data_dict, append=False ,
         if append == True and os.path.exists(file_name):
             # check file exists
             if not os.path.exists(file_name):
-                raise Exception , 'Cannot append, file does not exist: %s' % file_name  
+                raise Exception('Cannot append, file does not exist: %s' % file_name)
             # load old data
             data_dict_old = load( file_name   = file_name   ,
                                   var_names   = None        ,
@@ -238,28 +249,22 @@ def load_pickle(file_name):
     pkl_file.close()
     return data_dict
 
-#: def load_pickle()
-
-
 
 # -------------------------------------------------------------------
 #  Save Pickle
 # -------------------------------------------------------------------
 
-def save_pickle(file_name,data_dict):
-    """ save_pickle(file_name,data_dict)
+def save_pickle(file_name, data_dict):
+    """ save_pickle(file_name, data_dict)
         saves a core data dictionary
         first pickle entry is a list of all following data names
     """
-    pkl_file = open(file_name,'wb')
-    names = data_dict.keys()
-    pickle.dump(names,pkl_file)
+    pkl_file = open(file_name, 'wb')
+    names = list(data_dict.keys())
+    pickle.dump(names, pkl_file)
     for key in names:
-        pickle.dump(data_dict[key],pkl_file)
+        pickle.dump(data_dict[key], pkl_file)
     pkl_file.close()
-
-#: def save_pickle()
-
 
 
 # -------------------------------------------------------------------

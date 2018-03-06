@@ -2,20 +2,24 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,6 +66,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
   
   Prestretch              = NULL;   // Prestretch geometry
   
+  Reference_Geometry    = NULL;   // Reference geometry for optimization purposes
+  
 }
 
 CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -72,6 +78,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   bool incremental_load = config->GetIncrementalLoad();
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
+
+  bool discrete_adjoint = config->GetDiscrete_Adjoint();
+  
+  bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
   
   VonMises_Stress = 0.0;
   
@@ -129,6 +139,13 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   if (incremental_load && nonlinear_analysis) {
     Solution_Old       =  new su2double [nVar];
   }
+  /*--- If we are running a discrete adjoint iteration, we need this vector for cross-dependencies ---*/
+  else if (discrete_adjoint && fsi_analysis) {
+    Solution_Old      =  new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++){
+      Solution_Old[iVar] = val_fea[iVar];
+    }
+  }
   
   /*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
@@ -150,6 +167,9 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
     Residual_Ext_Surf[iVar] = 0.0;
     if (body_forces) Residual_Ext_Body[iVar] = 0.0;
   }
+  
+  Reference_Geometry = NULL;
+  if (refgeom)  Reference_Geometry = new su2double [nVar];
   
   Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
@@ -179,6 +199,8 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
   if (Solution_Pred       != NULL) delete [] Solution_Pred;
   if (Solution_Pred_Old     != NULL) delete [] Solution_Pred_Old;
   
+  if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
+
   if (Prestretch            != NULL) delete [] Prestretch;
   
 }

@@ -3,20 +3,24 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 5.0.0 "Raven"
+# \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -41,7 +45,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [5.0.0], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [6.0.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -55,6 +59,27 @@ AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 AC_PROG_CXX
+
+# Python configuration
+AM_PATH_PYTHON
+AC_ARG_VAR([PYTHON_INCLUDE], [Include flags for python, bypassing python-config])
+AC_ARG_VAR([PYTHON_CONFIG], [Path to python-config])
+AC_ARG_VAR([PYTHON_LIB], [Python lib flags])
+AC_ARG_VAR([PYTHON_EXEC_PREFIX], [Python exec-prefix])
+AS_IF([test -z "$PYTHON_INCLUDE"], [
+  AS_IF([test -z "$PYTHON_CONFIG"], [
+    AC_PATH_PROGS([PYTHON_CONFIG],
+                  [python$PYTHON_VERSION-config python-config],
+                  [no],
+                  [`dirname $PYTHON`])
+    AS_IF([test "$PYTHON_CONFIG" = no], [AC_MSG_ERROR([cannot find python-config for $PYTHON.])])
+  ])
+  AC_MSG_CHECKING([python include flags])
+  PYTHON_INCLUDE=`$PYTHON_CONFIG --includes`
+  PYTHON_LIB=`$PYTHON_CONFIG --libs`
+  PYTHON_EXEC_PREFIX=`$PYTHON_CONFIG --exec-prefix`
+  AC_MSG_RESULT([$PYTHON_INCLUDE])
+])
 
 #PKG_PROG_PKG_CONFIG
 
@@ -470,9 +495,6 @@ AC_SUBST([LAPACK_LD])
 
 build_PY=yes
 
-# Complex type
-COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
-
 # direct differentation type
 build_DIRECTDIFF=no
 DIRECTDIFF_CXX=
@@ -481,16 +503,7 @@ DIRECTDIFF_LIBS=
 build_REVERSE=no
 REVERSE_CXX=
 FORWARD_CXX=
-#CONFIGURE_ADOLC
 CONFIGURE_CODI
-
-if test $build_COMPLEX != "no"
-then 
-   DIRECTDIFF_CXX=$COMPLEX_CXX
-   build_DIRECTDIFF=yes
-   build_REVERSE=no
-   build_NORMAL=no
-fi
 
 AC_SUBST([DIRECTDIFF_CXX])
 AC_SUBST([DIRECTDIFF_LIBS])
@@ -508,6 +521,7 @@ then
   build_SOL=no
   build_GEO=no
   build_PY=no
+  build_PY_WRAPPER=no
 fi
 
 if test $build_REVERSE == "yes"
@@ -547,24 +561,27 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 5.0.0 'Raven'                             |
+|   / __| | | |_  )   Release 6.0.0 'Falcon'                            |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
 -------------------------------------------------------------------------
-| SU2 Original Developers: Dr. Francisco D. Palacios.                   |
-|                          Dr. Thomas D. Economon.                      |
+| The current SU2 release has been coordinated by the                   |
+| SU2 International Developers Society <www.su2devsociety.org>          |
+| with selected contributions from the open-source community.           |
 -------------------------------------------------------------------------
-| SU2 Developers:                                                       |
+| The main research teams contributing to the current release are:      |
 | - Prof. Juan J. Alonso's group at Stanford University.                |
 | - Prof. Piero Colonna's group at Delft University of Technology.      |
 | - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |
 | - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
 | - Prof. Rafael Palacios' group at Imperial College London.            |
-| - Prof. Edwin van der Weide's group at the University of Twente.      |
 | - Prof. Vincent Terrapon's group at the University of Liege.          |
+| - Prof. Edwin van der Weide's group at the University of Twente.      |
+| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |
 -------------------------------------------------------------------------
-| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |
+| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |
+|                      Tim Albring, and the SU2 contributors.           |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |
