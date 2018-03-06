@@ -13155,8 +13155,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -13747,8 +13747,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -14183,8 +14183,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -14671,8 +14671,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many nodes it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -14937,8 +14937,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nSurf_Poin_Par;
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -15225,8 +15225,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15569,8 +15569,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif

@@ -1327,7 +1327,7 @@ public:
 
 /*!
  * \class CPhysicalGeometry
- * \brief Class for reading a defining the primal grid which is read from the 
+ * \brief Class for reading a defining the primal grid which is read from the
  *        grid file in .su2 or .cgns format.
  * \author F. Palacios, T. Economon
  */
