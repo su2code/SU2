@@ -1135,10 +1135,10 @@ public:
    * \param[in] val_periodic - Bool for periodic BCs.
    */
   CFSIStatDriver(char* confFile,
-                 unsigned short val_nZone,
-                 unsigned short val_nDim,
-                 bool val_periodic,
-                 SU2_Comm MPICommunicator);
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             bool val_periodic,
+             SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
