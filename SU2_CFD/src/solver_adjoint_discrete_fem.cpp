@@ -158,6 +158,10 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
       }
   }
 
+#ifdef RINGLEB
+  direct_solver->SetRinglebQ(0.5);
+#endif
+
 }
 
 CFEM_DG_DiscAdjSolver::~CFEM_DG_DiscAdjSolver(void) { 

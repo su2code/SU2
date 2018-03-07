@@ -4548,7 +4548,7 @@ void CFEM_DG_DiscAdjFluidDriver::Run() {
     /*--- Extract the computed sensitivity values. ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivityRingleb(geometry_container[iZone][MESH_0],config_container[iZone]);
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivityRingleb();
     }
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/

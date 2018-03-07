@@ -2247,8 +2247,9 @@ inline su2double* CFEM_DG_DiscAdjSolver::GetVecSolDOFs(void) {return VecSolDOFs.
 inline void CSolver::RegisterRinglebQ(void) {}
 
 inline void CFEM_DG_DiscAdjSolver::RegisterRinglebQ(void){
-	direct_solver->SetRinglebQ(0.5);
-	AD::RegisterInput(direct_solver->GetRinglebQ());
+	su2double q0 = 0.5;
+	AD::RegisterInput(q0);
+	direct_solver->SetRinglebQ(q0);
 }
 
 inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
