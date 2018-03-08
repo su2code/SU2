@@ -748,6 +748,9 @@ public:
    */
    bool IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
     bool IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
+   
+   /* For 3D point search */
+   bool IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
     void Isoparameters_1(unsigned short nDim, unsigned short nDonor,
                                   su2double *X, su2double *xj, su2double *isoparams);
    void Isoparameters(unsigned short nDim, unsigned short nDonor,
