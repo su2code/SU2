@@ -91,7 +91,7 @@ inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solv
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
 inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) { }
-  
+
 inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
 inline void CSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
@@ -544,6 +544,10 @@ inline void CSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {}
 
 inline void CSolver::SetInletAtVertex(vector<su2double> values, unsigned short iMarker, unsigned long iVertex) { };
 
+inline void CSolver::SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex) { };
+
+inline su2double CSolver::GetInletAtVertex(su2double *val_inlet, unsigned long val_inlet_point, unsigned short val_kind_marker, CGeometry *geometry, CConfig *config) { return 0; }
+
 inline void CSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) { }
 
 inline su2double CSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return 0; }
@@ -608,7 +612,11 @@ inline su2double CSolver::GetPressure_Inf(void) { return 0; }
 
 inline su2double CSolver::GetViscosity_Inf(void) { return 0; }
 
+inline su2double CSolver::GetNuTilde_Inf(void) { return 0; }
+
 inline su2double CSolver::GetTke_Inf(void) { return 0; }
+
+inline su2double CSolver::GetOmega_Inf(void) { return 0; }
 
 inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
@@ -2139,12 +2147,18 @@ inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
     node[iPoint]->SetSolution(0, nu_tilde_Inf);
 }
 
+inline su2double CTurbSASolver::GetNuTilde_Inf(void) { return nu_tilde_Inf; }
+
 inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->SetSolution(0, kine_Inf);
     node[iPoint]->SetSolution(1, omega_Inf);
   }
 }
+
+inline su2double CTurbSSTSolver::GetTke_Inf(void) { return kine_Inf; }
+
+inline su2double CTurbSSTSolver::GetOmega_Inf(void) { return omega_Inf; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 

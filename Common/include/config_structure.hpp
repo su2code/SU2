@@ -710,6 +710,7 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
@@ -2796,7 +2797,19 @@ public:
    * \return <code>TRUE</code> means that rind layers will be written to the solution file.
    */
   bool GetWrt_Halo(void);
-  
+
+  /*!
+   * \brief Get information about writing a template inlet profile file.
+   * \return <code>TRUE</code> means that a template inlet profile file will be written.
+   */
+  bool GetWrt_InletFile(void);
+
+  /*!
+   * \brief Set information about writing a template inlet profile file.
+   * \param[in] val_wrt_inletfile - flag for whether to write a template inlet profile file.
+   */
+  void SetWrt_InletFile(bool val_wrt_inletfile);
+
   /*!
    * \brief Get information about writing sectional force files.
    * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
