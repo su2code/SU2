@@ -596,6 +596,15 @@ public:
                    CConfig* config);
 
   /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+                                    CConfig *config);
+
+  /*!
    * \brief Write the positions for all the inlet nodes
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
