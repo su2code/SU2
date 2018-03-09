@@ -126,6 +126,14 @@ protected:
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
+  unsigned long nMarker_InletFile;       /*!< \brief Auxiliary structure for holding the number of markers in an inlet profile file. */
+  vector<string> Marker_Tags_InletFile;       /*!< \brief Auxiliary structure for holding the string names of the markers in an inlet profile file. */
+  unsigned long *nRow_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in an inlet profile file. */
+  unsigned long *nRowCum_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows in cumulative storage format for a particular marker in an inlet profile file. */
+  unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
+  unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
+  passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -2811,6 +2819,29 @@ public:
 
   /*!
    * \brief A virtual member
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  virtual void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  virtual su2double GetInletAtVertex(su2double *val_inlet,
+                                     unsigned long val_inlet_point,
+                                     unsigned short val_kind_marker,
+                                     CGeometry *geometry,
+                                     CConfig *config);
+
+  /*!
+   * \brief A virtual member
    *
    * As the inlet values are read in from a file, each solver can check to see
    * if the inputs are valid.  By overriding this function and calling it
@@ -3028,13 +3059,25 @@ public:
    * \return Value of the viscosity at the infinity.
    */
   virtual su2double GetViscosity_Inf(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of nu tilde at the far-field.
+   */
+  virtual su2double GetNuTilde_Inf(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the turbulent kinetic energy.
    */
   virtual su2double GetTke_Inf(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the turbulent frequency.
+   */
+  virtual su2double GetOmega_Inf(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
@@ -3335,6 +3378,30 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename);
+
+  /*!
+   * \brief Read a native SU2 inlet file in ASCII format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Load a inlet profile data from file into a particular solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_kind_solver - Solver container position.
+   * \param[in] val_kind_marker - Kind of marker to apply the profiles.
+   */
+  void LoadInletProfile(CGeometry **geometry,
+                        CSolver ***solver,
+                        CConfig *config,
+                        int val_iter,
+                        unsigned short val_kind_solver,
+                        unsigned short val_kind_marker);
 
   /*!
    * \brief A virtual member.
@@ -6152,6 +6219,25 @@ public:
    */
   void SetInletAtVertex(vector<su2double> values, unsigned short iMarker,
                         unsigned long iVertex);
+
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet, unsigned long val_inlet_point, unsigned short val_kind_marker, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -9136,6 +9222,31 @@ public:
   void SetInletAtVertex(vector<su2double> values,
                         unsigned short iMarker, unsigned long iVertex);
 
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  /*!
+   * \brief Get the value of nu tilde at the far-field.
+   * \return Value of nu tilde at the far-field.
+   */
+  su2double GetNuTilde_Inf(void);
+
 };
 
 /*!
@@ -9332,6 +9443,37 @@ public:
    */
   void SetInletAtVertex(vector<su2double> values, unsigned short iMarker,
                         unsigned long iVertex);
+
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  /*!
+   * \brief Get the value of the turbulent kinetic energy.
+   * \return Value of the turbulent kinetic energy.
+   */
+  su2double GetTke_Inf(void);
+
+  /*!
+   * \brief Get the value of the turbulent frequency.
+   * \return Value of the turbulent frequency.
+   */
+  su2double GetOmega_Inf(void);
 
 };
 

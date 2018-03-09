@@ -1514,6 +1514,10 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
+inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
+
+inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
+
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) { return Aeroelastic_np1[iMarker]; }
