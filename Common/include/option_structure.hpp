@@ -145,6 +145,14 @@ const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
+const unsigned short COMM_TYPE_UNSIGNED_LONG  = 1; /*!< \brief Communication type for unsigned long. */
+const unsigned short COMM_TYPE_LONG           = 2; /*!< \brief Communication type for long. */
+const unsigned short COMM_TYPE_UNSIGNED_SHORT = 3; /*!< \brief Communication type for unsigned short. */
+const unsigned short COMM_TYPE_DOUBLE         = 4; /*!< \brief Communication type for double. */
+const unsigned short COMM_TYPE_CHAR           = 5; /*!< \brief Communication type for char. */
+const unsigned short COMM_TYPE_SHORT          = 6; /*!< \brief Communication type for short. */
+const unsigned short COMM_TYPE_INT            = 7; /*!< \brief Communication type for int. */
+
 const unsigned short N_ELEM_TYPES = 7;           /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_LINE = 2;          /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_TRIANGLE = 3;      /*!< \brief General output & CGNS defines. */
