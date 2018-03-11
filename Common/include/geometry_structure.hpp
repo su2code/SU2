@@ -1329,7 +1329,7 @@ public:
  * \class CPhysicalGeometry
  * \brief Class for reading a defining the primal grid which is read from the
  *        grid file in .su2 or .cgns format.
- * \author F. Palacios, T. Economon
+ * \author F. Palacios, T. Economon, J. Alonso
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1482,13 +1482,6 @@ public:
   void DistributeMarkerTags(CConfig *config, CGeometry *geometry);
 
   /*!
-   * \brief Partition the marker information according to a linear partitioning of the grid nodes.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  //void PartitionSurfacePoints(CConfig *config, CGeometry *geometry);
-
-  /*!
    * \brief Partition the marker connectivity held on the master rank according to a linear partitioning.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1516,6 +1509,37 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void LoadSurfaceElements(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Routine to launch non-blocking sends and recvs amongst all processors.
+   * \param[in] bufSend - Buffer of data to be sent.
+   * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage format.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] bufRecv - Buffer of data to be received.
+   * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative storage format.
+   * \param[in] sendReq - Array of MPI recv requests.
+   * \param[in] countPerElem - Pieces of data per element communicated.
+   */
+  void InitiateComms(void *bufSend,
+                     int *nElemSend,
+                     SU2_MPI::Request *sendReq,
+                     void *bufRecv,
+                     int *nElemRecv,
+                     SU2_MPI::Request *recvReq,
+                     unsigned short countPerElem,
+                     unsigned short commType);
+
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
+   * \param[in] nSends - Number of sends to be completed.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] nRecvs - Number of receives to be completed.
+   * \param[in] sendReq - Array of MPI recv requests.
+   */
+  void CompleteComms(int nSends,
+                     SU2_MPI::Request *sendReq,
+                     int nRecvs,
+                     SU2_MPI::Request *recvReq);
 
   /*!
 	 * \brief Set the send receive boundaries of the grid.

@@ -4827,7 +4827,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- The MASTER should wait for the sends above to complete ---*/
   
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   
   /*--- Set the value of Marker_All_SendRecv and Marker_All_TagBound in the config structure ---*/
@@ -4985,7 +4985,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag) {
+CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
+                                     CConfig *config,
+                                     bool val_flag) {
 
   /*--- Get rank and size. ---*/
 
@@ -5132,17 +5134,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool 
    reader to avoid reading the markers to the master rank alone at first. ---*/
 
   DistributeMarkerTags(config, geometry);
-  PartitionSurfaceConnectivity(config, geometry, LINE          );
-  PartitionSurfaceConnectivity(config, geometry, TRIANGLE      );
-  PartitionSurfaceConnectivity(config, geometry, QUADRILATERAL );
+  PartitionSurfaceConnectivity(config, geometry, LINE         );
+  PartitionSurfaceConnectivity(config, geometry, TRIANGLE     );
+  PartitionSurfaceConnectivity(config, geometry, QUADRILATERAL);
 
   /*--- Once the markers are distributed according to the linear partitioning
    of the grid points, we can use similar techniques as above for distributing
    the surface element connectivity. ---*/
 
-  DistributeSurfaceConnectivity(config, geometry, LINE          );
-  DistributeSurfaceConnectivity(config, geometry, TRIANGLE      );
-  DistributeSurfaceConnectivity(config, geometry, QUADRILATERAL );
+  DistributeSurfaceConnectivity(config, geometry, LINE         );
+  DistributeSurfaceConnectivity(config, geometry, TRIANGLE     );
+  DistributeSurfaceConnectivity(config, geometry, QUADRILATERAL);
 
   /*--- Reduce the total number of elements that we have on each rank. ---*/
 
@@ -5229,21 +5231,21 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   
 }
 
-void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry) {
+void CPhysicalGeometry::DistributeColoring(CConfig *config,
+                                           CGeometry *geometry) {
 
   /*--- To start, each linear partition carries the color only for the
    owned nodes (nPoint), but we have repeated elems on each linear partition.
    We need to complete the coloring information such that the repeated
    points on each rank also have their color values. ---*/
 
-#ifdef HAVE_MPI
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
-  int ind;
-#endif
-  unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
   unsigned short iNode, jNode;
+  unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
   vector<unsigned long>::iterator it;
+
+  SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL;
+  SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- First, create a complete list of the points on this rank (including
    repeats) and their neighbors so that we can efficiently loop through the
@@ -5315,10 +5317,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
   int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
   int *nPoint_Flag = new int[size];
 
-  for (int ii=0; ii < size; ii++) {
-    nPoint_Send[ii] = 0;
-    nPoint_Recv[ii] = 0;
-    nPoint_Flag[ii]= -1;
+  for (iProc = 0; iProc < size; iProc++) {
+    nPoint_Send[iProc] = 0; nPoint_Recv[iProc] = 0; nPoint_Flag[iProc]= -1;
   }
   nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
 
@@ -5359,12 +5359,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    all processors. After this communication, each proc knows how
    many points it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
                     &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
 
   /*--- Prepare to send colors. First check how many
    messages we will be sending and receiving. Here we also put
@@ -5372,31 +5368,31 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    communications simpler. ---*/
 
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
+  for (iProc = 0; iProc < size; iProc++) nPoint_Flag[iProc] = -1;
 
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
+  for (iProc = 0; iProc < size; iProc++) {
+    if ((iProc != rank) && (nPoint_Send[iProc+1] > 0)) nSends++;
+    if ((iProc != rank) && (nPoint_Recv[iProc+1] > 0)) nRecvs++;
 
-    nPoint_Send[ii+1] += nPoint_Send[ii];
-    nPoint_Recv[ii+1] += nPoint_Recv[ii];
+    nPoint_Send[iProc+1] += nPoint_Send[iProc];
+    nPoint_Recv[iProc+1] += nPoint_Recv[iProc];
   }
 
   /*--- Allocate arrays for sending the global ID. ---*/
 
   unsigned long *idSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++) idSend[ii] = 0;
+  for (iSend = 0; iSend < nPoint_Send[size]; iSend++) idSend[iSend] = 0;
 
   /*--- Allocate memory to hold the colors that we are sending. ---*/
 
   unsigned long *colorSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++) colorSend[ii] = 0;
+  for (iSend = 0; iSend < nPoint_Send[size]; iSend++) colorSend[iSend] = 0;
 
   /*--- Create an index variable to keep track of our index
    positions as we load up the send buffer. ---*/
 
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = nPoint_Send[ii];
+  for (iProc = 0; iProc < size; iProc++) index[iProc] = nPoint_Send[iProc];
 
   /*--- Now load up our buffers with the Global IDs and colors. ---*/
 
@@ -5433,6 +5429,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
         /*--- Increment the index by the message length ---*/
 
         index[iProcessor]++;
+
       }
     }
   }
@@ -5447,111 +5444,49 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    directly copy our own data later. ---*/
 
   unsigned long *colorRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    colorRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++)
+    colorRecv[iRecv] = 0;
 
   unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    idRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++)
+    idRecv[iRecv] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need double the number of messages to send both the colors
-   and the global IDs. ---*/
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  send_req = new SU2_MPI::Request[2*nSends];
-  recv_req = new SU2_MPI::Request[2*nRecvs];
-
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(colorRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
+  if (nSends > 0) {
+    colorSendReq = new SU2_MPI::Request[nSends];
+    idSendReq    = new SU2_MPI::Request[nSends];
+  }
+  if (nRecvs > 0) {
+    colorRecvReq = new SU2_MPI::Request[nRecvs];
+    idRecvReq    = new SU2_MPI::Request[nRecvs];
   }
 
-  /*--- Launch the non-blocking sends of the colors. ---*/
+  /*--- Launch the non-blocking sends and receives. ---*/
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll    = nPoint_Send[ii];
-      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count = kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(colorSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
+  InitiateComms(colorSend, nPoint_Send, colorSendReq,
+                colorRecv, nPoint_Recv, colorRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
-  /*--- Repeat the process to communicate the global IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the global IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll    = nPoint_Send[ii];
-      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count = kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-#endif
+  InitiateComms(idSend, nPoint_Send, idSendReq,
+                idRecv, nPoint_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  int mm = nPoint_Recv[rank];
-  int ll = nPoint_Send[rank];
-  int kk = nPoint_Send[rank+1];
+  iRecv   = nPoint_Recv[rank];
+  myStart = nPoint_Send[rank];
+  myFinal = nPoint_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    colorRecv[iRecv] = colorSend[iSend];
+    idRecv[iRecv]    = idSend[iSend];
+    iRecv++;
+  }
 
-  for (int nn=ll; nn<kk; nn++, mm++) colorRecv[mm] = colorSend[nn];
+  /*--- Complete the non-blocking communications. ---*/
 
-  mm = nPoint_Recv[rank];
-  ll = nPoint_Send[rank];
-  kk = nPoint_Send[rank+1];
-
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-
-#ifdef HAVE_MPI
-  int number = 2*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-
-  number = 2*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-
-  delete [] send_req;
-  delete [] recv_req;
-#endif
+  CompleteComms(nSends, colorSendReq, nRecvs, colorRecvReq);
+  CompleteComms(nSends,    idSendReq, nRecvs,    idRecvReq);
 
   /*--- Store the complete color map for this rank in class data. Now,
    each rank has a color value for all owned nodes as well as any repeated
@@ -5559,11 +5494,17 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config, CGeometry *geometry)
    communicated in the routine above, but since we are storing in a map,
    it will simply overwrite the same entries. ---*/
 
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
-    Color_List[idRecv[ii]] = colorRecv[ii];
+  for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++) {
+    Color_List[idRecv[iRecv]] = colorRecv[iRecv];
   }
 
   /*--- Free temporary memory from communications ---*/
+
+  if (colorSendReq != NULL) delete [] colorSendReq;
+  if (idSendReq    != NULL) delete [] idSendReq;
+
+  if (colorRecvReq != NULL) delete [] colorRecvReq;
+  if (idRecvReq    != NULL) delete [] idRecvReq;
 
   delete [] colorSend;
   delete [] colorRecv;
@@ -5582,15 +5523,13 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   unsigned short NODES_PER_ELEMENT = 0;
 
   unsigned long iProcessor;
-  unsigned long nElem_Total = 0, Global_Index;
+  unsigned long iElem, iNode, jNode, nElem_Total = 0, Global_Index;
   unsigned long *Conn_Elem  = NULL;
   unsigned long *ID_Elems   = NULL;
 
-#ifdef HAVE_MPI
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
-  int ind;
-#endif
+  SU2_MPI::Request *connSendReq = NULL, *idSendReq = NULL;
+  SU2_MPI::Request *connRecvReq = NULL, *idRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Store the number of nodes per this element type. ---*/
 
@@ -5624,10 +5563,10 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   map<unsigned long, unsigned long> Local2GlobalElem;
   map<unsigned long, unsigned long>::iterator MI;
 
-  for (unsigned long ii=0; ii <geometry->GetGlobal_nElem(); ii++) {
-    MI = geometry->Global_to_Local_Elem.find(ii);
+  for (iElem = 0; iElem < geometry->GetGlobal_nElem(); iElem++) {
+    MI = geometry->Global_to_Local_Elem.find(iElem);
     if (MI != geometry->Global_to_Local_Elem.end()) {
-      Local2GlobalElem[geometry->Global_to_Local_Elem[ii]] = ii;
+      Local2GlobalElem[geometry->Global_to_Local_Elem[iElem]] = iElem;
     }
   }
 
@@ -5640,20 +5579,18 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size];
 
-  for (int ii=0; ii < size; ii++) {
-    nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
-    nElem_Flag[ii]= -1;
+  for (iProc = 0; iProc < size; iProc++) {
+    nElem_Send[iProc] = 0; nElem_Recv[iProc] = 0; nElem_Flag[iProc]= -1;
   }
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
-  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++ ) {
-    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
-      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++ ) {
+    if (geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++ ) {
 
         /*--- Get the index of the current point. ---*/
 
-        Global_Index = geometry->elem[ii]->GetNode(jj);
+        Global_Index = geometry->elem[iElem]->GetNode(iNode);
 
         /*--- We have the color stored in a map for all local points. ---*/
 
@@ -5662,10 +5599,11 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
         /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
 
-        if ((nElem_Flag[iProcessor] != ii)) {
-          nElem_Flag[iProcessor] = ii;
+        if ((nElem_Flag[iProcessor] != (int)iElem)) {
+          nElem_Flag[iProcessor] = (int)iElem;
           nElem_Send[iProcessor+1]++;
         }
+
       }
     }
   }
@@ -5674,12 +5612,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -5687,14 +5621,14 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
    communications simpler. ---*/
 
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc] = -1;
 
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+  for (iProc = 0; iProc < size; iProc++) {
+    if ((iProc != rank) && (nElem_Send[iProc+1] > 0)) nSends++;
+    if ((iProc != rank) && (nElem_Recv[iProc+1] > 0)) nRecvs++;
 
-    nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
+    nElem_Send[iProc+1] += nElem_Send[iProc];
+    nElem_Recv[iProc+1] += nElem_Recv[iProc];
   }
 
   /*--- Allocate memory to hold the connectivity and element IDs
@@ -5702,33 +5636,35 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   unsigned long *connSend = NULL;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
-    connSend[ii] = 0;
+  for (iSend = 0; iSend < NODES_PER_ELEMENT*nElem_Send[size]; iSend++)
+    connSend[iSend] = 0;
 
   /*--- Allocate arrays for storing element global index. ---*/
 
   unsigned long *idSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++) idSend[ii] = 0;
+  for (iSend = 0; iSend < nElem_Send[size]; iSend++) idSend[iSend] = 0;
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
 
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  for (iProc = 0; iProc < size; iProc++)
+    index[iProc] = NODES_PER_ELEMENT*nElem_Send[iProc];
 
   unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
+  for (iProc = 0; iProc < size; iProc++)
+    idIndex[iProc] = nElem_Send[iProc];
 
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
 
-  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++) {
-    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
-      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    if (geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++ ) {
 
         /*--- Get the index of the current point. ---*/
 
-        Global_Index = geometry->elem[ii]->GetNode(jj);
+        Global_Index = geometry->elem[iElem]->GetNode(iNode);
 
         /*--- We have the color stored in a map for all local points. ---*/
 
@@ -5736,26 +5672,26 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
         /*--- Load connectivity and IDs into the buffer for sending ---*/
 
-        if (nElem_Flag[iProcessor] != ii) {
+        if (nElem_Flag[iProcessor] != (int)iElem) {
 
-          nElem_Flag[iProcessor] = ii;
+          nElem_Flag[iProcessor] = (int)iElem;
           unsigned long nn = index[iProcessor];
           unsigned long mm = idIndex[iProcessor];
 
           /*--- Load the connectivity values. Note that elements are already
           stored directly based on their global index for the nodes.---*/
 
-          for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-            connSend[nn] = geometry->elem[ii]->GetNode(kk); nn++;
+          for (jNode = 0; jNode < NODES_PER_ELEMENT; jNode++) {
+            connSend[nn] = geometry->elem[iElem]->GetNode(jNode); nn++;
           }
 
           /*--- Global ID for this element. ---*/
 
-          idSend[mm] = Local2GlobalElem[ii];
+          idSend[mm] = Local2GlobalElem[iElem];
 
           /*--- Increment the index by the message length ---*/
 
-          index[iProcessor]  += NODES_PER_ELEMENT;
+          index[iProcessor] += NODES_PER_ELEMENT;
           idIndex[iProcessor]++;
 
         }
@@ -5775,135 +5711,78 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   unsigned long *connRecv = NULL;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
-    connRecv[ii] = 0;
+  for (iRecv = 0; iRecv < NODES_PER_ELEMENT*nElem_Recv[size]; iRecv++)
+    connRecv[iRecv] = 0;
 
   unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) idRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) idRecv[iRecv] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need double the number of messages to send both the conn.
-   and the element IDs. ---*/
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  send_req = new SU2_MPI::Request[2*nSends];
-  recv_req = new SU2_MPI::Request[2*nRecvs];
-
-  /*--- Launch the non-blocking recv's for the connectivity. ---*/
-
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
+  if (nSends > 0) {
+    connSendReq = new SU2_MPI::Request[nSends];
+    idSendReq   = new SU2_MPI::Request[nSends];
+  }
+  if (nRecvs > 0) {
+    connRecvReq = new SU2_MPI::Request[nRecvs];
+    idRecvReq   = new SU2_MPI::Request[nRecvs];
   }
 
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  /*--- Launch the non-blocking sends and receives. ---*/
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int dest = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
+  InitiateComms(connSend, nElem_Send, connSendReq,
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
-  /*--- Repeat the process to communicate the element IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the element IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-#endif
+  InitiateComms(idSend, nElem_Send, idSendReq,
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
-  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
-  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  iRecv   = NODES_PER_ELEMENT*nElem_Recv[rank];
+  myStart = NODES_PER_ELEMENT*nElem_Send[rank];
+  myFinal = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    connRecv[iRecv] = connSend[iSend];
+    iRecv++;
+  }
 
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  iRecv   = nElem_Recv[rank];
+  myStart = nElem_Send[rank];
+  myFinal = nElem_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    idRecv[iRecv] = idSend[iSend];
+    iRecv++;
+  }
 
-  mm = nElem_Recv[rank];
-  ll = nElem_Send[rank];
-  kk = nElem_Send[rank+1];
+  /*--- Complete the non-blocking communications. ---*/
 
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-
-#ifdef HAVE_MPI
-  int number = 2*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-
-  number = 2*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-
-  delete [] send_req;
-  delete [] recv_req;
-#endif
+  CompleteComms(nSends, connSendReq, nRecvs, connRecvReq);
+  CompleteComms(nSends,   idSendReq, nRecvs,   idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper structure
    It will be loaded into the geometry objects in a later step. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     Conn_Elem = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-
-  int count = 0; nElem_Total = 0;
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    nElem_Total++;
-    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-      Conn_Elem[count] = connRecv[ii*NODES_PER_ELEMENT+jj];
-      count++;
+    int count = 0; nElem_Total = 0;
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      nElem_Total++;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        Conn_Elem[count] = connRecv[iRecv*NODES_PER_ELEMENT+iNode];
+        count++;
+      }
     }
   }
 
   /*--- Store the global element IDs too. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     ID_Elems = new unsigned long[nElem_Recv[size]];
-
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-      ID_Elems[ii] = idRecv[ii];
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      ID_Elems[iRecv] = idRecv[iRecv];
+    }
   }
 
   /*--- Store the particular element count, IDs, & conn. in the class data,
@@ -5961,6 +5840,12 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   Local2GlobalElem.clear();
 
+  if (connSendReq != NULL) delete [] connSendReq;
+  if (idSendReq   != NULL) delete [] idSendReq;
+
+  if (connRecvReq != NULL) delete [] connRecvReq;
+  if (idRecvReq   != NULL) delete [] idRecvReq;
+
   delete [] connSend;
   delete [] connRecv;
   delete [] idSend;
@@ -5978,13 +5863,13 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
    to all other ranks, including coordinates and coloring info, so that the
    receivers will be able to sort the data. ---*/
 
-#ifdef HAVE_MPI
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
-  int ind;
-#endif
+  unsigned short iDim;
   unsigned long iPoint, iNeighbor, jPoint, iProcessor;
   vector<unsigned long>::iterator it;
+
+  SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL, *coordSendReq = NULL;
+  SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL, *coordRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Prepare structures for communication. ---*/
 
@@ -5992,10 +5877,8 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
   int *nPoint_Flag = new int[size];
 
-  for (int ii=0; ii < size; ii++) {
-    nPoint_Send[ii] = 0;
-    nPoint_Recv[ii] = 0;
-    nPoint_Flag[ii]= -1;
+  for (iProc = 0; iProc < size; iProc++) {
+    nPoint_Send[iProc] = 0; nPoint_Recv[iProc] = 0; nPoint_Flag[iProc]= -1;
   }
   nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
 
@@ -6029,12 +5912,8 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
    all processors. After this communication, each proc knows how
    many points it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
                     &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nPoint_Recv[1] = nPoint_Send[1];
-#endif
 
   /*--- Prepare to send colors, ids, and coords. First check how many
    messages we will be sending and receiving. Here we also put
@@ -6042,41 +5921,43 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
    communications simpler. ---*/
 
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
+  for (iProc = 0; iProc < size; iProc++) nPoint_Flag[iProc] = -1;
 
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
+  for (iProc = 0; iProc < size; iProc++) {
+    if ((iProc != rank) && (nPoint_Send[iProc+1] > 0)) nSends++;
+    if ((iProc != rank) && (nPoint_Recv[iProc+1] > 0)) nRecvs++;
 
-    nPoint_Send[ii+1] += nPoint_Send[ii];
-    nPoint_Recv[ii+1] += nPoint_Recv[ii];
+    nPoint_Send[iProc+1] += nPoint_Send[iProc];
+    nPoint_Recv[iProc+1] += nPoint_Recv[iProc];
   }
 
   /*--- Allocate arrays for sending the global ID. ---*/
 
   unsigned long *idSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++) idSend[ii] = 0;
+  for (iSend = 0; iSend < nPoint_Send[size]; iSend++) idSend[iSend] = 0;
 
   /*--- Allocate memory to hold the colors that we are sending. ---*/
 
   unsigned long *colorSend = new unsigned long[nPoint_Send[size]];
-  for (int ii = 0; ii < nPoint_Send[size]; ii++) colorSend[ii] = 0;
+  for (iSend = 0; iSend < nPoint_Send[size]; iSend++) colorSend[iSend] = 0;
 
   /*--- Allocate memory to hold the coordinates that we are sending. ---*/
 
   su2double *coordSend = NULL;
   coordSend = new su2double[nDim*nPoint_Send[size]];
-  for (int ii = 0; ii < nDim*nPoint_Send[size]; ii++)
-    coordSend[ii] = 0;
+  for (iSend = 0; iSend < nDim*nPoint_Send[size]; iSend++)
+    coordSend[iSend] = 0;
 
   /*--- Create index variables to keep track of our index
    positions as we load up the send buffer. ---*/
 
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = nPoint_Send[ii];
+  for (iProc = 0; iProc < size; iProc++)
+    index[iProc] = nPoint_Send[iProc];
 
   unsigned long *coordIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) coordIndex[ii] = nDim*nPoint_Send[ii];
+  for (iProc = 0; iProc < size; iProc++)
+    coordIndex[iProc] = nDim*nPoint_Send[iProc];
 
   /*--- Now load up our buffers with the colors, ids, and coords. ---*/
 
@@ -6105,14 +5986,15 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
         colorSend[nn] = geometry->node[iPoint]->GetColor();
 
         nn = coordIndex[iProcessor];
-        for (unsigned short kk = 0; kk < nDim; kk++) {
-          coordSend[nn] = geometry->node[iPoint]->GetCoord(kk); nn++;
+        for (iDim  = 0; iDim < nDim; iDim++) {
+          coordSend[nn] = geometry->node[iPoint]->GetCoord(iDim); nn++;
         }
 
         /*--- Increment the index by the message length ---*/
 
-        index[iProcessor]++;
         coordIndex[iProcessor] += nDim;
+        index[iProcessor]++;
+
       }
     }
   }
@@ -6128,153 +6010,70 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
    directly copy our own data later. ---*/
 
   unsigned long *colorRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    colorRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++)
+    colorRecv[iRecv] = 0;
 
   unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
-    idRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++)
+    idRecv[iRecv] = 0;
 
   su2double *coordRecv = NULL;
   coordRecv = new su2double[nDim*nPoint_Recv[size]];
-  for (int ii = 0; ii < nDim*nPoint_Recv[size]; ii++)
-    coordRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nDim*nPoint_Recv[size]; iRecv++)
+    coordRecv[iRecv] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need to triple the messages for colors, ids, and coords. ---*/
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  send_req = new SU2_MPI::Request[3*nSends];
-  recv_req = new SU2_MPI::Request[3*nRecvs];
+  if (nSends > 0) {
+    colorSendReq = new SU2_MPI::Request[nSends];
+    idSendReq    = new SU2_MPI::Request[nSends];
+    coordSendReq = new SU2_MPI::Request[nSends];
 
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(colorRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
+  }
+  if (nRecvs > 0) {
+    colorRecvReq = new SU2_MPI::Request[nRecvs];
+    idRecvReq    = new SU2_MPI::Request[nRecvs];
+    coordRecvReq = new SU2_MPI::Request[nRecvs];
   }
 
-  /*--- Launch the non-blocking sends of the colors. ---*/
+  /*--- Launch the non-blocking sends and receives. ---*/
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll    = nPoint_Send[ii];
-      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count = kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(colorSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
+  InitiateComms(colorSend, nPoint_Send, colorSendReq,
+                colorRecv, nPoint_Recv, colorRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
-  /*--- Repeat the process to communicate the global IDs. ---*/
+  InitiateComms(idSend, nPoint_Send, idSendReq,
+                idRecv, nPoint_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
-  iMessage = nRecvs;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the global IDs. ---*/
-
-  iMessage = nSends;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll    = nPoint_Send[ii];
-      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count = kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
-
-  /*--- Lastly, communicate the coordinates. ---*/
-
-  iMessage = 2*nRecvs;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
-      int ll     = nDim*nPoint_Recv[ii];
-      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
-      int count  = nDim*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(coordRecv[ll]), count, MPI_DOUBLE, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the coordinates. ---*/
-
-  iMessage = 2*nSends;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
-      int ll    = nDim*nPoint_Send[ii];
-      int kk    = nPoint_Send[ii+1] - nPoint_Send[ii];
-      int count = nDim*kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(coordSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
-#endif
+  InitiateComms(coordSend, nPoint_Send, coordSendReq,
+                coordRecv, nPoint_Recv, coordRecvReq,
+                nDim, COMM_TYPE_DOUBLE);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  int mm = nPoint_Recv[rank];
-  int ll = nPoint_Send[rank];
-  int kk = nPoint_Send[rank+1];
+  iRecv   = nPoint_Recv[rank];
+  myStart = nPoint_Send[rank];
+  myFinal = nPoint_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    colorRecv[iRecv] = colorSend[iSend];
+    idRecv[iRecv]    = idSend[iSend];
+    iRecv++;
+  }
 
-  for (int nn=ll; nn<kk; nn++, mm++) colorRecv[mm] = colorSend[nn];
+  iRecv   = nDim*nPoint_Recv[rank];
+  myStart = nDim*nPoint_Send[rank];
+  myFinal = nDim*nPoint_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    coordRecv[iRecv] = coordSend[iSend];
+    iRecv++;
+  }
 
-  mm = nPoint_Recv[rank];
-  ll = nPoint_Send[rank];
-  kk = nPoint_Send[rank+1];
+  /*--- Complete the non-blocking communications. ---*/
 
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-
-  mm = nDim*nPoint_Recv[rank];
-  ll = nDim*nPoint_Send[rank];
-  kk = nDim*nPoint_Send[rank+1];
-
-  for (int nn=ll; nn<kk; nn++, mm++) coordRecv[mm] = coordSend[nn];
-
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-
-#ifdef HAVE_MPI
-  int number = 3*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-
-  number = 3*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-
-  delete [] send_req;
-  delete [] recv_req;
-#endif
+  CompleteComms(nSends, colorSendReq, nRecvs, colorRecvReq);
+  CompleteComms(nSends,    idSendReq, nRecvs,    idRecvReq);
+  CompleteComms(nSends, coordSendReq, nRecvs, coordRecvReq);
 
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -6289,17 +6088,25 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   Local_Coords = new su2double[nDim*nPoint_Recv[size]];
   
   nLocal_PointDomain = 0; nLocal_PointGhost = 0;
-  for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
-    Local_Points[ii] = idRecv[ii];
-    Local_Colors[ii] = colorRecv[ii];
-    for (int kk = 0; kk < nDim; kk++)
-      Local_Coords[ii*nDim+kk] = coordRecv[ii*nDim+kk];
-    if (Local_Colors[ii] == (unsigned long)rank) nLocal_PointDomain++;
+  for (iRecv = 0; iRecv < nPoint_Recv[size]; iRecv++) {
+    Local_Points[iRecv] = idRecv[iRecv];
+    Local_Colors[iRecv] = colorRecv[iRecv];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Local_Coords[iRecv*nDim+iDim] = coordRecv[iRecv*nDim+iDim];
+    if (Local_Colors[iRecv] == (unsigned long)rank) nLocal_PointDomain++;
     else nLocal_PointGhost++;
   }
   
   /*--- Free temporary memory from communications ---*/
-  
+
+  if (colorSendReq != NULL) delete [] colorSendReq;
+  if (idSendReq    != NULL) delete [] idSendReq;
+  if (coordSendReq != NULL) delete [] coordSendReq;
+
+  if (colorRecvReq != NULL) delete [] colorRecvReq;
+  if (idRecvReq    != NULL) delete [] idRecvReq;
+  if (coordRecvReq != NULL) delete [] coordRecvReq;
+
   delete [] colorSend;
   delete [] colorRecv;
   delete [] idSend;
@@ -6329,18 +6136,16 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   unsigned short NODES_PER_ELEMENT = 0;
 
-  unsigned long iMarker, iProcessor;
+  unsigned long iMarker, iProcessor, iElem, iNode, jNode;
   unsigned long nElem_Total = 0, Global_Index, Global_Elem_Index;
 
   unsigned long *Conn_Elem      = NULL;
   unsigned long *Linear_Markers = NULL;
   unsigned long *ID_SurfElem    = NULL;
 
-#ifdef HAVE_MPI
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
-  int ind;
-#endif
+  SU2_MPI::Request *connSendReq = NULL, *markerSendReq = NULL, *idSendReq = NULL;
+  SU2_MPI::Request *connRecvReq = NULL, *markerRecvReq = NULL, *idRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -6366,10 +6171,8 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
   int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size];
 
-  for (int ii=0; ii < size; ii++) {
-    nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
-    nElem_Flag[ii]= -1;
+  for (iProc = 0; iProc < size; iProc++) {
+    nElem_Send[iProc] = 0; nElem_Recv[iProc] = 0; nElem_Flag[iProc]= -1;
   }
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
@@ -6383,17 +6186,17 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
        don't miss some elements on different markers with the same local
        index. ---*/
 
-      for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+      for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc]= -1;
 
-      for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
+      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
 
-        if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
+        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
 
-          for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++ ) {
 
             /*--- Get the index of the current point (stored as global). ---*/
 
-            Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
+            Global_Index = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
             /*--- Search for the processor that owns this point ---*/
 
@@ -6410,8 +6213,8 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
             /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
 
-            if ((nElem_Flag[iProcessor] != ii)) {
-              nElem_Flag[iProcessor] = ii;
+            if ((nElem_Flag[iProcessor] != (int)iElem)) {
+              nElem_Flag[iProcessor] = (int)iElem;
               nElem_Send[iProcessor+1]++;
             }
           }
@@ -6424,12 +6227,8 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Scatter(&(nElem_Send[1]), 1, MPI_INT,
                    &(nElem_Recv[1]), 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -6437,18 +6236,17 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
    communications simpler. ---*/
 
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc] = -1;
 
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+  for (iProc = 0; iProc < size; iProc++) {
+    if ((iProc != rank) && (nElem_Send[iProc+1] > 0)) nSends++;
+    if ((iProc != rank) && (nElem_Recv[iProc+1] > 0)) nRecvs++;
 
-    nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
+    nElem_Send[iProc+1] += nElem_Send[iProc];
+    nElem_Recv[iProc+1] += nElem_Recv[iProc];
   }
 
-  /*--- Allocate memory to hold the connectivity that we are
-   sending. ---*/
+  /*--- Allocate memory to hold the connectivity that we are sending. ---*/
 
   unsigned long *connSend   = NULL;
   unsigned long *markerSend = NULL;
@@ -6457,27 +6255,27 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
   if (rank == MASTER_NODE) {
 
     connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
-    for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
-      connSend[ii] = 0;
+    for (iSend = 0; iSend < NODES_PER_ELEMENT*nElem_Send[size]; iSend++)
+      connSend[iSend] = 0;
 
     markerSend = new unsigned long[nElem_Send[size]];
-    for (int ii = 0; ii < nElem_Send[size]; ii++)
-      markerSend[ii] = 0;
+    for (iSend = 0; iSend < nElem_Send[size]; iSend++)
+      markerSend[iSend] = 0;
 
     idSend = new unsigned long[nElem_Send[size]];
-    for (int ii = 0; ii < nElem_Send[size]; ii++)
-      idSend[ii] = 0;
+    for (iSend = 0; iSend < nElem_Send[size]; iSend++)
+      idSend[iSend] = 0;
 
     /*--- Create an index variable to keep track of our index
      position as we load up the send buffer. ---*/
 
     unsigned long *index = new unsigned long[size];
-    for (int ii=0; ii < size; ii++)
-      index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+    for (iProc = 0; iProc < size; iProc++)
+      index[iProc] = NODES_PER_ELEMENT*nElem_Send[iProc];
 
     unsigned long *markerIndex = new unsigned long[size];
-    for (int ii=0; ii < size; ii++)
-      markerIndex[ii] = nElem_Send[ii];
+    for (iProc = 0; iProc < size; iProc++)
+      markerIndex[iProc] = nElem_Send[iProc];
 
     /*--- Loop through our elements and load the elems and their
      additional data that we will send to the other procs. ---*/
@@ -6489,16 +6287,15 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
        don't miss some elements on different markers with the same local
        index. ---*/
 
-      for (int ii=0; ii < size; ii++) nElem_Flag[ii]= -1;
+      for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc]= -1;
 
-      for (int ii = 0; ii < (int)geometry->GetnElem_Bound(iMarker); ii++) {
-
-        if (geometry->bound[iMarker][ii]->GetVTK_Type() == Elem_Type) {
-          for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+        if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
+          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++ ) {
 
             /*--- Get the index of the current point. ---*/
 
-            Global_Index = geometry->bound[iMarker][ii]->GetNode(jj);
+            Global_Index = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
             /*--- Search for the processor that owns this point ---*/
 
@@ -6514,16 +6311,16 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
             /*--- Load connectivity into the buffer for sending ---*/
 
-            if ((nElem_Flag[iProcessor] != ii)) {
+            if ((nElem_Flag[iProcessor] != (int)iElem)) {
 
-              nElem_Flag[iProcessor] = ii;
+              nElem_Flag[iProcessor] = (int)iElem;
               unsigned long nn = index[iProcessor];
               unsigned long mm = markerIndex[iProcessor];
 
               /*--- Load the connectivity values. ---*/
 
-              for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-                connSend[nn] = geometry->bound[iMarker][ii]->GetNode(kk);
+              for (jNode = 0; jNode < NODES_PER_ELEMENT; jNode++) {
+                connSend[nn] = geometry->bound[iMarker][iElem]->GetNode(jNode);
                 nn++;
               }
 
@@ -6560,189 +6357,105 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   unsigned long *connRecv = NULL;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
-    connRecv[ii] = 0;
+  for (iRecv = 0; iRecv < NODES_PER_ELEMENT*nElem_Recv[size]; iRecv++)
+    connRecv[iRecv] = 0;
 
   unsigned long *markerRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    markerRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++)
+    markerRecv[iRecv] = 0;
 
   unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    idRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++)
+    idRecv[iRecv] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need triple the number of messages to send the conn.,
-   the marker index, and the global surf elem index. ---*/
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  send_req = new SU2_MPI::Request[3*nSends];
-  recv_req = new SU2_MPI::Request[3*nRecvs];
-
-  /*--- Launch the non-blocking recv's for the connectivity. ---*/
-
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
+  if (nSends > 0) {
+    connSendReq   = new SU2_MPI::Request[nSends];
+    markerSendReq = new SU2_MPI::Request[nSends];
+    idSendReq     = new SU2_MPI::Request[nSends];
+  }
+  if (nRecvs > 0) {
+    connRecvReq   = new SU2_MPI::Request[nRecvs];
+    markerRecvReq = new SU2_MPI::Request[nRecvs];
+    idRecvReq     = new SU2_MPI::Request[nRecvs];
   }
 
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  /*--- Launch the non-blocking sends and receives. ---*/
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int dest = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
+  InitiateComms(connSend, nElem_Send, connSendReq,
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
-  /*--- Repeat the process to communicate the marker IDs. ---*/
+  InitiateComms(markerSend, nElem_Send, markerSendReq,
+                markerRecv, nElem_Recv, markerRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(markerRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the marker IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(markerSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-
-  /*--- Repeat the process to communicate the surf elem global IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+2*nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the surf elem global IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+2*nSends]));
-      iMessage++;
-    }
-  }
-#endif
+  InitiateComms(idSend, nElem_Send, idSendReq,
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
   if (rank == MASTER_NODE) {
 
-    int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
-    int ll = NODES_PER_ELEMENT*nElem_Send[rank];
-    int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+    iRecv   = NODES_PER_ELEMENT*nElem_Recv[rank];
+    myStart = NODES_PER_ELEMENT*nElem_Send[rank];
+    myFinal = NODES_PER_ELEMENT*nElem_Send[rank+1];
+    for (iSend = myStart; iSend < myFinal; iSend++) {
+      connRecv[iRecv] = connSend[iSend];
+      iRecv++;
+    }
 
-    for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
-
-    mm = nElem_Recv[rank];
-    ll = nElem_Send[rank];
-    kk = nElem_Send[rank+1];
-
-    for (int nn=ll; nn<kk; nn++, mm++) markerRecv[mm] = markerSend[nn];
-
-    mm = nElem_Recv[rank];
-    ll = nElem_Send[rank];
-    kk = nElem_Send[rank+1];
-
-    for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-
+    iRecv   = nElem_Recv[rank];
+    myStart = nElem_Send[rank];
+    myFinal = nElem_Send[rank+1];
+    for (iSend = myStart; iSend < myFinal; iSend++) {
+      markerRecv[iRecv] = markerSend[iSend];
+      idRecv[iRecv]     = idSend[iSend];
+      iRecv++;
+    }
+    
   }
 
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  /*--- Complete the non-blocking communications. ---*/
 
-#ifdef HAVE_MPI
-  int number = 3*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-
-  number = 3*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-
-  delete [] send_req;
-  delete [] recv_req;
-#endif
+  CompleteComms(nSends,   connSendReq, nRecvs,   connRecvReq);
+  CompleteComms(nSends, markerSendReq, nRecvs, markerRecvReq);
+  CompleteComms(nSends,     idSendReq, nRecvs,     idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate
    appropriate amount of memory for this section. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     Conn_Elem = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  int count = 0; nElem_Total = 0;
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    nElem_Total++;
-    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-      Conn_Elem[count] = connRecv[ii*NODES_PER_ELEMENT+jj];
-      count++;
+    int count = 0; nElem_Total = 0;
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      nElem_Total++;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        Conn_Elem[count] = connRecv[iRecv*NODES_PER_ELEMENT+iNode];
+        count++;
+      }
     }
   }
 
   /*--- Store the global marker ID for each element. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     Linear_Markers = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    Linear_Markers[ii] = markerRecv[ii];
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      Linear_Markers[iRecv] = markerRecv[iRecv];
+    }
   }
 
   /*--- Store the global surface elem ID for each element. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     ID_SurfElem = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    ID_SurfElem[ii] = idRecv[ii];
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      ID_SurfElem[iRecv] = idRecv[iRecv];
+    }
   }
 
   /*--- Store the particular global element count in the class data,
@@ -6779,7 +6492,15 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
   }
   
   /*--- Free temporary memory from communications ---*/
-  
+
+  if (connSendReq   != NULL) delete [] connSendReq;
+  if (markerSendReq != NULL) delete [] markerSendReq;
+  if (idSendReq     != NULL) delete [] idSendReq;
+
+  if (connRecvReq   != NULL) delete [] connRecvReq;
+  if (markerRecvReq != NULL) delete [] markerRecvReq;
+  if (idRecvReq     != NULL) delete [] idRecvReq;
+
   if (connSend   != NULL) delete [] connSend;
   if (markerSend != NULL) delete [] markerSend;
   if (idSend     != NULL) delete [] idSend;
@@ -6801,7 +6522,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   unsigned short NODES_PER_ELEMENT = 0;
 
   unsigned long iProcessor, NELEM = 0;
-  unsigned long nElem_Total = 0, Global_Index;
+  unsigned long iElem, iNode, jNode, nElem_Total = 0, Global_Index;
 
   unsigned long *Conn_Linear        = NULL;
   unsigned long *Conn_Elem          = NULL;
@@ -6810,15 +6531,9 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   unsigned long *Local_Markers      = NULL;
   unsigned long *ID_SurfElem        = NULL;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
-  int ind;
-#endif
+  SU2_MPI::Request *connSendReq = NULL,*markerSendReq = NULL,*idSendReq = NULL;
+  SU2_MPI::Request *connRecvReq = NULL,*markerRecvReq = NULL,*idRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
 
   /*--- Store the local number of this element type and the number of nodes
    per this element type. In serial, this will be the total number of this
@@ -6861,31 +6576,30 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
   int *nElem_Flag = new int[size];
 
-  for (int ii=0; ii < size; ii++) {
-    nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
-    nElem_Flag[ii]= -1;
+  for (iProc = 0; iProc < size; iProc++) {
+    nElem_Send[iProc] = 0; nElem_Recv[iProc] = 0; nElem_Flag[iProc]= -1;
   }
   nElem_Send[size] = 0; nElem_Recv[size] = 0;
 
-  for (int ii = 0; ii < (int)NELEM; ii++) {
-      for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+  for (iElem = 0; iElem < NELEM; iElem++) {
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
 
-        /*--- Get the index of the current point. ---*/
+      /*--- Get the index of the current point. ---*/
 
-        Global_Index = Conn_Linear[ii*NODES_PER_ELEMENT+jj];
+      Global_Index = Conn_Linear[iElem*NODES_PER_ELEMENT+iNode];
 
-        /*--- We have the color stored in a map for all local points. ---*/
+      /*--- We have the color stored in a map for all local points. ---*/
 
-        iProcessor = Color_List[Global_Index];
+      iProcessor = Color_List[Global_Index];
 
-        /*--- If we have not visited this element yet, increment our
-         number of elements that must be sent to a particular proc. ---*/
+      /*--- If we have not visited this element yet, increment our
+       number of elements that must be sent to a particular proc. ---*/
 
-        if ((nElem_Flag[iProcessor] != ii)) {
-          nElem_Flag[iProcessor] = ii;
-          nElem_Send[iProcessor+1]++;
-        }
+      if ((nElem_Flag[iProcessor] != (int)iElem)) {
+        nElem_Flag[iProcessor] = (int)iElem;
+        nElem_Send[iProcessor+1]++;
+      }
+
     }
   }
 
@@ -6893,12 +6607,8 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
    all processors. After this communication, each proc knows how
    many cells it will receive from each other processor. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -6906,14 +6616,14 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
    communications simpler. ---*/
 
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc] = -1;
 
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+  for (iProc = 0; iProc < size; iProc++) {
+    if ((iProc != rank) && (nElem_Send[iProc+1] > 0)) nSends++;
+    if ((iProc != rank) && (nElem_Recv[iProc+1] > 0)) nRecvs++;
 
-    nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
+    nElem_Send[iProc+1] += nElem_Send[iProc];
+    nElem_Recv[iProc+1] += nElem_Recv[iProc];
   }
 
   /*--- Allocate memory to hold the connectivity that we are
@@ -6921,35 +6631,37 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   unsigned long *connSend = NULL;
   connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
-    connSend[ii] = 0;
+  for (iSend = 0; iSend < NODES_PER_ELEMENT*nElem_Send[size]; iSend++)
+    connSend[iSend] = 0;
 
   /*--- Allocate arrays for storing the marker global index. ---*/
 
   unsigned long *markerSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++) markerSend[ii] = 0;
+  for (iSend = 0; iSend < nElem_Send[size]; iSend++) markerSend[iSend] = 0;
 
   unsigned long *idSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++) idSend[ii] = 0;
+  for (iSend = 0; iSend < nElem_Send[size]; iSend++) idSend[iSend] = 0;
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
 
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  for (iProc = 0; iProc < size; iProc++)
+    index[iProc] = NODES_PER_ELEMENT*nElem_Send[iProc];
 
   unsigned long *markerIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) markerIndex[ii] = nElem_Send[ii];
+  for (iProc = 0; iProc < size; iProc++)
+    markerIndex[iProc] = nElem_Send[iProc];
 
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
 
-  for (int ii = 0; ii < (int)NELEM; ii++) {
-    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+  for (iElem = 0; iElem < NELEM; iElem++) {
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
 
       /*--- Get the index of the current point. ---*/
 
-      Global_Index = Conn_Linear[ii*NODES_PER_ELEMENT+jj];
+      Global_Index = Conn_Linear[iElem*NODES_PER_ELEMENT+iNode];
 
       /*--- We have the color stored in a map for all local points. ---*/
 
@@ -6958,31 +6670,31 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
       /*--- If we have not visited this element yet, load up the data
        for sending. ---*/
 
-      if (nElem_Flag[iProcessor] != ii) {
+      if (nElem_Flag[iProcessor] != (int)iElem) {
 
-        nElem_Flag[iProcessor] = ii;
+        nElem_Flag[iProcessor] = (int)iElem;
         unsigned long nn = index[iProcessor];
         unsigned long mm = markerIndex[iProcessor];
 
         /*--- Load the connectivity values. ---*/
 
-        for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+        for (jNode = 0; jNode < NODES_PER_ELEMENT; jNode++) {
 
           /*--- Note that elements are already stored directly based on
            their global index for the nodes. ---*/
 
-          connSend[nn] = Conn_Linear[ii*NODES_PER_ELEMENT+kk]; nn++;
+          connSend[nn] = Conn_Linear[iElem*NODES_PER_ELEMENT+jNode]; nn++;
 
         }
 
         /*--- Global marker ID for this element. ---*/
 
-        markerSend[mm] = Linear_Markers[ii];
-        idSend[mm]     = ID_SurfElem_Linear[ii];
+        markerSend[mm] = Linear_Markers[iElem];
+        idSend[mm]     = ID_SurfElem_Linear[iElem];
 
         /*--- Increment the index by the message length ---*/
 
-        index[iProcessor]  += NODES_PER_ELEMENT;
+        index[iProcessor] += NODES_PER_ELEMENT;
         markerIndex[iProcessor]++;
         
       }
@@ -7001,182 +6713,98 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   unsigned long *connRecv = NULL;
   connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
-    connRecv[ii] = 0;
+  for (iRecv = 0; iRecv < NODES_PER_ELEMENT*nElem_Recv[size]; iRecv++)
+    connRecv[iRecv] = 0;
 
   unsigned long *markerRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) markerRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) markerRecv[iRecv] = 0;
 
   unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) idRecv[ii] = 0;
+  for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) idRecv[iRecv] = 0;
 
-#ifdef HAVE_MPI
-  /*--- We need triple the number of messages to send the conn.,
-   the marker index, and the global surf elem index. ---*/
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  send_req = new SU2_MPI::Request[3*nSends];
-  recv_req = new SU2_MPI::Request[3*nRecvs];
-
-  /*--- Launch the non-blocking recv's for the connectivity. ---*/
-
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
+  if (nSends > 0) {
+    connSendReq   = new SU2_MPI::Request[nSends];
+    markerSendReq = new SU2_MPI::Request[nSends];
+    idSendReq     = new SU2_MPI::Request[nSends];
+  }
+  if (nRecvs > 0) {
+    connRecvReq   = new SU2_MPI::Request[nRecvs];
+    markerRecvReq = new SU2_MPI::Request[nRecvs];
+    idRecvReq     = new SU2_MPI::Request[nRecvs];
   }
 
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  /*--- Launch the non-blocking sends and receives. ---*/
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll    = NODES_PER_ELEMENT*nElem_Send[ii];
-      int kk    = nElem_Send[ii+1] - nElem_Send[ii];
-      int count = NODES_PER_ELEMENT*kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
+  InitiateComms(connSend, nElem_Send, connSendReq,
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
-  /*--- Repeat the process to communicate the marker IDs. ---*/
+  InitiateComms(markerSend, nElem_Send, markerSendReq,
+                markerRecv, nElem_Recv, markerRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(markerRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the marker IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll    = nElem_Send[ii];
-      int kk    = nElem_Send[ii+1] - nElem_Send[ii];
-      int count = kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(markerSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-
-  /*--- Repeat the process to communicate the surface elem IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+2*nRecvs]));
-      iMessage++;
-    }
-  }
-
-  /*--- Launch the non-blocking sends of the surface elem IDs. ---*/
-
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll    = nElem_Send[ii];
-      int kk    = nElem_Send[ii+1] - nElem_Send[ii];
-      int count = kk;
-      int dest  = ii;
-      int tag   = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+2*nSends]));
-      iMessage++;
-    }
-  }
-#endif
+  InitiateComms(idSend, nElem_Send, idSendReq,
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
-  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
-  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  iRecv   = NODES_PER_ELEMENT*nElem_Recv[rank];
+  myStart = NODES_PER_ELEMENT*nElem_Send[rank];
+  myFinal = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    connRecv[iRecv] = connSend[iSend];
+    iRecv++;
+  }
 
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  iRecv   = nElem_Recv[rank];
+  myStart = nElem_Send[rank];
+  myFinal = nElem_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    markerRecv[iRecv] = markerSend[iSend];
+    idRecv[iRecv]     = idSend[iSend];
+    iRecv++;
+  }
 
-  mm = nElem_Recv[rank];
-  ll = nElem_Send[rank];
-  kk = nElem_Send[rank+1];
+  /*--- Complete the non-blocking communications. ---*/
 
-  for (int nn=ll; nn<kk; nn++, mm++) markerRecv[mm] = markerSend[nn];
-
-  mm = nElem_Recv[rank];
-  ll = nElem_Send[rank];
-  kk = nElem_Send[rank+1];
-
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-
-#ifdef HAVE_MPI
-  int number = 3*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-
-  number = 3*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-
-  delete [] send_req;
-  delete [] recv_req;
-#endif
+  CompleteComms(nSends,   connSendReq, nRecvs,   connRecvReq);
+  CompleteComms(nSends, markerSendReq, nRecvs, markerRecvReq);
+  CompleteComms(nSends,     idSendReq, nRecvs,     idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper data
    structure. It will be loaded into the geometry objects in a later step. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     Conn_Elem = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  int count = 0; nElem_Total = 0;
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    nElem_Total++;
-    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-      Conn_Elem[count] = connRecv[ii*NODES_PER_ELEMENT+jj];
-      count++;
+    int count = 0; nElem_Total = 0;
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      nElem_Total++;
+      for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+        Conn_Elem[count] = connRecv[iRecv*NODES_PER_ELEMENT+iNode];
+        count++;
+      }
     }
   }
 
   /*--- Store the global marker IDs too. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     Local_Markers = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    Local_Markers[ii] = markerRecv[ii];
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      Local_Markers[iRecv] = markerRecv[iRecv];
+    }
   }
 
   /*--- Store the global surface elem IDs too. ---*/
 
-  if (nElem_Recv[size] > 0)
+  if (nElem_Recv[size] > 0) {
     ID_SurfElem = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    ID_SurfElem[ii] = idRecv[ii];
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      ID_SurfElem[iRecv] = idRecv[iRecv];
+    }
   }
 
   /*--- Store the particular global element count in the class data,
@@ -7214,6 +6842,14 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   
   /*--- Free temporary memory from communications ---*/
 
+  if (connSendReq   != NULL) delete [] connSendReq;
+  if (markerSendReq != NULL) delete [] markerSendReq;
+  if (idSendReq     != NULL) delete [] idSendReq;
+
+  if (connRecvReq   != NULL) delete [] connRecvReq;
+  if (markerRecvReq != NULL) delete [] markerRecvReq;
+  if (idRecvReq     != NULL) delete [] idRecvReq;
+
   delete [] connSend;
   delete [] connRecv;
   delete [] markerSend;
@@ -7241,10 +6877,8 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
   /*--- Broadcast the global number of markers in the mesh. ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Bcast(&nMarker_Global, 1, MPI_UNSIGNED_LONG,
                  MASTER_NODE, MPI_COMM_WORLD);
-#endif
 
   char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE];
   if (rank == MASTER_NODE) {
@@ -7256,10 +6890,8 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
 
   /*--- Broadcast the string names of the variables. ---*/
 
-#ifdef HAVE_MPI
-  SU2_MPI::Bcast(mpi_str_buf, nMarker_Global*MAX_STRING_SIZE, MPI_CHAR,
+  SU2_MPI::Bcast(mpi_str_buf, (int)nMarker_Global*MAX_STRING_SIZE, MPI_CHAR,
                  MASTER_NODE, MPI_COMM_WORLD);
-#endif
 
   /*--- Now parse the string names and load into our marker tag vector.
    We also need to set the values of all markers into the config. ---*/
@@ -8079,6 +7711,193 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     TurboRadiusOut[iMarker] = NULL;
   }
 
+}
+
+void CPhysicalGeometry::InitiateComms(void *bufSend,
+                                      int *nElemSend,
+                                      SU2_MPI::Request *sendReq,
+                                      void *bufRecv,
+                                      int *nElemRecv,
+                                      SU2_MPI::Request *recvReq,
+                                      unsigned short countPerElem,
+                                      unsigned short commType) {
+
+  /*--- Local variables ---*/
+
+  int iMessage, iProc, offset, nElem, count, source, dest, tag;
+
+  /*--- Launch the non-blocking recv's first. ---*/
+
+  iMessage = 0;
+  for (iProc = 0; iProc < size; iProc++) {
+
+    /*--- Post recv's only if another proc is sending us data. We do
+     not communicate with ourselves or post recv's for zero length
+     messages to keep overhead down. ---*/
+
+    if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
+
+      /*--- Compute our location in the recv buffer. ---*/
+
+      offset = countPerElem*nElemRecv[iProc];
+
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. ---*/
+
+      nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
+
+      /*--- Total count can include multiple pieces of data per element. ---*/
+
+      count = countPerElem*nElem;
+
+      /*--- Post non-blocking recv for this proc. ---*/
+
+      source = iProc; tag = iProc + 1;
+
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Irecv(&(static_cast<su2double*>(bufRecv)[offset]),
+                         count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_LONG:
+          SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufRecv)[offset]),
+                         count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_LONG:
+          SU2_MPI::Irecv(&(static_cast<long*>(bufRecv)[offset]),
+                         count, MPI_LONG, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufRecv)[offset]),
+                         count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_CHAR:
+          SU2_MPI::Irecv(&(static_cast<char*>(bufRecv)[offset]),
+                         count, MPI_CHAR, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_SHORT:
+          SU2_MPI::Irecv(&(static_cast<short*>(bufRecv)[offset]),
+                         count, MPI_SHORT, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        case COMM_TYPE_INT:
+          SU2_MPI::Irecv(&(static_cast<int*>(bufRecv)[offset]),
+                         count, MPI_INT, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+        default:
+          break;
+      }
+
+      /*--- Increment message counter. ---*/
+
+      iMessage++;
+
+    }
+  }
+
+  /*--- Launch the non-blocking sends next. ---*/
+
+  iMessage = 0;
+  for (iProc = 0; iProc < size; iProc++) {
+
+    /*--- Post sends only if we are sending another proc data. We do
+     not communicate with ourselves or post sends for zero length
+     messages to keep overhead down. ---*/
+
+    if ((nElemSend[iProc+1] > nElemSend[iProc]) && (iProc != rank)) {
+
+      /*--- Compute our location in the send buffer. ---*/
+
+      offset = countPerElem*nElemSend[iProc];
+
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to send. ---*/
+
+      nElem = nElemSend[iProc+1] - nElemSend[iProc];
+
+      /*--- Total count can include multiple pieces of data per element. ---*/
+
+      count = countPerElem*nElem;
+
+      /*--- Post non-blocking send for this proc. ---*/
+
+      dest = iProc; tag = rank + 1;
+
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Isend(&(static_cast<su2double*>(bufSend)[offset]),
+                         count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_LONG:
+          SU2_MPI::Isend(&(static_cast<unsigned long*>(bufSend)[offset]),
+                         count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_LONG:
+          SU2_MPI::Isend(&(static_cast<long*>(bufSend)[offset]),
+                         count, MPI_LONG, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSend)[offset]),
+                         count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_CHAR:
+          SU2_MPI::Isend(&(static_cast<char*>(bufSend)[offset]),
+                         count, MPI_CHAR, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_SHORT:
+          SU2_MPI::Isend(&(static_cast<short*>(bufSend)[offset]),
+                         count, MPI_SHORT, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        case COMM_TYPE_INT:
+          SU2_MPI::Isend(&(static_cast<int*>(bufSend)[offset]),
+                         count, MPI_INT, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+        default:
+          break;
+      }
+
+      /*--- Increment message counter. ---*/
+
+      iMessage++;
+
+    }
+  }
+
+}
+
+void CPhysicalGeometry::CompleteComms(int nSends,
+                                      SU2_MPI::Request *sendReq,
+                                      int nRecvs,
+                                      SU2_MPI::Request *recvReq) {
+
+  /*--- Local variables ---*/
+
+  int ind, iSend, iRecv;
+  SU2_MPI::Status status;
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+
+  for (iSend = 0; iSend < nSends; iSend++)
+    SU2_MPI::Waitany(nSends, sendReq, &ind, &status);
+  
+  /*--- Wait for the non-blocking recvs to complete. ---*/
+  
+  for (iRecv = 0; iRecv < nRecvs; iRecv++)
+    SU2_MPI::Waitany(nRecvs, recvReq, &ind, &status);
+  
 }
 
 void CPhysicalGeometry::SetSendReceive(CConfig *config) {
