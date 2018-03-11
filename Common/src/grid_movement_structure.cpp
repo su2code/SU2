@@ -2753,6 +2753,8 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool unsteady = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+                      || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool adjoint = config->GetContinuous_Adjoint();
   bool restart = (config->GetRestart() || config->GetDiscrete_Adjoint());
 
@@ -2821,7 +2823,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
     su2double deltaX_Periodic[3];
 
-    if (iter == 0){
+    if (iter == 2){
 
       /*--- Initialize variable at first iteration for periodic movement ---*/
       periodic_count[0]  = 0;
@@ -2867,7 +2869,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
      velocity if this is an adjoint calculation. ---*/
 
     for (iDim = 0; iDim < nDim; iDim++) {
-      if (!restart && harmonic_balance)
+//      if (!restart && harmonic_balance)
         geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
       if (!adjoint || !config->GetDiscrete_Adjoint()) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
     }

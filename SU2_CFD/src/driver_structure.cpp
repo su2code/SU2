@@ -2690,6 +2690,8 @@ void CDriver::TurbomachineryPreprocessing(){
   bool harmonic_balance = config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE;
   bool restart   = (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetRestart_Flow());
   mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
+  bool unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+                      || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool discrete_adjoint = config_container[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 #ifdef HAVE_MPI
@@ -2739,16 +2741,31 @@ void CDriver::TurbomachineryPreprocessing(){
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
   }
 
+  if(unsteady && !harmonic_balance){
+    if (rank == MASTER_NODE) cout<<"Preprocess of the interpolation Interface." << endl;
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
+      nMarkerInt     = config_container[donorZone]->GetnMarker_Fluid_InterfaceBound()/2;
+      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+        for (targetZone = 0; targetZone < nZone; targetZone++) {
+          if (targetZone != donorZone){
+            interpolator_container[donorZone][targetZone]->Preprocessing_InterpolationInterface(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+                config_container[donorZone], config_container[targetZone],iMarkerInt);
+          }
+        }
+      }
+    }
+  }
 
-  if(mixingplane && !harmonic_balance){
+  if((mixingplane || unsteady) && !harmonic_balance){
     if (rank == MASTER_NODE) cout << "Set span-wise sections between zone interfaces." << endl;
     for (donorZone = 0; donorZone < nZone; donorZone++) {
       for (targetZone = 0; targetZone < nZone; targetZone++) {
         if (targetZone != donorZone){
           transfer_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[donorZone], config_container[targetZone]);
-//          TODO fix this for unsteady
-//          interpolator_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[targetZone]);
-//          interpolator_container[donorZone][targetZone]->Set_TransferCoeff(config_container);
+          if (unsteady){
+            interpolator_container[donorZone][targetZone]->SetSpanWiseLevels(config_container[targetZone]);
+            interpolator_container[donorZone][targetZone]->Set_TransferCoeff(config_container);
+          }
         }
       }
     }
@@ -3960,7 +3977,6 @@ void CTurbomachineryDriver::Run() {
   unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
                   || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-  //  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   int rank = MASTER_NODE;
 
@@ -3985,7 +4001,6 @@ void CTurbomachineryDriver::Run() {
 
   /*--- Updating zone interface communication patterns for unsteady problems ---*/
   if ( unsteady ) {
-    //  if ( true ) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
@@ -4218,6 +4233,8 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+                      || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -4227,7 +4244,7 @@ void CTurbomachineryDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && mixingplane) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && unsteady) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
 
       /*--- Turbo-vertex update ---*/

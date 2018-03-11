@@ -4492,9 +4492,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
-    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
-        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
-      
+////    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
+//        ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+     if (false){
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
       
       /*--- For specific applications, evaluate and plot the surface. ---*/
@@ -5107,22 +5107,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if (turbo){
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++){
-//                if (iMarker_Monitoring == 0){
-//                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
-//                }else{
-//                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
-//                  strcat(turbo_coeff, surface_coeff);
-//                }
                 if (iMarker_Monitoring == 0){
-                  SPRINTF(turbo_coeff, ", %12.10f", Power_HB);
+                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
                 }else{
-                  SPRINTF(surface_coeff, ", %12.10f", Power_HB);
+                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring][nSpanWiseSections]);
                   strcat(turbo_coeff, surface_coeff);
                 }
+//                if (iMarker_Monitoring == 0){
+//                  SPRINTF(turbo_coeff, ", %12.10f", Power_HB);
+//                }else{
+//                  SPRINTF(surface_coeff, ", %12.10f", Power_HB);
+//                  strcat(turbo_coeff, surface_coeff);
+//                }
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-//                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
-                SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
+                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
+//                SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
@@ -5147,10 +5147,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								//
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-//                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-//								strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
+                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
+//                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
+//								strcat(turbo_coeff, surface_coeff);
 
               }
             }
