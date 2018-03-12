@@ -1410,12 +1410,12 @@ public:
 };
 
 /*!
- * \class CMultiPhysicalZonesDriver
+ * \class CMultiphysicsZonalDriver
  * \brief Class for driving zone-specific iterations.
  * \author O. Burghardt
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  */
-class CMultiPhysicalZonesDriver : public CDriver {
+class CMultiphysicsZonalDriver : public CDriver {
 protected:
 
 public:
@@ -1426,7 +1426,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CMultiPhysicalZonesDriver(char* confFile,
+  CMultiphysicsZonalDriver(char* confFile,
              unsigned short val_nZone,
              unsigned short val_nDim,
              SU2_Comm MPICommunicator);
@@ -1434,7 +1434,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiPhysicalZonesDriver(void);
+  ~CMultiphysicsZonalDriver(void);
 
   /*!
    * \brief Run one iteration in all physical zones.

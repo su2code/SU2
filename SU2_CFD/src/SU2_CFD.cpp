@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     }
 
   } else if (zone_specific) {
-    driver = new CMultiPhysicalZonesDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, nDim, MPICommunicator);
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default

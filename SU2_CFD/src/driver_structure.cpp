@@ -7114,7 +7114,7 @@ void CDiscAdjFSIStatDriver::Postprocess(unsigned short ZONE_FLOW,
 
 }
 
-CMultiPhysicalZonesDriver::CMultiPhysicalZonesDriver(char* confFile,
+CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
@@ -7122,9 +7122,9 @@ CMultiPhysicalZonesDriver::CMultiPhysicalZonesDriver(char* confFile,
                                                           val_nDim,
                                                           MPICommunicator) { }
 
-CMultiPhysicalZonesDriver::~CMultiPhysicalZonesDriver(void) { }
+CMultiphysicsZonalDriver::~CMultiphysicsZonalDriver(void) { }
 
-void CMultiPhysicalZonesDriver::Run() {
+void CMultiphysicsZonalDriver::Run() {
 
   unsigned short iZone, jZone, checkConvergence;
   unsigned long IntIter, nIntIter;
@@ -7228,7 +7228,7 @@ void CMultiPhysicalZonesDriver::Run() {
 
 }
 
-void CMultiPhysicalZonesDriver::Update() {
+void CMultiphysicsZonalDriver::Update() {
 
   for(iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
@@ -7236,7 +7236,7 @@ void CMultiPhysicalZonesDriver::Update() {
          surface_movement, grid_movement, FFDBox, iZone);
 }
 
-void CMultiPhysicalZonesDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CMultiphysicsZonalDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance;
 
@@ -7250,7 +7250,7 @@ void CMultiPhysicalZonesDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 
-void CMultiPhysicalZonesDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
   bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
 
