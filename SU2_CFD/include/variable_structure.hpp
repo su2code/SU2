@@ -2486,7 +2486,7 @@ public:
  * \class CHeatFVMVariable
  * \brief Main class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  */
 class CHeatFVMVariable : public CVariable {
 protected:
