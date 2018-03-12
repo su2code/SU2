@@ -801,6 +801,21 @@ def main():
     test_list.append(fsi2d)
 
     ##########################
+    ### Zonal multiphysics ###
+    ##########################
+
+    # CHT incompressible
+    cht_incompressible           = TestCase('cht_incompressible')
+    cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
+    cht_incompressible.cfg_file  = "coupled_cht_cylinder2d.su2"
+    cht_incompressible.test_iter = 10
+    cht_incompressible.test_vals = [-6.153795, -44082.624869, -7.448554, 24831.915190] #last 4 columns
+    cht_incompressible.su2_exec  = "parallel_computation.py -f"
+    cht_incompressible.timeout   = 1600
+    cht_incompressible.tol       = 0.00001
+    test_list.append(cht_incompressible)
+
+    ##########################
     ###   Python wrapper   ###
     ##########################
     
