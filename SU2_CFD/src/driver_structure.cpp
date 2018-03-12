@@ -7219,7 +7219,6 @@ void CMultiPhysicalZonesDriver::Run() {
       else if ((config_container[iZone]->GetKind_Solver() == HEAT_EQUATION)
                || (config_container[iZone]->GetKind_Solver() == HEAT_EQUATION_FVM))
         checkConvergence += (int) integration_container[iZone][HEAT_SOL]->GetConvergence();
-      else { }
     }
 
     /*--- If convergence was reached in every zone --*/
