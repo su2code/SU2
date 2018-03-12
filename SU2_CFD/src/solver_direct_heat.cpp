@@ -1385,7 +1385,7 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iVar, iDim;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, eddy_viscosity, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
@@ -1424,8 +1424,7 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
         dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
 
         if(flow) {
-          eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-          thermal_diffusivity = eddy_viscosity/Prandtl_Turb + laminar_viscosity/Prandtl_Lam;
+          thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
         }
         else
           thermal_diffusivity = config->GetThermalDiffusivity_Solid();
@@ -1527,7 +1526,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
-  su2double *Coord_i, *Coord_j, Area, dist_ij, eddy_viscosity, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
   laminar_viscosity = config->GetViscosity_FreeStreamND();
@@ -1603,7 +1602,6 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
 
-        // eddy viscosity has to be added...
         thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
 
         Res_Visc[0] = thermal_diffusivity*dTdn*Area;
