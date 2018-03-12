@@ -760,7 +760,7 @@ public:
  * \class CTransfer_ConjugateHeatVars
  * \brief Transfer temperature and heatflux density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 4.0.1 "Cardinal"
+ * \version 6.0.0 "Falcon"
  */
 class CTransfer_ConjugateHeatVars : public CTransfer {
 

@@ -11202,7 +11202,7 @@ public:
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
  *  \author O. Burghardt
- *  \version 5.0.0 "Raven"
+ *  \version 6.0.0 "Falcon"
  *  \date January 19, 2018.
  */
 class CHeatSolverFVM : public CSolver {
