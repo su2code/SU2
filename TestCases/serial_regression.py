@@ -819,7 +819,7 @@ def main():
     # CHT incompressible
     cht_incompressible           = TestCase('cht_incompressible')
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
-    cht_incompressible.cfg_file  = "coupled_cht_cylinder2d.su2"
+    cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
     cht_incompressible.test_vals = [-6.160266, -42791.508203, -7.467639, 24103.777644] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
