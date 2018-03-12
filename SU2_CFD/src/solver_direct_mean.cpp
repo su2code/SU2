@@ -17228,14 +17228,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
   Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
   if(Wall_Function != NO_WALL_FUNCTION) {
-
-    cout << endl << "Wall function treament not implemented yet" << endl << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+      SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
   }
 
   /*--- Loop over boundary points ---*/
