@@ -246,7 +246,7 @@ CDriver::CDriver(char* confFile,
             break;
           case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
           case WAVE_EQUATION: cout << "Wave equation." << endl; break;
-          case HEAT_EQUATION: cout << "Heat equation." << endl; break;
+          case HEAT_EQUATION: case HEAT_EQUATION_FVM: cout << "Heat equation." << endl; break;
           case FEM_ELASTICITY: case DISC_ADJ_FEM: cout << "Geometrically linear elasticity solver." << endl; break;
           case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
           case ADJ_NAVIER_STOKES: cout << "Continuous Navier-Stokes adjoint equations." << endl; break;
