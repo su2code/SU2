@@ -2554,7 +2554,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the heat convection equation.
  * \ingroup ConvDiscr
  * \author O. Burghardt.
- * \version 4.3.0 "Cardinal"
+ * \version 6.0.0 "Falcon"
  */
 class CUpwSca_Heat : public CNumerics {
 private:
@@ -2849,7 +2849,7 @@ public:
  * \brief Class for scalar centered scheme.
  * \ingroup ConvDiscr
  * \author O. Burghardt
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  */
 class CCentSca_Heat : public CNumerics {
 
@@ -3944,7 +3944,7 @@ public:
  * \brief Class for computing viscous term using average of gradients without correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  */
 class CAvgGrad_Heat : public CNumerics {
 private:
@@ -3985,7 +3985,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  */
 class CAvgGradCorrected_Heat : public CNumerics {
 private:
@@ -5447,38 +5447,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
-};
-
-/*!
- * \class CSourceHeating
- * \brief Class for a source term due to external heating.
- * \ingroup SourceDiscr
- * \author O. Burghardt
- * \version 5.0.0 "Raven"
- */
-class CSourceHeating : public CNumerics {
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourceHeating(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSourceHeating(void);
-
-  /*!
-   * \brief Residual of the wind gust source term.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
 };
 
 /*!
