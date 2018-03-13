@@ -626,7 +626,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.352425, 0.417103, 82.840150, 0.882252] #last 4 columns
+    Jones_tc.test_vals = [-5.294493, 0.429399, 80.085030, 1.034808] #last 4 columns
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
@@ -637,7 +637,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.254084, -1.410305, 82.253620, 2.776442] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.409575, -1.605695, 82.250580, 2.791302] #last 4 columns
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -799,6 +799,21 @@ def main():
     fsi2d.timeout   = 1600
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)
+
+    ##########################
+    ### Zonal multiphysics ###
+    ##########################
+
+    # CHT incompressible
+    cht_incompressible           = TestCase('cht_incompressible')
+    cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
+    cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
+    cht_incompressible.test_iter = 10
+    cht_incompressible.test_vals = [-6.153795, -44082.624869, -7.448554, 24831.915190] #last 4 columns
+    cht_incompressible.su2_exec  = "parallel_computation.py -f"
+    cht_incompressible.timeout   = 1600
+    cht_incompressible.tol       = 0.00001
+    test_list.append(cht_incompressible)
 
     ##########################
     ###   Python wrapper   ###
