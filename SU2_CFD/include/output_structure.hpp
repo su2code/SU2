@@ -729,7 +729,7 @@ public:
     unsigned long FindProbeLocElement_fromNearestNodeElem(CGeometry *geometry,
                                                       unsigned long pointID,
                                                       su2double *probe_loc);
-    
+    unsigned long FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geometry, unsigned long pointID, su2double *probe_loc);
   /*!
    * \brief Probing flow solution data at a point using ADT search
    * \param[in] config - Definition of the particular problem.
@@ -751,6 +751,9 @@ public:
    
    /* For 3D point search */
    bool IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
+    
+    bool SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], unsigned long jElem, short iFace);
+    
     void Isoparameters_1(unsigned short nDim, unsigned short nDonor,
                                   su2double *X, su2double *xj, su2double *isoparams);
    void Isoparameters(unsigned short nDim, unsigned short nDonor,

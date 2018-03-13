@@ -16065,7 +16065,11 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             {
                 
                 // local element number inside which the probe is located
-                probe_elem = FindProbeLocElement_fromNearestNodeElem(geometry, pointID, probe_loc);
+                if (nDim == 2)
+                    probe_elem = FindProbeLocElement_fromNearestNodeElem(geometry, pointID, probe_loc);
+                else
+                    probe_elem = FindProbeLocElement_fromNearestNodeElem3D(geometry, pointID, probe_loc);
+                
                 MeshInterp_Location[i_count] = probe_elem;
                 /*if (i_count == 202)
                     cout << "#Ext iter number = " << config->GetExtIter() << ", elem = " << probe_elem << endl;*/
@@ -16442,6 +16446,132 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
     return probe_elem;
 }
 
+unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geometry, unsigned long pointID, su2double *probe_loc){
+    /*--- Compute the total number of nodes on no-slip boundaries ---*/
+    unsigned long jElem, probe_elem, elemID;
+    unsigned short nDim = geometry->GetnDim();
+    /* Total number of points in given processor */
+    //unsigned long nPoint_proc = geometry->GetnPoint();
+    bool Inside=false, FaceIntersect=false;
+    unsigned short nElem_node = geometry->node[pointID]->GetnElem();
+    unsigned short iFace;
+    
+    vector<unsigned long> ElemIntersectProbeSeg;
+    
+    //if (abs(probe_loc[0] - 0.1)<1e-5 && abs(probe_loc[1]) < 1e-4)
+    //cout << "IFor probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << endl;
+    
+    for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
+        jElem = geometry->node[pointID]->GetElem(iElem);
+        /*--- Determine whether the probe point is inside the element ---*/
+        Inside = IsPointInsideHex(geometry, probe_loc,jElem);
+        if (Inside) {
+            probe_elem = jElem;
+            return probe_elem;
+        }
+    }
+    
+    unsigned short count;
+    
+    /* Find the elementID to begin moving towards the probe location from nearest edge */
+    for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
+        jElem = geometry->node[pointID]->GetElem(iElem);
+        
+        //cout << "1111111---------- Checking for elem " << geometry->elem[jElem]->GetGlobalIndex() << endl;
+        
+        count=0;
+        /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
+        for (iFace =0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++) {
+            
+            FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, geometry->node[pointID]->GetCoord(), jElem, iFace);
+            
+            if(FaceIntersect)  {
+                //cout << " 11111-------- Face Intersect --------" << endl;
+                count+=1;
+                if (count > 3){
+                    elemID = jElem;
+                    ElemIntersectProbeSeg.push_back(elemID);
+                    break;
+                }
+            }
+        }
+        if (count ==4)
+        {
+            //cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
+            // Found element where the segment intersects twice
+            break;
+        }
+    }
+    
+    unsigned long iter =0, newElem=elemID, neighbor_elem;
+    
+    while (iter < 50)
+    {
+        /* Check if probe is inside the new element */
+        //Inside = IsPointInsideElement(geometry, probe_loc,newElem);
+        Inside = IsPointInsideHex(geometry, probe_loc,newElem);
+        if (Inside)
+        {
+            //cout << "----------------Found inside elem " <<  newElem << endl;
+            return newElem;
+        }
+        
+        /* Find the next neighboring element through wchih the probe-NN connecting segment passes */
+        count=0;
+        
+        //if (probe_loc[0]==0.1 && probe_loc[1]==6.72e-05)
+        //cout << "---------- Checking for elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
+        
+        /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
+        for (iFace =0; iFace < geometry->elem[newElem]->GetnFaces(); iFace++) {
+                FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, geometry->node[pointID]->GetCoord(), jElem, iFace);
+                //cout << "Facepoint 1 coord[0] = " << face_point1[0] << ", coord[1] = " << face_point1[1] << endl;
+                //cout << "Facepoint 2 coord[0] = " << face_point2[0] << ", coord[1] = " << face_point2[1] << endl;
+            
+            
+                if(FaceIntersect)   {
+                    //cout << " -------- Face Intersect --------" << endl;
+                
+                    if (geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 0)) == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 1)) == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 2)) == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 3)) == pointID)
+                        /* Ignore the face with nearest node */
+                        continue;
+                    
+                    if (geometry->elem[newElem]->GetNeighbor_Elements(iFace) == -1)
+                        return newElem;
+                
+                    neighbor_elem = geometry->elem[newElem]->GetNeighbor_Elements(iFace);
+                
+                    cout << "Neighboring elements are " << neighbor_elem << endl;
+                    
+                    if (neighbor_elem != ElemIntersectProbeSeg.back())  {
+                        ElemIntersectProbeSeg.push_back(newElem);
+                        newElem = neighbor_elem;
+                        //cout << "NewElem --------- ====== " << newElem << endl;
+                        count += 1;
+                    }
+                }
+            if(count > 0)
+                break;
+        }
+        
+        iter += 1;
+        if (iter>48){
+            cout << " Did 48 iters to locate the poitn probe_loc[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << endl;
+            cout << " NN[0] = " << geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << endl;
+            Inside = true;
+            return newElem;
+        }
+        
+    }
+    
+    if (!Inside) {
+        cout << " ######### Could not locate the point wit XCoord = " << probe_loc[0] << ", Ycoord= " << probe_loc[1] << " in the mesh ####### " << endl;
+        cout << "Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
+    }
+    return probe_elem;
+}
+
+
 
 bool COutput::IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,unsigned long jElem){
     bool Intersect, Inside = true;
@@ -16587,83 +16717,118 @@ bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigne
     bool Inside = true;
     unsigned long iPoint;
     unsigned short nDim = geometry->GetnDim();
-    unsigned short nNodes_elem;
-    su2double X[8];
-    su2double xj[2];
-    xj[0] = probe_loc[0]; xj[1] = probe_loc[1];
+    unsigned short iNode, nNodes_elem, nFaces_elem, nNodes_face, count=0;
+    
     nNodes_elem = geometry->elem[jElem]->GetnNodes();
+    nFaces_elem = geometry->elem[jElem]->GetnFaces();
+    nNodes_face = geometry->elem[jElem]->GetnNodesFace(0);
+    
+    if(jElem==0)
+        cout << "Number of Faces = " << nFaces_elem << endl;
+    
+    su2double **Coord_elem = new su2double*[nNodes_elem];
+    /* Coordinates of CG of the element */
+    su2double Elem_CG[nDim];
     
     if(nNodes_elem != 8){
         cout << "****** NOTE: IsPointInsideHex Works only for Hex element search" << endl;
         exit(EXIT_FAILURE);
     }
     
-    
-    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+    for (iNode = 0; iNode < nNodes_elem; iNode++){
         iPoint = geometry->elem[jElem]->GetNode(iNode);
-        for (unsigned short iDim=0; iDim < nDim; iDim++) {
-            X[iDim*nNodes_elem + iNode] = geometry->node[iPoint]->GetCoord(iDim);
-        }
-    }
-    
-    // Compute coefficients
-    vector< vector<su2double> > AI(4, vector<su2double>(4,0));
-    AI[0][0] = 1; AI[1][0] = -1; AI[1][1]=1; AI[2][0] = -1; AI[2][3] = 1;
-    AI[3][0] = 1; AI[3][1]=-1; AI[3][2] = 1; AI[3][3] = -1;
-    
-    su2double a[4], b[4];
-    /* a= AI*x; b = AI*y */
-    for (unsigned short i=0; i < 4; i++){
-        a[i] = 0; b[i] = 0;
-        for (unsigned short j=0; j < 4; j++){
-            a[i] += AI[i][j]*X[j];
-            b[i] += AI[i][j]*X[4 + j];
-        }
-    }
-    
-    /* Convert to logical coordinates l,m */
-    su2double aa = a[3]*b[2] - a[2]*b[3];
-    su2double bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + xj[0]*b[3] - xj[1]*a[3];
-    su2double cc = a[1]*b[0] - a[0]*b[1] + xj[0]*b[1] - xj[1]*a[1];
-    su2double det = sqrt(bb*bb - 4*aa*cc);
-    su2double m = (-bb+det)/(2*aa);
-    su2double l = (xj[0]-a[0]-a[2]*m)/(a[1]+a[3]*m);
-    
-    if (abs(a[1]+a[3]*m) < 1e-12)
-    {
-        //cout << " Degenrate parallelogram " << endl;
-        m = (xj[0] - a[0])/a[2];
-        l = (xj[1] - b[0] - b[2]*m)/(b[1]+b[3]*m);
-        //cout << "m = " << m << ", l = " << l << endl;
-    }
-    
-    su2double dx,dy;
-    if (aa == 0){
+        Coord_elem[iNode] = new su2double[nDim];
         
-        /* Quad is Perfect rectangle */
-        if(abs(X[0]/X[1]-1) < 1e-6){
-            dx = abs(X[0] - X[2]);
-            dy = abs(X[4 + 0] - X[4 + 1]);
+        for (unsigned short iDim =0; iDim < nDim; iDim++){
+            if(iNode == 0)
+                Elem_CG[iDim] = 0;
+            Coord_elem[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+            if (jElem == 0)
+                cout << "Elem "  << jElem << " Node Xcoord = " << geometry->node[iPoint]->GetCoord(0) << ", YCoord = " << geometry->node[iPoint]->GetCoord(1) << ", ZCoord = " << geometry->node[iPoint]->GetCoord(2) << endl;
+            Elem_CG[iDim] += Coord_elem[iNode][iDim]/nNodes_elem;
         }
-        else{
-            dx = abs(X[0] - X[1]);
-            dy = abs(X[4 + 0] - X[4 + 2]);
-        }
-        l = max(max(abs(X[0] - xj[0])/dx,abs(X[1] - xj[0])/dx),abs(X[2] - xj[0])/dx);
-        m = max(max(abs(X[4+0] - xj[1])/dy,abs(X[4+1] - xj[1])/dy),abs(X[4+2] - xj[1])/dy);
-        if (l > 1 || m >1)
-            Inside = false;
     }
     
-    if (l < -0.02 || m < -0.02 || l>1.02 || m>1.02) {
-        Inside = false;
-        //exit(EXIT_FAILURE);
+    /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
+    su2double **Coord_face = new su2double*[nNodes_face];
+    for (unsigned short iNode = 0; iNode < nNodes_face; iNode++)
+        Coord_face[iNode] = new su2double[nDim];
+        
+    for (unsigned short iFace = 0; iFace < nFaces_elem; iFace++) {
+        
+        /* Setting up the node vector for the face */
+        for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
+            unsigned long face_point = geometry->elem[jElem]->GetNode(geometry->elem[jElem]->GetFaces(iFace, iNode));
+            
+            for (unsigned short iDim =0; iDim < nDim; iDim++)
+                Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
+        }
+        
+        /* It intersects the quad face if it intersects either of the two triangles that make up the quad */
+        bool Intersect1 = geometry->SegmentIntersectsTriangle(probe_loc, Elem_CG, Coord_face[0], Coord_face[1], Coord_face[2]);
+        bool Intersect2 = geometry->SegmentIntersectsTriangle(probe_loc, Elem_CG, Coord_face[2], Coord_face[3], Coord_face[0]);
+        
+        if (Intersect1 || Intersect2)
+            count += 1;
+        
     }
+    
+    if (count > 0)
+        Inside = false;
+
+    
+    for (iNode = 0; iNode < nNodes_elem; iNode++) {
+        delete [] Coord_elem[iNode];
+    }
+    delete [] Coord_elem;
+    
+    for (iNode = 0; iNode < nNodes_face; iNode++) {
+        delete [] Coord_face[iNode];
+    }
+    delete [] Coord_face;
     
     return Inside;
-    
+
 }
 
+bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], unsigned long jElem, short iFace){
+    
+    bool Intersect;
+    unsigned short nDim = geometry->GetnDim();
+    unsigned short iNode, nNodes_face;
+
+    nNodes_face = geometry->elem[jElem]->GetnNodesFace(0);
+    
+    /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
+    su2double **Coord_face = new su2double*[nNodes_face];
+    for (unsigned short iNode = 0; iNode < nNodes_face; iNode++)
+        Coord_face[iNode] = new su2double[nDim];
+    
+    for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
+        unsigned long face_point = geometry->elem[jElem]->GetNode(geometry->elem[jElem]->GetFaces(iFace, iNode));
+        
+//        for (unsigned short iDim =0; iDim < nDim; iDim++)
+//            Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
+        Coord_face[iNode] = geometry->node[face_point]->GetCoord();
+        
+    }
+    
+    /* It intersects the quad face if it intersects either of the two triangles that make up the quad */
+    bool Intersect1 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[0], Coord_face[1], Coord_face[2]);
+    bool Intersect2 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[2], Coord_face[3], Coord_face[0]);
+    
+    if (Intersect1 || Intersect2)
+        Intersect = true;
+    else
+        Intersect = false;
+    
+    for (iNode = 0; iNode < nNodes_face; iNode++)
+        delete [] Coord_face[iNode];
+    delete [] Coord_face;
+    
+    return Intersect;
+    
+}
 
 void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
                             su2double *X, su2double *xj, su2double *isoparams) {
