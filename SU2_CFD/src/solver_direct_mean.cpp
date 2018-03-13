@@ -6404,8 +6404,7 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   /*--- Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -11509,115 +11508,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						V_inlet[nDim+3] = Energy + Pressure/Density;
 						
 						break;
-
-          dd = bb*bb - 4.0*aa*cc;
-          dd = sqrt(max(0.0, dd));
-          Vel_Mag   = (-bb + dd)/(2.0*aa);
-          Vel_Mag   = max(0.0, Vel_Mag);
-          Velocity2 = Vel_Mag*Vel_Mag;
-
-          /*--- Compute speed of sound from total speed of sound eqn. ---*/
-
-          SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-          /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-
-          Mach2 = Velocity2/SoundSpeed2;
-          Mach2 = min(1.0, Mach2);
-          Velocity2   = Mach2*SoundSpeed2;
-          Vel_Mag     = sqrt(Velocity2);
-          SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-
-          /*--- Compute new velocity vector at the inlet ---*/
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-
-          /*--- Static temperature from the speed of sound relation ---*/
-
-          Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-
-          /*--- Static pressure using isentropic relation at a point ---*/
-
-          Pressure = P_Total*pow((Temperature/T_Total), Gamma/Gamma_Minus_One);
-
-          /*--- Density at the inlet from the gas law ---*/
-
-          Density = Pressure/(Gas_Constant*Temperature);
-
-          /*--- Using pressure, density, & velocity, compute the energy ---*/
-
-          Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-          if (tkeNeeded) Energy += GetTke_Inf();
-
-          /*--- Primitive variables, using the derived quantities ---*/
-
-          V_inlet[0] = Temperature;
-          for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = Velocity[iDim];
-          V_inlet[nDim+1] = Pressure;
-          V_inlet[nDim+2] = Density;
-          V_inlet[nDim+3] = Energy + Pressure/Density;
-
-          break;
-
-          /*--- Mass flow has been specified at the inlet. ---*/
-
-        case MASS_FLOW:
-
-          /*--- Retrieve the specified mass flow for the inlet. ---*/
-
-          Density  = config->GetInlet_Ttotal(Marker_Tag);
-          Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-
-          /*--- Non-dim. the inputs if necessary. ---*/
-
-          Density /= config->GetDensity_Ref();
-          Vel_Mag /= config->GetVelocity_Ref();
-
-          /*--- Get primitives from current inlet state. ---*/
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
-          Pressure    = node[iPoint]->GetPressure();
-          SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
-
-          /*--- Compute the acoustic Riemann invariant that is extrapolated
-             from the domain interior. ---*/
-
-          Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-          for (iDim = 0; iDim < nDim; iDim++)
-            Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-          /*--- Speed of sound squared for fictitious inlet state ---*/
-
-          SoundSpeed2 = Riemann;
-          for (iDim = 0; iDim < nDim; iDim++)
-            SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
-
-          SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-          SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-
-          /*--- Pressure for the fictitious inlet state ---*/
-
-          Pressure = SoundSpeed2*Density/Gamma;
-
-          /*--- Energy for the fictitious inlet state ---*/
-
-          Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-          if (tkeNeeded) Energy += GetTke_Inf();
-
-          /*--- Primitive variables, using the derived quantities ---*/
-
-          V_inlet[0] = Pressure / ( Gas_Constant * Density);
-          for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-          V_inlet[nDim+1] = Pressure;
-          V_inlet[nDim+2] = Density;
-          V_inlet[nDim+3] = Energy + Pressure/Density;
-
-          break;
       }
       
       /*--- Set various quantities in the solver class ---*/
