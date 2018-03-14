@@ -396,7 +396,7 @@ void CConfig::SetPointersNull(void) {
   ActDisk_Power           = NULL;    ActDisk_MassFlow       = NULL;    ActDisk_Area             = NULL;
   ActDisk_ReverseMassFlow = NULL;    Surface_MassFlow        = NULL;   Surface_Mach             = NULL;
   Surface_Temperature      = NULL;   Surface_Pressure         = NULL;  Surface_Density          = NULL;   Surface_Enthalpy          = NULL;
-  Surface_NormalVelocity   = NULL;   Surface_TotalTemperature = NULL;  Surface_TotalPressure    = NULL;
+  Surface_NormalVelocity   = NULL;   Surface_TotalTemperature = NULL;  Surface_TotalPressure    = NULL;   Surface_PressureDrop    = NULL;
   Surface_DC60             = NULL;    Surface_IDC = NULL;
 
   Surface_Uniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondOverUniform = NULL;
@@ -3719,6 +3719,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
   }
 
+  /*--- Assert that there are two markers being analyzed if the
+   pressure drop objective function is selected. ---*/
+
+  for (unsigned short iObj = 0; iObj < nObj; iObj++) {
+    if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze != 2)) {
+      SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
+    }
+  }
+
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -3852,6 +3861,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Surface_MomentumDistortion = new su2double[nMarker_Analyze];
   Surface_TotalTemperature = new su2double[nMarker_Analyze];
   Surface_TotalPressure = new su2double[nMarker_Analyze];
+  Surface_PressureDrop = new su2double[nMarker_Analyze];
   Surface_DC60 = new su2double[nMarker_Analyze];
   Surface_IDC = new su2double[nMarker_Analyze];
   Surface_IDC_Mach = new su2double[nMarker_Analyze];
@@ -3870,6 +3880,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Surface_MomentumDistortion[iMarker_Analyze] = 0.0;
     Surface_TotalTemperature[iMarker_Analyze] = 0.0;
     Surface_TotalPressure[iMarker_Analyze] = 0.0;
+    Surface_PressureDrop[iMarker_Analyze] = 0.0;
     Surface_DC60[iMarker_Analyze] = 0.0;
     Surface_IDC[iMarker_Analyze] = 0.0;
     Surface_IDC_Mach[iMarker_Analyze] = 0.0;
@@ -6338,6 +6349,7 @@ CConfig::~CConfig(void) {
   if (Surface_MomentumDistortion != NULL)    delete[]  Surface_MomentumDistortion;
   if (Surface_TotalTemperature != NULL)    delete[]  Surface_TotalTemperature;
   if (Surface_TotalPressure!= NULL)    delete[]  Surface_TotalPressure;
+  if (Surface_PressureDrop!= NULL)    delete[]  Surface_PressureDrop;
   if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
   if (Surface_IDC != NULL)    delete[]  Surface_IDC;
   if (Surface_IDC_Mach != NULL)    delete[]  Surface_IDC_Mach;
@@ -6611,6 +6623,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;
         case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;
         case SURFACE_SECOND_OVER_UNIFORM: AdjExt = "_sou";      break;
+        case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:        		  AdjExt = "_custom";   break;
         case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;

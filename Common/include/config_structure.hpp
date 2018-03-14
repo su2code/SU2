@@ -364,6 +364,7 @@ private:
   su2double *Surface_MomentumDistortion;    /*!< \brief Integral measure of the streamwise uniformity (relative to plug flow) at the boundaries (non-dim). */
   su2double *Surface_TotalTemperature;   /*!< \brief Total temperature at the boundaries. */
   su2double *Surface_TotalPressure;    /*!< \brief Total pressure at the boundaries. */
+  su2double *Surface_PressureDrop;    /*!< \brief Pressure drop between boundaries. */
   su2double *Surface_DC60;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_IDC;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_IDC_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -7156,7 +7157,14 @@ public:
    * \param[in] val_surface_totalpressure - Value of the total pressure.
    */
   void SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure);
-  
+
+  /*!
+   * \brief Set the pressure drop between two surfaces.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_pressuredrop - Value of the pressure drop.
+   */
+  void SetSurface_PressureDrop(unsigned short val_imarker, su2double val_surface_pressuredrop);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -7415,7 +7423,14 @@ public:
    * \return The total pressure.
    */
   su2double GetSurface_TotalPressure(unsigned short val_imarker);
-   
+
+  /*!
+   * \brief Get the pressure drop between two surfaces.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The pressure drop.
+   */
+  su2double GetSurface_PressureDrop(unsigned short val_imarker);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
