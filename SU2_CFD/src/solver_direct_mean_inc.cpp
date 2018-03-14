@@ -4899,6 +4899,9 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case SURFACE_SECOND_OVER_UNIFORM:
         Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
         break;
+      case SURFACE_PRESSURE_DROP:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
+        break;
       case CUSTOM_OBJFUNC:
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
         break;

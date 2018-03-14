@@ -1245,6 +1245,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_SECONDARY = 53,           /*!< \brief Secondary flow strength objective function definition. */
   SURFACE_MOM_DISTORTION = 54,           /*!< \brief Momentum distortion objective function definition. */
   SURFACE_SECOND_OVER_UNIFORM = 55,   /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
+  SURFACE_PRESSURE_DROP = 56, 	    /*!< \brief Pressure drop objective function definition. */
   CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
