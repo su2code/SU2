@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - thomas.economon@gmail.com
   
 branches:
     only:
-        - develop
+        - feature_preconditioning
 
 python:
     - 2.7

@@ -4348,7 +4348,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   char adj_inc_coeff[]=",\"Sens_Geo\",\"Sens_Vin\",\"Sens_Pout\",\"Sens_Temp\"";
   char adj_turbo_coeff[]=",\"Sens_Geo\",\"Sens_PressOut\",\"Sens_TotTempIn\"";
-  char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Uniformity\",\"Secondary_Strength\",\"Momentum_Distortion\",\"Secondary_Over_Uniformity\",\"Avg_TotalTemp\",\"Avg_TotalPress\"";
+  char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Uniformity\",\"Secondary_Strength\",\"Momentum_Distortion\",\"Secondary_Over_Uniformity\",\"Avg_TotalTemp\",\"Avg_TotalPress\",\"Pressure_Drop\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
@@ -4708,7 +4708,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Avg_TotalTemp = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
-    su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0, Surface_Uniformity = 0.0, Surface_SecondaryStrength = 0.0,Surface_MomentumDistortion = 0.0, Surface_SecondOverUniform = 0.0;
+    su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0, Surface_Uniformity = 0.0, Surface_SecondaryStrength = 0.0,Surface_MomentumDistortion = 0.0, Surface_SecondOverUniform = 0.0, Surface_PressureDrop = 0.0;
 
     unsigned short iSpan;
 
@@ -4956,6 +4956,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Surface_SecondOverUniform = config[ZONE_0]->GetSurface_SecondOverUniform(iMarker_Analyze);
           Surface_TotalTemperature = config[ZONE_0]->GetSurface_TotalTemperature(iMarker_Analyze);
           Surface_TotalPressure = config[ZONE_0]->GetSurface_TotalPressure(iMarker_Analyze);
+          Surface_PressureDrop = config[ZONE_0]->GetSurface_PressureDrop(iMarker_Analyze);
 
         }
         
@@ -5317,7 +5318,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*---- Averaged stagnation pressure at an exit ----*/
             
             if (output_surface) {
-              SPRINTF( surface_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Surface_MassFlow, Surface_Mach, Surface_Temperature, Surface_Pressure, Surface_Density, Surface_Enthalpy, Surface_NormalVelocity, Surface_Uniformity, Surface_SecondaryStrength, Surface_MomentumDistortion, Surface_SecondOverUniform, Surface_TotalTemperature, Surface_TotalPressure);
+              SPRINTF( surface_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Surface_MassFlow, Surface_Mach, Surface_Temperature, Surface_Pressure, Surface_Density, Surface_Enthalpy, Surface_NormalVelocity, Surface_Uniformity, Surface_SecondaryStrength, Surface_MomentumDistortion, Surface_SecondOverUniform, Surface_TotalTemperature, Surface_TotalPressure, Surface_PressureDrop);
             }
             
             /*--- Transition residual ---*/
@@ -12165,9 +12166,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
       
-      Variable_Names.push_back("Grid_Velx");
-      Variable_Names.push_back("Grid_Vely");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+      Variable_Names.push_back("X-Grid_Velocity");
+      Variable_Names.push_back("Y-Grid_Velocity");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Grid_Velocity");
     }
     
     
@@ -12195,10 +12196,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
 			if (config->GetOutput_FileFormat() == PARAVIEW){
 				nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
 				nVar_Par += 2;
-				Variable_Names.push_back("Skin_Friction_Coefficient_X");
-				Variable_Names.push_back("Skin_Friction_Coefficient_Y");
+				Variable_Names.push_back("X-Skin_Friction_Coefficient");
+				Variable_Names.push_back("Y-Skin_Friction_Coefficient");
 				if (geometry->GetnDim() == 3) {
-					nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+					nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
 				}
 				nVar_Par += 2;
 				Variable_Names.push_back("Heat_Flux");
@@ -12681,9 +12682,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
 
-      Variable_Names.push_back("Grid_Velx");
-      Variable_Names.push_back("Grid_Vely");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+      Variable_Names.push_back("X-Grid_Velocity");
+      Variable_Names.push_back("Y-Grid_Velocity");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Grid_Velocity");
     }
 
     /*--- Add Cp, Mach. ---*/
@@ -12702,10 +12703,10 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (config->GetOutput_FileFormat() == PARAVIEW){
         nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
         nVar_Par += 2;
-        Variable_Names.push_back("Skin_Friction_Coefficient_X");
-        Variable_Names.push_back("Skin_Friction_Coefficient_Y");
+        Variable_Names.push_back("X-Skin_Friction_Coefficient");
+        Variable_Names.push_back("Y-Skin_Friction_Coefficient");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+          nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
         }
         nVar_Par += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -18031,7 +18032,23 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
     
   }
-  
+
+  /*--- Compute the average static pressure drop between two surfaces. Note
+   that this assumes we have two surfaces being analyzed and that the outlet
+   is first followed by the inlet. This is because we may also want to choose
+   outlet values (temperature, uniformity, etc.) for our design problems,
+   which require the outlet to be listed first. This is a simple first version
+   that could be generalized to a different orders/lists/etc. ---*/
+
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+    if (nMarker_Analyze == 2) {
+      su2double Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
+      config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
+    } else {
+      config->SetSurface_PressureDrop(iMarker_Analyze, 0.0);
+    }
+  }
+
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
     cout.precision(3);
