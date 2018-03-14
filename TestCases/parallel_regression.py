@@ -284,7 +284,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-3.544713, -3.135163, 0.968232, 0.010161] #last 4 columns
+    inc_euler_naca0012.test_vals = [-4.839173, -3.765131, 0.504724, 0.007563] #last 4 columns
     inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_euler_naca0012.timeout   = 1600
     inc_euler_naca0012.tol       = 0.00001
@@ -299,7 +299,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-3.755682, -3.318630, -0.005906, 6.254292] #last 4 columns
+    inc_lam_cylinder.test_vals = [-3.989004, -3.177762, -0.000215, 7.733233] #last 4 columns
     inc_lam_cylinder.su2_exec  = "parallel_computation.py -f"
     inc_lam_cylinder.timeout   = 1600
     inc_lam_cylinder.tol       = 0.00001
@@ -314,7 +314,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.708166, -11.010137, 0.000002, 0.207683] #last 4 columns
+    inc_turb_naca0012.test_vals = [-4.788498, -11.040505, 0.000003, 0.309508] #last 4 columns
     inc_turb_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
@@ -329,7 +329,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-8.280255, -14.505575, 0.000068, 0.005669] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.225238, -14.278195, 0.000045, 0.007987] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
