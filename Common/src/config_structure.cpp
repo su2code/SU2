@@ -1402,7 +1402,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
   /*!\brief WRT_CSV_SOL
    *  \n DESCRIPTION: Write a surface CSV solution file  \ingroup Config*/
-  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
+  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, false);
   /*!\brief WRT_SURFACE
    *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
   addBoolOption("WRT_SURFACE", Wrt_Surface, false);
