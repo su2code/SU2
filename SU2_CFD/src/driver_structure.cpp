@@ -2975,6 +2975,7 @@ void CDriver::StartSolver() {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
 
+  cout<<"Extiter: "<<config_container[ZONE_0]->GetnExtIter()<<endl;
   while ( ExtIter < config_container[ZONE_0]->GetnExtIter() ) {
 
     /*--- Perform some external iteration preprocessing. ---*/
@@ -3107,6 +3108,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
     case WAVE_EQUATION:
       StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
     case HEAT_EQUATION:
+      StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+    case POISSON_EQUATION:
       StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;

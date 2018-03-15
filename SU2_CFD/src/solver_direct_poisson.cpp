@@ -95,17 +95,22 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
     Jacobian_j[iVar] = new su2double [nVar];
   }
   
+  CoeffMatrix_Node = new su2double* [1];
+  for (unsigned short iVar = 0; iVar < 1; iVar++) {
+    CoeffMatrix_Node[iVar] = new su2double [1];
+  }
+  
   
   /*--- Initialization of the structure of the whole Jacobian ---*/
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Poisson equation)." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
+  CoeffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   /*--- Solution and residual vectors ---*/
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
+  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Computation of gradients by least squares ---*/
   
@@ -586,46 +591,52 @@ void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_c
 su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j;
 unsigned long iEdge, iPoint, jPoint;
 
- for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    if (config->GetKind_TimeIntScheme() == DIRECT_SOLVE) AssembleCoeffMatrix(geometry, solver_container, numerics, config, iMesh, iRKStep);
 
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+	else 
+		for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-    /*--- Points coordinates, and normal vector ---*/
-
-    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                       geometry->node[jPoint]->GetCoord());
-    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-
-    Poisson_Coeff_i = 1.0;//config->GetPoisson_Coeff();
-    Poisson_Coeff_j = 1.0;//config->GetPoisson_Coeff();
+			iPoint = geometry->edge[iEdge]->GetNode(0);
+			jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    Sol_i_Grad = node[iPoint]->GetGradient();
-    Sol_j_Grad = node[jPoint]->GetGradient();
+			/*--- Points coordinates, and normal vector ---*/
+
+			numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+						geometry->node[jPoint]->GetCoord());
+			numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-   numerics->SetConsVarGradient(Sol_i_Grad, Sol_j_Grad);
+
+
+			Poisson_Coeff_i = 1.0;//config->GetPoisson_Coeff();
+			Poisson_Coeff_j = 1.0;//config->GetPoisson_Coeff();
+    
+			Sol_i_Grad = node[iPoint]->GetGradient();
+			Sol_j_Grad = node[jPoint]->GetGradient();
+    
+			numerics->SetConsVarGradient(Sol_i_Grad, Sol_j_Grad);
    
-       /*--- Primitive variables w/o reconstruction ---*/
-    Poissonval_i = node[iPoint]->GetSolution(0);
-    Poissonval_j = node[jPoint]->GetSolution(0);
+			/*--- Primitive variables w/o reconstruction ---*/
+			Poissonval_i = node[iPoint]->GetSolution(0);
+			Poissonval_j = node[jPoint]->GetSolution(0);
     
-    numerics->SetPoissonval(Poissonval_i,Poissonval_j);
+			numerics->SetPoissonval(Poissonval_i,Poissonval_j);
     
-   //numerics->SetPoisson_Coeff(Poisson_Coeff_i,Poisson_Coeff_j);
+			//numerics->SetPoisson_Coeff(Poisson_Coeff_i,Poisson_Coeff_j);
 
-    /*--- Compute residual, and Jacobians ---*/
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+			/*--- Compute residual, and Jacobians ---*/
+			numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-    /*--- Add and subtract residual, and update Jacobians ---*/
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    LinSysRes.AddBlock(jPoint, Residual);
+			/*--- Add and subtract residual, and update Jacobians ---*/
+			LinSysRes.SubtractBlock(iPoint, Residual);
+			LinSysRes.AddBlock(jPoint, Residual);
 
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
- }
+			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+			Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+			Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+			Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+		}
+	
 }
 
 void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -652,6 +663,9 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->ComputeResidual(Residual, Jacobian_i, config);
 
     /*--- Add the source residual to the total ---*/
+    
+    //cout<<"iPoint: "<<iPoint<<" Source Residual: "<<Residual[0]<<endl;
+    
 
     LinSysRes.AddBlock(iPoint, Residual);
     
@@ -659,9 +673,74 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
   }
 }
 
+void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
+	su2double dist_ij_2,Edge_Vector[3],proj_vector_ij,*Normal,Area,*Src_Term;
+	unsigned long iEdge, iPoint, jPoint,iDim,iMarker,Point,iVertex,iNeigh;
 
+	Src_Term = new su2double [nVar];
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+		jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+		/*--- Points coordinates, and normal vector ---*/
+		numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+						geometry->node[jPoint]->GetCoord());
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+		Normal = geometry->edge[iEdge]->GetNormal();
+		Area = 0.0;
+		dist_ij_2 = 0; proj_vector_ij = 0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Edge_Vector[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
+			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+			//proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+			proj_vector_ij += Normal[iDim];
+			Area += Normal[iDim]*Normal[iDim];
+		}
+		Area = sqrt(Area);
+		
+		if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+		else proj_vector_ij = proj_vector_ij/dist_ij_2;
+		//else proj_vector_ij = proj_vector_ij/abs(proj_vector_ij);
+		
+		
+		
+		CoeffMatrix_Node[0][0] = -Area*proj_vector_ij;
+		
+		CoeffMatrix.SubtractBlock(iPoint, iPoint, CoeffMatrix_Node);
+		CoeffMatrix.AddBlock(iPoint, jPoint, CoeffMatrix_Node);
+		
+		CoeffMatrix_Node[0][0] = Area*proj_vector_ij;
+		
+		CoeffMatrix.SubtractBlock(jPoint, iPoint, CoeffMatrix_Node);
+		CoeffMatrix.AddBlock(jPoint, jPoint, CoeffMatrix_Node);
+		cout<<"iPoint: "<<iPoint<<"jPoint: "<<jPoint<<" normals "<<Normal[0]<<" , "<<Normal[1]<<" dist_ij_2 "<<dist_ij_2<<" Area "<<Area<<" entry "<<CoeffMatrix_Node[0][0]<<endl;
+	}
+
+	
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case DIRICHLET:
+		for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+			Point = geometry->vertex[iMarker][iVertex]->GetNode();
+			for (iNeigh = 0; iNeigh < geometry->node[Point]->GetnPoint(); iNeigh++) {
+				iPoint = geometry->node[Point]->GetPoint(iNeigh);
+				Src_Term[0] = 1+2*(geometry->node[Point]->GetCoord(0))*(geometry->node[Point]->GetCoord(0))+3*(geometry->node[Point]->GetCoord(1))*(geometry->node[Point]->GetCoord(1));
+				Src_Term[0] = Src_Term[0]*CoeffMatrix.GetBlock(iPoint,Point,0,0);
+				LinSysRes.SubtractBlock(iPoint, Src_Term);
+				//cout<<"Normal value of "<<iPoint<<" and "<<Point<<" is "<<Normal[0]<<" , "<<Normal[1]<<endl;
+				Src_Term[0]=0.0;
+				CoeffMatrix.SetBlock(iPoint,Point,Src_Term);
+			}
+		}
+        break;
+	}
+	delete Src_Term;
+
+}
 void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned long iPoint, total_index;
@@ -720,10 +799,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       LinSysSol[total_index] = 0.0;
     }
   }
-  
-  
-  
-  
+ 
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
@@ -789,7 +865,106 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
 }
 
+void CPoissonSolverFVM::Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
+  unsigned long  iPoint, total_index,j,Point, iVertex,iDim,iNeigh,maxNeigh,iMarker;
+  su2double      *Normal,Area,dist_ij_2,Edge_Vector[3],proj_vector_ij,*Src_Term;
+  unsigned short iVar;
+
+
+  /*--- Build implicit system ---*/
+  
+   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      LinSysRes[total_index] =  (LinSysRes[total_index]);
+      LinSysSol[total_index] = 0.0;
+    }
+    
+  }
+  
+  /*--- Initialize residual and solution at the ghost points ---*/
+  
+  for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
+    }
+  }
+  
+  cout<<"Jacobian matrix"<<endl;
+  for (iPoint=0;iPoint<geometry->GetnPoint();iPoint++){
+	  cout<<iPoint<<" : ";
+   for (j=0;j<geometry->GetnPointDomain();j++)
+       cout<<CoeffMatrix.GetBlock(iPoint,j,0,0)<<" , ";
+   cout<<endl;
+  }
+  
+  
+   cout<<"RHS"<<endl;
+  for (iPoint=0;iPoint<geometry->GetnPoint();iPoint++){
+	 cout<<iPoint<<" : ";
+    cout<<LinSysRes.GetBlock(iPoint,0);
+   cout<<endl;
+  }
+  
+     /* cout<<"BC"<<endl;
+  for (iPoint=0;iPoint<geometry->GetnPoint();iPoint++){
+	  cout<<iPoint<<" : ";
+      cout<<LinSysSol.GetBlock(iPoint,0);
+   cout<<endl;
+  }*/
+   
+  
+  /*--- Solve or smooth the linear system ---*/
+  
+  CSysSolve system;
+  system.Solve(CoeffMatrix, LinSysRes, LinSysSol, geometry, config);
+  
+  /*--- Update solution (system written in terms of increments) ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+    }
+  }
+  
+  /*--- MPI solution ---*/
+  
+  Set_MPI_Solution(geometry, config);
+  
+  /*---  Compute the residual Ax-f ---*/
+  
+  CoeffMatrix.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+  
+  /*--- Set maximum residual to zero ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
+  /*--- Compute the residual ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+      AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+    }
+  }
+  
+  /*--- Compute the root mean square residual ---*/
+  
+  //SetResidual_RMS(geometry, config);
+  
+
+	
+	
+}
 
 
 void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -881,7 +1056,7 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   pi = 4.0*atan(1.0);
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Point = geometry->vertex[val_marker][iVertex]->GetNode();
    
@@ -892,10 +1067,14 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
  /*--- Assign the dirichlet BC value to the solution ---*/
     node[Point]->SetSolution(Solution);
     node[Point]->Set_OldSolution();
-       
+    
+	CoeffMatrix.DeleteValsRowi(Point);
     LinSysRes.SetBlock_Zero(Point, 0);
     LinSysSol.SetBlock(Point, Solution);
   }
+
+  
+  
   
 }
 
@@ -1005,7 +1184,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Computation of gradients by least squares ---*/
-  
+  		//CoeffMatrixPoisson.SubtractBlock(iPoint, jPoint, proj_vector_ij);
   Smatrix = new su2double* [nDim]; // S matrix := inv(R)*traspose(inv(R))
   for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
