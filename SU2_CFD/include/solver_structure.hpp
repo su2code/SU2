@@ -134,6 +134,7 @@ public:
   CSysMatrix Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
   
   CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
+  CSysMatrix CoeffMatrix; /*!< \brief Sparse structure for storing the coefficient matrix in direct computations. */
   
   CSysVector OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
@@ -1300,6 +1301,15 @@ public:
    */
   virtual void Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh);
+                                
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config);                                
+                        
   
   /*!
    * \brief A virtual member.
@@ -10975,8 +10985,8 @@ public:
  *  \version 6.0.0 "Falcon"
  */
 class CPoissonSolverFVM : public CSolver {
-
-  
+	
+  su2double **CoeffMatrix_Node;  /*!< \brief Auxiliary matrices for storing point to point coefficient matrices. */
 public:
   
   /*!
@@ -11007,6 +11017,9 @@ public:
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                        unsigned short iMesh, unsigned short iRKStep);  
+                        
+  void AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                         unsigned short iMesh, unsigned short iRKStep);  
 
   void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
@@ -11137,6 +11150,15 @@ public:
    */
   
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Update the solution using an explicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  
+  void Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
 };
 
