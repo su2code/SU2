@@ -2361,6 +2361,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == POISSON_EQUATION) {
     nMGLevels = 0;
+    if (Kind_TimeIntScheme_Poisson == DIRECT_SOLVE) nExtIter = 1;
   }  
   
   if (Kind_Solver == FEM_ELASTICITY) {
