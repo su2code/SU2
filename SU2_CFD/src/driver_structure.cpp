@@ -1138,6 +1138,12 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
 
     /*--- If profile requested, use LoadInletProfile() routines for the solver. ---*/
 
+    if (rank == MASTER_NODE) {
+      cout << endl;
+      cout << "Reading inlet profile from file: ";
+      cout << config->GetInlet_FileName() << endl;
+    }
+
     bool no_profile = true;
 
     if (euler || ns || adj_euler || adj_ns) {
