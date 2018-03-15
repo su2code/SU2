@@ -2920,11 +2920,6 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
   int counter = 0;
   string::size_type position;
 
-  if (rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Reading inlet profile from file: " << val_filename << endl;
-  }
-
   /*--- Open the inlet profile file (we have already error checked) ---*/
 
   inlet_file.open(val_filename.data(), ios::in);
@@ -3172,6 +3167,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 if (nDim ==3) error_msg << ", " << Coord[2];
                 cout << "]" << endl;
                 cout << "Distance to closest point: " << min_dist << endl;
+                cout << "Current tolerance:         " << tolerance << endl;
+                cout << endl;
+                cout << "You can widen the tolerance for point matching by changing the value" << endl;
+                cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
                 local_failure = true;
                 break;
 
