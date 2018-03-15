@@ -2963,6 +2963,8 @@ void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string 
         for (iRow = 0; iRow < nRow_InletFile[iMarker]; iRow++) getline (inlet_file, text_line);
 
       }
+    } else {
+      SU2_MPI::Error("While opening inlet file, no \"NMARK=\" specification was found", CURRENT_FUNCTION);
     }
   }
 
