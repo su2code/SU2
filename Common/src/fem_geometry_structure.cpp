@@ -5346,8 +5346,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   /* Find out whether or not the full, inverse of the full and the lumped mass
      matrices are needed. In principle always the full mass matrix is used,
      unless the user explicitly indices to use the lumped mass matrix for
-     steady and dual time stepping. Furthermore, for ADER-DG both the mass
-     matrix and its inverse are needed. Note that for the DG_FEM the mass matrix
+     steady and dual time stepping. Note that for the DG_FEM the mass matrix
      is local to the elements. Finally, when the non-aliased predictor is used
      for ADER-DG for the Navier-Stokes equations, the derivatives of the
      metric terms are needed for the computation of the 2nd derivatives. */
@@ -5369,21 +5368,17 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   }
   else {
 
-    /* Time accurate explicit time integration scheme. Make a distinction
-       between ADER-DG and other time integration schemes. */
-    if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
-      FullMassMatrix   = FullInverseMassMatrix = true;
-      LumpedMassMatrix = false;
+    /* Time accurate explicit time integration scheme. */
+    FullMassMatrix        = LumpedMassMatrix = false;
+    FullInverseMassMatrix = true;
 
+    /* For ADER-DG, check if the derivative of the metric terms are needed. */
+    if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
       unsigned short solver = config->GetKind_Solver();
       if(solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
         if(config->GetKind_ADER_Predictor() == ADER_NON_ALIASED_PREDICTOR)
           DerMetricTerms = true;
       }
-    }
-    else {
-      FullMassMatrix        = LumpedMassMatrix = false;
-      FullInverseMassMatrix = true;
     }
   }
 
@@ -5671,15 +5666,13 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the mass matrix (or its inverse) and/or the      ---*/
-  /*---         lumped mass matrix. For ADER-DG also the iteration matrix  ---*/
-  /*---         of the predictor step is determined.                       ---*/
+  /*---         lumped mass matrix.                                        ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Determine the time coefficients in the iteration matrix of the ADER-DG
      predictor step. */
-  vector<su2double> timeCoefAder;
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
-    TimeCoefficientsPredictorADER_DG(config, timeCoefAder);
+    TimeCoefficientsPredictorADER_DG(config);
 
   /* Loop over the owned volume elements. */
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
@@ -5716,72 +5709,6 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
       /* Store the full mass matrix in volElem[i], if needed. */
       if( FullMassMatrix ) volElem[i].massMatrix = massMat;
-
-      /*--- Check for ADER-DG time integration. ---*/
-      if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
-
-        /* Allocate the memory for the iteration matrix in the predictor
-           step of the ADER-DG scheme. */
-        const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
-        volElem[i].ADERIterationMatrix.resize(nDOFs*nDOFs*nTimeDOFs*nTimeDOFs);
-
-        /* Store the iteration matrix a bit shorter. */
-        su2double *iterMat = volElem[i].ADERIterationMatrix.data();
-
-        /*--- Create the ADER iteration matrix. ---*/
-        ll = 0;
-        for(unsigned short jT=0; jT<nTimeDOFs; ++jT) {
-          for(unsigned short jS=0; jS<nDOFs; ++jS) {
-            for(unsigned short iT=0; iT<nTimeDOFs; ++iT) {
-              const su2double val = timeCoefAder[jT*nTimeDOFs+iT];
-              for(unsigned short iS=0; iS<nDOFs; ++iS, ++ll)
-                iterMat[ll] = val*massMat[jS*nDOFs+iS];
-            }
-          }
-        }
-
-        /*--- For efficiency reasons it is better to store the inverse of the
-              currently stored matrix. Check if LAPACK/MKL can be used. ---*/
-
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
-
-        /* The inverse can be computed using the Lapack routines LAPACKE_dgetrf
-           and LAPACKE_dgetri. In order to carry out these computations, some
-           extra memory is needed, which is allocated first. */
-        const unsigned short sizeMat = nDOFs*nTimeDOFs;
-        vector<int> ipiv(sizeMat);
-
-        /* Call LAPACKE_dgetrf to compute the LU factorization using
-           partial pivoting. Check if it went correctly. */
-        lapack_int errorCode;
-        errorCode = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, sizeMat, sizeMat,
-                                   volElem[i].ADERIterationMatrix.data(),
-                                   sizeMat, ipiv.data());
-        if(errorCode != 0) {
-          ostringstream message;
-          message << "Something wrong when calling LAPACKE_dgetrf. Error code: "
-                  << errorCode;
-          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-        }
-
-        /* LAPACKE_dgetri to compute the actual inverse. Check if everything
-           went fine. */
-        errorCode = LAPACKE_dgetri(LAPACK_ROW_MAJOR, sizeMat,
-                                   volElem[i].ADERIterationMatrix.data(),
-                                   sizeMat, ipiv.data());
-        if(errorCode != 0) {
-          ostringstream message;
-          message << "Something wrong when calling LAPACKE_dgetri. Error code: "
-                  << errorCode;
-          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-        }
-#else
-        /* No support for Lapack. Hence an internal routine is used.
-           This does not all the checking the Lapack routine does. */
-        FEMStandardElementBaseClass::InverseMatrix(nDOFs*nTimeDOFs,
-                                                   volElem[i].ADERIterationMatrix);
-#endif
-      }
 
       /*--- Check if the inverse of mass matrix is needed. ---*/
       if( FullInverseMassMatrix ) {
@@ -5875,15 +5802,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   }
 }
 
-void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
-                                                   vector<su2double> &timeCoefAder) {
+void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Determine the coefficients that appear in the iteration matrix of  ---*/
-  /*--- the prediction step of ADER-DG. Also determine the values of the   ---*/
-  /*--- Lagrangian interpolation functions at the beginning of the time    ---*/
-  /*--- interval, which are needed in the residual computation of the      ---*/
-  /*--- predictor step of ADER-DG.                                         ---*/
+  /*--- the prediction step of ADER-DG.                                    ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Determine the number of time DOFs in the predictor step of ADER as well
@@ -5927,29 +5850,6 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
   val = 1.0/val;
   for(unsigned short j=0; j<nTimeDOFs; ++j) lEnd[j] *= val;
 
-  /*--- Compute the values of the Lagrangian functions at the beginning of the
-        interval (r = -1). These are needed to compute the RHS of the predictor. ---*/
-  rEnd[0] = -1.0;
-  timeElement.Vandermonde1D(nTimeDOFs, rEnd, VEnd);
-
-  LagrangianBeginTimeIntervalADER_DG.assign(nTimeDOFs, 0.0);
-  for(unsigned short j=0; j<nTimeDOFs; ++j) {
-    for(unsigned short k=0; k<nTimeDOFs; ++k)
-      LagrangianBeginTimeIntervalADER_DG[j] += VEnd[k]*VInv[j*nTimeDOFs+k];
-  }
-
-  /*--- To reduce the error due to round off, make sure that the row sum is 1.
-        Also check if the difference is not too large to be solely caused by
-        roundoff.  ---*/
-  val = 0.0;
-  for(unsigned short j=0; j<nTimeDOFs; ++j) val += LagrangianBeginTimeIntervalADER_DG[j];
-
-  if(fabs(val-1.0) > 1.e-6)
-    SU2_MPI::Error( "Difference is too large to be caused by roundoff", CURRENT_FUNCTION);
-
-  val = 1.0/val;
-  for(unsigned short j=0; j<nTimeDOFs; ++j) LagrangianBeginTimeIntervalADER_DG[j] *= val;
-
   /*--- Compute the mass matrix in time, which is the inverse of V^T V. Note that
         this definition is different from the one used in Hesthaven, because their
         V is our V^T. Furthermore note that the mass matrix should be a diagonal
@@ -5991,11 +5891,15 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
   }
 
   /* Compute the time coefficients of the iteration matrix in the predictor step. */
-  timeCoefAder.assign(nTimeDOFs*nTimeDOFs, 0.0);
+  timeCoefADER_DG.assign(nTimeDOFs*nTimeDOFs, 0.0);
   for(unsigned short j=0; j<nTimeDOFs; ++j) {
     for(unsigned short i=0; i<nTimeDOFs; ++i)
-      timeCoefAder[j*nTimeDOFs+i] = lEnd[j]*lEnd[i] - S[i*nTimeDOFs+j];
+      timeCoefADER_DG[j*nTimeDOFs+i] = lEnd[j]*lEnd[i] - S[i*nTimeDOFs+j];
   }
+
+  /* Determine the inverse of timeCoefADER_DG, because this is needed in the
+     iteration matrix of the predictor step of ADER-DG. */
+  timeElement.InverseMatrix(nTimeDOFs, timeCoefADER_DG);
 
   /*--------------------------------------------------------------------------*/
   /*--- Determine the interpolation matrix from the time DOFs of ADER-DG   ---*/
