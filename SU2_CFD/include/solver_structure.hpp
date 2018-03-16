@@ -8759,7 +8759,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CGeometry* geometry, CConfig *config);
-  
+
   /*!
    * \brief Impose the send-receive boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9212,7 +9212,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Setup the inlet per the config file and stores the result
    * \param[in] config - Definition of the particular problem.
@@ -9403,13 +9403,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
-  
+
   /*!
    * \brief Setup the inlet per the config file and stores the result
    * \param[in] config - Definition of the particular problem.
    */
   void SetInlet(CConfig *config);
-  
+
 };
 
 /*!
@@ -13015,9 +13015,8 @@ protected:
                                                                   internal faces used for the solution of
                                                                   the DG solver. */
 
-  const su2double *LagrangianBeginTimeIntervalADER_DG;  /*!< \brief Array that stores the values of the Lagrangian interpolation
-                                                                    functions of the ADER time DOFs at the beginning of the time
-                                                                    interval, i.e. r == -1. */
+  const su2double *timeCoefADER_DG;                        /*!< \brief The time coefficients in the iteration matrix of
+                                                                       the ADER-DG predictor step. */
   const su2double *timeInterpolDOFToIntegrationADER_DG;    /*!< \brief The interpolation matrix between the time DOFs and
                                                                        the time integration points for ADER-DG. */
   const su2double *timeInterpolAdjDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs of adjacent
@@ -14209,15 +14208,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  virtual void ADER_DG_AliasedPredictorResidual_2D(CConfig           *config,
-                                                   CVolumeElementFEM *elem,
-                                                   const su2double   *sol,
-                                                   su2double         *res,
-                                                   su2double         *work);
+  virtual void ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
+                                                   CVolumeElementFEM    *elem,
+                                                   const su2double      *sol,
+                                                   const unsigned short nSimul,
+                                                   const unsigned short NPad,
+                                                   su2double            *res,
+                                                   su2double            *work);
 
   /*!
    * \brief Virtual function, which computes the spatial residual of the ADER-DG
@@ -14227,15 +14233,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  virtual void ADER_DG_AliasedPredictorResidual_3D(CConfig           *config,
-                                                   CVolumeElementFEM *elem,
-                                                   const su2double   *sol,
-                                                   su2double         *res,
-                                                   su2double         *work);
+  virtual void ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
+                                                   CVolumeElementFEM    *elem,
+                                                   const su2double      *sol,
+                                                   const unsigned short nSimul,
+                                                   const unsigned short NPad,
+                                                   su2double            *res,
+                                                   su2double            *work);
 
   /*!
    * \brief Virtual function, which computes the spatial residual of the ADER-DG
@@ -14245,15 +14258,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  virtual void ADER_DG_NonAliasedPredictorResidual_2D(CConfig           *config,
-                                                      CVolumeElementFEM *elem,
-                                                      const su2double   *sol,
-                                                      su2double         *res,
-                                                      su2double         *work);
+  virtual void ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
+                                                      CVolumeElementFEM    *elem,
+                                                      const su2double      *sol,
+                                                      const unsigned short nSimul,
+                                                      const unsigned short NPad,
+                                                      su2double            *res,
+                                                      su2double            *work);
 
 /*!
    * \brief Virtual function, which computes the spatial residual of the ADER-DG
@@ -14263,15 +14283,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  virtual void ADER_DG_NonAliasedPredictorResidual_3D(CConfig           *config,
-                                                      CVolumeElementFEM *elem,
-                                                      const su2double   *sol,
-                                                      su2double         *res,
-                                                      su2double         *work);
+  virtual void ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
+                                                      CVolumeElementFEM    *elem,
+                                                      const su2double      *sol,
+                                                      const unsigned short nSimul,
+                                                      const unsigned short NPad,
+                                                      su2double            *res,
+                                                      su2double            *work);
 
   /*!
    * \brief Function, which computes the graph of the spatial discretization
@@ -14818,15 +14845,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  void ADER_DG_AliasedPredictorResidual_2D(CConfig           *config,
-                                           CVolumeElementFEM *elem,
-                                           const su2double   *sol,
-                                           su2double         *res,
-                                           su2double         *work);
+  void ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
+                                           CVolumeElementFEM    *elem,
+                                           const su2double      *sol,
+                                           const unsigned short nSimul,
+                                           const unsigned short NPad,
+                                           su2double            *res,
+                                           su2double            *work);
 
 /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
@@ -14836,15 +14870,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  void ADER_DG_AliasedPredictorResidual_3D(CConfig           *config,
-                                           CVolumeElementFEM *elem,
-                                           const su2double   *sol,
-                                           su2double         *res,
-                                           su2double         *work);
+  void ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
+                                           CVolumeElementFEM    *elem,
+                                           const su2double      *sol,
+                                           const unsigned short nSimul,
+                                           const unsigned short NPad,
+                                           su2double            *res,
+                                           su2double            *work);
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
             predictor step for the given volume element and solution using a
@@ -14853,15 +14894,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  void ADER_DG_NonAliasedPredictorResidual_2D(CConfig           *config,
-                                              CVolumeElementFEM *elem,
-                                              const su2double   *sol,
-                                              su2double         *res,
-                                              su2double         *work);
+  void ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
+                                              CVolumeElementFEM    *elem,
+                                              const su2double      *sol,
+                                              const unsigned short nSimul,
+                                              const unsigned short NPad,
+                                              su2double            *res,
+                                              su2double            *work);
 
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
@@ -14871,15 +14919,22 @@ private:
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
    * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[in]  nSimul  - Number of entities (typically time integration points)
+                           that are treated simultaneously.
+   * \param[in]  NPad    - Padded N value in the matrix multiplications to
+                           obtain better performance. The solution sol is stored
+                           with this padded value to avoid a memcpy.
    * \param[out] res     - Residual of the spatial DOFs to be computed by this
                            function.
    * \param[out] work    - Work array.
    */
-  void ADER_DG_NonAliasedPredictorResidual_3D(CConfig           *config,
-                                              CVolumeElementFEM *elem,
-                                              const su2double   *sol,
-                                              su2double         *res,
-                                              su2double         *work);
+  void ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
+                                              CVolumeElementFEM    *elem,
+                                              const su2double      *sol,
+                                              const unsigned short nSimul,
+                                              const unsigned short NPad,
+                                              su2double            *res,
+                                              su2double            *work);
   /*!
    * \brief Function to compute the penalty terms in the integration
             points of a face.
