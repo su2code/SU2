@@ -171,7 +171,7 @@ inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) {
   }
 }
 
-inline su2double* CMeshFEM_DG::GetLagrangianBeginTimeIntervalADER_DG(void) {return LagrangianBeginTimeIntervalADER_DG.data();}
+inline su2double* CMeshFEM_DG::GetTimeCoefADER_DG(void) {return timeCoefADER_DG.data();}
 
 inline su2double* CMeshFEM_DG::GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
 

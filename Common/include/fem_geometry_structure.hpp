@@ -300,9 +300,6 @@ public:
   vector<su2double> invMassMatrix;          /*!< \brief Inverse mass matrix for this element. */
   vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
 
-  vector<su2double> ADERIterationMatrix;    /*!< \brief Iteration matrix used in the predictor step of
-                                                        the ADER-DG scheme. */
-
   vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
   vector<su2double> coorSolDOFs;            /*!< \brief The coordinates of the solution DOFs of this element. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
@@ -851,10 +848,8 @@ private:
                                                                               internal faces used for the geometry of
                                                                               the DG solver. */
 
-  vector<su2double> LagrangianBeginTimeIntervalADER_DG; /*!< \brief Values of the Lagrangian interpolation functions of
-                                                                    the time DOFs at the beginning of the time interval,
-                                                                    i.e. r == -1. */
-
+  vector<su2double> timeCoefADER_DG;                        /*!< \brief The time coefficients in the iteration matrix of
+                                                                        the ADER-DG predictor step. */
   vector<su2double> timeInterpolDOFToIntegrationADER_DG;    /*!< \brief The interpolation matrix between the time DOFs and
                                                                         the time integration points for ADER-DG. */
   vector<su2double> timeInterpolAdjDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs of adjacent
@@ -918,11 +913,12 @@ public:
   void CreateStandardVolumeElements(CConfig *config);
 
  /*!
-  * \brief Function, which makes available the Lagrangian interpolation functions
-           at the begin of the time interval for the time DOFs of ADER-DG.
-  * \return  The Lagrangian interpolation functions at the begin of the interval.
+  * \brief Function, which makes available the time coefficients in the
+           iteration matrix of the ADER-DG predictor step.
+  * \return  The time coefficients in the iteration matrix of ADER-DG.
   */
-  su2double *GetLagrangianBeginTimeIntervalADER_DG(void);
+
+  su2double *GetTimeCoefADER_DG(void);
 
  /*!
   * \brief Function, which makes available the time interpolation matrix between
@@ -1302,13 +1298,10 @@ private:
   void MetricTermsMatchingFaces(CConfig *config);
 
   /*!
-  * \brief Function, which computes the time coefficients in the iteration matrix
-           of the ADER-DG predictor step.
-  * \param[in]  config       - Definition of the particular problem.
-  * \param[out] timeCoefAder - The coefficients to be computed.
+  * \brief Function, which computes the time coefficients for the ADER-DG predictor step.
+  * \param[in] config - Definition of the particular problem.
   */
-  void TimeCoefficientsPredictorADER_DG(CConfig           *config,
-                                        vector<su2double> &timeCoefAder);
+  void TimeCoefficientsPredictorADER_DG(CConfig *config);
 
   /*!
   * \brief Function, which computes the volume metric terms for the given
