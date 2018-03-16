@@ -702,6 +702,44 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
   
 }
 
+bool CGeometry::IsPointInsideFace_3D(su2double *q,su2double **p,short n){
+    short i;
+    su2double m1,m2;
+    su2double anglesum=0,costheta;
+    su2double p1[3],p2[3];
+    su2double EPSILON_ang = 0.0000001;
+    su2double TWOPI = 6.283185307179586476925287;
+    
+    bool Inside = false;
+    
+    for (i=0;i<n;i++) {
+        cout << "i in PointonFace check = " << i << endl;
+        p1[0] = p[i][0] - q[0];
+        p1[1] = p[i][1] - q[1];
+        p1[2]=  p[i][2] - q[2];
+
+        p2[0] = p[(i+1)%n][0] - q[0];
+        p2[1] = p[(i+1)%n][1] - q[1];
+        p2[2] = p[(i+1)%n][2] - q[2];
+        
+        m1 = sqrt(p1[0]*p1[0] + p1[1]*p1[1] + p1[2]*p1[2]);
+        m2 = sqrt(p2[0]*p2[0] + p2[1]*p2[1] + p2[2]*p2[2]);
+
+        if (m1*m2 <= EPSILON)
+            return(TWOPI); // We are on a node, consider this inside
+        else{
+            costheta = (p1[0]*p2[0] + p1[1]*p2[1] + p1[2]*p2[2]) / (m1*m2);
+        }
+        cout << "Before acos in PointonFace routine" << endl;
+        anglesum += acos(costheta);
+    }
+    cout << " AngleSUm  = " << anglesum*360/TWOPI << endl;
+    if (abs(anglesum*360/TWOPI - 360) < EPSILON_ang)
+        Inside = true;
+    
+    return Inside;
+}
+
 void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
                                        su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
                                        vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,

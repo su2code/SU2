@@ -16061,6 +16061,17 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 }*/
                 continue;
             }
+            
+            /* Unit test for checking IsPointInsideHex method */
+            /*su2double probe_check[3];
+            probe_check[0] = 0; probe_check[1] = 2.4; probe_check[2] = 2.5;
+            cout << "Befor probe check " << endl;
+            bool Inside_check = IsPointInsideHex(geometry, probe_check, 0);
+            if(Inside_check)
+                cout << "\\\\\\\\######## probe check point is inside the 2.5x2.5x2.5 cube at origin" << endl;
+            else
+                cout << "\\\\\\\\######## probe check point is NOT inside the 2.5x2.5x2.5 cube at origin" << endl;*/
+            
             if (config->GetExtIter()-config->GetUnst_RestartIter() == 0)
             {
                 
@@ -16071,6 +16082,8 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                     probe_elem = FindProbeLocElement_fromNearestNodeElem3D(geometry, pointID, probe_loc);
                 
                 MeshInterp_Location[i_count] = probe_elem;
+                
+                
                 /*if (i_count == 202)
                     cout << "#Ext iter number = " << config->GetExtIter() << ", elem = " << probe_elem << endl;*/
             }
@@ -16081,13 +16094,14 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             }
             
             nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
-            
+            cout << "For prob_loc[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", located in element " << probe_elem << endl;
             for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                 unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
                 //cout << "Rank " << rank << " - The probe with xcoord = " << probe_loc[0] << " and ycoord = " << probe_loc[1] <<  "is located in elem " << probe_elem << " with node numbers " << geometry->node[iPoint_loc]->GetGlobalIndex() << endl;
                 for (unsigned short iDim=0; iDim < nDim; iDim++) {
                     X_donor[iDim*nNodes_elem + iNode] = geometry->node[iPoint_loc]->GetCoord(iDim);
                 }
+                 cout << " with coords= (" << geometry->node[iPoint_loc]->GetCoord(0) << ", " << geometry->node[iPoint_loc]->GetCoord(1) << ", " << geometry->node[iPoint_loc]->GetCoord(2) << ")" << endl; ;
             }
             
             //if (probe_loc[0]>0.009 && probe_loc[0] < 0.1001)
@@ -16449,7 +16463,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geomet
 unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geometry, unsigned long pointID, su2double *probe_loc){
     /*--- Compute the total number of nodes on no-slip boundaries ---*/
     unsigned long jElem, probe_elem, elemID;
-    unsigned short nDim = geometry->GetnDim();
+
     /* Total number of points in given processor */
     //unsigned long nPoint_proc = geometry->GetnPoint();
     bool Inside=false, FaceIntersect=false;
@@ -16476,15 +16490,14 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
     /* Find the elementID to begin moving towards the probe location from nearest edge */
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
-        
+    
         //cout << "1111111---------- Checking for elem " << geometry->elem[jElem]->GetGlobalIndex() << endl;
         
         count=0;
         /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
-        for (iFace =0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++) {
-            
+        for (iFace =0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++)
+        {
             FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, geometry->node[pointID]->GetCoord(), jElem, iFace);
-            
             if(FaceIntersect)  {
                 //cout << " 11111-------- Face Intersect --------" << endl;
                 count+=1;
@@ -16497,7 +16510,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
         }
         if (count ==4)
         {
-            //cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
+            cout << "First Elem to begin with " << geometry->elem[jElem]->GetGlobalIndex() << endl;
             // Found element where the segment intersects twice
             break;
         }
@@ -16508,7 +16521,6 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
     while (iter < 50)
     {
         /* Check if probe is inside the new element */
-        //Inside = IsPointInsideElement(geometry, probe_loc,newElem);
         Inside = IsPointInsideHex(geometry, probe_loc,newElem);
         if (Inside)
         {
@@ -16541,7 +16553,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
                 
                     neighbor_elem = geometry->elem[newElem]->GetNeighbor_Elements(iFace);
                 
-                    cout << "Neighboring elements are " << neighbor_elem << endl;
+                    //cout << "Neighboring elements are " << neighbor_elem << endl;
                     
                     if (neighbor_elem != ElemIntersectProbeSeg.back())  {
                         ElemIntersectProbeSeg.push_back(newElem);
@@ -16769,13 +16781,26 @@ bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigne
         bool Intersect2 = geometry->SegmentIntersectsTriangle(probe_loc, Elem_CG, Coord_face[2], Coord_face[3], Coord_face[0]);
         
         if (Intersect1 || Intersect2)
-            count += 1;
+        {
+            /* Check if probe is on a face */
+            cout << "Before point on face check " << endl;
+            bool IsPointOnFace = geometry->IsPointInsideFace_3D(probe_loc, Coord_face, nNodes_face);
+            
+            /* Increase the count only if the probe is not located on the face */
+            if (!IsPointOnFace)
+                count += 1;
+        }
         
     }
     
     if (count > 0)
         Inside = false;
-
+    
+    
+    if(Inside)
+        cout << "probe_lco is inside probe_elem" << endl;
+    else
+        cout << "Not located inside the element" << endl;
     
     for (iNode = 0; iNode < nNodes_elem; iNode++) {
         delete [] Coord_elem[iNode];
@@ -16786,7 +16811,7 @@ bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigne
         delete [] Coord_face[iNode];
     }
     delete [] Coord_face;
-    
+    cout << "End of IsInsideHex routine" << endl;
     return Inside;
 
 }

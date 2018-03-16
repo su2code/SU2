@@ -893,6 +893,7 @@ public:
   bool SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
                                  su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
+  bool IsPointInsideFace_3D(su2double *q,su2double **p,short n);
   /*!
    * \brief Segment Intersects Line (for 2D FFD Intersection)
    */
