@@ -824,18 +824,21 @@ public:
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_turb_ke - Turbulent kinetic energy
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
    * \param[in] val_thermal_conductivity - Thermal conductivity.
    */
   
-  void GetViscousArtCompProjFlux(su2double **val_gradprimvar,
+  void GetViscousArtCompProjFlux(su2double *val_primvar,
+                                 su2double **val_gradprimvar,
                                  su2double *val_normal,
                                  su2double val_laminar_viscosity,
                                  su2double val_eddy_viscosity,
+                                 su2double val_turb_ke,
                                  su2double val_thermal_conductivity);
-  
+
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
    * \param[in] val_velocity Pointer to the velocity.
@@ -3096,8 +3099,11 @@ public:
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
+  su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
+  *PrimVar_i, *PrimVar_j;           /*!< \brief Primitives variables at point i and j. */
   su2double **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the effective thermal conductivity. */
   dist_ij,              /*!< \brief Length of the edge and face. */
   proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
@@ -3475,10 +3481,12 @@ public:
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
+  su2double *Mean_PrimVar;           /*!< \brief Mean primitive variables. */
   su2double *PrimVar_i, *PrimVar_j,      /*!< \brief Primitives variables at point i and 1. */
   *Edge_Vector,                /*!< \brief Vector form point i to point j. */
   **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,      /*!< \brief Mean value of the viscosity. */
+  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_Thermal_Conductivity, Mean_Cp, /*!< \brief Mean value of the effective thermal conductivity and specific heat at constant pressure. */
   dist_ij_2,          /*!< \brief Length of the edge and face. */
   proj_vector_ij;     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */

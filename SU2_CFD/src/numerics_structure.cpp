@@ -1871,11 +1871,19 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 
 }
 
-void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double *val_normal, su2double val_laminar_viscosity, su2double val_eddy_viscosity, su2double val_thermal_conductivity) {
+void CNumerics::GetViscousArtCompProjFlux(su2double *val_primvar,
+                                          su2double **val_gradprimvar,
+                                          su2double *val_normal,
+                                          su2double val_laminar_viscosity,
+                                          su2double val_eddy_viscosity,
+                                          su2double val_turb_ke,
+                                          su2double val_thermal_conductivity) {
 
   unsigned short iVar, iDim, jDim;
-  su2double total_viscosity, div_vel;
-  
+  su2double total_viscosity, div_vel, Density;
+
+  Density = val_primvar[nDim+2];
+
   total_viscosity = (val_laminar_viscosity + val_eddy_viscosity);
 
   /*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
@@ -1888,7 +1896,8 @@ void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = (total_viscosity*(val_gradprimvar[jDim+1][iDim] +
                                           val_gradprimvar[iDim+1][jDim] )
-                         -TWO3*total_viscosity*div_vel*delta[iDim][jDim]);
+                         -TWO3*total_viscosity*div_vel*delta[iDim][jDim]
+                         -TWO3*Density*val_turb_ke*delta[iDim][jDim]);
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
 
