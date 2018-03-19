@@ -53,17 +53,9 @@ jobs:
                 # Parallel build and test for AD:
                 #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
                 # TEST_SCRIPT=parallel_regression_AD.py
-
-        before_install:
-            #- sh travis/before_install.sh
-
-        install:
-            #- sh travis/install.sh
-
-        before_script:
-            #- sh travis/before_script.sh
-            
+  
         script:
+            - echo "TESTING"
             #- python $TEST_SCRIPT
 
         - stage: Deploy
