@@ -37,8 +37,7 @@ env:
         CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
-        TEST_SCRIPT=serial_regression.py
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER" TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
         #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
@@ -56,14 +55,14 @@ script:
     - echo TESTING
     #- python $TEST_SCRIPT
 
-# jobs:
-#     include:
-#         - stage: Deploy
-#           python: 2.7
-#           script:
-#               - GH_REPO_NAME=Doxygen
-#               - DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
-#               - GH_REPO_REF=github.com/su2code/Doxygen.git
-#               - sh doc/generateDocumentationAndDeploy.sh
+jobs:
+    include:
+        - stage: Deploy
+          python: 2.7
+          script:
+              - GH_REPO_NAME=Doxygen
+              - DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
+              - GH_REPO_REF=github.com/su2code/Doxygen.git
+              - sh doc/generateDocumentationAndDeploy.sh
 
     
