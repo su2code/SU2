@@ -51,7 +51,7 @@ PROJECT_BRIEF          = "Software suite for the simulation and design of aerosp
 # and the maximum width should not exceed 200 pixels. Doxygen will copy the logo
 # to the output directory.
 
-PROJECT_LOGO           = Logo/logoSU2_v3.3_small.png
+PROJECT_LOGO           = ../doc/Logo/logoSU2_v3.3_small.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
 # into which the generated documentation will be written. If a relative path is
