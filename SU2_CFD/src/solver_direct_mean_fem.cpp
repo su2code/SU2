@@ -11087,8 +11087,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
   const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
   const unsigned short nDOFs              = elem->nDOFsSol;
   const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
-  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
-  const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+  const su2double *mat2ndDerBasisInt      = standardElementsSol[ind].GetMat2ndDerBasisFunctionsInt();
   const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
   const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
 
@@ -11118,10 +11117,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 
   /* Set the pointer for the second derivatives such that they are stored
      after the first derivatives. */
-  const unsigned short offPoint = 3*NPad*max(nInt, nDOFs);  /*(nDim+1)*NPad*max(..). */
-  su2double *secDerSoldrdr      = solAndGradInt + offPoint;
-  su2double *secDerSoldrds      = secDerSoldrdr + offDerivInt;
-  su2double *secDerSoldsds      = secDerSoldrds + offDerivInt;
+  su2double *secDerSol = solAndGradInt + 3*NPad*nInt;   /*(nDim+1)*NPad*nInt. */
 
   /* Store the number of metric points per integration point for readability. */
   const unsigned short nMetricPerPoint = 5;  /* nDim*nDim + 1. */
@@ -11138,35 +11134,18 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
   /*--- parametric coordinates.                                            ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* The computation of the second derivatives happens in two stages. First
-     the first derivatives in the DOFs are determined. */
-  su2double *gradSolDOFs = solAndGradInt;
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_1",
-                    nDOFs*nDim, NPad, nDOFs);
-
-  /* The second derivatives are obtained by differentiating the 1st derivatives
-     one more time. First compute the derivatives drdr. As the Hessian is
-     symmetric, it is not needed to compute the dsdr derivative. */
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt, NPad, nDOFs, matDerBasisInt, gradSolDOFs, secDerSoldrdr);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_2",
-                    nInt, NPad, nDOFs);
-
-  /* Compute the derivatives drds and dsds. These can be computed with one call
-     due to the storage of the r and s derivatives in gradSolDOFs. */
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt*2, NPad, nDOFs, matDerBasisInt,
-                     gradSolDOFs+NPad*nDOFs, secDerSoldrds);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_3",
-                    nInt*2, NPad, nDOFs);
-
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. The first argument is nInt*(nDim+1). */
   config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt*3, nVar, nDOFs, matBasisInt, sol, solAndGradInt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_4",
+  DenseMatrixProduct(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
+  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_1",
+                    nInt*3, NPad, nDOFs);
+
+  /* Compute the second derivatives w.r.t. the parametric coordinates
+     in the integration points. */
+  config->GEMM_Tick(&tick);
+  DenseMatrixProduct(nInt*3, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
+  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_2",
                     nInt*3, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
@@ -11189,9 +11168,9 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 
       /* Easier storage of the locations where the second derivatives are
          stored for this integration point. */
-      const su2double *solDrDr = secDerSoldrdr + offInt;
-      const su2double *solDsDs = secDerSoldsds + offInt;
-      const su2double *solDrDs = secDerSoldrds + offInt;
+      const su2double *solDrDr = secDerSol + offInt;
+      const su2double *solDrDs = solDrDr   + offDerivInt;
+      const su2double *solDsDs = solDrDs   + offDerivInt;
 
       /* Compute the velocities, pressure and total enthalpy
          in this integration point. */
@@ -11435,7 +11414,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_5",
+  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_3",
                     nDOFs, NPad, nInt);
 }
 
@@ -11462,8 +11441,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
   const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
   const unsigned short nDOFs              = elem->nDOFsSol;
   const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
-  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
-  const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+  const su2double *mat2ndDerBasisInt      = standardElementsSol[ind].GetMat2ndDerBasisFunctionsInt();
   const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
   const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
 
@@ -11494,13 +11472,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
   /* Set the pointer for the second derivatives such that they are stored
      after the first derivatives. */
-  const unsigned short offPoint = 4*NPad*max(nInt, nDOFs);  /*(nDim+1)*NPad*max(..). */
-  su2double *secDerSoldrdr      = solAndGradInt + offPoint;
-  su2double *secDerSoldrds      = secDerSoldrdr + offDerivInt;
-  su2double *secDerSoldsds      = secDerSoldrds + offDerivInt;
-  su2double *secDerSoldrdt      = secDerSoldsds + offDerivInt;
-  su2double *secDerSoldsdt      = secDerSoldrdt + offDerivInt;
-  su2double *secDerSoldtdt      = secDerSoldsdt + offDerivInt;
+  su2double *secDerSol = solAndGradInt + 4*NPad*nInt;  /*(nDim+1)*NPad*nInt. */
 
   /* Store the number of metric points per integration point for readability. */
   const unsigned short nMetricPerPoint = 10;  /* nDim*nDim + 1. */
@@ -11517,45 +11489,19 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
   /*--- parametric coordinates.                                            ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* The computation of the second derivatives happens in two stages. First
-     the first derivatives in the DOFs are determined. */
-  su2double *gradSolDOFs = solAndGradInt;
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_1",
-                    nDOFs*nDim, NPad, nDOFs);
-
-  /* The second derivatives are obtained by differentiating the 1st derivatives
-     one more time. First compute the derivatives drdr. As the Hessian is
-     symmetric, it is not needed to compute the dsdr and dtdr derivatives. */
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt, NPad, nDOFs, matDerBasisInt, gradSolDOFs, secDerSoldrdr);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_2",
-                    nInt, NPad, nDOFs);
-
-  /* Compute the derivatives drds and dsds. These can be computed with one call
-     due to the storage of the r and s derivatives in gradSolDOFs. As the
-     Hessian is symmetric, it is not needed to compute the dtds derivative. */
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt*2, NPad, nDOFs, matDerBasisInt,
-                     gradSolDOFs+NPad*nDOFs, secDerSoldrds);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_3",
-                    nInt*2, NPad, nDOFs);
-
-  /* Compute the derivatives drdt, dsdt and dtdt. These can be computed with one
-     call due to the storage of the r, s and t derivatives in gradSolDOFs. */
-  config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt*3, NPad, nDOFs, matDerBasisInt,
-                     gradSolDOFs+2*NPad*nDOFs, secDerSoldrdt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_4",
-                    nInt*3, NPad, nDOFs);
-
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. The first argument is nInt*(nDim+1). */
   config->GEMM_Tick(&tick);
-  DenseMatrixProduct(nInt*4, nVar, nDOFs, matBasisInt, sol, solAndGradInt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_5",
+  DenseMatrixProduct(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
+  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_1",
                     nInt*4, NPad, nDOFs);
+
+  /* Compute the second derivatives w.r.t. the parametric coordinates 
+     in the integration points. */
+  config->GEMM_Tick(&tick);
+  DenseMatrixProduct(nInt*6, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
+  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_2",
+                    nInt*6, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of viscous fluxes, multiplied by the        ---*/
@@ -11578,12 +11524,12 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
       /* Easier storage of the locations where the second derivatives are
          stored for this integration point. */
-      const su2double *solDrDr = secDerSoldrdr + offInt;
-      const su2double *solDsDs = secDerSoldsds + offInt;
-      const su2double *solDtDt = secDerSoldtdt + offInt;
-      const su2double *solDrDs = secDerSoldrds + offInt;
-      const su2double *solDrDt = secDerSoldrdt + offInt;
-      const su2double *solDsDt = secDerSoldsdt + offInt;
+      const su2double *solDrDr = secDerSol + offInt;
+      const su2double *solDrDs = solDrDr   + offDerivInt;
+      const su2double *solDsDs = solDrDs   + offDerivInt;
+      const su2double *solDrDt = solDsDs   + offDerivInt;
+      const su2double *solDsDt = solDrDt   + offDerivInt;
+      const su2double *solDtDt = solDsDt   + offDerivInt;
 
       /* Compute the velocities, pressure and total enthalpy
          in this integration point. */
@@ -11992,7 +11938,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_6",
+  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_3",
                     nDOFs, NPad, nInt);
 }
 

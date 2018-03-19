@@ -823,6 +823,9 @@ private:
                                                       DOFs. This differs from matDerBasisSolDOFs when the grid DOFs and the
                                                       solution DOFs do not coincide. This data is needed for the computation
                                                       of the derivatives of the metric terms. */
+  vector<su2double> mat2ndDerBasisInt;    /*!< \brief Matrix which contains all possible second derivatives of the basis functions
+                                                      in the integration points. As such second derivatives can be computed
+                                                      using one call to the BLAS routines. */
 
   vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
                                                 such that the element is to the left of the face. */
@@ -954,6 +957,13 @@ public:
   * \return  The pointer to matDerBasisSolDOFs.
   */
   const su2double *GetMatDerBasisFunctionsSolDOFs(void) const;
+
+  /*!
+  * \brief Function, which makes available the matrix storage of the second derivativex of the basis functions
+           in the integration points.
+  * \return  The pointer to mat2ndDerBasisInt.
+  */
+  const su2double *GetMat2ndDerBasisFunctionsInt(void) const;
 
   /*!
   * \brief Function, which makes available the connectivity of face 0.
