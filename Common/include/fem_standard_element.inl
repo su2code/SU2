@@ -73,6 +73,8 @@ inline const su2double* FEMStandardElementClass::GetMatDerBasisFunctionsOwnDOFs(
 
 inline const su2double* FEMStandardElementClass::GetMatDerBasisFunctionsSolDOFs(void) const {return matDerBasisSolDOFs.data();}
 
+inline const su2double* FEMStandardElementClass::GetMat2ndDerBasisFunctionsInt(void) const {return mat2ndDerBasisInt.data();}
+
 inline unsigned short* FEMStandardElementClass::GetConnFace0(void){return connFace0.data();}
 
 inline unsigned short* FEMStandardElementClass::GetConnFace1(void){return connFace1.data();}
