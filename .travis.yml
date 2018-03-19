@@ -80,8 +80,8 @@ before_install:
 
 install:
     # Configure, make, and install SU2
-    #- echo $TRAVIS_BUILD_DIR
-    #- echo $CONFIGURE_COMMAND
+    - echo $TRAVIS_BUILD_DIR
+    - echo $CONFIGURE_COMMAND
     #- $CONFIGURE_COMMAND
     #- make -j 4
     #- make install
@@ -92,7 +92,7 @@ install:
     #- export PATH=$PATH:$SU2_RUN
     #- export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-before_script:
+      #before_script:
     # Get the test cases
     #- git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     #- cp -R ./TestData/* ./TestCases/
