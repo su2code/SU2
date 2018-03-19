@@ -81,7 +81,7 @@ doxygen $DOXYFILE 2>&1 | tee doxygen.log
 # both exist. This is a good indication that Doxygen did it's work.
 if [ -d "html" ] && [ -f "html/index.html" ]; then
 
-    echo 'Uploading documentation to the gh-pages branch...'
+    echo 'Uploading documentation to the ${TRAVIS_BRANCH} branch...'
     # Add everything in this directory (the Doxygen code documentation) to the
     # gh-pages branch.
     # GitHub is smart enough to know which files have changed and which files have
