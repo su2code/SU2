@@ -40,13 +40,13 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER" TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER" TEST_SCRIPT=parallel_regression.py
+        #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER" TEST_SCRIPT=parallel_regression.py
         
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff" TEST_SCRIPT=serial_regression_AD.py
+        #- CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff" TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff" TEST_SCRIPT=parallel_regression_AD.py
+        #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff" TEST_SCRIPT=parallel_regression_AD.py
 
 script:
     - echo $CONFIGURE_COMMAND
@@ -57,8 +57,10 @@ jobs:
         - stage: Deploy
           python: 2.7
           env:
-            global:
-                GH_REPO_NAME=Doxygen DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile GH_REPO_REF=github.com/su2code/Doxygen.git
+              global:
+                  GH_REPO_NAME=Doxygen 
+                  DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
+                  GH_REPO_REF=github.com/su2code/Doxygen.git
           script:
               - sh doc/generateDocumentationAndDeploy.sh
 
