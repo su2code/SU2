@@ -54,7 +54,7 @@ script:
 
 jobs:
     include:
-        - stage: Deploy
+        - stage: Documentation
           python: 2.7
           script:
               - export GH_REPO_NAME=Doxygen
@@ -63,3 +63,6 @@ jobs:
               - sh doc/generateDocumentationAndDeploy.sh
 
     
+stages:
+    - name: Documentation
+      if: base_branch = auto_doxygen_test or branch = auto_doxygen_test 
