@@ -31,6 +31,7 @@
 
 #include "../include/fem_standard_element.hpp"
 #include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/dense_matrix_product.hpp"
 
 #ifdef HAVE_MKL
 #include "mkl.h"
@@ -2004,7 +2005,7 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
                                            matVandermondeInv, lagBasisSolDOFs, matDerBasisSolDOFs);
 
   /*--------------------------------------------------------------------------*/
-  /*--- Create the data of the derivatives of the basis functions  in the  ---*/
+  /*--- Create the data of the derivatives of the basis functions in the   ---*/
   /*--- owned DOFs of the element. This data is needed for the computation ---*/
   /*--- of the derivatives of the metric terms in the integration points   ---*/
   /*--- when the grid DOFs do not coincide with the solution DOFs.         ---*/
@@ -2014,6 +2015,49 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   vector<su2double> dummyMatVandermondeInv;
   CreateBasisFunctionsAndMatrixDerivatives(rDOFs, sDOFs, tDOFs,
                                            dummyMatVandermondeInv, dummyLagBasis, matDerBasisOwnDOFs);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Create the data of the second derivatives of the basis functions   ---*/
+  /*--- in the integration points of the element. This data is needed for  ---*/
+  /*--- the ADER preconditioning step when the Navier-Stokes equations are ---*/
+  /*--- solved and can be obtained by multiplying matBasisIntegration and  ---*/
+  /*--- matDerBasisSolDOFs.                                                ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Easier storage of the offset between the derivatives for matBasisIntegration
+     and matDerBasisSolDOFs. */
+  const unsigned long offsetDerInt  = nDOFs*nIntegration;
+  const unsigned long offsetDerDOFs = nDOFs*nDOFs;
+
+  /* Determine the size of the vector to store the second derivatives of the
+     basis functions in the integration points. */
+  const unsigned long sizeMat2ndDer = offsetDerInt*nDim*(nDim+1)/2;
+  mat2ndDerBasisInt.resize(sizeMat2ndDer);
+
+  /* Loop over the number of dimensions to carry out the matrix multiplications. */
+  const su2double *matDerBasisInt = matBasisIntegration.data();
+  su2double       *mat2ndDerBasisIntPoint = mat2ndDerBasisInt.data();
+  for(unsigned short jDim=0; jDim<nDim; ++jDim) {
+
+    /* Update the pointer matDerBasisInt to point to the correct derivative.
+       As in matBasisIntegration also the interpolation data is stored, this
+       update must happen before the matrix multiplication. */
+    matDerBasisInt = matDerBasisInt + offsetDerInt;
+
+    /* Second loop over the dimensions. Note that this loop only runs until
+       iDim, because the Hessian is symmetric. */
+    for(unsigned short iDim=0; iDim<=jDim; iDim++)
+    {
+      /* Carry out the matrix multiplication. */
+      DenseMatrixProduct(nIntegration, nDOFs, nDOFs, matDerBasisInt,
+                         matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
+                         mat2ndDerBasisIntPoint);
+
+      /* Update the pointer to the position where the next second
+         derivative will be stored. */
+      mat2ndDerBasisIntPoint = mat2ndDerBasisIntPoint + offsetDerInt;
+    }
+  }
 }
 
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
