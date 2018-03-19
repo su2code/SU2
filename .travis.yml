@@ -76,9 +76,9 @@ install:
     # Configure, make, and install SU2
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
-    - $CONFIGURE_COMMAND
-    - make -j 4
-    - make install
+      #- $CONFIGURE_COMMAND
+      #- make -j 4
+      #- make install
 
     # Add environmental variables according to the configure step
     - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
@@ -88,18 +88,18 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
-    - cp -R ./TestData/* ./TestCases/
+    #- git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    #- cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b master https://github.com/su2code/su2code.github.io ./Tutorials
+    #- git clone -b master https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
-    - cd TestCases/
+    #- cd TestCases/
 
 script: 
     # Run the tests via the Python scripts
-    - python $TEST_SCRIPT
+    #- python $TEST_SCRIPT
 
 jobs:
     include:
