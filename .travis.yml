@@ -56,14 +56,14 @@ script:
     - echo TESTING
     #- python $TEST_SCRIPT
 
-jobs:
-    include:
-        - stage: Deploy
-          python: 2.7
-          script:
-              - GH_REPO_NAME=Doxygen
-              - DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
-              - GH_REPO_REF=github.com/su2code/Doxygen.git
-              - sh doc/generateDocumentationAndDeploy.sh
+# jobs:
+#     include:
+#         - stage: Deploy
+#           python: 2.7
+#           script:
+#               - GH_REPO_NAME=Doxygen
+#               - DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
+#               - GH_REPO_REF=github.com/su2code/Doxygen.git
+#               - sh doc/generateDocumentationAndDeploy.sh
 
     
