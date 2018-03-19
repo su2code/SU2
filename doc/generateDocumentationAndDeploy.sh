@@ -39,10 +39,6 @@ echo 'Setting up the script...'
 # Exit with nonzero exit code if anything fails
 set -e
 
-# Create a clean working directory for this script.
-mkdir code_docs
-cd code_docs
-
 # Get the current gh-pages branch
 git clone https://git@$GH_REPO_REF
 cd $GH_REPO_NAME

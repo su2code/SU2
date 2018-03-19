@@ -51,7 +51,7 @@ PROJECT_BRIEF          = "Software suite for the simulation and design of aerosp
 # and the maximum width should not exceed 200 pixels. Doxygen will copy the logo
 # to the output directory.
 
-PROJECT_LOGO           = ../Logo/logoSU2_v3.3_small.png
+PROJECT_LOGO           = Logo/logoSU2_v3.3_small.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
 # into which the generated documentation will be written. If a relative path is
@@ -753,13 +753,13 @@ WARN_LOGFILE           =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = Common \
-                         SU2_DEF \
-                         SU2_MSH \
-                         SU2_DOT \
-                         SU2_GEO \
-			 SU2_SOL \
-                         SU2_CFD
+INPUT                  = ../Common \
+                         ../SU2_DEF \
+                         ../SU2_MSH \
+                         ../SU2_DOT \
+                         ../SU2_GEO \
+			 ../SU2_SOL \
+                         ../SU2_CFD
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

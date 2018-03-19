@@ -33,7 +33,7 @@ env:
         # Serial build and test
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
           TEST_SCRIPT=serial_regression.py
-          DOXYGEN_SCRIPT=./generateDocumentationAndDeploy.sh
+          DOXYGEN_SCRIPT=doc/generateDocumentationAndDeploy.sh
 
         # Parallel build and test
         #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
@@ -51,7 +51,6 @@ addons:
     packages:
       - doxygen
       - doxygen-doc
-      - doxygen-latex
       - doxygen-gui
       - graphviz
 
@@ -107,5 +106,5 @@ script:
     # Run the tests via the Python scripts
     #- python $TEST_SCRIPT
     # Update Documentation
-    - sh generateDocumentationAndDeploy.sh
+    - sh $DOXYGEN_SCRIPT
     
