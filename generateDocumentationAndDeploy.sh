@@ -44,7 +44,7 @@ mkdir code_docs
 cd code_docs
 
 # Get the current gh-pages branch
-git clone -b Doxygen https://git@$GH_REPO_REF
+git clone -b ${TRAVIS_BRANCH} https://git@$GH_REPO_REF
 cd $GH_REPO_NAME
 
 ##### Configure git.
