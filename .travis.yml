@@ -56,12 +56,10 @@ jobs:
     include:
         - stage: Deploy
           python: 2.7
-          env:
-              global:
-                  GH_REPO_NAME=Doxygen 
-                  DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
-                  GH_REPO_REF=github.com/su2code/Doxygen.git
           script:
+              - export GH_REPO_NAME=Doxygen
+              - export DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
+              - export GH_REPO_REF=github.com/su2code/Doxygen.git
               - sh doc/generateDocumentationAndDeploy.sh
 
     
