@@ -4,20 +4,24 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +55,6 @@ using namespace std;
  * \class CElement
  * \brief Main class for defining the element structure.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CElement {
@@ -460,7 +463,6 @@ public:
  * \class CTRIA1
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CTRIA1 : public CElement {
@@ -520,7 +522,6 @@ public:
  * \class CQUAD4
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CQUAD4 : public CElement {
@@ -585,7 +586,6 @@ public:
  * \class CQUAD1
  * \brief Quadrilateral element with 1 Gauss Point
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CQUAD1 : public CElement {
@@ -638,7 +638,6 @@ public:
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CTETRA1 : public CElement {
@@ -697,7 +696,6 @@ public:
  * \class CHEXA8
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CHEXA8 : public CElement {
@@ -762,7 +760,6 @@ public:
  * \class CPYRAM5
  * \brief Pyramid element with 5 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 5.0.0 "Raven"
  */
 
 class CPYRAM5 : public CElement {
@@ -854,7 +851,6 @@ public:
  * \class CHEXA1
  * \brief Hexahedral element with 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
  */
 
 class CHEXA1 : public CElement {

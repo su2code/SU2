@@ -18,7 +18,6 @@ branches:
     only:
         - auto_doxygen_test
 
-
 python:
     - 2.7
     - 3.6
@@ -31,30 +30,80 @@ addons:
       - doxygen-gui
       - graphviz
 
-
 env:
     global:
         CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER" TEST_SCRIPT=serial_regression.py
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
+          TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
-        #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER" TEST_SCRIPT=parallel_regression.py
-        
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
+          TEST_SCRIPT=parallel_regression.py
+
         # Serial build and test for AD
-        #- CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff" TEST_SCRIPT=serial_regression_AD.py
+        - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+          TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff" TEST_SCRIPT=parallel_regression_AD.py
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+          TEST_SCRIPT=parallel_regression_AD.py
 
-script:
+before_install:
+    # Temporarily fixes Travis CI issue with paths for Python packages
+    - export PATH=/usr/bin:$PATH
+
+    # Install the necessary packages using apt-get with sudo
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq build-essential libopenmpi-dev
+ 
+    # Install Python dependencies
+    # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    - conda install -q python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
+
+    # to avoid interference with MPI
+    - test -n $CC  && unset CC
+    - test -n $CXX && unset CXX
+
+install:
+    # Configure, make, and install SU2
+    - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
-    #- python $TEST_SCRIPT
+    - $CONFIGURE_COMMAND
+    - make -j 4
+    - make install
+
+    # Add environmental variables according to the configure step
+    - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
+    - export SU2_HOME=$TRAVIS_BUILD_DIR
+    - export PATH=$PATH:$SU2_RUN
+    - export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+
+before_script:
+    # Get the test cases
+    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - cp -R ./TestData/* ./TestCases/
+
+    # Get the tutorial cases
+    - git clone -b master https://github.com/su2code/su2code.github.io ./Tutorials
+    
+    # Enter the SU2/TestCases/ directory, which is now ready to run
+    - cd TestCases/
+
+script: 
+    # Run the tests via the Python scripts
+    - python $TEST_SCRIPT
 
 jobs:
     include:
-        - stage: Documentation
+        - stage: doxygen
           python: 2.7
           script:
               - export GH_REPO_NAME=Doxygen
@@ -64,5 +113,7 @@ jobs:
 
     
 stages:
-    - name: Documentation
+    - test
+    - name: doxygen
       if: base_branch = auto_doxygen_test or branch = auto_doxygen_test 
+

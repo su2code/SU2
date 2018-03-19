@@ -2,20 +2,24 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +43,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo;
+  bool fsi, turbo, zone_specific;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -74,6 +78,7 @@ int main(int argc, char *argv[]) {
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi   = config->GetFSI_Simulation();
   turbo = config->GetBoolTurbomachinery();
+  zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -118,6 +123,8 @@ int main(int argc, char *argv[]) {
       driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
     }
 
+  } else if (zone_specific) {
+    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, nDim, MPICommunicator);
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default

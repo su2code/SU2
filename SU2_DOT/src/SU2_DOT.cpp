@@ -2,18 +2,24 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ *
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -159,10 +165,12 @@ int main(int argc, char *argv[]) {
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
     geometry_container[iZone]->SetBoundVolume();
-    geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
-    geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+    if (config_container[iZone]->GetReorientElements()) {
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
+      geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+      geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+    }
   
   /*--- Create the edge structure ---*/
   
@@ -601,6 +609,15 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   AD::StopRecording();
   
+  /*--- Create a structure to identify points that have been already visited. 
+   * We need that to make sure to set the sensitivity of surface points only once
+   *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
+  
+  bool* visited = new bool[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    visited[iPoint] = false;
+  }
+  
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
   
@@ -609,26 +626,31 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
-        VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-        Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
-        
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++){
-          Area += Normal[iDim]*Normal[iDim];
-        }
-        Area = sqrt(Area);
-        
-        for (iDim = 0; iDim < nDim; iDim++){
-          if (config->GetDiscrete_Adjoint()){
-            Sensitivity = geometry->GetSensitivity(iPoint, iDim);
-          } else {
-            Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
+        if (!visited[iPoint]){
+          VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+          Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            Area += Normal[iDim]*Normal[iDim];
           }
-          SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
+          Area = sqrt(Area);
+          
+          for (iDim = 0; iDim < nDim; iDim++){
+            if (config->GetDiscrete_Adjoint()){
+              Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+            } else {
+              Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
+            }
+            SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
+          }
+          visited[iPoint] = true;
         }
       }
     }
   }
+  
+  delete [] visited;
   
   /*--- Compute derivatives and extract gradient ---*/
   

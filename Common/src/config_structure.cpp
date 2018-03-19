@@ -2,20 +2,24 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -290,6 +294,9 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
   Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
   Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
+  Marker_CfgFile_Turbomachinery = NULL; Marker_All_Turbomachinery = NULL;
+  Marker_CfgFile_TurbomachineryFlag = NULL; Marker_All_TurbomachineryFlag = NULL;
+  Marker_CfgFile_MixingPlaneInterface = NULL; Marker_All_MixingPlaneInterface = NULL;
   Marker_CfgFile_ZoneInterface = NULL;
   Marker_CfgFile_PyCustom     = NULL;   Marker_All_PyCustom      = NULL;
   
@@ -317,7 +324,7 @@ void CConfig::SetPointersNull(void) {
   Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
   Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
   Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
-  Marker_Fluid_InterfaceBound = NULL;    Marker_Damper           = NULL;
+  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper           = NULL;
 
   
     /*--- Boundary Condition settings ---*/
@@ -408,6 +415,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
+  Kappa_Heat          = NULL;
   Stations_Bounds     = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
@@ -460,6 +468,7 @@ void CConfig::SetPointersNull(void) {
   default_rampRotFrame_coeff = NULL;
   default_rampOutPres_coeff  = NULL;
   default_jst_adj_coeff      = NULL;
+  default_ad_coeff_heat      = NULL;
   default_obj_coeff          = NULL;
   default_geo_loc            = NULL;
   default_distortion         = NULL;
@@ -487,6 +496,7 @@ void CConfig::SetPointersNull(void) {
   RelaxFactorAverage       = NULL;
   RelaxFactorFourier       = NULL;
   nSpan_iZones             = NULL;
+  FinalRotation_Rate_Z     = NULL;
   ExtraRelFacGiles         = NULL;
   Mixedout_Coeff           = NULL;
   RampRotatingFrame_Coeff  = NULL;
@@ -517,6 +527,7 @@ void CConfig::SetPointersNull(void) {
 
   Grid_Movement = false;
   Aeroelastic_Simulation = false;
+  ZoneSpecific_Problem = false;
 
   nSpanMaxAllZones = 1;
   
@@ -549,6 +560,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_rampRotFrame_coeff = new su2double[3];
   default_rampOutPres_coeff  = new su2double[3];
   default_jst_adj_coeff      = new su2double[2];
+  default_ad_coeff_heat      = new su2double[2];
   default_obj_coeff          = new su2double[5];
   default_geo_loc            = new su2double[2];
   default_distortion         = new su2double[2];
@@ -557,7 +569,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_inc_crit           = new su2double[3];
   default_htp_axis           = new su2double[2];
   default_body_force         = new su2double[3];
-  default_nacelle_location   = new su2double[6];
+  default_nacelle_location   = new su2double[5];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -575,6 +587,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
+  /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
+  addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -582,6 +596,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
+
+  /*!\brief HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
+  addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
@@ -686,6 +703,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
+  /* DESCRIPTION: Heat capacity used for heat equation */
+  addDoubleOption("SPECIFIC_HEAT_FLUID", Specific_Heat_Fluid, 0.0);
+  /* DESCRIPTION: Heat capacity used for heat equation */
+  addDoubleOption("SPECIFIC_HEAT_SOLID", Specific_Heat_Solid, 0.0);
+  /* DESCRIPTION: Thermal conductivity used for heat equation */
+  addDoubleOption("THERMAL_CONDUCTIVITY_SOLID", Thermal_Conductivity_Solid, 0.0);
+  /* DESCRIPTION: Solids temperature at freestream conditions */
+  addDoubleOption("TEMPERATURE_FREESTREAM_SOLID", Temperature_Freestream_Solid, 288.15);
+  /* DESCRIPTION: Density used in solids */
+  addDoubleOption("DENSITY_SOLID", Density_Solid, 0.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
@@ -709,7 +736,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
   addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
   /* DESCRIPTION: Evaluate the dOF_dCL or dOF_dCMy during run time. */
-  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, true);
+  addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, false);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
@@ -790,6 +817,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
+  /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_CHT_INTERFACE", nMarker_CHTInterface, Marker_CHTInterface);
   /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
@@ -915,6 +944,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Fan poly efficiency */
   addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
+  addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
+  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
@@ -973,6 +1004,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
+  /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid in (heat fvm) solid solvers */
+  addDoubleOption("CFL_NUMBER_SOLID", CFLSolid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   /* DESCRIPTION: Activate The adaptive CFL number. */
@@ -1033,6 +1066,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
+  addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
+  /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
@@ -1046,8 +1081,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation for the FVM heat solver. */
+  addDoubleOption("LINEAR_SOLVER_ERROR_HEAT", Linear_Solver_Error_Heat, 1E-8);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /* DESCRIPTION: Max iterations of the linear solver for the FVM heat solver. */
+  addUnsignedLongOption("LINEAR_SOLVER_ITER_HEAT", Linear_Solver_Iter_Heat, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -1058,10 +1097,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
   /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
+  /* DESCRIPTION: Relaxation of the CHT coupling */
+  addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
   /* DESCRIPTION: Roe coefficient */
   addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
-  addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
+  addBoolOption("LOW_MACH_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Post-reconstruction correction for low Mach number flows */
   addBoolOption("LOW_MACH_CORR", Low_Mach_Corr, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -1180,6 +1221,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax–Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
+  default_ad_coeff_heat[0] = 0.5; default_ad_coeff_heat[1] = 0.02;
+  /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1212,6 +1256,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
+
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
+  /*!\brief CONV_NUM_METHOD_HEAT
+   *  \n DESCRIPTION: Convective numerical method \n DEFAULT: UPWIND */
+  addEnumOption("CONV_NUM_METHOD_HEAT", Kind_ConvNumScheme_Heat, Space_Map, SPACE_UPWIND);
 
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
@@ -1259,9 +1309,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
-  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0; default_nacelle_location[5] = 0.0;
-  /* DESCRIPTION: Definition of the nacelle location (point and axis) */
-  addDoubleArrayOption("GEO_NACELLE_LOCATION", 6, NacelleLocation, default_nacelle_location);
+  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0;
+  /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, NacelleLocation, default_nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -1277,11 +1327,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FROZEN_VISC_DISC", Frozen_Visc_Disc, false);
   /* DESCRIPTION: Discrete Adjoint frozen limiter */
   addBoolOption("FROZEN_LIMITER_DISC", Frozen_Limiter_Disc, false);
+  /* DESCRIPTION: Use an inconsistent (primal/dual) discrete adjoint formulation */
+  addBoolOption("INCONSISTENT_DISC", Inconsistent_Disc, false);
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
    * \n DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n DEFAULT: NO \ingroup Config*/
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
+
+  /* DESCRIPTION: Automatically reorient elements that seem flipped */
+  addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -1821,6 +1876,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
 
+  /* DESCRIPTION: Thermal diffusivity constant */
+  addDoubleOption("THERMAL_DIFFUSIVITY_SOLID", Thermal_Diffusivity_Solid, 1.172E-5);
+
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/
 
@@ -1841,6 +1899,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Write extra output */
   addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
+
+  /* DESCRIPTION: Write extra heat output for a given zone heat solver zone */
+  addLongOption("EXTRA_HEAT_ZONE_OUTPUT", ExtraHeatOutputZone, -1);
 
   /*--- options related to the FFD problem ---*/
   /*!\par CONFIG_CATEGORY:FFD point inversion \ingroup Config*/
@@ -1958,6 +2019,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
+    
+  /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
+  /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
+    
+  /* DESCRIPTION: Writing surface solution file frequency for dual time */
+  addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
+
+  /* DESCRIPTION: DES Constant */
+  addDoubleOption("DES_CONST", Const_DES, 0.65);
+
+  /* DESCRIPTION: Specify Hybrid RANS/LES model */
+  addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
+    
+  /* DESCRIPTION:  Roe with low dissipation for unsteady flows */
+  addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
+
+  /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
+  addBoolOption("SA_QCR", QCR, false);
   
   /* DESCRIPTION: Multipoint design Mach number*/
   addPythonOption("MULTIPOINT_MACH_NUMBER");
@@ -2215,6 +2294,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       || (Kind_ActDisk == POWER))
     ActDisk_Jump = RATIO;
 
+  /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
+
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
   if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL) {
@@ -2225,24 +2306,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObj=1;
     nObjW=1;
   }
-  
-  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
-  
-  if (nObjW<nObj) {
-    if (Weight_ObjFunc!= NULL) {
-      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
-                     string("or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
-    }
-    Weight_ObjFunc = new su2double[nObj];
-    for (unsigned short iObj=0; iObj<nObj; iObj++)
-      Weight_ObjFunc[iObj] = 1.0;
-  }
-  /*--- Ignore weights if only one objective provided ---*/
-  
-  if (nObj == 1 )
-      Weight_ObjFunc[0] = 1.0;
 
-  /*--- Maker sure that nMarker = nObj ---*/
+  /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
@@ -2255,13 +2320,43 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
+      else if(nObj==1){
+        /*--- If one objective and more than one marker: repeat objective over each marker, evenly weighted ---*/
+        unsigned int obj = Kind_ObjFunc[0];
+        su2double wt=1.0;
+        delete[] Kind_ObjFunc;
+        if (Weight_ObjFunc!=NULL){
+         wt = Weight_ObjFunc[0];
+         delete[] Weight_ObjFunc;
+        }
+        Kind_ObjFunc = new short unsigned int[nMarker_Monitoring];
+        Weight_ObjFunc = new su2double[nMarker_Monitoring];
+        for (unsigned short iObj=0; iObj<nMarker_Monitoring; iObj++){
+          Kind_ObjFunc[iObj] = obj;
+          Weight_ObjFunc[iObj] = wt;
+        }
+        nObjW = nObj;
+      }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n ") +
-                       string("For multiple surfaces per objective, list the objective multiple times. \n") +
-                       string("For multiple objectives per marker either use one marker overall or list the marker multiple times."),
+        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIORING must be the same length or length 1.\n ") +
+                       string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
+                       string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
+                       string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
                        CURRENT_FUNCTION);
       }
     }
+  }
+
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
+  
+  if (nObjW<nObj) {
+    if (Weight_ObjFunc!= NULL and nObjW>1) {
+      SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
+                     string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
+    }
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj] = 1.0;
   }
 
   /*--- Low memory only for ASCII Tecplot ---*/
@@ -2291,6 +2386,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
   }
   else { FSI_Problem = false; }
+
+  if(Kind_Solver == HEAT_EQUATION_FVM) {
+    Linear_Solver_Iter = Linear_Solver_Iter_Heat;
+    Linear_Solver_Error = Linear_Solver_Error_Heat;
+  }
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
@@ -2334,6 +2434,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   } else {
     Wrt_Dynamic = false;
+  }
+
+  if (Kind_Solver == ZONE_SPECIFIC) {
+
+    ZoneSpecific_Problem = true;
+    Kind_Solver = Kind_Solver_PerZone[val_izone];
   }
 
   /*--- Check for unsupported features. ---*/
@@ -3032,6 +3138,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_4th_Flow    = Kappa_Flow[1];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
+  Kappa_2nd_Heat = Kappa_Heat[0];
+  Kappa_4th_Heat = Kappa_Heat[1];
   
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -3181,6 +3289,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
 
+  if ((DiscreteAdjoint) && (Inconsistent_Disc)) {
+    Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
+    Kind_Centered_Flow = Kind_Centered_AdjFlow;
+    Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
+    Kappa_Flow[0] = Kappa_AdjFlow[0];
+    Kappa_Flow[1] = Kappa_AdjFlow[1];
+  }
+  
   if (Iter_Fixed_CL == 0) { Iter_Fixed_CL = nExtIter+1; Update_Alpha = 0; }
   if (Iter_Fixed_CM == 0) { Iter_Fixed_CM = nExtIter+1; Update_iH = 0; }
   if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
@@ -3451,7 +3567,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_ZoneInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
@@ -3466,7 +3582,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
+  nMarker_InterfaceBound + nMarker_CHTInterface + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -3720,6 +3836,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = FLUID_INTERFACE;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_CHTInterface = 0; iMarker_CHTInterface < nMarker_CHTInterface; iMarker_CHTInterface++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_CHTInterface[iMarker_CHTInterface];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = CHT_WALL_INTERFACE;
     iMarker_CfgFile++;
   }
 
@@ -4031,7 +4153,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 5.0.0  \"Raven\"                            |" << endl;
+  cout << "|   / __| | | |_  )   Release 6.0.0  \"Falcon\"                           |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -4045,19 +4167,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "|                                                                       |" << endl;
   //cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Original Developers: Dr. Francisco D. Palacios.                   |" << endl;
-  cout << "|                          Dr. Thomas D. Economon.                      |" << endl;
+  cout << "| The current SU2 release has been coordinated by the                   |" << endl;
+  cout << "| SU2 International Developers Society <www.su2devsociety.org>          |" << endl;
+  cout << "| with selected contributions from the open-source community.           |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| SU2 Developers:                                                       |" << endl;
+  cout << "| The main research teams contributing to the current release are:      |" << endl;
   cout << "| - Prof. Juan J. Alonso's group at Stanford University.                |" << endl;
   cout << "| - Prof. Piero Colonna's group at Delft University of Technology.      |" << endl;
   cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
-  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
+  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+  cout << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |" << endl;
+  cout << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << endl;
+  cout << "|                      Tim Albring, and the SU2 contributors.           |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
   cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -4100,6 +4225,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
+          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
+          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
+          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+        }
+        if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
+        cout << "Hybrid RANS/LES: ";
+        switch (Kind_HybridRANSLES){
+          case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
+          case SA_DES:  cout << "Detached Eddy Simulation (DES97) " << endl; break;
+          case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
+          case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
@@ -4577,6 +4714,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SW)  cout << "Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == L2ROE) cout << "L2ROE Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == SLAU) cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
+
+        switch (Kind_RoeLowDiss) {
+          case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+          case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+          case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+          case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+          case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+        }
         
         if (MUSCL_Flow) {
           cout << "Second order integration in space, with slope limiter." << endl;
@@ -5861,11 +6010,19 @@ CConfig::~CConfig(void) {
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
 
   if (Marker_CfgFile_PyCustom    != NULL) delete[] Marker_CfgFile_PyCustom;
-
   if (Marker_All_PyCustom != NULL) delete[] Marker_All_PyCustom;
   
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
+
+  if (Marker_CfgFile_Turbomachinery != NULL) delete [] Marker_CfgFile_Turbomachinery;
+  if (Marker_All_Turbomachinery     != NULL) delete [] Marker_All_Turbomachinery;
+
+  if (Marker_CfgFile_TurbomachineryFlag != NULL) delete [] Marker_CfgFile_TurbomachineryFlag;
+  if (Marker_All_TurbomachineryFlag     != NULL) delete [] Marker_All_TurbomachineryFlag;
+
+  if (Marker_CfgFile_MixingPlaneInterface != NULL) delete [] Marker_CfgFile_MixingPlaneInterface;
+  if (Marker_All_MixingPlaneInterface     != NULL) delete [] Marker_All_MixingPlaneInterface;
 
   if (Marker_DV!= NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
@@ -6159,6 +6316,7 @@ CConfig::~CConfig(void) {
   if (RelaxFactorAverage != NULL) delete [] RelaxFactorAverage;
   if (RelaxFactorFourier != NULL) delete [] RelaxFactorFourier;
   if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+  if (FinalRotation_Rate_Z != NULL) delete [] FinalRotation_Rate_Z;
   if (Kind_TurboMachinery != NULL) delete [] Kind_TurboMachinery;
 
   if (Marker_MixingPlaneInterface !=NULL) delete [] Marker_MixingPlaneInterface;
@@ -6350,6 +6508,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
+      if (val_system == RUNTIME_HEAT_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
+      }
       break;
     case RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
@@ -6369,6 +6531,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               MUSCL_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+      }
+      if (val_system == RUNTIME_HEAT_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
     case ADJ_EULER:
@@ -6437,12 +6603,13 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
       }
       break;
-    case HEAT_EQUATION:
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
+
     case FEM_ELASTICITY:
 
       Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;

@@ -3,20 +3,24 @@
  * \brief Headers of the transfer structure
  *        The subroutines and functions are in the <i>transfer_structure.cpp</i> and <i>transfer_physics.cpp</i> files.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -750,6 +754,60 @@ public:
               unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
 
 
+};
+
+/*!
+ * \class CTransfer_ConjugateHeatVars
+ * \brief Transfer temperature and heatflux density for conjugate heat interfaces between structure and fluid zones.
+ * \author O. Burghardt
+ * \version 6.0.0 "Falcon"
+ */
+class CTransfer_ConjugateHeatVars : public CTransfer {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CTransfer_ConjugateHeatVars(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nVar - Number of variables that need to be transferred.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CTransfer_ConjugateHeatVars(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CTransfer_ConjugateHeatVars(void);
+
+  /*!
+   * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] Marker_Donor - Index of the donor marker.
+   * \param[in] Vertex_Donor - Index of the donor vertex.
+   * \param[in] Point_Donor - Index of the donor point.
+   */
+  void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+               unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+  /*!
+   * \brief Set the variable that has been received from the target mesh into the target mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] Point_Target - Index of the target point.
+   */
+  void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+              unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
 };
 
 #include "transfer_structure.inl"

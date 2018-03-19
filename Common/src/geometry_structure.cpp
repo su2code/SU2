@@ -2,20 +2,24 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -695,7 +699,51 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               v3[0] = v1[1]*Plane_Normal[2]-v1[2]*Plane_Normal[1];
               v3[1] = v1[2]*Plane_Normal[0]-v1[0]*Plane_Normal[2];
               v3[2] = v1[0]*Plane_Normal[1]-v1[1]*Plane_Normal[0];
+              
+              su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+              su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+              
+              /*--- Translate to the origin ---*/
+              
+              su2double XCoord_Trans = node[iPoint]->GetCoord(0) - config->GetNacelleLocation(0);
+              su2double YCoord_Trans = node[iPoint]->GetCoord(1) - config->GetNacelleLocation(1);
+              su2double ZCoord_Trans = node[iPoint]->GetCoord(2) - config->GetNacelleLocation(2);
+              
+              /*--- Apply tilt angle ---*/
+              
+              su2double XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+              su2double YCoord_Trans_Tilt = YCoord_Trans;
+              su2double ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+              
+              /*--- Apply toe angle ---*/
+              
+ //             su2double XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+              su2double YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+              su2double ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+              
+              /*--- Undo plane rotation, we have already rotated the nacelle ---*/
+              
+              /*--- Undo tilt angle ---*/
+              
+              su2double XPlane_Normal_Tilt = Plane_Normal[0]*cos(-Tilt_Angle) + Plane_Normal[2]*sin(-Tilt_Angle);
+              su2double YPlane_Normal_Tilt = Plane_Normal[1];
+              su2double ZPlane_Normal_Tilt = Plane_Normal[2]*cos(-Tilt_Angle) - Plane_Normal[0]*sin(-Tilt_Angle);
+              
+              /*--- Undo toe angle ---*/
+              
+              su2double XPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*cos(-Toe_Angle) - YPlane_Normal_Tilt*sin(-Toe_Angle);
+              su2double YPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*sin(-Toe_Angle) + YPlane_Normal_Tilt*cos(-Toe_Angle);
+              su2double ZPlane_Normal_Tilt_Toe = ZPlane_Normal_Tilt;
+              
+              
+              v1[0] = 0.0;
+              v1[1] = YCoord_Trans_Tilt_Toe;
+              v1[2] = ZCoord_Trans_Tilt_Toe;
+              v3[0] = v1[1]*ZPlane_Normal_Tilt_Toe-v1[2]*YPlane_Normal_Tilt_Toe;
+              v3[1] = v1[2]*XPlane_Normal_Tilt_Toe-v1[0]*ZPlane_Normal_Tilt_Toe;
+              v3[2] = v1[0]*YPlane_Normal_Tilt_Toe-v1[1]*XPlane_Normal_Tilt_Toe;
               CrossProduct = v3[0] * 1.0 + v3[1] * 0.0 + v3[2] * 0.0;
+              
             }
             
             if ((jPoint > iPoint) && (CrossProduct >= 0.0)
@@ -979,26 +1027,75 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
       
       
       if (config->GetGeo_Description() == NACELLE) {
-        su2double theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
-        su2double Angle = 0.5*PI_NUMBER - theta_deg*PI_NUMBER/180;
+        
+        su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Theta_deg = atan2(Plane_Normal[1],-Plane_Normal[2])/PI_NUMBER*180 + 180;
+        su2double Roll_Angle = 0.5*PI_NUMBER - Theta_deg*PI_NUMBER/180;
+
+        su2double XCoord_Trans, YCoord_Trans, ZCoord_Trans, XCoord_Trans_Tilt, YCoord_Trans_Tilt, ZCoord_Trans_Tilt,
+        XCoord_Trans_Tilt_Toe, YCoord_Trans_Tilt_Toe, ZCoord_Trans_Tilt_Toe, XCoord, YCoord, ZCoord;
+        
         for (iEdge = 0; iEdge < Xcoord_Index0.size(); iEdge++) {
           
-          su2double XCoord_Translate = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
-          su2double YCoord_Translate = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
-          su2double ZCoord_Translate = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
+          /*--- First point of the edge ---*/
+
+          /*--- Translate to the origin ---*/
+
+          XCoord_Trans = Xcoord_Index0[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index0[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index0[iEdge] - config->GetNacelleLocation(2);
           
-          su2double XCoord = XCoord_Translate;
-          su2double YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
-          su2double ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
+          /*--- Apply tilt angle ---*/
+
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+
+          /*--- Rotate to X-Z plane (roll) ---*/
+
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
           Xcoord_Index0[iEdge] = XCoord; Ycoord_Index0[iEdge] = YCoord; Zcoord_Index0[iEdge] = ZCoord;
           
-          XCoord_Translate = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
-          YCoord_Translate = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
-          ZCoord_Translate = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          /*--- Second point of the edge ---*/
           
-          XCoord = XCoord_Translate;
-          YCoord = YCoord_Translate*cos(Angle) - ZCoord_Translate*sin(Angle);
-          ZCoord = ZCoord_Translate*cos(Angle) + YCoord_Translate*sin(Angle);
+          /*--- Translate to the origin ---*/
+          
+          XCoord_Trans = Xcoord_Index1[iEdge] - config->GetNacelleLocation(0);
+          YCoord_Trans = Ycoord_Index1[iEdge] - config->GetNacelleLocation(1);
+          ZCoord_Trans = Zcoord_Index1[iEdge] - config->GetNacelleLocation(2);
+          
+          /*--- Apply tilt angle ---*/
+          
+          XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          YCoord_Trans_Tilt = YCoord_Trans;
+          ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle ---*/
+          
+          XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
+          YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+          
+          /*--- Rotate to X-Z plane (roll) ---*/
+          
+          XCoord = XCoord_Trans_Tilt_Toe;
+          YCoord = YCoord_Trans_Tilt_Toe*cos(Roll_Angle) - ZCoord_Trans_Tilt_Toe*sin(Roll_Angle);
+          ZCoord = YCoord_Trans_Tilt_Toe*sin(Roll_Angle) + ZCoord_Trans_Tilt_Toe*cos(Roll_Angle);
+          
+          /*--- Update coordinates ---*/
+          
           Xcoord_Index1[iEdge] = XCoord; Ycoord_Index1[iEdge] = YCoord; Zcoord_Index1[iEdge] = ZCoord;
           
         }
@@ -1302,6 +1399,9 @@ void CGeometry::SetCustomBoundary(CConfig *config) {
             CustomBoundaryTemperature[iMarker][iVertex] = config->GetIsothermal_Temperature(Marker_Tag);
           }
           break;
+        case INLET_FLOW:
+          // This case is handled in the solver class.
+          break;
         default:
           cout << "WARNING: Marker " << Marker_Tag << " is not customizable. Using default behavior." << endl;
           break;
@@ -1319,11 +1419,17 @@ void CGeometry::UpdateCustomBoundaryConditions(CGeometry **geometry_container, C
   for (iMGlevel=1; iMGlevel <= nMGlevel; iMGlevel++){
     iMGfine = iMGlevel-1;
     for(iMarker = 0; iMarker< config->GetnMarker_All(); iMarker++){
-      if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
-        geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
-      }
-      else if (config->GetMarker_All_PyCustom(iMarker) && config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+      if(config->GetMarker_All_PyCustom(iMarker)){
+        switch(config->GetMarker_All_KindBC(iMarker)){
+          case HEAT_FLUX:
+            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+            break;
+          case ISOTHERMAL:
+            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+            break;
+          // Inlet flow handled in solver class.
+          default: break;
+        }
       }
     }
   }
@@ -1458,7 +1564,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               
               W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
               
-              Length_U = 0.0, Length_V = 0.0, Length_W = 0.0, CosValue = 0.0;
+              Length_U = 0.0; Length_V = 0.0; Length_W = 0.0; CosValue = 0.0;
               for (iDim = 0; iDim < nDim; iDim++) { Length_U += U[iDim]*U[iDim]; Length_V += V[iDim]*V[iDim]; Length_W += W[iDim]*W[iDim]; }
               Length_U = sqrt(Length_U); Length_V = sqrt(Length_V); Length_W = sqrt(Length_W);
               for (iDim = 0; iDim < nDim; iDim++) { U[iDim] /= Length_U; V[iDim] /= Length_V; CosValue += U[iDim]*V[iDim]; }
@@ -1733,9 +1839,10 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   ending_node   = NULL;
   npoint_procs  = NULL;
 
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
   SpanWiseValue           = NULL;
   nVertexSpan             = NULL;
   nTotVertexSpan          = NULL;
@@ -1771,9 +1878,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ending_node   = NULL;
   npoint_procs  = NULL;
   
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
   SpanWiseValue           = NULL;
   nVertexSpan             = NULL;
   nTotVertexSpan          = NULL;
@@ -1917,9 +2025,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   ending_node   = NULL;
   npoint_procs  = NULL;
 
-  /*--- Arrays for defining the tutbomachinery structure ---*/
+  /*--- Arrays for defining the turbomachinery structure ---*/
 
   nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
   SpanWiseValue           = NULL;
   nVertexSpan             = NULL;
   nTotVertexSpan          = NULL;
@@ -4748,6 +4857,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- initialize pointers for turbomachinery computations  ---*/
   nSpanWiseSections       = new unsigned short[2];
+  nSpanSectionsByMarker   = new unsigned short[nMarker];
   SpanWiseValue           = new su2double*[2];
   for (iMarker = 0; iMarker < 2; iMarker++){
     nSpanWiseSections[iMarker]      = 0;
@@ -4768,6 +4878,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   MinRelAngularCoord                = new su2double*[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
+    nSpanSectionsByMarker[iMarker]  = 0;
     nVertexSpan[iMarker]            = NULL;
     nTotVertexSpan[iMarker]         = NULL;
     turbovertex[iMarker]            = NULL;
@@ -4879,6 +4990,151 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
   
+  /*--- Free up memory from turbomachinery performance computation  ---*/
+
+  unsigned short iMarker;
+  if (TangGridVelIn != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TangGridVelIn[iMarker] != NULL) delete [] TangGridVelIn[iMarker];
+    delete [] TangGridVelIn;
+  }
+  if (SpanAreaIn != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (SpanAreaIn[iMarker] != NULL) delete [] SpanAreaIn[iMarker];
+    delete [] SpanAreaIn;
+  }
+  if (TurboRadiusIn != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TurboRadiusIn[iMarker] != NULL) delete [] TurboRadiusIn[iMarker];
+    delete [] TurboRadiusIn;
+  }
+  if (TangGridVelOut != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TangGridVelOut[iMarker] != NULL) delete [] TangGridVelOut[iMarker];
+    delete [] TangGridVelOut;
+  }
+  if (SpanAreaOut != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (SpanAreaOut[iMarker] != NULL) delete [] SpanAreaOut[iMarker];
+    delete [] SpanAreaOut;
+  }
+  if (TurboRadiusOut != NULL) {
+    for (iMarker = 0; iMarker < nTurboPerf; iMarker++)
+      if (TurboRadiusOut[iMarker] != NULL) delete [] TurboRadiusOut[iMarker];
+    delete [] TurboRadiusOut;
+  }
+
+  /*--- Free up memory from turbomachinery computations
+   * If there are send/receive boundaries, nMarker isn't the same number
+   * as in the constructor. There must be an explicit check to ensure
+   * that iMarker doesn't point us to memory that was never allocated. ---*/
+
+  unsigned short iSpan, iVertex;
+  if (turbovertex != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (Marker_All_SendRecv[iMarker] == 0 && turbovertex[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]; iSpan++) {
+          if (turbovertex[iMarker][iSpan] != NULL) {
+            for (iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++)
+              if (turbovertex[iMarker][iSpan][iVertex] != NULL)
+                delete turbovertex[iMarker][iSpan][iVertex];
+            delete [] turbovertex[iMarker][iSpan];
+          }
+        }
+        delete [] turbovertex[iMarker];
+      }
+    }
+    delete [] turbovertex;
+  }
+  if (AverageTurboNormal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageTurboNormal[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
+          delete [] AverageTurboNormal[iMarker][iSpan];
+        delete [] AverageTurboNormal[iMarker];
+      }
+    }
+    delete [] AverageTurboNormal;
+  }
+  if (AverageNormal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageNormal[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
+          delete [] AverageNormal[iMarker][iSpan];
+        delete [] AverageNormal[iMarker];
+      }
+    }
+    delete [] AverageNormal;
+  }
+  if (AverageGridVel != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageGridVel[iMarker] != NULL) {
+        for (iSpan= 0; iSpan < nSpanSectionsByMarker[iMarker]+1; iSpan++)
+          delete [] AverageGridVel[iMarker][iSpan];
+        delete [] AverageGridVel[iMarker];
+      }
+    }
+    delete [] AverageGridVel;
+  }
+
+  if (AverageTangGridVel != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && AverageTangGridVel[iMarker] != NULL)
+        delete [] AverageTangGridVel[iMarker];
+    delete [] AverageTangGridVel;
+  }
+  if (SpanArea != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && SpanArea[iMarker] != NULL)
+        delete [] SpanArea[iMarker];
+    delete [] SpanArea;
+  }
+  if (TurboRadius != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && TurboRadius[iMarker] != NULL)
+        delete [] TurboRadius[iMarker];
+    delete [] TurboRadius;
+  }
+  if (MaxAngularCoord != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && MaxAngularCoord[iMarker] != NULL)
+        delete [] MaxAngularCoord[iMarker];
+    delete [] MaxAngularCoord;
+  }
+  if (MinAngularCoord != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && MinAngularCoord[iMarker] != NULL)
+        delete [] MinAngularCoord[iMarker];
+    delete [] MinAngularCoord;
+  }
+  if (MinRelAngularCoord != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && MinRelAngularCoord[iMarker] != NULL)
+        delete [] MinRelAngularCoord[iMarker];
+    delete [] MinRelAngularCoord;
+  }
+
+  if (nSpanWiseSections != NULL) delete [] nSpanWiseSections;
+  if (nSpanSectionsByMarker != NULL) delete [] nSpanSectionsByMarker;
+  if (SpanWiseValue != NULL) {
+    for (iMarker = 0; iMarker < 2; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && SpanWiseValue[iMarker] != NULL)
+        delete [] SpanWiseValue[iMarker];
+    delete [] SpanWiseValue;
+  }
+  if (nVertexSpan != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && nVertexSpan[iMarker] != NULL)
+        delete [] nVertexSpan[iMarker];
+    delete [] nVertexSpan;
+  }
+  if (nTotVertexSpan != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      if (Marker_All_SendRecv[iMarker] == 0 && nTotVertexSpan[iMarker] != NULL)
+        delete [] nTotVertexSpan[iMarker];
+    delete [] nTotVertexSpan;
+  }
+
 }
 
 
@@ -10347,6 +10603,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+            nSpanSectionsByMarker[iMarker]       = nSpanWiseSections[marker_flag-1];
             nVertexSpan[iMarker]                 = new long[nSpanWiseSections[marker_flag-1]];
             turbovertex[iMarker]                 = new CTurboVertex** [nSpanWiseSections[marker_flag-1]];
             nTotVertexSpan[iMarker]              = new unsigned long [nSpanWiseSections[marker_flag-1] +1];
@@ -11190,6 +11447,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           if(allocate){
+            nSpanSectionsByMarker[iMarker]            = nSpanWiseSections[marker_flag-1];
             AverageTurboNormal[iMarker]               = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageNormal[iMarker]                    = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
             AverageGridVel[iMarker]                   = new su2double *[nSpanWiseSections[marker_flag-1] + 1];
@@ -15099,7 +15357,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
       field_buf.append("\"");
-      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);
@@ -16538,7 +16796,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, SemiSpan;
+  su2double Angle, MinAngle, MaxAngle, dAngle, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Nacelle_File, Section_File;
   
@@ -16546,7 +16804,6 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   /*--- Make a large number of section cuts for approximating volume ---*/
   
   nPlane = config->GetnWingStations();
-  SemiSpan = config->GetSemiSpan();
   
   /*--- Allocate memory for the section cutting ---*/
   
@@ -16581,10 +16838,35 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
     
+    /*--- Apply roll to cut the nacelle ---*/
+
     Angle = iPlane*dAngle*PI_NUMBER/180.0;
     Plane_Normal[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = -sin(Angle);
     Plane_Normal[iPlane][2] = cos(Angle);
+    
+    /*--- Apply tilt angle to the plane ---*/
+    
+    su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+    su2double Plane_NormalX_Tilt = Plane_Normal[iPlane][0]*cos(Tilt_Angle) + Plane_Normal[iPlane][2]*sin(Tilt_Angle);
+    su2double Plane_NormalY_Tilt = Plane_Normal[iPlane][1];
+    su2double Plane_NormalZ_Tilt = Plane_Normal[iPlane][2]*cos(Tilt_Angle) - Plane_Normal[iPlane][0]*sin(Tilt_Angle);
+    
+    /*--- Apply toe angle to the plane ---*/
+    
+    su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+    su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+    su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+    su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+    
+    /*--- Update normal vector ---*/
+    
+    Plane_Normal[iPlane][0] = Plane_NormalX_Tilt_Toe;
+    Plane_Normal[iPlane][1] = Plane_NormalY_Tilt_Toe;
+    Plane_Normal[iPlane][2] = Plane_NormalZ_Tilt_Toe;
+    
+    /*--- Point in the plane ---*/
+    
     Plane_P0[iPlane][0] = config->GetNacelleLocation(0);
     Plane_P0[iPlane][1] = config->GetNacelleLocation(1);
     Plane_P0[iPlane][2] = config->GetNacelleLocation(2);
@@ -18794,30 +19076,55 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   /*--- Ghost points, look at the nodes in the send receive ---*/
   iMarkerReceive = nMarker - 1;
   GhostPoints = nElem_Bound[iMarkerReceive];
-  
+
   /*--- Change the numbering to guarantee that the all the receive
-   points are at the end of the file ---*/
-  unsigned long OldnPoint = geometry->GetnPoint();
-  unsigned long *NewSort = new unsigned long[nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    NewSort[iPoint] = iPoint;
-  }
-  
-  unsigned long Index = OldnPoint-1;
+   points are at the end of the file. ---*/
+  std::vector<unsigned long> receive_nodes;
+  std::vector<unsigned long> send_nodes;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       if (config->GetMarker_All_SendRecv(iMarker) < 0) {
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          if (bound[iMarker][iElem_Bound]->GetNode(0) < geometry->GetnPoint()) {
-            NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] = Index;
-            NewSort[Index] = bound[iMarker][iElem_Bound]->GetNode(0);
-            Index--;
+          if (bound[iMarker][iElem_Bound]->GetRotation_Type() == 1) {
+            receive_nodes.push_back(bound[iMarker][iElem_Bound]->GetNode(0));
+          } else {
+            send_nodes.push_back(bound[iMarker][iElem_Bound]->GetNode(0));
           }
         }
       }
     }
   }
+
+  /*--- Build the sorted lists of node numbers with receive/send at the end
+   * NewSort[i] = j maps the new number (i) to the old number (j)
+   * ReverseSort[j] = i maps the old number (j) to the new number (i) ---*/
+  std::vector<unsigned long> NewSort;
+  std::vector<unsigned long> ReverseSort;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    bool isReceive = (find(receive_nodes.begin(), receive_nodes.end(), iPoint)
+                      != receive_nodes.end());
+    bool isSend = (find(send_nodes.begin(), send_nodes.end(), iPoint)
+                   != send_nodes.end());
+    if (!isSend && !isReceive) {
+      NewSort.push_back(iPoint);
+    }
+  }
+  NewSort.insert(NewSort.end(), receive_nodes.begin(), receive_nodes.end());
+  NewSort.insert(NewSort.end(), send_nodes.begin(), send_nodes.end());
   
+  ReverseSort.resize(NewSort.size());
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    unsigned long jPoint;
+    for (jPoint = 0; jPoint < nPoint; jPoint++) {
+      if (NewSort[iPoint] == jPoint) {
+        ReverseSort[jPoint] = iPoint;
+        break;
+      }
+    }
+    if (jPoint == nPoint) { // Loop fell through without break
+      SU2_MPI::Error("Remapping of periodic nodes failed.", CURRENT_FUNCTION);
+    }
+  }
   
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
@@ -18825,14 +19132,16 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   for (iElem = 0; iElem < nElem; iElem++) {
     output_file << elem[iElem]->GetVTK_Type();
     for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-      output_file << "\t" << NewSort[elem[iElem]->GetNode(iNodes)];
+      output_file << "\t" << ReverseSort[elem[iElem]->GetNode(iNodes)];
     output_file << "\t"<<iElem<< endl;
   }
   
   output_file << "NPOIN= " << nPoint << "\t" << nPoint - GhostPoints << endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      output_file << scientific;
+      output_file << "\t" << node[NewSort[iPoint]]->GetCoord(iDim) ;
+    }
     output_file << "\t" << iPoint << endl;
   }
   
@@ -18847,9 +19156,9 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
         for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes()-1; iNodes++)
-          output_file << NewSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
+          output_file << ReverseSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
         iNodes = bound[iMarker][iElem_Bound]->GetnNodes()-1;
-        output_file << NewSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
+        output_file << ReverseSort[bound[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
       }
       
       /*--- Write any new elements at the end of the list. ---*/
@@ -18857,9 +19166,9 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
         for (iElem_Bound = 0; iElem_Bound < nNewElem_BoundPer[iMarker]; iElem_Bound++) {
           output_file << newBoundPer[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < newBoundPer[iMarker][iElem_Bound]->GetnNodes()-1; iNodes++)
-            output_file << NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
+            output_file << ReverseSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << "\t" ;
           iNodes = newBoundPer[iMarker][iElem_Bound]->GetnNodes()-1;
-          output_file << NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
+          output_file << ReverseSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
         }
       }
       
@@ -18873,7 +19182,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
-        NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] << "\t" <<
+        ReverseSort[bound[iMarker][iElem_Bound]->GetNode(0)] << "\t" <<
         bound[iMarker][iElem_Bound]->GetRotation_Type()  << endl;
       }
     }
@@ -18911,10 +19220,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   
   
   output_file.close();
-  
-  /*--- Free memory ---*/
-  delete [] NewSort;
-  
 }
 
 void CPeriodicGeometry::SetTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file) {

@@ -2,20 +2,24 @@
  * \file solution_direct_mean_inc.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1057,7 +1061,7 @@ void CIncEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config
   }
 }
 
-void CIncEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -2076,7 +2080,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -2794,7 +2798,7 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   
 }
 
-void CIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   su2double Pressure_i = 0.0, Pressure_j = 0.0;
@@ -2863,7 +2867,7 @@ void CIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -3760,6 +3764,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -4331,16 +4337,19 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
-  unsigned short iMarker_Monitoring;
+  unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
 
+  Total_ComboObj = 0.0;
+  
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
     Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-
-    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+   
+    switch(Kind_ObjFunc) {
       case DRAG_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
@@ -4618,14 +4627,13 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint;
   su2double *Flow_Dir,  Vel_Mag, Area;
   su2double *V_inlet, *V_domain;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
-  bool viscous       = config->GetViscous();
 
   su2double *Normal = new su2double[nDim];
   
@@ -4642,10 +4650,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -4704,45 +4708,46 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-      /*--- Viscous contribution ---*/
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the inlet ---*/
+//
+//        V_inlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
+//        V_inlet[nDim+4] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+//                                          node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+//                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
       
-      if (viscous) {
-        
-        /*--- Set laminar and eddy viscosity at the inlet ---*/
-        
-        V_inlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
-        V_inlet[nDim+4] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_inlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                          node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
     }
   }
   
@@ -4761,7 +4766,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool viscous       = config->GetViscous();
   bool gravity       = (config->GetGravityForce());
 
   su2double *Normal = new su2double[nDim];
@@ -4844,42 +4848,44 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
-      /*--- Viscous contribution ---*/
+      /*--- Viscous contribution, commented out because serious convergence problems ---*/
       
-      if (viscous) {
-
-        V_outlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
-        V_outlet[nDim+4] = node[iPoint]->GetEddyViscosity();
-        
-        /*--- Set the normal vector and the coordinates ---*/
-        
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord());
-        
-        /*--- Primitive variables, and gradient ---*/
-        
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                          node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Turbulent kinetic energy ---*/
-        
-        if (config->GetKind_Turb_Model() == SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
-        /*--- Compute and update residual ---*/
-        
-        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        /*--- Jacobian contribution for implicit integration ---*/
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
+//      if (viscous) {
+//
+//        V_outlet[nDim+3] = node[iPoint]->GetLaminarViscosity();
+//        V_outlet[nDim+4] = node[iPoint]->GetEddyViscosity();
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        visc_numerics->SetPrimitive(V_domain, V_outlet);
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+//                                          node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+//                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit)
+//         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
+      
     }
   }
   
@@ -6324,7 +6330,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
   }
@@ -6346,7 +6352,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
-  StrainMag_Max = 0.0, Omega_Max = 0.0;
+  StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
@@ -6392,7 +6398,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool RightSol = true;
   
@@ -6405,6 +6411,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+      
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+        DES_LengthScale = solver_container[TURB_SOL]->node[iPoint]->GetDES_LengthScale();
+      }
     }
     
     /*--- Initialize the non-physical points vector ---*/
@@ -6416,6 +6426,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     RightSol = node[iPoint]->SetPrimVar(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
     
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+    
+    /*--- Set the DES length scale ---*/
+    
+    node[iPoint]->SetDES_LengthScale(DES_LengthScale);    
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     

@@ -2,20 +2,24 @@
  * \file solution_adjoint_mean_inc.cpp
  * \brief Main subrotuines for solving adjoint incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -908,7 +912,7 @@ void CAdjIncEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfi
   
 }
 
-void CAdjIncEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjIncEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
@@ -1517,8 +1521,8 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Artificial dissipation for centered schemes ---*/
   
   if (center) {
-    if ((center_jst) && (iMesh == MESH_0) && !Output) {
-      SetDissipation_Switch(geometry, config);
+    if ((center_jst) && (iMesh == MESH_0)) {
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
       if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -1904,7 +1908,7 @@ void CAdjIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *co
   
 }
 
-void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
@@ -1932,7 +1936,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   }
   
   /*--- MPI parallelization ---*/
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -3913,8 +3917,8 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Artificial dissipation for centered schemes ---*/
   
-  if (center_jst && (iMesh == MESH_0) && !Output) {
-    SetDissipation_Switch(geometry, config);
+  if (center_jst && (iMesh == MESH_0)) {
+    SetCentered_Dissipation_Sensor(geometry, config);
     SetUndivided_Laplacian(geometry, config);
   }
   

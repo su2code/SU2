@@ -3,20 +3,24 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +71,6 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CGeometry {
 protected:
@@ -126,7 +129,8 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
+  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
+  unsigned short *nSpanSectionsByMarker; /*! <\brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
   unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
   su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
   long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
@@ -1326,7 +1330,6 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -2152,7 +2155,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -2348,7 +2350,6 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -2394,7 +2395,6 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {
