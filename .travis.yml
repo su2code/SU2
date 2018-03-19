@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - auto_doxygen_test
 
 
 python:
@@ -25,16 +25,20 @@ python:
 
 env:
     global:
+        - GH_REPO_NAME: Doxygen
+        - DOXYFILE: $TRAVIS_BUILD_DIR/
+        - GH_REPO_REF: github.com/su2code/Doxygen.git
         CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
         # Serial build and test
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
           TEST_SCRIPT=serial_regression.py
+          DOXYGEN_SCRIPT=./generateDocumentationAndDeploy.sh
 
         # Parallel build and test
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
           TEST_SCRIPT=parallel_regression.py
-
+        
         # Serial build and test for AD
         - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
           TEST_SCRIPT=serial_regression_AD.py
@@ -42,6 +46,15 @@ env:
         # Parallel build and test for AD:
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
           TEST_SCRIPT=parallel_regression_AD.py
+addons:
+  apt:
+    packages:
+      - doxygen
+      - doxygen-doc
+      - doxygen-latex
+      - doxygen-gui
+      - graphviz
+
 
 before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
@@ -67,29 +80,32 @@ before_install:
 
 install:
     # Configure, make, and install SU2
-    - echo $TRAVIS_BUILD_DIR
-    - echo $CONFIGURE_COMMAND
-    - $CONFIGURE_COMMAND
-    - make -j 4
-    - make install
+    #- echo $TRAVIS_BUILD_DIR
+    #- echo $CONFIGURE_COMMAND
+    #- $CONFIGURE_COMMAND
+    #- make -j 4
+    #- make install
 
     # Add environmental variables according to the configure step
-    - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
-    - export SU2_HOME=$TRAVIS_BUILD_DIR
-    - export PATH=$PATH:$SU2_RUN
-    - export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+    #- export SU2_RUN=$TRAVIS_BUILD_DIR/bin
+    #- export SU2_HOME=$TRAVIS_BUILD_DIR
+    #- export PATH=$PATH:$SU2_RUN
+    #- export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
-    - cp -R ./TestData/* ./TestCases/
+    #- git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    #- cp -R ./TestData/* ./TestCases/
 
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
+    #- git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
-    - cd TestCases/
+    #- cd TestCases/
 
 script:
     # Run the tests via the Python scripts
-    - python $TEST_SCRIPT
+    #- python $TEST_SCRIPT
+    # Update Documentation
+    - if [-n "$DOXYGEN_SCRIPT"]; then chmod +x $DOXYGEN_SCRIPT fi;
+    - if [-n "$DOXYGEN_SCRIPT"]; then $DOXYGEN_SCRIPT fi;
