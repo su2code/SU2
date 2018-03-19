@@ -8098,12 +8098,12 @@ void CFEM_DG_EulerSolver::RinglebSolution(CConfig *config,
 
   /* Compute the speed of sound, density and pressure. */
   if(config->GetRingleb_Findiff()){
-    if((abs(q - 0.5) < 1.0E-8) && y > 0.0){ // Perturb inflow if requested
-      q += 1.0E-5;
+    if((abs(q - 0.5) < 1.0E-6) && y > 0.0){ // Perturb inflow if requested
+      q += 1.0E-4;
     }
   }
 
-  if(config->GetDiscrete_Adjoint() && (abs(q - 0.5) < 1.0E-8) && (y > 0.0)){
+  if(config->GetDiscrete_Adjoint() && (abs(q - 0.5) < 1.0E-6) && (y > 0.0)){
     q = GetRinglebQ(); // Only want single q as input, so extract the q that's already been recorded
   }
   const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);

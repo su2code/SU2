@@ -2213,9 +2213,14 @@ void CFEM_DG_DiscAdjFluidIteration::Preprocess(COutput *output,
   unsigned long IntIter = 0, iPoint;
   unsigned short iMesh;
   config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
 
-  for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
-    solver_container[val_iZone][iMesh][ADJFLOW_SOL]->StoreSolution_Direct();
+  /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
+
+  if(ExtIter == 0){
+    for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+      solver_container[val_iZone][iMesh][ADJFLOW_SOL]->StoreSolution_Direct();
+    }
   }
 
 }
