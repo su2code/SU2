@@ -107,5 +107,5 @@ script:
     # Run the tests via the Python scripts
     #- python $TEST_SCRIPT
     # Update Documentation
-    - if [-n "$DOXYGEN_SCRIPT"]; then chmod +x $DOXYGEN_SCRIPT fi;
-    - if [-n "$DOXYGEN_SCRIPT"]; then $DOXYGEN_SCRIPT fi;
+    - if [-n "$DOXYGEN_SCRIPT"]; then chmod +x $DOXYGEN_SCRIPT fi
+    - if [-n "$DOXYGEN_SCRIPT"]; then $DOXYGEN_SCRIPT fi
