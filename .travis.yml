@@ -53,55 +53,17 @@ jobs:
                 # Parallel build and test for AD:
                 #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
                 # TEST_SCRIPT=parallel_regression_AD.py
+
         before_install:
-            # Temporarily fixes Travis CI issue with paths for Python packages
-            - export PATH=/usr/bin:$PATH
-
-            # Install the necessary packages using apt-get with sudo
-            - sudo apt-get update -qq
-            - sudo apt-get install -qq build-essential libopenmpi-dev
-        
-            # Install Python dependencies
-            # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
-            - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-            - bash miniconda.sh -b -p $HOME/miniconda
-            - export PATH="$HOME/miniconda/bin:$PATH"
-            - hash -r
-            - conda config --set always_yes yes --set changeps1 no
-            - conda update -q conda
-            - conda install -q python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
-
-            # to avoid interference with MPI
-            - test -n $CC  && unset CC
-            - test -n $CXX && unset CXX
+            #- sh travis/before_install.sh
 
         install:
-            # Configure, make, and install SU2
-            - echo $TRAVIS_BUILD_DIR
-            - echo $CONFIGURE_COMMAND
-            #- $CONFIGURE_COMMAND
-            #- make -j 4
-            #- make install
+            #- sh travis/install.sh
 
-            # Add environmental variables according to the configure step
-            #- export SU2_RUN=$TRAVIS_BUILD_DIR/bin
-            #- export SU2_HOME=$TRAVIS_BUILD_DIR
-            #- export PATH=$PATH:$SU2_RUN
-            #- export PYTHONPATH=$PYTHONPATH:$SU2_RUN
-
-            #before_script:
-            # Get the test cases
-            #- git clone -b develop https://github.com/su2code/TestCases.git ./TestData
-            #- cp -R ./TestData/* ./TestCases/
-
-            # Get the test cases
-            #- git clone -b develop https://github.com/su2code/Tutorials.git ./Tutorials
+        before_script:
+            #- sh travis/before_script.sh
             
-            # Enter the SU2/TestCases/ directory, which is now ready to run
-            #- cd TestCases/
-
         script:
-            # Run the tests via the Python scripts
             #- python $TEST_SCRIPT
 
         - stage: Deploy
