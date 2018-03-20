@@ -523,6 +523,8 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_Simulation = false;
 
   nSpanMaxAllZones = 1;
+
+  Wrt_InletFile = false;
   
 }
 
