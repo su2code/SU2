@@ -119,5 +119,5 @@ jobs:
 stages:
     - test
     - name: doxygen
-      if: base_branch = auto_doxygen_test or branch = auto_doxygen_test or base_branch = master or branch = master
+      if: base_branch = develop or branch = develop or base_branch = master or branch = master
 
