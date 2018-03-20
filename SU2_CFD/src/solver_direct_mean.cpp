@@ -8623,62 +8623,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-bool CEulerSolver::ValidateInletValues(vector<su2double> inlet_values) {
-
-  /*--- Alias position to be more readable and avoid redundancy ---*/
-  unsigned short FlowDir_position = nDim+2;
-
-  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
-
-  su2double norm = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    norm += pow(inlet_values[FlowDir_position + iDim], 2);
-  }
-  norm = sqrt(norm);
-
-  /*--- The tolerance here needs to be loose.  When adding a very
-   * small number (1e-10 or smaller) to a number close to 1.0, floating
-   * point roundoff errors can occur. ---*/
-
-  if (abs(norm - 1.0) > 1e-6) {
-    if (rank == MASTER_NODE) {
-      ostringstream error_msg;
-      error_msg << "ERROR: Found these values in columns ";
-      error_msg << FlowDir_position << " - ";
-      error_msg << FlowDir_position + nDim - 1 << endl;
-      error_msg << std::scientific;
-      error_msg << "  [" << inlet_values[FlowDir_position];
-      error_msg << ", " << inlet_values[FlowDir_position + 1];
-      if (nDim == 3) error_msg << ", " << inlet_values[FlowDir_position + 2];
-      error_msg << "]" << endl;
-      error_msg << "  These values **should** be components of a unit vector for velocity." << endl;
-      error_msg << "  But their magnitude is: " << norm << endl;
-      cout << error_msg.str();
-    }
-    return false;
-  } else {
-    return true;
-  }
-
-}
-
-void CEulerSolver::SetInletAtVertex(vector<su2double> values,
-                                    unsigned short iMarker,
-                                    unsigned long iVertex) {
-
-  /*--- Alias positions within inlet file for readability ---*/
-  unsigned short T_position = nDim;
-  unsigned short P_position = nDim+1;
-  unsigned short FlowDir_position = nDim+2;
-
-  Inlet_Ttotal[iMarker][iVertex] = values[T_position];
-  Inlet_Ptotal[iMarker][iVertex] = values[P_position];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Inlet_FlowDir[iMarker][iVertex][iDim] = values[FlowDir_position + iDim];
-  }
-
-}
-
 void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
@@ -8689,12 +8633,41 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
   unsigned short P_position       = nDim+1;
   unsigned short FlowDir_position = nDim+2;
 
+  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
+
+  su2double norm = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    norm += pow(val_inlet[FlowDir_position + iDim], 2);
+  }
+  norm = sqrt(norm);
+
+  /*--- The tolerance here needs to be loose.  When adding a very
+   * small number (1e-10 or smaller) to a number close to 1.0, floating
+   * point roundoff errors can occur. ---*/
+
+  if (abs(norm - 1.0) > 1e-6) {
+    ostringstream error_msg;
+    error_msg << "ERROR: Found these values in columns ";
+    error_msg << FlowDir_position << " - ";
+    error_msg << FlowDir_position + nDim - 1 << endl;
+    error_msg << std::scientific;
+    error_msg << "  [" << val_inlet[FlowDir_position];
+    error_msg << ", " << val_inlet[FlowDir_position + 1];
+    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
+    error_msg << "]" << endl;
+    error_msg << "  These values should be components of a unit vector for direction," << endl;
+    error_msg << "  but their magnitude is: " << norm << endl;
+    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Store the values in our inlet data structures. ---*/
+
   Inlet_Ttotal[iMarker][iVertex] = val_inlet[T_position];
   Inlet_Ptotal[iMarker][iVertex] = val_inlet[P_position];
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     Inlet_FlowDir[iMarker][iVertex][iDim] =  val_inlet[FlowDir_position + iDim];
   }
-  
+
 }
 
 su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
