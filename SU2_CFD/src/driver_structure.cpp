@@ -971,15 +971,32 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
       cout << config->GetInlet_FileName() << endl;
     }
 
-    bool no_profile = true;
+    bool no_profile = false;
 
-    if (euler || ns || adj_euler || adj_ns) {
+    if (euler || ns || adj_euler || adj_ns || disc_adj) {
       solver_container[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver_container, config, val_iter, FLOW_SOL, INLET_FLOW);
-      no_profile = false;
     }
-    if (turbulent) {
+    if (turbulent || adj_turb || disc_adj_turb) {
       solver_container[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver_container, config, val_iter, TURB_SOL, INLET_FLOW);
-      no_profile = false;
+    }
+
+    if (template_solver) {
+      no_profile = true;
+    }
+    if (poisson) {
+      no_profile = true;
+    }
+    if (wave) {
+      no_profile = true;
+    }
+    if (heat) {
+      no_profile = true;
+    }
+    if (fem) {
+      no_profile = true;
+    }
+    if (disc_adj_fem) {
+      no_profile = true;
     }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
