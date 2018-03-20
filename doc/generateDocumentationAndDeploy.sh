@@ -78,7 +78,7 @@ if [ -d "html" ] && [ -f "html/index.html" ] ; then
 
     # Only push the documentation if it is a PR or push to master or develop, otherwise only push the log file.
 
-    if ( ["$TRAVIS_BRANCH" -eq "master"] || ["$TRAVIS_BRANCH" -eq "develop"] ) ; then
+    if ( ["$TRAVIS_BRANCH" == "master"] || ["$TRAVIS_BRANCH" == "develop"] ) ; then
 
         echo 'Uploading documentation ...'
 
