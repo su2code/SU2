@@ -67,31 +67,46 @@ echo "" > .nojekyll
 ##### Generate the Doxygen code documentation and log the output.          #####
 echo 'Generating Doxygen code documentation...'
 # Redirect both stderr and stdout to the log file AND the console.
-doxygen $DOXYFILE 2>&1 | tee doxygen.log
+doxygen $DOXYFILE 2>&1 | tee doxygen_${TRAVIS_BRANCH}_${TRAVIS_PULL_REQUEST_BRANCH}.log
 
 ################################################################################
 ##### Upload the documentation to the gh-pages branch of the repository.   #####
 # Only upload if Doxygen successfully created the documentation.
 # Check this by verifying that the html directory and the file html/index.html
 # both exist. This is a good indication that Doxygen did it's work.
-if [ -d "html" ] && [ -f "html/index.html" ]; then
+if [ -d "html" ] && [ -f "html/index.html" ] ; then
 
-    echo 'Uploading documentation to the master branch...'
+    # Only push the documentation if it is a PR or push to master or develop, otherwise only push the log file.
 
-    # create folder if it does not exist
-    mkdir -p $TRAVIS_BRANCH
-    # move everything to the corresponding folder
-    mv html $TRAVIS_BRANCH/
+    if ( ["$TRAVIS_BRANCH" -eq "master"] || ["$TRAVIS_BRANCH" -eq "develop"] ) ; then
 
-    # Add everything in this directory (the Doxygen code documentation) to the
-    # gh-pages branch.
-    # GitHub is smart enough to know which files have changed and which files have
-    # stayed the same and will only update the changed files.
-    git add --all
+        echo 'Uploading documentation ...'
 
-    # Commit the added files with a title and description containing the Travis CI
-    # build number and the GitHub commit reference that issued this build.
-    git commit -m "Deploy code docs to GitHub Pages Travis build: ${TRAVIS_BUILD_NUMBER}" -m "Branch: ${TRAVIS_BRANCH}" -m "Commit: ${TRAVIS_COMMIT}" 
+        # create folder if it does not exist
+        mkdir -p $TRAVIS_BRANCH
+        # move everything to the corresponding folder
+        mv html $TRAVIS_BRANCH/
+
+        # Add everything in this directory (the Doxygen code documentation) to the
+        # gh-pages branch.
+        # GitHub is smart enough to know which files have changed and which files have
+        # stayed the same and will only update the changed files.
+        git add --all
+
+        # Commit the added files with a title and description containing the Travis CI
+        # build number and the GitHub commit reference that issued this build.
+        git commit -m "Deploy code docs to GitHub Pages Travis build: ${TRAVIS_BUILD_NUMBER}" -m "Branch: ${TRAVIS_BRANCH}" -m "Commit: ${TRAVIS_COMMIT}" 
+
+    else
+        echo 'Uploading doxygen log file ...'
+
+        git add doxygen_${TRAVIS_BRANCH}_${TRAVIS_PULL_REQUEST_BRANCH}.log
+
+        # Commit the added files with a title and description containing the Travis CI
+        # build number and the GitHub commit reference that issued this build.
+        git commit -m "Deploy doxygen log to GitHub Pages Travis build: ${TRAVIS_BUILD_NUMBER}" -m "Branch: ${TRAVIS_BRANCH}" -m "Commit: ${TRAVIS_COMMIT}" 
+
+    fi
 
     # Force push to the remote gh-pages branch.
     # The ouput is redirected to /dev/null to hide any sensitive credential data
