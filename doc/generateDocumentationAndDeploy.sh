@@ -102,7 +102,7 @@ if [ -d "html" ] && [ -f "html/index.html" ] ; then
         git push --force "https://${GH_REPO_TOKEN}@${GH_REPO_REF}" > /dev/null 2>&1
     else
         # Exit successful if we are on any other branch.
-        echo 'No documentation update necessary!' > &2
+        echo 'No documentation update necessary!' >&2
         exit 0
 
 else
