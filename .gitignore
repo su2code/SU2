@@ -55,6 +55,9 @@ SU2_DIRECTDIFF/
 # ignore the bin/ directory
 bin/
 
+#documentation
+doc/html/
+
 # ignore project settings from eclipse
 .project
 
