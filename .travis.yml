@@ -114,10 +114,7 @@ jobs:
               - export DOXYFILE=$TRAVIS_BUILD_DIR/doc/Doxyfile
               - export GH_REPO_REF=github.com/su2code/Doxygen.git
               - sh doc/generateDocumentationAndDeploy.sh
-
-    
+              
 stages:
     - test
-    - name: doxygen
-      if: base_branch = develop or branch = develop or base_branch = master or branch = master
-
+    - doxygen
