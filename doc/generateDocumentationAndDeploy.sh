@@ -96,21 +96,12 @@ if [ -d "html" ] && [ -f "html/index.html" ] ; then
         # build number and the GitHub commit reference that issued this build.
         git commit -m "Deploy code docs to GitHub Pages Travis build: ${TRAVIS_BUILD_NUMBER}" -m "Branch: ${TRAVIS_BRANCH}" -m "Commit: ${TRAVIS_COMMIT}" 
 
-    else
-        echo 'Uploading doxygen log file ...'
-
-        git add doxygen_${TRAVIS_BRANCH}_${TRAVIS_PULL_REQUEST_BRANCH}.log
-
-        # Commit the added files with a title and description containing the Travis CI
-        # build number and the GitHub commit reference that issued this build.
-        git commit -m "Deploy doxygen log to GitHub Pages Travis build: ${TRAVIS_BUILD_NUMBER}" -m "Branch: ${TRAVIS_BRANCH}" -m "Commit: ${TRAVIS_COMMIT}" 
-
+        # Force push to the remote gh-pages branch.
+        # The ouput is redirected to /dev/null to hide any sensitive credential data
+        # that might otherwise be exposed.
+        git push --force "https://${GH_REPO_TOKEN}@${GH_REPO_REF}" > /dev/null 2>&1
     fi
 
-    # Force push to the remote gh-pages branch.
-    # The ouput is redirected to /dev/null to hide any sensitive credential data
-    # that might otherwise be exposed.
-    git push --force "https://${GH_REPO_TOKEN}@${GH_REPO_REF}" > /dev/null 2>&1
 else
     echo '' >&2
     echo 'Warning: No documentation (html) files have been found!' >&2
