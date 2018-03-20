@@ -2802,23 +2802,6 @@ public:
 
   /*!
    * \brief A virtual member
-   *
-   * This function serves as a wrapper for other inlet setters. The values
-   * correspond to a row from the inlet specification file, with the
-   * physical coordinates and all the flow/turbulence variables.  Each solver
-   * can implement its own inlet setup, pulling the right values from the
-   * row of the table. For example, the CEulerSolver will use
-   * SetInletAtVertex to set Ttotal, Ptotal, and FlowDir.
-   *
-   * \param[in] values - Vector of values matching a line from the input file
-   * \param[in] iMarker - Surface marker where the coefficient is computed.
-   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
-   */
-  virtual void SetInletAtVertex(vector<su2double> values,
-                                unsigned short iMarker, unsigned long iVertex);
-
-  /*!
-   * \brief A virtual member
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
@@ -2839,22 +2822,6 @@ public:
                                      unsigned short val_kind_marker,
                                      CGeometry *geometry,
                                      CConfig *config);
-
-  /*!
-   * \brief A virtual member
-   *
-   * As the inlet values are read in from a file, each solver can check to see
-   * if the inputs are valid.  By overriding this function and calling it
-   * from CDriver, the solver can raise an error if the inlet file doesn't
-   * contain valid data.
-   *
-   * If this function is not overriden, the default implementation is
-   * to return "True", meaning "Valid Input".
-   *
-   * \param[in] inlet_values - Vector of values matching a line from the input file
-   * \return True if the inputs are valid, false otherwise.
-   */
-  virtual bool ValidateInletValues(vector<su2double> inlet_values);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -6189,14 +6156,6 @@ public:
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
 
   /*!
-   * \brief Check if the values specified in the inlet file are valid.
-   *
-   * \param[in] inlet_values - Vector of values matching a line from the input file
-   * \return True if the inputs are valid, false otherwise.
-   */
-  bool ValidateInletValues(vector<su2double> inlet_values);
-
-  /*!
    * \brief Set a uniform inlet profile
    *
    * The values at the inlet are set to match the values specified for
@@ -6206,19 +6165,6 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
   void SetUniformInlet(CConfig* config, unsigned short iMarker);
-
-  /*!
-   * \brief Read in a row of inlet values and set the inlet values
-   *
-   * This function serves as a wrapper for other inlet setters, setting
-   * Ttotal, Ptotal, and FlowDir.
-   *
-   * \param[in] values - Vector of values matching a line from the input file
-   * \param[in] iMarker - Surface marker where the coefficient is computed.
-   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
-   */
-  void SetInletAtVertex(vector<su2double> values, unsigned short iMarker,
-                        unsigned long iVertex);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -6237,7 +6183,11 @@ public:
    * \param config - Definition of the particular problem.
    * \return Value of the face area at the vertex.
    */
-  su2double GetInletAtVertex(su2double *val_inlet, unsigned long val_inlet_point, unsigned short val_kind_marker, CGeometry *geometry, CConfig *config);
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -9211,24 +9161,27 @@ public:
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Read in a row of inlet values and set the turb variables
-   *
-   * This function serves as a wrapper for other inlet setters.
-   *
-   * \param[in] values - Vector of values matching a line from the input file
-   * \param[in] iMarker - Surface marker where the coefficient is computed.
-   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
-   */
-  void SetInletAtVertex(vector<su2double> values,
-                        unsigned short iMarker, unsigned long iVertex);
-
-  /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
   void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
 
   /*!
    * \brief Set a uniform inlet profile
@@ -9431,18 +9384,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
-  
-  /*!
-   * \brief Read in a row of inlet values and set the turb variables
-   *
-   * This function serves as a wrapper for other inlet setters.
-   *
-   * \param[in] values - Vector of values matching a line from the input file
-   * \param[in] iMarker - Surface marker where the coefficient is computed.
-   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
-   */
-  void SetInletAtVertex(vector<su2double> values, unsigned short iMarker,
-                        unsigned long iVertex);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -9452,6 +9393,20 @@ public:
    */
   void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
 
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
   /*!
    * \brief Set a uniform inlet profile
    *

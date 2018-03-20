@@ -3188,20 +3188,70 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInletAtVertex(vector<su2double> values,
-                                    unsigned short iMarker,
-                                    unsigned long iVertex) {
-
-  Inlet_TurbVars[iMarker][iVertex][0] = values[nDim+2+nDim];
-
-}
-
 void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
 
   Inlet_TurbVars[iMarker][iVertex][0] = val_inlet[nDim+2+nDim];
 
+}
+
+su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
+                                          unsigned long val_inlet_point,
+                                          unsigned short val_kind_marker,
+                                          CGeometry *geometry,
+                                          CConfig *config) {
+
+  /*--- Local variables ---*/
+
+  unsigned short iMarker, iDim;
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+
+  /*--- Alias positions within inlet file for readability ---*/
+
+  if (val_kind_marker == INLET_FLOW) {
+
+    unsigned short position = nDim+2+nDim;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+
+            val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
+      }
+    }
+
+  }
+
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+  
+  return Area;
+  
 }
 
 void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
@@ -4346,15 +4396,6 @@ su2double* CTurbSSTSolver::GetConstants() {
   return constants;
 }
 
-void CTurbSSTSolver::SetInletAtVertex(vector<su2double> values,
-                                      unsigned short iMarker,
-                                      unsigned long iVertex) {
-
-  Inlet_TurbVars[iMarker][iVertex][0] = values[nDim+2+nDim];
-  Inlet_TurbVars[iMarker][iVertex][1] = values[nDim+2+nDim+1];
-
-}
-
 void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
                                      unsigned short iMarker,
                                      unsigned long iVertex) {
@@ -4362,6 +4403,66 @@ void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
   Inlet_TurbVars[iMarker][iVertex][0] = val_inlet[nDim+2+nDim];
   Inlet_TurbVars[iMarker][iVertex][1] = val_inlet[nDim+2+nDim+1];
 
+}
+
+su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
+                                           unsigned long val_inlet_point,
+                                           unsigned short val_kind_marker,
+                                           CGeometry *geometry,
+                                           CConfig *config) {
+
+  /*--- Local variables ---*/
+
+  unsigned short iMarker, iDim;
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+
+  /*--- Alias positions within inlet file for readability ---*/
+
+  if (val_kind_marker == INLET_FLOW) {
+
+    unsigned short tke_position   = nDim+2+nDim;
+    unsigned short omega_position = nDim+2+nDim+1;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+
+            val_inlet[tke_position]   = Inlet_TurbVars[iMarker][iVertex][0];
+            val_inlet[omega_position] = Inlet_TurbVars[iMarker][iVertex][1];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
+      }
+    }
+
+  }
+
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+  
+  return Area;
+  
 }
 
 void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {

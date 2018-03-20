@@ -3064,7 +3064,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   su2double *Inlet_Fine   = NULL;
   su2double *Normal       = new su2double[nDim];
 
-  int counter = 0;
+  unsigned long Marker_Counter = 0;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -3095,7 +3095,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     /*--- Load data from the restart into correct containers. ---*/
 
-    counter = 0;
+    Marker_Counter = 0;
 
     Inlet_Values = new su2double[maxCol_InletFile];
     Inlet_Fine   = new su2double[maxCol_InletFile];
@@ -3117,6 +3117,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- If we have found the matching marker string, continue. ---*/
 
           if (Marker_Tags_InletFile[jMarker] == Marker_Tag) {
+
+            /*--- Increment our counter for marker matches. ---*/
+
+            Marker_Counter++;
 
             /*--- Loop through the nodes on this marker. ---*/
 
@@ -3191,6 +3195,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     if (global_failure) {
       SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
+    }
+
+    /*--- Throw an error if the number of markers listed in the inlet
+     profile file is not equal to the number of inlet markers in the
+     calculation. ---*/
+
+    if (Marker_Counter != nMarker_InletFile) {
+      SU2_MPI::Error(string("Mismatch between NMARK in inlet profile file and number of inlets in the config file."), CURRENT_FUNCTION);
     }
 
     /*--- Copy the inlet data down to the coarse levels if multigrid is active.
