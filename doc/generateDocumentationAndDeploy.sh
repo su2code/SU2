@@ -77,7 +77,7 @@ doxygen $DOXYFILE 2>&1 | tee doxygen_${TRAVIS_BRANCH}.log
 if [ -d "html" ] && [ -f "html/index.html" ] ; then
 
     # Only push the documentation if it is push to master or develop.
-    if  ( [ "${TRAVIS_BRANCH}" = "master" ] || [ "${TRAVIS_BRANCH}" = "develop" ] ) && [ "${TRAVIS_PULL_REQUEST}" = "false" ] ; then
+    if  ( [ "${TRAVIS_BRANCH}" = "master" ] || [ "${TRAVIS_BRANCH}" = "develop" ] ) ; then
 
         echo 'Uploading documentation ...'
 
