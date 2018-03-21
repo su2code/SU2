@@ -1512,7 +1512,7 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
           if( i ) VDs[ii] *= pow((1.0-b), i);
 
           if(i > 0) {
-            su2double tmp = i*gb;
+            tmp = i*gb;
             if(i > 1) tmp *= pow((1.0-b), (i-1));
             VDs[ii] -= tmp;
           }
@@ -1534,15 +1534,17 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
                 expression. The first part is the derivative of the basis function w.r.t. c,
                 which is equal to t.                                     ---*/
           VDt[ii] = dhc;
-          if(i+j > 0) VDt[ii] *= pow((1.0-c), (i+j));
-
           if(i+j > 0) {
-            VDt[ii] -= (i+j)*hc;
-            if(i+j > 1) VDt[ii] *= pow((1.0-c), (i+j-1));
+            VDt[ii] *= pow((1.0-c), (i+j));
+
+            tmp = (i+j)*hc;
+            if(i+j > 1) tmp *= pow((1.0-c), (i+j-1));
+
+            VDt[ii] -= tmp;
           }
 
           VDt[ii] *= sqrt(8.0)*fa*gb;
-          if( i) VDt[i] *= pow((1.0-b), i);
+          if( i) VDt[ii] *= pow((1.0-b), i);
 
           /*--- Add the contribution from the derivative of the basis function w.r.t. a multiplied
                 by dadt and the derivative w.r.t. b multiplied by dbdt.           ---*/
@@ -2111,7 +2113,7 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   matDerBasisIntTrans = other.matDerBasisIntTrans;
   matDerBasisSolDOFs  = other.matDerBasisSolDOFs;
   matDerBasisOwnDOFs  = other.matDerBasisOwnDOFs;
-
+  mat2ndDerBasisInt   = other.mat2ndDerBasisInt;
 }
 
 void FEMStandardElementClass::CreateBasisFunctionsAndMatrixDerivatives(
