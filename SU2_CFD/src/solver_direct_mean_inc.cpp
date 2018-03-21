@@ -7124,12 +7124,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
-  
-  /*--- Compute the limiter in case we need it in the turbulence model
-   or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
-  
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output) { SetPrimitive_Limiter(geometry, config);
-  }
 
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/

@@ -518,8 +518,8 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -662,8 +662,8 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -799,8 +799,8 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
