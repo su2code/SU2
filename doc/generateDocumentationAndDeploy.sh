@@ -40,7 +40,7 @@ echo 'Setting up the script...'
 set -e
 
 # Get the current gh-pages branch
-git clone https://git@$GH_REPO_REF
+git clone -b master https://git@$GH_REPO_REF
 cd $GH_REPO_NAME
 
 ##### Configure git.
