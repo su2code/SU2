@@ -67,7 +67,7 @@ echo "" > .nojekyll
 ##### Generate the Doxygen code documentation and log the output.          #####
 echo 'Generating Doxygen code documentation...'
 # Redirect both stderr and stdout to the log file AND the console.
-doxygen $DOXYFILE 2>&1 | tee doxygen_${TRAVIS_BRANCH}_${TRAVIS_PULL_REQUEST_BRANCH}.log
+doxygen $DOXYFILE 2>&1 | tee doxygen_${TRAVIS_BRANCH}.log
 
 ################################################################################
 ##### Upload the documentation to the gh-pages branch of the repository.   #####
@@ -76,8 +76,8 @@ doxygen $DOXYFILE 2>&1 | tee doxygen_${TRAVIS_BRANCH}_${TRAVIS_PULL_REQUEST_BRAN
 # both exist. This is a good indication that Doxygen did it's work.
 if [ -d "html" ] && [ -f "html/index.html" ] ; then
 
-    # Only push the documentation if it is a PR or push to master or develop, otherwise only push the log file.
-    if  [ "${TRAVIS_BRANCH}" = "master" ] || [ "${TRAVIS_BRANCH}" = "develop" ] ; then
+    # Only push the documentation if it is push to master or develop.
+    if  ( [ "${TRAVIS_BRANCH}" = "master" ] || [ "${TRAVIS_BRANCH}" = "develop" ] ) && [ "${TRAVIS_PULL_REQUEST}" = "false" ] ; then
 
         echo 'Uploading documentation ...'
 
@@ -101,7 +101,7 @@ if [ -d "html" ] && [ -f "html/index.html" ] ; then
         # that might otherwise be exposed.
         git push --force "https://${GH_REPO_TOKEN}@${GH_REPO_REF}" > /dev/null 2>&1
     else
-        # Exit successful if we are on any other branch.
+        # Exit successful if we are on any other branch or pull request.
         echo 'No documentation update necessary!' >&2
         exit 0
     fi
