@@ -105,9 +105,6 @@ CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, C
 
 CCentSca_Heat::~CCentSca_Heat(void) {
 
-  delete [] Velocity_i;
-  delete [] Velocity_j;
-
 }
 
 void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
