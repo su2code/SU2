@@ -60,7 +60,7 @@ git config user.email "travis@travis-ci.org"
 # stayed the same and will only update the changed files. So the gh-pages branch
 # can be safely cleaned, and it is sure that everything pushed later is the new
 # documentation.
-rm -rf *
+rm -rf $TRAVIS_BRANCH
 
 # Need to create a .nojekyll file to allow filenames starting with an underscore
 # to be seen on the gh-pages site. Therefore creating an empty .nojekyll file.
@@ -73,8 +73,6 @@ echo "" > .nojekyll
 echo 'Generating Doxygen code documentation...'
 # Redirect both stderr and stdout to the log file AND the console.
 doxygen $DOXYFILE 2>&1 | tee doxygen.log
-
-echo $TRAVIS_BRANCH
 
 ################################################################################
 ##### Upload the documentation to the gh-pages branch of the repository.   #####
