@@ -10,7 +10,7 @@ notifications:
 # Change the branch name to the name of your branch
 branches:
     only:
-        - auto_doxygen_test
+        - develop
 
 # DO NOT TOUCH ANYTHING BELOW HERE 
 dist: trusty
