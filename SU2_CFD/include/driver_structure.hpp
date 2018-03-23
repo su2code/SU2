@@ -71,9 +71,10 @@ protected:
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
   ofstream *ConvHist_file;                       /*!< \brief Convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
-  iZone,                          /*!< \brief Iterator on zones.*/
-  nZone,                          /*!< \brief Total number of zones in the problem. */
-  nDim;                           /*!< \brief Number of dimensions.*/
+                iZone,                          /*!< \brief Iterator on zones.*/
+                nZone,                          /*!< \brief Total number of zones in the problem. */
+                nDim,                           /*!< \brief Number of dimensions.*/
+                **transfer_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi,                                     /*!< \brief FSI simulation flag.*/
@@ -1416,3 +1417,51 @@ public:
 
 };
 
+/*!
+ * \class CMultiphysicsZonalDriver
+ * \brief Class for driving zone-specific iterations.
+ * \author O. Burghardt
+ * \version 6.0.0 "Falcon"
+ */
+class CMultiphysicsZonalDriver : public CDriver {
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CMultiphysicsZonalDriver(char* confFile,
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMultiphysicsZonalDriver(void);
+
+  /*!
+   * \brief Run one iteration in all physical zones.
+   */
+  void Run();
+
+  /*!
+   * \brief Update the dual-time solution within multiple zones.
+   */
+  void Update();
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
+
+  /*!
+   * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
+   */
+  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+};
