@@ -2298,7 +2298,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
-  if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL) {
+  if (Weight_ObjFunc == NULL && Kind_ObjFunc == NULL) {
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
@@ -2310,7 +2310,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
-    if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
+    if (nMarker_Monitoring!=nObj && Marker_Monitoring!= NULL) {
       if (nMarker_Monitoring==1) {
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
@@ -2350,7 +2350,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
   if (nObjW<nObj) {
-    if (Weight_ObjFunc!= NULL and nObjW>1) {
+    if (Weight_ObjFunc!= NULL && nObjW>1) {
       SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
                      string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
     }
