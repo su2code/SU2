@@ -304,6 +304,7 @@ COutput::~COutput(void) {
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
 
+  if (RhoRes_Old != NULL) delete [] RhoRes_Old;
 
   /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
   unsigned short iMarker, iSpan;
