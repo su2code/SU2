@@ -509,7 +509,9 @@ def read_config(filename):
                         this_type = 'DEFAULT'
                         this_val  = 0.0 
                     this_name = this_obj[0]
-                       
+                    # Print an error and exit if the same key appears twice
+                    if (this_name in this_def):
+                      raise SystemExit('Multiple occurrences of the same objective in the OPT_OBJECTIVE definition are not currently supported. To evaluate one objective over multiple surfaces, list the objective once.')
                     # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
                     this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'VALUE':this_val} })
                     if (len(data_dict['MARKER_MONITORING'])>1):
