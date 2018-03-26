@@ -662,9 +662,18 @@ void CFEM_DG_DiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config)
 
 void CFEM_DG_DiscAdjSolver::SetSensitivityRingleb(){
 
+  su2double Local_Sens_Ringleb = SU2_TYPE::GetDerivative(Ringleb_Q0);
   Sens_Ringleb = SU2_TYPE::GetDerivative(Ringleb_Q0);
 
-  cout << "Sensitivity to Ringleb q0: " << Sens_Ringleb << "." << endl;
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_Ringleb,  &Sens_Ringleb,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Sens_Ringleb = Local_Sens_Ringleb;
+
+#endif
+
+  if(rank == MASTER_NODE)
+    cout << "Sensitivity to Ringleb q0: " << Sens_Ringleb << "." << endl;
 
   direct_solver->SetRinglebQ(Ringleb_Q0);
 }
