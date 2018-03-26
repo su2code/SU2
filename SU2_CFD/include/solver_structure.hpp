@@ -12595,6 +12595,8 @@ private:
   vector<su2double> VecSolDOFsSens;   /*!< \brief Vector, which stores the mesh sensitivity variables in the owned DOFs. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
+
+  su2double Ringleb_Q0;
   
 public:
 
@@ -12659,6 +12661,16 @@ public:
    *        Registers q0 for the Ringleb inflow.
    */
   void RegisterRinglebQ(void);
+
+  /*!
+   * \brief Set the value of Q0 for the Ringleb solution (for discrete adjoint).
+   */
+  void SetRinglebQ(su2double val);
+
+  /*!
+   * \brief Get the value of Q0 for the Ringleb solution (for discrete adjoint).
+   */
+  su2double GetRinglebQ(void);
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration

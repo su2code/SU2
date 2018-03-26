@@ -8099,7 +8099,7 @@ void CFEM_DG_EulerSolver::RinglebSolution(CConfig *config,
   /* Compute the speed of sound, density and pressure. */
   if(config->GetRingleb_Findiff()){
     if((abs(q - 0.5) < 1.0E-6) && y > 0.0){ // Perturb inflow if requested
-      q += 1.0E-4;
+      q += 1.0E-6;
     }
   }
 

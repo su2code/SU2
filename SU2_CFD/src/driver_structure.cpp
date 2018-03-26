@@ -4458,7 +4458,7 @@ void CFEM_DG_DiscAdjFluidDriver::Run() {
 
     SetRecording(FLOW_CONS_VARS);
 
-    RecordingState = NONE; // Hack to enter this conditional at next iteration, since RecordingState=FLOW_CONS_VARS otherwise...
+    //RecordingState = NONE; // Hack to enter this conditional at next iteration, since RecordingState=FLOW_CONS_VARS otherwise...
 
   }
 

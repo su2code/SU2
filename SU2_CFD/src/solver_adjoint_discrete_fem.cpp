@@ -159,6 +159,7 @@ CFEM_DG_DiscAdjSolver::CFEM_DG_DiscAdjSolver(CGeometry *geometry, CConfig *confi
   }
 
 #ifdef RINGLEB
+  SetRinglebQ(0.5);
   direct_solver->SetRinglebQ(0.5);
 #endif
 
@@ -661,9 +662,11 @@ void CFEM_DG_DiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config)
 
 void CFEM_DG_DiscAdjSolver::SetSensitivityRingleb(){
 
-  Sens_Ringleb = SU2_TYPE::GetDerivative(direct_solver->GetRinglebQ());
+  Sens_Ringleb = SU2_TYPE::GetDerivative(Ringleb_Q0);
 
   cout << "Sensitivity to Ringleb q0: " << Sens_Ringleb << "." << endl;
+
+  direct_solver->SetRinglebQ(Ringleb_Q0);
 }
 
 void CFEM_DG_DiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {

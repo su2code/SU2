@@ -1804,6 +1804,10 @@ inline void CFEM_DG_EulerSolver::SetRinglebQ(su2double val) { Ringleb_Q0 = val; 
 
 inline su2double CFEM_DG_EulerSolver::GetRinglebQ(void) { return Ringleb_Q0; }
 
+inline void CFEM_DG_DiscAdjSolver::SetRinglebQ(su2double val) { Ringleb_Q0 = val; }
+
+inline su2double CFEM_DG_DiscAdjSolver::GetRinglebQ(void) { return Ringleb_Q0; }
+
 inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CFEM_DG_NSSolver::GetTke_Inf(void) { return Tke_Inf; }
@@ -2247,9 +2251,8 @@ inline su2double* CFEM_DG_DiscAdjSolver::GetVecSolDOFs(void) {return VecSolDOFs.
 inline void CSolver::RegisterRinglebQ(void) {}
 
 inline void CFEM_DG_DiscAdjSolver::RegisterRinglebQ(void){
-	su2double q0 = 0.5;
-	AD::RegisterInput(q0);
-	direct_solver->SetRinglebQ(q0);
+	AD::RegisterInput(Ringleb_Q0);
+	direct_solver->SetRinglebQ(Ringleb_Q0);
 }
 
 inline su2double CFEM_DG_DiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
