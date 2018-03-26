@@ -675,6 +675,8 @@ void CFEM_DG_DiscAdjSolver::SetSensitivityRingleb(){
   if(rank == MASTER_NODE)
     cout << "Sensitivity to Ringleb q0: " << Sens_Ringleb << "." << endl;
 
+  /*--- Reset q0 ---*/
+  SetRinglebQ(0.5);
   direct_solver->SetRinglebQ(Ringleb_Q0);
 }
 
