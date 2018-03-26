@@ -46,6 +46,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   relVel = new su2double[nDim];
   su2double muLam, kine, omega, nu;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+		            (config->GetKind_Solver() == TWO_PHASE_RANS) ||
 		            (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   bool menter_sst = (config->GetKind_Turb_Model() == SST);
   bool two_phase = ((config->GetKind_Solver() == TWO_PHASE_EULER) ||
@@ -265,15 +266,22 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       //    FORMULA HAS TO BE IMPROVED TO INCLUDE 1) NON CONDENSING CASES AND 2) EQUILIBRIUM EXPANSIONS
       // preliminary attempt, imposed liquid volume fraction at component outlet //
 
-    	  EntropyGen[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan];
-
+    	  EntropyGen[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan]*100000;
+//    	  EntropyGen[iMarkerTP][iSpan] = PressureOut[iMarkerTP][iSpan];
+/*    	  if (DropletNumberOut[iMarkerTP][iSpan] !=0)
+          EntropyGen[iMarkerTP][iSpan] = pow(LiqVolumeOut[iMarkerTP][iSpan] /3.14 /4 *3 /DropletNumberOut[iMarkerTP][iSpan], 1.3);
+          else
+          EntropyGen[iMarkerTP][iSpan] = 0;
+*/
       } else {
           EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+//          EntropyGen[iMarkerTP][iSpan] = PressureOut[iMarkerTP][iSpan];
       }
 
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
       KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
+//      KineticEnergyLoss[iMarkerTP][iSpan]  = PressureOut[iMarkerTP][iSpan];
       PressureRatio[iMarkerTP][iSpan]      = TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan];
       EnthalpyOutIs[iMarkerTP][iSpan]      = (pow(TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan], 0.4/1.4) - 1.0)/(TotalTemperatureOut[iMarkerTP][iSpan]/TotalTemperatureIn[iMarkerTP][iSpan] -1.0);
     }

@@ -15629,12 +15629,17 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double Nu, Kine, Omega;
   su2double y, rho_v, rho_m, Mom0, LiqVolFraction;
   su2double MachTest, soundSpeed;
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+		  (config->GetKind_Solver() == TWO_PHASE_RANS) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
   bool two_phase = (config->GetKind_Solver() == TWO_PHASE_EULER) ||
 		  	  	   (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES) ||
-		  	  	   (config->GetKind_Solver() == TWO_PHASE_RANS);
+		  	  	   (config->GetKind_Solver() == TWO_PHASE_RANS) ||
+				   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER) ||
+				   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) ||
+				   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS);
+
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
@@ -15812,12 +15817,12 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                   Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
                   LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
-                  LiqVolFraction *=  solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
+     //             LiqVolFraction *=  solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
 
                   y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
                   rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
 
-                  Mom0 = Mom0/rho_m;
+                  //Mom0 = Mom0/rho_m;
 
                   TotalMom0 += Mom0;
                   TotalLiqVolFraction += LiqVolFraction;
@@ -15919,7 +15924,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                     Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
                     LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
-                    LiqVolFraction *= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
+ //                   LiqVolFraction *= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
 
                     y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
                     rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
