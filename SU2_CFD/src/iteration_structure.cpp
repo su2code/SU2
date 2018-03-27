@@ -1101,7 +1101,9 @@ void CPoissonIteration::Iterate(COutput *output,
   
   /*--- Poisson equation ---*/
   config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
-  integration_container[val_iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+  /*integration_container[val_iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                      config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone);*/
+  integration_container[val_iZone][POISSON_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                       config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone);
   
   

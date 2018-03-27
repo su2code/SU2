@@ -600,6 +600,8 @@ unsigned long iEdge, iPoint, jPoint;
 			jPoint = geometry->edge[iEdge]->GetNode(1);
     
 			/*--- Points coordinates, and normal vector ---*/
+			
+			
 
 			numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
 						geometry->node[jPoint]->GetCoord());
@@ -676,10 +678,25 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-	su2double dist_ij_2,Edge_Vector[3],proj_vector_ij,*Normal,Area,*Src_Term;
-	unsigned long iEdge, iPoint, jPoint,iDim,iMarker,Point,iVertex,iNeigh;
+	su2double dist_ij_2,Edge_Vector[3],proj_vector_ij,*Normal,Area,*Src_Term,cross_prod;
+	su2double **Sol_i_Grad,**Sol_j_Grad,*Correction,*Grad_Norm,*Grad_Edge;
+	unsigned long iEdge, iPoint, jPoint,iDim,iMarker,Point,iVertex,iNeigh,iVar;
+	bool collinear;
 
 	Src_Term = new su2double [nVar];
+	Correction = new su2double [nVar];
+	Grad_Norm = new su2double [nVar];
+	Grad_Edge = new su2double [nVar];
+	/*--- Create the coefficient marix using FV discretization ---*/
+	
+	  CoeffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  
+  /*--- Solution and residual vectors ---*/
+  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+	
+	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
 		iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -696,7 +713,7 @@ void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solve
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Edge_Vector[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
 			dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-			//proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+
 			proj_vector_ij += Normal[iDim];
 			Area += Normal[iDim]*Normal[iDim];
 		}
@@ -704,8 +721,33 @@ void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solve
 		
 		if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
 		else proj_vector_ij = proj_vector_ij/dist_ij_2;
-		//else proj_vector_ij = proj_vector_ij/abs(proj_vector_ij);
+
+
+		if (nDim==2) cross_prod = Edge_Vector[1]*Normal[0]-Edge_Vector[0]*Normal[1];
+		else cross_prod = pow((Edge_Vector[2]*Normal[1]-Edge_Vector[1]*Normal[2]),2) + pow((Edge_Vector[2]*Normal[0]-Edge_Vector[0]*Normal[2]),2) + pow((Edge_Vector[1]*Normal[0]-Edge_Vector[0]*Normal[1]),2);
+		collinear = false;
+		if (fabs(cross_prod)<=1.0e-10) collinear =true;
 		
+		if (!collinear){
+			Sol_i_Grad = node[iPoint]->GetGradient();
+			Sol_j_Grad = node[jPoint]->GetGradient();
+
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Grad_Edge[iVar] = 0.0;
+				Grad_Norm[iVar] = 0.0;
+				Correction[iVar] = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Grad_Norm[iVar] += 0.5*(Sol_i_Grad[iVar][iDim]+Sol_i_Grad[iVar][iDim])*Normal[iDim];
+					Grad_Edge[iVar] += 0.5*(Sol_i_Grad[iVar][iDim]+Sol_i_Grad[iVar][iDim])*Edge_Vector[iDim];
+				}	
+				Correction[iVar] = Correction[iVar] + Grad_Norm[iVar] ;
+				Correction[iVar] = Correction[iVar] - Grad_Edge[iVar]*proj_vector_ij;
+				Correction[iVar] = Correction[iVar]*Area;
+			}
+			cout<<"i: "<<iPoint<<"j: "<<jPoint<<"Correction: "<<Correction[0]<<endl;
+			LinSysRes.AddBlock(iPoint, Correction);
+			LinSysRes.SubtractBlock(jPoint, Correction);
+		}
 		
 		
 		CoeffMatrix_Node[0][0] = -Area*proj_vector_ij;
@@ -717,10 +759,14 @@ void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solve
 		
 		CoeffMatrix.SubtractBlock(jPoint, iPoint, CoeffMatrix_Node);
 		CoeffMatrix.AddBlock(jPoint, jPoint, CoeffMatrix_Node);
-		cout<<"iPoint: "<<iPoint<<"jPoint: "<<jPoint<<" normals "<<Normal[0]<<" , "<<Normal[1]<<" dist_ij_2 "<<dist_ij_2<<" Area "<<Area<<" entry "<<CoeffMatrix_Node[0][0]<<endl;
+		//cout<<"iPoint: "<<iPoint<<"jPoint: "<<jPoint<<" normals "<<Normal[0]<<" , "<<Normal[1]<<" Area "<<Area<<" proj_vector_ij: "<<proj_vector_ij<<" entry "<<CoeffMatrix_Node[0][0]<<endl;
+		//cout<<"iPoint: "<<iPoint<<"jPoint: "<<jPoint<<" edge vector "<<Edge_Vector[0]<<" , "<<Edge_Vector[1]<<" dist_ij_2: "<<dist_ij_2<<endl;
+		
+		
+		
 	}
 
-	
+	/*--- Modify the RHS to account for dirichlet/neumann boundaries ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case DIRICHLET:
@@ -739,6 +785,9 @@ void CPoissonSolverFVM::AssembleCoeffMatrix(CGeometry *geometry, CSolver **solve
         break;
 	}
 	delete Src_Term;
+	delete Grad_Edge;
+	delete Grad_Norm;
+	delete Correction;
 
 }
 void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -760,6 +809,10 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 	/*--- Initialize residual and solution at the ghost points ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+	  
+	 /*--- Read the residual ---*/
+    
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
 
 	/*--- Read the volume ---*/
 
@@ -784,7 +837,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] );
+      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar] );
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
@@ -1049,6 +1102,18 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 }
 
 
+su2double CPoissonSolverFVM::GetDirichlet_BC(CGeometry *geometry, CConfig *config, unsigned long Point){
+	
+	su2double dirichlet_bc;
+	
+	dirichlet_bc = cos(geometry->node[Point]->GetCoord(0))*cosh(geometry->node[Point]->GetCoord(1));
+	//1+2*(geometry->node[Point]->GetCoord(0))*(geometry->node[Point]->GetCoord(0))+3*(geometry->node[Point]->GetCoord(1))*(geometry->node[Point]->GetCoord(1));
+	
+	return dirichlet_bc;
+	
+}
+
+
 void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                   CConfig *config, unsigned short val_marker) {
   unsigned long Point, iVertex;
@@ -1060,9 +1125,10 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Point = geometry->vertex[val_marker][iVertex]->GetNode();
    
-    Solution[0] = 1+2*(geometry->node[Point]->GetCoord(0))*(geometry->node[Point]->GetCoord(0))+3*(geometry->node[Point]->GetCoord(1))*(geometry->node[Point]->GetCoord(1));
+    Solution[0] = GetDirichlet_BC(geometry,config,Point);
+    //1+2*(geometry->node[Point]->GetCoord(0))*(geometry->node[Point]->GetCoord(0))+3*(geometry->node[Point]->GetCoord(1))*(geometry->node[Point]->GetCoord(1));
     //cos(geometry->node[Point]->GetCoord(0))*cosh(geometry->node[Point]->GetCoord(1));
-    
+    //config
     
  /*--- Assign the dirichlet BC value to the solution ---*/
     node[Point]->SetSolution(Solution);
@@ -1070,6 +1136,7 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
     
 	CoeffMatrix.DeleteValsRowi(Point);
     LinSysRes.SetBlock_Zero(Point, 0);
+    node[Point]->SetVal_ResTruncError_Zero(0);
     LinSysSol.SetBlock(Point, Solution);
   }
 
@@ -1077,6 +1144,7 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
   
   
 }
+
 
 void CPoissonSolverFVM::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                 unsigned short val_marker) { 
