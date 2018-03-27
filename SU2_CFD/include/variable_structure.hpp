@@ -238,6 +238,11 @@ public:
   void SetVelSolutionOldZero(void);
   
   /*!
+   * \brief Set to zero the solution.
+   */
+  void SetSolutionOldVal(unsigned short val_var, su2double val);
+  
+  /*!
    * \brief Specify a vector to set the velocity components of the old solution.
    * \param[in] val_vector - Pointer to the vector.
    */

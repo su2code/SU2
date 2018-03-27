@@ -454,6 +454,8 @@ inline su2double CSolver::GetTotal_CWave() { return 0; }
 
 inline su2double CSolver::GetTotal_CHeat() { return 0; }
 
+inline su2double CSolver::GetDirichlet_BC(CGeometry *geometry, CConfig *config, unsigned long Point) { return 0; }
+
 inline void CSolver::SetTotal_CL(su2double val_Total_CL) { }
 
 inline void CSolver::SetTotal_CD(su2double val_Total_CD) { }
@@ -854,6 +856,8 @@ inline void CSolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver *
 
 inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                     unsigned short iMesh) { }
+                    
+inline void CSolver::Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
 

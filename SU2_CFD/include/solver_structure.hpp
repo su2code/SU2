@@ -2364,6 +2364,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Dirichlet value for given point on the boundary
+   */
+  virtual su2double GetDirichlet_BC(CGeometry *geometry, CConfig *config, unsigned long Point);
+  
+ /*!
+   * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CL_Inv(void);
@@ -3150,7 +3156,7 @@ public:
    */
   virtual su2double* GetConstants();
   
-  /*!
+ /*!
    * \brief A virtual member.
    * \param[in] fea_geometry - Geometrical definition of the problem.
    * \param[in] flow_solution - Container vector with all the solutions.
@@ -10987,6 +10993,7 @@ public:
 class CPoissonSolverFVM : public CSolver {
 	
   su2double **CoeffMatrix_Node;  /*!< \brief Auxiliary matrices for storing point to point coefficient matrices. */
+
 public:
   
   /*!
@@ -11006,6 +11013,15 @@ public:
    * \brief Destructor of the class.
    */
   ~CPoissonSolverFVM(void);
+  
+  
+  /*!
+   * \brief Return the value at the dirichlet boundary
+   * 
+   */
+  su2double GetDirichlet_BC(CGeometry *geometry, CConfig *config, unsigned long Point);
+  
+  
   
   /*!
    * \brief Compute the spatial integration using a centered scheme.
