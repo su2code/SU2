@@ -5869,13 +5869,6 @@ public:
   su2double* GetInlet_Velocity(string val_index);
   
   /*!
-   * \brief Get the fixed value at the Dirichlet boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetDirichlet_Value(string val_index);
-  
-  /*!
    * \brief Get whether this is a Dirichlet or a Neumann boundary.
    * \param[in] val_index - Index corresponding to the Dirichlet boundary.
    * \return Yes or No.
