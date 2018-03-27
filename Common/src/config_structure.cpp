@@ -2360,8 +2360,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if (Kind_Solver == POISSON_EQUATION) {
-    nMGLevels = 0;
-    if (Kind_TimeIntScheme_Poisson == DIRECT_SOLVE) nExtIter = 1;
+    //nMGLevels = 0;
+    //if (Kind_TimeIntScheme_Poisson == DIRECT_SOLVE) nExtIter = 5;
   }  
   
   if (Kind_Solver == FEM_ELASTICITY) {
@@ -3785,6 +3785,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Dirichlet[iMarker_Dirichlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = DIRICHLET;
     iMarker_CfgFile++;
+    cout<<"nMarker dirichlet: "<<nMarker_Dirichlet<<endl;
   }
 
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
@@ -6749,13 +6750,6 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
     if (Marker_Moving[iMarker_Moving] == val_marker) break;
 
   return iMarker_Moving;
-}
-
-su2double CConfig::GetDirichlet_Value(string val_marker) {
-  unsigned short iMarker_Dirichlet;
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++)
-    if (Marker_Dirichlet[iMarker_Dirichlet] == val_marker) break;
-  return Dirichlet_Value[iMarker_Dirichlet];
 }
 
 bool CConfig::GetDirichlet_Boundary(string val_marker) {
