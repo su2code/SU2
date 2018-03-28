@@ -154,6 +154,12 @@ def main():
     # load config, start state
     config = SU2.io.Config(inputbaseFile)
     state = SU2.io.State()
+    # Set SU2 defaults units, if definitions are not included in the cfg file
+    if 'SYSTEM_MEASUREMENTS' not in config:
+        config.SYSTEM_MEASUREMENTS = 'SI'
+    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+        if 'REYNOLDS_LENGTH' not in config:
+            config.REYNOLDS_LENGTH = 1.0
 
     # prepare config
     config.NUMBER_PART = options.partitions
@@ -276,9 +282,12 @@ def main():
     f.write('\n%  ')
     line_text = 'Mach : %7.2f  ,  '%(config.MACH_NUMBER)
     f.write(line_text)
-    line_text = 'Reynolds Number  :  %s   '%(config.REYNOLDS_NUMBER)
-    f.write(line_text)
-    line_text = 'Reynolds length :   %s   [ %s ] '%(config.REYNOLDS_LENGTH, length_dimension)
+    if config.PHYSICAL_PROBLEM == 'NAVIER_STOKES':
+        line_text = 'Reynolds Number  :  %s   '%(config.REYNOLDS_NUMBER)
+        f.write(line_text)
+        line_text = 'Reynolds length :   %s   [ %s ] '%(config.REYNOLDS_LENGTH, length_dimension)
+    else:
+        line_text = 'Physical problem : %s '%( config.PHYSICAL_PROBLEM)
     f.write(line_text)
     f.write('\n%  ')
     rho = float(config.FREESTREAM_PRESSURE)/\
@@ -298,12 +307,14 @@ def main():
     line_text = 'Grid file :  %s  '%(config.MESH_FILENAME)
     f.write(line_text)
     f.write('\n%  ')
-    try:
-        config.MARKER_SYM
-    except NameError:
-        line_text = 'Symmetry surface :  no'
-    else:
+    symmmetry_exists = False
+    if 'MARKER_SYM' in config:
+        if config.MARKER_SYM != 'NONE':
+            symmmetry_exists = True
+    if symmmetry_exists:
         line_text = 'Symmetry surface :  yes'
+    else:
+        line_text = 'Symmetry surface :  no'
     f.write(line_text)
     f.write('\n% \n')
     # -----------------   end reference parameter section --------------
