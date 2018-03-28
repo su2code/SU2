@@ -1804,9 +1804,7 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
 #ifdef HAVE_MPI
-  su2double MyAllBound_HeatFlux, MyAllBound_AvgTemperature, *MyHeatFlux;
-  MyHeatFlux = new su2double[nMarker];
-
+  su2double MyAllBound_HeatFlux, MyAllBound_AvgTemperature;
 #endif
 
   cp_fluid = config->GetSpecificHeat_Fluid();
@@ -1915,14 +1913,10 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
   }
 
 #ifdef HAVE_MPI
-  for(iMarker = 0; iMarker < nMarker; iMarker++) { MyHeatFlux[iMarker] = Heat_Flux[iMarker]; }
   MyAllBound_HeatFlux = AllBound_HeatFlux;
   MyAllBound_AvgTemperature = AllBound_AvgTemperature;
-  SU2_MPI::Allreduce(MyHeatFlux, Heat_Flux, nMarker, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_HeatFlux, &AllBound_HeatFlux, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_AvgTemperature, &AllBound_AvgTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  delete[] MyHeatFlux;
 #endif
 
   if (Total_HeatFlux_Areas_Monitor != 0.0) {
