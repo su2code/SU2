@@ -738,6 +738,8 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   unsigned long iPoint, PointNormal;
   unsigned short nDim, iDim;
 
+  nDim = donor_geometry->GetnDim();
+
   su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall, Tnormal,
       dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, Prandtl_Turb, eddy_viscosity, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity, thermal_conductivityND, heat_flux_density, conductivity_over_dist, Temperature_Ref;
@@ -753,8 +755,6 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
                || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
   bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
   bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;
-
-  nDim = donor_geometry->GetnDim();
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
   Prandtl_Lam       = donor_config->GetPrandtl_Lam();
