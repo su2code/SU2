@@ -60,3 +60,6 @@
 #else
   typedef codi::RealReverse su2double;
 #endif
+
+typedef su2double::PassiveReal passivedouble;
+

@@ -37,3 +37,5 @@
 #pragma once
 
 typedef double su2double;
+
+typedef double passivedouble;

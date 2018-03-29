@@ -40,3 +40,5 @@
 
 typedef codi::RealForward su2double;
 
+typedef su2double::PassiveReal passivedouble;
+

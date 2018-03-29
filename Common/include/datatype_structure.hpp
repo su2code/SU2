@@ -59,10 +59,6 @@
 
 #include "ad_structure.hpp"
 
-/*--- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. ---*/
-
-typedef double passivedouble;
-
 /*!
  * \namespace SU2_TYPE
  * \brief Namespace for defining the datatype wrapper routines; this class features as a base class for
