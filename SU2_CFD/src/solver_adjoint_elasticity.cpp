@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_adjoint_elasticity.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
@@ -540,7 +540,7 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
    * when running the discrete adjoint solver. ---*/
 
-  direct_solver->System.SetValZero_Matrix();
+  direct_solver->System.SetValZero();
 
   /*--- Set indices to zero ---*/
 

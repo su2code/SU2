@@ -59,10 +59,10 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 	  /*--- Initialize the number of spatial dimensions, length of the state
 	   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-	  nDim   = geometry->GetnDim();
-	  nVar   = geometry->GetnDim();
-	  nPoint = geometry->GetnPoint();
-	  nPointDomain = geometry->GetnPointDomain();
+    nDim   = geometry->GetnDim();
+    nVar   = geometry->GetnDim();
+    nPoint = geometry->GetnPoint();
+    nPointDomain = geometry->GetnPointDomain();
 
 	  nIterMesh = 0;
 
@@ -70,14 +70,13 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
 	  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-	  System.Initialize_System(nVar, false, geometry, config);
-    
-   System.Initialize_Linear_Solver(nVar, 
-                                   config->GetKind_Deform_Linear_Solver(), 
-                                   config->GetKind_Deform_Linear_Solver_Prec(), 
-                                   config->GetDeform_Linear_Solver_Iter(), 
-                                   config->GetDeform_Linear_Solver_Error(),
-                                   geometry, config);
+	  System.Initialize(nVar, false, geometry, config);
+      
+    System.Initialize_Linear_Solver(config->GetKind_Deform_Linear_Solver(), 
+                                    config->GetKind_Deform_Linear_Solver_Prec(), 
+                                    config->GetDeform_Linear_Solver_Iter(), 
+                                    config->GetDeform_Linear_Solver_Error(),
+                                    geometry, config);
 
 }
 
@@ -169,7 +168,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
-    System.SetValZero_Matrix();
+    System.SetValZero();
     
     /*--- Compute the stiffness matrix entries for all nodes/elements in the
      mesh. FEA uses a finite element method discretization of the linear
@@ -1488,7 +1487,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix(CGeometry *geometry, su2double **St
         }
       }
 
-      System.AddBlock_Matrix(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
+      System.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
       
     }
   }
@@ -8902,7 +8901,7 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    System.Initialize_System(nVar, false, geometry, config);
+    System.Initialize(nVar, false, geometry, config);
 
     /*--- Matrices to impose boundary conditions ---*/
 
@@ -9068,7 +9067,7 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     /*--- Initialize vector and sparse matrix ---*/
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
-    System.SetValZero_Matrix();
+    System.SetValZero();
 
     /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
@@ -9239,16 +9238,16 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
       for (jPoint = 0; jPoint < nPoint; jPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = System.GetBlock_Matrix(iNode, jPoint,0,0);
+        valJacobian_ij_00 = System.GetBlock(iNode, jPoint,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != jPoint) {
-            System.SetBlock_Matrix(iNode,jPoint,matrixZeros);
+            System.SetBlock(iNode,jPoint,matrixZeros);
           }
           /*--- And the diagonal to 1.0 ---*/
           else{
-            System.SetBlock_Matrix(iNode,jPoint,matrixId);
+            System.SetBlock(iNode,jPoint,matrixId);
           }
         }
       }
@@ -9257,12 +9256,12 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
       for (iPoint = 0; iPoint < nPoint; iPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = System.GetBlock_Matrix(iPoint, iNode,0,0);
+        valJacobian_ij_00 = System.GetBlock(iPoint, iNode,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != iPoint) {
-            System.SetBlock_Matrix(iPoint,iNode,matrixZeros);
+            System.SetBlock(iPoint,iNode,matrixZeros);
           }
         }
       }
@@ -9318,16 +9317,16 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
       for (jPoint = 0; jPoint < nPoint; jPoint++){
 
         /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = System.GetBlock_Matrix(iNode, jPoint,0,0);
+        valJacobian_ij_00 = System.GetBlock(iNode, jPoint,0,0);
 
         if (valJacobian_ij_00 != 0.0 ){
           /*--- Set the rest of the row to 0 ---*/
           if (iNode != jPoint) {
-            System.SetBlock_Matrix(iNode,jPoint,matrixZeros);
+            System.SetBlock(iNode,jPoint,matrixZeros);
           }
           /*--- And the diagonal to 1.0 ---*/
           else{
-            System.SetBlock_Matrix(iNode,jPoint,matrixId);
+            System.SetBlock(iNode,jPoint,matrixId);
           }
         }
       }
@@ -9337,7 +9336,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
       for (iPoint = 0; iPoint < nPoint; iPoint++){
 
         /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = System.GetBlock_Matrix(iPoint,iNode,0,0);
+        valJacobian_ij_00 = System.GetBlock(iPoint,iNode,0,0);
 
         /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
         if (valJacobian_ij_00 != 0.0 ){
@@ -9345,7 +9344,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
           /*--- Retrieve the Jacobian term ---*/
           for (iDim = 0; iDim < nDim; iDim++){
             for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = System.GetBlock_Matrix(iPoint,iNode,iDim,jDim);
+              auxJacobian_ij[iDim][jDim] = System.GetBlock(iPoint,iNode,iDim,jDim);
             }
           }
 
@@ -9362,7 +9361,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
             /*--- The term is substracted from the residual (right hand side) ---*/
             LinSysRes.SubtractBlock(iPoint, Residual);
             /*--- The Jacobian term is now set to 0 ---*/
-            System.SetBlock_Matrix(iPoint,iNode,matrixZeros);
+            System.SetBlock(iPoint,iNode,matrixZeros);
           }
         }
       }
@@ -9648,7 +9647,7 @@ void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
           }
         }
 
-        System.AddBlock_Matrix(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+        System.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
       }
 

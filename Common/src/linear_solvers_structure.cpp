@@ -38,32 +38,6 @@
 #include "../include/linear_solvers_structure.hpp"
 #include "../include/linear_solvers_structure_b.hpp"
 
-template<class CalcType, class BaseType>
-Convert<CalcType, BaseType>::Convert(){
-  
-
-}
-
-template<class CalcType, class BaseType>
-Convert<CalcType, BaseType>::~Convert(){
-  
-}
-
-template<class CalcType, class BaseType>
-void Convert<CalcType, BaseType>::Initialize(unsigned short MaxSize){
-
-  Block_CalcType = new CalcType*[MaxSize];
-  Block_BaseType = new BaseType*[MaxSize];
-
-  for (unsigned short i=0; i < MaxSize; i++){
-    Block_CalcType[i] = new CalcType[MaxSize];
-    Block_BaseType[i] = new BaseType[MaxSize];
-  } 
-  BlockLin_CalcType = new CalcType[MaxSize];
-  BlockLin_BaseType = new BaseType[MaxSize];
-  
-}
-
 
 template<class CalcType>
 TCLinSolver<CalcType>::TCLinSolver(unsigned short blocksize, unsigned long elem, unsigned long elemdomain, CalcType tol, unsigned long m, bool monitoring){
@@ -717,12 +691,9 @@ TCSysSolve<CalcType, BaseType>::~TCSysSolve(){
 //  delete Precond_b;
   
 }
-template<>
-void TCSysSolve<su2double, su2double>::Initialize_System_Adjoint(unsigned short BlockSize, CGeometry *geometry, CConfig *config){
-  
-}
+
 template<class CalcType, class BaseType>
-void TCSysSolve<CalcType, BaseType>::Initialize_System(unsigned short blocksize, bool edgeconnect, CGeometry *geometry, CConfig *config){
+void TCSysSolve<CalcType, BaseType>::Initialize(unsigned short blocksize, bool edgeconnect, CGeometry *geometry, CConfig *config){
   
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -732,83 +703,77 @@ void TCSysSolve<CalcType, BaseType>::Initialize_System(unsigned short blocksize,
   
   Matrix.Initialize(nPoint, nPointDomain, BlockSize, BlockSize, edgeconnect, geometry, config);
   
+  /*--- Initialize the conversion class that is used to convert between CalcType and BaseType --- */
+  
   convert.Initialize(BlockSize);
   
-  Initialize_System_Adjoint(blocksize, geometry, config);
+  /*--- Initialize the right-hand side and solution vectors using the CalcType datatype
+   *  (does nothing if CalcType and BaseType are identical) ---*/
   
-}
-
-
-template<>
-void TCSysSolve<su2double, su2double>::Initialize_Linear_Solver_Adjoint(unsigned short blocksize,
-                                                                        unsigned short kind_solver, 
-                                                                        unsigned short kind_preconditioner, 
-                                                                        unsigned long max_iter,
-                                                                        su2double solver_error, 
-                                                                        CGeometry *geometry, 
-                                                                        CConfig *config){
-
+  Initialize_CalcType();
+  
 }
 
 template<class CalcType, class BaseType>
-void TCSysSolve<CalcType, BaseType>::Initialize_Linear_Solver(unsigned short blocksize,
-                                                                unsigned short kind_solver, 
-                                                                unsigned short kind_preconditioner, 
-                                                                unsigned long max_iter,
-                                                                BaseType solver_error, 
-                                                                CGeometry *geometry, 
-                                                                CConfig *config){
+void TCSysSolve<CalcType, BaseType>::Initialize_Linear_Solver(unsigned short kind_solver, 
+                                                              unsigned short kind_preconditioner, 
+                                                              unsigned long max_iter,
+                                                              BaseType solver_error, 
+                                                              CGeometry *geometry, 
+                                                              CConfig *config){
   
-  nPoint       = geometry->GetnPoint();
-  nPointDomain = geometry->GetnPointDomain();
-  BlockSize    = blocksize;
-  
+
+  if (geometry->GetnPoint() != nPoint){
+    SU2_MPI::Error("Incompatible geometry container as argument.", CURRENT_FUNCTION);
+  }
+
   CalcType SolverTol    = convert.ToCalcType(solver_error);
   
   kind_prec = kind_preconditioner;
   
-  /*--- Solve the linear system using a Krylov subspace method ---*/
+  MatVec   = new TCSysMatrixVectorProduct<CalcType>(Matrix, geometry, config);
   
-  MatVec = new TCSysMatrixVectorProduct<CalcType>(Matrix, geometry, config);
+  MatVec_b = new TCSysMatrixVectorProductTransposed<CalcType>(Matrix, geometry, config);
+  
+  /*--- Solve the linear system using a Krylov subspace method ---*/
   
   switch (kind_preconditioner) {
   case JACOBI:
-    Precond = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond   = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond_b = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);
     break;
   case ILU:
-    Precond = new TCILUPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond   = new TCILUPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond_b = new TCILUPreconditioner<CalcType>(Matrix, geometry, config);
     break;
   case LU_SGS:
-    Precond = new TCLU_SGSPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond   = new TCLU_SGSPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond_b = new TCILUPreconditioner<CalcType>(Matrix, geometry, config);    
     break;
   case LINELET:
-    Precond = new TCLineletPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond   = new TCLineletPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond_b = new TCILUPreconditioner<CalcType>(Matrix, geometry, config);    
     break;
   default:
     Precond = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);
+    Precond_b = new TCJacobiPreconditioner<CalcType>(Matrix, geometry, config);    
     break;
   }
   switch (kind_solver) {
   case BCGSTAB:
-    LinSolver = new TCLinSolver_BCGSTAB<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, false);
+    LinSolver = new TCLinSolver_BCGSTAB<CalcType>(BlockSize, nPoint, nPointDomain, SolverTol, max_iter, false);
     break;
   case FGMRES: case RESTARTED_FGMRES:
-    LinSolver = new TCLinSolver_FGMRES<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, true);
+    LinSolver = new TCLinSolver_FGMRES<CalcType>(BlockSize, nPoint, nPointDomain, SolverTol, max_iter, false);
     break;
   case CONJUGATE_GRADIENT:
-    LinSolver = new TCLinSolver_CG<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, false);
+    LinSolver = new TCLinSolver_CG<CalcType>(BlockSize, nPoint, nPointDomain, SolverTol, max_iter, false);
     break;
   default:
-    LinSolver = new TCLinSolver_FGMRES<CalcType>(blocksize, nPoint, nPointDomain, SolverTol, max_iter, false);
+    LinSolver = new TCLinSolver_FGMRES<CalcType>(BlockSize, nPoint, nPointDomain, SolverTol, max_iter, false);
     break;
   }
-  
-
-  
-  Initialize_Linear_Solver_Adjoint(blocksize, kind_solver, kind_preconditioner, max_iter, solver_error, geometry, config);
-  
 }
-
 
 template<class CalcType, class BaseType>
 void TCSysSolve<CalcType, BaseType>::Build_Preconditioner(unsigned short kind_prec, bool transpose){
@@ -828,31 +793,21 @@ void TCSysSolve<CalcType, BaseType>::Build_Preconditioner(unsigned short kind_pr
 }
 
 template<>
+void TCSysSolve<su2double, su2double>::Initialize_CalcType() {}
+
+template<>
 void TCSysSolve<su2double, su2double>::Solve_System(TCSysVector<su2double>& Rhs, TCSysVector<su2double>& Sol){
   Build_Preconditioner(kind_prec, false);  
   LinSolver->Solve(Rhs, Sol, *MatVec, *Precond);
 }
+
+
 #ifdef CODI_REVERSE_TYPE
 template<>
-void TCSysSolve<passivedouble, su2double>::Initialize_System_Adjoint(unsigned short blocksize, CGeometry *geometry, CConfig *config){
+void TCSysSolve<passivedouble, su2double>::Initialize_CalcType(){
   
-  LinSysRes_calc.Initialize(nPoint, nPointDomain, BlockSize, 0.0);
-  LinSysSol_calc.Initialize(nPoint, nPointDomain, BlockSize, 0.0);
-  
-}
-template<>
-void TCSysSolve<passivedouble, su2double>::Initialize_Linear_Solver_Adjoint(unsigned short blocksize,
-                                                                        unsigned short kind_solver, 
-                                                                        unsigned short kind_preconditioner, 
-                                                                        unsigned long max_iter,
-                                                                        su2double solver_error, 
-                                                                        CGeometry *geometry, 
-                                                                        CConfig *config){
-
-  kind_prec_b = ILU;
-  
-  MatVec_b = new TCSysMatrixVectorProductTransposed<passivedouble>(Matrix, geometry, config);
-  Precond_b = new TCILUPreconditioner<passivedouble>(Matrix, geometry, config);
+  Rhs_CalcType.Initialize(nPoint, nPointDomain, BlockSize, 0.0);
+  Sol_CalcType.Initialize(nPoint, nPointDomain, BlockSize, 0.0);
   
 }
 
@@ -882,18 +837,18 @@ void TCSysSolve<passivedouble, su2double>::Solve_System(TCSysVector<su2double> &
   /*--- Convert data from the basetype to the calc type---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    LinSysSol_calc.SetBlock(iPoint, convert.ToCalcType(Rhs.GetBlock(iPoint), BlockSize));
-    LinSysRes_calc.SetBlock(iPoint, convert.ToCalcType(Sol.GetBlock(iPoint), BlockSize));
+    Sol_CalcType.SetBlock(iPoint, convert.ToCalcType(Rhs.GetBlock(iPoint), BlockSize));
+    Rhs_CalcType.SetBlock(iPoint, convert.ToCalcType(Sol.GetBlock(iPoint), BlockSize));
   }
   
   Build_Preconditioner(kind_prec, false);
-  LinSolver->Solve(LinSysRes_calc, LinSysSol_calc, *MatVec, *Precond);
+  LinSolver->Solve(Rhs_CalcType, Sol_CalcType, *MatVec, *Precond);
   
   /*--- Convert data back from the calc type to the base type---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    Rhs.SetBlock(iPoint, convert.ToBaseType(LinSysSol_calc.GetBlock(iPoint), BlockSize));
-    Sol.SetBlock(iPoint, convert.ToBaseType(LinSysRes_calc.GetBlock(iPoint), BlockSize));
+    Rhs.SetBlock(iPoint, convert.ToBaseType(Sol_CalcType.GetBlock(iPoint), BlockSize));
+    Sol.SetBlock(iPoint, convert.ToBaseType(Rhs_CalcType.GetBlock(iPoint), BlockSize));
   }
   
   if(TapeActive) {
@@ -906,8 +861,8 @@ void TCSysSolve<passivedouble, su2double>::Solve_System(TCSysVector<su2double> &
 
     /*--- Add some pointers to additional data that is required in the reverse sweep ---*/
     
-    AD::FuncHelper->addUserData(&LinSysRes_calc);
-    AD::FuncHelper->addUserData(&LinSysSol_calc);
+    AD::FuncHelper->addUserData(&Rhs_CalcType);
+    AD::FuncHelper->addUserData(&Sol_CalcType);
     AD::FuncHelper->addUserData(MatVec_b);
     AD::FuncHelper->addUserData(Precond_b);
     AD::FuncHelper->addUserData(LinSolver);

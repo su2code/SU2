@@ -262,7 +262,7 @@ TCSysVector<CalcType> & TCSysVector<CalcType>::operator=(const CalcType & val) {
 }
 
 template<class CalcType>
-TCSysVector<CalcType> TCSysVector<CalcType>::operator+(const TCSysVector<CalcType> & u) const {
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator+(const TCSysVector<CalcType> & u) const {
   
   /*--- Use copy constructor and compound addition-assignment ---*/
   TCSysVector<CalcType> sum(*this);
@@ -283,7 +283,7 @@ TCSysVector<CalcType> & TCSysVector<CalcType>::operator+=(const TCSysVector<Calc
 }
 
 template<class CalcType>
-TCSysVector<CalcType> TCSysVector<CalcType>::operator-(const TCSysVector<CalcType> & u) const {
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator-(const TCSysVector<CalcType> & u) const {
   
   /*--- Use copy constructor and compound subtraction-assignment ---*/
   TCSysVector<CalcType> diff(*this);
@@ -304,7 +304,7 @@ TCSysVector<CalcType> & TCSysVector<CalcType>::operator-=(const TCSysVector<Calc
 }
 
 template<class CalcType>
-TCSysVector<CalcType> TCSysVector<CalcType>::operator*(const CalcType & val) const {
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator*(const CalcType & val) const {
   
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
@@ -314,7 +314,7 @@ TCSysVector<CalcType> TCSysVector<CalcType>::operator*(const CalcType & val) con
 }
 
 template<class CalcType>
-TCSysVector<CalcType> operator*(const CalcType & val, const CSysVector & u) {
+TCSysVector<CalcType> & operator*(const CalcType & val, const CSysVector & u) {
   
   /*--- use copy constructor and compound scalar
    multiplication-assignment ---*/
@@ -332,7 +332,7 @@ TCSysVector<CalcType> & TCSysVector<CalcType>::operator*=(const CalcType & val) 
 }
 
 template<class CalcType>
-TCSysVector<CalcType> TCSysVector<CalcType>::operator/(const CalcType & val) const {
+TCSysVector<CalcType> & TCSysVector<CalcType>::operator/(const CalcType & val) const {
   
   /*--- use copy constructor and compound scalar
    division-assignment ---*/
@@ -416,7 +416,7 @@ CalcType TCSysVector<CalcType>::GetBlock(unsigned long val_ipoint, unsigned shor
 }
 
 template<class CalcType>
-CalcType *TCSysVector<CalcType>::GetBlock(unsigned long val_ipoint) {
+const CalcType *TCSysVector<CalcType>::GetBlock(unsigned long val_ipoint) {
   return &vec_val[val_ipoint*nVar];
 }
 

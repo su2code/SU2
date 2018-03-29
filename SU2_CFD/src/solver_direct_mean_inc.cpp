@@ -282,9 +282,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  System.Initialize_System(nVar, true, geometry, config);
-  System.Initialize_Linear_Solver(nVar, 
-                                  config->GetKind_Linear_Solver(), 
+  System.Initialize(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(config->GetKind_Linear_Solver(), 
                                   config->GetKind_Linear_Solver_Prec(),
                                   config->GetLinear_Solver_Iter(), 
                                   config->GetLinear_Solver_Error(), 
@@ -2093,7 +2092,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !disc_adjoint) System.SetValZero_Matrix();
+  if (implicit && !disc_adjoint) System.SetValZero();
 
   /*--- Error message ---*/
   
@@ -2388,10 +2387,10 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Store implicit contributions from the reisdual calculation. ---*/
     
     if (implicit) {
-      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(iPoint, jPoint, Jacobian_j);
-      System.SubtractBlock_Matrix(jPoint, iPoint, Jacobian_i);
-      System.SubtractBlock_Matrix(jPoint, jPoint, Jacobian_j);
+      System.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock(iPoint, jPoint, Jacobian_j);
+      System.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      System.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   
@@ -2488,10 +2487,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
-      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(iPoint, jPoint, Jacobian_j);
-      System.SubtractBlock_Matrix(jPoint, iPoint, Jacobian_i);
-      System.SubtractBlock_Matrix(jPoint, jPoint, Jacobian_j);
+      System.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock(iPoint, jPoint, Jacobian_j);
+      System.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      System.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   
@@ -2547,7 +2546,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Add the implicit Jacobian contribution ---*/
       
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -2594,7 +2593,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Implicit part ---*/
       
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -3668,9 +3667,9 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      System.AddVal2Diag_Matrix(iPoint, Delta);
+      System.AddVal2Diag(iPoint, Delta);
     } else {
-      System.SetVal2Diag_Matrix(iPoint, 1.0);
+      System.SetVal2Diag(iPoint, 1.0);
       
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar + iVar;
@@ -4502,7 +4501,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
         
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian_i[iDim+1][0] = -Normal[iDim];
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
 
       }
     }
@@ -4580,7 +4579,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Convective Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous residual contribution ---*/
       
@@ -4617,7 +4616,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         /*--- Viscous Jacobian contribution for implicit integration ---*/
         
         if (implicit)
-          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
       
@@ -4712,7 +4711,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -4851,7 +4850,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit) {
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
@@ -4985,7 +4984,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
     
@@ -5129,7 +5128,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
   }
@@ -5963,9 +5962,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  System.Initialize_System(nVar, true, geometry, config);
-  System.Initialize_Linear_Solver(nVar, 
-                                  config->GetKind_Linear_Solver(), 
+  System.Initialize(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(config->GetKind_Linear_Solver(), 
                                   config->GetKind_Linear_Solver_Prec(),
                                   config->GetLinear_Solver_Iter(), 
                                   config->GetLinear_Solver_Error(), 
@@ -6380,7 +6378,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !config->GetDiscrete_Adjoint()) System.SetValZero_Matrix();
+  if (implicit && !config->GetDiscrete_Adjoint()) System.SetValZero();
 
   /*--- Error message ---*/
   
@@ -6695,10 +6693,10 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Implicit part ---*/
     
     if (implicit) {
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      System.SubtractBlock_Matrix(iPoint, jPoint, Jacobian_j);
-      System.AddBlock_Matrix(jPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(jPoint, jPoint, Jacobian_j);
+      System.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      System.AddBlock(jPoint, iPoint, Jacobian_i);
+      System.AddBlock(jPoint, jPoint, Jacobian_j);
     }
     
   }

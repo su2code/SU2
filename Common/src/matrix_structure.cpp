@@ -131,193 +131,18 @@ TCSysMatrix<CalcType>::~TCSysMatrix(void) {
 template <class CalcType>
 void TCSysMatrix<CalcType>::Initialize(unsigned long nPoint, unsigned long nPointDomain,
                             unsigned short nVar, unsigned short nEqn,
-                            bool EdgeConnect, CGeometry *geometry, CConfig *config) {
+                            CSparsityPattern *pattern) {
 
-  /*--- Don't delete *row_ptr, *col_ind because they are
-   asigned to the Jacobian structure. ---*/
-
-  unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem, iVar;
-  unsigned short iNeigh, iElem, iNode, *nNeigh, *nNeigh_ilu;
-  vector<unsigned long>::iterator it;
-  vector<unsigned long> vneighs, vneighs_ilu;
-  
-  /*--- Set the ILU fill in level --*/
-   
-  ilu_fill_in = config->GetLinear_Solver_ILU_n();
-  
-  /*--- Compute the number of neighbors ---*/
-  
-  nNeigh = new unsigned short [nPoint];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    if (EdgeConnect) {
-      nNeigh[iPoint] = (geometry->node[iPoint]->GetnPoint()+1);  // +1 -> to include diagonal element
-    }
-    else {
-      vneighs.clear();
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-      
-      sort(vneighs.begin(), vneighs.end());
-      it = unique(vneighs.begin(), vneighs.end());
-      vneighs.resize(it - vneighs.begin());
-      nNeigh[iPoint] = vneighs.size();
-    }
-    
-  }
-  
-  /*--- Create row_ptr structure, using the number of neighbors ---*/
-  
-  row_ptr = new unsigned long [nPoint+1];
-  row_ptr[0] = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
-  nnz = row_ptr[nPoint];
-  
-  /*--- Create col_ind structure ---*/
-  
-  col_ind = new unsigned long [nnz];
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    vneighs.clear();
-    
-    if (EdgeConnect) {
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++)
-        vneighs.push_back(geometry->node[iPoint]->GetPoint(iNeigh));
-      vneighs.push_back(iPoint);
-    }
-    else {
-      for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-        Elem =  geometry->node[iPoint]->GetElem(iElem);
-        for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++)
-          vneighs.push_back(geometry->elem[Elem]->GetNode(iNode));
-      }
-      vneighs.push_back(iPoint);
-    }
-    
-    sort(vneighs.begin(), vneighs.end());
-    it = unique(vneighs.begin(), vneighs.end());
-    vneighs.resize( it - vneighs.begin() );
-    
-    index = row_ptr[iPoint];
-    for (iNeigh = 0; iNeigh < vneighs.size(); iNeigh++) {
-      col_ind[index] = vneighs[iNeigh];
-      index++;
-    }
-    
-  }
-  
-  /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
-  
-  SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
-  
-  /*--- Initialization matrix to zero ---*/
-  
-  SetValZero();
-  
-  delete [] nNeigh;
-  
-  /*--- ILU(n) preconditioner with a specific sparse structure ---*/
-  
-  if (ilu_fill_in != 0) {
-    
-    nNeigh_ilu = new unsigned short [nPoint];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      
-      vneighs_ilu.clear();
-      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
-      sort(vneighs_ilu.begin(), vneighs_ilu.end());
-      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-      vneighs_ilu.resize(it - vneighs_ilu.begin());
-      nNeigh_ilu[iPoint] = vneighs_ilu.size();
-      
-    }
-    
-    row_ptr_ilu = new unsigned long [nPoint+1];
-    row_ptr_ilu[0] = 0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      row_ptr_ilu[iPoint+1] = row_ptr_ilu[iPoint] + nNeigh_ilu[iPoint];
-    nnz_ilu = row_ptr_ilu[nPoint];
-    
-    /*--- Create col_ind structure ---*/
-    
-    col_ind_ilu = new unsigned long [nnz_ilu];
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      
-      vneighs_ilu.clear();
-      SetNeighbours(geometry, iPoint, 0, ilu_fill_in, EdgeConnect, vneighs_ilu);
-      sort(vneighs_ilu.begin(), vneighs_ilu.end());
-      it = unique(vneighs_ilu.begin(), vneighs_ilu.end());
-      vneighs_ilu.resize( it - vneighs_ilu.begin() );
-      
-      index = row_ptr_ilu[iPoint];
-      for (iNeigh = 0; iNeigh < vneighs_ilu.size(); iNeigh++) {
-        col_ind_ilu[index] = vneighs_ilu[iNeigh];
-        index++;
-      }
-      
-    }
-    
-    ILU_matrix = new CalcType [nnz_ilu*nVar*nEqn];
-    for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-    
-    delete [] nNeigh_ilu;
-    
-  }
-  
-}
-
-template <class CalcType>
-void TCSysMatrix<CalcType>::SetNeighbours(CGeometry *geometry, unsigned long iPoint, unsigned short deep_level, unsigned short fill_level,
-                               bool EdgeConnect, vector<unsigned long> & vneighs) {
-  unsigned long Point, iElem, Elem;
-  unsigned short iNode;
-
-
-  if (EdgeConnect) {
-    vneighs.push_back(iPoint);
-    for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-      Point = geometry->node[iPoint]->GetPoint(iNode);
-      vneighs.push_back(Point);
-      if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
-    }
-  }
-  else {
-    for (iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
-      Elem =  geometry->node[iPoint]->GetElem(iElem);
-      for (iNode = 0; iNode < geometry->elem[Elem]->GetnNodes(); iNode++) {
-        Point = geometry->elem[Elem]->GetNode(iNode);
-        vneighs.push_back(Point);
-        if (deep_level < fill_level) SetNeighbours(geometry, Point, deep_level+1, fill_level, EdgeConnect, vneighs);
-      }
-    }
-  }
-  
-}
-
-template <class CalcType>
-void TCSysMatrix<CalcType>::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config) {
-  
   unsigned long iVar;
   
-  nPoint       = val_nPoint;        // Assign number of points in the mesh
-  nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
-  nVar         = val_nVar;          // Assign number of vars in each block system
-  nEqn         = val_nEq;           // Assign number of eqns in each block system
+  sparsity_pattern = pattern;
   
-  row_ptr      = val_row_ptr;       // Assign row values in the spare system structure (Jacobian structure)
-  col_ind      = val_col_ind;       // Assign colums values in the spare system structure (Jacobian structure)
-  nnz          = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (Jacobian structure)
+  nnz = sparsity_pattern->GetnNonZero();
   
-  if (ilu_fill_in == 0) {
-    row_ptr_ilu  = val_row_ptr;       // Assign row values in the spare system structure (ILU structure)
-    col_ind_ilu  = val_col_ind;       // Assign colums values in the spare system structure (ILU structure)
-    nnz_ilu      = val_nnz;           // Assign number of possible non zero blocks in the spare system structure (ILU structure)
-  }
+  this->nPoint       = nPoint;        // Assign number of points in the mesh
+  this->nPointDomain = nPointDomain;  // Assign number of points in the mesh
+  this->nVar         = nVar;          // Assign number of vars in each block system
+  this->nEqn         = nEqn;           // Assign number of eqns in each block system
   
   matrix            = new CalcType [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
   block             = new CalcType [nVar*nEqn];
@@ -331,152 +156,83 @@ void TCSysMatrix<CalcType>::SetIndexes(unsigned long val_nPoint, unsigned long v
   
   /*--- Memory initialization ---*/
   
-  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar] = 0.0;
+  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar]        = 0.0;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block[iVar]         = 0.0;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar]  = 0.0;
   for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_inverse[iVar] = 0.0;
 
   for (iVar = 0; iVar < nEqn; iVar++)          prod_block_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
-  
-  if (ilu_fill_in == 0) {
-
-    /*--- Set specific preconditioner matrices (ILU) ---*/
-    
-    if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-        ((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-        ((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
-        (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
-        (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
-      
-      /*--- Reserve memory for the ILU matrix. ---*/
-      
-      ILU_matrix = new CalcType [nnz_ilu*nVar*nEqn];
-      for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
-      
-    }
-    
-  }
-  
-  /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
-  
-  if ((config->GetKind_Linear_Solver_Prec() == JACOBI) ||
-      (config->GetKind_Linear_Solver_Prec() == LINELET) ||
-   		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
-    	((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
-      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == JACOBI) ||
-      (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == JACOBI))   {
-    
-    /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
-    
-    invM = new CalcType [nPoint*nVar*nEqn];
-    for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
-
-  }
+  for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar]   = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar]        = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar]        = 0.0;
 
 }
 
+
 template<class CalcType>
 CalcType *TCSysMatrix<CalcType>::GetBlock(unsigned long block_i, unsigned long block_j) {
-  
-  unsigned long step = 0, index;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) { return &(matrix[(row_ptr[block_i]+step-1)*nVar*nEqn]); }
-  }
-  return NULL;
-  
+  return &matrix[sparsity_pattern->GetIndex(block_i, block_j)*nVar*nEqn];
 }
 
 template<class CalcType>
 CalcType TCSysMatrix<CalcType>::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
-  
-  unsigned long step = 0, index;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) { return matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar]; }
-  }
-  return 0;
-  
+  return matrix[sparsity_pattern->GetIndex(block_i, block_j)*nVar*nEqn+iVar*nEqn+jVar];
 }
 
 template<class CalcType>
 void TCSysMatrix<CalcType>::SetBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned short iVar, jVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = SU2_TYPE::GetValue(val_block[iVar][jVar]);
-      break;
+  unsigned long index = sparsity_pattern->GetIndex(block_i, block_j);
+  
+  for (iVar = 0; iVar < nVar; iVar++){
+    for (jVar = 0; jVar < nEqn; jVar++){
+      matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar][jVar];
     }
   }
-  
 }
 
 template<class CalcType>  
 void TCSysMatrix<CalcType>::SetBlock(unsigned long block_i, unsigned long block_j, CalcType *val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = SU2_TYPE::GetValue(val_block[iVar*nVar+jVar]);
-      break;
+  unsigned long index = sparsity_pattern->GetIndex(block_i, block_j);
+  
+  for (iVar = 0; iVar < nVar; iVar++){
+    for (jVar = 0; jVar < nEqn; jVar++){
+      matrix[index*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
     }
-  }
-  
+  } 
 }
 
 template<class CalcType>
 void TCSysMatrix<CalcType>::AddBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += SU2_TYPE::GetValue(val_block[iVar][jVar]);
-      break;
+  unsigned long index = sparsity_pattern->GetIndex(block_i, block_j);
+  
+  for (iVar = 0; iVar < nVar; iVar++){
+    for (jVar = 0; jVar < nEqn; jVar++){
+      matrix[index*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];
     }
   }
-  
 }
 
 template<class CalcType>
 void TCSysMatrix<CalcType>::SubtractBlock(unsigned long block_i, unsigned long block_j, CalcType **val_block) {
   
-  unsigned long iVar, jVar, index, step = 0;
+  unsigned long iVar, jVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//         matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= SU2_TYPE::GetValue(val_block[iVar][jVar]);
-      break;
+  unsigned long index = sparsity_pattern->GetIndex(block_i, block_j);
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    for (jVar = 0; jVar < nEqn; jVar++){
+      matrix[index*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];
     }
   }
-  
 }
 
 template<class CalcType>
@@ -576,41 +332,31 @@ void TCSysMatrix<CalcType>::MatrixMatrixProduct(CalcType *matrix_a, CalcType *ma
 template<class CalcType>
 void TCSysMatrix<CalcType>::AddVal2Diag(unsigned long block_i, CalcType val_matrix) {
   
-  unsigned long step = 0, iVar, index;
+  unsigned long iVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_i) {	// Only elements on the diagonal
-      for (iVar = 0; iVar < nVar; iVar++)
-//        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix;  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += SU2_TYPE::GetValue(val_matrix);
-      break;
-    }
+  unsigned long index = sparsity_pattern->GetIndex(block_i, block_i);
+  
+  for (iVar = 0; iVar < nVar; iVar++){
+    matrix[index*nVar*nVar+iVar*nVar+iVar] += val_matrix;
   }
-  
 }
 
 template<class CalcType>
 void TCSysMatrix<CalcType>::SetVal2Diag(unsigned long block_i, CalcType val_matrix) {
   
-  unsigned long step = 0, iVar, jVar, index;
+  unsigned long iVar, jVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_i) {	// Only elements on the diagonal
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-//        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = val_matrix;  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = SU2_TYPE::GetValue(val_matrix);
-      
-      break;
+  unsigned long index = sparsity_pattern->GetIndex(block_i, block_i);  
+  
+  for (iVar = 0; iVar < nVar; iVar++){
+    for (jVar = 0; jVar < nVar; jVar++){
+      matrix[index*nVar*nVar+iVar*nVar+jVar] = 0.0;
     }
   }
   
+  for (iVar = 0; iVar < nVar; iVar++){
+    matrix[index*nVar*nVar+iVar*nVar+iVar] = val_matrix;
+  }
 }
 
 template<class CalcType>
@@ -620,10 +366,10 @@ void TCSysMatrix<CalcType>::DeleteValsRowi(unsigned long i) {
   unsigned long row = i - block_i*nVar;
   unsigned long index, iVar;
   
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+  for (index = sparsity_pattern->GetRowPointer(block_i); index < sparsity_pattern->GetRowPointer(block_i+1); index++) {
     for (iVar = 0; iVar < nVar; iVar++)
       matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
-    if (col_ind[index] == block_i)
+    if (sparsity_pattern->GetColumnIndex(index) == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
   }
   
@@ -892,9 +638,9 @@ void TCSysMatrix<CalcType>::UpperProduct(TCSysVector<CalcType> & vec, unsigned l
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] > row_i) {
-      ProdBlockVector(row_i, col_ind[index], vec);
+  for (index = sparsity_pattern->GetRowPointer(row_i); index < sparsity_pattern->GetRowPointer(row_i+1); index++) {
+    if (sparsity_pattern->GetColumnIndex(index) > row_i) {
+      ProdBlockVector(row_i, sparsity_pattern->GetColumnIndex(index), vec);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
     }
@@ -910,9 +656,9 @@ void TCSysMatrix<CalcType>::LowerProduct(TCSysVector<CalcType> & vec, unsigned l
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] < row_i) {
-      ProdBlockVector(row_i, col_ind[index], vec);
+  for (index = sparsity_pattern->GetRowPointer(row_i); index < sparsity_pattern->GetRowPointer(row_i+1); index++) {
+    if (sparsity_pattern->GetColumnIndex(index) < row_i) {
+      ProdBlockVector(row_i, sparsity_pattern->GetColumnIndex(index), vec);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
     }
@@ -928,9 +674,9 @@ void TCSysMatrix<CalcType>::DiagonalProduct(TCSysVector<CalcType> & vec, unsigne
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    if (col_ind[index] == row_i) {
-      ProdBlockVector(row_i, col_ind[index], vec);
+  for (index = sparsity_pattern->GetRowPointer(row_i); index < sparsity_pattern->GetRowPointer(row_i+1); index++) {
+    if (sparsity_pattern->GetColumnIndex(index) == row_i) {
+      ProdBlockVector(row_i, sparsity_pattern->GetColumnIndex(index), vec);
       for (iVar = 0; iVar < nVar; iVar++)
         prod_row_vector[iVar] += prod_block_vector[iVar];
     }
@@ -947,8 +693,8 @@ void TCSysMatrix<CalcType>::RowProduct(const TCSysVector<CalcType> & vec, unsign
   for (iVar = 0; iVar < nVar; iVar++)
     prod_row_vector[iVar] = 0;
   
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    ProdBlockVector(row_i, col_ind[index], vec);
+  for (index = sparsity_pattern->GetRowPointer(row_i); index < sparsity_pattern->GetRowPointer(row_i+1); index++) {
+    ProdBlockVector(row_i, sparsity_pattern->GetColumnIndex(index), vec);
     for (iVar = 0; iVar < nVar; iVar++)
       prod_row_vector[iVar] += prod_block_vector[iVar];
   }
@@ -973,23 +719,16 @@ void TCSysMatrix<CalcType>::MatrixVectorProduct(const TCSysVector<CalcType> & ve
   
   unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
   
-  /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
-  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    cerr << "TCSysMatrix<CalcType>::MatrixVectorProduct(const CSysVector&, CSysVector): "
-    << "nVar values incompatible." << endl;
-    throw(-1);
-  }
-  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    cerr << "TCSysMatrix<CalcType>::MatrixVectorProduct(const CSysVector&, CSysVector): "
-    << "nPoint and nBlk values incompatible." << endl;
-    throw(-1);
-  }
+  assert (nVar   == vec.GetNVar());
+  assert (nVar   == prod.GetNVar());
+  assert (nPoint == vec.GetNBlk());
+  assert (nPoint == prod.GetNBlk());
   
   prod = CalcType(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     prod_begin = row_i*nVar; // offset to beginning of block row_i
-    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
+    for (index = sparsity_pattern->GetRowPointer(row_i); index < sparsity_pattern->GetRowPointer(row_i+1); index++) {
+      vec_begin = sparsity_pattern->GetColumnIndex(index)*nVar; // offset to beginning of block col_ind[index]
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -1009,19 +748,16 @@ void TCSysMatrix<CalcType>::MatrixVectorProductTransposed(const TCSysVector<Calc
 
   unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar , row_i;
 
-  /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
-  if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
-  }
-  if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
-  }
+  assert (nVar   == vec.GetNVar());
+  assert (nVar   == prod.GetNVar());
+  assert (nPoint == vec.GetNBlk());
+  assert (nPoint == prod.GetNBlk());
 
   prod = CalcType(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
-    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      prod_begin = col_ind[index]*nVar; // offset to beginning of block row_i
+    for (index = sparsity_pattern->GetRowPointer(row_i); index < sparsity_pattern->GetRowPointer(row_i+1); index++) {
+      prod_begin = sparsity_pattern->GetColumnIndex(index)*nVar; // offset to beginning of block row_i
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -1785,304 +1521,6 @@ unsigned long TCSysMatrix<CalcType>::LU_SGS_Smoother(const TCSysVector<CalcType>
   }
   
   return (unsigned int) i;
-  
-}
-
-template<class CalcType>
-unsigned short TCSysMatrix<CalcType>::BuildLineletPreconditioner(CGeometry *geometry, CConfig *config) {
-  
-//  bool *check_Point, add_point;
-//  unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-//  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
-//  CalcType alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
-//  unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
-  
-//  /*--- Memory allocation --*/
-  
-//  check_Point = new bool [geometry->GetnPoint()];
-//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-//    check_Point[iPoint] = true;
-  
-//  LineletBool = new bool[geometry->GetnPoint()];
-//  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-//    LineletBool[iPoint] = false;
-  
-//  nLinelet = 0;
-//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-//        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-//        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-//        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-//      nLinelet += geometry->nVertex[iMarker];
-//    }
-//  }
-  
-//  /*--- If the domain contains well defined Linelets ---*/
-  
-//  if (nLinelet != 0) {
-    
-//    /*--- Basic initial allocation ---*/
-    
-//    LineletPoint = new vector<unsigned long>[nLinelet + ExtraLines];
-    
-//    /*--- Define the basic linelets, starting from each vertex ---*/
-    
-//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-//          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-//          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
-//          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
-//        iLinelet = 0;
-//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//          LineletPoint[iLinelet].push_back(iPoint);
-//          check_Point[iPoint] = false;
-//          iLinelet++;
-//        }
-//      }
-//    }
-    
-//    /*--- Create the linelet structure ---*/
-    
-//    iLinelet = 0;
-    
-//    do {
-      
-//      index_Point = 0;
-      
-//      do {
-        
-//        /*--- Compute the value of the max weight ---*/
-        
-//        iPoint = LineletPoint[iLinelet][index_Point];
-//        max_weight = 0.0;
-//        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-//          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-//          if ((check_Point[jPoint]) && geometry->node[jPoint]->GetDomain()) {
-//            iEdge = geometry->FindEdge(iPoint, jPoint);
-//            normal = geometry->edge[iEdge]->GetNormal();
-//            if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-//            else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-//            volume_iPoint = geometry->node[iPoint]->GetVolume();
-//            volume_jPoint = geometry->node[jPoint]->GetVolume();
-//            weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-//            max_weight = max(max_weight, weight);
-//          }
-//        }
-        
-//        /*--- Verify if any face of the control volume must be added ---*/
-        
-//        add_point = false;
-//        counter = 0;
-//        next_Point = geometry->node[iPoint]->GetPoint(0);
-//        for (iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-//          jPoint = geometry->node[iPoint]->GetPoint(iNode);
-//          iEdge = geometry->FindEdge(iPoint, jPoint);
-//          normal = geometry->edge[iEdge]->GetNormal();
-//          if (geometry->GetnDim() == 3) area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
-//          else area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]);
-//          volume_iPoint = geometry->node[iPoint]->GetVolume();
-//          volume_jPoint = geometry->node[jPoint]->GetVolume();
-//          weight = 0.5*area*((1.0/volume_iPoint)+(1.0/volume_jPoint));
-//          if (((check_Point[jPoint]) && (weight/max_weight > alpha) && (geometry->node[jPoint]->GetDomain())) &&
-//              ((index_Point == 0) || ((index_Point > 0) && (jPoint != LineletPoint[iLinelet][index_Point-1])))) {
-//            add_point = true;
-//            next_Point = jPoint;
-//            counter++;
-//          }
-//        }
-        
-//        /*--- We have arrived to an isotropic zone ---*/
-        
-//        if (counter > 1) add_point = false;
-        
-//        /*--- Add a typical point to the linelet, no leading edge ---*/
-        
-//        if (add_point) {
-//          LineletPoint[iLinelet].push_back(next_Point);
-//          check_Point[next_Point] = false;
-//          index_Point++;
-//        }
-        
-//      } while (add_point);
-//      iLinelet++;
-//    } while (iLinelet < nLinelet);
-    
-//    /*--- Identify the points that belong to a Linelet ---*/
-    
-//    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-//      for (iElem = 0; iElem < LineletPoint[iLinelet].size(); iElem++) {
-//        iPoint = LineletPoint[iLinelet][iElem];
-//        LineletBool[iPoint] = true;
-//      }
-//    }
-    
-//    /*--- Identify the maximum number of elements in a Linelet ---*/
-    
-//    max_nElem = LineletPoint[0].size();
-//    for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
-//      if (LineletPoint[iLinelet].size() > max_nElem)
-//        max_nElem = LineletPoint[iLinelet].size();
-    
-//  }
-  
-//  /*--- The domain doesn't have well defined linelets ---*/
-  
-//  else {
-    
-//    max_nElem = 0;
-    
-//  }
-  
-//  /*--- Screen output ---*/
-  
-//  Local_nPoints = 0;
-//  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-//    Local_nPoints += LineletPoint[iLinelet].size();
-//  }
-//  Local_nLineLets = nLinelet;
-  
-//#ifndef HAVE_MPI
-//  Global_nPoints = Local_nPoints;
-//  Global_nLineLets = Local_nLineLets;
-//#else
-//  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-//  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-//#endif
-  
-//  MeanPoints = SU2_TYPE::Int(CalcType(Global_nPoints)/CalcType(Global_nLineLets));
-  
-//  /*--- Memory allocation --*/
-  
-//  UBlock = new CalcType* [max_nElem];
-//  invUBlock = new CalcType* [max_nElem];
-//  LBlock = new CalcType* [max_nElem];
-//  yVector = new CalcType* [max_nElem];
-//  zVector = new CalcType* [max_nElem];
-//  rVector = new CalcType* [max_nElem];
-//  for (iElem = 0; iElem < max_nElem; iElem++) {
-//    UBlock[iElem] = new CalcType [nVar*nVar];
-//    invUBlock[iElem] = new CalcType [nVar*nVar];
-//    LBlock[iElem] = new CalcType [nVar*nVar];
-//    yVector[iElem] = new CalcType [nVar];
-//    zVector[iElem] = new CalcType [nVar];
-//    rVector[iElem] = new CalcType [nVar];
-//  }
-  
-//  LFBlock = new CalcType [nVar*nVar];
-//  LyVector = new CalcType [nVar];
-//  FzVector = new CalcType [nVar];
-  
-//  /*--- Memory deallocation --*/
-  
-//  delete [] check_Point;
-  
-//  return MeanPoints;
-  
-  return 0;
-}
-
-template<class CalcType>
-void TCSysMatrix<CalcType>::ComputeLineletPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod,
-                                              CGeometry *geometry, CConfig *config) {
-  
-  unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
-  long iElemLoop;
-  CalcType *block;
-  
-  if (size == SINGLE_NODE) {
-    
-    /*--- Jacobi preconditioning if there is no linelet ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!LineletBool[iPoint]) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          prod[(unsigned long)(iPoint*nVar+iVar)] = 0.0;
-          for (jVar = 0; jVar < nVar; jVar++)
-            prod[(unsigned long)(iPoint*nVar+iVar)] +=
-            invM[(unsigned long)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(unsigned long)(iPoint*nVar+jVar)];
-        }
-      }
-    }
-    
-    /*--- MPI Parallelization ---*/
-    
-    prod.SendReceive(geometry, config);
-    
-    /*--- Solve linelet using a Thomas' algorithm ---*/
-    
-    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
-      
-      nElem = LineletPoint[iLinelet].size();
-      
-      /*--- Copy vec vector to the new structure ---*/
-      
-      for (iElem = 0; iElem < nElem; iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        for (iVar = 0; iVar < nVar; iVar++)
-          rVector[iElem][iVar] = vec[(unsigned long)(iPoint*nVar+iVar)];
-      }
-      
-      /*--- Initialization (iElem = 0) ---*/
-      
-      iPoint = LineletPoint[iLinelet][0];
-      block = GetBlock(iPoint, iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        yVector[0][iVar] = rVector[0][iVar];
-        for (jVar = 0; jVar < nVar; jVar++)
-          UBlock[0][iVar*nVar+jVar] = block[iVar*nVar+jVar];
-      }
-      
-      /*--- Main loop (without iElem = 0) ---*/
-      
-      for (iElem = 1; iElem < nElem; iElem++) {
-        
-        im1Point = LineletPoint[iLinelet][iElem-1];
-        iPoint = LineletPoint[iLinelet][iElem];
-        
-        InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
-        block = GetBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
-        block = GetBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
-        block = GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
-        
-        /*--- Forward substituton ---*/
-        
-        GetMultBlockVector(LyVector, LBlock[iElem], yVector[iElem-1]);
-        GetSubsVector(yVector[iElem], rVector[iElem], LyVector);
-        
-      }
-      
-      /*--- Backward substituton ---*/
-      
-      InverseBlock(UBlock[nElem-1], invUBlock[nElem-1]);
-      GetMultBlockVector(zVector[nElem-1], invUBlock[nElem-1], yVector[nElem-1]);
-      
-      for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
-        iPoint = LineletPoint[iLinelet][iElemLoop];
-        ip1Point = LineletPoint[iLinelet][iElemLoop+1];
-        block = GetBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
-        GetSubsVector(aux_vector, yVector[iElemLoop], FzVector);
-        GetMultBlockVector(zVector[iElemLoop], invUBlock[iElemLoop], aux_vector);
-      }
-      
-      /*--- Copy zVector to the prod vector ---*/
-      
-      for (iElem = 0; iElem < nElem; iElem++) {
-        iPoint = LineletPoint[iLinelet][iElem];
-        for (iVar = 0; iVar < nVar; iVar++)
-          prod[(unsigned long)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
-      }
-      
-    }
-    
-    /*--- MPI Parallelization ---*/
-    
-    prod.SendReceive(geometry, config);
-    
-  }
-  else {
-    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
-  }
   
 }
 

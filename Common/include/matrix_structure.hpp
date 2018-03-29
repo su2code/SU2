@@ -47,6 +47,7 @@
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
 #include "vector_structure.hpp"
+#include "sparsity_pattern.hpp"
 
 using namespace std;
 
@@ -94,6 +95,9 @@ private:
   *LyVector, *FzVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
   unsigned long max_nElem;
   
+  CSparsityPattern *sparsity_pattern;
+  
+  
 public:
   
   /*!
@@ -114,7 +118,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
-                  bool EdgeConnect, CGeometry *geometry, CConfig *config);
+                  CSparsityPattern *pattern);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -269,20 +273,6 @@ public:
    * \param[out] x - TCSysVector<CalcType> containing the result of the smoothing (x^k+1 = x^k + M^-1*(b - A*x^k).
    */
   unsigned long LU_SGS_Smoother(const TCSysVector<CalcType> & b, TCSysVector<CalcType> & x, TCMatrixVectorProduct<CalcType> & mat_vec, CalcType tol, unsigned long m, CalcType *residual, bool monitoring, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Build the Linelet preconditioner.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Multiply TCSysVector<CalcType> by the preconditioner
-   * \param[in] vec - TCSysVector<CalcType> to be multiplied by the preconditioner.
-   * \param[out] prod - Result of the product A*vec.
-   */
-  void ComputeLineletPreconditioner(const TCSysVector<CalcType> & vec, TCSysVector<CalcType> & prod, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Performs the product of a sparse matrix by a vector.
@@ -529,6 +519,8 @@ private:
 };
 
 typedef TCSysMatrix<su2double> CSysMatrix;
+
+
 
 /*!
  * \class TCSysMatrixVectorProduct

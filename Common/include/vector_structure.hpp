@@ -41,6 +41,7 @@
 #include "./mpi_structure.hpp"
 #include "../include/geometry_structure.hpp"
 #include "../include/config_structure.hpp"
+#include "../include/vector_interface_structure.hpp"
 
 #include <climits>
 #include <cmath>
@@ -63,7 +64,7 @@ using namespace std;
  * scheme).
  */
 template<class CalcType>
-class TCSysVector {
+class TCSysVector : TCVectorInterface<CalcType> {
   
 private:
 	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
@@ -205,7 +206,7 @@ public:
    * \brief addition operator
    * \param[in] u - CSysVector being added to *this
    */
-  TCSysVector<CalcType> operator+(const TCSysVector<CalcType> & u) const;
+  TCSysVector<CalcType> & operator+(const TCSysVector<CalcType> & u) const;
   
   /*!
    * \brief compound addition-assignment operator
@@ -217,7 +218,7 @@ public:
    * \brief subtraction operator
    * \param[in] u - CSysVector being subtracted from *this
    */
-  TCSysVector<CalcType> operator-(const TCSysVector<CalcType> & u) const;
+  TCSysVector<CalcType> & operator-(const TCSysVector<CalcType> & u) const;
   
   /*!
    * \brief compound subtraction-assignment operator
@@ -229,7 +230,7 @@ public:
    * \brief vector * scalar multiplication operator
    * \param[in] val - value to multiply *this by
    */
-  TCSysVector<CalcType> operator*(const CalcType & val) const;
+  TCSysVector<CalcType> & operator*(const CalcType & val) const;
   
   /*!
    * \brief scalar * vector multiplication operator
@@ -329,7 +330,7 @@ public:
 	 * \param[in] val_ipoint - index of the point where set the residual.
    * \return Pointer to the residual.
 	 */
-  CalcType *GetBlock(unsigned long val_ipoint);
+  const CalcType *GetBlock(unsigned long val_ipoint);
 	
   /*!
 	 * \brief Get the value of the residual.

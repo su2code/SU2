@@ -442,9 +442,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Initialize the linear system structure ---*/
   
-  System.Initialize_System(nVar, true, geometry, config);
-  System.Initialize_Linear_Solver(nVar, 
-                                  config->GetKind_Linear_Solver(), 
+  System.Initialize(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(config->GetKind_Linear_Solver(), 
                                   config->GetKind_Linear_Solver_Prec(),
                                   config->GetLinear_Solver_Iter(), 
                                   config->GetLinear_Solver_Error(), 
@@ -4333,7 +4332,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !disc_adjoint) System.SetValZero_Matrix();
+  if (implicit && !disc_adjoint) System.SetValZero();
 
   /*--- Error message ---*/
   
@@ -4610,10 +4609,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Set implicit computation ---*/
     if (implicit) {
-      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(iPoint, jPoint, Jacobian_j);
-      System.SubtractBlock_Matrix(jPoint, iPoint, Jacobian_i);
-      System.SubtractBlock_Matrix(jPoint, jPoint, Jacobian_j);
+      System.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock(iPoint, jPoint, Jacobian_j);
+      System.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      System.SubtractBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   
@@ -4836,10 +4835,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
-      System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(iPoint, jPoint, Jacobian_j);
-      System.AddBlock_Matrix(jPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(jPoint, jPoint, Jacobian_j);
+      System.AddBlock(iPoint, iPoint, Jacobian_i);
+      System.AddBlock(iPoint, jPoint, Jacobian_j);
+      System.AddBlock(jPoint, iPoint, Jacobian_i);
+      System.AddBlock(jPoint, jPoint, Jacobian_j);
     }
     
     /*--- Roe Turkel preconditioning, set the value of beta ---*/
@@ -4964,7 +4963,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -4998,7 +4997,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Implicit part ---*/
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
     }
   }
   
@@ -5069,7 +5068,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
        LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -6327,14 +6326,14 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
         for (iVar = 0; iVar < nVar; iVar ++ )
           for (jVar = 0; jVar < nVar; jVar ++ )
             LowMach_Precontioner[iVar][jVar] = Delta*LowMach_Precontioner[iVar][jVar];
-        System.AddBlock_Matrix(iPoint, iPoint, LowMach_Precontioner);
+        System.AddBlock(iPoint, iPoint, LowMach_Precontioner);
       }
       else {
-        System.AddVal2Diag_Matrix(iPoint, Delta);
+        System.AddVal2Diag(iPoint, Delta);
       }
     }
     else {
-      System.SetVal2Diag_Matrix(iPoint, 1.0);
+      System.SetVal2Diag(iPoint, 1.0);
       
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar + iVar;
@@ -8947,7 +8946,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 
         /*--- Add the Jacobian to the sparse matrix ---*/
 
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
 
       }
     }
@@ -9175,7 +9174,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Convective Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
       
@@ -9217,7 +9216,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Viscous Jacobian contribution for implicit integration ---*/
         
         if (implicit)
-          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
       
@@ -9629,7 +9628,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
       if (config->GetKind_Upwind() == TURKEL)
@@ -9691,7 +9690,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
-          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
       
@@ -10124,7 +10123,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
-          System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.AddBlock(iPoint, iPoint, Jacobian_i);
 
         /*--- Roe Turkel preconditioning, set the value of beta ---*/
         if (config->GetKind_Upwind() == TURKEL)
@@ -10186,7 +10185,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Jacobian contribution for implicit integration ---*/
           if (implicit)
-            System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+            System.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
         }
       }
@@ -11018,7 +11017,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
       if (config->GetKind_Upwind() == TURKEL)
@@ -11070,7 +11069,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Jacobian contribution for implicit integration ---*/
         if (implicit)
-          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
       
@@ -11357,7 +11356,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
       
@@ -11533,7 +11532,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit) {
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
@@ -11671,7 +11670,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -11785,7 +11784,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
  //     /*--- Viscous contribution, commented out because serious convergence problems ---*/
  //
@@ -12005,7 +12004,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -12256,7 +12255,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -12402,7 +12401,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   
           LinSysRes.AddBlock(iPoint, Residual);
           if (implicit) 
-            System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+            System.AddBlock(iPoint, iPoint, Jacobian_i);
 
           if (viscous) {
             
@@ -12451,7 +12450,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             /*--- Jacobian contribution for implicit integration ---*/
 
             if (implicit)
-              System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+              System.SubtractBlock(iPoint, iPoint, Jacobian_i);
             
           }
         }
@@ -12514,7 +12513,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
       /*--- Add Residuals and Jacobians ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
     
@@ -12575,7 +12574,7 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
       /*--- Add Residuals and Jacobians ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
     
@@ -12897,7 +12896,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Jacobian contribution for implicit integration ---*/
       
-      if (implicit) System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+      if (implicit) System.AddBlock(iPoint, iPoint, Jacobian_i);
       
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -13021,7 +13020,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
     
@@ -13148,7 +13147,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
-        System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
   }
@@ -15166,9 +15165,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);  
 
-  System.Initialize_System(nVar, true, geometry, config);
-  System.Initialize_Linear_Solver(nVar, 
-                                  config->GetKind_Linear_Solver(), 
+  System.Initialize(nVar, true, geometry, config);
+  System.Initialize_Linear_Solver(config->GetKind_Linear_Solver(), 
                                   config->GetKind_Linear_Solver_Prec(),
                                   config->GetLinear_Solver_Iter(), 
                                   config->GetLinear_Solver_Error(), 
@@ -15824,7 +15822,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !config->GetDiscrete_Adjoint()) System.SetValZero_Matrix();
+  if (implicit && !config->GetDiscrete_Adjoint()) System.SetValZero();
 
   /*--- Error message ---*/
   
@@ -16140,10 +16138,10 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Implicit part ---*/
     
     if (implicit) {
-      System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
-      System.SubtractBlock_Matrix(iPoint, jPoint, Jacobian_j);
-      System.AddBlock_Matrix(jPoint, iPoint, Jacobian_i);
-      System.AddBlock_Matrix(jPoint, jPoint, Jacobian_j);
+      System.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      System.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      System.AddBlock(jPoint, iPoint, Jacobian_i);
+      System.AddBlock(jPoint, jPoint, Jacobian_j);
     }
     
   }
@@ -16790,7 +16788,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
           
           /*--- Add the block to the Global Jacobian structure ---*/
           
-          System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.AddBlock(iPoint, iPoint, Jacobian_i);
           
           /*--- Now the Jacobian contribution related to the shear stress ---*/
           
@@ -16851,7 +16849,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
           
           /*--- Subtract the block from the Global Jacobian structure ---*/
           
-          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock(iPoint, iPoint, Jacobian_i);
           
         }
       }
@@ -17027,7 +17025,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Subtract the block from the Global Jacobian structure ---*/
         
-        System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+        System.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
       
@@ -17103,7 +17101,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           
           /*--- Add the block to the Global Jacobian structure ---*/
           
-          System.AddBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.AddBlock(iPoint, iPoint, Jacobian_i);
           
           /*--- Now the Jacobian contribution related to the shear stress ---*/
           
@@ -17147,7 +17145,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           
           /*--- Subtract the block from the Global Jacobian structure ---*/
           
-          System.SubtractBlock_Matrix(iPoint, iPoint, Jacobian_i);
+          System.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
         
       }

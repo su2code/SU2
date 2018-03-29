@@ -240,33 +240,7 @@ public:
    
 };
 
-template <class CalcType, class BaseType>
-class Convert{
-  
-  unsigned short BlockSize;
-  
-  CalcType* BlockLin_CalcType;
-  BaseType* BlockLin_BaseType;
-  CalcType** Block_CalcType;
-  BaseType** Block_BaseType;
 
-
-public:
-  Convert();
-  
-  ~Convert();
-  
-  void Initialize(unsigned short MaxSize);
-  
-  BaseType** ToBaseType(CalcType** block, unsigned short BlockSizeI, unsigned short BlockSizeJ);
-  CalcType** ToCalcType(BaseType** block, unsigned short BlockSizeI, unsigned short BlockSizeJ);
-
-  BaseType* ToBaseType(CalcType* block, unsigned short BlockSize);
-  CalcType* ToCalcType(BaseType* block, unsigned short BlockSize);
-  
-  BaseType ToBaseType(CalcType val);
-  CalcType ToCalcType(BaseType val);
-};
 
 /*!
  * \class TCSysSolve
@@ -297,14 +271,9 @@ private:
   TCMatrixVectorProduct<CalcType>* MatVec_b;
   
   TCSysMatrix<CalcType> Matrix;
-  TCSysVector<BaseType> LinSysSol,
-                        LinSysRes;
-  
-  TCSysVector<CalcType> LinSysRes_b,
-                        LinSysSol_b;
 
-  TCSysVector<CalcType> LinSysRes_calc,
-                        LinSysSol_calc;
+  TCSysVector<CalcType> Rhs_CalcType,
+                        Sol_CalcType;
   
   Convert<CalcType, BaseType> convert;
   
@@ -315,34 +284,14 @@ public:
   
   ~TCSysSolve();
   
-  void Initialize_System(unsigned short BlockSize,  bool edgeconnect, CGeometry *geometry, CConfig *config);
+  void Initialize(unsigned short BlockSize,  bool edgeconnect, CGeometry *geometry, CConfig *config);
+  BaseType* GetBlock(unsigned long iPoint, unsigned long jPoint);
   
-  void Initialize_System_Adjoint(unsigned short BlockSize, CGeometry *geometry, CConfig* config);
+  void Initialize_CalcType();
   
-  void Initialize_Linear_Solver(unsigned short blocksize, unsigned short kind_solver, unsigned short kind_preconditioner, unsigned long max_iter, BaseType error, CGeometry *geometry, CConfig *config);
-  
-  void Initialize_Linear_Solver_Adjoint(unsigned short blocksize, unsigned short kind_solver, unsigned short kind_preconditioner, unsigned long max_iter, BaseType error, CGeometry *geometry, CConfig *config);
-  
-  void SetValZero_Matrix();
-  void SetValZero_Rhs();
-  void SetValZero_Sol();
-  void DeleteValsRowi(unsigned long i);
-  
-  void SetVal2Diag_Matrix(unsigned long iPoint, BaseType val);
-  void AddVal2Diag_Matrix(unsigned long iPoint, BaseType val);
-  
-  void AddBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType** block);
-  void SubtractBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType** block);
-  
-  BaseType* GetBlock_Matrix(unsigned long iPoint, unsigned long jPoint);
-  BaseType GetBlock_Matrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
-  void SetBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType* block);
-  void SetBlock_Matrix(unsigned long iPoint, unsigned long jPoint, BaseType** block);
-  
-  void MatrixVectorProduct();    
-  
-  void Build_Preconditioner(unsigned short kind_prec, bool transpose);
-  
+  void Initialize_Linear_Solver(unsigned short kind_solver, unsigned short kind_preconditioner, unsigned long max_iter, BaseType error, CGeometry *geometry, CConfig *config);
+    
+
   void Solve_System(TCSysVector<BaseType> &Rhs, TCSysVector<BaseType> &Sol);
     
 };
