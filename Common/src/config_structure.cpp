@@ -3785,7 +3785,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Dirichlet[iMarker_Dirichlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = DIRICHLET;
     iMarker_CfgFile++;
-    cout<<"nMarker dirichlet: "<<nMarker_Dirichlet<<endl;
   }
 
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
