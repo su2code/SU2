@@ -982,7 +982,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
       no_restart = true;
     }
     if (poisson) {
-      no_restart = true;
+      solver_container[MESH_0][POISSON_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (wave) {
       no_restart = true;
@@ -2978,7 +2978,7 @@ void CDriver::StartSolver() {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
 
-  cout<<"Extiter: "<<config_container[ZONE_0]->GetnExtIter()<<endl;
+ 
   while ( ExtIter < config_container[ZONE_0]->GetnExtIter() ) {
 
     /*--- Perform some external iteration preprocessing. ---*/

@@ -61,7 +61,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
-                       (config[iZone]->GetKind_Solver() == POISSON_EQUATION)        ||
+                       (config[iZone]->GetKind_Solver() == POISSON_EQUATION)        	  ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
@@ -102,7 +102,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Set the current finest grid (full multigrid strategy) ---*/
   
   FinestMesh = config[iZone]->GetFinestMesh();
-  //cout<<"Finest Mesh = "<<FinestMesh<<endl;
+
   /*--- Perform the Full Approximation Scheme multigrid ---*/
   
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
@@ -144,7 +144,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   
-  //cout<<"Multigrid cycle iMesh = "<<iMesh<<" nPreSmooth = "<<config[iZone]->GetMG_PreSmooth(iMesh)<<" nPostSmooth = "<<config[iZone]->GetMG_PostSmooth(iMesh)<<endl;
   
   for (iPreSmooth = 0; iPreSmooth < config[iZone]->GetMG_PreSmooth(iMesh); iPreSmooth++) {
     
@@ -175,7 +174,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
         solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, Iteration);
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
-        //cout<<"Runtime_eqsystem "<<RunTime_EqSystem<<endl;
+
         if (RunTime_EqSystem!=POISSON_EQUATION) Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
         
       }
@@ -195,19 +194,17 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     }
     
   }
- // cout<<"Begin multigrid "<<endl;
+
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
   if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
-   // cout<<"iMesh: "<<iMesh<<endl;
+
     Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
     SetResidual_Term(geometry[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position]);
-  /*  cout<<"iMesh(Set residual term): "<<iMesh<<endl;
-    cout<<"iZone(Set residual term): "<<iZone<<endl;
-    cout<<"Size of geometry container: "<<sizeof(geometry)<<endl;*/
+
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
     
     SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
@@ -217,7 +214,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
     
     SetForcing_Term(solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone], iMesh+1);
-    //cout<<"iMesh(Set forcing term): "<<iMesh<<endl;
+
     /*--- Recursive call to MultiGrid_Cycle ---*/
     
     for (unsigned short imu = 0; imu <= RecursiveParam; imu++) {
@@ -686,11 +683,9 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
     }
     if(config->GetMarker_All_KindBC(iMarker) == DIRICHLET) {
 		for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        if (SolContainer_Position == POISSON_SOL) {
+			Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 			dirichlet_val = sol_coarse->GetDirichlet_BC(geo_coarse,config,Point_Coarse);
-			sol_coarse->node[Point_Coarse]->SetSolutionOldVal(0,dirichlet_val);
-		}
+			sol_coarse->node[Point_Coarse]->SetSolutionVal(0,dirichlet_val);
 		} 
 	}
   }
