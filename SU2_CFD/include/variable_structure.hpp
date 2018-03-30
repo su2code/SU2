@@ -243,6 +243,12 @@ public:
   void SetSolutionOldVal(unsigned short val_var, su2double val);
   
   /*!
+   * \brief Set the solution to given val.
+   */
+  void SetSolutionVal(unsigned short val_var, su2double val);  
+
+  
+  /*!
    * \brief Specify a vector to set the velocity components of the old solution.
    * \param[in] val_vector - Pointer to the vector.
    */
