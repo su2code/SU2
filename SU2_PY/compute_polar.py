@@ -245,7 +245,7 @@ def main():
         outFile = 'machRamp_aoa' + str(alpha[0]) + '.dat'
     else:
         outFile = 'Polar_M' + str(MachList[0]) + '.dat'
-    bufsize = 0
+    bufsize = 12
     #
     #----------- Prepare output header ---------------
     #
