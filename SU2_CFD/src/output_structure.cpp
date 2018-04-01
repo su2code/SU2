@@ -16306,7 +16306,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    needed for when we read the strings later. ---*/
 
   for (iVar = 0; iVar < nVar_Par; iVar++) {
-    strcpy(str_buf, Variable_Names[iVar].c_str());
+    strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
     fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
   }
 

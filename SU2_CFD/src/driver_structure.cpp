@@ -1091,7 +1091,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
   fem              = false;  disc_adj_fem    = false;
-  heat             = false;
+  heat             = false;  heat_fvm        = false;
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
@@ -1195,7 +1195,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
   wave             = false;
-  heat             = false;
+  heat             = false; heat_fvm         = false;
   fem 			       = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
