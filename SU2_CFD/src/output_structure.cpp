@@ -8121,6 +8121,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       /*--- Deallocate connectivity ---*/
       
       DeallocateConnectivity(config[iZone], geometry[iZone], true);
+      DeallocateConnectivity(config[iZone], geometry[iZone], false);
+      DeallocateCoordinates(config[iZone], geometry[iZone]);
       
     }
 
