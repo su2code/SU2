@@ -4702,7 +4702,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     long ExtraHeatOutputZone = config[val_iZone]->GetExtraHeatOutputZone() - 1;
     bool extra_heat_output = false;
     su2double Extra_Total_Heat = 0.0;
-    su2double Extra_Avg_TotalTemp = 0.0;
     su2double Extra_Heat_Residual = 0.0;
 
     if (ExtraHeatOutputZone > -1) {
@@ -5123,7 +5122,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     if (extra_heat_output) {
       Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-      Extra_Avg_TotalTemp   = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
       Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
@@ -5439,8 +5437,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                   ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
 
-                  if (nZone > 1)
-                    cout << "CFL in zone 2: " << config[1]->GetCFL(MESH_0) << endl;
+                if (nZone > 1)
+                  cout << "CFL in zone 2: " << config[1]->GetCFL(MESH_0) << endl;
 
                 cout << "-------------------------------------------------------------------------" << endl;
 

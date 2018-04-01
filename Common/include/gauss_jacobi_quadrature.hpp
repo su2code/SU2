@@ -76,69 +76,69 @@ public:
    * \param[in,out] GJPoints  Location of the Gauss-Jacobi integration points.
    * \param[in,out] GJWeights Weights of the Gauss-Jacobi integration points.
    */
-  void GetQuadraturePoints(const su2double   alpha,     const su2double   beta,
-                           const su2double   a,         const su2double   b,
-                           vector<su2double> &GJPoints, vector<su2double> &GJWeights);
+  void GetQuadraturePoints(const passivedouble   alpha,     const passivedouble   beta,
+                           const passivedouble   a,         const passivedouble   b,
+                           vector<passivedouble> &GJPoints, vector<passivedouble> &GJWeights);
 private:
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void cdgqf(int nt, int kind, su2double alpha, su2double beta, su2double t[],
-             su2double wts[]);
+  void cdgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble t[],
+             passivedouble wts[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void cgqf(int nt, int kind, su2double alpha, su2double beta, su2double a,
-            su2double b, su2double t[], su2double wts[]);
+  void cgqf(int nt, int kind, passivedouble alpha, passivedouble beta, passivedouble a,
+            passivedouble b, passivedouble t[], passivedouble wts[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  su2double class_matrix(int kind, int m, su2double alpha, su2double beta,
-                         su2double aj[], su2double bj[]);
+  passivedouble class_matrix(int kind, int m, passivedouble alpha, passivedouble beta,
+                             passivedouble aj[], passivedouble bj[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void imtqlx(int n, su2double d[], su2double e[], su2double z[]);
+  void imtqlx(int n, passivedouble d[], passivedouble e[], passivedouble z[]);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void parchk(int kind, int m, su2double alpha, su2double beta);
+  void parchk(int kind, int m, passivedouble alpha, passivedouble beta);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  su2double r8_epsilon();
+  passivedouble r8_epsilon();
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  su2double r8_sign(su2double x);
+  passivedouble r8_sign(passivedouble x);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void scqf(int nt, su2double t[], int mlt[], su2double wts[], int nwts, int ndx[],
-            su2double swts[], su2double st[], int kind, su2double alpha,
-            su2double beta, su2double a, su2double b);
+  void scqf(int nt, passivedouble t[], int mlt[], passivedouble wts[], int nwts, int ndx[],
+            passivedouble swts[], passivedouble st[], int kind, passivedouble alpha,
+            passivedouble beta, passivedouble a, passivedouble b);
 
   /*!
    * \brief Function in the original implementation of John Burkardt to compute
             the integration points of the Gauss-Jacobi quadrature rule.
    */
-  void sgqf(int nt, su2double aj[], su2double bj[], su2double zemu, su2double t[],
-            su2double wts[]);
+  void sgqf(int nt, passivedouble aj[], passivedouble bj[], passivedouble zemu, passivedouble t[],
+            passivedouble wts[]);
 };
 
 #include "gauss_jacobi_quadrature.inl"

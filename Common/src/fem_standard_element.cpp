@@ -1097,10 +1097,21 @@ su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
 void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoints,
                                                         vector<su2double> &GLWeights) {
 
-  /*--- Gauss Legendre quadrature is a special case of Gauss Jacobi integration.
-        Determine the integration points for this case. ----*/
+  /* The class used to determine the integration points operate on passivedoubles.
+     Allocate the memory for the help vectors. */
+  vector<passivedouble> GLPointsPas(GLPoints.size());
+  vector<passivedouble> GLWeightsPas(GLWeights.size());
+
+  /* Gauss Legendre quadrature is a special case of Gauss Jacobi integration.
+     Determine the integration points for this case. */
   CGaussJacobiQuadrature GaussJacobi;
-  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
+  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPointsPas, GLWeightsPas);
+
+  /* Copy the data back into GLPoints and GLWeights. */
+  for(unsigned long i=0; i<GLPoints.size(); ++i) {
+    GLPoints[i]  = GLPointsPas[i];
+    GLWeights[i] = GLWeightsPas[i];
+  }
 }
 
 void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
@@ -1147,15 +1158,23 @@ su2double FEMStandardElementBaseClass::NormJacobi(unsigned short n,
   su2double apbp3 = apb + 3;
   su2double b2ma2 = beta*beta - alpha*alpha;
 
+  /*--- Determine the term, which involves the gamma function for P0. As the
+        arguments are integers, this term can be computed easily, because
+        Gamma(n+1) = n!. ---*/
+  su2double Gamap1 = 1.0, Gambp1 = 1.0, Gamapbp2 = 1.0;
+  for(unsigned short i=2; i<=alpha; ++i)          Gamap1   *= i;
+  for(unsigned short i=2; i<=beta; ++i)           Gambp1   *= i;
+  for(unsigned short i=2; i<=(alpha+beta+1); ++i) Gamapbp2 *= i;
+
   /*--- Initialize the normalized polynomials. ---*/
-  su2double Pnm1 = sqrt(pow(0.5,apbp1)*tgamma(apbp2)/(tgamma(ap1)*tgamma(bp1)));
+  su2double Pnm1 = sqrt(pow(0.5,apbp1)*Gamapbp2/(Gamap1*Gambp1));
   su2double Pn   = 0.5*Pnm1*(apbp2*x + alpha - beta)*sqrt(apbp3/(ap1*bp1));
 
   /*--- Take care of the special situation of n == 0. ---*/
   if(n == 0) Pn = Pnm1;
   else
   {
-    /*--- The value of the normalized Legendre polynomial must be obtained via recursion. ---*/
+    /*--- The value of the normalized Jacobi polynomial must be obtained via recursion. ---*/
     for(unsigned short i=2; i<=n; ++i)
     {
       /*--- Compute the coefficients a for i and i-1 and the coefficient bi. ---*/
