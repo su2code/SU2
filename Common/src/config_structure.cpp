@@ -3452,7 +3452,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     /* Determine the location of the ADER time DOFs, which are the Gauss-Legendre
        integration points corresponding to the number of time DOFs. */
-    vector<su2double> GLPoints(nTimeDOFsADER_DG), GLWeights(nTimeDOFsADER_DG);
+    vector<passivedouble> GLPoints(nTimeDOFsADER_DG), GLWeights(nTimeDOFsADER_DG);
     CGaussJacobiQuadrature GaussJacobi;
     GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
 
