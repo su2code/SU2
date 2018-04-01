@@ -33,9 +33,9 @@
 
 #include "../include/gauss_jacobi_quadrature.hpp"
 
-void CGaussJacobiQuadrature::GetQuadraturePoints(const su2double   alpha,     const su2double   beta,
-                                                 const su2double   a,         const su2double   b,
-                                                 vector<su2double> &GJPoints, vector<su2double> &GJWeights) {
+void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,     const passivedouble   beta,
+                                                 const passivedouble   a,         const passivedouble   b,
+                                                 vector<passivedouble> &GJPoints, vector<passivedouble> &GJWeights) {
 
   /*--- Determine the number of integration points. Check if the number makes sense. ---*/
   unsigned int nIntPoints = GJPoints.size();
@@ -49,8 +49,8 @@ void CGaussJacobiQuadrature::GetQuadraturePoints(const su2double   alpha,     co
 
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::cdgqf(int nt, int kind, su2double alpha, su2double beta,
-                                   su2double t[], su2double wts[])
+void CGaussJacobiQuadrature::cdgqf(int nt, int kind, passivedouble alpha, passivedouble beta,
+                                   passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80
 //
@@ -103,25 +103,25 @@ void CGaussJacobiQuadrature::cdgqf(int nt, int kind, su2double alpha, su2double 
 //    7, Exponential,          (a,b)       |x-(a+b)/2.0|^alpha
 //    8, Rational,             (a,inf)     (x-a)^alpha*(x+b)^beta
 //
-//    Input, su2double ALPHA, the value of Alpha, if needed.
+//    Input, passivedouble ALPHA, the value of Alpha, if needed.
 //
-//    Input, su2double BETA, the value of Beta, if needed.
+//    Input, passivedouble BETA, the value of Beta, if needed.
 //
-//    Output, su2double T[NT], the knots.
+//    Output, passivedouble T[NT], the knots.
 //
-//    Output, su2double WTS[NT], the weights.
+//    Output, passivedouble WTS[NT], the weights.
 //
 {
-  su2double *aj;
-  su2double *bj;
-  su2double zemu;
+  passivedouble *aj;
+  passivedouble *bj;
+  passivedouble zemu;
 
   parchk ( kind, 2 * nt, alpha, beta );
 //
 //  Get the Jacobi matrix and zero-th moment.
 //
-  aj = new su2double[nt];
-  bj = new su2double[nt];
+  aj = new passivedouble[nt];
+  bj = new passivedouble[nt];
 
   zemu = class_matrix ( kind, nt, alpha, beta, aj, bj );
 //
@@ -136,8 +136,8 @@ void CGaussJacobiQuadrature::cdgqf(int nt, int kind, su2double alpha, su2double 
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::cgqf(int nt, int kind, su2double alpha, su2double beta,
-                                  su2double a, su2double b, su2double t[], su2double wts[])
+void CGaussJacobiQuadrature::cgqf(int nt, int kind, passivedouble alpha, passivedouble beta,
+                                  passivedouble a, passivedouble b, passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80
 //
@@ -189,16 +189,16 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, su2double alpha, su2double b
 //    8, Rational,             (a,+oo)     (x-a)^alpha*(x+b)^beta
 //    9, Chebyshev Type 2,     (a,b)       ((b-x)*(x-a))^(+0.5)
 //
-//    Input, su2double ALPHA, the value of Alpha, if needed.
+//    Input, passivedouble ALPHA, the value of Alpha, if needed.
 //
-//    Input, su2double BETA, the value of Beta, if needed.
+//    Input, passivedouble BETA, the value of Beta, if needed.
 //
-//    Input, su2double A, B, the interval endpoints, or
+//    Input, passivedouble A, B, the interval endpoints, or
 //    other parameters.
 //
-//    Output, su2double T[NT], the knots.
+//    Output, passivedouble T[NT], the knots.
 //
-//    Output, su2double WTS[NT], the weights.
+//    Output, passivedouble WTS[NT], the weights.
 //
 {
   int i;
@@ -231,9 +231,9 @@ void CGaussJacobiQuadrature::cgqf(int nt, int kind, su2double alpha, su2double b
 }
 //****************************************************************************80
 
-su2double CGaussJacobiQuadrature::class_matrix(int kind, int m, su2double alpha,
-                                               su2double beta, su2double aj[], 
-                                               su2double bj[])
+passivedouble CGaussJacobiQuadrature::class_matrix(int kind, int m, passivedouble alpha,
+                                                   passivedouble beta, passivedouble aj[], 
+                                                   passivedouble bj[])
 
 //****************************************************************************80
 //
@@ -289,28 +289,28 @@ su2double CGaussJacobiQuadrature::class_matrix(int kind, int m, su2double alpha,
 //
 //    Input, int M, the order of the Jacobi matrix.
 //
-//    Input, su2double ALPHA, the value of Alpha, if needed.
+//    Input, passivedouble ALPHA, the value of Alpha, if needed.
 //
-//    Input, su2double BETA, the value of Beta, if needed.
+//    Input, passivedouble BETA, the value of Beta, if needed.
 //
-//    Output, su2double AJ[M], BJ[M], the diagonal and subdiagonal
+//    Output, passivedouble AJ[M], BJ[M], the diagonal and subdiagonal
 //    of the Jacobi matrix.
 //
-//    Output, su2double CLASS_MATRIX, the zero-th moment.
+//    Output, passivedouble CLASS_MATRIX, the zero-th moment.
 //
 {
-  su2double a2b2;
-  su2double ab;
-  su2double aba;
-  su2double abi;
-  su2double abj;
-  su2double abti;
-  su2double apone;
+  passivedouble a2b2;
+  passivedouble ab;
+  passivedouble aba;
+  passivedouble abi;
+  passivedouble abj;
+  passivedouble abti;
+  passivedouble apone;
   int i;
-  su2double pi = 3.14159265358979323846264338327950;
-  su2double temp;
-  su2double temp2;
-  su2double zemu;
+  passivedouble pi = 3.14159265358979323846264338327950;
+  passivedouble temp;
+  passivedouble temp2;
+  passivedouble zemu;
 
   temp = r8_epsilon ( );
 
@@ -470,7 +470,7 @@ su2double CGaussJacobiQuadrature::class_matrix(int kind, int m, su2double alpha,
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::imtqlx(int n, su2double d[], su2double e[], su2double z[])
+void CGaussJacobiQuadrature::imtqlx(int n, passivedouble d[], passivedouble e[], passivedouble z[])
 
 //****************************************************************************80
 //
@@ -521,22 +521,22 @@ void CGaussJacobiQuadrature::imtqlx(int n, su2double d[], su2double e[], su2doub
 //
 //    Input, int N, the order of the matrix.
 //
-//    Input/output, su2double D(N), the diagonal entries of the matrix.
+//    Input/output, passivedouble D(N), the diagonal entries of the matrix.
 //    On output, the information in D has been overwritten.
 //
-//    Input/output, su2double E(N), the subdiagonal entries of the 
+//    Input/output, passivedouble E(N), the subdiagonal entries of the 
 //    matrix, in entries E(1) through E(N-1).  On output, the information in
 //    E has been overwritten.
 //
-//    Input/output, su2double Z(N).  On input, a vector.  On output,
+//    Input/output, passivedouble Z(N).  On input, a vector.  On output,
 //    the value of Q' * Z, where Q is the matrix that diagonalizes the
 //    input symmetric tridiagonal matrix.
 //
 {
-  su2double b;
-  su2double c;
-  su2double f;
-  su2double g;
+  passivedouble b;
+  passivedouble c;
+  passivedouble f;
+  passivedouble g;
   int i;
   int ii;
   int itn = 30;
@@ -545,10 +545,10 @@ void CGaussJacobiQuadrature::imtqlx(int n, su2double d[], su2double e[], su2doub
   int l;
   int m = 0;  // To avoid a compiler warning.
   int mml;
-  su2double p;
-  su2double prec;
-  su2double r;
-  su2double s;
+  passivedouble p;
+  passivedouble prec;
+  passivedouble r;
+  passivedouble s;
 
   prec = r8_epsilon ( );
 
@@ -664,7 +664,7 @@ void CGaussJacobiQuadrature::imtqlx(int n, su2double d[], su2double e[], su2doub
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::parchk(int kind, int m, su2double alpha, su2double beta)
+void CGaussJacobiQuadrature::parchk(int kind, int m, passivedouble alpha, passivedouble beta)
 
 //****************************************************************************80
 //
@@ -708,11 +708,11 @@ void CGaussJacobiQuadrature::parchk(int kind, int m, su2double alpha, su2double 
 //    Input, int M, the order of the highest moment to
 //    be calculated.  This value is only needed when KIND = 8.
 //
-//    Input, su2double ALPHA, BETA, the parameters, if required
+//    Input, passivedouble ALPHA, BETA, the parameters, if required
 //    by the value of KIND.
 //
 {
-  su2double tmp;
+  passivedouble tmp;
 
   if ( kind <= 0 )
   {
@@ -759,7 +759,7 @@ void CGaussJacobiQuadrature::parchk(int kind, int m, su2double alpha, su2double 
 }
 //****************************************************************************80
 
-su2double CGaussJacobiQuadrature::r8_epsilon( )
+passivedouble CGaussJacobiQuadrature::r8_epsilon( )
 
 //****************************************************************************80
 //
@@ -789,16 +789,16 @@ su2double CGaussJacobiQuadrature::r8_epsilon( )
 //
 //  Parameters:
 //
-//    Output, su2double R8_EPSILON, the R8 round-off unit.
+//    Output, passivedouble R8_EPSILON, the R8 round-off unit.
 //
 {
-  const su2double value = 2.220446049250313E-016;
+  const passivedouble value = 2.220446049250313E-016;
 
   return value;
 }
 //****************************************************************************80
 
-su2double CGaussJacobiQuadrature::r8_sign(su2double x)
+passivedouble CGaussJacobiQuadrature::r8_sign(passivedouble x)
 
 //****************************************************************************80
 //
@@ -820,12 +820,12 @@ su2double CGaussJacobiQuadrature::r8_sign(su2double x)
 //
 //  Parameters:
 //
-//    Input, su2double X, the number whose sign is desired.
+//    Input, passivedouble X, the number whose sign is desired.
 //
-//    Output, su2double R8_SIGN, the sign of X.
+//    Output, passivedouble R8_SIGN, the sign of X.
 //
 {
-  su2double value;
+  passivedouble value;
 
   if ( x < 0.0 )
   {
@@ -839,10 +839,10 @@ su2double CGaussJacobiQuadrature::r8_sign(su2double x)
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::scqf(int nt, su2double t[], int mlt[], su2double wts[],
-                                  int nwts, int ndx[], su2double swts[], su2double st[],
-                                  int kind, su2double alpha, su2double beta, su2double a, 
-                                  su2double b)
+void CGaussJacobiQuadrature::scqf(int nt, passivedouble t[], int mlt[], passivedouble wts[],
+                                  int nwts, int ndx[], passivedouble swts[], passivedouble st[],
+                                  int kind, passivedouble alpha, passivedouble beta, passivedouble a, 
+                                  passivedouble b)
 
 //****************************************************************************80
 //
@@ -881,20 +881,20 @@ void CGaussJacobiQuadrature::scqf(int nt, su2double t[], int mlt[], su2double wt
 //
 //    Input, int NT, the number of knots.
 //
-//    Input, su2double T[NT], the original knots.
+//    Input, passivedouble T[NT], the original knots.
 //
 //    Input, int MLT[NT], the multiplicity of the knots.
 //
-//    Input, su2double WTS[NWTS], the weights.
+//    Input, passivedouble WTS[NWTS], the weights.
 //
 //    Input, int NWTS, the number of weights.
 //
 //    Input, int NDX[NT], used to index the array WTS.  
 //    For more details see the comments in CAWIQ.
 //
-//    Output, su2double SWTS[NWTS], the scaled weights.
+//    Output, passivedouble SWTS[NWTS], the scaled weights.
 //
-//    Output, su2double ST[NT], the scaled knots.
+//    Output, passivedouble ST[NT], the scaled knots.
 //
 //    Input, int KIND, the rule.
 //    1, Legendre,             (a,b)       1.0
@@ -907,23 +907,23 @@ void CGaussJacobiQuadrature::scqf(int nt, su2double t[], int mlt[], su2double wt
 //    8, Rational,             (a,+oo)     (x-a)^alpha*(x+b)^beta
 //    9, Chebyshev Type 2,     (a,b)       ((b-x)*(x-a))^(+0.5)
 //
-//    Input, su2double ALPHA, the value of Alpha, if needed.
+//    Input, passivedouble ALPHA, the value of Alpha, if needed.
 //
-//    Input, su2double BETA, the value of Beta, if needed.
+//    Input, passivedouble BETA, the value of Beta, if needed.
 //
-//    Input, su2double A, B, the interval endpoints.
+//    Input, passivedouble A, B, the interval endpoints.
 //
 {
-  su2double al;
-  su2double be;
+  passivedouble al;
+  passivedouble be;
   int i;
   int k;
   int l;
-  su2double p;
-  su2double shft;
-  su2double slp;
-  su2double temp;
-  su2double tmp;
+  passivedouble p;
+  passivedouble shft;
+  passivedouble slp;
+  passivedouble temp;
+  passivedouble tmp;
 
   temp = r8_epsilon ( );
 
@@ -1078,8 +1078,8 @@ void CGaussJacobiQuadrature::scqf(int nt, su2double t[], int mlt[], su2double wt
 }
 //****************************************************************************80
 
-void CGaussJacobiQuadrature::sgqf(int nt, su2double aj[], su2double bj[],
-                                  su2double zemu, su2double t[], su2double wts[])
+void CGaussJacobiQuadrature::sgqf(int nt, passivedouble aj[], passivedouble bj[],
+                                  passivedouble zemu, passivedouble t[], passivedouble wts[])
 
 //****************************************************************************80
 //
@@ -1118,16 +1118,16 @@ void CGaussJacobiQuadrature::sgqf(int nt, su2double aj[], su2double bj[],
 //
 //    Input, int NT, the number of knots.
 //
-//    Input, su2double AJ[NT], the diagonal of the Jacobi matrix.
+//    Input, passivedouble AJ[NT], the diagonal of the Jacobi matrix.
 //
-//    Input/output, su2double BJ[NT], the subdiagonal of the Jacobi 
+//    Input/output, passivedouble BJ[NT], the subdiagonal of the Jacobi 
 //    matrix, in entries 1 through NT-1.  On output, BJ has been overwritten.
 //
-//    Input, su2double ZEMU, the zero-th moment of the weight function.
+//    Input, passivedouble ZEMU, the zero-th moment of the weight function.
 //
-//    Output, su2double T[NT], the knots.
+//    Output, passivedouble T[NT], the knots.
 //
-//    Output, su2double WTS[NT], the weights.
+//    Output, passivedouble WTS[NT], the weights.
 //
 {
   int i;

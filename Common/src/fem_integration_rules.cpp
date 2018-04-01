@@ -3300,9 +3300,10 @@ void FEMStandardElementBaseClass::IntegrationPointsPyramid(void) {
         and the actual integration 1D integration points. ---*/
   unsigned short M = orderExact/2 + 1;
 
-  vector<su2double> GLPoints(M), GLWeights(M), GJPoints(M), GJWeights(M);
+  vector<su2double> GLPoints(M), GLWeights(M);
   GaussLegendrePoints1D(GLPoints, GLWeights);
 
+  vector<passivedouble> GJPoints(M), GJWeights(M);
   CGaussJacobiQuadrature GaussJacobi;
   GaussJacobi.GetQuadraturePoints(2.0, 0.0, -1.0, 1.0, GJPoints, GJWeights);
 
