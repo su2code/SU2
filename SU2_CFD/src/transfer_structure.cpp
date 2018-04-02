@@ -77,7 +77,10 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   for (iVar = 0; iVar < val_nConst; iVar++) {
     Physical_Constants[iVar] = 0.0;
   }
-  
+
+  SpanLevelDonor       = NULL;
+  SpanValueCoeffTarget = NULL;
+
 }
 
 CTransfer::~CTransfer(void) {
