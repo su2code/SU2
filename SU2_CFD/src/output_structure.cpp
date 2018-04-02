@@ -304,6 +304,7 @@ COutput::~COutput(void) {
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
 
+  if (RhoRes_Old != NULL) delete [] RhoRes_Old;
 
   /*--- Delete turboperformance pointers initiliazed at constrction  ---*/
   unsigned short iMarker, iSpan;
@@ -8120,6 +8121,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       /*--- Deallocate connectivity ---*/
       
       DeallocateConnectivity(config[iZone], geometry[iZone], true);
+      DeallocateConnectivity(config[iZone], geometry[iZone], false);
+      DeallocateCoordinates(config[iZone], geometry[iZone]);
       
     }
 
@@ -16305,7 +16308,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    needed for when we read the strings later. ---*/
 
   for (iVar = 0; iVar < nVar_Par; iVar++) {
-    strcpy(str_buf, Variable_Names[iVar].c_str());
+    strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
     fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
   }
 
