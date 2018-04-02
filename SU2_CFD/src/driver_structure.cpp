@@ -635,7 +635,15 @@ void CDriver::Postprocessing() {
     delete [] transfer_container;
     if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
   }
-
+  
+  if (transfer_types != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (transfer_types[iZone] != NULL)
+      delete [] transfer_types[iZone];
+    }
+    delete [] transfer_types;
+  }
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone] != NULL) {
       for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
@@ -1298,7 +1306,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
   fem              = false;  disc_adj_fem    = false;
-  heat             = false;
+  heat             = false;  heat_fvm        = false;
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
@@ -1414,7 +1422,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   fem_ns           = false;
   fem_turbulent    = false;
   wave             = false;
-  heat             = false;
+  heat             = false; heat_fvm         = false;
   fem 			       = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
