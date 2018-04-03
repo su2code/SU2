@@ -68,6 +68,9 @@ public:
   			mu,				// Viscosity
   			kappa;			// Thermal conduction coefficient
 
+  /*---Cost function---*/
+  su2double *PLdB;
+
   /*---Sensitivity---*/
   unsigned short nDim;
   unsigned long *nPanel, nSig, *nPointID, nPanel_tot, nPointID_loc, *nPointID_proc, nPointID_tot;
@@ -130,7 +133,10 @@ public:
   void Spreading(unsigned short iPhi);
   void Stratification(unsigned short iPhi);
   void Iterate(unsigned short iPhi);
-  void WriteGroundPressure(unsigned short iPhi, unsigned long iIter);
+  void PerceivedLoudness(unsigned short iPhi);
+  void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, unsigned long &n_sample);
+  void MarkVII(unsigned short iPhi, su2double *SPL_band);
+  void WriteGroundPressure(unsigned short iPhi);
   void WriteSensitivities();
 
 };
