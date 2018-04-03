@@ -2,20 +2,24 @@
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author F. Palacios, J. Hicken
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,9 +51,9 @@ CSysVector::CSysVector(const unsigned long & size, const su2double & val) {
   
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= UINT_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, su2double): "
-    << "invalid input: size = " << size << endl;
-    throw(-1);
+    char buf[100];
+    SPRINTF(buf, "Invalid input: size = %lu", size );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
   vec_val = new su2double[nElm];
@@ -72,9 +76,9 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, su2double): "
-    << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
-    throw(-1);
+    char buf[100];
+    SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 	
   vec_val = new su2double[nElm];
@@ -82,8 +86,6 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
     vec_val[i] = val;
   
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -115,9 +117,9 @@ CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
   
   /*--- Check for invalid size, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, su2double*): "
-    << "invalid input: size = " << size << endl;
-    throw(-1);
+    char buf[100];    
+    SPRINTF(buf, "Invalid input: size = %lu", size );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
   vec_val = new su2double[nElm];
@@ -125,8 +127,6 @@ CSysVector::CSysVector(const unsigned long & size, const su2double* u_array) {
     vec_val[i] = u_array[i];
 
 #ifdef HAVE_MPI
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
   SU2_MPI::Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -142,9 +142,9 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   
   /*--- check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, su2double*): "
-    << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
-    throw(-1);
+    char buf[100];
+    SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
   vec_val = new su2double[nElm];
@@ -175,9 +175,9 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   
   /*--- Check for invalid input, then allocate memory and initialize values ---*/
   if ( (nElm <= 0) || (nElm >= ULONG_MAX) ) {
-    cerr << "CSysVector::CSysVector(unsigned int, unsigned int, su2double): "
-    << "invalid input: numBlk, numVar = " << numBlk << "," << numVar << endl;
-    throw(-1);
+    char buf[100];
+    SPRINTF(buf, "invalid input: numBlk, numVar = %lu, %u", numBlk, numVar );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 	
   vec_val = new su2double[nElm];
@@ -204,8 +204,7 @@ void CSysVector::Equals_AX(const su2double & a, CSysVector & x) {
 void CSysVector::Plus_AX(const su2double & a, CSysVector & x) {
   /*--- check that *this and x are compatible ---*/
   if (nElm != x.nElm) {
-    cerr << "CSysVector::Plus_AX(): " << "sizes do not match";
-    throw(-1);
+    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
   }
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] += a * x.vec_val[i];
@@ -214,8 +213,7 @@ void CSysVector::Plus_AX(const su2double & a, CSysVector & x) {
 void CSysVector::Equals_AX_Plus_BY(const su2double & a, CSysVector & x, const su2double & b, CSysVector & y) {
   /*--- check that *this, x and y are compatible ---*/
   if ((nElm != x.nElm) || (nElm != y.nElm)) {
-    cerr << "CSysVector::Equals_AX_Plus_BY(): " << "sizes do not match";
-    throw(-1);
+    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
   }
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = a * x.vec_val[i] + b * y.vec_val[i];
@@ -263,8 +261,7 @@ CSysVector & CSysVector::operator+=(const CSysVector & u) {
   
   /*--- Check for consistent sizes, then add elements ---*/
   if (nElm != u.nElm) {
-    cerr << "CSysVector::operator+=(CSysVector): " << "sizes do not match";
-    throw(-1);
+    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
   }
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] += u.vec_val[i];
@@ -283,8 +280,7 @@ CSysVector & CSysVector::operator-=(const CSysVector & u) {
   
   /*--- Check for consistent sizes, then subtract elements ---*/
   if (nElm != u.nElm) {
-    cerr << "CSysVector::operator-=(CSysVector): " << "sizes do not match";
-    throw(-1);
+    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
   }
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] -= u.vec_val[i];
@@ -337,8 +333,7 @@ su2double CSysVector::norm() const {
   /*--- just call dotProd on this*, then sqrt ---*/
   su2double val = dotProd(*this, *this);
   if (val < 0.0) {
-    cerr << "CSysVector::norm(): " << "inner product of CSysVector is negative";
-    throw(-1);
+    SU2_MPI::Error("Inner product of CSysVector is negative", CURRENT_FUNCTION);
   }
   return sqrt(val);
 }
@@ -398,9 +393,7 @@ su2double dotProd(const CSysVector & u, const CSysVector & v) {
   
   /*--- check for consistent sizes ---*/
   if (u.nElm != v.nElm) {
-    cerr << "CSysVector friend dotProd(CSysVector, CSysVector): "
-    << "CSysVector sizes do not match";
-    throw(-1);
+    SU2_MPI::Error("Sizes do not match", CURRENT_FUNCTION);
   }
   
   /*--- find local inner product and, if a parallel run, sum over all

@@ -4,20 +4,24 @@
 # \file pySU2.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas
-# \version 5.0.0 "Raven"
+#  \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -52,11 +56,42 @@ threads="1"
 %import "../../Common/include/datatypes/primitive_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
+%include "std_vector.i"
+%include "std_map.i"
 %include "typemaps.i"
 //%include "numpy.i"
-#ifdef HAVE_MPI			//Need mpi4py only for a parallel build of the wrapper.
+#ifdef HAVE_MPI                    //Need mpi4py only for a parallel build of the wrapper.
   %include "mpi4py/mpi4py.i"
   %mpi4py_typemap(Comm, MPI_Comm)
 #endif
+
+namespace std {
+   %template() vector<int>;
+   %template() vector<double>;
+   %template() vector<string>;
+   %template() map<string, int>;
+   %template() map<string, string>;
+}
+
 // ----------- API CLASSES ----------------
+
+//Constants definitions
+/*!
+ * \brief different software components of SU2
+ */
+enum SU2_COMPONENT {
+  SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
+  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
+  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
+  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
+};
+
+const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
+const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
+const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+
+// CDriver class
 %include "../../SU2_CFD/include/driver_structure.hpp"

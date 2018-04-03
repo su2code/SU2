@@ -2,20 +2,24 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -120,6 +124,10 @@ inline void CGeometry::SetRCM_Ordering(CConfig *config) { }
 inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) { }
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
+
+inline void CGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){ }
+
+inline void CGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){ }
 
 inline void CGeometry::SetPoint_Connectivity(CGeometry *fine_grid) { }
 
@@ -328,6 +336,14 @@ inline void CGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
+
+inline su2double CGeometry::GetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryTemperature[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryTemperature){ CustomBoundaryTemperature[val_marker][val_vertex] = val_customBoundaryTemperature; }
+
+inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 

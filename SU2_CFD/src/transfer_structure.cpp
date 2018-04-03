@@ -2,20 +2,24 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +38,9 @@
 #include "../include/transfer_structure.hpp"
 
 CTransfer::CTransfer(void) {
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   Physical_Constants = NULL;
   Donor_Variable     = NULL;
@@ -47,6 +54,9 @@ CTransfer::CTransfer(void) {
 
 CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) {
   
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
   unsigned short iVar;
   
   Physical_Constants = new su2double[val_nConst];
@@ -67,7 +77,10 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   for (iVar = 0; iVar < val_nConst; iVar++) {
     Physical_Constants[iVar] = 0.0;
   }
-  
+
+  SpanLevelDonor       = NULL;
+  SpanValueCoeffTarget = NULL;
+
 }
 
 CTransfer::~CTransfer(void) {
@@ -102,12 +115,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   bool fsi = donor_config->GetFSI_Simulation();
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
 
   if (rank == MASTER_NODE) 
@@ -437,8 +445,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
           Point_Target_Check = Buffer_Recv_TargetIndices[indexPoint_iVertex];
           
           if (Point_Target_Check < 0 && fsi) {
-            cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
           }
           
           for (iVar = 0; iVar < nVar; iVar++)
@@ -497,12 +504,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   bool fsi = donor_config->GetFSI_Simulation();
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
   
   if (rank == MASTER_NODE) 
@@ -760,8 +762,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
           Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
           
           if (Point_Target_Check < 0 && fsi) {
-            cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-            exit(EXIT_FAILURE);
+            SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
           }
           
           for (iVar = 0; iVar < nVar; iVar++)
@@ -815,14 +816,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
   bool fsi = donor_config->GetFSI_Simulation();
   
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
 
   if (rank == MASTER_NODE) 
@@ -1111,8 +1107,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
             if (Point_Target_Check < 0 && fsi) {
-                cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-                exit(EXIT_FAILURE);
+              SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
             }
             else if (fsi){
               for (iVar = 0; iVar < nVar; iVar++)
@@ -1177,13 +1172,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   unsigned long Point_Donor, Point_Target;
   
   bool fsi = donor_config->GetFSI_Simulation();
-  
-  int size = SINGLE_NODE;
-  
+    
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
   
   if (rank == MASTER_NODE) 
@@ -1412,8 +1402,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
             Point_Target_Check = Buffer_Recv_DonorIndices[indexPoint_iVertex];
             
             if (Point_Target_Check < 0 && fsi) {
-              cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-              exit(EXIT_FAILURE);
+              SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
             }
             
             for (iVar = 0; iVar < nVar; iVar++)
@@ -1458,12 +1447,8 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
   su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
 
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE, iSize;
+  int iSize;
   int *BuffMarkerDonor, *BuffDonorFlag;
-
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
 
@@ -1578,8 +1563,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
         SpanValueCoeffTarget[iSpan]  = (SpanValuesTarget[iSpan] - SpanValuesDonor[kSpan])/(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
         break;
       default:
-        cout << "MixinPlane interface option not implemented yet" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("MixingPlane interface option not implemented yet", CURRENT_FUNCTION);
         break;
 
       }
@@ -1600,12 +1584,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
       *avgTangVelDonor = NULL, *avg3DVelDonor = NULL, *avgNuDonor = NULL, *avgOmegaDonor = NULL, *avgKineDonor = NULL;
   su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL,
       *avg3DVelTarget = NULL, *avgTangVelTarget = NULL, *avgNuTarget = NULL, *avgOmegaTarget = NULL, *avgKineTarget = NULL;
-  int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  int size, iSize;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int iSize;
   su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
       *BuffAvgTangVelDonor = NULL, *BuffAvgNuDonor = NULL, *BuffAvgKineDonor = NULL, *BuffAvgOmegaDonor = NULL;
   int nSpanSize, *BuffMarkerDonor;
