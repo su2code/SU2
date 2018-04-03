@@ -1409,10 +1409,6 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   /*--- Clean up ---*/
   delete [] w;
   delete [] p_of_w;
-  delete [] fc;
-  delete [] f_min;
-  delete [] f_max;
-  delete [] E_band;
 
 }
 
