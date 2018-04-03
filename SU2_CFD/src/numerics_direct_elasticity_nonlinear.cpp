@@ -2,20 +2,24 @@
  * \file numerics_direct_elasticity_nonlinear.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -135,8 +139,7 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
     ref_Efield_mod = sqrt(ref_Efield_mod);
 
     if (ref_Efield_mod == 0){
-      cout << "The electric field has not been defined!!!!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The electric field has not been defined!!!!!", CURRENT_FUNCTION);
     }
 
     /*--- Initialize pointer for the electric field ---*/
@@ -502,8 +505,8 @@ void CFEANonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CCo
   unsigned short iDim ;
 
   su2double GradNi_Mat_Term;
-  su2double Vol_current, Vol_reference;
-  su2double Avg_kappa;
+  su2double Vol_current = 0.0, Vol_reference;
+  su2double Avg_kappa = 0.0;
   su2double el_Pressure;
 
   /*--- TODO: Initialize values for the material model considered ---*/
@@ -572,8 +575,7 @@ void CFEANonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CCo
 
   }
   else {
-    cout << "Warning: Negative volume computed during FE structural analysis. Exiting..." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(" Negative volume computed during FE structural analysis.", CURRENT_FUNCTION);
   }
 
   for (iNode = 0; iNode < nNode; iNode++) {

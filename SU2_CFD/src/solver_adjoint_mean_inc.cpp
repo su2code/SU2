@@ -2,20 +2,24 @@
  * \file solution_adjoint_mean_inc.cpp
  * \brief Main subrotuines for solving adjoint incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,11 +64,6 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   string filename, AdjExt;
   su2double myArea_Monitored, Area, *Normal;
   bool axisymmetric = config->GetAxisymmetric();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Array initialization ---*/
   Phi_Inf = NULL;
@@ -333,7 +332,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -450,7 +449,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *conf
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -566,7 +565,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -682,7 +681,7 @@ void CAdjIncEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   su2double **Gradient = new su2double* [nVar];
@@ -805,7 +804,7 @@ void CAdjIncEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfi
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -913,14 +912,14 @@ void CAdjIncEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfi
   
 }
 
-void CAdjIncEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjIncEulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
   unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -989,11 +988,6 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
   
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
@@ -1039,9 +1033,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
@@ -1053,11 +1045,11 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) ForceProj_Vector[2] = -2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLength; ForceProj_Vector[2] = (y - y_origin)/RefLength; }
             break;
           case MOMENT_Y_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLength; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLength; }
             break;
           case MOMENT_Z_COEFFICIENT :
@@ -1087,15 +1079,11 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case THRUST_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
             break;
           case TORQUE_COEFFICIENT :
@@ -1103,9 +1091,7 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
             if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLength; ForceProj_Vector[1] = -(x - x_origin)/RefLength; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(EXIT_FAILURE);
-            }
+            if (nDim == 2) { SU2_MPI::Error("This functional is not possible in 2D!!", CURRENT_FUNCTION);}
             if (nDim == 3) {
               ForceProj_Vector[0] = -invCQ;
               ForceProj_Vector[1] = -CTRCQ2*(z - z_origin);
@@ -1162,8 +1148,7 @@ void CAdjIncEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solv
     /*--- Read derivative of the objective function at the NearField from file ---*/
     index_file.open("WeightNF.dat", ios::in);
     if (index_file.fail()) {
-      cout << "There is no Weight Nearfield Pressure file (WeightNF.dat)." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("There is no Weight Nearfield Pressure file (WeightNF.dat).", CURRENT_FUNCTION);
     }
     
     nPointNearField = 0;
@@ -1200,13 +1185,7 @@ void CAdjIncEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solv
       IndexNF_inv[IndexNF[iIndex]] = iIndex;
   }
   else {
-    #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-    #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-        MPI_Finalize();
-    #endif
+    SU2_MPI::Error("", CURRENT_FUNCTION);
   }
     
   }
@@ -1493,11 +1472,6 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   su2double SharpEdge_Distance;
   bool RightSol = true;
   
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   
@@ -1547,8 +1521,8 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Artificial dissipation for centered schemes ---*/
   
   if (center) {
-    if ((center_jst) && (iMesh == MESH_0) && !Output) {
-      SetDissipation_Switch(geometry, config);
+    if ((center_jst) && (iMesh == MESH_0)) {
+      SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
       if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
@@ -1934,7 +1908,7 @@ void CAdjIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *co
   
 }
 
-void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
+void CAdjIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
@@ -1962,7 +1936,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   }
   
   /*--- MPI parallelization ---*/
-  Set_MPI_Dissipation_Switch(geometry, config);
+  Set_MPI_Sensor(geometry, config);
   
 }
 
@@ -2694,10 +2668,9 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
   
 #else
   
-  int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1];
-  MPI_Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int jProcessor;
+  SU2_MPI::Status send_stat[1], recv_stat[1];
+  SU2_MPI::Request send_req[1], recv_req[1];
   
   bool compute;
   su2double *Buffer_Send_Psi = new su2double[nVar];
@@ -2818,7 +2791,7 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
     }
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   delete[] Buffer_Send_Psi;
   delete[] Buffer_Receive_Psi;
@@ -2941,11 +2914,10 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
   
 #else
   
-  int rank, jProcessor;
-  MPI_Status status;
-  //MPI_Status send_stat[1], recv_stat[1];
-  //MPI_Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int jProcessor;
+  SU2_MPI::Status status;
+  //SU2_MPI::Status send_stat[1], recv_stat[1];
+  //SU2_MPI::Request send_req[1], recv_req[1];
   
   bool compute;
   su2double *Buffer_Send_Psi = new su2double[nVar];
@@ -3108,7 +3080,7 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
     }
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   delete[] Buffer_Send_Psi;
   delete[] Buffer_Receive_Psi;
@@ -3575,11 +3547,6 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
@@ -3644,17 +3611,8 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -3703,11 +3661,6 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   string filename, AdjExt;
   su2double Area=0.0, *Normal = NULL, myArea_Monitored;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*--- Norm heat flux objective test ---*/
   pnorm = 1.0;
@@ -3915,11 +3868,6 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   su2double SharpEdge_Distance;
   bool RightSol = true;
   
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   
@@ -3969,8 +3917,8 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Artificial dissipation for centered schemes ---*/
   
-  if (center_jst && (iMesh == MESH_0) && !Output) {
-    SetDissipation_Switch(geometry, config);
+  if (center_jst && (iMesh == MESH_0)) {
+    SetCentered_Dissipation_Sensor(geometry, config);
     SetUndivided_Laplacian(geometry, config);
   }
   
