@@ -1358,12 +1358,8 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   FourierTransform(iPhi, w, p_of_w, n_sample);
 
   /*--- Compute 1/3-oct bands ---*/
-  su2double *fc       = new su2double[41],
-            *f_min    = new su2double[41],
-            *f_max    = new su2double[41],
-            *E_band   = new su2double[41],
-            *SPL_band = new su2double[41];
-  unsigned long *band_edge_inds = new unsigned long[41][2];
+  su2double fc[41], f_min[41], f_max[41], E_band[41], SPL_band[41];
+  unsigned long band_edge_inds[41][2];
 
   for(unsigned short i = 0; i < 41; i++){
     fc[i]     = pow(10.,3.)*pow(2.,-29./3.)*pow(2.,su2double(i)/3.);
@@ -1417,10 +1413,6 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   delete [] f_min;
   delete [] f_max;
   delete [] E_band;
-  for(unsigned short i = 0; i < 41; i++){
-    delete [] band_edges_inds[i];
-  }
-  delete [] band_edge_inds;
 
 }
 
@@ -1679,7 +1671,7 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band){
     }
   }
 
-  sonovr = sonmax + f*(sumson-sonmax);
+  sonovr = sonmax + f*(sonsum-sonmax);
 
   /*--- PLdB = 32 + 9 log_2(sonovr) = 32 + 9*3.322 log_10(sonovr) ---*/
   if(sonovr > 0){
