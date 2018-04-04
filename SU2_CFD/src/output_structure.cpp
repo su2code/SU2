@@ -4594,7 +4594,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
       
-      if (rank == MASTER_NODE) cout << endl;
+      if ((rank == MASTER_NODE) && !(fea || fluid_structure)) cout << endl;
       
       if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
       
