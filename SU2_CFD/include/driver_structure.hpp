@@ -1123,54 +1123,12 @@ public:
 };
 
 /*!
- * \class CFSIDriver
- * \brief Overload: class for driving a steady-state BGS iteration for a fluid-structure interaction problem in multiple zones.
+ * \class CDiscAdjFSIDriver
+ * \brief Overload: Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
  * \version 4.2.0 "Cardinal"
  */
-class CFSIStatDriver : public CFSIDriver {
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  CFSIStatDriver(char* confFile,
-             unsigned short val_nZone,
-             unsigned short val_nDim,
-             SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFSIStatDriver(void);
-
-  /*!
-   * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-
-  void Run();
-
-};
-
-/*!
- * \class CDiscAdjFSIStatDriver
- * \brief Class for driving a discrete adjoint FSI iteration.
- * \author R. Sanchez.
- * \version 4.2.0 "Cardinal"
- */
-class CDiscAdjFSIStatDriver : public CFSIStatDriver {
+class CDiscAdjFSIDriver : public CFSIDriver {
 
   CIteration** direct_iteration;
   unsigned short RecordingState;
@@ -1208,7 +1166,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of zones.
    */
-  CDiscAdjFSIStatDriver(char* confFile,
+  CDiscAdjFSIDriver(char* confFile,
                            unsigned short val_nZone,
                            unsigned short val_nDim,
                            SU2_Comm MPICommunicator);
@@ -1216,7 +1174,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFSIStatDriver(void);
+  ~CDiscAdjFSIDriver(void);
 
   /*!
    * \brief Run a Discrete Adjoint iteration for the FSI problem.
