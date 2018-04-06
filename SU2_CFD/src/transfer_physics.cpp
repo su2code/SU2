@@ -759,9 +759,9 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   Temperature_Ref   = donor_config->GetTemperature_Ref();
   Prandtl_Lam       = donor_config->GetPrandtl_Lam();
   Prandtl_Turb      = donor_config->GetPrandtl_Turb();
-  laminar_viscosity = donor_config->GetViscosity_FreeStreamND();
-  cp_fluid          = donor_config->GetSpecificHeat_Fluid();
-  rho_cp_solid      = donor_config->GetSpecificHeat_Solid()*donor_config->GetDensity_Solid();
+  laminar_viscosity = donor_config->GetMu_ConstantND();
+  cp_fluid          = donor_config->GetSpecific_Heat_Cp();
+  rho_cp_solid      = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
 
   PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
   Coord         = donor_geometry->node[Point_Donor]->GetCoord();

@@ -753,7 +753,7 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- If the heat solver runs stand-alone, we have to set the reference values ---*/
   if(heat_equation) {
-    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
+    su2double rho_cp = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
     su2double thermal_diffusivity_solid = config->GetThermalConductivity_Solid() / rho_cp;
     config->SetThermalDiffusivity_Solid(thermal_diffusivity_solid);
   }
@@ -1258,7 +1258,7 @@ void CHeatSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
-  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  laminar_viscosity = config->GetMu_ConstantND();
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
 
@@ -1395,7 +1395,7 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
-  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  laminar_viscosity = config->GetMu_ConstantND();
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -1476,10 +1476,10 @@ void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   }
 
   if(flow) {
-    Wall_HeatFlux = Wall_HeatFlux/(config->GetViscosity_Ref()*config->GetSpecificHeat_Fluid()*config->GetTemperature_Ref());
+    Wall_HeatFlux = Wall_HeatFlux/(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp()*config->GetTemperature_Ref());
   }
   else {
-    Wall_HeatFlux = Wall_HeatFlux/(config->GetDensity_Solid()*config->GetSpecificHeat_Solid()*config->GetTemperature_Ref());
+    Wall_HeatFlux = Wall_HeatFlux/(config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid()*config->GetTemperature_Ref());
   }
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1529,7 +1529,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
-  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  laminar_viscosity = config->GetMu_ConstantND();
   Twall = config->GetTemperature_FreeStreamND();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1566,7 +1566,7 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         if (grid_movement)
           conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-        conv_numerics->SetTemperature(node[iPoint]->GetSolution(0), config->GetTemperature_FreeStreamND());
+        conv_numerics->SetTemperature(node[iPoint]->GetSolution(0), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
 
         /*--- Compute the residual using an upwind scheme ---*/
 
@@ -1713,7 +1713,7 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
   su2double *Normal = new su2double[nDim];
 
   Temperature_Ref       = config->GetTemperature_Ref();
-  rho_cp_solid          = config->GetDensity_Solid()*config->GetSpecificHeat_Solid();
+  rho_cp_solid          = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp_Solid();
 
   if (flow) {
 
@@ -1807,8 +1807,8 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
   su2double MyAllBound_HeatFlux, MyAllBound_AvgTemperature;
 #endif
 
-  cp_fluid = config->GetSpecificHeat_Fluid();
-  rho_cp_solid = config->GetSpecificHeat_Solid()*config->GetDensity_Solid();
+  cp_fluid = config->GetSpecific_Heat_Cp();
+  rho_cp_solid = config->GetSpecific_Heat_Cp_Solid()*config->GetDensity_Solid();
 
   AllBound_HeatFlux = 0.0;
   AllBound_AvgTemperature = 0.0;
@@ -1942,7 +1942,7 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
-  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  laminar_viscosity = config->GetMu_ConstantND();
   Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
 

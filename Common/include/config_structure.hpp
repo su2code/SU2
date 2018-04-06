@@ -744,6 +744,7 @@ private:
   Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
+  Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
   Specific_Heat_Cv,     /*!< \brief Specific heat at constant volume. */
   Specific_Heat_CvND,     /*!< \brief Non-dimensional specific heat at constant volume. */
   Thermal_Expansion_Coeff,     /*!< \brief Thermal expansion coefficient. */
@@ -770,8 +771,6 @@ private:
   Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,     /*!< \brief Reference S for Sutherland model.  */
   Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  Specific_Heat_Fluid, /*!< \brief Specific heat in fluids. */
-  Specific_Heat_Solid, /*!< \brief Specific heat in solids. */
   Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
@@ -1557,6 +1556,12 @@ public:
    * \return Value of the constant: Cp
    */
   su2double GetSpecific_Heat_Cp(void);
+
+  /*!
+   * \brief Get the value of the specific heat for solids.
+   * \return Specific heat number (solid).
+   */
+  su2double GetSpecific_Heat_Cp_Solid(void);
   
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
@@ -1667,18 +1672,6 @@ public:
    * \return Turbulent Prandtl number.
    */
   su2double GetPrandtl_Turb(void);
-
-  /*!
-   * \brief Get the value of the specific heat for fluids.
-   * \return Specific heat number (fluid).
-   */
-  su2double GetSpecificHeat_Fluid(void);
-
-  /*!
-   * \brief Get the value of the specific heat for solids.
-   * \return Specific heat number (solid).
-   */
-  su2double GetSpecificHeat_Solid(void);
 
   /*!
    * \brief Get the value of the thermal conductivity for solids.
