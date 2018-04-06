@@ -8456,6 +8456,7 @@ private:
   *CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *HF_Visc,    /*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHF_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  ***HeatConjugateVar,   /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
   ***CSkinFriction;  /*!< \brief Skin friction coefficient for each boundary and vertex. */
   su2double *ForceViscous,  /*!< \brief Viscous force for each boundary. */
   *MomentViscous;      /*!< \brief Inviscid moment for each boundary. */

@@ -754,6 +754,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
   bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
+  bool incompressible_flow = (donor_config->GetEnergy_Equation()) && flow;
   bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
@@ -789,6 +790,13 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
     dTdn = (Twall - Tnormal)/dist;
   }
+  else if (incompressible_flow) {
+
+    Twall   = donor_solution->node[Point_Donor]->GetTemperature()*Temperature_Ref;
+    Tnormal = donor_solution->node[PointNormal]->GetTemperature()*Temperature_Ref;
+
+    dTdn = (Twall - Tnormal)/dist;
+  }
   else if (flow || heat_equation) {
     Twall   = donor_solution->node[Point_Donor]->GetSolution(0)*Temperature_Ref;
     Tnormal = donor_solution->node[PointNormal]->GetSolution(0)*Temperature_Ref;
@@ -810,6 +818,26 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
     thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
     thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref();
+
+    heat_flux_density       = thermal_conductivity*dTdn;
+    conductivity_over_dist  = thermal_conductivity/dist;
+  }
+  else if (incompressible_flow) {
+
+    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+
+    thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
+
+    switch (donor_config->GetKind_ConductivityModel()) {
+
+      case CONSTANT_CONDUCTIVITY:
+        thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
+        break;
+
+      case CONSTANT_PRANDTL:
+        thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()*donor_config->GetViscosity_Ref();
+        break;
+    }
 
     heat_flux_density       = thermal_conductivity*dTdn;
     conductivity_over_dist  = thermal_conductivity/dist;
