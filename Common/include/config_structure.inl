@@ -451,6 +451,8 @@ inline su2double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
 inline su2double CConfig::GetSpecific_Heat_Cp(void) { return Specific_Heat_Cp; }
 
+inline su2double CConfig::GetSpecific_Heat_Cp_Solid(void) { return Specific_Heat_Cp_Solid; }
+
 inline su2double CConfig::GetSpecific_Heat_CpND(void) { return Specific_Heat_CpND; }
 
 inline su2double CConfig::GetSpecific_Heat_Cv(void) { return Specific_Heat_Cv; }
@@ -502,10 +504,6 @@ inline su2double CConfig::GetTemperature_ve_FreeStream(void) { return Temperatur
 inline su2double CConfig::GetPrandtl_Lam(void) { return Prandtl_Lam; }
 
 inline su2double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
-
-inline su2double CConfig::GetSpecificHeat_Fluid(void) { return Specific_Heat_Fluid; }
-
-inline su2double CConfig::GetSpecificHeat_Solid(void) { return Specific_Heat_Solid; }
 
 inline su2double CConfig::GetThermalConductivity_Solid(void) { return Thermal_Conductivity_Solid; }
 
