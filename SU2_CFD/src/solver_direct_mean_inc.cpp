@@ -6783,6 +6783,23 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       }
     }
   }
+
+  /*--- Store the values of the temperature and the heat flux density at the boundaries,
+   used for coupling with a solid donor cell ---*/
+  unsigned short nHeatConjugateVar = 4;
+
+  HeatConjugateVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    HeatConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar];
+      for (iVar = 1; iVar < nHeatConjugateVar ; iVar++) {
+        HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
+      }
+      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
+    }
+  }
   
   /*--- Inviscid force definition and coefficient in all the markers ---*/
   
@@ -8194,6 +8211,154 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         }
       }
       
+    }
+  }
+}
+
+
+void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned short iVar, jVar, iDim, jDim, Wall_Function;
+  unsigned long iVertex, iPoint, Point_Normal, total_index;
+
+  su2double *GridVel;
+  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij;
+  su2double Twall, Tconjugate, dTdn;
+  su2double thermal_conductivity;
+  su2double Temperature_Ref = config->GetTemperature_Ref();
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool energy        = config->GetEnergy_Equation();
+
+  /*--- Identify the boundary ---*/
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Retrieve the specified wall function treatment.---*/
+
+  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if(Wall_Function != NO_WALL_FUNCTION) {
+      SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+  }
+
+  /*--- Loop over boundary points ---*/
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Initialize the convective & viscous residuals to zero ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Conv[iVar] = 0.0;
+        Res_Visc[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+
+      /*--- Store the corrected velocity at the wall which will
+       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
+
+      if (grid_movement) {
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
+      } else {
+        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+      }
+
+      /*--- Impose the value of the velocity as a strong boundary
+       condition (Dirichlet). Fix the velocity and remove any
+       contribution to the residual at this node. ---*/
+
+      node[iPoint]->SetVelocity_Old(Vector);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+      node[iPoint]->SetVel_ResTruncError_Zero();
+
+      if (energy) {
+
+        Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
+
+//        node[iPoint]->SetSolution_Old(nDim+1, Tconjugate);
+//        node[iPoint]->SetEnergy_ResTruncError_Zero();
+
+        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt (Area);
+
+        /*--- Compute closest normal neighbor ---*/
+
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+        Coord_i = geometry->node[iPoint]->GetCoord();
+        Coord_j = geometry->node[Point_Normal]->GetCoord();
+        dist_ij = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+        dist_ij = sqrt(dist_ij);
+
+        /*--- Compute the normal gradient in temperature using Twall ---*/
+
+        dTdn = -(node[Point_Normal]->GetTemperature() - Tconj)/dist_ij;
+
+        /*--- Get thermal conductivity ---*/
+
+        thermal_conductivity = node[iPoint]->GetThermalConductivity();
+
+        /*--- Apply a weak boundary condition for the energy equation.
+        Compute the residual due to the prescribed heat flux. ---*/
+
+        Res_Visc[nDim+1] = thermal_conductivity*dTdn*Area;
+
+        /*--- Jacobian contribution for temperature equation. ---*/
+
+        if (implicit) {
+          su2double Edge_Vector[3];
+          su2double dist_ij_2 = 0, proj_vector_ij = 0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+            dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+            proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+          }
+          if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+          else proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+          Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*proj_vector_ij;
+
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+
+        /*--- Viscous contribution to the residual at the wall ---*/
+
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      }
+
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+
+      if (implicit) {
+        for (iVar = 1; iVar <= nDim; iVar++) {
+          total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+//        if(energy) {
+//          total_index = iPoint*nVar+nDim+1;
+//          Jacobian.DeleteValsRowi(total_index);
+//        }
+      }
+
     }
   }
 }
