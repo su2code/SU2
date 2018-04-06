@@ -15277,7 +15277,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 3;
+  unsigned short nHeatConjugateVar = 4;
 
   HeatConjugateVar = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {

@@ -3233,7 +3233,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
       StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
     case WAVE_EQUATION:
       StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
-    case HEAT_EQUATION:
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
       StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
@@ -7143,8 +7143,10 @@ void CMultiphysicsZonalDriver::Run() {
 
   /*--- Zone preprocessing ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++)
+  for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+    config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
+  }
 
   /*--- Updating zone interface communication patterns,
    needed only for unsteady simulation since for steady problems
