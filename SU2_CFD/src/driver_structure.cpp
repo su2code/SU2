@@ -543,7 +543,15 @@ void CDriver::Postprocessing() {
     delete [] transfer_container;
     if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
   }
-
+  
+  if (transfer_types != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (transfer_types[iZone] != NULL)
+      delete [] transfer_types[iZone];
+    }
+    delete [] transfer_types;
+  }
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone] != NULL) {
       for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
