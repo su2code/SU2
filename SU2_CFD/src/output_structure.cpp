@@ -6281,7 +6281,6 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
       nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
       if (energy) {
         RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-        cout << "nVar: " << nVar << " heat res: " << log10(RhoRes_New) << endl;
       }
       else if (weakly_coupled_heat) {
         RhoRes_New = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
