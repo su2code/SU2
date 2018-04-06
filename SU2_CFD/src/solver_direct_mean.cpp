@@ -1023,7 +1023,7 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] DonorPrimVar;
   }
-  
+    
   if (DonorGlobalIndex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] DonorGlobalIndex[iMarker];
@@ -15716,6 +15716,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 CNSSolver::~CNSSolver(void) {
 
   unsigned short iMarker, iDim;
+  
+  unsigned long iVertex;
 
   if (CD_Visc != NULL)          delete [] CD_Visc;
   if (CL_Visc != NULL)          delete [] CL_Visc;
@@ -15759,6 +15761,16 @@ CNSSolver::~CNSSolver(void) {
       delete [] CSkinFriction[iMarker];
     }
     delete [] CSkinFriction;
+  }
+  
+  if (HeatConjugateVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        delete [] HeatConjugateVar[iMarker][iVertex];
+      }
+      delete [] HeatConjugateVar[iMarker];
+    }
+    delete [] HeatConjugateVar;
   }
   
 }
