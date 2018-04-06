@@ -334,10 +334,10 @@ enum ENUM_TRANSFER {
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
   MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
-  CONJUGATE_HEAT_COMPRESSIBLE_FS    = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
-  CONJUGATE_HEAT_INCOMPRESSIBLE_FS  = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
-  CONJUGATE_HEAT_COMPRESSIBLE_SF    = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
-  CONJUGATE_HEAT_INCOMPRESSIBLE_SF  = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CONJUGATE_HEAT_FS                 = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
+  CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
+  CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
+  CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
 };
 static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
 ("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
@@ -349,10 +349,10 @@ static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_T
 ("SLIDING_INTERFACE", SLIDING_INTERFACE)
 ("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
 ("MIXING_PLANE", MIXING_PLANE)
-("CONJUGATE_HEAT_COMPRESSIBLE_FS", CONJUGATE_HEAT_COMPRESSIBLE_FS)
-("CONJUGATE_HEAT_INCOMPRESSIBLE_FS", CONJUGATE_HEAT_INCOMPRESSIBLE_FS)
-("CONJUGATE_HEAT_COMPRESSIBLE_SF", CONJUGATE_HEAT_COMPRESSIBLE_SF)
-("CONJUGATE_HEAT_INCOMPRESSIBLE_SF", CONJUGATE_HEAT_INCOMPRESSIBLE_SF);
+("CONJUGATE_HEAT_FS", CONJUGATE_HEAT_FS)
+("CONJUGATE_HEAT_WEAKLY_FS", CONJUGATE_HEAT_WEAKLY_FS)
+("CONJUGATE_HEAT_SF", CONJUGATE_HEAT_SF)
+("CONJUGATE_HEAT_WEAKLY_SF", CONJUGATE_HEAT_WEAKLY_SF);
 /*!
  * \brief different regime modes
  */

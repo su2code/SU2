@@ -2842,10 +2842,10 @@ void CDriver::Interface_Preprocessing() {
       else if (fluid_donor && heat_target) {
         nVarTransfer = 0;
         nVar = 4;
-        if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_COMPRESSIBLE_FS;
-        else if (config_container[donorZone]->GetKind_Regime() == INCOMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_INCOMPRESSIBLE_FS;
+        if(config_container[donorZone]->GetEnergy_Equation())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_FS;
+        else if (config_container[donorZone]->GetWeakly_Coupled_Heat())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_FS;
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
@@ -2853,10 +2853,10 @@ void CDriver::Interface_Preprocessing() {
       else if (heat_donor && fluid_target) {
         nVarTransfer = 0;
         nVar = 4;
-        if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_COMPRESSIBLE_SF;
-        else if (config_container[targetZone]->GetKind_Regime() == INCOMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_INCOMPRESSIBLE_SF;
+        if(config_container[targetZone]->GetEnergy_Equation())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_SF;
+        else if (config_container[targetZone]->GetWeakly_Coupled_Heat())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_SF;
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
@@ -7246,22 +7246,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
                 geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
                 config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
@@ -7283,22 +7283,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
                 geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
                 config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
@@ -7323,22 +7323,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
@@ -7369,22 +7369,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
