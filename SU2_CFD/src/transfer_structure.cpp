@@ -52,7 +52,7 @@ CTransfer::CTransfer(void) {
   
 }
 
-CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) {
+CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer() {
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();

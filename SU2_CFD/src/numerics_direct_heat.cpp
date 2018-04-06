@@ -105,8 +105,8 @@ CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, C
 
 CCentSca_Heat::~CCentSca_Heat(void) {
 
-  delete [] Velocity_i;
-  delete [] Velocity_j;
+  delete [] MeanVelocity;
+  delete [] Diff_Lapl;
 
 }
 
