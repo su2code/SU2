@@ -8310,7 +8310,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
         /*--- Compute the normal gradient in temperature using Twall ---*/
 
-        dTdn = -(node[Point_Normal]->GetTemperature() - Tconj)/dist_ij;
+        dTdn = -(node[Point_Normal]->GetTemperature() - Tconjugate)/dist_ij;
 
         /*--- Get thermal conductivity ---*/
 
