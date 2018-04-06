@@ -718,19 +718,30 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   Set_Heatflux_Areas(geometry, config);
 
-  config->SetTemperature_Ref(config->GetTemperature_FreeStream());
-
   /*--- Non-dimensionalization of heat equation */
-  if(compressible) {
-    cout << "Heat solver in compressible environment: Setting reference temperature to 1.0K." << endl;
-    config->SetTemperature_Ref(1.0);
+
+  su2double Temperature_FreeStream = config->GetInc_Temperature_Init();
+  config->SetTemperature_FreeStream(Temperature_FreeStream);
+  su2double Temperature_Ref = 0.0;
+
+  if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
+    Temperature_Ref = 1.0;
   }
+  else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
+    Temperature_Ref = Temperature_FreeStream;
+  }
+  else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
+    Temperature_Ref = config->GetInc_Temperature_Ref();
+  }
+  config->SetTemperature_Ref(Temperature_Ref);
 
   config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
-  cout << "Heat solver freestream temperature: " << config->GetTemperature_FreeStreamND() << endl;
+  if (rank == MASTER_NODE) {
+    cout << "Weakly coupled heat solver's freestream temperature: " << config->GetTemperature_FreeStreamND() << endl;
+  }
 
   su2double Temperature_Solid_Freestream_ND = config->GetTemperature_Freestream_Solid()/config->GetTemperature_Ref();
-  if (heat_equation) {
+  if (heat_equation && (rank == MASTER_NODE)) {
     cout << "Heat solver freestream temperature in case for solids: " << Temperature_Solid_Freestream_ND << endl;
   }
 
