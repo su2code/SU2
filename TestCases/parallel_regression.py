@@ -779,7 +779,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-6.153795, -44082.624869, -7.448554, 24831.915190] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.961785, -4658.284814] #last 4 columns
     cht_incompressible.su2_exec  = "parallel_computation.py -f"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
