@@ -207,6 +207,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -289,6 +290,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -408,6 +410,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -531,6 +534,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -647,6 +651,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
     
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed    
 
