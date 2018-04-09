@@ -16561,7 +16561,7 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
           }
           
           Area              = sqrt (Area);
-          Vn                = Vn / Area;
+          if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Pressure          = solver->node[iPoint]->GetPressure();
           SoundSpeed        = solver->node[iPoint]->GetSoundSpeed();
 
