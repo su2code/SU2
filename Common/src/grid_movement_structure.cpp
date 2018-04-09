@@ -4072,13 +4072,13 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     }
     
     if (polar){
-    	index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    	index[1] = 0;
-     index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+    	 index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    	 index[1] = 0;
+      index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
     }
     else {
-    	index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    	index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+    	 index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    	 index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
       index[2] = 0;
     }
     
@@ -4090,6 +4090,10 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     
     for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
       if (index[1] == FFDBox->Get_Fix_JPlane(iPlane)) return false;
+    }
+    
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
+      if (index[2] == FFDBox->Get_Fix_KPlane(iPlane)) return false;
     }
     
     if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
