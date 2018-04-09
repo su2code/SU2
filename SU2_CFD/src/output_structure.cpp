@@ -4335,7 +4335,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   /*--- Header for the coefficients ---*/
   
   char flow_coeff[]= ",\"CL\",\"CD\",\"CSF\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"AoA\",\"Custom_ObjFunc\"";
-  char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Avg_TotalTemp\"";
+  char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Temperature_Total\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char engine_coeff[]= ",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
@@ -4664,7 +4664,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     long ExtraHeatOutputZone = config[val_iZone]->GetExtraHeatOutputZone() - 1;
     bool extra_heat_output = false;
     su2double Extra_Total_Heat = 0.0;
-    su2double Extra_Avg_TotalTemp = 0.0;
+    su2double Extra_Total_Temperature = 0.0;
     su2double Extra_Heat_Residual = 0.0;
 
     if (ExtraHeatOutputZone > -1) {
@@ -4684,7 +4684,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0,
-    Total_Heat = 0.0, Total_MaxHeat = 0.0, Avg_TotalTemp = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
+    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Temperature = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0;
@@ -4838,12 +4838,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (thermal) {
           Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
           Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
-          Avg_TotalTemp  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AvgTemperature();
+          Total_Temperature  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Temperature();
 
           if(weakly_coupled_heat) {
             Total_Heat     = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
             Total_MaxHeat  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-            Avg_TotalTemp  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+            Total_Temperature  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
           }
         }
         
@@ -5029,7 +5029,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         Total_Heat     = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
         Total_MaxHeat  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-        Avg_TotalTemp  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+        Total_Temperature  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
 
         /*--- Heat Residuals ---*/
 
@@ -5082,7 +5082,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     if (extra_heat_output) {
       Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-      Extra_Avg_TotalTemp   = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+      Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
       Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
@@ -5146,7 +5146,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
-            if (thermal) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Avg_TotalTemp);
+            if (thermal) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Total_Temperature);
             if (equiv_area) SPRINTF (equivalent_area_coeff, ", %14.8e, %14.8e", Total_CEquivArea, Total_CNearFieldOF);
             if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e", Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
             if (rotating_frame) SPRINTF (rotating_frame_coeff, ", %14.8e, %14.8e, %14.8e", Total_CMerit, Total_CT, Total_CQ);
@@ -5344,7 +5344,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           case HEAT_EQUATION_FVM:
 
-            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e", Total_Heat, Total_MaxHeat, Avg_TotalTemp);
+            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e", Total_Heat, Total_MaxHeat, Total_Temperature);
             SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
 
             break;
