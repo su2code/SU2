@@ -705,12 +705,12 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   Heat_Flux = new su2double[nMarker];
-  AvgTemperature = new su2double[nMarker];
+  Temperature = new su2double[nMarker];
   Surface_Areas = new su2double[config->GetnMarker_HeatFlux()];
 
   for(iMarker = 0; iMarker < nMarker; iMarker++) {
     Heat_Flux[iMarker] = 0.0;
-    AvgTemperature[iMarker] = 0.0;
+    Temperature[iMarker] = 0.0;
   }
   for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
     Surface_Areas[iMarker] = 0.0;
@@ -1804,7 +1804,7 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
 #ifdef HAVE_MPI
-  su2double MyAllBound_HeatFlux, MyAllBound_AvgTemperature, *MyHeatFlux;
+  su2double MyAllBound_HeatFlux, MyAllBound_Temperature, *MyHeatFlux;
   MyHeatFlux = new su2double[nMarker];
 
 #endif
@@ -1813,11 +1813,11 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
   rho_cp_solid = config->GetSpecificHeat_Solid()*config->GetDensity_Solid();
 
   AllBound_HeatFlux = 0.0;
-  AllBound_AvgTemperature = 0.0;
+  AllBound_Temperature = 0.0;
 
   for ( iMarker = 0; iMarker < nMarker; iMarker++ ) {
 
-    AvgTemperature[iMarker] = 0.0;
+    Temperature[iMarker] = 0.0;
 
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
@@ -1900,7 +1900,7 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
           /*--- We do only aim to compute averaged temperatures on the (interesting) heat flux walls ---*/
           if ( Boundary == HEAT_FLUX ) {
 
-            AvgTemperature[iMarker] += Twall*config->GetTemperature_Ref()*Area;
+            Temperature[iMarker] += Twall*config->GetTemperature_Ref()*Area;
           }
 
         }
@@ -1910,26 +1910,26 @@ void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container
     if (Monitoring == YES) {
 
     AllBound_HeatFlux += Heat_Flux[iMarker];
-    AllBound_AvgTemperature += AvgTemperature[iMarker];
+    AllBound_Temperature += Temperature[iMarker];
     }
   }
 
 #ifdef HAVE_MPI
   for(iMarker = 0; iMarker < nMarker; iMarker++) { MyHeatFlux[iMarker] = Heat_Flux[iMarker]; }
   MyAllBound_HeatFlux = AllBound_HeatFlux;
-  MyAllBound_AvgTemperature = AllBound_AvgTemperature;
+  MyAllBound_Temperature = AllBound_Temperature;
   SU2_MPI::Allreduce(MyHeatFlux, Heat_Flux, nMarker, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_HeatFlux, &AllBound_HeatFlux, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyAllBound_AvgTemperature, &AllBound_AvgTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_Temperature, &AllBound_Temperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   delete[] MyHeatFlux;
 #endif
 
   if (Total_HeatFlux_Areas_Monitor != 0.0) {
-    Total_AvgTemperature = AllBound_AvgTemperature/Total_HeatFlux_Areas_Monitor;
+    Total_Temperature = AllBound_Temperature/Total_HeatFlux_Areas_Monitor;
   }
   else {
-    Total_AvgTemperature = 0.0;
+    Total_Temperature = 0.0;
   }
 
 
