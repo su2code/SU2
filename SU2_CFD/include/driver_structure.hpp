@@ -81,7 +81,7 @@ protected:
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ***geometry_container;              /*!< \brief Geometrical definition of the problem. */
-  CSolver ****solver_container;                 /*!< \brief Container vector with all the solutions. */
+  CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
   CNumerics *****numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
