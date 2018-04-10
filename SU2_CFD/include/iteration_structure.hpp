@@ -91,7 +91,7 @@ public:
    */
   virtual void SetGrid_Movement(CGeometry ***geometry_container, CSurfaceMovement **surface_movement,
                       CVolumetricMovement **grid_movement, CFreeFormDefBox ***FFDBox,
-                      CSolver ****solver_container, CConfig **config_container,
+                      CSolver *****solver_container, CConfig **config_container,
                       unsigned short val_iZone, unsigned long IntIter, unsigned long ExtIter);
   
   /*!
@@ -101,7 +101,7 @@ public:
   virtual void Preprocess(COutput *output,
                           CIntegration ***integration_container,
                           CGeometry ***geometry_container,
-                          CSolver ****solver_container,
+                          CSolver *****solver_container,
                           CNumerics *****numerics_container,
                           CConfig **config_container,
                           CSurfaceMovement **surface_movement,
@@ -124,7 +124,7 @@ public:
   virtual void Iterate(COutput *output,
                        CIntegration ***integration_container,
                        CGeometry ***geometry_container,
-                       CSolver ****solver_container,
+                       CSolver *****solver_container,
                        CNumerics *****numerics_container,
                        CConfig **config_container,
                        CSurfaceMovement **surface_movement,
@@ -147,7 +147,7 @@ public:
   virtual void Update(COutput *output,
                       CIntegration ***integration_container,
                       CGeometry ***geometry_container,
-                      CSolver ****solver_container,
+                      CSolver *****solver_container,
                       CNumerics *****numerics_container,
                       CConfig **config_container,
                       CSurfaceMovement **surface_movement,
@@ -182,7 +182,7 @@ public:
   virtual void Postprocess(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
-                            CSolver ****solver_container,
+                            CSolver *****solver_container,
                             CNumerics *****numerics_container,
                             CConfig **config_container,
                             CSurfaceMovement **surface_movement,
@@ -190,49 +190,49 @@ public:
                             CFreeFormDefBox*** FFDBox,
                             unsigned short val_iZone);
 
-  virtual void InitializeAdjoint(CSolver ****solver_container,
+  virtual void InitializeAdjoint(CSolver *****solver_container,
                                  CGeometry ***geometry_container,
                                  CConfig **config_container,
                                  unsigned short iZone){}
 
-  virtual void InitializeAdjoint_CrossTerm(CSolver ****solver_container,
+  virtual void InitializeAdjoint_CrossTerm(CSolver *****solver_container,
                                  CGeometry ***geometry_container,
                                  CConfig **config_container,
                                  unsigned short iZone){}
 
-  virtual void RegisterInput(CSolver ****solver_container,
+  virtual void RegisterInput(CSolver *****solver_container,
                              CGeometry*** geometry_container,
                              CConfig** config_container,
                              unsigned short iZone,
                              unsigned short kind_recording){}
 
-  virtual void SetDependencies(CSolver ****solver_container,
+  virtual void SetDependencies(CSolver *****solver_container,
                                CGeometry ***geometry_container,
                                CConfig **config_container,
                                unsigned short iZone,
                                unsigned short kind_recording){}
 
-  virtual void SetDependencies(CSolver ****solver_container,
+  virtual void SetDependencies(CSolver *****solver_container,
                                CGeometry ***geometry_container,
                                CNumerics *****numerics_container,
                                CConfig **config_container,
                                unsigned short iZone,
                                unsigned short kind_recording){}
 
-  virtual void RegisterOutput(CSolver ****solver_container,
+  virtual void RegisterOutput(CSolver *****solver_container,
                               CGeometry*** geometry_container,
                               CConfig** config_container,
                               COutput* output,
                               unsigned short iZone){}
 
   virtual void LoadUnsteady_Solution(CGeometry ***geometry_container,
-                                         CSolver ****solver_container,
+                                         CSolver *****solver_container,
                                          CConfig **config_container,
                                          unsigned short val_iZone,
                                          int val_DirectIter){}
 
   virtual void LoadDynamic_Solution(CGeometry ***geometry_container,
-                                        CSolver ****solver_container,
+                                        CSolver *****solver_container,
                                         CConfig **config_container,
                                         unsigned short val_iZone,
                                         int val_DirectIter){}
@@ -266,7 +266,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -289,7 +289,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -304,7 +304,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -332,7 +332,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -390,7 +390,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -407,7 +407,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -453,7 +453,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -477,7 +477,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -501,7 +501,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -528,7 +528,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -564,7 +564,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -587,7 +587,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -602,7 +602,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -631,7 +631,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -667,7 +667,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -690,7 +690,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -705,7 +705,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -734,7 +734,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -788,7 +788,7 @@ public:
   void Iterate(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -803,7 +803,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -832,7 +832,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -869,7 +869,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -892,7 +892,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -907,7 +907,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -934,7 +934,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -978,7 +978,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -1001,7 +1001,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -1016,7 +1016,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -1045,7 +1045,7 @@ public:
   void Postprocess(COutput *output,
                    CIntegration ***integration_container,
                    CGeometry ***geometry_container,
-                   CSolver ****solver_container,
+                   CSolver *****solver_container,
                    CNumerics *****numerics_container,
                    CConfig **config_container,
                    CSurfaceMovement **surface_movement,
@@ -1060,7 +1060,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint(CSolver ****solver_container,
+  void InitializeAdjoint(CSolver *****solver_container,
                          CGeometry*** geometry_container,
                          CConfig** config_container,
                          unsigned short iZone);
@@ -1073,7 +1073,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - Kind of recording, either FLOW_CONS_VARS or MESH_COORDS
    */
-  void RegisterInput(CSolver ****solver_container,
+  void RegisterInput(CSolver *****solver_container,
                      CGeometry*** geometry_container,
                      CConfig** config_container,
                      unsigned short iZone,
@@ -1086,7 +1086,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void RegisterOutput(CSolver ****solver_container,
+  void RegisterOutput(CSolver *****solver_container,
                       CGeometry*** geometry_container,
                       CConfig** config_container,
 											                      COutput* output,
@@ -1099,7 +1099,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone);
+  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone);
 
   /*!
    * \brief Record a single iteration of the direct mean flow system.
@@ -1118,7 +1118,7 @@ public:
   void SetRecording(COutput *output,
                       CIntegration ***integration_container,
                       CGeometry ***geometry_container,
-                      CSolver ****solver_container,
+                      CSolver *****solver_container,
                       CNumerics *****numerics_container,
                       CConfig **config_container,
                       CSurfaceMovement **surface_movement,
@@ -1136,7 +1136,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
-  void SetDependencies(CSolver ****solver_container,
+  void SetDependencies(CSolver *****solver_container,
                        CGeometry ***geometry_container,
                        CConfig **config_container,
                        unsigned short iZone,
@@ -1151,7 +1151,7 @@ public:
    * \param[in] val_DirectIter - Direct iteration to load.
    */
   void LoadUnsteady_Solution(CGeometry ***geometry_container,
-                      CSolver ****solver_container,
+                      CSolver *****solver_container,
                       CConfig **config_container,
                       unsigned short val_iZone,
                       int val_DirectIter);
@@ -1193,7 +1193,7 @@ public:
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
                   CGeometry ***geometry_container,
-                  CSolver ****solver_container,
+                  CSolver *****solver_container,
                   CNumerics *****numerics_container,
                   CConfig **config_container,
                   CSurfaceMovement **surface_movement,
@@ -1216,7 +1216,7 @@ public:
   void Iterate(COutput *output,
                CIntegration ***integration_container,
                CGeometry ***geometry_container,
-               CSolver ****solver_container,
+               CSolver *****solver_container,
                CNumerics *****numerics_container,
                CConfig **config_container,
                CSurfaceMovement **surface_movement,
@@ -1231,7 +1231,7 @@ public:
   void Update(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -1258,7 +1258,7 @@ public:
   void Postprocess(COutput *output,
               CIntegration ***integration_container,
               CGeometry ***geometry_container,
-              CSolver ****solver_container,
+              CSolver *****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
               CSurfaceMovement **surface_movement,
@@ -1274,7 +1274,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - Kind of recording, either FEM_VARIABLES or MESH_COORDS
    */
-  void RegisterInput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
+  void RegisterInput(CSolver *****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
 
   /*!
    * \brief Registers all output variables of the FEM iteration.
@@ -1283,7 +1283,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void RegisterOutput(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
+  void RegisterOutput(CSolver *****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
   using CIteration::RegisterOutput;
   
   /*!
@@ -1293,7 +1293,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
+  void InitializeAdjoint(CSolver *****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
 
   /*!
    * \brief Initializes the adjoints of the output variables of the FEM iteration - without the contribution of the objective function
@@ -1302,7 +1302,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone);
+  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone);
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
@@ -1321,7 +1321,7 @@ public:
   void SetRecording(COutput *output,
                       CIntegration ***integration_container,
                       CGeometry ***geometry_container,
-                      CSolver ****solver_container,
+                      CSolver *****solver_container,
                       CNumerics *****numerics_container,
                       CConfig **config_container,
                       CSurfaceMovement **surface_movement,
@@ -1338,7 +1338,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
-  void SetDependencies(CSolver ****solver_container,
+  void SetDependencies(CSolver *****solver_container,
                        CGeometry ***geometry_container,
                        CNumerics *****numerics_container,
                        CConfig **config_container,
@@ -1354,7 +1354,7 @@ public:
    * \param[in] val_DirectIter - Direct iteration to load.
    */
   void LoadDynamic_Solution(CGeometry ***geometry_container,
-                      CSolver ****solver_container,
+                      CSolver *****solver_container,
                       CConfig **config_container,
                       unsigned short val_iZone,
                       int val_DirectIter);

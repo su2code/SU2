@@ -212,7 +212,7 @@ public:
    * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, 
+  void SetResult_Files(CSolver *****solver_container, CGeometry ***geometry, CConfig **config,
                        unsigned long iExtIter, unsigned short val_nZone);
   
   /*!
@@ -302,7 +302,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration,
+  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver *****solver_container, CConfig **config, CIntegration ***integration,
                          unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
 
   /*!
@@ -639,7 +639,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver *****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
   
   /*!
@@ -649,7 +649,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -662,7 +662,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
+  void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);
   
   /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
@@ -696,7 +696,7 @@ public:
    * \param[in] val_nZone - iZone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_Turbo(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutput_Turbo(CSolver *****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
@@ -727,7 +727,7 @@ public:
    * \param[in] val_iZone - Zone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
+  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
@@ -738,7 +738,7 @@ public:
    * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetResult_Files_Parallel(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
+  void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ***geometry, CConfig **config,
                                 unsigned long iExtIter, unsigned short val_nZone);
   
   /*!
