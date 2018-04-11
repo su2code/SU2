@@ -325,11 +325,10 @@ CDriver::CDriver(char* confFile,
      evaluating convective or viscous fluxes between any two nodes in the edge-based
      data structure (centered, upwind, galerkin), as well as any source terms
      (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
-    for (iInst = 0; iInst < nInstance; iZone++) {
     numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
-    Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone][iInst],
+
+    Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone][INST_0],
         geometry_container[iZone], config_container[iZone]);
-    }
 
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
 
