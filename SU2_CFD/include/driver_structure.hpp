@@ -137,7 +137,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Solver_Preprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -145,7 +145,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Restart(CSolver ***solver_container, CGeometry **geometry, CConfig *config, bool update_geo);
+  void Solver_Restart(CSolver ****solver_container, CGeometry **geometry, CConfig *config, bool update_geo);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -153,7 +153,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all integration classes.

@@ -283,25 +283,21 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
 
-    for (iInst = 0; iInst < nInstance; iInst++) {
+    solver_container[iZone] = new CSolver*** [1];
+        solver_container[iZone][INST_0] = NULL;
 
-    solver_container[iZone] = new CSolver*** [nInstance];
-        solver_container[iZone][iInst] = NULL;
-
-    solver_container[iZone][iInst] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
+    solver_container[iZone][INST_0] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
-      solver_container[iZone][iInst][iMesh] = NULL;
+      solver_container[iZone][INST_0][iMesh] = NULL;
 
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-      solver_container[iZone][iInst][iMesh] = new CSolver* [MAX_SOLS];
+      solver_container[iZone][INST_0][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        solver_container[iZone][iInst][iMesh][iSol] = NULL;
+        solver_container[iZone][INST_0][iMesh][iSol] = NULL;
     }
 
-    Solver_Preprocessing(solver_container[iZone][iInst], geometry_container[iZone],
+    Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
         config_container[iZone]);
-
-    }
 
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
@@ -412,7 +408,7 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE)cout << endl <<"Restarting Fluid and Structural Solvers." << endl;
 
     for (iZone = 0; iZone < nZone; iZone++) {
-        Solver_Restart(solver_container[iZone][INST_0], geometry_container[iZone],
+        Solver_Restart(solver_container[iZone], geometry_container[iZone],
                        config_container[iZone], true);
     }
 
@@ -511,7 +507,7 @@ void CDriver::Postprocessing() {
   for (iZone = 0; iZone < nZone; iZone++) {
      Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone][INST_0],
      geometry_container[iZone], config_container[iZone]);
-    delete [] numerics_container[iZone][INST_0];
+     delete [] numerics_container[iZone];
   }
   delete [] numerics_container;
   if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
@@ -526,10 +522,10 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    Solver_Postprocessing(solver_container[iZone][INST_0],
+    Solver_Postprocessing(solver_container[iZone],
                           geometry_container[iZone],
                           config_container[iZone]);
-    delete [] solver_container[iZone][INST_0];
+    delete [] solver_container[iZone];
   }
   delete [] solver_container;
   if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
@@ -799,7 +795,7 @@ void CDriver::Geometrical_Preprocessing() {
 
 }
 
-void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry **geometry,
                                    CConfig *config) {
   
   unsigned short iMGlevel;
@@ -869,91 +865,91 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     /*--- Allocate solution for a template problem ---*/
     
     if (template_solver) {
-      solver_container[iMGlevel][TEMPLATE_SOL] = new CTemplateSolver(geometry[iMGlevel], config);
+      solver_container[INST_0][iMGlevel][TEMPLATE_SOL] = new CTemplateSolver(geometry[iMGlevel], config);
     }
     
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
     
     if (euler) {
       if (compressible) {
-        solver_container[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[INST_0][iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (incompressible) {
-        solver_container[iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[INST_0][iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
     }
     if (ns) {
       if (compressible) {
-        solver_container[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-        solver_container[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
     if (turbulent) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
-        solver_container[iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[iMGlevel][FLOW_SOL]->GetFluidModel() );
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][TURB_SOL] = new CTurbSASolver(geometry[iMGlevel], config, iMGlevel, solver_container[INST_0][iMGlevel][FLOW_SOL]->GetFluidModel() );
+        solver_container[INST_0][iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[INST_0][iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel);
       }
       else if (menter_sst) {
-        solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
-        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[INST_0][iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[INST_0][iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[INST_0][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (transition) {
-        solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
     if (poisson) {
-      solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
+      solver_container[INST_0][iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
     }
     if (wave) {
-      solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
+      solver_container[INST_0][iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
     }
     if (heat) {
-      solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
+      solver_container[INST_0][iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
     }
     if (heat_fvm) {
-      solver_container[iMGlevel][HEAT_SOL] = new CHeatSolverFVM(geometry[iMGlevel], config, iMGlevel);
+      solver_container[INST_0][iMGlevel][HEAT_SOL] = new CHeatSolverFVM(geometry[iMGlevel], config, iMGlevel);
     }
     if (fem) {
-      solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
+      solver_container[INST_0][iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
     }
     
     /*--- Allocate solution for adjoint problem ---*/
     
     if (adj_euler) {
       if (compressible) {
-        solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-        solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][ADJFLOW_SOL] = new CAdjIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
     if (adj_ns) {
       if (compressible) {
-        solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjNSSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][ADJFLOW_SOL] = new CAdjNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-        solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjIncNSSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[INST_0][iMGlevel][ADJFLOW_SOL] = new CAdjIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
     if (adj_turb) {
-      solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
+      solver_container[INST_0][iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
     
     if (disc_adj) {
-      solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
+      solver_container[INST_0][iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[INST_0][iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (disc_adj_turb)
-        solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+        solver_container[INST_0][iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[INST_0][iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
     }
 
     if (disc_adj_fem) {
-      solver_container[iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[iMGlevel], config, solver_container[iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
+      solver_container[INST_0][iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[iMGlevel], config, solver_container[INST_0][iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
     }
   }
   
@@ -967,7 +963,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
 }
 
-void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
+void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
   bool euler, ns, turbulent,
@@ -1040,14 +1036,14 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
 
   if (restart || restart_flow) {
     if (euler || ns) {
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      solver_container[INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
     if (turbulent) {
-      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      solver_container[INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
-      solver_container[MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      solver_container[INST_0][MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
   }
 
@@ -1062,25 +1058,25 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
       no_restart = true;
     }
     if (heat_fvm) {
-      solver_container[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      solver_container[INST_0][MESH_0][HEAT_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
     if (heat) {
       no_restart = true;
     }
     if (adj_euler || adj_ns) {
-      solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      solver_container[INST_0][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
     if (adj_turb) {
       no_restart = true;
     }
     if (disc_adj) {
-      solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      solver_container[INST_0][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
       if (disc_adj_turb)
-        solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+        solver_container[INST_0][MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
         if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
-        solver_container[MESH_0][ADJFEA_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+        solver_container[INST_0][MESH_0][ADJFEA_SOL]->LoadRestart(geometry, solver_container[INST_0], config, val_iter, update_geo);
     }
   }
 
@@ -1096,7 +1092,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
 
 }
 
-void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry,
+void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry,
                                     CConfig *config) {
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
@@ -1160,49 +1156,49 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     /*--- DeAllocate solution for a template problem ---*/
     
     if (template_solver) {
-      delete solver_container[iMGlevel][TEMPLATE_SOL];
+      delete solver_container[INST_0][iMGlevel][TEMPLATE_SOL];
     }
-    
+
     /*--- DeAllocate solution for adjoint problem ---*/
     
     if (adj_euler || adj_ns || disc_adj) {
-      delete solver_container[iMGlevel][ADJFLOW_SOL];
+      delete solver_container[INST_0][iMGlevel][ADJFLOW_SOL];
       if (disc_adj_turb || adj_turb) {
-        delete solver_container[iMGlevel][ADJTURB_SOL];
+        delete solver_container[INST_0][iMGlevel][ADJTURB_SOL];
       }
     }
-    
+
     /*--- DeAllocate solution for direct problem ---*/
     
     if (euler || ns) {
-      delete solver_container[iMGlevel][FLOW_SOL];
+      delete solver_container[INST_0][iMGlevel][FLOW_SOL];
     }
-    
+
     if (turbulent) {
       if (spalart_allmaras || neg_spalart_allmaras || menter_sst || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
-        delete solver_container[iMGlevel][TURB_SOL];
+        delete solver_container[INST_0][iMGlevel][TURB_SOL];
       }
       if (transition) {
-        delete solver_container[iMGlevel][TRANS_SOL];
+        delete solver_container[INST_0][iMGlevel][TRANS_SOL];
       }
     }
     if (poisson) {
-      delete solver_container[iMGlevel][POISSON_SOL];
+      delete solver_container[INST_0][iMGlevel][POISSON_SOL];
     }
     if (wave) {
-      delete solver_container[iMGlevel][WAVE_SOL];
+      delete solver_container[INST_0][iMGlevel][WAVE_SOL];
     }
     if (heat || heat_fvm) {
-      delete solver_container[iMGlevel][HEAT_SOL];
+      delete solver_container[INST_0][iMGlevel][HEAT_SOL];
     }
     if (fem) {
-      delete solver_container[iMGlevel][FEA_SOL];
+      delete solver_container[INST_0][iMGlevel][FEA_SOL];
     }
     if (disc_adj_fem) {
-      delete solver_container[iMGlevel][ADJFEA_SOL];
+      delete solver_container[INST_0][iMGlevel][ADJFEA_SOL];
     }
     
-    delete [] solver_container[iMGlevel];
+    delete solver_container[INST_0][iMGlevel];
   }
   
 }
