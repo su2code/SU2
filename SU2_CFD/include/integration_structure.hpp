@@ -273,7 +273,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void MultiGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  virtual void MultiGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                   CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
   
   /*! 
@@ -287,7 +287,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void MultiGrid_Cycle(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  virtual void MultiGrid_Cycle(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                  unsigned long Iteration, unsigned short iZone);
   
@@ -400,7 +400,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                   CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 
@@ -413,7 +413,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void Structural_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  virtual void Structural_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                   CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   
@@ -426,7 +426,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  virtual void SetPotential_Solver(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  virtual void SetPotential_Solver(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
   
   /*!
@@ -473,7 +473,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void MultiGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  void MultiGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
   
   /*! 
@@ -487,7 +487,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void MultiGrid_Cycle(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  void MultiGrid_Cycle(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                      unsigned long Iteration, unsigned short iZone);
   
@@ -642,7 +642,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void SingleGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  void SingleGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
   
   /*!
@@ -702,7 +702,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void Structural_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics *****numerics_container,
+  void Structural_Iteration(CGeometry ***geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 };
