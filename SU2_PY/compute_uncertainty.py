@@ -68,14 +68,6 @@ def main():
     config.URLX = options.urlx
     config.PERMUTE = 'NO'
 
-#    if options.baseline == "":
-#        print "\n\n ===================== Performing Baseline Computation ===================== \n\n"
-#        config.USING_UQ = "NO"
-#        info = SU2.run.CFD(config)
-#        state.update(info)
-	#config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
-#    else:
-#	config.SOLUTION_FLOW_FILENAME = options.baseline
 
     # perform eigenvalue perturbations
     for comp in range(1,4):
@@ -85,7 +77,7 @@ def main():
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
 
-	    # set componentality
+	# set componentality
         konfig.COMPONENTALITY = comp
 
         # send output to a folder
@@ -98,6 +90,12 @@ def main():
         # run su2
         info = SU2.run.CFD(konfig)
         ztate.update(info)
+	
+	# Solution merging
+    	konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+    	info = SU2.run.merge(konfig)
+    	ztate.update(info)
+
 
     print "\n\n =================== Performing p1c1 Component Perturbation =================== \n\n"
 
@@ -119,6 +117,11 @@ def main():
     # run su2
     info = SU2.run.CFD(konfig)
     ztate.update(info)
+    
+    # Solution merging
+    konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+    info = SU2.run.merge(konfig)
+    state.update(info)
 
     print "\n\n =================== Performing p1c2 Component Perturbation =================== \n\n"
 
@@ -139,6 +142,11 @@ def main():
 
     # run su2
     info = SU2.run.CFD(konfig)
+    ztate.update(info)
+
+    # Solution merging
+    konfig.SOLUTION_FLOW_FILENAME = konfig.RESTART_FLOW_FILENAME
+    info = SU2.run.merge(konfig)
     ztate.update(info)
 
 def sendOutputFiles( config, folderName = ''):
