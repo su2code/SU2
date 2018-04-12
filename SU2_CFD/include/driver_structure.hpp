@@ -82,7 +82,7 @@ protected:
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ***geometry_container;              /*!< \brief Geometrical definition of the problem. */
   CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
-  CNumerics *****numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
+  CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement **grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
@@ -183,7 +183,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Numerics_Preprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -192,7 +192,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Numerics_Postprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Initialize Python interface functionalities

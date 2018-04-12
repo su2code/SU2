@@ -43,7 +43,7 @@ CMultiGridIntegration::~CMultiGridIntegration(void) { }
 
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                                                 CSolver *****solver_container,
-                                                CNumerics *****numerics_container,
+                                                CNumerics ******numerics_container,
                                                 CConfig **config,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned long Iteration,
@@ -117,7 +117,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
   
   NonDimensional_Parameters(geometry[iZone], solver_container[iZone][INST_0],
-                            numerics_container[iZone], config[iZone],
+                            numerics_container[iZone][INST_0], config[iZone],
                             FinestMesh, RunTime_EqSystem, Iteration, &monitor);
   
   /*--- Convergence strategy ---*/
@@ -128,7 +128,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
                                             CSolver *****solver_container,
-                                            CNumerics *****numerics_container,
+                                            CNumerics ******numerics_container,
                                             CConfig **config,
                                             unsigned short iMesh,
                                             unsigned short RecursiveParam,
@@ -179,7 +179,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
       
       /*--- Space integration ---*/
       
-      Space_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
+      Space_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], numerics_container[iZone][INST_0][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
       
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       
@@ -199,14 +199,14 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][INST_0][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
-    Space_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
+    Space_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], numerics_container[iZone][INST_0][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
     SetResidual_Term(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh][SolContainer_Position]);
     
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
     
     SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][INST_0][iMesh][SolContainer_Position], solver_container[iZone][INST_0][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     solver_container[iZone][INST_0][iMesh+1][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh+1], solver_container[iZone][INST_0][iMesh+1], config[iZone], iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
-    Space_Integration(geometry[iZone][iMesh+1], solver_container[iZone][INST_0][iMesh+1], numerics_container[iZone][iMesh+1][SolContainer_Position], config[iZone], iMesh+1, NO_RK_ITER, RunTime_EqSystem);
+    Space_Integration(geometry[iZone][iMesh+1], solver_container[iZone][INST_0][iMesh+1], numerics_container[iZone][INST_0][iMesh+1][SolContainer_Position], config[iZone], iMesh+1, NO_RK_ITER, RunTime_EqSystem);
     
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
     
@@ -247,7 +247,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
           solver_container[iZone][INST_0][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], config[iZone], iMesh, Iteration);
         }
         
-        Space_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
+        Space_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], numerics_container[iZone][INST_0][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
         Time_Integration(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
         
         solver_container[iZone][INST_0][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solver_container[iZone][INST_0][iMesh], config[iZone], iMesh);
@@ -775,7 +775,7 @@ CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(c
 CSingleGridIntegration::~CSingleGridIntegration(void) { }
 
 void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver *****solver_container,
-                                                  CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
   unsigned short iMesh;
   su2double monitor = 0.0;
   
@@ -797,7 +797,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   /*--- Space integration ---*/
   
-  Space_Integration(geometry[iZone][FinestMesh], solver_container[iZone][INST_0][FinestMesh], numerics_container[iZone][FinestMesh][SolContainer_Position],
+  Space_Integration(geometry[iZone][FinestMesh], solver_container[iZone][INST_0][FinestMesh], numerics_container[iZone][INST_0][FinestMesh][SolContainer_Position],
                     config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
   
   /*--- Time integration ---*/
@@ -924,30 +924,30 @@ CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(c
 CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver *****solver_container,
-                                                  CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+                                                  CNumerics ******numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
   /*--- Preprocessing ---*/
 
   solver_container[iZone][INST_0][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][INST_0][MESH_0],
-      config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+      config[iZone], numerics_container[iZone][INST_0][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
 
 
   /*--- Space integration ---*/
 
-  Space_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][INST_0][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
+  Space_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][INST_0][MESH_0], numerics_container[iZone][INST_0][MESH_0][SolContainer_Position],
                     config[iZone], RunTime_EqSystem, Iteration);
 
   /*--- Time integration ---*/
 
-  Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][INST_0][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
+  Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][INST_0][MESH_0], numerics_container[iZone][INST_0][MESH_0][SolContainer_Position],
                 config[iZone], RunTime_EqSystem, Iteration);
 
   /*--- Postprocessing ---*/
 
   solver_container[iZone][INST_0][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][INST_0][MESH_0],
-      config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
+      config[iZone], numerics_container[iZone][INST_0][MESH_0][SolContainer_Position],  MESH_0);
 
   /*--- Convergence strategy ---*/
 

@@ -371,7 +371,7 @@ void CIteration::Preprocess(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
                             CSolver *****solver_container,
-                            CNumerics *****numerics_container,
+                            CNumerics ******numerics_container,
                             CConfig **config_container,
                             CSurfaceMovement **surface_movement,
                             CVolumetricMovement **grid_movement,
@@ -381,7 +381,7 @@ void CIteration::Iterate(COutput *output,
                          CIntegration ***integration_container,
                          CGeometry ***geometry_container,
                          CSolver *****solver_container,
-                         CNumerics *****numerics_container,
+                         CNumerics ******numerics_container,
                          CConfig **config_container,
                          CSurfaceMovement **surface_movement,
                          CVolumetricMovement **grid_movement,
@@ -391,7 +391,7 @@ void CIteration::Update(COutput *output,
                         CIntegration ***integration_container,
                         CGeometry ***geometry_container,
                         CSolver *****solver_container,
-                        CNumerics *****numerics_container,
+                        CNumerics ******numerics_container,
                         CConfig **config_container,
                         CSurfaceMovement **surface_movement,
                         CVolumetricMovement **grid_movement,
@@ -403,7 +403,7 @@ void CIteration::Postprocess(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
                              CSolver *****solver_container,
-                             CNumerics *****numerics_container,
+                             CNumerics ******numerics_container,
                              CConfig **config_container,
                              CSurfaceMovement **surface_movement,
                              CVolumetricMovement **grid_movement,
@@ -419,7 +419,7 @@ void CFluidIteration::Preprocess(COutput *output,
                                     CIntegration ***integration_container,
                                     CGeometry ***geometry_container,
                                     CSolver *****solver_container,
-                                    CNumerics *****numerics_container,
+                                    CNumerics ******numerics_container,
                                     CConfig **config_container,
                                     CSurfaceMovement **surface_movement,
                                     CVolumetricMovement **grid_movement,
@@ -450,7 +450,7 @@ void CFluidIteration::Iterate(COutput *output,
                                  CIntegration ***integration_container,
                                  CGeometry ***geometry_container,
                                  CSolver *****solver_container,
-                                 CNumerics *****numerics_container,
+                                 CNumerics ******numerics_container,
                                  CConfig **config_container,
                                  CSurfaceMovement **surface_movement,
                                  CVolumetricMovement **grid_movement,
@@ -544,7 +544,7 @@ void CFluidIteration::Update(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
                                 CSolver *****solver_container,
-                                CNumerics *****numerics_container,
+                                CNumerics ******numerics_container,
                                 CConfig **config_container,
                                 CSurfaceMovement **surface_movement,
                                 CVolumetricMovement **grid_movement,
@@ -599,7 +599,7 @@ void CFluidIteration::Postprocess(COutput *output,
                                   CIntegration ***integration_container,
                                   CGeometry ***geometry_container,
                                   CSolver *****solver_container,
-                                  CNumerics *****numerics_container,
+                                  CNumerics ******numerics_container,
                                   CConfig **config_container,
                                   CSurfaceMovement **surface_movement,
                                   CVolumetricMovement **grid_movement,
@@ -837,7 +837,7 @@ void CTurboIteration::Preprocess(COutput *output,
                                     CIntegration ***integration_container,
                                     CGeometry ***geometry_container,
                                     CSolver *****solver_container,
-                                    CNumerics *****numerics_container,
+                                    CNumerics ******numerics_container,
                                     CConfig **config_container,
                                     CSurfaceMovement **surface_movement,
                                     CVolumetricMovement **grid_movement,
@@ -854,7 +854,7 @@ void CTurboIteration::Postprocess( COutput *output,
                                    CIntegration ***integration_container,
                                    CGeometry ***geometry_container,
                                    CSolver *****solver_container,
-                                   CNumerics *****numerics_container,
+                                   CNumerics ******numerics_container,
                                    CConfig **config_container,
                                    CSurfaceMovement **surface_movement,
                                    CVolumetricMovement **grid_movement,
@@ -879,7 +879,7 @@ void CWaveIteration::Preprocess(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
                                 CSolver *****solver_container,
-                                CNumerics *****numerics_container,
+                                CNumerics ******numerics_container,
                                 CConfig **config_container,
                                 CSurfaceMovement **surface_movement,
                                 CVolumetricMovement **grid_movement,
@@ -890,7 +890,7 @@ void CWaveIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
                              CSolver *****solver_container,
-                             CNumerics *****numerics_container,
+                             CNumerics ******numerics_container,
                              CConfig **config_container,
                              CSurfaceMovement **surface_movement,
                              CVolumetricMovement **grid_movement,
@@ -933,7 +933,7 @@ void CWaveIteration::Update(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
                             CSolver *****solver_container,
-                            CNumerics *****numerics_container,
+                            CNumerics ******numerics_container,
                             CConfig **config_container,
                             CSurfaceMovement **surface_movement,
                             CVolumetricMovement **grid_movement,
@@ -967,7 +967,7 @@ void CWaveIteration::Postprocess(COutput *output,
                                  CIntegration ***integration_container,
                                  CGeometry ***geometry_container,
                                  CSolver *****solver_container,
-                                 CNumerics *****numerics_container,
+                                 CNumerics ******numerics_container,
                                  CConfig **config_container,
                                  CSurfaceMovement **surface_movement,
                                  CVolumetricMovement **grid_movement,
@@ -983,7 +983,7 @@ void CHeatIteration::Preprocess(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
                                 CSolver *****solver_container,
-                                CNumerics *****numerics_container,
+                                CNumerics ******numerics_container,
                                 CConfig **config_container,
                                 CSurfaceMovement **surface_movement,
                                 CVolumetricMovement **grid_movement,
@@ -994,7 +994,7 @@ void CHeatIteration::Iterate(COutput *output,
                              CIntegration ***integration_container,
                              CGeometry ***geometry_container,
                              CSolver *****solver_container,
-                             CNumerics *****numerics_container,
+                             CNumerics ******numerics_container,
                              CConfig **config_container,
                              CSurfaceMovement **surface_movement,
                              CVolumetricMovement **grid_movement,
@@ -1044,7 +1044,7 @@ void CHeatIteration::Update(COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
                             CSolver *****solver_container,
-                            CNumerics *****numerics_container,
+                            CNumerics ******numerics_container,
                             CConfig **config_container,
                             CSurfaceMovement **surface_movement,
                             CVolumetricMovement **grid_movement,
@@ -1075,7 +1075,7 @@ void CHeatIteration::Postprocess(COutput *output,
                                  CIntegration ***integration_container,
                                  CGeometry ***geometry_container,
                                  CSolver *****solver_container,
-                                 CNumerics *****numerics_container,
+                                 CNumerics ******numerics_container,
                                  CConfig **config_container,
                                  CSurfaceMovement **surface_movement,
                                  CVolumetricMovement **grid_movement,
@@ -1089,7 +1089,7 @@ void CPoissonIteration::Preprocess(COutput *output,
                                    CIntegration ***integration_container,
                                    CGeometry ***geometry_container,
                                    CSolver *****solver_container,
-                                   CNumerics *****numerics_container,
+                                   CNumerics ******numerics_container,
                                    CConfig **config_container,
                                    CSurfaceMovement **surface_movement,
                                    CVolumetricMovement **grid_movement,
@@ -1099,7 +1099,7 @@ void CPoissonIteration::Iterate(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
                                 CSolver *****solver_container,
-                                CNumerics *****numerics_container,
+                                CNumerics ******numerics_container,
                                 CConfig **config_container,
                                 CSurfaceMovement **surface_movement,
                                 CVolumetricMovement **grid_movement,
@@ -1125,7 +1125,7 @@ void CPoissonIteration::Update(COutput *output,
                                CIntegration ***integration_container,
                                CGeometry ***geometry_container,
                                CSolver *****solver_container,
-                               CNumerics *****numerics_container,
+                               CNumerics ******numerics_container,
                                CConfig **config_container,
                                CSurfaceMovement **surface_movement,
                                CVolumetricMovement **grid_movement,
@@ -1137,7 +1137,7 @@ void CPoissonIteration::Postprocess(COutput *output,
                         CIntegration ***integration_container,
                         CGeometry ***geometry_container,
                         CSolver *****solver_container,
-                        CNumerics *****numerics_container,
+                        CNumerics ******numerics_container,
                         CConfig **config_container,
                         CSurfaceMovement **surface_movement,
                         CVolumetricMovement **grid_movement,
@@ -1152,7 +1152,7 @@ void CFEAIteration::Iterate(COutput *output,
                                 CIntegration ***integration_container,
                                 CGeometry ***geometry_container,
                                 CSolver *****solver_container,
-                                CNumerics *****numerics_container,
+                                CNumerics ******numerics_container,
                                 CConfig **config_container,
                                 CSurfaceMovement **surface_movement,
                                 CVolumetricMovement **grid_movement,
@@ -1243,7 +1243,7 @@ void CFEAIteration::Iterate(COutput *output,
         if (disc_adj_fem) break;
 
         /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-        solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+        solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
         write_output = output->PrintOutput(IntIter-1, config_container[val_iZone]->GetWrt_Con_Freq_DualTime());
         if (write_output) output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
@@ -1288,7 +1288,7 @@ void CFEAIteration::Iterate(COutput *output,
 
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-      solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
       output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
       /*--- Run the second iteration ---*/
@@ -1301,7 +1301,7 @@ void CFEAIteration::Iterate(COutput *output,
           config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
       /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-      solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+      solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
       output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
 
@@ -1327,7 +1327,7 @@ void CFEAIteration::Iterate(COutput *output,
         for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
           /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-          solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+          solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
           output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
           config_container[val_iZone]->SetIntIter(IntIter);
@@ -1392,7 +1392,7 @@ void CFEAIteration::Iterate(COutput *output,
           for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
             /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-            solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+            solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
             output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
             config_container[val_iZone]->SetIntIter(IntIter);
@@ -1407,7 +1407,7 @@ void CFEAIteration::Iterate(COutput *output,
           /*--- Write history for intermediate steps ---*/
           if (iIncrement < nIncrements - 1){
             /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-            solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+            solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
             output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
           }
 
@@ -1427,14 +1427,14 @@ void CFEAIteration::Iterate(COutput *output,
     case REFERENCE_GEOMETRY:
       if ((config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config_container[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
         solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][INST_0][MESH_0],
-          numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+          numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
       }
       solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
       break;
     case REFERENCE_NODE:
       if ((config_container[val_iZone]->GetDV_FEA() == YOUNG_MODULUS) || (config_container[val_iZone]->GetDV_FEA() == DENSITY_VAL)){
         solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][INST_0][MESH_0],
-          numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+          numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
       }
        solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
        break;
@@ -1446,7 +1446,7 @@ void CFEAIteration::Update(COutput *output,
        CIntegration ***integration_container,
        CGeometry ***geometry_container,
        CSolver *****solver_container,
-       CNumerics *****numerics_container,
+       CNumerics ******numerics_container,
        CConfig **config_container,
        CSurfaceMovement **surface_movement,
        CVolumetricMovement **grid_movement,
@@ -1462,7 +1462,7 @@ void CFEAIteration::Update(COutput *output,
 
   /*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
-  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL], config_container[val_iZone]);
 
   /*----------------- Update structural solver ----------------------*/
 
@@ -1494,7 +1494,7 @@ void CFEAIteration::Postprocess(COutput *output,
                                           CIntegration ***integration_container,
                                           CGeometry ***geometry_container,
                                           CSolver *****solver_container,
-                                          CNumerics *****numerics_container,
+                                          CNumerics ******numerics_container,
                                           CConfig **config_container,
                                           CSurfaceMovement **surface_movement,
                                           CVolumetricMovement **grid_movement,
@@ -1508,7 +1508,7 @@ void CAdjFluidIteration::Preprocess(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
                                        CSolver *****solver_container,
-                                       CNumerics *****numerics_container,
+                                       CNumerics ******numerics_container,
                                        CConfig **config_container,
                                        CSurfaceMovement **surface_movement,
                                        CVolumetricMovement **grid_movement,
@@ -1617,7 +1617,7 @@ void CAdjFluidIteration::Iterate(COutput *output,
                                     CIntegration ***integration_container,
                                     CGeometry ***geometry_container,
                                     CSolver *****solver_container,
-                                    CNumerics *****numerics_container,
+                                    CNumerics ******numerics_container,
                                     CConfig **config_container,
                                     CSurfaceMovement **surface_movement,
                                     CVolumetricMovement **grid_movement,
@@ -1675,7 +1675,7 @@ void CAdjFluidIteration::Update(COutput *output,
                                    CIntegration ***integration_container,
                                    CGeometry ***geometry_container,
                                    CSolver *****solver_container,
-                                   CNumerics *****numerics_container,
+                                   CNumerics ******numerics_container,
                                    CConfig **config_container,
                                    CSurfaceMovement **surface_movement,
                                    CVolumetricMovement **grid_movement,
@@ -1710,7 +1710,7 @@ void CAdjFluidIteration::Postprocess(COutput *output,
                                      CIntegration ***integration_container,
                                      CGeometry ***geometry_container,
                                      CSolver *****solver_container,
-                                     CNumerics *****numerics_container,
+                                     CNumerics ******numerics_container,
                                      CConfig **config_container,
                                      CSurfaceMovement **surface_movement,
                                      CVolumetricMovement **grid_movement,
@@ -1729,7 +1729,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
                                            CIntegration ***integration_container,
                                            CGeometry ***geometry_container,
                                            CSolver *****solver_container,
-                                           CNumerics *****numerics_container,
+                                           CNumerics ******numerics_container,
                                            CConfig **config_container,
                                            CSurfaceMovement **surface_movement,
                                            CVolumetricMovement **grid_movement,
@@ -1922,7 +1922,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                         CIntegration ***integration_container,
                                         CGeometry ***geometry_container,
                                         CSolver *****solver_container,
-                                        CNumerics *****numerics_container,
+                                        CNumerics ******numerics_container,
                                         CConfig **config_container,
                                         CSurfaceMovement **surface_movement,
                                         CVolumetricMovement **volume_grid_movement,
@@ -2109,7 +2109,7 @@ void CDiscAdjFluidIteration::Update(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
                                        CSolver *****solver_container,
-                                       CNumerics *****numerics_container,
+                                       CNumerics ******numerics_container,
                                        CConfig **config_container,
                                        CSurfaceMovement **surface_movement,
                                        CVolumetricMovement **grid_movement,
@@ -2134,7 +2134,7 @@ void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CIntegration ***integration_container,
                                          CGeometry ***geometry_container,
                                          CSolver *****solver_container,
-                                         CNumerics *****numerics_container,
+                                         CNumerics ******numerics_container,
                                          CConfig **config_container,
                                          CSurfaceMovement **surface_movement,
                                          CVolumetricMovement **grid_movement,
@@ -2185,7 +2185,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
                                            CIntegration ***integration_container,
                                            CGeometry ***geometry_container,
                                            CSolver *****solver_container,
-                                           CNumerics *****numerics_container,
+                                           CNumerics ******numerics_container,
                                            CConfig **config_container,
                                            CSurfaceMovement **surface_movement,
                                            CVolumetricMovement **grid_movement,
@@ -2335,7 +2335,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
                                         CIntegration ***integration_container,
                                         CGeometry ***geometry_container,
                                         CSolver *****solver_container,
-                                        CNumerics *****numerics_container,
+                                        CNumerics ******numerics_container,
                                         CConfig **config_container,
                                         CSurfaceMovement **surface_movement,
                                         CVolumetricMovement **volume_grid_movement,
@@ -2505,7 +2505,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
                                              CIntegration ***integration_container,
                                              CGeometry ***geometry_container,
                                              CSolver *****solver_container,
-                                             CNumerics *****numerics_container,
+                                             CNumerics ******numerics_container,
                                              CConfig **config_container,
                                              CSurfaceMovement **surface_movement,
                                              CVolumetricMovement **grid_movement,
@@ -2616,7 +2616,7 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver_container, CGeometr
 
 }
 
-void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeometry ***geometry_container, CNumerics ******numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
   unsigned short iVar;
   unsigned short iMPROP = config_container[iZone]->GetnElasticityMod();
@@ -2625,13 +2625,13 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
       /*--- Add dependencies for E and Nu ---*/
 
-      numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(iVar,
+      numerics_container[iZone][INST_0][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(iVar,
                                                                                    solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
                                                                                    solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
 
       /*--- Add dependencies for Rho and Rho_DL ---*/
 
-      numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(iVar,
+      numerics_container[iZone][INST_0][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(iVar,
                                                                                 solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
                                                                                 solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
 
@@ -2640,26 +2640,26 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
       if (solver_container[iZone][INST_0][MESH_0][FEA_SOL]->IsElementBased()){
 
           /*--- Neo Hookean Compressible ---*/
-          numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
                                                                                        solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
                                                                                        solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
-          numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Density(iVar,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Density(iVar,
                                                                                     solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
                                                                                     solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
 
           /*--- Ideal DE ---*/
-          numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Properties(iVar,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Properties(iVar,
                                                                                        solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
                                                                                        solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
-          numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Density(iVar,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_IDEALDE]->SetMaterial_Density(iVar,
                                                                                     solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
                                                                                     solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
 
           /*--- Knowles ---*/
-          numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Properties(iVar,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Properties(iVar,
                                                                                        solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
                                                                                        solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
-          numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Density(iVar,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_KNOWLES]->SetMaterial_Density(iVar,
                                                                                     solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
                                                                                     solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
 
@@ -2675,10 +2675,10 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
       for (unsigned short iEField = 0; iEField < nEField; iEField++){
 
-          numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_ElectricField(iEField,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][FEA_TERM]->Set_ElectricField(iEField,
                                                                                  solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
 
-          numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField,
                                                                                  solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
 
       }
@@ -2699,11 +2699,11 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
       for (unsigned short iDV = 0; iDV < nDV; iDV++){
 
-          numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
+          numerics_container[iZone][INST_0][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
                                                                            solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
 
           if (config_container[iZone]->GetDE_Effects()){
-            numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
+            numerics_container[iZone][INST_0][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
           }
 
@@ -2712,11 +2712,11 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
       if (solver_container[iZone][INST_0][MESH_0][FEA_SOL]->IsElementBased()){
 
         for (unsigned short iDV = 0; iDV < nDV; iDV++){
-            numerics_container[iZone][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
+            numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
-            numerics_container[iZone][MESH_0][FEA_SOL][MAT_IDEALDE]->Set_DV_Val(iDV,
+            numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_IDEALDE]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
-            numerics_container[iZone][MESH_0][FEA_SOL][MAT_KNOWLES]->Set_DV_Val(iDV,
+            numerics_container[iZone][INST_0][MESH_0][FEA_SOL][MAT_KNOWLES]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][INST_0][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
         }
 
@@ -2771,7 +2771,7 @@ void CDiscAdjFEAIteration::Update(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
                                        CSolver *****solver_container,
-                                       CNumerics *****numerics_container,
+                                       CNumerics ******numerics_container,
                                        CConfig **config_container,
                                        CSurfaceMovement **surface_movement,
                                        CVolumetricMovement **grid_movement,
@@ -2783,7 +2783,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CIntegration ***integration_container,
     CGeometry ***geometry_container,
     CSolver *****solver_container,
-    CNumerics *****numerics_container,
+    CNumerics ******numerics_container,
     CConfig **config_container,
     CSurfaceMovement **surface_movement,
     CVolumetricMovement **grid_movement,
@@ -2797,7 +2797,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
   switch (config_container[val_iZone]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[val_iZone][MESH_0],
-        solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM],
+        solver_container[val_iZone][INST_0][MESH_0], numerics_container[val_iZone][INST_0][MESH_0][FEA_SOL][FEA_TERM],
         config_container[val_iZone], iMarker);
     break;
   }
