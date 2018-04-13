@@ -1230,7 +1230,6 @@ int main(int argc, char *argv[]) {
   delete [] Plane_P0;
   delete [] Plane_Normal;
   
-  delete [] LeadingEdge; delete [] TrailingEdge;
   if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
   
   
