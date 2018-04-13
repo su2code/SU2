@@ -680,6 +680,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   }
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
     if (config->GetMarker_All_GeoEval(iMarker) == YES) {
       
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -711,21 +712,15 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         CrossProduct = 1.0;
         
         if (config->GetGeo_Description() == NACELLE) {
-          v1[0] = AveXCoord - node[iPoint]->GetCoord(0);
-          v1[1] = AveYCoord - 0.0;
-          v1[2] = AveZCoord - 0.0;
-          v3[0] = v1[1]*Plane_Normal[2]-v1[2]*Plane_Normal[1];
-          v3[1] = v1[2]*Plane_Normal[0]-v1[0]*Plane_Normal[2];
-          v3[2] = v1[0]*Plane_Normal[1]-v1[1]*Plane_Normal[0];
           
           su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
           su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
           
           /*--- Translate to the origin ---*/
           
-          su2double XCoord_Trans = node[iPoint]->GetCoord(0) - config->GetNacelleLocation(0);
-          su2double YCoord_Trans = node[iPoint]->GetCoord(1) - config->GetNacelleLocation(1);
-          su2double ZCoord_Trans = node[iPoint]->GetCoord(2) - config->GetNacelleLocation(2);
+          su2double XCoord_Trans = AveXCoord - config->GetNacelleLocation(0);
+          su2double YCoord_Trans = AveYCoord - config->GetNacelleLocation(1);
+          su2double ZCoord_Trans = AveZCoord - config->GetNacelleLocation(2);
           
           /*--- Apply tilt angle ---*/
           
@@ -748,7 +743,6 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           
           /*--- Undo toe angle ---*/
           
-          su2double XPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*cos(-Toe_Angle) - YPlane_Normal_Tilt*sin(-Toe_Angle);
           su2double YPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*sin(-Toe_Angle) + YPlane_Normal_Tilt*cos(-Toe_Angle);
           su2double ZPlane_Normal_Tilt_Toe = ZPlane_Normal_Tilt;
           
