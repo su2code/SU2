@@ -4505,7 +4505,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                   CGeometry ***geometry,
                                   CSolver *****solver_container,
                                   CConfig **config,
-                                  CIntegration ***integration,
+                                  CIntegration ****integration,
                                   bool DualTime_Iteration,
                                   su2double timeused,
                                   unsigned short val_iZone) {
@@ -10653,7 +10653,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 }
 
 void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver *****solver_container,
-                                CConfig **config, CIntegration ***integration, unsigned long iExtIter,
+                                CConfig **config, CIntegration ****integration, unsigned long iExtIter,
                                 unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header) {
 
   int rank = MASTER_NODE;

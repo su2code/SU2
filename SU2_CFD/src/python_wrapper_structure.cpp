@@ -802,34 +802,34 @@ void CGeneralDriver::ResetConvergence() {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-    integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
-      if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][TURB_SOL]->SetConvergence(false);
-      if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][TRANS_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][INST_0][FLOW_SOL]->SetConvergence(false);
+      if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][INST_0][TURB_SOL]->SetConvergence(false);
+      if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][INST_0][TRANS_SOL]->SetConvergence(false);
     break;
 
   case WAVE_EQUATION:
-    integration_container[ZONE_0][WAVE_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][INST_0][WAVE_SOL]->SetConvergence(false);
     break;
 
   case HEAT_EQUATION:
-    integration_container[ZONE_0][HEAT_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][INST_0][HEAT_SOL]->SetConvergence(false);
     break;
 
   case POISSON_EQUATION:
     break;
 
   case FEM_ELASTICITY:
-    integration_container[ZONE_0][FEA_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][INST_0][FEA_SOL]->SetConvergence(false);
     break;
 
   case DISC_ADJ_FEM:
-    integration_container[ZONE_0][ADJFEA_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][INST_0][ADJFEA_SOL]->SetConvergence(false);
     break;
 
   case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    integration_container[ZONE_0][ADJFLOW_SOL]->SetConvergence(false);
+    integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->SetConvergence(false);
       if( (config_container[ZONE_0]->GetKind_Solver() == ADJ_RANS) || (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) )
-      integration_container[ZONE_0][ADJTURB_SOL]->SetConvergence(false);
+      integration_container[ZONE_0][INST_0][ADJTURB_SOL]->SetConvergence(false);
     break;
 
   }
@@ -896,30 +896,30 @@ void CFluidDriver::ResetConvergence() {
     switch (config_container[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-      integration_container[iZone][FLOW_SOL]->SetConvergence(false);
-      if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
-      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+      if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
+      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
       break;
 
     case WAVE_EQUATION:
-      integration_container[iZone][WAVE_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][WAVE_SOL]->SetConvergence(false);
       break;
 
     case HEAT_EQUATION:
-      integration_container[iZone][HEAT_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][HEAT_SOL]->SetConvergence(false);
       break;
 
     case POISSON_EQUATION:
       break;
 
     case FEM_ELASTICITY:
-      integration_container[iZone][FEA_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][FEA_SOL]->SetConvergence(false);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][ADJFLOW_SOL]->SetConvergence(false);
       if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) )
-        integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
+        integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
       break;
     }
   }

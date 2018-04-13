@@ -302,7 +302,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver *****solver_container, CConfig **config, CIntegration ***integration,
+  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
                          unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
 
   /*!
@@ -640,7 +640,7 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver *****solver_container, CConfig **config,
-                              CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
+                              CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
