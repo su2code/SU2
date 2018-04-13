@@ -93,6 +93,8 @@ int main(int argc, char *argv[]) {
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
+    surface_movement[iZone]       = NULL;
+    grid_movement[iZone]          = NULL;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -301,27 +303,37 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
   
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (geometry_container[iZone] != NULL) {
-      delete geometry_container[iZone];
+  if (geometry_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != NULL) {
+        delete geometry_container[iZone];
+      }
     }
+    delete [] geometry_container;
   }
-  delete [] geometry_container;
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-  for (iZone = 0; iZone < nZone; iZone++) {
-    delete surface_movement[iZone];
+  if (surface_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (surface_movement[iZone] != NULL) {
+        delete surface_movement[iZone];
+      }
+    }
+    delete [] surface_movement;
   }
-  delete [] surface_movement;
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
-  for (iZone = 0; iZone < nZone; iZone++) {
-    delete grid_movement[iZone];
+  if (grid_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (grid_movement[iZone] != NULL) {
+        delete grid_movement[iZone];
+      }
+    }
+    delete [] grid_movement;
   }
-  delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
   
-  if (config_container!= NULL) {
+  if (config_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone] != NULL) {
         delete config_container[iZone];
@@ -331,10 +343,9 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
-  /*--- Deallocate output container ---*/
-  if (output!= NULL) delete output;
+  if (output != NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
-  
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
