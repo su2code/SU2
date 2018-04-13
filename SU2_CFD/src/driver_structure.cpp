@@ -77,7 +77,7 @@ CDriver::CDriver(char* confFile,
 
   /*--- Definition and of the containers for all possible zones. ---*/
 
-  iteration_container            = new CIteration*[nZone];
+  iteration_container            = new CIteration**[nZone];
   solver_container               = new CSolver****[nZone];
   integration_container          = new CIntegration**[nZone];
   numerics_container             = new CNumerics*****[nZone];
@@ -271,6 +271,10 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE) {
       cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
     }
+
+    iteration_container[iZone] = new CIteration* [1];
+      iteration_container[iZone][INST_0] = NULL;
+
     Iteration_Preprocessing();
 
     /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
@@ -371,7 +375,7 @@ CDriver::CDriver(char* confFile,
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
+        iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN) {
@@ -535,6 +539,7 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
+    delete iteration_container[iZone][INST_0];
     delete iteration_container[iZone];
   }
   delete [] iteration_container;
@@ -1426,7 +1431,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   
   nDim = geometry[MESH_0]->GetnDim();
   
-  /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
+  /*--- Definition of the Class for the numerical method: numerics_container[INSTANCE_LEVEL][MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   if (fem){
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics_container[INST_0][iMGlevel] = new CNumerics** [MAX_SOLS];
@@ -2574,62 +2579,62 @@ void CDriver::Iteration_Preprocessing() {
       if(config_container[iZone]->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
           cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
-      iteration_container[iZone] = new CTurboIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CTurboIteration(config_container[iZone]);
 
       }
       else{
         if (rank == MASTER_NODE)
           cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CFluidIteration(config_container[iZone]);
       }
       break;
 
     case WAVE_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": wave iteration." << endl;
-      iteration_container[iZone] = new CWaveIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CWaveIteration(config_container[iZone]);
       break;
 
     case HEAT_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": heat iteration." << endl;
-      iteration_container[iZone] = new CHeatIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CHeatIteration(config_container[iZone]);
       break;
 
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
         cout << ": heat iteration (finite volume method)." << endl;
-      iteration_container[iZone] = new CHeatIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CHeatIteration(config_container[iZone]);
       break;
 
     case POISSON_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": poisson iteration." << endl;
-      iteration_container[iZone] = new CPoissonIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CPoissonIteration(config_container[iZone]);
       break;
 
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM iteration." << endl;
-      iteration_container[iZone] = new CFEAIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CFEAIteration(config_container[iZone]);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CAdjFluidIteration(config_container[iZone]);
       break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CDiscAdjFluidIteration(config_container[iZone]);
       break;
 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEM structural iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjFEAIteration(config_container[iZone]);
+      iteration_container[iZone][INST_0] = new CDiscAdjFEAIteration(config_container[iZone]);
       break;
   }
   
@@ -3409,11 +3414,11 @@ void CGeneralDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone);
 
-    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
   }
@@ -3423,12 +3428,12 @@ void CGeneralDriver::Run() {
 void CGeneralDriver::Update() {
 
   for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Update(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, iZone);
 
   if (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM){
-      iteration_container[ZONE_0]->Postprocess(output, integration_container, geometry_container,
+      iteration_container[ZONE_0][INST_0]->Postprocess(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, ZONE_0);
   }
@@ -3443,7 +3448,7 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
 }
@@ -3467,7 +3472,7 @@ void CFluidDriver::Run() {
   /*--- Zone preprocessing ---*/
 
   for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
   /*--- Updating zone interface communication patterns,
    needed only for unsteady simulation since for steady problems
@@ -3501,7 +3506,7 @@ void CFluidDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetIntIter(IntIter);
-      iteration_container[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+      iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
     }
 
     /*--- Check convergence in each zone --*/
@@ -3582,7 +3587,7 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
 void CFluidDriver::Update() {
 
   for(iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Update(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
          solver_container, numerics_container, config_container,
          surface_movement, grid_movement, FFDBox, iZone);
 }
@@ -3595,7 +3600,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
 
@@ -3617,7 +3622,7 @@ void CTurbomachineryDriver::Run() {
    and other intermediate procedures may be required. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone);
   }
@@ -3628,13 +3633,13 @@ void CTurbomachineryDriver::Run() {
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Postprocess(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Postprocess(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, iZone);
   }
@@ -3872,7 +3877,7 @@ void CDiscAdjFluidDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
                                                      solver_container, numerics_container, config_container,
                                                      surface_movement, grid_movement, FFDBox, iZone);
   }
@@ -3905,7 +3910,7 @@ void CDiscAdjFluidDriver::Run() {
 
       config_container[iZone]->SetIntIter(IntIter);
 
-      iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
+      iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
 
     }
 
@@ -3920,7 +3925,7 @@ void CDiscAdjFluidDriver::Run() {
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+      iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
                                           solver_container, numerics_container, config_container,
                                           surface_movement, grid_movement, FFDBox, iZone);
     }
@@ -3966,7 +3971,7 @@ void CDiscAdjFluidDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
+      iteration_container[iZone][INST_0]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
 
     }
 
@@ -4020,13 +4025,13 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
       cout << "-------------------------------------------------------------------------" << endl << endl;
     }
     for (iZone = 0; iZone < nZone; iZone++) {
-      iteration_container[iZone]->RegisterInput(solver_container, geometry_container, config_container, iZone, kind_recording);
+      iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container, config_container, iZone, kind_recording);
     }
 
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
+    iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
   }
 
   /*--- Do one iteration of the direct flow solver ---*/
@@ -4047,7 +4052,7 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   RecordingState = kind_recording;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
+    iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
   }
 
   /*--- Extract the objective function and store it --- */
@@ -4310,12 +4315,12 @@ void CHBDriver::Run() {
    all zones before beginning the iteration. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone);
 
   for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone);
 
@@ -4338,7 +4343,7 @@ void CHBDriver::Update() {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Update the harmonic balance terms across all zones ---*/
-    iteration_container[iZone]->Update(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone);
 
@@ -4958,14 +4963,14 @@ void CFSIDriver::Run() {
     /*--------------------- Mesh deformation --------------------------*/
     /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
+  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container,surface_movement, grid_movement, FFDBox, solver_container,
         config_container, ZONE_FLOW, 0, ExtIter);
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Fluid subiteration -------------------------*/
     /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
+  iteration_container[ZONE_FLOW][INST_0]->Preprocess(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
@@ -4981,7 +4986,7 @@ void CFSIDriver::Run() {
       /*--- Set ExtIter to iExtIter_FLOW; this is a trick to loop on the steady-state flow solver ---*/
       config_container[ZONE_FLOW]->SetExtIter(IntIter);
 
-      iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+      iteration_container[ZONE_FLOW][INST_0]->Iterate(output, integration_container, geometry_container,
           solver_container, numerics_container, config_container,
           surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
@@ -5006,7 +5011,7 @@ void CFSIDriver::Run() {
 
       config_container[ZONE_FLOW]->SetIntIter(IntIter);
 
-      iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+      iteration_container[ZONE_FLOW][INST_0]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
       /*--- If convergence was reached in every zone --*/
 
@@ -5037,7 +5042,7 @@ void CFSIDriver::Run() {
     /*------------------ Structural subiteration ----------------------*/
     /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+  iteration_container[ZONE_STRUCT][INST_0]->Iterate(output, integration_container, geometry_container,
                                   solver_container, numerics_container, config_container,
                                   surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
 
@@ -5089,7 +5094,7 @@ void CFSIDriver::Run() {
   /*-------------------- Update fluid solver ------------------------*/
   /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_FLOW]->Update(output, integration_container, geometry_container,
+  iteration_container[ZONE_FLOW][INST_0]->Update(output, integration_container, geometry_container,
                        solver_container, numerics_container, config_container,
                        surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
@@ -5097,7 +5102,7 @@ void CFSIDriver::Run() {
   /*----------------- Update structural solver ----------------------*/
   /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_STRUCT]->Update(output, integration_container, geometry_container,
+  iteration_container[ZONE_STRUCT][INST_0]->Update(output, integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
 
@@ -5279,7 +5284,7 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[INST_0][ZONE_STRUCT][MESH_0][FEA_SOL][FEA_TERM],
+        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
         config_container[ZONE_STRUCT], iMarker);
     break;
   }
@@ -5384,7 +5389,7 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   /*-------------------- Set the grid movement -------------------------*/
 
-  iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement,
+  iteration_container[ZONE_FLOW][INST_0]->SetGrid_Movement(geometry_container, surface_movement,
                                                    grid_movement, FFDBox, solver_container,
       config_container, ZONE_FLOW, IntIter, ExtIter);
 
@@ -5669,7 +5674,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
         /*--- Load solution at timestep n-2 ---*/
 
-        iteration_container[ZONE_FLOW]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow-2);
+        iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow-2);
 
         /*--- Push solution back to correct array ---*/
 
@@ -5688,7 +5693,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
         /*--- Load solution at timestep n-1 ---*/
 
-        iteration_container[ZONE_FLOW]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow-1);
+        iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow-1);
 
         /*--- Push solution back to correct array ---*/
 
@@ -5704,7 +5709,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
       /*--- Load solution timestep n ---*/
 
-      iteration_container[ZONE_FLOW]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow);
+      iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow);
 
     }
 
@@ -5713,7 +5718,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
       /*--- Load solution timestep n - 2 ---*/
 
-      iteration_container[ZONE_FLOW]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow - 2);
+      iteration_container[ZONE_FLOW][INST_0]->LoadUnsteady_Solution(geometry_container, solver_container,config_container, ZONE_FLOW, Direct_Iter_Flow - 2);
 
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
@@ -5818,7 +5823,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
     /*--- Load solution at timestep n-1 ---*/
 
-    iteration_container[ZONE_STRUCT]->LoadDynamic_Solution(geometry_container, solver_container,config_container, ZONE_STRUCT, Direct_Iter_FEA-1);
+    iteration_container[ZONE_STRUCT][INST_0]->LoadDynamic_Solution(geometry_container, solver_container,config_container, ZONE_STRUCT, Direct_Iter_FEA-1);
 
     /*--- Push solution back to correct array ---*/
 
@@ -5840,7 +5845,7 @@ void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
 
     /*--- Load solution timestep n ---*/
 
-    iteration_container[ZONE_STRUCT]->LoadDynamic_Solution(geometry_container, solver_container,config_container, ZONE_STRUCT, Direct_Iter_FEA);
+    iteration_container[ZONE_STRUCT][INST_0]->LoadDynamic_Solution(geometry_container, solver_container,config_container, ZONE_STRUCT, Direct_Iter_FEA);
 
     /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
 
@@ -6278,19 +6283,19 @@ void CDiscAdjFSIDriver::RegisterInput(unsigned short ZONE_FLOW,
   /*--- Register flow variables ---*/
   if ((kind_recording == FLOW_CONS_VARS) ||
       (kind_recording == FLOW_CROSS_TERM)) {
-    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, kind_recording);
+    iteration_container[ZONE_FLOW][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, kind_recording);
   }
 
   /*--- Register geometry variables ---*/
   if ((kind_recording == MESH_COORDS) ||
       (kind_recording == GEOMETRY_CROSS_TERM)) {
-    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, kind_recording);
+    iteration_container[ZONE_FLOW][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, kind_recording);
   }
 
   /*--- Register structural variables ---*/
   if ((kind_recording == FEA_DISP_VARS) ||
       (kind_recording == FEM_CROSS_TERM_GEOMETRY)) {
-    iteration_container[ZONE_STRUCT]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, kind_recording);
+    iteration_container[ZONE_STRUCT][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, kind_recording);
   }
 
 
@@ -6302,11 +6307,11 @@ void CDiscAdjFSIDriver::SetDependencies(unsigned short ZONE_FLOW,
 
   /*--- Add dependencies for geometrical and turbulent variables ---*/
 
-  iteration_container[ZONE_FLOW]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_FLOW, kind_recording);
+  iteration_container[ZONE_FLOW][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_FLOW, kind_recording);
 
   /*--- Add dependencies for E, Nu, Rho, and Rho_DL variables ---*/
 
-  iteration_container[ZONE_STRUCT]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_STRUCT, kind_recording);
+  iteration_container[ZONE_STRUCT][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_STRUCT, kind_recording);
 
 
 }
@@ -6864,7 +6869,7 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[INST_0][ZONE_STRUCT][MESH_0][FEA_SOL][FEA_TERM],
+        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
         config_container[ZONE_STRUCT], iMarker);
     break;
   }
@@ -7069,7 +7074,7 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
   switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
     case CLAMPED_BOUNDARY:
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][MESH_0],
-        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[INST_0][ZONE_STRUCT][MESH_0][FEA_SOL][FEA_TERM],
+        solver_container[ZONE_STRUCT][INST_0][MESH_0], numerics_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL][FEA_TERM],
         config_container[ZONE_STRUCT], iMarker);
     break;
   }
@@ -7130,7 +7135,7 @@ void CMultiphysicsZonalDriver::Run() {
   /*--- Zone preprocessing ---*/
 
   for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
   /*--- Updating zone interface communication patterns,
    needed only for unsteady simulation since for steady problems
@@ -7163,7 +7168,7 @@ void CMultiphysicsZonalDriver::Run() {
         if(jZone != iZone && transfer_container[jZone][iZone] != NULL)
           Transfer_Data(jZone, iZone);
 
-      iteration_container[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+      iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
     }
 
     /*--- Check convergence in each zone --*/
@@ -7194,7 +7199,7 @@ void CMultiphysicsZonalDriver::Run() {
 void CMultiphysicsZonalDriver::Update() {
 
   for(iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Update(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
          solver_container, numerics_container, config_container,
          surface_movement, grid_movement, FFDBox, iZone);
 }
@@ -7207,7 +7212,7 @@ void CMultiphysicsZonalDriver::DynamicMeshUpdate(unsigned long ExtIter) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
-      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
+      iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
 

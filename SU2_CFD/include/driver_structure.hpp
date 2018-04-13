@@ -77,7 +77,7 @@ protected:
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi;                                     /*!< \brief FSI simulation flag.*/
-  CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
+  CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ***geometry_container;              /*!< \brief Geometrical definition of the problem. */
