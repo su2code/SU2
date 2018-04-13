@@ -79,7 +79,7 @@ protected:
        fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
-  CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
+  CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ***geometry_container;              /*!< \brief Geometrical definition of the problem. */
   CSolver *****solver_container;                 /*!< \brief Container vector with all the solutions. */
   CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
@@ -161,7 +161,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+  void Integration_Preprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -169,7 +169,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+  void Integration_Postprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all interface classes.

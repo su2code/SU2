@@ -79,7 +79,7 @@ CDriver::CDriver(char* confFile,
 
   iteration_container            = new CIteration**[nZone];
   solver_container               = new CSolver****[nZone];
-  integration_container          = new CIntegration**[nZone];
+  integration_container          = new CIntegration***[nZone];
   numerics_container             = new CNumerics*****[nZone];
   config_container               = new CConfig*[nZone];
   geometry_container             = new CGeometry**[nZone];
@@ -306,13 +306,16 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
 
-    /*--- Definition of the integration class: integration_container[#ZONES][#EQ_SYSTEMS].
+    /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
      The integration class orchestrates the execution of the spatial integration
      subroutines contained in the solver class (including multigrid) for computing
      the residual at each node, R(U) and then integrates the equations to a
      steady state or time-accurately. ---*/
 
-    integration_container[iZone] = new CIntegration*[MAX_SOLS];
+    integration_container[iZone] = new CIntegration** [1];
+      integration_container[iZone][INST_0] = NULL;
+
+    integration_container[iZone][INST_0] = new CIntegration*[MAX_SOLS];
     Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
                               config_container[iZone]);
 
@@ -1212,7 +1215,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   
 }
 
-void CDriver::Integration_Preprocessing(CIntegration **integration_container,
+void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     CGeometry **geometry, CConfig *config) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
@@ -1249,29 +1252,29 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   }
 
   /*--- Allocate solution for a template problem ---*/
-  if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
+  if (template_solver) integration_container[INST_0][TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
   /*--- Allocate solution for direct problem ---*/
-  if (euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
-  if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
-  if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
-  if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
-  if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
-  if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
-  if (heat || heat_fvm) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
-  if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
+  if (euler) integration_container[INST_0][FLOW_SOL] = new CMultiGridIntegration(config);
+  if (ns) integration_container[INST_0][FLOW_SOL] = new CMultiGridIntegration(config);
+  if (turbulent) integration_container[INST_0][TURB_SOL] = new CSingleGridIntegration(config);
+  if (transition) integration_container[INST_0][TRANS_SOL] = new CSingleGridIntegration(config);
+  if (poisson) integration_container[INST_0][POISSON_SOL] = new CSingleGridIntegration(config);
+  if (wave) integration_container[INST_0][WAVE_SOL] = new CSingleGridIntegration(config);
+  if (heat || heat_fvm) integration_container[INST_0][HEAT_SOL] = new CSingleGridIntegration(config);
+  if (fem) integration_container[INST_0][FEA_SOL] = new CStructuralIntegration(config);
 
   /*--- Allocate solution for adjoint problem ---*/
-  if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
-  if (adj_ns) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
-  if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
+  if (adj_euler) integration_container[INST_0][ADJFLOW_SOL] = new CMultiGridIntegration(config);
+  if (adj_ns) integration_container[INST_0][ADJFLOW_SOL] = new CMultiGridIntegration(config);
+  if (adj_turb) integration_container[INST_0][ADJTURB_SOL] = new CSingleGridIntegration(config);
 
-  if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
-  if (disc_adj_fem) integration_container[ADJFEA_SOL] = new CIntegration(config);
+  if (disc_adj) integration_container[INST_0][ADJFLOW_SOL] = new CIntegration(config);
+  if (disc_adj_fem) integration_container[INST_0][ADJFEA_SOL] = new CIntegration(config);
 
 }
 
-void CDriver::Integration_Postprocessing(CIntegration **integration_container,
+void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     CGeometry **geometry, CConfig *config) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
       heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
@@ -1308,21 +1311,23 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   }
 
   /*--- DeAllocate solution for a template problem ---*/
-  if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
+  if (template_solver) integration_container[INST_0][TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
   /*--- DeAllocate solution for direct problem ---*/
-  if (euler || ns) delete integration_container[FLOW_SOL];
-  if (turbulent) delete integration_container[TURB_SOL];
-  if (transition) delete integration_container[TRANS_SOL];
-  if (poisson) delete integration_container[POISSON_SOL];
-  if (wave) delete integration_container[WAVE_SOL];
-  if (heat || heat_fvm) delete integration_container[HEAT_SOL];
-  if (fem) delete integration_container[FEA_SOL];
-  if (disc_adj_fem) delete integration_container[ADJFEA_SOL];
+  if (euler || ns) delete integration_container[INST_0][FLOW_SOL];
+  if (turbulent) delete integration_container[INST_0][TURB_SOL];
+  if (transition) delete integration_container[INST_0][TRANS_SOL];
+  if (poisson) delete integration_container[INST_0][POISSON_SOL];
+  if (wave) delete integration_container[INST_0][WAVE_SOL];
+  if (heat || heat_fvm) delete integration_container[INST_0][HEAT_SOL];
+  if (fem) delete integration_container[INST_0][FEA_SOL];
+  if (disc_adj_fem) delete integration_container[INST_0][ADJFEA_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
-  if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
-  if (adj_turb) delete integration_container[ADJTURB_SOL];
+  if (adj_euler || adj_ns || disc_adj) delete integration_container[INST_0][ADJFLOW_SOL];
+  if (adj_turb) delete integration_container[INST_0][ADJTURB_SOL];
+
+  delete integration_container[INST_0];
   
 
 }
@@ -3296,16 +3301,16 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
-      StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
     case WAVE_EQUATION:
-      StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+      StopCalc = integration_container[ZONE_0][INST_0][WAVE_SOL]->GetConvergence(); break;
     case HEAT_EQUATION:
-      StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+      StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
-      StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+      StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+      StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
   
   return StopCalc;
@@ -3513,7 +3518,7 @@ void CFluidDriver::Run() {
 
     checkConvergence = 0;
     for (iZone = 0; iZone < nZone; iZone++)
-    checkConvergence += (int) integration_container[iZone][FLOW_SOL]->GetConvergence();
+    checkConvergence += (int) integration_container[iZone][INST_0][FLOW_SOL]->GetConvergence();
 
     /*--- If convergence was reached in every zone --*/
 
@@ -3819,9 +3824,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   switch (config_container[ZONE_0]->GetKind_Solver()) {
   case EULER: case NAVIER_STOKES: case RANS:
-    StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+    StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 
   return StopCalc;
@@ -3938,7 +3943,7 @@ void CDiscAdjFluidDriver::Run() {
 
     checkConvergence = 0;
     for (iZone = 0; iZone < nZone; iZone++)
-      checkConvergence += (int) integration_container[iZone][ADJFLOW_SOL]->GetConvergence();
+      checkConvergence += (int) integration_container[iZone][INST_0][ADJFLOW_SOL]->GetConvergence();
 
     /*--- If convergence was reached in every zone --*/
 
@@ -3954,7 +3959,7 @@ void CDiscAdjFluidDriver::Run() {
   /*--- Compute the geometrical sensitivities ---*/
 
   if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
-      integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence() ||
+      integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence() ||
       (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) || unsteady){
 
     /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
@@ -4357,30 +4362,30 @@ void CHBDriver::ResetConvergence() {
     switch (config_container[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-      integration_container[iZone][FLOW_SOL]->SetConvergence(false);
-      if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
-      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+      if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
+      if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
       break;
 
     case WAVE_EQUATION:
-      integration_container[iZone][WAVE_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][WAVE_SOL]->SetConvergence(false);
       break;
 
     case HEAT_EQUATION:
-      integration_container[iZone][HEAT_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][HEAT_SOL]->SetConvergence(false);
       break;
 
     case POISSON_EQUATION:
       break;
 
     case FEM_ELASTICITY:
-      integration_container[iZone][FEA_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][FEA_SOL]->SetConvergence(false);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      integration_container[iZone][ADJFLOW_SOL]->SetConvergence(false);
+      integration_container[iZone][INST_0][ADJFLOW_SOL]->SetConvergence(false);
       if( (config_container[iZone]->GetKind_Solver() == ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) )
-        integration_container[iZone][ADJTURB_SOL]->SetConvergence(false);
+        integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
       break;
     }
   }
@@ -4995,7 +5000,7 @@ void CFSIDriver::Run() {
       output->SetConvHistory_Body(&ConvHist_file[ZONE_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW);
 
       /*--- If the convergence criteria is met for the flow, break the loop ---*/
-      StopCalc_Flow = integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence();
+      StopCalc_Flow = integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence();
       if (StopCalc_Flow) break;
 
     }
@@ -5015,7 +5020,7 @@ void CFSIDriver::Run() {
 
       /*--- If convergence was reached in every zone --*/
 
-      if (integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence() == 1) break;
+      if (integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence() == 1) break;
     }
 
     /*--- Write the convergence history for the fluid (only screen output) ---*/
@@ -5030,7 +5035,7 @@ void CFSIDriver::Run() {
 
   /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
-  integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
+  integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->SetConvergence(false);
 
   /*-----------------------------------------------------------------*/
   /*------------------- Set FEA loads from fluid --------------------*/
@@ -5052,7 +5057,7 @@ void CFSIDriver::Run() {
 
     /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
-    integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence(false);
+    integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->SetConvergence(false);
 
     /*-----------------------------------------------------------------*/
     /*----------------- Displacements relaxation ----------------------*/
@@ -5110,7 +5115,7 @@ void CFSIDriver::Run() {
   /*-----------------------------------------------------------------*/
   /*--------------- Update convergence parameter --------------------*/
   /*-----------------------------------------------------------------*/
-  integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence_FSI(false);
+  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->SetConvergence_FSI(false);
 
 }
 
@@ -5352,9 +5357,9 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
 
   }
 
-  integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL], IntIter);
+  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL], IntIter);
 
-  Convergence = integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI();
+  Convergence = integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->GetConvergence_FSI();
 
 
   /*--- Flow ---*/
@@ -6451,10 +6456,10 @@ void CDiscAdjFSIDriver::Iterate_Block(unsigned short ZONE_FLOW,
   }
 
   if (dual_time){
-    integration_container[ZONE_FLOW][ADJFLOW_SOL]->SetConvergence(false);
+    integration_container[ZONE_FLOW][INST_0][ADJFLOW_SOL]->SetConvergence(false);
   }
   if (dynamic){
-    integration_container[ZONE_FLOW][ADJFLOW_SOL]->SetConvergence(false);
+    integration_container[ZONE_FLOW][INST_0][ADJFLOW_SOL]->SetConvergence(false);
   }
 
 }
@@ -7179,14 +7184,14 @@ void CMultiphysicsZonalDriver::Run() {
       if ((config_container[iZone]->GetKind_Solver() == EULER)
           || (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES)
           || (config_container[iZone]->GetKind_Solver() == RANS))
-        checkConvergence += (int) integration_container[iZone][FLOW_SOL]->GetConvergence();
+        checkConvergence += (int) integration_container[iZone][INST_0][FLOW_SOL]->GetConvergence();
       else if ((config_container[iZone]->GetKind_Solver() == DISC_ADJ_EULER)
                || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
-        checkConvergence += (int) integration_container[iZone][ADJFLOW_SOL]->GetConvergence();
+        checkConvergence += (int) integration_container[iZone][INST_0][ADJFLOW_SOL]->GetConvergence();
       else if ((config_container[iZone]->GetKind_Solver() == HEAT_EQUATION)
                || (config_container[iZone]->GetKind_Solver() == HEAT_EQUATION_FVM))
-        checkConvergence += (int) integration_container[iZone][HEAT_SOL]->GetConvergence();
+        checkConvergence += (int) integration_container[iZone][INST_0][HEAT_SOL]->GetConvergence();
     }
 
     /*--- If convergence was reached in every zone --*/
