@@ -417,6 +417,41 @@ int main(int argc, char *argv[]) {
     
   }
   
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+  
+  if (geometry_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != NULL) {
+        delete geometry_container[iZone];
+      }
+    }
+    delete [] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+  
+  if (solver_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (solver_container[iZone] != NULL) {
+        delete solver_container[iZone];
+      }
+    }
+    delete [] solver_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
+  
+  if (config_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  
+  if (output != NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

@@ -3328,8 +3328,11 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
             Diff = sqrt(Diff);
             my_MaxDiff = max(my_MaxDiff, Diff);
             
-            cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
-            << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<"." <<endl;
+            if (Diff >= config->GetFFD_Tol()) {
+              cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
+              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<"." <<endl;
+            }
+            
           }
           
         }
