@@ -313,15 +313,15 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-  if (surface_movement != NULL) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (surface_movement[iZone] != NULL) {
-        delete surface_movement[iZone];
-      }
-    }
-    delete [] surface_movement;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+//  if (surface_movement != NULL) {
+//    for (iZone = 0; iZone < nZone; iZone++) {
+//      if (surface_movement[iZone] != NULL) {
+//        delete surface_movement[iZone];
+//      }
+//    }
+//    delete [] surface_movement;
+//  }
+//  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
   if (grid_movement != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {

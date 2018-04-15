@@ -1243,18 +1243,18 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-  if (surface_movement != NULL) delete [] surface_movement;
-  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
-  
-  if (FFDBox != NULL) {
-    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
-      if (FFDBox[iFFDBox] != NULL) {
-        delete FFDBox[iFFDBox];
-      }
-    }
-    delete [] FFDBox;
-  }
-  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+//  if (surface_movement != NULL) delete [] surface_movement;
+//  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+
+//  if (FFDBox != NULL) {
+//    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
+//      if (FFDBox[iFFDBox] != NULL) {
+//        delete FFDBox[iFFDBox];
+//      }
+//    }
+//    delete [] FFDBox;
+//  }
+//  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
   
   if (config_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
