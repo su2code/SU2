@@ -62,11 +62,11 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout 
    the entire code ---*/
   
-  CConfig **config_container         = NULL;
-  CGeometry **geometry_container     = NULL;
+  CConfig **config_container          = NULL;
+  CGeometry **geometry_container      = NULL;
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
-  COutput *output                    = NULL;
+  COutput *output                     = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file 
    (if no config file is specified, default.cfg is used) ---*/
