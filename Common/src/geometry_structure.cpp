@@ -713,7 +713,6 @@ bool CGeometry::IsPointInsideFace_3D(su2double *q,su2double **p,short n){
     bool Inside = false;
     
     for (i=0;i<n;i++) {
-        cout << "i in PointonFace check = " << i << endl;
         p1[0] = p[i][0] - q[0];
         p1[1] = p[i][1] - q[1];
         p1[2]=  p[i][2] - q[2];
@@ -730,10 +729,9 @@ bool CGeometry::IsPointInsideFace_3D(su2double *q,su2double **p,short n){
         else{
             costheta = (p1[0]*p2[0] + p1[1]*p2[1] + p1[2]*p2[2]) / (m1*m2);
         }
-        cout << "Before acos in PointonFace routine" << endl;
         anglesum += acos(costheta);
     }
-    cout << " AngleSUm  = " << anglesum*360/TWOPI << endl;
+    //cout << " AngleSUm  = " << anglesum*360/TWOPI << endl;
     if (abs(anglesum*360/TWOPI - 360) < EPSILON_ang)
         Inside = true;
     
