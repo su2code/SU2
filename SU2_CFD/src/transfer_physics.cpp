@@ -687,13 +687,12 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   unsigned long iPoint, PointNormal;
   unsigned short nDim, iDim;
 
-  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall, Tnormal,
+  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall = 0.0, Tnormal = 0.0,
       dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, Prandtl_Turb, eddy_viscosity, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity, thermal_conductivityND, heat_flux_density, conductivity_over_dist, Temperature_Ref;
   su2double Gamma = donor_config->GetGamma();
   su2double Gas_Constant = donor_config->GetGas_ConstantND();
   su2double Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
-  Edge_Vector = new su2double[nDim];
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
   bool flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
@@ -704,6 +703,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;
 
   nDim = donor_geometry->GetnDim();
+  Edge_Vector = new su2double[nDim];
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
   Prandtl_Lam       = donor_config->GetPrandtl_Lam();
