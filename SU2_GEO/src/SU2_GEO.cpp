@@ -591,6 +591,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Definition of the FFD deformation class ---*/
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
     
     if (rank == MASTER_NODE)
       cout << endl << endl << "------------- Gradient evaluation using finite differences --------------" << endl;
@@ -1242,19 +1243,19 @@ int main(int argc, char *argv[]) {
     delete [] geometry_container;
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
-  
-//  if (surface_movement != NULL) delete [] surface_movement;
-//  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
 
-//  if (FFDBox != NULL) {
-//    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
-//      if (FFDBox[iFFDBox] != NULL) {
-//        delete FFDBox[iFFDBox];
-//      }
-//    }
-//    delete [] FFDBox;
-//  }
-//  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+  if (surface_movement != NULL) delete surface_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  if (FFDBox != NULL) {
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
+      if (FFDBox[iFFDBox] != NULL) {
+        delete FFDBox[iFFDBox];
+      }
+    }
+    delete [] FFDBox;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
   
   if (config_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
