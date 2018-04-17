@@ -176,6 +176,7 @@ private:
   unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
   unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
   unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for  harmonic balance. */
+  unsigned short nInstances;  /*!< \brief Number of solution instances (generic). */
   su2double HarmonicBalance_Period;		/*!< \brief Period of oscillation to be used with harmonic balance computations. */
   su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
   su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
@@ -2723,6 +2724,12 @@ public:
    */
   long GetDyn_RestartIter(void);
   
+  /*!
+   * \brief Retrieves the number of solution instances (generic).
+   * \return: Number of solution instances (generic).
+   */
+  unsigned short GetnInstances(void);
+
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
    * \return: Number of periodic time instances for Harmonic Balance.

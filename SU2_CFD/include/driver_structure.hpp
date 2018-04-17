@@ -73,6 +73,8 @@ protected:
                 iZone,                          /*!< \brief Iterator on zones.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim,                           /*!< \brief Number of dimensions.*/
+				iInst,                          /*!< \brief Iterator on instance levels.*/
+				*nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
                 **transfer_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
@@ -137,7 +139,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Preprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config);
+  void Solver_Preprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Restart of the solvers from the restart files.
@@ -145,7 +147,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Restart(CSolver ****solver_container, CGeometry **geometry, CConfig *config, bool update_geo);
+  void Solver_Restart(CSolver ****solver_container, CGeometry **geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -153,7 +155,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config);
+  void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -161,7 +163,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integration_Preprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config);
+  void Integration_Preprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -169,7 +171,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Integration_Postprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config);
+  void Integration_Postprocessing(CIntegration ***integration_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -183,7 +185,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Numerics_Preprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -192,7 +194,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Postprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+  void Numerics_Postprocessing(CNumerics *****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Initialize Python interface functionalities

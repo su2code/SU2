@@ -1047,6 +1047,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
+  /* DESCRIPTION: Integer number of instances (generic, temporary) */
+  addUnsignedShortOption("SOLUTION_INSTANCES", nInstances, 1);
   /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
