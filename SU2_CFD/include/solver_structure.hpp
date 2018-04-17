@@ -2111,7 +2111,7 @@ public:
    * \brief A virtual member.
    * \return Value of the average temperature.
    */
-  virtual su2double GetTotal_AvgTemperature(void);
+  virtual su2double GetTotal_Temperature(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -11210,7 +11210,7 @@ class CHeatSolverFVM : public CSolver {
 protected:
   unsigned short nVarFlow, nMarker, CurrentMesh;
   su2double *Heat_Flux, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
-            *AvgTemperature, Total_AvgTemperature, AllBound_AvgTemperature,
+            *Temperature, Total_Temperature, AllBound_Temperature,
             *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
             *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
   su2double ***ConjugateVar, ***InterfaceVar;
@@ -11444,7 +11444,7 @@ public:
    * \brief Get value of the integral-averaged temperature.
    * \return Value of the integral-averaged temperature.
    */
-  su2double GetTotal_AvgTemperature(void);
+  su2double GetTotal_Temperature(void);
 
   /*!
    * \brief Update the solution using an implicit solver.
