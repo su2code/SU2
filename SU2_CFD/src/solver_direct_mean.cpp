@@ -11600,7 +11600,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain;
   
-  su2double Density, Pressure, Temperature, Energy, *Velocity, Velocity2;
+  su2double Density, Pressure, Temperature, Energy, *Vel, Velocity2;
   su2double Gas_Constant = config->GetGas_ConstantND();
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -11609,6 +11609,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double *Normal = new su2double[nDim];
+  su2double *Velocity = new su2double[nDim];
   
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
    so all flow variables can be imposed at the inlet.
@@ -11616,22 +11617,21 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   
   Temperature = config->GetInlet_Temperature(Marker_Tag);
   Pressure    = config->GetInlet_Pressure(Marker_Tag);
-  Velocity    = config->GetInlet_Velocity(Marker_Tag);
+  Vel         = config->GetInlet_Velocity(Marker_Tag);
+  
+  /*--- Non-dim. the inputs if necessary. ---*/
+  
+  Temperature /= config->GetTemperature_Ref();
+  Pressure    /= config->GetPressure_Ref();
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
   
   /*--- Density at the inlet from the gas law ---*/
   
   Density = Pressure/(Gas_Constant*Temperature);
   
-  /*--- Non-dim. the inputs if necessary. ---*/
-  
-  Temperature = Temperature/config->GetTemperature_Ref();
-  Pressure    = Pressure/config->GetPressure_Ref();
-  Density     = Density/config->GetDensity_Ref();
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Velocity[iDim]/config->GetVelocity_Ref();
-  
   /*--- Compute the energy from the specified state ---*/
-  
+
   Velocity2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity2 += Velocity[iDim]*Velocity[iDim];
