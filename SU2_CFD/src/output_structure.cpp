@@ -4664,7 +4664,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     long ExtraHeatOutputZone = config[val_iZone]->GetExtraHeatOutputZone() - 1;
     bool extra_heat_output = false;
     su2double Extra_Total_Heat = 0.0;
-    su2double Extra_Total_Temperature = 0.0;
+    //su2double Extra_Total_Temperature = 0.0;
     su2double Extra_Heat_Residual = 0.0;
 
     if (ExtraHeatOutputZone > -1) {
@@ -5082,7 +5082,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     if (extra_heat_output) {
       Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-      Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
+      //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
       Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
