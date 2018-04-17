@@ -735,7 +735,8 @@ CTransfer_ConjugateHeatVars::~CTransfer_ConjugateHeatVars(void) {
 void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                                                 unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned long iPoint, PointNormal;
+  //unsigned long iPoint;
+  unsigned long PointNormal;
   unsigned short nDim, iDim;
 
   su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall = 0.0, Tnormal = 0.0,
@@ -807,7 +808,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and set it as second donor variable ---*/
   if (compressible_flow) {
 
-    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+    //iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
     thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
     thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref();
@@ -817,8 +818,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   }
   else if (flow) {
 
-    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
-
+    //iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
     //eddy_viscosity          = donor_solution->node[iPoint]->GetEddyViscosity();
     thermal_conductivityND  = laminar_viscosity/Prandtl_Lam;
     thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref()*cp_fluid;
