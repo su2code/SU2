@@ -271,6 +271,8 @@ inline bool CConfig::GetViscous(void) { return Viscous; }
 
 inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
+inline unsigned short CConfig::GetnInstances(void) { return nInstances; }
+
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
 
 inline su2double CConfig::GetHarmonicBalance_Period(void) { return HarmonicBalance_Period; }
