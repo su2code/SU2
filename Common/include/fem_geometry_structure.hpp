@@ -1029,6 +1029,13 @@ public:
    */
   long GetGlobal_to_Local_Point(unsigned long val_ipoint);
 
+  /*!
+   * \brief Function, which carries out the preprocessing tasks
+            when wall functions are used.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void WallFunctionPreprocessing(CConfig *config);
+
 private:
  /*!
   * \brief Function, which computes the correct sequence of the connectivities
