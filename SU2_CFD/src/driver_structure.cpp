@@ -344,7 +344,7 @@ CDriver::CDriver(char* confFile,
      data structure (centered, upwind, galerkin), as well as any source terms
      (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
 
-    numerics_container[iZone] = new CNumerics****[1];
+    numerics_container[iZone] = new CNumerics****[nInst[iZone]];
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
       numerics_container[iZone][iInst] = NULL;
 
@@ -538,8 +538,8 @@ void CDriver::Postprocessing() {
      for (iInst = 0; iInst < nInst[iZone]; iInst++){
      Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone][iInst],
      geometry_container[iZone], config_container[iZone], iInst);
-     delete [] numerics_container[iZone];
      }
+     delete [] numerics_container[iZone];
   }
   delete [] numerics_container;
   if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
