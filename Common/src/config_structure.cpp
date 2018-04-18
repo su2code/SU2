@@ -1381,7 +1381,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
-  default_nacelle_location[3] = 1.0; default_nacelle_location[4] = 0.0;
+  default_nacelle_location[3] = 0.0; default_nacelle_location[4] = 0.0;
   /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
   addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, NacelleLocation, default_nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
@@ -2395,7 +2395,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
-  if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL) {
+  if (Weight_ObjFunc == NULL && Kind_ObjFunc == NULL) {
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
@@ -2407,7 +2407,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Maker sure that arrays are the same length ---*/
 
   if (nObj>0) {
-    if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
+    if (nMarker_Monitoring!=nObj && Marker_Monitoring!= NULL) {
       if (nMarker_Monitoring==1) {
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
@@ -2447,7 +2447,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
   if (nObjW<nObj) {
-    if (Weight_ObjFunc!= NULL and nObjW>1) {
+    if (Weight_ObjFunc!= NULL && nObjW>1) {
       SU2_MPI::Error(string("The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n") +
                      string("be lenght 1, or be deleted from the config file (equal weights will be applied)."), CURRENT_FUNCTION);
     }
@@ -3230,6 +3230,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Solver == NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
+  
+  if (Kind_Solver == EULER) Kind_Turb_Model = NONE;
 
   Kappa_2nd_Flow    = Kappa_Flow[0];
   Kappa_4th_Flow    = Kappa_Flow[1];

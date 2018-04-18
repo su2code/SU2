@@ -386,7 +386,7 @@ inline su2double CSolver::GetTotal_CQ() { return 0; }
 
 inline su2double CSolver::GetTotal_HeatFlux() { return 0; }
 
-inline su2double CSolver::GetTotal_AvgTemperature() { return 0; }
+inline su2double CSolver::GetTotal_Temperature() { return 0; }
 
 inline su2double CSolver::GetTotal_MaxHeatFlux() { return 0; }
 
@@ -2192,7 +2192,7 @@ inline void CIncNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = va
 
 inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
-inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
+inline su2double CHeatSolverFVM::GetTotal_Temperature() { return Total_Temperature; }
 
 inline su2double CHeatSolverFVM::GetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var) { return ConjugateVar[val_marker][val_vertex][pos_var]; }
 
