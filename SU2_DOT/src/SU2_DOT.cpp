@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   
-  char config_file_name[MAX_STRING_SIZE], *cstr;
+  char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
 
   su2double** Gradient;
@@ -68,7 +68,8 @@ int main(int argc, char *argv[]) {
   CGeometry **geometry_container      = NULL;
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
-  
+  COutput *output                     = NULL;
+
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
   
@@ -213,7 +214,7 @@ int main(int argc, char *argv[]) {
    if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
      if (rank == MASTER_NODE)
        cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
-     COutput *output = new COutput(config_container[ZONE_0]);
+     output = new COutput(config_container[ZONE_0]);
      output->SetSensitivity_Files(geometry_container, config_container, nZone);
    }
 
@@ -277,11 +278,59 @@ int main(int argc, char *argv[]) {
 
    }
 
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+  
+  if (geometry_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != NULL) {
+        delete geometry_container[iZone];
+      }
+    }
+    delete [] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+  
+  if (surface_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (surface_movement[iZone] != NULL) {
+        delete surface_movement[iZone];
+      }
+    }
+    delete [] surface_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  if (grid_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (grid_movement[iZone] != NULL) {
+        delete grid_movement[iZone];
+      }
+    }
+    delete [] grid_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
+  
+  delete config;
+  config = NULL;
+  if (config_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  
+  if (output != NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
-
-    /*--- Synchronization point after a single solver iteration. Compute the
-     wall clock time required. ---*/
-
+  if (cstr != NULL) delete cstr;
+  
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
@@ -289,7 +338,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
-  
+
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
     cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
@@ -332,6 +381,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   unsigned short nFFDBox = MAX_NUMBER_FFD;
   FFDBox = new CFreeFormDefBox*[nFFDBox];
+  for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
 
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
@@ -554,6 +604,20 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     Gradient[iDV][0] += localGradient;
     }
   }
+  
+  /*--- Delete memory for parameterization. ---*/
+  
+  if (FFDBox != NULL) {
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
+      if (FFDBox[iFFDBox] != NULL) {
+        delete FFDBox[iFFDBox];
+      }
+    }
+    delete [] FFDBox;
+  }
+  
+  delete [] UpdatePoint;
+  
 }
   
 
