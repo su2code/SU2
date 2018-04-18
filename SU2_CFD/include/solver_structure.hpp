@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -11248,7 +11248,7 @@ public:
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
  *  \author O. Burghardt
- *  \version 6.0.0 "Falcon"
+ *  \version 6.0.1 "Falcon"
  *  \date January 19, 2018.
  */
 class CHeatSolverFVM : public CSolver {
