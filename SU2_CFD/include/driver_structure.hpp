@@ -68,6 +68,7 @@ protected:
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
   ofstream *ConvHist_file;                       /*!< \brief Convergence history file.*/
+  ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
   unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
                 iZone,                          /*!< \brief Iterator on zones.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */
@@ -1024,6 +1025,19 @@ public:
  * \author R. Sanchez.
  */
 class CFSIDriver : public CDriver {
+
+  su2double *init_res_flow,     /*!< \brief Stores the initial residual for the flow. */
+            *init_res_struct,   /*!< \brief Stores the initial residual for the structure. */
+            *residual_flow,     /*!< \brief Stores the current residual for the flow. */
+            *residual_struct,   /*!< \brief Stores the current residual for the structure. */
+            *residual_flow_rel,
+            *residual_struct_rel;
+
+  su2double flow_criteria,
+            flow_criteria_rel,
+            structure_criteria,
+            structure_criteria_rel;
+
 public:
 
   /*!
@@ -1092,6 +1106,14 @@ public:
   void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
 
   /*!
+   * \brief Check the convergence of BGS subiteration process
+   * \param[in] ZONE_FLOW - zone of the fluid solver.
+   * \param[in] ZONE_STRUCT - zone of the structural solver.
+   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
+   */
+  bool BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
+
+  /*!
    * \brief Enforce the coupling condition at the end of the time step
    * \param[in] zoneFlow - zone of the flow equations.
    * \param[in] zoneStruct - zone of the structural equations.
@@ -1101,54 +1123,12 @@ public:
 };
 
 /*!
- * \class CFSIDriver
- * \brief Overload: class for driving a steady-state BGS iteration for a fluid-structure interaction problem in multiple zones.
+ * \class CDiscAdjFSIDriver
+ * \brief Overload: Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
  * \version 4.2.0 "Cardinal"
  */
-class CFSIStatDriver : public CFSIDriver {
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  CFSIStatDriver(char* confFile,
-             unsigned short val_nZone,
-             unsigned short val_nDim,
-             SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFSIStatDriver(void);
-
-  /*!
-   * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-
-  void Run();
-
-};
-
-/*!
- * \class CDiscAdjFSIStatDriver
- * \brief Class for driving a discrete adjoint FSI iteration.
- * \author R. Sanchez.
- * \version 4.2.0 "Cardinal"
- */
-class CDiscAdjFSIStatDriver : public CFSIStatDriver {
+class CDiscAdjFSIDriver : public CFSIDriver {
 
   CIteration** direct_iteration;
   unsigned short RecordingState;
@@ -1186,7 +1166,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of zones.
    */
-  CDiscAdjFSIStatDriver(char* confFile,
+  CDiscAdjFSIDriver(char* confFile,
                            unsigned short val_nZone,
                            unsigned short val_nDim,
                            SU2_Comm MPICommunicator);
@@ -1194,7 +1174,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFSIStatDriver(void);
+  ~CDiscAdjFSIDriver(void);
 
   /*!
    * \brief Run a Discrete Adjoint iteration for the FSI problem.
