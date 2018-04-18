@@ -4045,13 +4045,13 @@ public:
 };
 
 /*!
- * \class CFEM_Elasticity
+ * \class CFEAElasticity
  * \brief Generic class for computing the tangent matrix and the residual for structural problems
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_Elasticity : public CNumerics {
+class CFEAElasticity : public CNumerics {
 
 protected:
 
@@ -4091,12 +4091,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_Elasticity(void);
+  virtual ~CFEAElasticity(void);
 
   void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
 
@@ -4139,13 +4139,13 @@ public:
 };
 
 /*!
- * \class CFEM_LinearElasticity
+ * \class CFEALinearElasticity
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_LinearElasticity : public CFEM_Elasticity {
+class CFEALinearElasticity : public CFEAElasticity {
 
   su2double **nodalDisplacement;
 
@@ -4157,12 +4157,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_LinearElasticity(void);
+  ~CFEALinearElasticity(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -4174,13 +4174,13 @@ public:
 };
 
 /*!
- * \class CFEM_LinearElasticity
+ * \class CFEANonlinearElasticity
  * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_NonlinearElasticity : public CFEM_Elasticity {
+class CFEANonlinearElasticity : public CFEAElasticity {
 
 protected:
 
@@ -4231,12 +4231,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_NonlinearElasticity(void);
+  virtual ~CFEANonlinearElasticity(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -4282,7 +4282,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_NeoHookean_Comp : public CFEM_NonlinearElasticity {
+class CFEM_NeoHookean_Comp : public CFEANonlinearElasticity {
 
 public:
 
@@ -4315,7 +4315,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_NeoHookean_Incomp : public CFEM_NonlinearElasticity {
+class CFEM_NeoHookean_Incomp : public CFEANonlinearElasticity {
 
 public:
 
@@ -4348,7 +4348,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_IdealDE : public CFEM_NonlinearElasticity {
+class CFEM_IdealDE : public CFEANonlinearElasticity {
 
 	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Variables of the model calculation. */
 
@@ -4382,7 +4382,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_Knowles_NearInc : public CFEM_NonlinearElasticity {
+class CFEM_Knowles_NearInc : public CFEANonlinearElasticity {
 
 	su2double trbbar, term1, term2, Ek, Pr;	/*!< \brief Variables of the model calculation. */
 	su2double Bk, Nk;						/*!< \brief Parameters b and n of the model. */
@@ -4418,7 +4418,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
+class CFEM_DielectricElastomer : public CFEANonlinearElasticity {
 
 public:
 

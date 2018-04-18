@@ -48,7 +48,7 @@ void CDriver::PythonInterface_Preprocessing(){
   /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
   for(iZone=0; iZone < nZone; iZone++){
     if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
-    for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       geometry_container[iZone][iMesh]->SetCustomBoundary(config_container[iZone]);
     }
     geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);

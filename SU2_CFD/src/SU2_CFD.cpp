@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     /*--- If the problem is a discrete adjoint FSI problem ---*/
     if (disc_adj_fsi) {
       if (stat_fsi) {
-        driver = new CDiscAdjFSIStatDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
       }
       else {
         SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
