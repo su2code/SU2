@@ -917,6 +917,10 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
     if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
     DGMesh->CoordinatesSolDOFs();
 
+    /*--- Perform the preprocessing tasks when wall functions are used. ---*/
+    if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
+    DGMesh->WallFunctionPreprocessing(config_container[iZone]);
+
     /*--- Store the global to local mapping. ---*/
     if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
     geometry_container[iZone][MESH_0]->SetGlobal_to_Local_Point();

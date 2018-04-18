@@ -371,18 +371,38 @@ public:
    * \param[in]     val_VTKElem  Type of the elements using the VTK convention.
    * \param[in]     val_markerID Markers of the local elements.
    * \param[in]     val_elemID   Local element IDs of the elements. 
+   * \param[in]     globalTree   Whether or not a global tree must be built. If false
+                                 a local ADT is built.
    */
   su2_adtElemClass(unsigned short         val_nDim,
                    vector<su2double>      &val_coor,
                    vector<unsigned long>  &val_connElem,
                    vector<unsigned short> &val_VTKElem,
                    vector<unsigned short> &val_markerID,
-                   vector<unsigned long>  &val_elemID);
+                   vector<unsigned long>  &val_elemID,
+                   const bool             globalTree);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
   ~su2_adtElemClass();
+
+  /*!
+   * \brief Function, which determines the element that contains the given
+            coordinate.
+   * \param[in]  coor     Coordinate which the element must contain.
+   * \param[out] markerID Local marker ID of the element containing the coordinate.
+   * \param[out] elemID   Local element ID of the element containing the coordinate.
+   * \param[out] rankID   Rank on which element containing the coordinate is stored.
+   * \param[out] parCoor  Parametric coordinates of coor inside the element,
+                          which contains the coordinate.
+   * \return              True if an element is found, false if not.
+   */
+  bool DetermineContainingElement(const su2double *coor,
+                                  unsigned short  &markerID,
+                                  unsigned long   &elemID,
+                                  int             &rankID,
+                                  su2double       *parCoor);
 
   /*!
    * \brief Function, which determines the nearest element in the ADT for the
@@ -399,6 +419,149 @@ public:
                                unsigned long   &elemID,
                                int             &rankID);
 private:
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given element.
+   * \param[in]  elemID  ID of the element for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given element.
+   * \return             True if coor is inside the element and false otherwise.
+   */
+  bool CoorInElement(const unsigned long elemID,
+                     const su2double     *coor,
+                     su2double           *parCoor);
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given quadrilateral.
+   * \param[in]  elemID  ID of the quadrilateral for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given quadrilateral.
+   * \return             True if coor is inside the quadrilateral and false otherwise.
+   */
+  bool CoorInQuadrilateral(const unsigned long elemID,
+                           const su2double     *coor,
+                           su2double           *parCoor);
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given triangle.
+   * \param[in]  elemID  ID of the triangle for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given triangle.
+   * \return             True if coor is inside the triangle and false otherwise.
+   */
+  bool CoorInTriangle(const unsigned long elemID,
+                      const su2double     *coor,
+                      su2double           *parCoor);
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given hexahedron.
+   * \param[in]  elemID  ID of the hexahedron for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given hexahedron.
+   * \return             True if coor is inside the hexahedron and false otherwise.
+   */
+  bool CoorInHexahedron(const unsigned long elemID,
+                        const su2double     *coor,
+                        su2double           *parCoor);
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given prism.
+   * \param[in]  elemID  ID of the prism for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given prism.
+   * \return             True if coor is inside the prism and false otherwise.
+   */
+  bool CoorInPrism(const unsigned long elemID,
+                   const su2double     *coor,
+                   su2double           *parCoor);
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given pyramid.
+   * \param[in]  elemID  ID of the pyramid for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given pyramid.
+   * \return             True if coor is inside the pyramid and false otherwise.
+   */
+  bool CoorInPyramid(const unsigned long elemID,
+                     const su2double     *coor,
+                     su2double           *parCoor);
+
+  /*!
+   * \brief Function, which checks whether or not the given coordinate is
+            inside the given tetrahedron.
+   * \param[in]  elemID  ID of the tetrahedron for which the containment
+                         must be checked.
+   * \param[in]  coor    Coordinate for which the containment must be checked.
+   * \param[out] parCoor Parametric coordinates of coor if it is inside the
+                         given tetrahedron.
+   * \return             True if coor is inside the tetrahedron and false otherwise.
+   */
+  bool CoorInTetrahedron(const unsigned long elemID,
+                         const su2double     *coor,
+                         su2double           *parCoor);
+
+  /*!
+   * \brief Function, which provides an initial guess for the parametric coordinates
+            of the given point inside a hexahedron by splitting it into tetrahedra.
+   * \param[in]  xRelC   Coordinates of the point to be investigated relative to
+                         vertex 0 of the hexahedron.
+   * \param[in]  xRel    Coordinates of the vertices of the hexahedron relative to
+                         vertex 0.
+   * \param[out] parCoor Initial guess of the parametric coordinates.
+   * \return             True if the initial guess is within the hexahedron and
+                         false otherwise.
+   */
+  bool InitialGuessContainmentHexahedron(const su2double xRelC[3],
+                                         const su2double xRel[8][3],
+                                         su2double       *parCoor);
+
+  /*!
+   * \brief Function, which provides an initial guess for the parametric coordinates
+            of the given point inside a prism by splitting it into tetrahedra.
+   * \param[in]  xRelC   Coordinates of the point to be investigated relative to
+                         vertex 0 of the prism.
+   * \param[in]  xRel    Coordinates of the vertices of the prism relative to
+                         vertex 0.
+   * \param[out] parCoor Initial guess of the parametric coordinates.
+   * \return             True if the initial guess is within the prism and
+                         false otherwise.
+   */
+  bool InitialGuessContainmentPrism(const su2double xRelC[3],
+                                    const su2double xRel[6][3],
+                                    su2double       *parCoor);
+
+  /*!
+   * \brief Function, which provides an initial guess for the parametric coordinates
+            of the given point inside a pyramid by splitting it into tetrahedra.
+   * \param[in]  xRelC   Coordinates of the point to be investigated relative to
+                         vertex 0 of the pyramid.
+   * \param[in]  xRel    Coordinates of the vertices of the pyramid relative to
+                         vertex 0.
+   * \param[out] parCoor Initial guess of the parametric coordinates.
+   * \return             True if the initial guess is within the pyramid and
+                         false otherwise.
+   */
+  bool InitialGuessContainmentPyramid(const su2double xRelC[3],
+                                      const su2double xRel[5][3],
+                                      su2double       *parCoor);
 
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
