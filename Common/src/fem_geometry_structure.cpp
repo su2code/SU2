@@ -2091,28 +2091,6 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   nVolElemHaloPerTimeLevel[0] = nVolElemOwned;
   for(unsigned short i=0; i<nTimeLevels; ++i)
     nVolElemHaloPerTimeLevel[i+1] += nVolElemHaloPerTimeLevel[i];
-
-  /* Check for wall function treatment for the viscous wall boundaries. */
-  bool wallFunctions = false;
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case ISOTHERMAL:
-      case HEAT_FLUX: {
-         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-         if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
-           wallFunctions = true;
-        break;
-      }
-      default:  /* Just to avoid a compiler warning. */
-        break;
-    }
-  }
-
-  if( wallFunctions ) {
-    cout << endl << "Wall function preprocessing not implemented yet" << endl;
-    exit(EXIT_FAILURE);
-  }
 }
 
 void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
@@ -4641,7 +4619,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
 
   /*--- If non-matching vertices have been found, terminate with an error message. ---*/
   if( verticesDontMatch )
-    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION); 
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.", CURRENT_FUNCTION);
 
   /*--- Loop over the DOFs of the original prism to create the connectivity
         of the prism that corresponds to the new numbering. ---*/
@@ -6089,4 +6067,230 @@ void CMeshFEM_DG::VolumeMetricTermsFromCoorGradients(
       break;
     }
   }
+}
+
+void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Check whether wall functions are used at all.              ---*/
+  /*--------------------------------------------------------------------------*/
+
+  bool wallFunctions = false;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+          wallFunctions = true;
+        break;
+      }
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+
+  /* If no wall functions are used, nothing needs to be done and a
+     return can be made. */
+  if( !wallFunctions ) return;
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Build the local ADT of the volume elements. The halo       ---*/
+  /*---         elements are included such that also direct neighbors are  ---*/
+  /*---         guaranteed to be found as donor element. Note that the ADT ---*/
+  /*---         is built with the linear subelements. This is done to      ---*/
+  /*---         avoid relatively many expensive Newton solves for high     ---*/
+  /*---         order elements.                                            ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Define the vectors, which store the mapping from the subelement to the
+     parent element, subelement ID within the parent element, the element
+     type and the connectivity of the subelements. */
+  vector<unsigned long>  parentElement;
+  vector<unsigned short> subElementIDInParent;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned long>  elemConn;
+
+  /* Loop over the locally stored volume elements (including halo elements)
+     to create the connectivity of the subelements. */
+  for(unsigned long l=0; l<nVolElemTot; ++l) {
+
+    /* Determine the necessary data from the corresponding standard element. */
+    const unsigned short ind = volElem[l].indStandardElement;
+
+    unsigned short VTK_Type[]  = {standardElementsGrid[ind].GetVTK_Type1(),
+                                  standardElementsGrid[ind].GetVTK_Type2()};
+    unsigned short nSubElems[] = {0, 0};
+    unsigned short nDOFsPerSubElem[] = {0, 0};
+    const unsigned short *connSubElems[] = {NULL, NULL};
+
+    if(VTK_Type[0] != NONE) {
+      nSubElems[0]       = standardElementsGrid[ind].GetNSubElemsType1();
+      nDOFsPerSubElem[0] = standardElementsGrid[ind].GetNDOFsPerSubElem(VTK_Type[0]);
+      connSubElems[0]    = standardElementsGrid[ind].GetSubConnType1();
+    }
+
+    if(VTK_Type[1] != NONE) {
+      nSubElems[1]       = standardElementsGrid[ind].GetNSubElemsType2();
+      nDOFsPerSubElem[1] = standardElementsGrid[ind].GetNDOFsPerSubElem(VTK_Type[1]);
+      connSubElems[1]    = standardElementsGrid[ind].GetSubConnType2();
+    }
+
+    /* Abbreviate the grid DOFs of this element a bit easier. */
+    const unsigned long *DOFs = volElem[l].nodeIDsGrid.data();
+
+    /* Loop over the number of subelements and store the required data. */
+    unsigned short kk = 0, jj = 0;
+    for(unsigned short i=0; i<2; ++i) {
+      for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
+        parentElement.push_back(l);
+        subElementIDInParent.push_back(jj);
+        VTK_TypeElem.push_back(VTK_Type[i]);
+
+        for(unsigned short k=0; k<nDOFsPerSubElem[i]; ++k, ++kk)
+          elemConn.push_back(DOFs[connSubElems[i][kk]]);
+      }
+    }
+  }
+
+  /* Copy the coordinates in a vector that can be used by the ADT. */
+  vector<su2double> volCoor;
+  volCoor.reserve(nDim*meshPoints.size());
+
+  for(unsigned long l=0; l<meshPoints.size(); ++l) {
+    for(unsigned short k=0; k<nDim; ++k)
+      volCoor.push_back(meshPoints[l].coor[k]);
+  }
+
+  /* Build the local ADT. */
+  su2_adtElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                                  subElementIDInParent, parentElement, false);
+
+  /* Release the memory of the vectors used to build the ADT. To make sure
+     that all the memory is deleted, the swap function is used. */
+  vector<unsigned short>().swap(subElementIDInParent);
+  vector<unsigned short>().swap(VTK_TypeElem);
+  vector<unsigned long>().swap(parentElement);
+  vector<unsigned long>().swap(elemConn);
+  vector<su2double>().swap(volCoor);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
+  /*---         the local trees.                                           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Define the vectors to store the information of the points for which
+     a global search, i.e. on other ranks, must be carried out.
+     These variables are only needed in parallel mode. */
+#ifdef HAVE_MPI
+  vector<unsigned short> markersGlobalSearch, intPointGlobalSearch;
+  vector<unsigned long>  surfElemGlobalSearch;
+  vector<su2double>      coorExGlobalSearch;
+#endif
+
+  /* Loop over the markers and select the ones for which a wall function
+     treatment must be carried out. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+
+          /* Retrieve the floating point information for this boundary marker.
+             The exchange location is the first element of this array. */
+          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+
+          /* Easier storage of the surface elements and loop over them. */
+          vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+          for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+            /* Determine the corresponding standard face element and get the
+               relevant information from it. Note that the standard element
+               of the solution must be taken and not of the grid. */
+            const unsigned short ind  = surfElem[l].indStandardElement;
+            const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+            /* Loop over the integration points. */
+            for(unsigned short i=0; i<nInt; ++i) {
+
+              /* Easier storage of the normals and coordinates of this
+                 integration point. */
+              const su2double *normals = surfElem[l].metricNormalsFace.data()
+                                       + i*(nDim+1);
+              const su2double *Coord   = surfElem[l].coorIntegrationPoints.data()
+                                       + i*nDim;
+
+              /* Determine the coordinates of the exchange location. Note that the normals
+                 point out of the domain, so the normals must be subtracted. */
+              su2double coorExchange[] = {0.0, 0.0, 0.0};  // To avoid a compiler warning.
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                coorExchange[iDim] = Coord[iDim] - doubleInfo[0]*normals[iDim];
+
+              /* Search for the element, which contains the exchange location. */
+              unsigned short subElem;
+              unsigned long  parElem;
+              int            rank;
+              su2double      parCoor[3];
+              if( localVolumeADT.DetermineContainingElement(coorExchange, subElem,
+                                                            parElem, rank, parCoor) ) {
+
+                /* Subelement found that contains the exchange location. However,
+                   what is needed is the location in the high order parent element.
+                   Determine this. */
+                cout << "High order containment search not implemented yet" << endl;
+                exit(1);
+              }
+              else {
+
+                /* No subelement found that contains the exchange location.
+                   The action to be taken depends whether a parallel or
+                   a sequential executable is built. */
+#ifdef HAVE_MPI
+                /* Parallel mode. Store it in the vectors for the global search. */
+                markersGlobalSearch.push_back(iMarker);
+                surfElemGlobalSearch.push_back(l);
+                intPointGlobalSearch.push_back(i);
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                 coorExGlobalSearch.push_back(coorExchange[iDim]);
+#else
+                /* Sequential mode. Create an error message and exit. */
+                SU2_MPI::Error("Exchange location not found in ADT",
+                               CURRENT_FUNCTION);
+#endif
+              }
+            }
+          }
+        }
+
+        break;
+      }
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 4. Search for donor elements at the exchange locations in     ---*/
+  /*---         the trees of other ranks. Only needed in parallel mode.    ---*/
+  /*--------------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+
+  /* Determine the total number of points for which a global search must
+     be carried out. */
+  unsigned long nLocalSearchPoints = markersGlobalSearch.size();
+  unsigned long nGlobalSearchPoints;
+  SU2_MPI::Allreduce(&nLocalSearchPoints, &nGlobalSearchPoints, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+  /* Return if there are no points to be searched. */
+  if(nGlobalSearchPoints == 0) return;
+
+  cout << "Global search not implemented yet" << endl;
+  exit(1);
+
+#endif
 }
