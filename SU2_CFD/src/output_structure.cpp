@@ -8064,7 +8064,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     /*--- Flags identifying the types of files to be written. ---*/
     
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol() && config[iZone]->GetVisualize_Deformation();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol() && config[iZone]->GetVisualize_Deformation();;
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol() && config[iZone]->GetVisualize_Deformation();
+    bool Wrt_Crd = config[iZone]->GetWrt_Crd_Sol();
     
     /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
@@ -8117,7 +8118,14 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
       
       if (su2_file) SetSTL_MeshASCII(config[iZone], geometry[iZone]);
-
+      
+      /*--- Write a binary file with the grid coordinates alone. ---*/
+      
+      if (Wrt_Crd) {
+        cout <<"Writing .dat binary coordinates file." << endl;
+        WriteCoordinates_Binary(config[iZone], geometry[iZone], iZone);
+      }
+      
       /*--- Deallocate connectivity ---*/
       
       DeallocateConnectivity(config[iZone], geometry[iZone], true);

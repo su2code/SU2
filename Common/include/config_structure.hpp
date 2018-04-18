@@ -718,6 +718,7 @@ private:
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
+  Wrt_Crd_Sol,                /*!< \brief Write a binary file with the grid coordinates only. */
   Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Surface,                /*!< \brief Write solution at each surface */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
@@ -2848,6 +2849,12 @@ public:
    * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
    */
   bool GetWrt_Csv_Sol(void);
+  
+  /*!
+   * \brief Get information about writing a binary coordinates file.
+   * \return <code>TRUE</code> means that a binary coordinates file will be written.
+   */
+  bool GetWrt_Crd_Sol(void);
   
   /*!
    * \brief Get information about writing residuals to volume solution file.
