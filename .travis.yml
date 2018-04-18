@@ -94,4 +94,4 @@ before_script:
 
 script: 
     # Run the tests via the Python scripts
-    - python $TEST_SCRIPT
+    - travis_wait 90 python $TEST_SCRIPT
