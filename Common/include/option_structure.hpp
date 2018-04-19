@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -235,7 +235,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
 ("HEAT_EQUATION", HEAT_EQUATION)
-("FEM_ELASTICITY", FEM_ELASTICITY)
+("ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
@@ -268,11 +268,10 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
-  ADJFEM_ELASTICITY_SFSI = 14,   /*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
-("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
+("ELASTICITY", FEM_ELASTICITY_SFSI);
 
 /*!
  * \brief Material geometric conditions
@@ -921,13 +920,11 @@ enum ENUM_TRANSFER_METHOD {
   BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
   SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
   ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
-  LEGACY_METHOD = 4		/*!< \brief Original transfer method, maintained to check . */
 };
 static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
 ("BROADCAST_DATA", BROADCAST_DATA)
 ("SCATTER_DATA", SCATTER_DATA)
-("ALLGATHER_DATA", ALLGATHER_DATA)
-("LEGACY_METHOD", LEGACY_METHOD);
+("ALLGATHER_DATA", ALLGATHER_DATA);
 
 /*!
  * \brief types of schemes to compute the flow gradient
@@ -986,7 +983,6 @@ enum BC_TYPE {
   RIEMANN_BOUNDARY= 24,   /*!< \brief Riemann Boundary definition. */
   ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
-  PRESSURE_BOUNDARY = 27,   	/*!< \brief Pressure boundary condition. */
   ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */

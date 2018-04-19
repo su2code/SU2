@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -1463,6 +1463,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long>::iterator it;
   su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
+
+  bool fea = ((config->GetKind_Solver()==FEM_ELASTICITY) || (config->GetKind_Solver()==DISC_ADJ_FEM));
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -1730,8 +1732,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 #endif
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
-
-  if (rank == MASTER_NODE)
+  
+  if ((rank == MASTER_NODE) && (!fea))
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();
@@ -9726,6 +9728,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
+  bool fea = ((config->GetKind_Solver() == FEM_ELASTICITY) || (config->GetKind_Solver() == DISC_ADJ_FEM));
   
   PositiveXArea = 0.0;
   PositiveYArea = 0.0;
@@ -9735,12 +9738,13 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
-
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+    
+    if ((((Boundary == EULER_WALL)              ||
+          (Boundary == HEAT_FLUX)               ||
+          (Boundary == ISOTHERMAL)              ||
+          (Boundary == LOAD_BOUNDARY)           ||
+          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+        || (fea))
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -9774,6 +9778,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           
         }
       }
+
   }
 
 #ifdef HAVE_MPI
@@ -9842,7 +9847,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
   if (rank == MASTER_NODE) {
 
-    cout << "Wetted area = "<< TotalWettedArea;
+    if (fea) cout << "Surface area = "<< TotalWettedArea;
+    else cout << "Wetted area = "<< TotalWettedArea;
+
     if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
@@ -9873,7 +9880,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
     
     if (nDim == 3) {
     	cout << ", z-direction = "<< TotalMinCoordZ;
