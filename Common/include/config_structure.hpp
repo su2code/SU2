@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -191,7 +191,6 @@ private:
   nMarker_FarField,				/*!< \brief Number of far-field markers. */
   nMarker_Custom,
   nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
-  nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
   nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
   nMarker_MixingPlaneInterface,				/*!< \brief Number of mixing plane interface boundary markers. */
   nMarker_Turbomachinery,				/*!< \brief Number turbomachinery markers. */
@@ -234,7 +233,6 @@ private:
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
   *Marker_SymWall,				/*!< \brief Symmetry wall markers. */
-  *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
   *Marker_PerBound,				/*!< \brief Periodic boundary markers. */
   *Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
   *Marker_MixingPlaneInterface,				/*!< \brief MixingPlane interface boundary markers. */
@@ -824,6 +822,9 @@ private:
   su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
   su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
+  bool RampAndRelease;        /*!< \brief option for ramp load and release */
+  bool Sine_Load;             /*!< \brief option for sine load */
+  su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
   su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
@@ -908,8 +909,8 @@ private:
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
-  su2double Newmark_alpha,		/*!< \brief Parameter alpha for Newmark method. */
-  Newmark_delta;				      /*!< \brief Parameter delta for Newmark method. */
+  su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		  /*!< \brief Time integration coefficients for structural method. */
   unsigned short nElasticityMod,  /*!< \brief Number of different values for the elasticity modulus. */
@@ -930,7 +931,6 @@ private:
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
-  su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
@@ -969,7 +969,8 @@ private:
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
-  *default_extrarelfac;       /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  *default_extrarelfac,       /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  *default_sineload_coeff;    /*!< \brief Default values for a sine load. */
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
@@ -1000,6 +1001,7 @@ private:
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
+  ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -7958,14 +7960,14 @@ public:
    * \brief Get Newmark alpha parameter.
    * \return Value of the Newmark alpha parameter.
    */
-  su2double GetNewmark_alpha(void);
-
+  su2double GetNewmark_beta(void);
+  
   /*!
    * \brief Get Newmark delta parameter.
    * \return Value of the Newmark delta parameter.
    */
-  su2double GetNewmark_delta(void);
-
+  su2double GetNewmark_gamma(void);
+  
   /*!
    * \brief Get the number of integration coefficients provided by the user.
    * \return Number of integration coefficients.
@@ -8042,7 +8044,25 @@ public:
    * \return 	Value of the max time while the load is linearly increased
    */
   su2double GetRamp_Time(void);
+  
+  /*!
+   * \brief Check if the user wants to apply the load as a ramp.
+   * \return  <code>TRUE</code> means that the load is to be applied as a ramp.
+   */
+  bool GetRampAndRelease_Load(void);
 
+  /*!
+   * \brief Check if the user wants to apply the load as a ramp.
+   * \return  <code>TRUE</code> means that the load is to be applied as a ramp.
+   */
+  bool GetSine_Load(void);
+
+  /*!
+   * \brief Get the sine load properties.
+   * \param[in] val_index - Index corresponding to the load boundary.
+   * \return The pointer to the sine load values.
+   */
+  su2double* GetLoad_Sine(void);
    /*!
     * \brief Get the kind of load transfer method we want to use for dynamic problems
     * \note This value is obtained from the config file, and it is constant
@@ -8062,12 +8082,6 @@ public:
     * \return  Penalty weight value for the reference geometry objective function.
     */
    su2double GetTotalDV_Penalty(void);
-
-  /*!
-   * \brief Get the maximum time of the ramp.
-   * \return 	Value of the max time while the load is linearly increased
-   */
-  su2double GetStatic_Time(void);
 
   /*!
    * \brief Get the order of the predictor for FSI applications.
@@ -8238,6 +8252,16 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux(void);
+
+  /*!
+   * \brief Retrieve the ofstream of the history file for the current zone.
+   */
+  ofstream* GetHistFile(void);
+
+  /*!
+   * \brief Set the ofstream of the history file for the current zone.
+   */
+  void SetHistFile(ofstream *HistFile);
 };
 
 #include "config_structure.inl"
