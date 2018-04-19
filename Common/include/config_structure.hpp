@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -80,6 +80,7 @@ private:
   unsigned short Kind_SpanWise; /*!< \brief Kind of span-wise section computation.*/
   unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
+  unsigned short nZoneSpecified; /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
   su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
@@ -126,6 +127,7 @@ private:
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
+  Weakly_Coupled_Heat, /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
   Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
   PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
   Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
@@ -140,7 +142,8 @@ private:
   Inconsistent_Disc,      /*!< \brief Use an inconsistent (primal/dual) discrete adjoint formulation. */
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
-  Axisymmetric; /*!< \brief Flag for axisymmetric calculations */
+  Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -188,7 +191,6 @@ private:
   nMarker_FarField,				/*!< \brief Number of far-field markers. */
   nMarker_Custom,
   nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
-  nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
   nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
   nMarker_MixingPlaneInterface,				/*!< \brief Number of mixing plane interface boundary markers. */
   nMarker_Turbomachinery,				/*!< \brief Number turbomachinery markers. */
@@ -199,6 +201,7 @@ private:
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
   nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
   nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
+  nMarker_CHTInterface,     /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
   nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
@@ -233,7 +236,6 @@ private:
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
   *Marker_SymWall,				/*!< \brief Symmetry wall markers. */
-  *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
   *Marker_PerBound,				/*!< \brief Periodic boundary markers. */
   *Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
   *Marker_MixingPlaneInterface,				/*!< \brief MixingPlane interface boundary markers. */
@@ -242,6 +244,7 @@ private:
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
   *Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
+  *Marker_CHTInterface,         /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,
   *Marker_ActDiskOutlet,
   *Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
@@ -399,6 +402,7 @@ private:
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
+  CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
@@ -429,6 +433,7 @@ private:
   su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
+  *Kind_Solver_PerZone,  /*!< \brief Kind of solvers for each zone Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
@@ -461,6 +466,7 @@ private:
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
+  Kind_TimeStep_Heat, /*!< \brief Time stepping method for the (fvm) heat equation. */
   Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -490,9 +496,11 @@ private:
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
+  MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  ZoneSpecific_Problem;   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
@@ -506,9 +514,11 @@ private:
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
+  su2double Linear_Solver_Error_Heat;        /*!< \brief Min error of the linear solver for the implicit formulation in the fvm heat solver . */
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
+  unsigned long Linear_Solver_Iter_Heat;       /*!< \brief Max iterations of the linear solver for the implicit formulation in the fvm heat solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned short Linear_Solver_ILU_n;		/*!< \brief ILU fill=in level. */
   su2double SemiSpan;		/*!< \brief Wing Semi span. */
@@ -516,6 +526,7 @@ private:
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
   su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
   su2double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
+  su2double Relaxation_Factor_CHT;  /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -523,14 +534,17 @@ private:
   unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-  *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
+  *Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
+  *Kappa_Heat;                    /*!< \brief Numerical dissipation coefficients for the (fvm) heat equation. */  
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
   Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-  Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
+  Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
   
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -734,6 +748,12 @@ private:
   Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,     /*!< \brief Reference S for Sutherland model.  */
   Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  Specific_Heat_Fluid, /*!< \brief Specific heat in fluids. */
+  Specific_Heat_Solid, /*!< \brief Specific heat in solids. */
+  Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
+  Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
+  Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
+  Density_Solid,      /*!< \brief Total density in solids. */  
   *Velocity_FreeStream,     /*!< \brief Free-stream velocity vector of the fluid.  */
   Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,     /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
@@ -790,6 +810,9 @@ private:
   su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
   su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
+  bool RampAndRelease;        /*!< \brief option for ramp load and release */
+  bool Sine_Load;             /*!< \brief option for sine load */
+  su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
   su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
@@ -869,12 +892,13 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
+  long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
-  su2double Newmark_alpha,		/*!< \brief Parameter alpha for Newmark method. */
-  Newmark_delta;				      /*!< \brief Parameter delta for Newmark method. */
+  su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		  /*!< \brief Time integration coefficients for structural method. */
   unsigned short nElasticityMod,  /*!< \brief Number of different values for the elasticity modulus. */
@@ -895,7 +919,6 @@ private:
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
-  su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
@@ -925,6 +948,7 @@ private:
   *default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
   *default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
   *default_jst_adj_coeff,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_ad_coeff_heat,     /*!< \brief Default artificial dissipation (heat) array for the COption class. */  
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -933,7 +957,8 @@ private:
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
-  *default_extrarelfac;       /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  *default_extrarelfac,       /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
+  *default_sineload_coeff;    /*!< \brief Default values for a sine load. */
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
@@ -954,6 +979,7 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
+  ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -1432,6 +1458,12 @@ public:
    * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
    */
   bool GetExtraOutput(void);
+
+  /*!
+   * \brief Heat solver zone with extra screen output.
+   * \return Heat solver zone with extra screen output.
+   */
+  long GetExtraHeatOutputZone(void);
   
   /*!
    * \brief Get the value of the Mach number (velocity divided by speed of sound).
@@ -1548,6 +1580,12 @@ public:
    * \return Freestream temperature.
    */
   su2double GetDensity_FreeStream(void);
+
+  /*!
+   * \brief Get the value of the solid density.
+   * \return Solid density.
+   */
+  su2double GetDensity_Solid(void);
   
   /*!
    * \brief Get the value of the frestream temperature.
@@ -1578,6 +1616,36 @@ public:
    * \return Turbulent Prandtl number.
    */
   su2double GetPrandtl_Turb(void);
+
+  /*!
+   * \brief Get the value of the specific heat for fluids.
+   * \return Specific heat number (fluid).
+   */
+  su2double GetSpecificHeat_Fluid(void);
+
+  /*!
+   * \brief Get the value of the specific heat for solids.
+   * \return Specific heat number (solid).
+   */
+  su2double GetSpecificHeat_Solid(void);
+
+  /*!
+   * \brief Get the value of the thermal conductivity for solids.
+   * \return Thermal conductivity (solid).
+   */
+  su2double GetThermalConductivity_Solid(void);
+
+  /*!
+   * \brief Get the value of the thermal diffusivity for solids.
+   * \return Thermal conductivity (solid).
+   */
+  su2double GetThermalDiffusivity_Solid(void);
+
+  /*!
+   * \brief Get the temperature in solids at freestream conditions.
+   * \return Freestream temperature (solid).
+   */
+  su2double GetTemperature_Freestream_Solid(void);
   
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
@@ -2280,6 +2348,12 @@ public:
    * \return Value of the Froude number.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream);
+
+  /*!
+   * \brief Set the thermal diffusivity for solids.
+   * \return Value of the Froude number.
+   */
+  void SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity);
   
   /*!
    * \brief Set the Froude number for free surface problems.
@@ -2396,6 +2470,13 @@ public:
    * \return CFL number for each grid.
    */
   su2double GetCFL(unsigned short val_mesh);
+
+  /*!
+   * \brief Get the Courant Friedrich Levi number for solid solvers.
+   * \param[in] val_mesh - Index of the mesh were the CFL is applied.
+   * \return CFL number for each grid.
+   */
+  su2double GetCFL_Solid(void);
   
   /*!
    * \brief Get the Courant Friedrich Levi number for each grid.
@@ -2585,6 +2666,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Analyze(void);
+
+  /*!
+   * \brief Get the total number of heat flux markers.
+   * \return Total number of heat flux markers.
+   */
+  unsigned short GetnMarker_HeatFlux(void);
   
   /*!
    * \brief Get the total number of objectives in kind_objective list
@@ -2870,6 +2957,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Monitoring_TagBound(unsigned short val_marker);
+
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_HeatFlux_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the tag if the iMarker defined in the geometry file.
@@ -3451,6 +3546,12 @@ public:
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
   su2double GetRelaxation_Factor_Turb(void);
+
+  /*!
+   * \brief Get the relaxation coefficient of the CHT coupling.
+   * \return relaxation coefficient of the CHT coupling.
+   */
+  su2double GetRelaxation_Factor_CHT(void);
   
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
@@ -3692,6 +3793,15 @@ public:
    *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
+  bool GetMUSCL_Heat(void);
+
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
   bool GetMUSCL_Turb(void);
   
   /*!
@@ -3739,6 +3849,15 @@ public:
    */
   unsigned short GetKind_TimeIntScheme_Heat(void);
   
+  /*!
+   * \brief Get the kind of time stepping
+   *        for the heat equation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of time stepping for the heat equation.
+   */
+  unsigned short GetKind_TimeStep_Heat(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
@@ -3873,6 +3992,18 @@ public:
    * \return Calibrated constant for the JST method for the flow equations.
    */
   su2double GetKappa_4th_Flow(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+   * \return Calibrated constant for the JST-like method for the heat equations.
+   */
+  su2double GetKappa_2nd_Heat(void);
+
+  /*!
+   * \brief Value of the calibrated constant for the JST-like method (center scheme).
+   * \return Calibrated constant for the JST-like method for the heat equation.
+   */
+  su2double GetKappa_4th_Heat(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3978,6 +4109,14 @@ public:
    */
   unsigned short GetKind_ConvNumScheme_AdjTurb(void);
   
+  /*!
+   * \brief Get the kind of convective numerical scheme for the heat equation.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the heat equation.
+   */
+  unsigned short GetKind_ConvNumScheme_Heat(void);
+
   /*!
    * \brief Get the kind of center convective numerical scheme for the adjoint turbulence equations.
    * \note This value is obtained from the config file, and it is constant
@@ -4187,6 +4326,12 @@ public:
    * \return boolean.
    */
   bool GetBoolTurbomachinery(void);
+
+  /*!
+   * \brief Verify if there are zone specific solvers entered in the config file.
+   * \return boolean.
+   */
+  bool GetBoolZoneSpecific(void);
   
   /*!
    * \brief number Turbomachinery blades computed using the pitch information.
@@ -7682,13 +7827,13 @@ public:
    * \brief Get Newmark alpha parameter.
    * \return Value of the Newmark alpha parameter.
    */
-  su2double GetNewmark_alpha(void);
+  su2double GetNewmark_beta(void);
   
   /*!
    * \brief Get Newmark delta parameter.
    * \return Value of the Newmark delta parameter.
    */
-  su2double GetNewmark_delta(void);
+  su2double GetNewmark_gamma(void);
   
   /*!
    * \brief Get the number of integration coefficients provided by the user.
@@ -7767,6 +7912,24 @@ public:
    */
   su2double GetRamp_Time(void);
   
+  /*!
+   * \brief Check if the user wants to apply the load as a ramp.
+   * \return  <code>TRUE</code> means that the load is to be applied as a ramp.
+   */
+  bool GetRampAndRelease_Load(void);
+
+  /*!
+   * \brief Check if the user wants to apply the load as a ramp.
+   * \return  <code>TRUE</code> means that the load is to be applied as a ramp.
+   */
+  bool GetSine_Load(void);
+
+  /*!
+   * \brief Get the sine load properties.
+   * \param[in] val_index - Index corresponding to the load boundary.
+   * \return The pointer to the sine load values.
+   */
+  su2double* GetLoad_Sine(void);
    /*!
     * \brief Get the kind of load transfer method we want to use for dynamic problems
     * \note This value is obtained from the config file, and it is constant
@@ -7786,12 +7949,6 @@ public:
     * \return  Penalty weight value for the reference geometry objective function.
     */
    su2double GetTotalDV_Penalty(void);
-  
-  /*!
-   * \brief Get the maximum time of the ramp.
-   * \return 	Value of the max time while the load is linearly increased
-   */
-  su2double GetStatic_Time(void);
   
   /*!
    * \brief Get the order of the predictor for FSI applications.
@@ -7878,6 +8035,28 @@ public:
    * \brief Get if AD preaccumulation should be performed.
    */
   bool GetAD_Preaccumulation(void);
+
+  /*!
+   * \brief Get the heat equation.
+   * \return YES if weakly coupled heat equation for inc. flow is enabled.
+   */
+  bool GetWeakly_Coupled_Heat(void);
+
+  /*!
+   * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
+   * \return YES if the passed values is the integrated heat flux over the marker's surface.
+   */
+  bool GetIntegrated_HeatFlux(void);
+
+  /*!
+   * \brief Retrieve the ofstream of the history file for the current zone.
+   */
+  ofstream* GetHistFile(void);
+
+  /*!
+   * \brief Set the ofstream of the history file for the current zone.
+   */
+  void SetHistFile(ofstream *HistFile);
 };
 
 #include "config_structure.inl"

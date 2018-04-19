@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -42,6 +42,8 @@ CSysMatrix::CSysMatrix(void) {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
   
+  ilu_fill_in       = 0;
+
   /*--- Array initialization ---*/
 
   matrix            = NULL;
