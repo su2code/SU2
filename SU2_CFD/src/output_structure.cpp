@@ -5362,7 +5362,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               /*--- Adjoint two phase residuals ---*/
               if (two_phase)
                 if (!frozen_visc)
-                  SPRINTF (adj_2phase_resid, ", %12.10f, %12.10f", max(log10(residual_adjtwophase[0]), 1e-40), max(log10(residual_adjtwophase[3]), 1e-40));
+                  SPRINTF (adj_2phase_resid, ", %12.10f, %12.10f", log10(max(residual_adjtwophase[0], 1e-40)), log10(max(residual_adjtwophase[3],1e-40)));
             
             break;
             
@@ -6201,7 +6201,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               if (two_phase) {
                 cout.width(15); cout << log10(max(residual_adjtwophase[0], 1e-40));
-                cout.width(15); cout << log10(max(residual_adjtwophase[3], 1e-40));
               }
             }
               if (disc_adj) {

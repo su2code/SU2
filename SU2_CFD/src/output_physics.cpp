@@ -267,6 +267,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       // preliminary attempt, imposed liquid volume fraction at component outlet //
 
     	  EntropyGen[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan]*100000;
+//          EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+
 //    	  EntropyGen[iMarkerTP][iSpan] = PressureOut[iMarkerTP][iSpan];
 /*    	  if (DropletNumberOut[iMarkerTP][iSpan] !=0)
           EntropyGen[iMarkerTP][iSpan] = pow(LiqVolumeOut[iMarkerTP][iSpan] /3.14 /4 *3 /DropletNumberOut[iMarkerTP][iSpan], 1.3);
