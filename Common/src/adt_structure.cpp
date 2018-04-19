@@ -1141,9 +1141,9 @@ bool su2_adtElemClass::CoorInTriangle(const unsigned long elemID,
      dimesions is 2. As a consequence, the parametric coordinates r and s
      can be solved easily. Note that X0 is 0 in the above expression, because
      the coordinates are relative to node 0. */
-  const su2double detInv = 1.0/(x1*y2 - x2*y1);
-  parCoor[0] = 2.0*detInv*(xc*y2 - yc*x2) - 1.0;
-  parCoor[1] = 2.0*detInv*(yc*x1 - xc*y1) - 1.0;
+  const su2double detInv = 2.0/(x1*y2 - x2*y1);
+  parCoor[0] = detInv*(xc*y2 - yc*x2) - 1.0;
+  parCoor[1] = detInv*(yc*x1 - xc*y1) - 1.0;
 
   /* Check if the point resides within the triangle. */
   bool coorIsInside = false;
@@ -1189,9 +1189,9 @@ bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
      linear triangles to check if the point is actually within the quad.
      First check the triangle i0-i1-i3. See CoorInTriangle for more details
      on this test. */
-  su2double detInv = 1.0/(x1*y3 - x3*y1);
-  parCoor[0] = 2.0*detInv*(xc*y3 - yc*x3) - 1.0;
-  parCoor[1] = 2.0*detInv*(yc*x1 - xc*y1) - 1.0;
+  su2double detInv = 2.0/(x1*y3 - x3*y1);
+  parCoor[0] = detInv*(xc*y3 - yc*x3) - 1.0;
+  parCoor[1] = detInv*(yc*x1 - xc*y1) - 1.0;
 
   bool coorIsInside = false;
   if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
@@ -1206,9 +1206,9 @@ bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
     const su2double xx3 = x1 - x2, yy3 = y1 - y2;
 
     /* Check if the coordinate is inside this triangle. */
-    detInv = 1.0/(xx1*yy3 - xx3*yy1);
-    parCoor[0] = 2.0*detInv*(xxc*yy3 - yyc*xx3) - 1.0;
-    parCoor[1] = 2.0*detInv*(yyc*xx1 - xxc*yy1) - 1.0;
+    detInv = 2.0/(xx1*yy3 - xx3*yy1);
+    parCoor[0] = detInv*(xxc*yy3 - yyc*xx3) - 1.0;
+    parCoor[1] = detInv*(yyc*xx1 - xxc*yy1) - 1.0;
 
     if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
        ((parCoor[0]+parCoor[1]) <= tolInsideElem)) coorIsInside = true;
@@ -1312,10 +1312,10 @@ bool su2_adtElemClass::CoorInTetrahedron(const unsigned long elemID,
      r, s, t >= -1, r+s+t <= -1. As a consequence, the parametric coordinates
      r, s and t can be solved easily. Note that X0 is 0 in the above expression,
      because the coordinates are relative to node 0. */
-  const su2double detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  const su2double detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* Check if the point resides within the tetrahedron. */
   bool coorIsInside = false;
@@ -1487,10 +1487,10 @@ bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
   su2double xc = xRelC[0], yc = xRelC[1], zc = xRelC[2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  su2double detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  su2double detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, return true. */
   if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
@@ -1506,10 +1506,10 @@ bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
   xc = xRelC[0]-xRel[2][0]; yc = xRelC[1]-xRel[2][1]; zc = xRelC[2]-xRel[2][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, adapt the parametric coordinates
      to the real pyramid and return true. */
@@ -1530,10 +1530,10 @@ bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
   xc = xRelC[0]-xRel[1][0]; yc = xRelC[1]-xRel[1][1]; zc = xRelC[2]-xRel[1][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, adapt the parametric coordinates
      to the real pyramid and return true. */
@@ -1555,10 +1555,10 @@ bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
   xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  parCoor[0] =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, adapt the parametric coordinates
      to the real pyramid and return true. */
@@ -1736,10 +1736,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   su2double xc = xRelC[0], yc = xRelC[1], zc = xRelC[2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  su2double detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  su2double r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  su2double s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  su2double t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  su2double detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  su2double r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  su2double s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  su2double t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real prism and return true. */
@@ -1758,10 +1758,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   xc = xRelC[0]-xRel[4][0]; yc = xRelC[1]-xRel[4][1]; zc = xRelC[2]-xRel[4][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real prism and return true. */
@@ -1780,10 +1780,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real prism and return true. */
@@ -1802,10 +1802,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real prism and return true. */
@@ -1824,10 +1824,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   xc = xRelC[0]-xRel[1][0]; yc = xRelC[1]-xRel[1][1]; zc = xRelC[2]-xRel[1][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real prism and return true. */
@@ -1846,10 +1846,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   xc = xRelC[0]; yc = xRelC[1]; zc = xRelC[2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real prism and return true. */
@@ -2047,10 +2047,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   su2double xc = xRelC[0], yc = xRelC[1], zc = xRelC[2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  su2double detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  su2double r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  su2double s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  su2double t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  su2double detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  su2double r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  su2double s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  su2double t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2069,10 +2069,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[4][0]; yc = xRelC[1]-xRel[4][1]; zc = xRelC[2]-xRel[4][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2091,10 +2091,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[6][0]; yc = xRelC[1]-xRel[6][1]; zc = xRelC[2]-xRel[6][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2113,10 +2113,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2135,10 +2135,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]; yc = xRelC[1]; zc = xRelC[2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2157,10 +2157,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]; yc = xRelC[1]; zc = xRelC[2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2179,10 +2179,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[7][0]; yc = xRelC[1]-xRel[7][1]; zc = xRelC[2]-xRel[7][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2201,10 +2201,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[5][0]; yc = xRelC[1]-xRel[5][1]; zc = xRelC[2]-xRel[5][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2223,10 +2223,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[2][0]; yc = xRelC[1]-xRel[2][1]; zc = xRelC[2]-xRel[2][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
@@ -2245,10 +2245,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
 
   /* Determine the parametric coordinates inside this tetrahedron. */
-  detInv = 1.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
-  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2);
-  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1);
-  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1);
+  detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+  r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+  s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+  t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
   /* If the point is inside this tetrahedron, set the parametric coordinates for
      the real hexahedron and return true. */
