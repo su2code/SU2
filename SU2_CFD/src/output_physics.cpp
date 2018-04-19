@@ -162,7 +162,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       if (two_phase) {
           DropletNumberIn[iMarkerTP][iSpan] = solver_container->GetMom0In(iMarkerTP, iSpan);
           LiqVolumeIn[iMarkerTP][iSpan] = solver_container->GetLiqVolFractionIn(iMarkerTP, iSpan);
-          LiquidFractionIn[iMarkerTP][iSpan] = 0.0;
+          LiquidFractionIn[iMarkerTP][iSpan] = solver_container->GetLiqMassFractionIn(iMarkerTP, iSpan);
       }
 
 
@@ -186,6 +186,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
       /*--- Compute all the Outflow quantities ---*/
       FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
+      su2double TemperatureOut = FluidModel->GetTemperature();
       EntropyOut[iMarkerTP][iSpan]          = FluidModel->GetEntropy();
       MassFlowOut[iMarkerTP][iSpan]         = config->GetnBlades(iMarkerTP)*DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
       AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
@@ -256,32 +257,42 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       if (two_phase) {
           DropletNumberOut[iMarkerTP][iSpan] = solver_container->GetMom0Out(iMarkerTP, iSpan);
           LiqVolumeOut[iMarkerTP][iSpan] = solver_container->GetLiqVolFractionOut(iMarkerTP, iSpan);
-          LiquidFractionOut[iMarkerTP][iSpan] = 0.0;
+          LiquidFractionOut[iMarkerTP][iSpan] = solver_container->GetLiqMassFractionOut(iMarkerTP, iSpan);
       }
 
       /*--- TURBO-PERFORMANCE---*/
       if (two_phase) {
-//          EntropyGen[iMarkerTP][iSpan] = (MassFlowOut[iMarkerTP][iSpan]*EntropyOut[iMarkerTP][iSpan] - MassFlowIn[iMarkerTP][iSpan]*EntropyIn[iMarkerTP][iSpan])
-//       		  /abs(MassFlowIn[iMarkerTP][iSpan]*EntropyIn_BC[iMarkerTP][iSpan] + 1);
       //    FORMULA HAS TO BE IMPROVED TO INCLUDE 1) NON CONDENSING CASES AND 2) EQUILIBRIUM EXPANSIONS
       // preliminary attempt, imposed liquid volume fraction at component outlet //
 
-    	  EntropyGen[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan]*100000;
-//    	  EntropyGen[iMarkerTP][iSpan] = PressureOut[iMarkerTP][iSpan];
-/*    	  if (DropletNumberOut[iMarkerTP][iSpan] !=0)
-          EntropyGen[iMarkerTP][iSpan] = pow(LiqVolumeOut[iMarkerTP][iSpan] /3.14 /4 *3 /DropletNumberOut[iMarkerTP][iSpan], 1.3);
-          else
-          EntropyGen[iMarkerTP][iSpan] = 0;
-*/
+      // this is a test before to change the python scripts - total press = liquid vol out x1e5;
+      // kin energy loss = radius / 1e-8
+
+
+    	  su2double delta_Sout = solver_container->GetVap_LiqDeltaEntropyOut(iMarkerTP, iSpan);
+    	  EntropyGen[iMarkerTP][iSpan] = -LiquidFractionOut[iMarkerTP][iSpan]*delta_Sout + EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan];
+    	  EntropyGen[iMarkerTP][iSpan] = 2*EntropyGen[iMarkerTP][iSpan]*TemperatureOut/relVel2;
+
+          TotalPressureLoss[iMarkerTP][iSpan]  = LiqVolumeOut[iMarkerTP][iSpan]*100000;
+
+		  if (DropletNumberOut[iMarkerTP][iSpan] !=0) {
+			  KineticEnergyLoss[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan] /3.14 /4 *3 /DropletNumberOut[iMarkerTP][iSpan];
+			  KineticEnergyLoss[iMarkerTP][iSpan] = pow(KineticEnergyLoss[iMarkerTP][iSpan], 0.333);}
+		  else
+			  KineticEnergyLoss[iMarkerTP][iSpan] = 0;
+
+		  KineticEnergyLoss[iMarkerTP][iSpan] /= 1e-8;
+
+
       } else {
-          EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
-//          EntropyGen[iMarkerTP][iSpan] = PressureOut[iMarkerTP][iSpan];
+//          EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+          EntropyGen[iMarkerTP][iSpan] = 2*(EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])*TemperatureOut/relVel2;
+          TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
+          KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
+
       }
 
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
-      TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
-      KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
-//      KineticEnergyLoss[iMarkerTP][iSpan]  = PressureOut[iMarkerTP][iSpan];
       PressureRatio[iMarkerTP][iSpan]      = TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan];
       EnthalpyOutIs[iMarkerTP][iSpan]      = (pow(TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan], 0.4/1.4) - 1.0)/(TotalTemperatureOut[iMarkerTP][iSpan]/TotalTemperatureIn[iMarkerTP][iSpan] -1.0);
     }
