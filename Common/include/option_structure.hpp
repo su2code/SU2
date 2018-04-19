@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -116,7 +116,7 @@ const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parame
 const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 6;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 7;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
@@ -197,6 +197,7 @@ enum ENUM_SOLVER {
   RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
   POISSON_EQUATION = 4,       			/*!< \brief Definition of the poisson potential solver. */
   WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
+  HEAT_EQUATION_FVM = 28,     /*!< \brief Definition of the finite volume heat solver. */
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
@@ -204,6 +205,7 @@ enum ENUM_SOLVER {
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
+  ZONE_SPECIFIC = 31,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
@@ -220,16 +222,16 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
 ("WAVE_EQUATION", WAVE_EQUATION)
+("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
 ("HEAT_EQUATION", HEAT_EQUATION)
-("FEM_ELASTICITY", FEM_ELASTICITY)
+("ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
-
-("TEMPLATE_SOLVER", TEMPLATE_SOLVER);
-
+("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
+("ZONE_SPECIFIC", ZONE_SPECIFIC);
 
 /*!
  * \brief types of fluid solvers
@@ -252,11 +254,10 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
-  ADJFEM_ELASTICITY_SFSI = 14,   /*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
-("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
+("ELASTICITY", FEM_ELASTICITY_SFSI);
 
 /*!
  * \brief Material geometric conditions
@@ -317,6 +318,39 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 ("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE);
 
 /*!
+ * \brief types of (coupling) transfers between distinct physical zones
+ */
+
+enum ENUM_TRANSFER {
+  ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
+  NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
+  NO_TRANSFER                       = 2,    /*!< \brief Zones may share a boundary, but still no coupling desired. */
+  FLOW_TRACTION                     = 10,   /*!< \brief Flow traction coupling (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS          = 11,   /*!< \brief Structural displacements (between fluids and solids). */
+  STRUCTURAL_DISPLACEMENTS_DISC_ADJ = 12,   /*!< \brief Adjoints of structural displacements (between fluids and solids). */
+  SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
+  CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
+  MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
+  CONJUGATE_HEAT_COMPRESSIBLE_FS    = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
+  CONJUGATE_HEAT_INCOMPRESSIBLE_FS  = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
+  CONJUGATE_HEAT_COMPRESSIBLE_SF    = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
+  CONJUGATE_HEAT_INCOMPRESSIBLE_SF  = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+};
+static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
+("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
+("NO_COMMON_INTERFACE", NO_COMMON_INTERFACE)
+("NO_TRANSFER", NO_TRANSFER)
+("FLOW_TRACTION", FLOW_TRACTION)
+("STRUCTURAL_DISPLACEMENTS", STRUCTURAL_DISPLACEMENTS)
+("STRUCTURAL_DISPLACEMENTS_DISC_ADJ", STRUCTURAL_DISPLACEMENTS_DISC_ADJ)
+("SLIDING_INTERFACE", SLIDING_INTERFACE)
+("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
+("MIXING_PLANE", MIXING_PLANE)
+("CONJUGATE_HEAT_COMPRESSIBLE_FS", CONJUGATE_HEAT_COMPRESSIBLE_FS)
+("CONJUGATE_HEAT_INCOMPRESSIBLE_FS", CONJUGATE_HEAT_INCOMPRESSIBLE_FS)
+("CONJUGATE_HEAT_COMPRESSIBLE_SF", CONJUGATE_HEAT_COMPRESSIBLE_SF)
+("CONJUGATE_HEAT_INCOMPRESSIBLE_SF", CONJUGATE_HEAT_INCOMPRESSIBLE_SF);
+/*!
  * \brief different regime modes
  */
 enum ENUM_REGIME {
@@ -326,6 +360,7 @@ enum ENUM_REGIME {
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE);
+
 /*!
  * \brief different non-dimensional modes
  */
@@ -379,7 +414,7 @@ const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbul
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
-const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
+const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
 
 const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -763,6 +798,21 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 ("DIRECT_SOLVE", DIRECT_SOLVE);
 
 /*!
+ * \brief type of heat timestep calculation
+ */
+enum ENUM_HEAT_TIMESTEP {
+  MINIMUM = 1, /*!< \brief Local time stepping based on minimum lambda.*/
+  CONVECTIVE = 2, /*!< \brief Local time stepping based on convective spectral radius.*/
+  VISCOUS = 3, /*!< \brief Local time stepping based on viscous spectral radius.*/
+  BYFLOW = 4, /*!< \brief Unsing the mean solvers time step. */
+};
+static const map<string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = CCreateMap<string, ENUM_HEAT_TIMESTEP>
+("LOCAL", MINIMUM)
+("CONVECTIVE", CONVECTIVE)
+("VISCOUS", VISCOUS)
+("BYFLOW", BYFLOW);
+
+/*!
  * \brief type of time integration schemes
  */
 enum ENUM_TIME_INT_FEA {
@@ -793,13 +843,11 @@ enum ENUM_TRANSFER_METHOD {
   BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
   SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
   ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
-  LEGACY_METHOD = 4		/*!< \brief Original transfer method, maintained to check . */
 };
 static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
 ("BROADCAST_DATA", BROADCAST_DATA)
 ("SCATTER_DATA", SCATTER_DATA)
-("ALLGATHER_DATA", ALLGATHER_DATA)
-("LEGACY_METHOD", LEGACY_METHOD);
+("ALLGATHER_DATA", ALLGATHER_DATA);
 
 /*!
  * \brief types of schemes to compute the flow gradient
@@ -858,7 +906,6 @@ enum BC_TYPE {
   RIEMANN_BOUNDARY= 24,   /*!< \brief Riemann Boundary definition. */
   ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
-  PRESSURE_BOUNDARY = 27,   	/*!< \brief Pressure boundary condition. */
   ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
@@ -869,6 +916,7 @@ enum BC_TYPE {
   FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
   DISP_DIR_BOUNDARY = 40,    /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,    /*!< \brief Damper. */
+  CHT_WALL_INTERFACE = 50, /*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
