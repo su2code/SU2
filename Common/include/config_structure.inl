@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -329,11 +329,17 @@ inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
+inline long CConfig::GetExtraHeatOutputZone(void) { return ExtraHeatOutputZone; }
+
 inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
 inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
 inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity; }
+
+inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
+
+inline su2double CConfig::GetTemperature_Freestream_Solid(void) { return Temperature_Freestream_Solid;  }
 
 inline su2double CConfig::GetElasticyMod(unsigned short id_val) { return ElasticityMod[id_val]; }
 
@@ -433,6 +439,8 @@ inline su2double CConfig::GetViscosity_FreeStream(void) { return Viscosity_FreeS
 
 inline su2double CConfig::GetDensity_FreeStream(void) { return Density_FreeStream; }
 
+inline su2double CConfig::GetDensity_Solid(void) { return Density_Solid; }
+
 inline su2double CConfig::GetModVel_FreeStream(void) { return ModVel_FreeStream; }
 
 inline su2double CConfig::GetModVel_FreeStreamND(void) { return ModVel_FreeStreamND; }
@@ -444,6 +452,12 @@ inline su2double CConfig::GetTemperature_ve_FreeStream(void) { return Temperatur
 inline su2double CConfig::GetPrandtl_Lam(void) { return Prandtl_Lam; }
 
 inline su2double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
+
+inline su2double CConfig::GetSpecificHeat_Fluid(void) { return Specific_Heat_Fluid; }
+
+inline su2double CConfig::GetSpecificHeat_Solid(void) { return Specific_Heat_Solid; }
+
+inline su2double CConfig::GetThermalConductivity_Solid(void) { return Thermal_Conductivity_Solid; }
 
 inline su2double CConfig::GetLength_Ref(void) { return Length_Ref; }
 
@@ -616,6 +630,8 @@ inline void CConfig::SetConductivity_Ref(su2double val_conductivity_ref) { Condu
 
 inline void CConfig::SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
+inline void CConfig::SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity) { Thermal_Diffusivity_Solid = val_thermal_diffusivity; }
+
 inline su2double CConfig::GetAoA(void) { return AoA; }
 
 inline void CConfig::SetAoA(su2double val_AoA) { AoA = val_AoA; }
@@ -655,6 +671,8 @@ inline unsigned short CConfig::GetMGCycle(void) { return MGCycle; }
 inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
 
 inline su2double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
+
+inline su2double CConfig::GetCFL_Solid(void) {	return CFLSolid; }
 
 inline void CConfig::SetCFL(unsigned short val_mesh, su2double val_cfl) { CFL[val_mesh] = val_cfl; }
 
@@ -887,6 +905,8 @@ inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation
 
 inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
+inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
+
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
 
 inline su2double CConfig::GetSemiSpan(void) { return SemiSpan; }
@@ -951,6 +971,8 @@ inline bool CConfig::GetMUSCL_Flow(void) { return MUSCL_Flow; }
 
 inline bool CConfig::GetMUSCL_Turb(void) { return MUSCL_Turb; }
 
+inline bool CConfig::GetMUSCL_Heat(void) { return MUSCL_Heat; }
+
 inline bool CConfig::GetMUSCL_AdjFlow(void) { return MUSCL_AdjFlow; }
 
 inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
@@ -960,6 +982,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_Ti
 inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_TimeIntScheme_Wave; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
+
+inline unsigned short CConfig::GetKind_TimeStep_Heat(void) { return Kind_TimeStep_Heat; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Poisson(void) { return Kind_TimeIntScheme_Poisson; }
 
@@ -993,6 +1017,10 @@ inline su2double CConfig::GetKappa_2nd_Flow(void) { return Kappa_2nd_Flow; }
 
 inline su2double CConfig::GetKappa_4th_Flow(void) { return Kappa_4th_Flow; }
 
+inline su2double CConfig::GetKappa_2nd_Heat(void) { return Kappa_2nd_Heat; }
+
+inline su2double CConfig::GetKappa_4th_Heat(void) { return Kappa_4th_Heat; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjFlow(void) { return Kind_TimeIntScheme_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjFlow(void) { return Kind_ConvNumScheme_AdjFlow; }
@@ -1022,6 +1050,8 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTurb(void) { return Kind
 inline unsigned short CConfig::GetKind_Centered_AdjTurb(void) { return Kind_Centered_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind_AdjTurb; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) {	return Kind_ConvNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
@@ -1074,6 +1104,8 @@ inline unsigned short CConfig::GetKind_SpanWise(void) { return Kind_SpanWise; }
 inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
+
+inline bool CConfig::GetBoolZoneSpecific(void) { return ZoneSpecific_Problem;}
 
 inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
 
@@ -1166,6 +1198,8 @@ inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker
 inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
 
 inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
+
+inline string CConfig::GetMarker_HeatFlux_TagBound(unsigned short val_marker) { return Marker_HeatFlux[val_marker]; }
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
@@ -1269,6 +1303,8 @@ inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
+
+inline unsigned short CConfig::GetnMarker_HeatFlux(void) { return nMarker_HeatFlux; }
 
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
@@ -1662,9 +1698,9 @@ inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
 
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
-inline su2double CConfig::GetNewmark_alpha(void) { return Newmark_alpha; }
+inline su2double CConfig::GetNewmark_beta(void) { return Newmark_beta; }
 
-inline su2double CConfig::GetNewmark_delta(void) { return Newmark_delta; }
+inline su2double CConfig::GetNewmark_gamma(void) { return Newmark_gamma; }
 
 inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
 
@@ -1684,11 +1720,15 @@ inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
 
 inline su2double CConfig::GetRamp_Time(void) { return Ramp_Time; }
 
+inline bool CConfig::GetRampAndRelease_Load(void) { return RampAndRelease; }
+
+inline bool CConfig::GetSine_Load(void) { return Sine_Load; }
+
+inline su2double* CConfig::GetLoad_Sine(void) { return SineLoad_Coeff; }
+
 inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
 
 inline su2double CConfig::GetTotalDV_Penalty(void) { return DV_Penalty; }
-
-inline su2double CConfig::GetStatic_Time(void) { return Static_Time; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
@@ -1732,6 +1772,10 @@ inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
 
+inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
+
+inline bool CConfig::GetIntegrated_HeatFlux(void) { return Integrated_HeatFlux; }
+
 inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 
 inline bool CConfig::GetAD_Preaccumulation(void) {return AD_Preaccumulation;}
@@ -1749,3 +1793,7 @@ inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss;
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 
 inline bool CConfig::GetQCR(void) {return QCR;}
+
+inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
+
+inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }

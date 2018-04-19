@@ -5,7 +5,7 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -89,7 +89,9 @@ public:
   su2double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
-  Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
+  Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
+  Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
   su2double Cp_i, /*!< \brief Cp at point i. */
   Cp_j;         /*!< \brief Cp at point j. */
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
@@ -486,6 +488,14 @@ public:
   void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
                                  su2double val_thermal_conductivity_ve_j);
   
+  /*!
+   * \brief Set the thermal diffusivity (translational/rotational)
+   * \param[in] val_thermal_diffusivity_i - Value of the thermal diffusivity at point i.
+   * \param[in] val_thermal_diffusivity_j - Value of the thermal diffusivity at point j.
+   * \param[in] iSpecies - Value of the species.
+   */
+  void SetThermalDiffusivity(su2double val_thermal_diffusivity_i,
+                              su2double val_thermal_diffusivity_j);
   /*!
    * \brief Set the eddy viscosity.
    * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
@@ -2539,6 +2549,44 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+/*!
+ * \class CUpwSca_Heat
+ * \brief Class for doing a scalar upwind solver for the heat convection equation.
+ * \ingroup ConvDiscr
+ * \author O. Burghardt.
+ * \version 6.0.1 "Falcon"
+ */
+class CUpwSca_Heat : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement;
+  su2double q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSca_Heat(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
 
 /*!
  * \class CCentJST_Flow
@@ -2795,6 +2843,55 @@ public:
                         su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj,
                         CConfig *config);
 };
+
+/*!
+ * \class CCentSca_Heat
+ * \brief Class for scalar centered scheme.
+ * \ingroup ConvDiscr
+ * \author O. Burghardt
+ * \version 6.0.1 "Falcon"
+ */
+class CCentSca_Heat : public CNumerics {
+
+private:
+  unsigned short iDim; /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
+  *MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
+  cte_0, cte_1; /*!< \brief Artificial dissipation values. */
+  bool implicit, /*!< \brief Implicit calculation. */
+  grid_movement; /*!< \brief Modification for grid movement. */
+
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCentSca_Heat(void);
+
+  /*!
+   * \brief Compute the flow residual using a JST method.
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+
 
 /*!
  * \class CCentLax_Flow
@@ -3834,6 +3931,89 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+
+/*!
+ * \class CAvgGrad_Heat
+ * \brief Class for computing viscous term using average of gradients without correction (heat equation).
+ * \ingroup ViscDiscr
+ * \author O. Burghardt.
+ * \version 6.0.1 "Falcon"
+ */
+class CAvgGrad_Heat : public CNumerics {
+private:
+  su2double **Mean_GradHeatVar;
+  su2double *Proj_Mean_GradHeatVar_Normal, *Proj_Mean_GradHeatVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Diffusivity_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Heat(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGradCorrected_Heat
+ * \brief Class for computing viscous term using average of gradients with correction (heat equation).
+ * \ingroup ViscDiscr
+ * \author O. Burghardt.
+ * \version 6.0.1 "Falcon"
+ */
+class CAvgGradCorrected_Heat : public CNumerics {
+private:
+  su2double **Mean_GradHeatVar;
+  su2double *Proj_Mean_GradHeatVar_Kappa, *Proj_Mean_GradHeatVar_Edge, *Proj_Mean_GradHeatVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Diffusivity_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_Heat(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
 /*!
  * \class CGalerkin_Flow
  * \brief Class for computing the stiffness matrix of the Galerkin method.
@@ -3865,13 +4045,13 @@ public:
 };
 
 /*!
- * \class CFEM_Elasticity
+ * \class CFEAElasticity
  * \brief Generic class for computing the tangent matrix and the residual for structural problems
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_Elasticity : public CNumerics {
+class CFEAElasticity : public CNumerics {
 
 protected:
 
@@ -3911,12 +4091,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_Elasticity(void);
+  virtual ~CFEAElasticity(void);
 
   void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
 
@@ -3959,13 +4139,13 @@ public:
 };
 
 /*!
- * \class CFEM_LinearElasticity
+ * \class CFEALinearElasticity
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_LinearElasticity : public CFEM_Elasticity {
+class CFEALinearElasticity : public CFEAElasticity {
 
   su2double **nodalDisplacement;
 
@@ -3977,12 +4157,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_LinearElasticity(void);
+  ~CFEALinearElasticity(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -3994,13 +4174,13 @@ public:
 };
 
 /*!
- * \class CFEM_LinearElasticity
+ * \class CFEANonlinearElasticity
  * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_NonlinearElasticity : public CFEM_Elasticity {
+class CFEANonlinearElasticity : public CFEAElasticity {
 
 protected:
 
@@ -4051,12 +4231,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEM_NonlinearElasticity(void);
+  virtual ~CFEANonlinearElasticity(void);
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -4102,7 +4282,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_NeoHookean_Comp : public CFEM_NonlinearElasticity {
+class CFEM_NeoHookean_Comp : public CFEANonlinearElasticity {
 
 public:
 
@@ -4135,7 +4315,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_NeoHookean_Incomp : public CFEM_NonlinearElasticity {
+class CFEM_NeoHookean_Incomp : public CFEANonlinearElasticity {
 
 public:
 
@@ -4168,7 +4348,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_IdealDE : public CFEM_NonlinearElasticity {
+class CFEM_IdealDE : public CFEANonlinearElasticity {
 
 	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Variables of the model calculation. */
 
@@ -4202,7 +4382,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_Knowles_NearInc : public CFEM_NonlinearElasticity {
+class CFEM_Knowles_NearInc : public CFEANonlinearElasticity {
 
 	su2double trbbar, term1, term2, Ek, Pr;	/*!< \brief Variables of the model calculation. */
 	su2double Bk, Nk;						/*!< \brief Parameters b and n of the model. */
@@ -4238,7 +4418,7 @@ public:
  * \author R.Sanchez
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
+class CFEM_DielectricElastomer : public CFEANonlinearElasticity {
 
 public:
 
