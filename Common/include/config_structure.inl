@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -1716,9 +1716,9 @@ inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
 
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
-inline su2double CConfig::GetNewmark_alpha(void) { return Newmark_alpha; }
+inline su2double CConfig::GetNewmark_beta(void) { return Newmark_beta; }
 
-inline su2double CConfig::GetNewmark_delta(void) { return Newmark_delta; }
+inline su2double CConfig::GetNewmark_gamma(void) { return Newmark_gamma; }
 
 inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
 
@@ -1738,11 +1738,15 @@ inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
 
 inline su2double CConfig::GetRamp_Time(void) { return Ramp_Time; }
 
+inline bool CConfig::GetRampAndRelease_Load(void) { return RampAndRelease; }
+
+inline bool CConfig::GetSine_Load(void) { return Sine_Load; }
+
+inline su2double* CConfig::GetLoad_Sine(void) { return SineLoad_Coeff; }
+
 inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
 
 inline su2double CConfig::GetTotalDV_Penalty(void) { return DV_Penalty; }
-
-inline su2double CConfig::GetStatic_Time(void) { return Static_Time; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
 
@@ -1829,3 +1833,7 @@ inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss;
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 
 inline bool CConfig::GetQCR(void) {return QCR;}
+
+inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
+
+inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }

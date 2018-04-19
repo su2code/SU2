@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
     /*--- If the problem is a discrete adjoint FSI problem ---*/
     if (disc_adj_fsi) {
       if (stat_fsi) {
-        driver = new CDiscAdjFSIStatDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
       }
       else {
         SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
