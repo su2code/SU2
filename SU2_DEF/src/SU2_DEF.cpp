@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -313,15 +313,15 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-//  if (surface_movement != NULL) {
-//    for (iZone = 0; iZone < nZone; iZone++) {
-//      if (surface_movement[iZone] != NULL) {
-//        delete surface_movement[iZone];
-//      }
-//    }
-//    delete [] surface_movement;
-//  }
-//  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  if (surface_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (surface_movement[iZone] != NULL) {
+        delete surface_movement[iZone];
+      }
+    }
+    delete [] surface_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
   if (grid_movement != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {

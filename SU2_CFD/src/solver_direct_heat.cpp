@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -1369,7 +1369,8 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iDim;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
+  //su2double Prandtl_Turb;
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
@@ -1378,7 +1379,7 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   Prandtl_Lam = config->GetPrandtl_Lam();
-  Prandtl_Turb = config->GetPrandtl_Turb();
+  //Prandtl_Turb = config->GetPrandtl_Turb();
   laminar_viscosity = config->GetViscosity_FreeStreamND();
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -1510,9 +1511,10 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
-  su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
+  //su2double Prandtl_Turb;
   Prandtl_Lam = config->GetPrandtl_Lam();
-  Prandtl_Turb = config->GetPrandtl_Turb();
+  //Prandtl_Turb = config->GetPrandtl_Turb();
   laminar_viscosity = config->GetViscosity_FreeStreamND();
   Twall = config->GetTemperature_FreeStreamND();
 
@@ -1678,7 +1680,7 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iVertex, iPoint, total_index, Point_Normal;
+  unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar, iMarker;
 
   su2double Area, rho_cp_solid,
@@ -1705,8 +1707,6 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (geometry->node[iPoint]->GetDomain()) {
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
@@ -1740,8 +1740,6 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (geometry->node[iPoint]->GetDomain()) {
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
