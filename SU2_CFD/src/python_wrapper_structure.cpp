@@ -845,12 +845,12 @@ void CGeneralDriver::StaticMeshUpdate() {
 #endif
 
   if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
-  grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], true);
+  grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], true);
 
   if(rank == MASTER_NODE) cout << "No grid velocity to be computed : static grid deformation." << endl;
 
   if(rank == MASTER_NODE) cout << " Updating multigrid structure." << endl;
-  grid_movement[ZONE_0]->UpdateMultiGrid(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
+  grid_movement[ZONE_0][INST_0]->UpdateMultiGrid(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
 
 }
 
@@ -936,12 +936,12 @@ void CFluidDriver::StaticMeshUpdate() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
     if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
-    grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], true);
+    grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], true);
 
     if(rank == MASTER_NODE) cout << "No grid velocity to be computde : static grid deformation." << endl;
 
     if(rank == MASTER_NODE) cout << " Updating multigrid structure." << endl;
-    grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone][INST_0], config_container[iZone]);
+    grid_movement[iZone][INST_0]->UpdateMultiGrid(geometry_container[iZone][INST_0], config_container[iZone]);
   }
 }
 
