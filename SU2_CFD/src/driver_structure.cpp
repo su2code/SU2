@@ -85,7 +85,7 @@ CDriver::CDriver(char* confFile,
   config_container               = new CConfig*[nZone];
   geometry_container             = new CGeometry***[nZone];
   surface_movement               = new CSurfaceMovement*[nZone];
-  grid_movement                  = new CVolumetricMovement*[nZone];
+  grid_movement                  = new CVolumetricMovement**[nZone];
   FFDBox                         = new CFreeFormDefBox**[nZone];
   interpolator_container         = new CInterpolator**[nZone];
   transfer_container             = new CTransfer**[nZone];
@@ -402,11 +402,17 @@ CDriver::CDriver(char* confFile,
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
+    grid_movement[iZone] = new CVolumetricMovement*[nInst[iZone]];
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      grid_movement[iZone][iInst] = NULL;
+
     if (config_container[iZone]->GetGrid_Movement() ||
         (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
-      if (rank == MASTER_NODE)
-        cout << "Setting dynamic mesh structure for zone "<< iZone<<"." << endl;
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+        if (rank == MASTER_NODE)
+          cout << "Setting dynamic mesh structure for zone "<< iZone<<"." << endl;
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        grid_movement[iZone][iInst] = new CVolumetricMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+      }
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
@@ -425,25 +431,28 @@ CDriver::CDriver(char* confFile,
       /*--- Call the volume deformation routine with derivative mode enabled.
        This computes the derivative of the volume mesh with respect to the surface nodes ---*/
 
-      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],config_container[iZone], true, true);
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      grid_movement[iZone][iInst]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],config_container[iZone], true, true);
 
       /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
 
-      geometry_container[iZone][INST_0][MESH_0]->UpdateGeometry(geometry_container[iZone][INST_0],config_container[iZone]);
+      geometry_container[iZone][iInst][MESH_0]->UpdateGeometry(geometry_container[iZone][INST_0],config_container[iZone]);
 
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
 
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
           (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
-        geometry_container[iZone][INST_0][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+        geometry_container[iZone][iInst][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    }
     }
 
     if (config_container[iZone]->GetKind_GridMovement(iZone) == FLUID_STRUCTURE_STATIC){
       if (rank == MASTER_NODE)
         cout << "Setting moving mesh structure for static FSI problems." << endl;
         /*--- Instantiate the container for the grid movement structure ---*/
-      grid_movement[iZone]    = new CElasticityMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      grid_movement[iZone][iInst] = new CElasticityMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
 
   }
@@ -650,7 +659,10 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    delete grid_movement[iZone];
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      if (grid_movement[iZone][iInst] != NULL) delete grid_movement[iZone][iInst];
+    }
+    if (grid_movement[iZone] != NULL) delete grid_movement[iZone];
   }
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
@@ -3058,8 +3070,8 @@ void CDriver::InitStaticMeshMovement(){
 
       /*--- Update the grid velocities on the coarser multigrid levels after
            setting the moving wall velocities for the finest mesh. ---*/
-
-      grid_movement[iZone]->UpdateMultiGrid(geometry_container[iZone][INST_0], config_container[iZone]);
+      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        grid_movement[iZone][iInst]->UpdateMultiGrid(geometry_container[iZone][iInst], config_container[iZone]);
       break;
 
 
@@ -6344,7 +6356,7 @@ void CDiscAdjFSIDriver::PrepareRecording(unsigned short ZONE_FLOW,
 
   /*--- Set geometry to the converged values ---*/
 
-  solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetMesh_Recording(geometry_container[ZONE_FLOW][INST_0], grid_movement[ZONE_FLOW], config_container[ZONE_FLOW]);
+  solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetMesh_Recording(geometry_container[ZONE_FLOW][INST_0], grid_movement[ZONE_FLOW][INST_0], config_container[ZONE_FLOW]);
 
   /*--- Set structural variables to direct solver values ---*/
 
