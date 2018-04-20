@@ -44,12 +44,17 @@ public:
   su2double ray_lambda, *ray_gamma, *ray_theta;
   bool ground_flag;     // Whether or not we've propagated to the ground
 
+  /*---Scale variables---*/
+  su2double scale_L;
+
   /*---ABE variables---*/
   su2double p0, 			// Reference pressure
+        p_peak,   // Reference pressure for shock formation distance
   			w0,				// Reference angular frequency
   			rho0,			// Ambient density (function of altitude)
   			c0,				// Ambient sound speed (function of altitude)
   			dsigma,			// Step size
+        dsigma_old, // Previous step size
         dz,       // Change in altitude
         dtau,     // Grid spacing
   			xbar,			// Shock formation distance of plane wave
@@ -98,10 +103,7 @@ public:
                 *taud,      // distorted time
                 **p_prime,  // pressure signal for every azimuth
                 *P,         // pressure signal (dimensionless)
-                *dP_att,    // change in pressure (Attenuation)
-                *dP_rel,    // change in pressure (Relaxation)
-                *dP_spr,    // change in pressure (Spreading)
-                *dP_str;    // change in pressure (Stratification)
+                *dP;        // change in pressure
   };
 
   Signal signal;
@@ -129,7 +131,7 @@ public:
   void DetermineStepSize(unsigned short iPhi);
   void Nonlinearity(unsigned short iPhi);
   void Attenuation(unsigned short iPhi);
-  void Relaxation(unsigned short iPhi);
+  void Relaxation(unsigned short iPhi, unsigned long iIter);
   void Spreading(unsigned short iPhi);
   void Stratification(unsigned short iPhi);
   void Iterate(unsigned short iPhi);

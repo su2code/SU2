@@ -58,6 +58,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     }
   }
   ray_r0 = config->GetBoom_r0();
+  scale_L = config->GetRefLength();
 
   /*---Cost function---*/
   PLdB = new su2double[ray_N_phi];
@@ -273,15 +274,15 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
   su2double Minf = config->GetMach();
   su2double x = 0.0, y = 0.0, z = 0.0;
   su2double *Coord;
-  su2double *p0, *p1;
+  su2double *pp0, *pp1;
 
   nPanel = new unsigned long[ray_N_phi];
   for(unsigned short i = 0; i < ray_N_phi; i++){
     nPanel[i] = 0;
   }
 
-  p0 = new su2double[nDim];
-  p1 = new su2double[nDim];
+  pp0 = new su2double[nDim];
+  pp1 = new su2double[nDim];
 
   /*--- Search on boundaries ---*/  
   for(iMarker = 0; iMarker < nMarker; iMarker++){
@@ -301,7 +302,7 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
             jElem = geometry->node[iPoint]->GetElem(iElem);
             if(jElem < geometry->GetnElem()){
               for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-                inside = InsideElem(geometry, r0, phi[iPhi], jElem, p0, p1);
+                inside = InsideElem(geometry, r0, phi[iPhi], jElem, pp0, pp1);
                 if(inside){
                   if(nPanel[iPhi] == 0){
                     nPanel[iPhi] = 1;
@@ -312,7 +313,7 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
                     Coord_original[iPhi][0] = new su2double[nDim];
 
                     pointID_original[iPhi][0] = jElem;
-                    Coord_original[iPhi][0][0] = (p0[0] + p1[0])/2.0;
+                    Coord_original[iPhi][0][0] = (pp0[0] + pp1[0])/2.0;
 
                     if(nDim == 2){
                       Coord_original[iPhi][0][1] = -r0;
@@ -357,7 +358,7 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
 
                     Coord_original[iPhi][nPanel[iPhi]-1] = new su2double[nDim];
                     pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
-                    Coord_original[iPhi][nPanel[iPhi]-1][0] = (p0[0] + p1[0])/2.0;
+                    Coord_original[iPhi][nPanel[iPhi]-1][0] = (pp0[0] + pp1[0])/2.0;
 
                     if(nDim == 2){
                       Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
@@ -380,8 +381,8 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
   }
 
   delete [] Coord;
-  delete [] p0;
-  delete [] p1;
+  delete [] pp0;
+  delete [] pp1;
 
 }
 
@@ -393,7 +394,7 @@ void CBoom_AugBurgers::ExtractLine(CGeometry *geometry, const su2double r0, unsi
 
   unsigned long *pointID_tmp;
   su2double **Coord_tmp;
-  su2double *p0 = new su2double[nDim], *p1 = new su2double[nDim];
+  su2double *pp0 = new su2double[nDim], *pp1 = new su2double[nDim];
 
   
   while(!end){
@@ -408,7 +409,7 @@ void CBoom_AugBurgers::ExtractLine(CGeometry *geometry, const su2double r0, unsi
         jElem = geometry->elem[jElem_m1]->GetNeighbor_Elements(iElem);
         /*--- Check element ---*/
         if(jElem < nElem_tot){
-          inside = InsideElem(geometry, r0, ray_phi[iPhi], jElem, p0, p1);
+          inside = InsideElem(geometry, r0, ray_phi[iPhi], jElem, pp0, pp1);
           if(inside){
             for(unsigned long iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
               if(jElem == pointID_original[iPhi][iPanel]){
@@ -449,7 +450,7 @@ void CBoom_AugBurgers::ExtractLine(CGeometry *geometry, const su2double r0, unsi
 
               Coord_original[iPhi][nPanel[iPhi]-1] = new su2double[nDim];
               pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
-              Coord_original[iPhi][nPanel[iPhi]-1][0] = (p0[0] + p1[0])/2.0;
+              Coord_original[iPhi][nPanel[iPhi]-1][0] = (pp0[0] + pp1[0])/2.0;
               if(nDim == 2){
                 Coord_original[iPhi][nPanel[iPhi]-1][1] = -r0;
               }
@@ -594,13 +595,13 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   
 }
 
-bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1){
+bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *pp0, su2double *pp1){
   bool inside = false;
   unsigned long iPoint, jNode;
   unsigned short iNode, nNode, count, intersect;
 
-  su2double *pp0 = new su2double[nDim];
-  su2double *pp1 = new su2double[nDim];
+  su2double *ppp0 = new su2double[nDim];
+  su2double *ppp1 = new su2double[nDim];
 
   /*--- Now determine if line intersects element ---*/
   if(nDim == 2){ // Check if line intersects any edge
@@ -621,22 +622,22 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-        intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], pp0, pp1);
+        intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], ppp0, ppp1);
         if(intersect == 1){
           if(count == 0){
-            p0[0] = pp0[0];
-            p0[1] = pp0[1];
+            pp0[0] = ppp0[0];
+            pp0[1] = ppp0[1];
           }
           else{
-            p1[0] = pp0[0];
-            p1[1] = pp0[1];
+            pp1[0] = ppp0[0];
+            pp1[1] = ppp0[1];
           }
         }
         else if(intersect == 2){
-          p0[0] = pp0[0];
-          p0[1] = pp0[1];
-          p1[0] = pp1[0];
-          p1[1] = pp1[1];
+          pp0[0] = ppp0[0];
+          pp0[1] = ppp0[1];
+          pp1[0] = ppp1[0];
+          pp1[1] = ppp1[1];
           inside = true;
           break;
         }
@@ -668,17 +669,17 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
           Coord_face[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim);
         }
       }
-      intersect = Intersect3D(r0, phi, nNodeFace, Coord_face, pp0);
+      intersect = Intersect3D(r0, phi, nNodeFace, Coord_face, ppp0);
       if(intersect == 1){
         if(count == 0){
-          p0[0] = pp0[0];
-          p0[1] = pp0[1];
-          p0[2] = pp0[2];
+          pp0[0] = ppp0[0];
+          pp0[1] = ppp0[1];
+          pp0[2] = ppp0[2];
         }
         else{
-          p1[0] = pp0[0];
-          p1[1] = pp0[1];
-          p1[2] = pp0[2];
+          pp1[0] = pp0[0];
+          pp1[1] = pp0[1];
+          pp1[2] = pp0[2];
         }
         count++;
         if(count > 1){
@@ -697,20 +698,20 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
   return inside;
 }
 
-int CBoom_AugBurgers::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1){
+int CBoom_AugBurgers::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *pp0, su2double *pp1){
 
   /*--- Interpolate if point between yi and yi+1 ---*/
   if((Coord_i[1] > -r0 && Coord_ip1[1] < -r0) || (Coord_i[1] < -r0 && Coord_ip1[1] > -r0)){
     su2double t = (-r0-Coord_i[1])/(Coord_ip1[1]-Coord_i[1]);
-    p0[0] = Coord_i[0] + t*(Coord_ip1[0]-Coord_i[0]);
+    pp0[0] = Coord_i[0] + t*(Coord_ip1[0]-Coord_i[0]);
     return 1;
   }
   /*--- Colinear segments at r0 ---*/
   else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8){
-    p0[0] = Coord_i[0];
-    p0[1] = -r0;
-    p1[0] = Coord_ip1[0];
-    p1[1] = -r0;
+    pp0[0] = Coord_i[0];
+    pp0[1] = -r0;
+    pp1[0] = Coord_ip1[0];
+    pp1[1] = -r0;
     return 2;
   }
   else{
@@ -719,7 +720,7 @@ int CBoom_AugBurgers::Intersect2D(su2double r0, su2double *Coord_i, su2double *C
 
 }
 
-int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *p1){
+int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *pp1){
   
   su2double y0 = r0*sin(phi), z0 = -r0*cos(phi);
   su2double ymin = 1.0E9, ymax = -1.0E9, zmin = 1.0E9, zmax = -1.0E9;
@@ -780,11 +781,11 @@ int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2do
     Isoparameters(2, nCoord, X_donor, Coord, isoparams);
 
     /*--- Interpolate x-coord ---*/
-    p1[0] = 0.0;
-    p1[1] = y0;
-    p1[2] = z0;
+    pp1[0] = 0.0;
+    pp1[1] = y0;
+    pp1[2] = z0;
     for(int iCoord = 0; iCoord < nCoord; iCoord++){
-      p1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
+      pp1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
     }
 
     delete [] isoparams;
@@ -857,19 +858,18 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
   
   while(!ground_flag){
   	Preprocessing(iPhi, iIter);
+    Spreading(iPhi);
+    Stratification(iPhi);
+    if(flt_h - ray_z > 1000.){
+      Relaxation(iPhi, iIter);
+    }
+    Attenuation(iPhi);
   	Nonlinearity(iPhi);
-  	Attenuation(iPhi);
-  	Relaxation(iPhi);
-  	Spreading(iPhi);
-  	Stratification(iPhi);
-  	Iterate(iPhi);
+    ray_z -= dz;
     iIter++;
   }
 
-  PerceivedLoudness(iPhi);
-  WriteGroundPressure(iPhi);
-
-  int rank = 0;
+int rank = 0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -877,6 +877,10 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
   if(rank == MASTER_NODE)
     cout << "Signal propagated in " << iIter << " iterations." << endl;
+
+  WriteGroundPressure(iPhi);
+  PerceivedLoudness(iPhi);
+
 }
 
 void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
@@ -901,23 +905,25 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     CreateUniformGridSignal(iPhi);
 
   	signal.P       = new su2double[signal.len[iPhi]];
-    signal.dP_att  = new su2double[signal.len[iPhi]];
-    signal.dP_rel  = new su2double[signal.len[iPhi]];
-    signal.dP_spr  = new su2double[signal.len[iPhi]];
-    signal.dP_str  = new su2double[signal.len[iPhi]];
   	signal.t       = new su2double[signal.len[iPhi]];
   	signal.t_prime = new su2double[signal.len[iPhi]];
   	signal.tau     = new su2double[signal.len[iPhi]];
     signal.taud    = new su2double[signal.len[iPhi]];
+    p_peak = 0.;
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-  		signal.P[i]       = signal.p_prime[iPhi][i]/p_inf;
-  		signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(c0);
+  		signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(flt_M*c0);
   		signal.t_prime[i] = signal.t[i] - signal.x[iPhi][i]/c0;
+
+      p_peak = max(p_peak, signal.p_prime[iPhi][i]);
   	}
-    w0 = 2*M_PI/signal.t[signal.len[iPhi]-1];
+    w0 = 2.*M_PI*c0/scale_L; // Characteristic time governed by length of signal
+    // w0 = 2.*M_PI*flt_M/signal.t[signal.len[iPhi]-1];
     beta = 1. + (atm_g - 1.)/2.;
+    // p0 = 50.; // From Robin Cleveland
     p0 = p_inf;
+    // p0 = Pr;
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
+      signal.P[i] = signal.p_prime[iPhi][i]/p0;
       signal.tau[i] = w0*signal.t[i];
     }
     dtau = signal.tau[1] - signal.tau[0];
@@ -926,6 +932,18 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
     ground_flag = false;
 
+    /*---Initial signal---*/
+    ofstream sigFile;
+    char filename [64];
+    SPRINTF (filename, "nearfield_%d.dat", SU2_TYPE::Int(iPhi));
+    sigFile.precision(15);
+    sigFile.open(filename, ios::out);
+    if(iPhi == 0) sigFile << "#T, p" << endl;
+    for(int j = 0; j < signal.len[iPhi]; j++){
+      sigFile << signal.tau[j]/w0 << "\t" << signal.P[j] << endl;
+    }
+    sigFile.close();
+
   }
   else{
     AtmosISA(ray_z, T_inf, c0, p_inf, rho0, atm_g);
@@ -933,7 +951,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
   /*---Compute other coefficients needed for solution of ABE---*/
 
-  xbar = rho0*pow(c0,3)/(beta*w0*p0);
+  xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
 
   mu        = mu0*pow(T_inf/T0,1.5)*(T0+Ts)/(T_inf+Ts);
   kappa     = kappa0*pow(T_inf/T0,1.5)*(T0+Ta*exp(-Tb/T0))/(T_inf+Ta*exp(-Tb/T_inf));
@@ -942,17 +960,35 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   Gamma     = 1./(alpha0_tv*xbar);
 
   su2double logPsat_Pr = -6.8346*pow(T01/T_inf,1.261) + 4.6151;  // ISO standard for saturation vapor pressure
-  su2double hr = 20.;                                                     // Relative humidity (percent), hardcoding for now
-  su2double h = hr * Pr/p_inf * pow(logPsat_Pr,10.);             // Absolute humidity (percent)
+  su2double hr_prof[2][61] = {{0, 304.8, 609.6, 914.4, 1219.2,  1524,  1828.8,  2133.6,  2438.4,  2743.2,  3048,
+                               3352.8,  3657.6,  3962.4,  4267.2,  4572,  4876.8,  5181.6,  5486.4,  5791.2,  6096,  
+                               6400.8,  6705.6,  7010.4,  7315.2,  7620,  7924.8,  8229.6,  8534.4,  8839.2,  9144,  
+                               9448.8,  9753.6,  10058.4, 10363.2, 10668, 10972.8, 11277.6, 11582.4, 11887.2, 12192, 
+                               12496.8, 12801.6, 13106.4, 13411.2, 13716, 14020.8, 14325.6, 14630.4, 14935.2, 15240, 
+                               15544.8, 16154.4, 16459.2, 16764, 17068.8, 17373.6, 17678.4, 17983.2, 18288, 18592.8},
+                              {59.62, 60.48, 62.03, 63.83, 65.57, 67.06, 68.2,  68.97, 69.41, 69.62, 69.72, 69.83, 
+                               70.05, 70.46, 71.12, 72.04, 73.19, 74.48, 75.77, 76.9,  77.61, 77.66, 76.77, 74.75, 
+                               71.47, 66.96, 61.38, 55.07, 48.44, 41.95, 36.01, 30.95, 27.01, 24.38, 23.31, 24.29, 
+                               28.6,  25.61, 22.1,  19.04, 16.42, 14.2,  12.34, 10.8,  9.53,  8.49,  7.64,  6.95,  
+                               6.4, 5.97,  5.63,  5.38,  5.08,  5.02,  5.01,  5.03,  5.09,  5.18,  5.28,  5.4, 5.5}};
+  su2double hr = 5.5;  // Interpolate relative humidity from profile (hr_prof is the default profile for sBOOM)
+  for(unsigned short i = 0; i < 60; i++){
+    if(hr_prof[0][i] <= ray_z && hr_prof[0][i+1] >= ray_z){
+      hr = hr_prof[1][i] + (ray_z-hr_prof[0][i])*(hr_prof[1][i+1]-hr_prof[1][i])/(hr_prof[0][i+1]-hr_prof[0][i]);
+      break;
+    }
+  }
 
-  su2double A_nu_O2 = 0.01275 * pow(T_inf/Tr,-2.5) * exp(-2339.1/T_inf);
+  su2double h = hr * Pr/p_inf * pow(10.,logPsat_Pr);             // Absolute humidity (percent)
+
+  su2double A_nu_O2 = 0.01275 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
 
-  m_nu_O2 = 2.*c0*A_nu_O2;
-  m_nu_N2 = 2.*c0*A_nu_N2;
+  m_nu_O2 = c0*A_nu_O2/M_PI;
+  m_nu_N2 = c0*A_nu_N2/M_PI;
 
-  su2double f_nu_O2 = p_inf/Pr * sqrt(T_inf/Tr) * (9. + 280.*h*exp(pow(Tr/T_inf, 1./3.) - 1.));
-  su2double f_nu_N2 = p_inf/Pr * (24. + 4.04E4*h*(0.02+h)/(0.391+h));
+  su2double f_nu_O2 = p_inf/Pr * (24. + 4.04E4*h*(0.02+h)/(0.391+h));
+  su2double f_nu_N2 = p_inf/Pr * sqrt(Tr/T_inf) * (9. + 280.*h*exp(-4.170*(pow(Tr/T_inf, 1./3.) - 1.)));
 
   tau_nu_O2 = 1./(2.*M_PI*f_nu_O2);
   tau_nu_N2 = 1./(2.*M_PI*f_nu_N2);
@@ -963,23 +999,68 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
   C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
 
+
+  if(iIter == 0) dsigma_old = 100.;
   DetermineStepSize(iPhi);
+  if(iIter < 100) dsigma *= 0.1;
+
+  if(iIter%2000 == 0){
+    cout << "iIter = " << iIter << ", z = " << ray_z << ", dz = " << dz << ", dsigma = " << dsigma << ", xbar = " << xbar << endl;
+  }
 
 }
 
 void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
-  
+
+  /*---Clip signal---*/
+  unsigned long istart = 0, iend = signal.len[iPhi]-1;
+  for(unsigned long i = 0; i < signal.len[iPhi]; i++){
+    if(abs(signal.p_prime[iPhi][i]) > 1.0E-3){
+      istart = i;
+      break;
+    }
+  }
+
+  for(unsigned long i = signal.len[iPhi]-1; i >= istart+1; i--){
+    if(abs(signal.p_prime[iPhi][i]) > 1.0E-3){
+      iend = i;
+      break;
+    }
+  }
+
+  unsigned long len_new = iend-istart+1;
+  su2double *xtmp = new su2double[len_new],
+            *ptmp = new su2double[len_new];
+
+  for(unsigned long i = istart; i < iend+1; i++){
+    xtmp[i-istart] = signal.x[iPhi][i];
+    ptmp[i-istart] = signal.p_prime[iPhi][i];
+  }
+
+  signal.len[iPhi] = len_new;
+  signal.x[iPhi] = new su2double[len_new];
+  signal.p_prime[iPhi] = new su2double[len_new];
+  for(unsigned long i = 0; i < len_new; i++){
+    signal.x[iPhi][i] = xtmp[i];
+    signal.p_prime[iPhi][i] = ptmp[i];
+  }
+  scale_L = signal.x[iPhi][len_new-1] - signal.x[iPhi][0];
+
+  cout << "Nearfield signal clipped to " << len_new << " points." << endl;
+  cout << "Length scale of waveform = " << scale_L << " m." << endl;
+
   /*---Loop over signal and find smallest spacing---*/
-  su2double dx, dx_min = (signal.x[iPhi][signal.len[iPhi]-1] - signal.x[iPhi][0])/10000.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
+  su2double dx, dx_min = scale_L/10001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
   for(unsigned long i = 1; i < signal.len[iPhi]; i++){
     dx = signal.x[iPhi][i] - signal.x[iPhi][i-1];
     dx_min = min(dx, dx_min);
   }
 
   /*---Create new temp signal---*/
-  unsigned long j = 0, len_new = ceil((signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0])/dx_min);
-  su2double *xtmp = new su2double[len_new],
-            *ptmp = new su2double[len_new];
+  unsigned long j = 0;
+  len_new = ceil((signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0])/dx_min);
+  xtmp = new su2double[len_new];
+  ptmp = new su2double[len_new];
   xtmp[0] = signal.x[iPhi][0];
   ptmp[0] = signal.p_prime[iPhi][0];
   for(unsigned long i = 1; i < len_new; i++){
@@ -994,22 +1075,34 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   }
 
   /*---Store new signal---*/
-  signal.len[iPhi] = len_new*3;
-  signal.x[iPhi] = new su2double[len_new*3];
-  signal.p_prime[iPhi] = new su2double[len_new*3];
-  for(unsigned long i = 0; i < len_new; i++){
-    /*---Interpolated signal---*/
-    signal.x[iPhi][i+len_new] = xtmp[i];
-    signal.p_prime[iPhi][i+len_new] = ptmp[i];
-
-    /*---Zero-pad front of signal---*/
-    signal.x[iPhi][i] = xtmp[i]-dx_min*len_new;
+  su2double dp_dx_end = -ptmp[len_new-1]/(4.*scale_L);
+  unsigned long len_recompress = ceil(4.*scale_L/dx_min);
+  signal.len[iPhi] = ceil(len_new+len_recompress*2.0);
+  signal.x[iPhi] = new su2double[signal.len[iPhi]];
+  signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
+  unsigned long i0 = floor(len_recompress*0.95), i1 = i0+len_new, i2 = signal.len[iPhi];
+  /*---Zero-pad front of signal---*/
+  for(unsigned long i = 0; i < i0; i++){
+    signal.x[iPhi][i] = xtmp[0]-dx_min*su2double(i0-i);
     signal.p_prime[iPhi][i] = 0.;
-
-    /*---Recompress aft of signal---*/
-    signal.x[iPhi][i+2*len_new] = xtmp[i]+dx_min*len_new;
-    signal.p_prime[iPhi][i+2*len_new] = ptmp[len_new-1]*(1.-su2double(i+1)/su2double(len_new));
   }
+  /*---Interpolated signal---*/
+  for(unsigned long i = i0; i < i1; i++){
+    signal.x[iPhi][i] = xtmp[i-i0];
+    signal.p_prime[iPhi][i] = ptmp[i-i0];
+  }
+  /*---Recompress aft of signal---*/
+  for(unsigned long i = i1; i < i2; i++){
+    signal.x[iPhi][i] = signal.x[iPhi][i1-1]+dx_min*su2double(i+1-i1);
+    if(i-i1 < len_recompress){
+      signal.p_prime[iPhi][i] = signal.p_prime[iPhi][i-1]+dp_dx_end*dx_min;
+    }
+    else{
+      signal.p_prime[iPhi][i] = 0.;
+    }
+  }
+
+  cout << "Signal refined and padded, now contains " << signal.len[iPhi] << " points." << endl;
 
   delete [] xtmp;
   delete [] ptmp;
@@ -1053,13 +1146,13 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   su2double dsigma_non, dsigma_tv, dsigma_relO, dsigma_relN, dsigma_A, dsigma_rc, dsigma_c;
 
   /*---Restrict dsigma to avoid multivalued waveforms---*/
-  su2double dp_dtau, max_dp_dtau = -1.0E9;
+  su2double dp, max_dp = 1.0E-9;
   for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
-    dp_dtau = (signal.P[i+1]-signal.P[i])/(signal.tau[i+1]-signal.tau[i]);
-    max_dp_dtau = max(dp_dtau, max_dp_dtau);
+    dp = signal.P[i+1]-signal.P[i];
+    max_dp = max(dp, max_dp);
   }
 
-  dsigma_non = 0.2/max_dp_dtau; // dsigma < 1/max(dp/dtau)
+  dsigma_non = 0.2*dtau/max_dp; // dsigma < 1/max(dp/dtau)
 
   /*---Restrict dsigma based on thermoviscous effects---*/
   dsigma_tv = 0.1*Gamma/signal.len[iPhi];
@@ -1108,19 +1201,21 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
 
   su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-6);
-  dsigma_rc = abs(0.05*rho0*c0/drhoc_dsigma);
+  dsigma_rc = abs(0.02*rho0*c0/drhoc_dsigma);
 
   su2double dc_dsigma = (cp1-c0)/(1.0E-6);
-  dsigma_c = abs(0.05*c0/dc_dsigma);
+  dsigma_c = abs(0.02*c0/dc_dsigma);
 
   /*---Pick minimum dsigma---*/
   dsigma = dsigma_non;
-  if(dsigma_tv < dsigma){dsigma = dsigma_tv;}
-  if(dsigma_relO < dsigma){dsigma = dsigma_relO;}
-  if(dsigma_relN < dsigma){dsigma = dsigma_relN;}
-  if(dsigma_A < dsigma){dsigma = dsigma_A;}
-  if(dsigma_rc < dsigma){dsigma = dsigma_rc;}
-  if(dsigma_c < dsigma){dsigma = dsigma_c;}
+  dsigma = min(dsigma, dsigma_tv);
+  dsigma = min(dsigma, dsigma_relO);
+  dsigma = min(dsigma, dsigma_relN);
+  dsigma = min(dsigma, dsigma_A);
+  dsigma = min(dsigma, dsigma_rc);
+  dsigma = min(dsigma, dsigma_c);
+  dsigma = min(dsigma, dsigma_old);
+  dsigma_old = 10.*dsigma;
 
   /*---Check for intersection with ground plane---*/
   ds = xbar*dsigma;
@@ -1135,6 +1230,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
     dsigma = ds/xbar;
     ground_flag = true;
   }
+
 }
 
 void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
@@ -1144,18 +1240,49 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
     signal.taud[i] = signal.tau[i] - signal.P[i]*dsigma;
   }
 
+  /*---Account for nonlinearity and interpolate new signal from distorted grid---*/
+  su2double *Ptmp = new su2double[signal.len[iPhi]];
+  unsigned long j = 0, jp1 = 1;
+  for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+    if(signal.tau[i] < signal.taud[0]){
+      j   = 0;
+      jp1 = 1;
+    }
+    else if(signal.tau[i] > signal.taud[signal.len[iPhi]-1]){
+      j   = signal.len[iPhi]-2;
+      jp1 = signal.len[iPhi]-1;
+    }
+    else{
+      for(unsigned long k = jp1-1; k < signal.len[iPhi]-1; k++){
+        if((signal.tau[i] >= signal.taud[k]) && (signal.tau[i] <= signal.taud[k+1])){
+          j   = k;
+          jp1 = k+1;
+          break;
+        }
+      }
+    }
+
+    Ptmp[i] = signal.P[j] + (signal.tau[i] - signal.taud[j]) * (signal.P[jp1]-signal.P[j])/(signal.taud[jp1]-signal.taud[j]);
+  }
+
+  for(unsigned long i = 0; i < signal.len[iPhi]; i++){
+    signal.P[i] = Ptmp[i];
+  }
+
+  delete [] Ptmp;
+
 }
 
 void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
 
   su2double lambda = dsigma/(2.*Gamma*pow(dtau,2));
-  su2double *BPk = new su2double[signal.len[iPhi]];
+  su2double *y = new su2double[signal.len[iPhi]];
 
   /*---Tridiagonal matrix-vector multiplication B_tv * Pk (see Cleveland thesis)---*/
-  BPk[0] = signal.P[0];
-  BPk[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
+  y[0] = signal.P[0];
+  y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-    BPk[i] = lambda*(signal.P[i+1]+signal.P[i-1]) + (1.-2.*lambda)*signal.P[i];
+    y[i] = lambda*(signal.P[i+1]+signal.P[i-1]) + (1.-2.*lambda)*signal.P[i];
   }
 
   /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
@@ -1163,74 +1290,61 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
             *di = new su2double[signal.len[iPhi]-1];
 
   ci[0] = 0.;
-  di[0] = BPk[0];
+  di[0] = y[0];
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
     ci[i] = -lambda/((1.+2.*lambda) + lambda*ci[i-1]);
-    di[i] = (BPk[i] + lambda*di[i-1])/((1.+2.*lambda) + lambda*ci[i-1]);
+    di[i] = (y[i] + lambda*di[i-1])/((1.+2.*lambda) + lambda*ci[i-1]);
   }
 
-  signal.dP_att[signal.len[iPhi]-1] = BPk[signal.len[iPhi]-1];
-  for(int i = signal.len[iPhi]-2; i >= 0; i--){
-    signal.dP_att[i] = di[i] - ci[i]*signal.dP_att[i+1];
+  for(int i = signal.len[iPhi]-2; i >= 1; i--){
+    signal.P[i] = di[i] - ci[i]*signal.P[i+1];
   }
 
-  /*---Get change in pressure---*/
-  for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    signal.dP_att[i] = signal.dP_att[i] - signal.P[i];
-  }
-
-  delete [] BPk;
+  delete [] y;
   delete [] ci;
   delete [] di;
 }
 
-void CBoom_AugBurgers::Relaxation(unsigned short iPhi){
+void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
 
   su2double lambda[2] = {dsigma*C_nu_O2/pow(dtau,2), dsigma*C_nu_N2/pow(dtau,2)},
-            mu[2] = {theta_nu_O2/(2.*dtau), theta_nu_N2/(2.*dtau)},
-            alpha = 0.5,
-            alpha_p = 1.-alpha;
-
-  su2double *BPk = new su2double[signal.len[iPhi]],
-            *dP  = new su2double[signal.len[iPhi]],
+            mur[2] = {theta_nu_O2/(2.*dtau), theta_nu_N2/(2.*dtau)},
+            alpha, alpha_p;
+  su2double *y = new su2double[signal.len[iPhi]],
             *ci  = new su2double[signal.len[iPhi]-1],
             *di  = new su2double[signal.len[iPhi]-1];
 
-  /*---Reset dP_rel---*/
-  for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    signal.dP_rel[i] = 0.;
-  }
+  alpha = 0.55;
+  alpha_p = 1.-alpha;
 
   /*---Compute effect of different relaxation modes---*/
-  for(unsigned short j = 0; j < 2; j++){
+  for(unsigned short j = 0; j < 1; j++){
     /*---Tridiagonal matrix-vector multiplication B_nu * Pk (see Cleveland thesis)---*/
-    BPk[0] = signal.P[0];
-    BPk[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
-    for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-      BPk[i] = (alpha_p*lambda[j]-mu[j])*signal.P[i-1] + (1.-2.*alpha_p*lambda[j])*signal.P[i] + (alpha_p*lambda[j]+mu[j])*signal.P[i+1];
+    y[0] = signal.P[0];
+    y[1] = signal.P[1];
+    y[signal.len[iPhi]-2] = signal.P[signal.len[iPhi]-2];
+    y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
+    for(unsigned long i = 2; i < signal.len[iPhi]-2; i++){
+      y[i] = (alpha_p*lambda[j]-mur[j])*signal.P[i-1] + (1.-2.*alpha_p*lambda[j])*signal.P[i] + (alpha_p*lambda[j]+mur[j])*signal.P[i+1];
     }
 
     /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
     ci[0] = 0.;
-    di[0] = BPk[0];
-    for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-      ci[i] = -(alpha*lambda[j]-mu[j])/((1.+2.*alpha*lambda[j]) + (alpha*lambda[j]+mu[j])*ci[i-1]);
-      di[i] = (BPk[i] + (alpha*lambda[j]+mu[j])*di[i-1])/((1.+2.*alpha*lambda[j]) + (alpha*lambda[j]+mu[j])*ci[i-1]);
+    di[0] = y[0];
+    ci[1] = 0.;
+    di[1] = y[1];
+    for(unsigned long i = 2; i < signal.len[iPhi]-2; i++){
+      ci[i] = -(alpha*lambda[j]-mur[j])/((1.+2.*alpha*lambda[j]) + (alpha*lambda[j]+mur[j])*ci[i-1]);
+      di[i] = (y[i] + (alpha*lambda[j]+mur[j])*di[i-1])/((1.+2.*alpha*lambda[j]) + (alpha*lambda[j]+mur[j])*ci[i-1]);
     }
 
-    dP[signal.len[iPhi]-1] = BPk[signal.len[iPhi]-1];
-    for(int i = signal.len[iPhi]-2; i >= 0; i--){
-      dP[i] = di[i] - ci[i]*dP[i+1];
+    for(int i = signal.len[iPhi]-3; i >= 2; i--){
+      signal.P[i] = di[i] - ci[i]*signal.P[i+1];
     }
 
-    /*---Get change in pressure---*/
-    for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-      signal.dP_rel[i] += (dP[i]-signal.P[i]);
-    }
   }
 
-  delete [] BPk;
-  delete [] dP;
+  delete [] y;
   delete [] ci;
   delete [] di;
 }
@@ -1271,7 +1385,7 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
 
   /*---Compute change in pressure from exact solution to general ray tube area eqn---*/
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    signal.dP_spr[i] = (sqrt(ray_A/A_new)-1.0)*signal.P[i];
+    signal.P[i] = sqrt(ray_A/A_new)*signal.P[i];
   }
 
   /*---Set new ray properties (except z, we'll do that later)---*/
@@ -1297,7 +1411,7 @@ void CBoom_AugBurgers::Stratification(unsigned short iPhi){
 
   /*---Compute change in pressure from exact solution to stratification eqn---*/
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    signal.dP_str[i] = (sqrt((rhop1*cp1)/(rho0*c0))-1.0)*signal.P[i];
+    signal.P[i] = sqrt((rhop1*cp1)/(rho0*c0))*signal.P[i];
   }
 
 }
@@ -1306,12 +1420,12 @@ void CBoom_AugBurgers::Iterate(unsigned short iPhi){
 
   /*---Propagate signal to sigma+dsigma---*/
   for(unsigned long i =0; i < signal.len[iPhi]; i++){
-    signal.P[i] += signal.dP_att[i] + signal.dP_rel[i] + signal.dP_spr[i] + signal.dP_str[i];
+    signal.P[i] += signal.dP[i];
   }
 
   /*---Account for nonlinearity and interpolate new signal from distorted grid---*/
   su2double *Ptmp = new su2double[signal.len[iPhi]];
-  unsigned long j, jp1;
+  unsigned long j = 0, jp1 = 1;
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
     if(signal.tau[i] < signal.taud[0]){
       j   = 0;
@@ -1322,7 +1436,7 @@ void CBoom_AugBurgers::Iterate(unsigned short iPhi){
       jp1 = signal.len[iPhi]-1;
     }
     else{
-      for(unsigned long k = 0; k < signal.len[iPhi]-1; k++){
+      for(unsigned long k = jp1-1; k < signal.len[iPhi]-1; k++){
         if((signal.tau[i] >= signal.taud[k]) && (signal.tau[i] <= signal.taud[k+1])){
           j   = k;
           jp1 = k+1;
@@ -1683,7 +1797,7 @@ void CBoom_AugBurgers::WriteGroundPressure(unsigned short iPhi){
   /*---Final signal and boom strength---*/
   ofstream sigFile;
   char filename [64];
-  SPRINTF (filename, "signal_%d.dat", SU2_TYPE::Int(iPhi));
+  SPRINTF (filename, "ground_%d.dat", SU2_TYPE::Int(iPhi));
   sigFile.precision(15);
   sigFile.open(filename, ios::out);
   if(iPhi == 0) sigFile << "# phi, T, p" << endl;
