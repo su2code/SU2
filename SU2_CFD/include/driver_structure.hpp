@@ -87,7 +87,7 @@ protected:
   CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement **grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
+  CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
