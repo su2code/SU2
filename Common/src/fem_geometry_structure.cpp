@@ -6233,9 +6233,10 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
               unsigned short subElem;
               unsigned long  parElem;
               int            rank;
-              su2double      parCoor[3];
+              su2double      parCoor[3], weightsInterpol[8];
               if( localVolumeADT.DetermineContainingElement(coorExchange, subElem,
-                                                            parElem, rank, parCoor) ) {
+                                                            parElem, rank, parCoor,
+                                                            weightsInterpol) ) {
 
                 /* Subelement found that contains the exchange location. However,
                    what is needed is the location in the high order parent element.

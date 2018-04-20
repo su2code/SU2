@@ -390,19 +390,22 @@ public:
   /*!
    * \brief Function, which determines the element that contains the given
             coordinate.
-   * \param[in]  coor     Coordinate which the element must contain.
-   * \param[out] markerID Local marker ID of the element containing the coordinate.
-   * \param[out] elemID   Local element ID of the element containing the coordinate.
-   * \param[out] rankID   Rank on which element containing the coordinate is stored.
-   * \param[out] parCoor  Parametric coordinates of coor inside the element,
-                          which contains the coordinate.
-   * \return              True if an element is found, false if not.
+   * \param[in]  coor             Coordinate which the element must contain.
+   * \param[out] markerID         Local marker ID of the element containing the coordinate.
+   * \param[out] elemID           Local element ID of the element containing the coordinate.
+   * \param[out] rankID           Rank on which element containing the coordinate is stored.
+   * \param[out] parCoor          Parametric coordinates of coor inside the element,
+                                  which contains the coordinate.
+   * \param[out] weightsInterpol  Interpolation weigts of of coor inside the element,
+                                  which contains the coordinate.
+   * \return                      True if an element is found, false if not.
    */
   bool DetermineContainingElement(const su2double *coor,
                                   unsigned short  &markerID,
                                   unsigned long   &elemID,
                                   int             &rankID,
-                                  su2double       *parCoor);
+                                  su2double       *parCoor,
+                                  su2double       *weightsInterpol);
 
   /*!
    * \brief Function, which determines the nearest element in the ADT for the
@@ -423,100 +426,121 @@ private:
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given element.
-   * \param[in]  elemID  ID of the element for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given element.
-   * \return             True if coor is inside the element and false otherwise.
+   * \param[in]  elemID          ID of the element for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given element.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given element.
+   * \return                     True if coor is inside the element and false otherwise.
    */
   bool CoorInElement(const unsigned long elemID,
                      const su2double     *coor,
-                     su2double           *parCoor);
+                     su2double           *parCoor,
+                     su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given quadrilateral.
-   * \param[in]  elemID  ID of the quadrilateral for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given quadrilateral.
-   * \return             True if coor is inside the quadrilateral and false otherwise.
+   * \param[in]  elemID          ID of the quadrilateral for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given quadrilateral.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given quadrilateral.
+   * \return                     True if coor is inside the quadrilateral and false otherwise.
    */
   bool CoorInQuadrilateral(const unsigned long elemID,
                            const su2double     *coor,
-                           su2double           *parCoor);
+                           su2double           *parCoor,
+                           su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given triangle.
-   * \param[in]  elemID  ID of the triangle for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given triangle.
-   * \return             True if coor is inside the triangle and false otherwise.
+   * \param[in]  elemID          ID of the triangle for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given triangle.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given triangle.
+   * \return                     True if coor is inside the triangle and false otherwise.
    */
   bool CoorInTriangle(const unsigned long elemID,
                       const su2double     *coor,
-                      su2double           *parCoor);
+                      su2double           *parCoor,
+                      su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given hexahedron.
-   * \param[in]  elemID  ID of the hexahedron for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given hexahedron.
-   * \return             True if coor is inside the hexahedron and false otherwise.
+   * \param[in]  elemID          ID of the hexahedron for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given hexahedron.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given hexahedron.
+   * \return                     True if coor is inside the hexahedron and false otherwise.
    */
   bool CoorInHexahedron(const unsigned long elemID,
                         const su2double     *coor,
-                        su2double           *parCoor);
+                        su2double           *parCoor,
+                        su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given prism.
-   * \param[in]  elemID  ID of the prism for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given prism.
-   * \return             True if coor is inside the prism and false otherwise.
+   * \param[in]  elemID          ID of the prism for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given prism.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given prism.
+   * \return                     True if coor is inside the prism and false otherwise.
    */
   bool CoorInPrism(const unsigned long elemID,
                    const su2double     *coor,
-                   su2double           *parCoor);
+                   su2double           *parCoor,
+                   su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given pyramid.
-   * \param[in]  elemID  ID of the pyramid for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given pyramid.
-   * \return             True if coor is inside the pyramid and false otherwise.
+   * \param[in]  elemID          ID of the pyramid for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given pyramid.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given pyramid.
+   * \return                     True if coor is inside the pyramid and false otherwise.
    */
   bool CoorInPyramid(const unsigned long elemID,
                      const su2double     *coor,
-                     su2double           *parCoor);
+                     su2double           *parCoor,
+                     su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
             inside the given tetrahedron.
-   * \param[in]  elemID  ID of the tetrahedron for which the containment
-                         must be checked.
-   * \param[in]  coor    Coordinate for which the containment must be checked.
-   * \param[out] parCoor Parametric coordinates of coor if it is inside the
-                         given tetrahedron.
-   * \return             True if coor is inside the tetrahedron and false otherwise.
+   * \param[in]  elemID          ID of the tetrahedron for which the containment
+                                 must be checked.
+   * \param[in]  coor            Coordinate for which the containment must be checked.
+   * \param[out] parCoor         Parametric coordinates of coor if it is inside the
+                                 given tetrahedron.
+   * \param[out] weightsInterpol Interpolation weights of coor if it is inside the
+                                 given tetrahedron.
+   * \return                     True if coor is inside the tetrahedron and false otherwise.
    */
   bool CoorInTetrahedron(const unsigned long elemID,
                          const su2double     *coor,
-                         su2double           *parCoor);
+                         su2double           *parCoor,
+                         su2double           *weightsInterpol);
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
