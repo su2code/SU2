@@ -52,10 +52,14 @@ CTransfer::CTransfer(void) {
   
 }
 
-CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer() {
+CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) {
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  Physical_Constants = NULL;
+  Donor_Variable     = NULL;
+  Target_Variable    = NULL;
 
   unsigned short iVar;
   
