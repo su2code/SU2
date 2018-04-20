@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   
-  char config_file_name[MAX_STRING_SIZE], *cstr;
+  char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
 
   su2double** Gradient;
@@ -291,15 +291,15 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
-//  if (surface_movement != NULL) {
-//    for (iZone = 0; iZone < nZone; iZone++) {
-//      if (surface_movement[iZone] != NULL) {
-//        delete surface_movement[iZone];
-//      }
-//    }
-//    delete [] surface_movement;
-//  }
-//  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  if (surface_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (surface_movement[iZone] != NULL) {
+        delete surface_movement[iZone];
+      }
+    }
+    delete [] surface_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
   if (grid_movement != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -311,6 +311,8 @@ int main(int argc, char *argv[]) {
   }
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
   
+  delete config;
+  config = NULL;
   if (config_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone] != NULL) {
@@ -324,6 +326,8 @@ int main(int argc, char *argv[]) {
   if (output != NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
+  if (cstr != NULL) delete cstr;
+  
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
@@ -377,6 +381,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   unsigned short nFFDBox = MAX_NUMBER_FFD;
   FFDBox = new CFreeFormDefBox*[nFFDBox];
+  for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
 
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
@@ -599,6 +604,20 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     Gradient[iDV][0] += localGradient;
     }
   }
+  
+  /*--- Delete memory for parameterization. ---*/
+  
+  if (FFDBox != NULL) {
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
+      if (FFDBox[iFFDBox] != NULL) {
+        delete FFDBox[iFFDBox];
+      }
+    }
+    delete [] FFDBox;
+  }
+  
+  delete [] UpdatePoint;
+  
 }
   
 

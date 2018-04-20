@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -4679,7 +4679,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     long ExtraHeatOutputZone = config[val_iZone]->GetExtraHeatOutputZone() - 1;
     bool extra_heat_output = false;
     su2double Extra_Total_Heat = 0.0;
-    su2double Extra_Total_Temperature = 0.0;
+    //su2double Extra_Total_Temperature = 0.0;
     su2double Extra_Heat_Residual = 0.0;
 
     if (ExtraHeatOutputZone > -1) {
@@ -5106,7 +5106,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     if (extra_heat_output) {
       Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-      Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
+      //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
       Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
@@ -6660,7 +6660,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
     
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 6.0.0  \"Falcon\"                           |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 6.0.1  \"Falcon\"                           |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";

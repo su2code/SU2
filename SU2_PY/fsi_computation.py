@@ -3,7 +3,7 @@
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling a third-party structural solver to SU2.
 #  \author David Thomas
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
