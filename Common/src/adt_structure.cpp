@@ -713,7 +713,8 @@ bool su2_adtElemClass::DetermineContainingElement(const su2double *coor,
                                                   unsigned short  &markerID,
                                                   unsigned long   &elemID,
                                                   int             &rankID,
-                                                  su2double       *parCoor) {
+                                                  su2double       *parCoor,
+                                                  su2double       *weightsInterpol) {
 
   /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
      it only contains the root leaf. Make sure to wipe out any data from a
@@ -755,7 +756,7 @@ bool su2_adtElemClass::DetermineContainingElement(const su2double *coor,
             /* Coordinate is inside the bounding box. Check if it
                is also inside the corresponding element. If so,
                set the required information and return true. */
-            if( CoorInElement(kk, coor, parCoor) ) {
+            if( CoorInElement(kk, coor, parCoor, weightsInterpol) ) {
               markerID = localMarkers[kk];
               elemID   = localElemIDs[kk];
               rankID   = ranksOfElems[kk];
@@ -981,17 +982,18 @@ void su2_adtElemClass::DetermineNearestElement(const su2double *coor,
 
 bool su2_adtElemClass::CoorInElement(const unsigned long elemID,
                                      const su2double     *coor,
-                                     su2double           *parCoor) {
+                                     su2double           *parCoor,
+                                     su2double           *weightsInterpol) {
 
   /*--- Make a distinction between the element types. ---*/
   switch( elemVTK_Type[elemID] ) {
 
-    case TRIANGLE:      return CoorInTriangle(elemID, coor, parCoor);
-    case QUADRILATERAL: return CoorInQuadrilateral(elemID, coor, parCoor);
-    case TETRAHEDRON:   return CoorInTetrahedron(elemID, coor, parCoor);
-    case PYRAMID:       return CoorInPyramid(elemID, coor, parCoor);
-    case PRISM:         return CoorInPrism(elemID, coor, parCoor);
-    case HEXAHEDRON:    return CoorInHexahedron(elemID, coor, parCoor);
+    case TRIANGLE:      return CoorInTriangle(elemID, coor, parCoor, weightsInterpol);
+    case QUADRILATERAL: return CoorInQuadrilateral(elemID, coor, parCoor, weightsInterpol);
+    case TETRAHEDRON:   return CoorInTetrahedron(elemID, coor, parCoor, weightsInterpol);
+    case PYRAMID:       return CoorInPyramid(elemID, coor, parCoor, weightsInterpol);
+    case PRISM:         return CoorInPrism(elemID, coor, parCoor, weightsInterpol);
+    case HEXAHEDRON:    return CoorInHexahedron(elemID, coor, parCoor, weightsInterpol);
 
     default:
       /* This should not happen. */
@@ -1117,7 +1119,8 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
 
 bool su2_adtElemClass::CoorInTriangle(const unsigned long elemID,
                                       const su2double     *coor,
-                                      su2double           *parCoor) {
+                                      su2double           *parCoor,
+                                      su2double           *weightsInterpol) {
 
   /* Determine the indices of the three vertices of the triangle,
      multiplied by nDim (which is 2). This gives the position in the
@@ -1145,10 +1148,17 @@ bool su2_adtElemClass::CoorInTriangle(const unsigned long elemID,
   parCoor[0] = detInv*(xc*y2 - yc*x2) - 1.0;
   parCoor[1] = detInv*(yc*x1 - xc*y1) - 1.0;
 
-  /* Check if the point resides within the triangle. */
+  /* Check if the point resides within the triangle and compute the
+     interpolation weights if it is. */
   bool coorIsInside = false;
   if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
-     ((parCoor[0]+parCoor[1]) <= tolInsideElem)) coorIsInside = true;
+     ((parCoor[0]+parCoor[1]) <= tolInsideElem)) {
+    coorIsInside = true;
+
+    weightsInterpol[0] = -0.5*(parCoor[0] + parCoor[1]);
+    weightsInterpol[1] =  0.5*(parCoor[0] + 1.0);
+    weightsInterpol[2] =  0.5*(parCoor[1] + 1.0);
+  }
 
   /* Return the value of coorIsInside. */
   return coorIsInside;
@@ -1156,7 +1166,9 @@ bool su2_adtElemClass::CoorInTriangle(const unsigned long elemID,
 
 bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
                                            const su2double     *coor,
-                                           su2double           *parCoor) {
+                                           su2double           *parCoor,
+                                           su2double           *weightsInterpol) {
+
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
   const unsigned short maxIt = 50;
@@ -1274,13 +1286,23 @@ bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
      parCoor[1] < paramLowerBound || parCoor[1] > paramUpperBound)
     SU2_MPI::Error("Point not inside the quadrilateral.", CURRENT_FUNCTION);
 
+  /* Compute the interpolation weights. */
+  const su2double omr = 0.5*(1.0-parCoor[0]), opr = 0.5*(1.0+parCoor[0]);
+  const su2double oms = 0.5*(1.0-parCoor[1]), ops = 0.5*(1.0+parCoor[1]);
+
+  weightsInterpol[0] = omr*oms;
+  weightsInterpol[1] = opr*oms;
+  weightsInterpol[2] = opr*ops;
+  weightsInterpol[3] = omr*ops;
+
   /* Return true, because the search was successful. */
   return true;
 }
 
 bool su2_adtElemClass::CoorInTetrahedron(const unsigned long elemID,
                                          const su2double     *coor,
-                                         su2double           *parCoor) {
+                                         su2double           *parCoor,
+                                         su2double           *weightsInterpol) {
 
   /* Determine the indices of the four vertices of the tetrahedron,
      multiplied by nDim (which is 3). This gives the position in the
@@ -1317,11 +1339,19 @@ bool su2_adtElemClass::CoorInTetrahedron(const unsigned long elemID,
   parCoor[1] = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
   parCoor[2] =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
 
-  /* Check if the point resides within the tetrahedron. */
+  /* Check if the point resides within the tetrahedron and compute the
+     interpolation weights if it is. */
   bool coorIsInside = false;
   if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
      (parCoor[2] >= paramLowerBound) &&
-     ((parCoor[0]+parCoor[1]+parCoor[2]) <= paramLowerBound)) coorIsInside = true;
+     ((parCoor[0]+parCoor[1]+parCoor[2]) <= paramLowerBound)) {
+    coorIsInside = true;
+
+    parCoor[0] = -0.5*(parCoor[0] + parCoor[1] + parCoor[2] + 1.0);
+    parCoor[1] =  0.5*(parCoor[0] + 1.0);
+    parCoor[2] =  0.5*(parCoor[1] + 1.0);
+    parCoor[3] =  0.5*(parCoor[2] + 1.0);
+  }
 
   /* Return the value of coorIsInside. */
   return coorIsInside;
@@ -1329,7 +1359,9 @@ bool su2_adtElemClass::CoorInTetrahedron(const unsigned long elemID,
 
 bool su2_adtElemClass::CoorInPyramid(const unsigned long elemID,
                                      const su2double     *coor,
-                                     su2double           *parCoor) {
+                                     su2double           *parCoor,
+                                     su2double           *weightsInterpol) {
+
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
   const unsigned short maxIt = 50;
@@ -1461,14 +1493,35 @@ bool su2_adtElemClass::CoorInPyramid(const unsigned long elemID,
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
-  /* Check if the coordinate is inside the pyramid. */
+  /* Check if the point resides within the pyramid and compute the
+     interpolation weights if it is. */
   bool coorIsInside = false;
   if((parCoor[2] >= paramLowerBound) && (parCoor[2] <= paramUpperBound)) {
     const su2double lowRSBound = 0.5*(parCoor[2]-1.0) - tolInsideElem;
     const su2double uppRSBound = -lowRSBound;
 
     if((parCoor[0] >= lowRSBound) && (parCoor[0] <= uppRSBound) &&
-       (parCoor[1] >= lowRSBound) && (parCoor[1] <= uppRSBound)) coorIsInside = true;
+       (parCoor[1] >= lowRSBound) && (parCoor[1] <= uppRSBound)) {
+      coorIsInside = true;
+
+      su2double oneMinT = 1.0 - parCoor[2];
+      if(fabs(oneMinT) < 1.e-10) {
+        if(oneMinT < 0.0) oneMinT = -1.e-10;
+        else              oneMinT =  1.e-10;
+      }
+      const su2double oneMinTInv = 1.0/oneMinT;
+
+      const su2double omr = (1.0-parCoor[2]-2.0*parCoor[0]);
+      const su2double opr = (1.0-parCoor[2]+2.0*parCoor[0]);
+      const su2double oms = (1.0-parCoor[2]-2.0*parCoor[1]);
+      const su2double ops = (1.0-parCoor[2]+2.0*parCoor[1]);
+
+      weightsInterpol[0] = 0.125*oneMinTInv*omr*oms;
+      weightsInterpol[1] = 0.125*oneMinTInv*opr*oms;
+      weightsInterpol[2] = 0.125*oneMinTInv*opr*ops;
+      weightsInterpol[3] = 0.125*oneMinTInv*omr*ops;
+      weightsInterpol[4] = 0.5*(1.0+parCoor[2]);
+    }
   }
 
   /* Return the value of coorIsInside. */
@@ -1579,7 +1632,8 @@ bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
 
 bool su2_adtElemClass::CoorInPrism(const unsigned long elemID,
                                    const su2double     *coor,
-                                   su2double           *parCoor) {
+                                   su2double           *parCoor,
+                                   su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
@@ -1712,12 +1766,23 @@ bool su2_adtElemClass::CoorInPrism(const unsigned long elemID,
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
-  /* Check if the coordinate is inside the prism. */
+  /* Check if the point resides within the prism and compute the
+     interpolation weights if it is. */
   bool coorIsInside = false;
   if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
      ((parCoor[0]+parCoor[1]) <= tolInsideElem) &&
-     (parCoor[2] >= paramLowerBound) && (parCoor[2] <= paramUpperBound))
+     (parCoor[2] >= paramLowerBound) && (parCoor[2] <= paramUpperBound)) {
     coorIsInside = true;
+
+    const su2double omt = 0.25*(1.0-parCoor[2]), opt = 0.25*(1.0+parCoor[2]);
+
+    weightsInterpol[0] = -omt*(parCoor[0]+parCoor[1]);
+    weightsInterpol[1] =  omt*(parCoor[0]+1.0);
+    weightsInterpol[2] =  omt*(parCoor[1]+1.0);
+    weightsInterpol[3] = -opt*(parCoor[0]+parCoor[1]);
+    weightsInterpol[4] =  opt*(parCoor[0]+1.0);
+    weightsInterpol[5] =  opt*(parCoor[1]+1.0);
+  }
 
   /* Return the value of coorIsInside. */
   return coorIsInside;
@@ -1867,7 +1932,8 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
 
 bool su2_adtElemClass::CoorInHexahedron(const unsigned long elemID,
                                         const su2double     *coor,
-                                        su2double           *parCoor) {
+                                        su2double           *parCoor,
+                                        su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
@@ -2024,12 +2090,27 @@ bool su2_adtElemClass::CoorInHexahedron(const unsigned long elemID,
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
-  /* Check if the coordinate is inside the prism. */
+  /* Check if the point resides within the hexcahedron and compute the
+     interpolation weights if it is. */
   bool coorIsInside = false;
   if((parCoor[0] >= paramLowerBound) && (parCoor[0] <= paramUpperBound) &&
      (parCoor[1] >= paramLowerBound) && (parCoor[1] <= paramUpperBound) &&
-     (parCoor[2] >= paramLowerBound) && (parCoor[2] <= paramUpperBound))
+     (parCoor[2] >= paramLowerBound) && (parCoor[2] <= paramUpperBound)) {
     coorIsInside = true;
+
+    const su2double omr = 0.5*(1.0-parCoor[0]), opr = 0.5*(1.0+parCoor[0]);
+    const su2double oms = 0.5*(1.0-parCoor[1]), ops = 0.5*(1.0+parCoor[1]);
+    const su2double omt = 0.5*(1.0-parCoor[2]), opt = 0.5*(1.0+parCoor[2]);
+
+    weightsInterpol[0] = omr*oms*omt;
+    weightsInterpol[1] = opr*oms*omt;
+    weightsInterpol[2] = opr*ops*omt;
+    weightsInterpol[3] = omr*ops*omt;
+    weightsInterpol[4] = omr*oms*opt;
+    weightsInterpol[5] = opr*oms*opt;
+    weightsInterpol[6] = opr*ops*opt;
+    weightsInterpol[7] = omr*ops*opt;
+  }
 
   /* Return the value of coorIsInside. */
   return coorIsInside;
