@@ -2,7 +2,7 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -48,11 +48,17 @@ void CDriver::PythonInterface_Preprocessing(){
   /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
   for(iZone=0; iZone < nZone; iZone++){
     if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
-    for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
       geometry_container[iZone][iMesh]->SetCustomBoundary(config_container[iZone]);
     }
     geometry_container[iZone][MESH_0]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
-    solver_container[iZone][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+
+    if ((config_container[iZone]->GetKind_Solver() == EULER) ||
+        (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() == RANS)) {
+
+          solver_container[iZone][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry_container[iZone], config_container[iZone]);
+    }
   }
   /*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
   PyWrapVarCoord[0] = 0.0;
