@@ -2,7 +2,7 @@
  * \file variable_direct_mean_inc.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -59,6 +59,8 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   nSecondaryVarGrad = 0;
  
   Undivided_Laplacian = NULL;
+
+  Solution_BGS_k = NULL;
  
 }
 
@@ -71,7 +73,8 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   bool windgust     = config->GetWind_Gust();
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
-  
+  bool fsi          = config->GetFSI_Simulation();
+
   /*--- Array initialization ---*/
   
   Primitive = NULL;
@@ -190,6 +193,15 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double [nDim];
 
+  Solution_BGS_k = NULL;
+  if (fsi){
+    Solution_BGS_k  = new su2double [nVar];
+    Solution_BGS_k[0] = val_pressure;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution_BGS_k[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
+    }
+  }
+
 }
 
 CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -200,6 +212,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   bool windgust     = config->GetWind_Gust();
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
+  bool fsi = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
@@ -311,6 +324,14 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
+  
+  Solution_BGS_k = NULL;
+  if (fsi){
+      Solution_BGS_k  = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution_BGS_k[iVar] = val_solution[iVar];
+      }
+  }
 
 }
 
@@ -329,6 +350,8 @@ CIncEulerVariable::~CIncEulerVariable(void) {
   }
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
+  
+  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
 
 }
 

@@ -3,7 +3,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -364,7 +364,7 @@ def obj_df(dvs,config,state=None):
             # For multiple objectives are evaluated one-by-one rather than combined
             # MARKER_MONITORING should be updated to only include the marker for i_obj
             # For single objectives, multiple markers can be used 
-            config['MARKER_MONITORING'] = marker_monitored[i_obj]
+            if (n_obj>1): config['MARKER_MONITORING'] = marker_monitored[i_obj]
             scale = def_objs[this_obj]['SCALE']
             global_factor = float(config['OPT_GRADIENT_FACTOR'])
             sign  = su2io.get_objectiveSign(this_obj)
