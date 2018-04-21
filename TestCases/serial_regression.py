@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -637,18 +637,18 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.362540, 0.406893, 82.840290, 0.882243] #last 4 columns
+    Jones_tc.test_vals = [-5.304569, 0.419188, 80.085880, 1.034776] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
 
-	# Jones APU Turbocharger restart
+    # Jones APU Turbocharger restart
     Jones_tc_rst           = TestCase('jones_turbocharger_restart')
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.265376, -1.422420, 82.253590, 2.776443] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.422871, -1.618084, 82.250580, 2.791307] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -812,6 +812,20 @@ def main():
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)    
    
+    ##########################
+    ### Zonal multiphysics ###
+    ##########################
+
+    # CHT incompressible
+    cht_incompressible           = TestCase('cht_incompressible')
+    cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
+    cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
+    cht_incompressible.test_iter = 10
+    cht_incompressible.test_vals = [-6.160266, -42791.508203, -7.467639, 24103.777644] #last 4 columns
+    cht_incompressible.su2_exec  = "SU2_CFD"
+    cht_incompressible.timeout   = 1600
+    cht_incompressible.tol       = 0.00001
+    test_list.append(cht_incompressible)
 
     ######################################
     ### RUN TESTS                      ###
@@ -1090,7 +1104,7 @@ def main():
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1    
-    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 1.779489E-07] #last 4 columns
+    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005657, 0.000341] #last 4 columns
     opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001

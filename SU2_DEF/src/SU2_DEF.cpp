@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -62,11 +62,11 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout 
    the entire code ---*/
   
-  CConfig **config_container         = NULL;
-  CGeometry **geometry_container     = NULL;
+  CConfig **config_container          = NULL;
+  CGeometry **geometry_container      = NULL;
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
-  COutput *output                    = NULL;
+  COutput *output                     = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file 
    (if no config file is specified, default.cfg is used) ---*/
@@ -94,6 +94,8 @@ int main(int argc, char *argv[]) {
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
+    surface_movement[iZone]       = NULL;
+    grid_movement[iZone]          = NULL;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -306,6 +308,51 @@ int main(int argc, char *argv[]) {
   
   delete config;
   config = NULL;
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+  
+  if (geometry_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != NULL) {
+        delete geometry_container[iZone];
+      }
+    }
+    delete [] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+  
+  if (surface_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (surface_movement[iZone] != NULL) {
+        delete surface_movement[iZone];
+      }
+    }
+    delete [] surface_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  if (grid_movement != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (grid_movement[iZone] != NULL) {
+        delete grid_movement[iZone];
+      }
+    }
+    delete [] grid_movement;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
+  
+  if (config_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  
+  if (output != NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
