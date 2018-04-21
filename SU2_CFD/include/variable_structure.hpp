@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -90,8 +90,7 @@ protected:
   unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
-  su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem. */
-
+  su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
   
 public:
   
@@ -2498,7 +2497,7 @@ public:
  * \class CHeatFVMVariable
  * \brief Main class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  */
 class CHeatFVMVariable : public CVariable {
 protected:
@@ -2573,13 +2572,13 @@ public:
 };
 
 /*!
- * \class CFEM_ElasVariable
+ * \class CFEAVariable
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_ElasVariable : public CVariable {
+class CFEAVariable : public CVariable {
 protected:
   
   bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
@@ -2611,13 +2610,15 @@ protected:
   
   su2double *Prestretch;        /*!< \brief Prestretch geometry */
   
+  su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
+  
   
 public:
   
   /*!
    * \brief Constructor of the class.
    */
-  CFEM_ElasVariable(void);
+  CFEAVariable(void);
   
   /*!
    * \overload
@@ -2626,12 +2627,12 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_ElasVariable(void);
+  ~CFEAVariable(void);
   
   /*!
    * \brief Get the value of the stress.
@@ -3077,6 +3078,17 @@ public:
    */
   void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
   
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
+
 };
 
 /*!
@@ -3164,6 +3176,9 @@ protected:
   /*--- New solution container for Classical RK4 ---*/
 
   su2double *Solution_New;
+
+  /*--- Old solution container for BGS iterations ---*/
+  su2double* Solution_BGS_k;
   
 public:
   
@@ -3565,6 +3580,17 @@ public:
    * \param[in] Value of the derivatives of the wind gust
    */
   void SetWindGustDer(su2double* val_WindGust);
+
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
 };
 
 /*!
@@ -3586,6 +3612,9 @@ protected:
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   
+  /*--- Old solution container for BGS iterations ---*/
+  su2double* Solution_BGS_k;
+
 public:
   
   /*!
@@ -3836,6 +3865,17 @@ public:
    */
   su2double GetSpecificHeatCv(void);
   
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
+
 };
 
 /*!
