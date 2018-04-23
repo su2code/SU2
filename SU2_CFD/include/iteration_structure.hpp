@@ -107,7 +107,8 @@ public:
                           CSurfaceMovement **surface_movement,
                           CVolumetricMovement ***grid_movement,
                           CFreeFormDefBox*** FFDBox,
-                          unsigned short val_iZone);
+                          unsigned short val_iZone,
+                          unsigned short val_iInst);
   
   /*!
    * \brief A virtual member.
@@ -130,7 +131,8 @@ public:
                        CSurfaceMovement **surface_movement,
                        CVolumetricMovement ***grid_movement,
                        CFreeFormDefBox*** FFDBox,
-                       unsigned short val_iZone);
+                       unsigned short val_iZone,
+                       unsigned short val_iInst);
   
   /*!
    * \brief A virtual member.
@@ -153,7 +155,8 @@ public:
                       CSurfaceMovement **surface_movement,
                       CVolumetricMovement ***grid_movement,
                       CFreeFormDefBox*** FFDBox,
-                      unsigned short val_iZone);
+                      unsigned short val_iZone,
+                      unsigned short val_iInst);
   
   /*!
    * \brief A virtual member.
@@ -188,28 +191,33 @@ public:
                             CSurfaceMovement **surface_movement,
                             CVolumetricMovement ***grid_movement,
                             CFreeFormDefBox*** FFDBox,
-                            unsigned short val_iZone);
+                            unsigned short val_iZone,
+                            unsigned short val_iInst);
 
   virtual void InitializeAdjoint(CSolver *****solver_container,
                                  CGeometry ****geometry_container,
                                  CConfig **config_container,
-                                 unsigned short iZone){}
+                                 unsigned short iZone,
+                                 unsigned short iInst){}
 
   virtual void InitializeAdjoint_CrossTerm(CSolver *****solver_container,
                                  CGeometry ****geometry_container,
                                  CConfig **config_container,
-                                 unsigned short iZone){}
+                                 unsigned short iZone,
+                                 unsigned short iInst){}
 
   virtual void RegisterInput(CSolver *****solver_container,
                              CGeometry ****geometry_container,
                              CConfig** config_container,
                              unsigned short iZone,
+                             unsigned short iInst,
                              unsigned short kind_recording){}
 
   virtual void SetDependencies(CSolver *****solver_container,
                                CGeometry ****geometry_container,
                                CConfig **config_container,
                                unsigned short iZone,
+                               unsigned short iInst,
                                unsigned short kind_recording){}
 
   virtual void SetDependencies(CSolver *****solver_container,
@@ -217,24 +225,28 @@ public:
                                CNumerics ******numerics_container,
                                CConfig **config_container,
                                unsigned short iZone,
+                               unsigned short iInst,
                                unsigned short kind_recording){}
 
   virtual void RegisterOutput(CSolver *****solver_container,
                               CGeometry ****geometry_container,
                               CConfig** config_container,
                               COutput* output,
-                              unsigned short iZone){}
+                              unsigned short iZone,
+                              unsigned short iInst){}
 
   virtual void LoadUnsteady_Solution(CGeometry ****geometry_container,
                                          CSolver *****solver_container,
                                          CConfig **config_container,
                                          unsigned short val_iZone,
+                                         unsigned short val_iInst,
                                          int val_DirectIter){}
 
   virtual void LoadDynamic_Solution(CGeometry ****geometry_container,
                                         CSolver *****solver_container,
                                         CConfig **config_container,
                                         unsigned short val_iZone,
+                                        unsigned short val_iInst,
                                         int val_DirectIter){}
 
 };
@@ -272,7 +284,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the fluid system.
@@ -295,7 +308,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
   
   /*!
    * \brief Updates the containers for the fluid system.
@@ -310,7 +324,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the fluid system.
@@ -338,7 +353,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
   
   /*!
    * \brief Imposes a gust via the grid velocities.
@@ -396,7 +412,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
@@ -413,7 +430,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
 
 
 };
@@ -459,7 +477,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the wave system.
@@ -483,7 +502,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
 
   /*!
    * \brief Updates the containers for the wave system.
@@ -507,7 +527,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the wave system.
@@ -534,7 +555,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
   
 };
 
@@ -570,7 +592,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the heat system.
@@ -593,7 +616,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
 
   /*!
    * \brief Updates the containers for the heat system.
@@ -608,7 +632,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the heat system.
@@ -637,7 +662,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
   
 };
 
@@ -673,7 +699,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the poisson system.
@@ -696,7 +723,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
 
   /*!
    * \brief Updates the containers for the poisson system.
@@ -711,7 +739,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the poisson system.
@@ -740,7 +769,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
   
 };
 
@@ -794,7 +824,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
 
   /*!
    * \brief Updates the containers for the FEM system.
@@ -809,7 +840,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
 
   /*!
    * \brief Monitors the convergence and other metrics for the FEM system.
@@ -838,7 +870,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
 
 
 };
@@ -875,7 +908,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -898,7 +932,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
   
   /*!
    * \brief Updates the containers for the adjoint fluid system.
@@ -913,7 +948,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the adjoint fluid system.
@@ -940,7 +976,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
 
   
 };
@@ -984,7 +1021,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
   
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
@@ -1007,7 +1045,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
   
   /*!
    * \brief Updates the containers for the discrete adjoint fluid system.
@@ -1022,7 +1061,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
   
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
@@ -1051,7 +1091,8 @@ public:
                    CSurfaceMovement **surface_movement,
                    CVolumetricMovement ***grid_movement,
                    CFreeFormDefBox*** FFDBox,
-                   unsigned short val_iZone);
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
 
   /*!
    * \brief Registers all input variables of the fluid iteration.
@@ -1063,7 +1104,8 @@ public:
   void InitializeAdjoint(CSolver *****solver_container,
                          CGeometry ****geometry_container,
                          CConfig** config_container,
-                         unsigned short iZone);
+                         unsigned short iZone,
+                         unsigned short iInst);
 
   /*!
    * \brief Registers all output variables of the fluid iteration.
@@ -1077,6 +1119,7 @@ public:
                      CGeometry ****geometry_container,
                      CConfig** config_container,
                      unsigned short iZone,
+                     unsigned short iInst,
                      unsigned short kind_recording);
 
   /*!
@@ -1089,8 +1132,9 @@ public:
   void RegisterOutput(CSolver *****solver_container,
                       CGeometry ****geometry_container,
                       CConfig** config_container,
-											                      COutput* output,
-                      unsigned short iZone);
+                      COutput* output,
+                      unsigned short iZone,
+                      unsigned short iInst);
 
   /*!
    * \brief Initializes the adjoints of the output variables of the meanflow iteration - without the contribution of the objective function
@@ -1099,7 +1143,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone);
+  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Record a single iteration of the direct mean flow system.
@@ -1125,6 +1169,7 @@ public:
                       CVolumetricMovement ***grid_movement,
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone,
+                      unsigned short val_iInst,
                       unsigned short kind_recording);
 
   /*!
@@ -1140,6 +1185,7 @@ public:
                        CGeometry ****geometry_container,
                        CConfig **config_container,
                        unsigned short iZone,
+                       unsigned short iInst,
                        unsigned short kind_recording);
 
   /*!
@@ -1154,6 +1200,7 @@ public:
                       CSolver *****solver_container,
                       CConfig **config_container,
                       unsigned short val_iZone,
+                      unsigned short val_iInst,
                       int val_DirectIter);
 
 
@@ -1199,7 +1246,8 @@ public:
                   CSurfaceMovement **surface_movement,
                   CVolumetricMovement ***grid_movement,
                   CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
 
   /*!
    * \brief Perform a single iteration of the adjoint mean flow system.
@@ -1222,7 +1270,8 @@ public:
                CSurfaceMovement **surface_movement,
                CVolumetricMovement ***grid_movement,
                CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
+               unsigned short val_iZone,
+               unsigned short val_iInst);
 
   /*!
    * \brief Updates the containers for the discrete adjoint mean flow system.
@@ -1237,7 +1286,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint mean flow system.
@@ -1264,7 +1314,8 @@ public:
               CSurfaceMovement **surface_movement,
               CVolumetricMovement ***grid_movement,
               CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
+              unsigned short val_iZone,
+              unsigned short val_iInst);
 
   /*!
    * \brief Registers all input variables of the FEM iteration.
@@ -1274,7 +1325,7 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] kind_recording - Kind of recording, either FEM_VARIABLES or MESH_COORDS
    */
-  void RegisterInput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig** config_container, unsigned short iZone, unsigned short kind_recording);
+  void RegisterInput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig** config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording);
 
   /*!
    * \brief Registers all output variables of the FEM iteration.
@@ -1283,7 +1334,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void RegisterOutput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig** config_container, unsigned short iZone);
+  void RegisterOutput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig** config_container, unsigned short iZone, unsigned short iInst);
   using CIteration::RegisterOutput;
   
   /*!
@@ -1293,7 +1344,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint(CSolver *****solver_container, CGeometry ****geometry_container, CConfig** config_container, unsigned short iZone);
+  void InitializeAdjoint(CSolver *****solver_container, CGeometry ****geometry_container, CConfig** config_container, unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Initializes the adjoints of the output variables of the FEM iteration - without the contribution of the objective function
@@ -1302,7 +1353,7 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone);
+  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
@@ -1328,6 +1379,7 @@ public:
                       CVolumetricMovement ***grid_movement,
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone,
+                      unsigned short val_iInst,
                       unsigned short kind_recording);
 
   /*!
@@ -1343,6 +1395,7 @@ public:
                        CNumerics ******numerics_container,
                        CConfig **config_container,
                        unsigned short iZone,
+                       unsigned short iInst,
                        unsigned short kind_recording);
 
   /*!
@@ -1357,6 +1410,7 @@ public:
                       CSolver *****solver_container,
                       CConfig **config_container,
                       unsigned short val_iZone,
+                      unsigned short val_iInst,
                       int val_DirectIter);
 
 };

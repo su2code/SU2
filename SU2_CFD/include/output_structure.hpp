@@ -398,7 +398,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write a native SU2 restart file (binary) in parallel.
@@ -407,7 +407,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -459,7 +459,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
 
   /*!
    * \brief Write a Tecplot ASCII solution file.
@@ -509,7 +509,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -640,7 +640,7 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-                              CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone);
+                              CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -739,7 +739,7 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short val_nZone);
+                                unsigned long iExtIter, unsigned short val_nZone, unsigned short *nInst);
   
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
