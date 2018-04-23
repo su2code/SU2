@@ -2,7 +2,7 @@
  * \file numerics_direct_heat.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -104,9 +104,6 @@ CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, C
 }
 
 CCentSca_Heat::~CCentSca_Heat(void) {
-
-  delete [] Velocity_i;
-  delete [] Velocity_j;
 
 }
 

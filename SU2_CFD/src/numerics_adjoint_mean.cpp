@@ -2,7 +2,7 @@
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains the numerical methods for adjoint compressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

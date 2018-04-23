@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -745,24 +745,24 @@ public:
 };
 
 /*!
- * \class CFEM_StructuralAnalysis
+ * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
  * \version 4.0.1 "Cardinal"
  */
-class CFEM_StructuralAnalysis : public CIteration {
+class CFEAIteration : public CIteration {
 public:
 
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_StructuralAnalysis(CConfig *config);
+  CFEAIteration(CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_StructuralAnalysis(void);
+  ~CFEAIteration(void);
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
@@ -1169,7 +1169,7 @@ class CDiscAdjFEAIteration : public CIteration {
 
 private:
 
-  CFEM_StructuralAnalysis* fem_iteration; /*!< \brief Pointer to the mean flow iteration class. */
+  CFEAIteration* fem_iteration; /*!< \brief Pointer to the mean flow iteration class. */
   unsigned short CurrentRecording;        /*!< \brief Stores the current status of the recording. */
 
 
@@ -1361,21 +1361,3 @@ public:
 
 };
 
-
-/*!
- * \brief Iteration function for structural analysis using the Finite Element Method.
- * \author R. Sanchez.
- * \param[in] output - Pointer to the COutput class.
- * \param[in] integration_container - Container vector with all the integration methods.
- * \param[in] geometry_container - Geometrical definition of the problem.
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] config_container - Definition of the particular problem.
- * \param[in] surface_movement - Surface movement classes of the problem.
- * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] FFDBox - FFD FFDBoxes of the problem.
- * \param[in] ExtIter - Current physical time iteration number.
- */
-void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);

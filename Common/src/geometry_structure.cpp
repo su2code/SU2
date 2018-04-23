@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -680,10 +680,79 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   }
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
     if (config->GetMarker_All_GeoEval(iMarker) == YES) {
       
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+        
         PointIndex=0;
+        
+        /*--- To decide if an element is going to be used or not should be done element based,
+         The first step is to compute and average coordinate for the element ---*/
+        
+        su2double AveXCoord = 0.0;
+        su2double AveYCoord = 0.0;
+        su2double AveZCoord = 0.0;
+        
+        for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          AveXCoord += node[iPoint]->GetCoord(0);
+          AveYCoord += node[iPoint]->GetCoord(1);
+          AveZCoord += node[iPoint]->GetCoord(2);
+        }
+        
+        AveXCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
+        AveYCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
+        AveZCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
+        
+        /*--- To only cut one part of the nacelle based on the cross product
+         of the normal to the plane and a vector that connect the point
+         with the center line ---*/
+        
+        CrossProduct = 1.0;
+        
+        if (config->GetGeo_Description() == NACELLE) {
+          
+          su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+          su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+          
+          /*--- Translate to the origin ---*/
+          
+          su2double XCoord_Trans = AveXCoord - config->GetNacelleLocation(0);
+          su2double YCoord_Trans = AveYCoord - config->GetNacelleLocation(1);
+          su2double ZCoord_Trans = AveZCoord - config->GetNacelleLocation(2);
+          
+          /*--- Apply tilt angle ---*/
+          
+          su2double XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
+          su2double YCoord_Trans_Tilt = YCoord_Trans;
+          su2double ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle ---*/
+          
+          su2double YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
+          su2double ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
+          
+          /*--- Undo plane rotation, we have already rotated the nacelle ---*/
+          
+          /*--- Undo tilt angle ---*/
+          
+          su2double XPlane_Normal_Tilt = Plane_Normal[0]*cos(-Tilt_Angle) + Plane_Normal[2]*sin(-Tilt_Angle);
+          su2double YPlane_Normal_Tilt = Plane_Normal[1];
+          su2double ZPlane_Normal_Tilt = Plane_Normal[2]*cos(-Tilt_Angle) - Plane_Normal[0]*sin(-Tilt_Angle);
+          
+          /*--- Undo toe angle ---*/
+          
+          su2double YPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*sin(-Toe_Angle) + YPlane_Normal_Tilt*cos(-Toe_Angle);
+          su2double ZPlane_Normal_Tilt_Toe = ZPlane_Normal_Tilt;
+          
+          
+          v1[1] = YCoord_Trans_Tilt_Toe - 0.0;
+          v1[2] = ZCoord_Trans_Tilt_Toe - 0.0;
+          v3[0] = v1[1]*ZPlane_Normal_Tilt_Toe-v1[2]*YPlane_Normal_Tilt_Toe;
+          CrossProduct = v3[0] * 1.0;
+          
+        }
         
         for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
@@ -691,68 +760,18 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           for (jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
             jPoint = bound[iMarker][iElem]->GetNode(jNode);
             
-            CrossProduct = 1.0;
-            if (config->GetGeo_Description() == NACELLE) {
-              v1[0] = node[iPoint]->GetCoord(0) - node[iPoint]->GetCoord(0);
-              v1[1] = node[iPoint]->GetCoord(1) - 0.0;
-              v1[2] = node[iPoint]->GetCoord(2) - 0.0;
-              v3[0] = v1[1]*Plane_Normal[2]-v1[2]*Plane_Normal[1];
-              v3[1] = v1[2]*Plane_Normal[0]-v1[0]*Plane_Normal[2];
-              v3[2] = v1[0]*Plane_Normal[1]-v1[1]*Plane_Normal[0];
-              
-              su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
-              su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
-              
-              /*--- Translate to the origin ---*/
-              
-              su2double XCoord_Trans = node[iPoint]->GetCoord(0) - config->GetNacelleLocation(0);
-              su2double YCoord_Trans = node[iPoint]->GetCoord(1) - config->GetNacelleLocation(1);
-              su2double ZCoord_Trans = node[iPoint]->GetCoord(2) - config->GetNacelleLocation(2);
-              
-              /*--- Apply tilt angle ---*/
-              
-              su2double XCoord_Trans_Tilt = XCoord_Trans*cos(Tilt_Angle) + ZCoord_Trans*sin(Tilt_Angle);
-              su2double YCoord_Trans_Tilt = YCoord_Trans;
-              su2double ZCoord_Trans_Tilt = ZCoord_Trans*cos(Tilt_Angle) - XCoord_Trans*sin(Tilt_Angle);
-              
-              /*--- Apply toe angle ---*/
-              
- //             su2double XCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*cos(Toe_Angle) - YCoord_Trans_Tilt*sin(Toe_Angle);
-              su2double YCoord_Trans_Tilt_Toe = XCoord_Trans_Tilt*sin(Toe_Angle) + YCoord_Trans_Tilt*cos(Toe_Angle);
-              su2double ZCoord_Trans_Tilt_Toe = ZCoord_Trans_Tilt;
-              
-              /*--- Undo plane rotation, we have already rotated the nacelle ---*/
-              
-              /*--- Undo tilt angle ---*/
-              
-              su2double XPlane_Normal_Tilt = Plane_Normal[0]*cos(-Tilt_Angle) + Plane_Normal[2]*sin(-Tilt_Angle);
-              su2double YPlane_Normal_Tilt = Plane_Normal[1];
-              su2double ZPlane_Normal_Tilt = Plane_Normal[2]*cos(-Tilt_Angle) - Plane_Normal[0]*sin(-Tilt_Angle);
-              
-              /*--- Undo toe angle ---*/
-              
-              su2double XPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*cos(-Toe_Angle) - YPlane_Normal_Tilt*sin(-Toe_Angle);
-              su2double YPlane_Normal_Tilt_Toe = XPlane_Normal_Tilt*sin(-Toe_Angle) + YPlane_Normal_Tilt*cos(-Toe_Angle);
-              su2double ZPlane_Normal_Tilt_Toe = ZPlane_Normal_Tilt;
-              
-              
-              v1[0] = 0.0;
-              v1[1] = YCoord_Trans_Tilt_Toe;
-              v1[2] = ZCoord_Trans_Tilt_Toe;
-              v3[0] = v1[1]*ZPlane_Normal_Tilt_Toe-v1[2]*YPlane_Normal_Tilt_Toe;
-              v3[1] = v1[2]*XPlane_Normal_Tilt_Toe-v1[0]*ZPlane_Normal_Tilt_Toe;
-              v3[2] = v1[0]*YPlane_Normal_Tilt_Toe-v1[1]*XPlane_Normal_Tilt_Toe;
-              CrossProduct = v3[0] * 1.0 + v3[1] * 0.0 + v3[2] * 0.0;
-              
-            }
+            /*--- CrossProduct concept is delicated because it allows triangles where only one side is divided by a plane.
+             that is going against the concept that all the triangles are divided twice  and causes probelms because
+             Xcoord_Index0.size() > Xcoord_Index1.size()! ---*/
             
             if ((jPoint > iPoint) && (CrossProduct >= 0.0)
-                && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))
-                && ((node[iPoint]->GetCoord(1) > MinYCoord) && (node[iPoint]->GetCoord(1) < MaxYCoord))
-                && ((node[iPoint]->GetCoord(2) > MinZCoord) && (node[iPoint]->GetCoord(2) < MaxZCoord))) {
+                && ((AveXCoord > MinXCoord) && (AveXCoord < MaxXCoord))
+                && ((AveYCoord > MinYCoord) && (AveYCoord < MaxYCoord))
+                && ((AveZCoord > MinZCoord) && (AveZCoord < MaxZCoord))) {
               
               Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
               Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
+              
               
               for (iDim = 0; iDim < nDim; iDim++) {
                 if (original_surface == true) {
@@ -1443,6 +1462,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long>::iterator it;
   su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
+
+  bool fea = ((config->GetKind_Solver()==FEM_ELASTICITY) || (config->GetKind_Solver()==DISC_ADJ_FEM));
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -1711,7 +1732,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
   
-  if (rank == MASTER_NODE)
+  if ((rank == MASTER_NODE) && (!fea))
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
   
   Point_Critical.clear();
@@ -9691,6 +9712,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
+  bool fea = ((config->GetKind_Solver() == FEM_ELASTICITY) || (config->GetKind_Solver() == DISC_ADJ_FEM));
   
   PositiveXArea = 0.0;
   PositiveYArea = 0.0;
@@ -9701,11 +9723,12 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+    if ((((Boundary == EULER_WALL)              ||
+          (Boundary == HEAT_FLUX)               ||
+          (Boundary == ISOTHERMAL)              ||
+          (Boundary == LOAD_BOUNDARY)           ||
+          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+        || (fea))
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -9739,6 +9762,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           
         }
       }
+
   }
   
 #ifdef HAVE_MPI
@@ -9807,7 +9831,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   
   if (rank == MASTER_NODE) {
 
-    cout << "Wetted area = "<< TotalWettedArea;
+    if (fea) cout << "Surface area = "<< TotalWettedArea;
+    else cout << "Wetted area = "<< TotalWettedArea;
+
     if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
@@ -9838,7 +9864,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
     
     cout << " y-direction = "<< TotalMinCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
+    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
     
     if (nDim == 3) {
     	cout << ", z-direction = "<< TotalMinCoordZ;

@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -207,6 +207,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -289,6 +290,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -408,6 +410,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -531,6 +534,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
 
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed
 
@@ -647,6 +651,7 @@ class TestCase:
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
     
+        sys.stdout.flush()
         os.chdir(workdir)
         return passed    
 
