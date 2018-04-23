@@ -6429,6 +6429,20 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
     return multizone_filename;
 }
 
+string CConfig::GetMultiinstance_FileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
+    return multizone_filename;
+}
+
 string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
