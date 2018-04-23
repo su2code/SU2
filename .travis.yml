@@ -63,7 +63,7 @@ before_script:
     - sh travis_scripts/test/before_script.sh
 
 script: 
-    - sh travis_scripts/test/script.sh
+    - travis_wait 90 sh travis_scripts/test/script.sh
               
 jobs:
     include:
