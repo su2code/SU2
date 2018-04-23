@@ -964,6 +964,7 @@ class CHBDriver : public CDriver {
 
 private:
 
+  unsigned short nInstHB;
   su2double **D; /*!< \brief Harmonic Balance operator. */
 
 public:
