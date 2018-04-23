@@ -2833,6 +2833,12 @@ void CDriver::Interface_Preprocessing() {
             if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
 
             break;
+            
+          case RADIAL_BASIS_FUNCTION:
+              interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
+
+              break;
 
           case CONSISTCONSERVE:
             if ( targetZone > 0 && structural_target ) {
