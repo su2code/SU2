@@ -43,10 +43,19 @@
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
+#include <stdexcept>
 
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
 #include "vector_structure.hpp"
+
+#ifdef HAVE_LAPACK
+extern "C" void dsptrf_(char*, int*, double*, int*, int*);
+extern "C" void dsptri_(char*, int*, double*, int*, double*, int*);
+extern "C" void dsymm_(char*, char*, int*, int*, double*, double*, int*, \
+  double*, int*, double*, double*, int*);
+#endif
 
 using namespace std;
 
@@ -181,7 +190,8 @@ public:
    * \param[in] nDim - number of physical dimensions.
    */
   void Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim);
-
+  
+  void Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim, unsigned long &nLocalVertex_Donor);
 
 };
 
@@ -385,4 +395,100 @@ public:
   bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
 };
 
+/*!
+ * \brief Radial basis function interpolation
+ */
+class CRadialBasisFunction : public CInterpolator {
+public:
 
+  /*!
+   * \brief Constructor of the class.
+   */
+  CRadialBasisFunction(void);
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
+   */
+  CRadialBasisFunction(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CRadialBasisFunction(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_TransferCoeff(CConfig **config);
+  
+  void Check_PolynomialTerms(int m, unsigned long n, double *P, int *skip_row, int *keep_row, double max_diff_tol, bool P_transposed, int &n_polynomial);
+  
+  void Get_Distance(su2double *coord_i, su2double *coord_j, unsigned short nDim, su2double &dist);
+
+  void Get_RadialBasisValue(su2double &dist, CConfig *config);
+
+  inline unsigned long Get_BufferCoordIdx(unsigned long iPoint, unsigned int nDim, unsigned int iDim){return iPoint*nDim+iDim;}
+
+};
+
+class CSymmetricMatrix{
+
+	private:
+		
+		/*--- Variables ---*/
+		bool initialized, inversed;
+		int sz, num_val;
+		int *perm_vec;
+		double *val_vec, *decompose_vec, *inv_val_vec;
+		
+		enum DecompositionType { none, cholesky, lu };
+		
+		DecompositionType decomposed;
+		
+		/*--- Methods ---*/
+		inline int CalcIdx(int i, int j);
+		inline int CalcIdxFull(int i, int j);
+
+	public:
+	
+		/*--- Methods ---*/
+		CSymmetricMatrix();
+		~CSymmetricMatrix();
+		
+		void Initialize(int N);
+		void Initialize(int N, double *formed_val_vec);
+		
+		inline int GetSize();
+		
+		void Write(int i, int j, double val);
+		double Read(int i, int j);
+		
+		void CholeskyDecompose(bool overwrite);
+		void LUDecompose();
+		void CalcInv(bool overwrite);
+		
+		void CalcInv_dsptri();
+		void CalcInv_dpotri();
+		
+		double ReadL(int i, int j);
+		double ReadU(int i, int j);
+		double ReadInv(int i,int j);
+		
+		void Print();
+		void PrintInv();
+		void PrintLU();
+		void CheckInv();
+		
+		void VecMatMult(double *v);
+		void VecMatMult(double *v, int N);
+		void VecMatMult(double *v, double *res, int N);
+		void MatVecMult(double *v);
+		
+		void MatMatMult(bool left_mult, double *mat_vec, int N);
+		
+};
