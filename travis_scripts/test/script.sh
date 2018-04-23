@@ -1,6 +1,6 @@
 #!/bin/sh
 
 # Run the tests via the Python scripts
-echo $CONFIGURE_COMMAND
-python $TEST_SCRIPT
+travis_wait 90 python $TEST_SCRIPT
+
 
