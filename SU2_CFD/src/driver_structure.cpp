@@ -3367,7 +3367,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   if (!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       output->SetConvHistory_Body(&ConvHist_file[iZone], geometry_container, solver_container,
-          config_container, integration_container, false, UsedTime, iZone);
+          config_container, integration_container, false, UsedTime, iZone, INST_0);
     }
   }
 
@@ -3465,7 +3465,7 @@ void CDriver::Output(unsigned long ExtIter) {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
     
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone, nInst);
     
     
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -3806,7 +3806,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     output->SetConvHistory_Body(&ConvHist_file[iZone], geometry_container, solver_container,
-        config_container, integration_container, false, UsedTime, iZone);
+        config_container, integration_container, false, UsedTime, iZone, INST_0);
   }
 
 
@@ -4035,7 +4035,7 @@ void CDiscAdjFluidDriver::Run() {
     /*--- Write the convergence history (only screen output) ---*/
 
     if (unsteady)
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0, INST_0);
 
   }
 
@@ -5080,7 +5080,7 @@ void CFSIDriver::Run() {
 
       /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-      output->SetConvHistory_Body(&ConvHist_file[ZONE_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW);
+      output->SetConvHistory_Body(&ConvHist_file[ZONE_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
 
       /*--- If the convergence criteria is met for the flow, break the loop ---*/
       StopCalc_Flow = integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence();
@@ -5108,7 +5108,7 @@ void CFSIDriver::Run() {
 
     /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW);
+     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW, INST_0);
 
   } else {
 
@@ -5136,7 +5136,7 @@ void CFSIDriver::Run() {
 
     /*--- Write the convergence history for the structure (only screen output) ---*/
 
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_STRUCT);
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_STRUCT, INST_0);
 
     /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
@@ -6815,7 +6815,7 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
   if (kind_recording == FEA_DISP_VARS) {
 
     /*--- Set the convergence criteria (only residual possible) ---*/
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
 
   }
 
