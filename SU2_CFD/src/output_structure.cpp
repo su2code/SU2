@@ -4508,7 +4508,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                   CIntegration ****integration,
                                   bool DualTime_Iteration,
                                   su2double timeused,
-                                  unsigned short val_iZone) {
+                                  unsigned short val_iZone,
+                                  unsigned short val_iInst) {
   
   bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
@@ -11660,13 +11661,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                                        CGeometry ****geometry,
                                        CConfig **config,
                                        unsigned long iExtIter,
-                                       unsigned short val_nZone) {
+                                       unsigned short val_nZone,
+                                       unsigned short *nInst) {
   
-  unsigned short iZone, iVar;
+  unsigned short iZone, iVar, iInst;
   unsigned long iPoint;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
     bool cont_adj = config[iZone]->GetContinuous_Adjoint();
     bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
 
@@ -11697,14 +11701,14 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
-        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                        solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
+                                        solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                           solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL],
-                                           solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][iInst][MESH_0],
+                                           solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL],
+                                           solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone);
         break;
       default: break;
     }
@@ -11718,17 +11722,17 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES: case RANS :
-        LoadLocalData_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        LoadLocalData_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        LoadLocalData_Elasticity(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-        LoadLocalData_Base(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+        LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       default: break;
     }
@@ -11741,12 +11745,12 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       if (rank == MASTER_NODE)
         cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
       
-      Local_Data_Copy = new su2double*[geometry[iZone][INST_0][MESH_0]->GetnPoint()];
-      for (iPoint = 0; iPoint < geometry[iZone][INST_0][MESH_0]->GetnPoint(); iPoint++) {
+      Local_Data_Copy = new su2double*[geometry[iZone][iInst][MESH_0]->GetnPoint()];
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
         Local_Data_Copy[iPoint] = new su2double[nVar_Par];
       }
       
-      for (iPoint = 0; iPoint < geometry[iZone][INST_0][MESH_0]->GetnPoint(); iPoint++) {
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar_Par; iVar++) {
           Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
         }
@@ -11762,13 +11766,13 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
       
-      for (iPoint = 0; iPoint < geometry[iZone][INST_0][MESH_0]->GetnPoint(); iPoint++) {
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar_Par; iVar++) {
           Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
         }
       }
       
-      for (iPoint = 0; iPoint < geometry[iZone][INST_0][MESH_0]->GetnPoint(); iPoint++)
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++)
         delete [] Local_Data_Copy[iPoint];
       delete [] Local_Data_Copy;
       
@@ -11778,16 +11782,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
     
     if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
-    SortOutputData(config[iZone], geometry[iZone][INST_0][MESH_0]);
+    SortOutputData(config[iZone], geometry[iZone][iInst][MESH_0]);
     
     /*--- Write either a binary or ASCII restart file in parallel. ---*/
 
     if (config[iZone]->GetWrt_Binary_Restart()) {
       if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
-      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
     } else {
       if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
-      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
     }
 
     /*--- Get the file output format ---*/
@@ -11805,11 +11809,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       if (rank == MASTER_NODE)
         cout << "Preparing element connectivity across all ranks." << endl;
-      SortConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], iZone);
+      SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
 
       /*--- Sort the surface data and renumber if for writing. ---*/
 
-      SortOutputData_Surface(config[iZone], geometry[iZone][INST_0][MESH_0]);
+      SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
 
       /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
@@ -11822,8 +11826,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                     solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, false);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                     solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
 
           case FIELDVIEW:
@@ -11842,8 +11846,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                     solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, false);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                     solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
 
           case FIELDVIEW_BINARY:
@@ -11859,8 +11863,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                     solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, false);
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                     solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
 
           default:
@@ -11878,8 +11882,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                       solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, true);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                       solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
 
           case TECPLOT_BINARY:
@@ -11889,8 +11893,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                       solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, true);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                       solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
 
           case PARAVIEW:
@@ -11898,8 +11902,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0],
-                                        solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, true);
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                        solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
             
           default:
@@ -11910,23 +11914,24 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       /*--- Clean up the connectivity data that was allocated for output. ---*/
 
-      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0], false);
-      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0], true);
+      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], false);
+      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
 
       /*--- Clean up the surface data that was only needed for output. ---*/
 
-      DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0]);
+      DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
       
     }
     
     /*--- Deallocate the nodal data needed for writing restarts. ---*/
     
-    DeallocateData_Parallel(config[iZone], geometry[iZone][INST_0][MESH_0]);
+    DeallocateData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
     
     /*--- Clear the variable names list. ---*/
     
     Variable_Names.clear();
 
+    }
   }
 }
 
@@ -16377,11 +16382,11 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
   
   /*--- Local variables ---*/
   
-  unsigned short nZone = geometry->GetnZone();
+  unsigned short nZone = geometry->GetnZone(), nInst = config->GetnInstances();
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -16412,6 +16417,10 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
   
+  /*--- Append the zone number if multiple instance problems ---*/
+  if (nInst > 1)
+    filename= config->GetMultiinstance_FileName(filename, val_iInst);
+
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
@@ -16504,11 +16513,11 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   
 }
 
-void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, nZone = geometry->GetnZone();
+  unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnInstances();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
@@ -16533,6 +16542,10 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
+
+  /*--- Append the zone number if multiple instance problems ---*/
+  if (nInst > 1)
+    filename= config->GetMultiinstance_FileName(filename, val_iInst);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
