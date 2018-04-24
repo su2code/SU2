@@ -749,6 +749,42 @@ public:
    bool IsPointInsideElement(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
     bool IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
    
+    /*!
+     * \brief Function, which checks whether or not the given coordinate is
+     inside the given quadrilateral.
+     * \param[in]  elemID  ID of the quadrilateral for which the containment
+     must be checked.
+     * \param[in]  coor    Coordinate for which the containment must be checked.
+     * \param[out] parCoor Parametric coordinates of coor if it is inside the
+     given quadrilateral.
+     * \return             True if coor is inside the quadrilateral and false otherwise.
+     * Taken from adt Elem Class funcitons in feature_hom_singleNodeOpt branch
+     */
+    bool CoorInQuadrilateral(CGeometry *geometry,
+                             const unsigned long jElem,
+                             const su2double     *coor,
+                             su2double           *parCoor);
+    
+    bool CoorInHexahedron(CGeometry *geometry,
+                          const unsigned long jElem,
+                          const su2double     *coor,
+                          su2double           *parCoor);
+    
+    /*!
+     * \brief Function, which provides an initial guess for the parametric coordinates
+     of the given point inside a hexahedron by splitting it into tetrahedra.
+     * \param[in]  xRelC   Coordinates of the point to be investigated relative to
+     vertex 0 of the hexahedron.
+     * \param[in]  xRel    Coordinates of the vertices of the hexahedron relative to
+     vertex 0.
+     * \param[out] parCoor Initial guess of the parametric coordinates.
+     * \return             True if the initial guess is within the hexahedron and
+     false otherwise.
+     */
+    bool InitialGuessContainmentHexahedron(const su2double xRelC[3],
+                                           const su2double xRel[8][3],
+                                           su2double       *parCoor);
+    
    /* For 3D point search */
    bool IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
     

@@ -15644,8 +15644,9 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                                      CConfig *config,CSolver **solver_interp,
                                      CGeometry *geometry_interp, CConfig *config_interp, su2double *MeshInterp_Location){
     unsigned short nDim = geometry->GetnDim();
-    su2double *probe_loc;
+    su2double *probe_loc, *parCoor;
     probe_loc = new su2double[nDim];
+    parCoor = new su2double[nDim];
     su2double isoparams[10];
 
     /*--- Compute the total number of nodes on no-slip boundaries ---*/
@@ -16063,7 +16064,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             }
             
             /* Unit test for checking IsPointInsideHex method */
-            /*su2double probe_check[3];
+           /* su2double probe_check[3];
             probe_check[0] = 0; probe_check[1] = 2.4; probe_check[2] = 2.5;
             cout << "Befor probe check " << endl;
             bool Inside_check = IsPointInsideHex(geometry, probe_check, 0);
@@ -16105,9 +16106,12 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             
             //if (probe_loc[0]>0.009 && probe_loc[0] < 0.1001)
               //  cout << "1 -Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
-            Isoparameters_1(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
-                
-                /*cout << "isoparams for probe_loc[0] = " << probe_loc[0] << ", porbe_loc[1] = " << probe_loc[1] << endl;
+            if (nDim ==2 )
+                Isoparameters_1(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
+            
+            /*bool isIn = CoorInQuadrilateral(geometry, probe_elem, probe_loc, parCoor);
+            
+                cout << "isoparams for probe_loc[0] = " << probe_loc[0] << ", porbe_loc[1] = " << probe_loc[1] << endl;
                 cout << "     Element number  = " << geometry->elem[probe_elem] << endl;
                 for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                     unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
@@ -16117,10 +16121,29 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                     cout << endl;
                 }
                 
-                cout << "     isoparam[0] = " << isoparams[0] << ", isoparam[1] = " << isoparams[1] << ", isoparam[2] = " << isoparams[2] << ", isoparam[4] = " << isoparams[3] << endl;*/
- 
+                cout << "     isoparam[0] = " << isoparams[0] << ", isoparam[1] = " << isoparams[1] << ", isoparam[2] = " << isoparams[2] << ", isoparam[4] = " << isoparams[3] << endl;
+            cout << "isIn = " << isIn << endl;
+                cout << "     parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << ", parCoor[4] = " << parCoor[3] << endl;*/
             
-            for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+            if (nDim == 3){
+                bool isIn = CoorInHexahedron(geometry, probe_elem, probe_loc, parCoor);
+                cout << "isoparams for probe_loc[0] = " << probe_loc[0] << ", porbe_loc[1] = " << probe_loc[1] << ", porbe_loc[2] = " << probe_loc[2] << endl;
+                cout << "     Element number  = " << geometry->elem[probe_elem] << endl;
+                
+                for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+                    unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
+                    for (unsigned short iDim=0; iDim < nDim; iDim++) {
+                        cout << "     Node " << iNode << "Coord[" << iDim << "] = " <<    geometry->node[iPoint_loc]->GetCoord(iDim) << ",";
+                    }
+                    cout << endl;
+                }
+                if (!isIn)
+                    cout << " ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!!" << endl;
+
+                cout << "     parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;
+            }
+            
+            for (unsigned  short iNode=0; iNode < nNodes_elem; iNode++) {
                 unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
                 for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)*isoparams[iNode];
@@ -16254,62 +16277,11 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
 # endif
     
     if(probe_loc != NULL) delete [] probe_loc;
+    if(parCoor != NULL) delete [] parCoor;
     if(X_donor != NULL) delete [] X_donor;
 }
 
-unsigned long COutput::FindProbeLocElement_fromNearestNode(CGeometry *geometry,
-                                                           unsigned long pointID,
-                                                           su2double *probe_loc){
-    /*--- Compute the total number of nodes on no-slip boundaries ---*/
-    unsigned long jElem, probe_elem;
-    /* Total number of points in given processor */
-    //unsigned long nPoint_proc = geometry->GetnPoint();
-    bool Inside=false;
-    unsigned short nElem_node = geometry->node[pointID]->GetnElem();
-    //cout << "Number of elements containing Node " <<  geometry->node[pointID]->GetGlobalIndex()  << " are " << nElem_node << endl;
-    
-    for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
-        jElem = geometry->node[pointID]->GetElem(iElem);
-        /*--- Determine whether the probe point is inside the element ---*/
-        Inside = IsPointInsideElement(geometry, probe_loc,jElem);
-        if (Inside) {
-            probe_elem = jElem;
-            break;
-        }
-    }
-    
-    if(!Inside){
-        /* Point not found in the elements containing the nearest edge */
-        /* Search the next tier neighbours */
-        unsigned short nPoint_node =geometry->node[pointID]->GetnPoint();
-        /* Neighbouring points of the nearest edge */
-        for ( unsigned short iPoint = 0; iPoint < nPoint_node; iPoint++) {
-            unsigned long jPoint = geometry->node[pointID]->GetPoint(iPoint);
-            unsigned short nElem_node = geometry->node[jPoint]->GetnElem();
-            for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
-                jElem = geometry->node[jPoint]->GetElem(iElem);
-                /*--- Determine whether the probe point is inside the element ---*/
-                //cout << " Checking if inside elem " << jElem << endl;
-                Inside = IsPointInsideElement(geometry, probe_loc,jElem);
-                if (Inside) {
-                    cout << "Found in next tier neighbours" << endl;
-                    probe_elem = jElem;
-                    return probe_elem;
-                }
-            }
-            if (Inside)
-                break;
-        }
-    }
-    
-    
-    if (!Inside) {
-        cout << " ######### Could not locate the point wit XCoord = " << probe_loc[0] << ", Ycoord= " << probe_loc[1] << " in the mesh ####### " << endl;
-        cout << "Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
-    }
-    return probe_elem;
-}
-
+/* Searching for element the point is located in searching from element of NN along the direction of line segement connecting NN to probe */
 unsigned long COutput::FindProbeLocElement_fromNearestNodeElem(CGeometry *geometry,
                                                            unsigned long pointID,
                                                            su2double *probe_loc){
@@ -16721,6 +16693,587 @@ bool COutput::IsPointInsideQuad(CGeometry *geometry, su2double *probe_loc,unsign
     return Inside;
     
 }
+
+/* Taken from adt class for FEM in feature_hom_singleNodeOpt branch */
+/* Author: Edwin */
+bool COutput::CoorInQuadrilateral(CGeometry *geometry,
+                         const unsigned long jElem,
+                         const su2double     *coor,
+                         su2double           *parCoor) {
+    /* Definition of the maximum number of iterations in the Newton solver
+     and the tolerance level. */
+    const unsigned short maxIt = 50;
+    const su2double tolNewton  = 1.e-10;
+    unsigned short nDim = 2;
+    unsigned long iPoint;
+    /* Determine the indices of the four vertices of the quadrilatral,
+     multiplied by nDim (which is 2). This gives the position in the
+     coordinate array where the coordinates of these points are stored. */
+    unsigned long i0=0;// = nDOFsPerElem[elemID];
+    unsigned long i1 = i0 + 1, i2 = i0 + 2, i3 = i0+3;
+//    i0 = nDim*elemConns[i0]; i1 = nDim*elemConns[i1];
+//    i2 = nDim*elemConns[i2]; i3 = nDim*elemConns[i3];
+    
+    const su2double tolInsideElem   =  1.e-10;
+    const su2double paramLowerBound = -1.0 - tolInsideElem;
+    const su2double paramUpperBound =  1.0 + tolInsideElem;
+    i0 = 0; i1 = 2; i2 = 4; i3 = 6;
+    unsigned short nNodes_elem;
+    su2double coorPoints[8];
+    nNodes_elem = geometry->elem[jElem]->GetnNodes();
+    if(nNodes_elem != 4){
+        cout << "****** NOTE: IsPointInsideQuad Works only for quad element search" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+        iPoint = geometry->elem[jElem]->GetNode(iNode);
+        for (unsigned short iDim=0; iDim < nDim; iDim++) {
+            coorPoints[nDim*iNode + iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        }
+    }
+    
+    /* Determine the coordinates relative to the vertex 0. */
+    const su2double xc = coor[0] - coorPoints[i0];
+    const su2double yc = coor[1] - coorPoints[i0+1];
+    
+    const su2double x1 = coorPoints[i1]   - coorPoints[i0];
+    const su2double y1 = coorPoints[i1+1] - coorPoints[i0+1];
+    
+    const su2double x2 = coorPoints[i2]   - coorPoints[i0];
+    const su2double y2 = coorPoints[i2+1] - coorPoints[i0+1];
+    
+    const su2double x3 = coorPoints[i3]   - coorPoints[i0];
+    const su2double y3 = coorPoints[i3+1] - coorPoints[i0+1];
+    
+    /* The parametrization of the quadrilatral is nonlinear, which requires an
+     iterative algorithm. Especially for highly skewed quadrilaterals, this
+     could lead to convergence problems. Hence the quadrilateral is split into
+     linear triangles to check if the point is actually within the quad.
+     First check the triangle i0-i1-i3. See CoorInTriangle for more details
+     on this test. */
+    su2double detInv = 2.0/(x1*y3 - x3*y1);
+    parCoor[0] = detInv*(xc*y3 - yc*x3) - 1.0;
+    parCoor[1] = detInv*(yc*x1 - xc*y1) - 1.0;
+    
+    bool coorIsInside = false;
+    if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
+       ((parCoor[0]+parCoor[1]) <= tolInsideElem)) coorIsInside = true;
+    
+    /* Check triangle i2-i3-i1 if the coordinate is not inside i0-i1-i3. */
+    if( !coorIsInside ) {
+        
+        /* Define the coordinates w.r.t. vertex 2 using the numbering i2-i3-i1. */
+        const su2double xxc = xc - x2, yyc = yc - y2;
+        const su2double xx1 = x3 - x2, yy1 = y3 - y2;
+        const su2double xx3 = x1 - x2, yy3 = y1 - y2;
+        
+        /* Check if the coordinate is inside this triangle. */
+        detInv = 2.0/(xx1*yy3 - xx3*yy1);
+        parCoor[0] = detInv*(xxc*yy3 - yyc*xx3) - 1.0;
+        parCoor[1] = detInv*(yyc*xx1 - xxc*yy1) - 1.0;
+        
+        if((parCoor[0] >= paramLowerBound) && (parCoor[1] >= paramLowerBound) &&
+           ((parCoor[0]+parCoor[1]) <= tolInsideElem)) coorIsInside = true;
+        
+        /* Convert the parametric coordinates to the ones used by the
+         quadrilatral i0-i1-i2-i3. They serve as initial guess below. */
+        parCoor[0] = 1.0 - parCoor[0];
+        parCoor[1] = 1.0 - parCoor[1];
+    }
+    
+    /* If the coordinate is in neither triangle, return false. */
+    if( !coorIsInside ) return false;
+    
+    /* The coordinate is inside the quadrilatral and an initial guess has been
+     obtained by splitting the quad into two triangles. Carry out a Newton
+     algorithm to obtain the true parametric coordinates.
+     The quadrilateral is parametrized by
+     X = {(1-r)*(1-s)*X0 + (1+r)*(1-s)*X1 + (1+r)*(1+s)*X2 + (1-r)*(1+s)*X3}/4,
+     -1 <= r,s <= 1. As the coordinates are relative to X0, the first term
+     drops from this equation. The nonlinear set of equations can be written as
+     V0 - r*V1 - s*V2 - r*s*V3 = 0, where V0 = xc - (x1+x2+x3)/4,
+     V1 = (x1+x2-x3)/4, V2 = (x2+x3-X1)/4, V3 = (x2-x1-x3)/4. First
+     construct the vectors V0, V1, V2 and V3. */
+    const su2double V0x = xc - 0.25*(x1+x2+x3), V0y = yc - 0.25*(y1+y2+y3);
+    const su2double V1x =      0.25*(x1+x2-x3), V1y =      0.25*(y1+y2-y3);
+    const su2double V2x =      0.25*(x2+x3-x1), V2y =      0.25*(y2+y3-y1);
+    const su2double V3x =      0.25*(x2-x1-x3), V3y =      0.25*(y2-y1-y3);
+    
+    /* Loop over the maximum number of iterations. */
+    unsigned short itCount;
+    for(itCount=0; itCount<maxIt; ++itCount) {
+        
+        /* Compute the values of the nonlinear functions. */
+        const su2double f0 = V0x - parCoor[0]*V1x - parCoor[1]*V2x - parCoor[0]*parCoor[1]*V3x;
+        const su2double f1 = V0y - parCoor[0]*V1y - parCoor[1]*V2y - parCoor[0]*parCoor[1]*V3y;
+        
+        /* Compute the negative of the Jacobian matrix. */
+        const su2double a00 = V1x + parCoor[1]*V3x, a01 = V2x + parCoor[0]*V3x;
+        const su2double a10 = V1y + parCoor[1]*V3y, a11 = V2y + parCoor[1]*V3y;
+        
+        /* Compute the update of the parametric coordinates. */
+        detInv = 1.0/(a00*a11 - a01*a10);
+        const su2double dr = detInv*(f0*a11 - f1*a01);
+        const su2double ds = detInv*(f1*a00 - f0*a10);
+        
+        /* Update the parametric coordinates. Note that the negative of the
+         Jacobian is used, so the update must be added. */
+        parCoor[0] += dr;
+        parCoor[1] += ds;
+        
+        /* Check for convergence. */
+        if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton) break;
+    }
+    
+    /* Terminate if the optimization process did not converge. */
+    if(itCount == maxIt){
+        cout << "Newton did not converge"<< endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /* Check if the parametric coordinates are inside the quadrilateral.
+     If not, something is seriously wrong, because the inside test has been
+     done already with the triangles. */
+    if(parCoor[0] < paramLowerBound || parCoor[0] > paramUpperBound ||
+       parCoor[1] < paramLowerBound || parCoor[1] > paramUpperBound)
+    {
+        cout << "Point not inside the quadrilateral."<< endl;
+        exit(EXIT_FAILURE);
+    }
+    /* Return true, because the search was successful. */
+    return true;
+}
+
+bool COutput::CoorInHexahedron(CGeometry *geometry,
+                                        const unsigned long jElem,
+                                        const su2double     *coor,
+                                        su2double           *parCoor) {
+    
+    /* Definition of the maximum number of iterations in the Newton solver
+     and the tolerance level. */
+    const unsigned short maxIt = 50;
+    const su2double tolNewton  = 1.e-10;
+    unsigned short nDim = 3;
+    unsigned long iPoint;
+    
+    /* Determine the indices of the eight vertices of the hexahedron,
+     multiplied by nDim (which is 3). This gives the position in the
+     coordinate array where the coordinates of these points are stored. */
+    //unsigned long i0 = nDOFsPerElem[elemID];
+    unsigned long i0=0;// = nDOFsPerElem[elemID];
+    unsigned long i1 = i0 + 1, i2 = i0 + 2, i3 = i0+3, i4 = i0+4, i5 = i0+5, i6 = i0+6, i7 = i0+7;
+//    i0 = nDim*elemConns[i0]; i1 = nDim*elemConns[i1];
+//    i2 = nDim*elemConns[i2]; i3 = nDim*elemConns[i3];
+//    i4 = nDim*elemConns[i4]; i5 = nDim*elemConns[i5];
+//    i6 = nDim*elemConns[i6]; i7 = nDim*elemConns[i7];
+    
+    i0 = 0; i1 = 3; i2 = 6; i3 = 9; i4 = 12; i5 = 15; i6 = 18; i7 = 21;
+    const su2double tolInsideElem   =  1.e-10;
+    const su2double paramLowerBound = -1.0 - tolInsideElem;
+    const su2double paramUpperBound =  1.0 + tolInsideElem;
+    
+    unsigned short nNodes_elem;
+    su2double coorPoints[24];
+    nNodes_elem = geometry->elem[jElem]->GetnNodes();
+    if(nNodes_elem != 8){
+        cout << "****** NOTE: CoorInHexahedron Works only for hex element search" << endl;
+        exit(EXIT_FAILURE);
+    }
+    /* Coordinates of the vertices in Hex cell */
+    for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
+        iPoint = geometry->elem[jElem]->GetNode(iNode);
+        for (unsigned short iDim=0; iDim < nDim; iDim++) {
+            coorPoints[nDim*iNode + iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        }
+    }
+    
+    /* Determine the coordinates relative to the vertex 0. */
+    su2double xRel[8][3], xc[3];
+    xc[0] = coor[0] - coorPoints[i0];
+    xc[1] = coor[1] - coorPoints[i0+1];
+    xc[2] = coor[2] - coorPoints[i0+2];
+    
+    xRel[0][0] = xRel[0][1] = xRel[0][2] = 0.0;
+    
+    xRel[1][0] = coorPoints[i1]   - coorPoints[i0];
+    xRel[1][1] = coorPoints[i1+1] - coorPoints[i0+1];
+    xRel[1][2] = coorPoints[i1+2] - coorPoints[i0+2];
+    
+    xRel[2][0] = coorPoints[i2]   - coorPoints[i0];
+    xRel[2][1] = coorPoints[i2+1] - coorPoints[i0+1];
+    xRel[2][2] = coorPoints[i2+2] - coorPoints[i0+2];
+    
+    xRel[3][0] = coorPoints[i3]   - coorPoints[i0];
+    xRel[3][1] = coorPoints[i3+1] - coorPoints[i0+1];
+    xRel[3][2] = coorPoints[i3+2] - coorPoints[i0+2];
+    
+    xRel[4][0] = coorPoints[i4]   - coorPoints[i0];
+    xRel[4][1] = coorPoints[i4+1] - coorPoints[i0+1];
+    xRel[4][2] = coorPoints[i4+2] - coorPoints[i0+2];
+    
+    xRel[5][0] = coorPoints[i5]   - coorPoints[i0];
+    xRel[5][1] = coorPoints[i5+1] - coorPoints[i0+1];
+    xRel[5][2] = coorPoints[i5+2] - coorPoints[i0+2];
+    
+    xRel[6][0] = coorPoints[i6]   - coorPoints[i0];
+    xRel[6][1] = coorPoints[i6+1] - coorPoints[i0+1];
+    xRel[6][2] = coorPoints[i6+2] - coorPoints[i0+2];
+    
+    xRel[7][0] = coorPoints[i7]   - coorPoints[i0];
+    xRel[7][1] = coorPoints[i7+1] - coorPoints[i0+1];
+    xRel[7][2] = coorPoints[i7+2] - coorPoints[i0+2];
+    
+    /* Obtain an initial guess of the parametric coordinates by splitting the
+     hexahedron into tetrahedra. If this approach is not successful, this means
+     that the point is not inside the true hexahedron and false can be returned. */
+    if( !InitialGuessContainmentHexahedron(xc, xRel, parCoor) ) return false;
+    
+    /* The hexahedron is parametrized by X-X0 = (Xi-X0)*li, where the sum runs
+     over i = 0..7, although i = 0 does not give a contribution. The Lagrangian
+     interpolation functions for the hexahedron are given by:
+     l0 = (1-r)*(1-s)*(1-t)/8, l1 = (1+r)*(1-s)*(1-t)/8,
+     l2 = (1+r)*(1+s)*(1-t)/8, l3 = (1-r)*(1+s)*(1-t)/8,
+     l4 = (1-r)*(1-s)*(1+t)/8, l5 = (1+r)*(1-s)*(1+t)/8,
+     l6 = (1+r)*(1+s)*(1+t)/8, l7 = (1-r)*(1+s)*(1+t)/8.
+     The boundaries are -1 <= r,s,t <= 1.
+     As all coordinates are taken relative to vertex 0, X0 drops out and the
+     nonlinear set of equations can be written as
+     V0 - V1*r - V2*s - V3*t - V4*r*s - V5*r*t - V6*s*t - V7*r*s*t = 0, where
+     V0 = xc - (x1+x2+x3+x4+x5+x6+x7)/8, V1 = (x1+x2-x3-x4+x5+x6-x7)/8,
+     V2 =      (x2+x3-x1-x4-x5+x6+x7)/8, V3 = (x4+x5+x6+x7-x1-x2-x3)/8,
+     V4 =      (x2+x4+x6-x1-x3-x5-x7)/8, V5 = (x3+x5+x6-x1-x2-x4-x7)/8,
+     V6 =      (x1+x6+x7-x2-x3-x4-x5)/8, V7 = (x1+x3+x4+x6-x2-x5-x7)/8.
+     First construct these vectors. */
+    const su2double V0x = xc[0] - 0.125*(xRel[1][0]+xRel[2][0]+xRel[3][0]+xRel[4][0]+xRel[5][0]+xRel[6][0]+xRel[7][0]);
+    const su2double V0y = xc[1] - 0.125*(xRel[1][1]+xRel[2][1]+xRel[3][1]+xRel[4][1]+xRel[5][1]+xRel[6][1]+xRel[7][1]);
+    const su2double V0z = xc[2] - 0.125*(xRel[1][2]+xRel[2][2]+xRel[3][2]+xRel[4][2]+xRel[5][2]+xRel[6][2]+xRel[7][2]);
+    
+    const su2double V1x = 0.125*(xRel[1][0]+xRel[2][0]-xRel[3][0]-xRel[4][0]+xRel[5][0]+xRel[6][0]-xRel[7][0]);
+    const su2double V1y = 0.125*(xRel[1][1]+xRel[2][1]-xRel[3][1]-xRel[4][1]+xRel[5][1]+xRel[6][1]-xRel[7][1]);
+    const su2double V1z = 0.125*(xRel[1][2]+xRel[2][2]-xRel[3][2]-xRel[4][2]+xRel[5][2]+xRel[6][2]-xRel[7][2]);
+    
+    const su2double V2x = 0.125*(xRel[2][0]+xRel[3][0]-xRel[1][0]-xRel[4][0]-xRel[5][0]+xRel[6][0]+xRel[7][0]);
+    const su2double V2y = 0.125*(xRel[2][1]+xRel[3][1]-xRel[1][1]-xRel[4][1]-xRel[5][1]+xRel[6][1]+xRel[7][1]);
+    const su2double V2z = 0.125*(xRel[2][2]+xRel[3][2]-xRel[1][2]-xRel[4][2]-xRel[5][2]+xRel[6][2]+xRel[7][2]);
+    
+    const su2double V3x = 0.125*(xRel[4][0]+xRel[5][0]+xRel[6][0]+xRel[7][0]-xRel[1][0]-xRel[2][0]-xRel[3][0]);
+    const su2double V3y = 0.125*(xRel[4][1]+xRel[5][1]+xRel[6][1]+xRel[7][1]-xRel[1][1]-xRel[2][1]-xRel[3][1]);
+    const su2double V3z = 0.125*(xRel[4][2]+xRel[5][2]+xRel[6][2]+xRel[7][2]-xRel[1][2]-xRel[2][2]-xRel[3][2]);
+    
+    const su2double V4x = 0.125*(xRel[2][0]+xRel[4][0]+xRel[6][0]-xRel[1][0]-xRel[3][0]-xRel[5][0]-xRel[7][0]);
+    const su2double V4y = 0.125*(xRel[2][1]+xRel[4][1]+xRel[6][1]-xRel[1][1]-xRel[3][1]-xRel[5][1]-xRel[7][1]);
+    const su2double V4z = 0.125*(xRel[2][2]+xRel[4][2]+xRel[6][2]-xRel[1][2]-xRel[3][2]-xRel[5][2]-xRel[7][2]);
+    
+    const su2double V5x = 0.125*(xRel[3][0]+xRel[5][0]+xRel[6][0]-xRel[1][0]-xRel[2][0]-xRel[4][0]-xRel[7][0]);
+    const su2double V5y = 0.125*(xRel[3][1]+xRel[5][1]+xRel[6][1]-xRel[1][1]-xRel[2][1]-xRel[4][1]-xRel[7][1]);
+    const su2double V5z = 0.125*(xRel[3][2]+xRel[5][2]+xRel[6][2]-xRel[1][2]-xRel[2][2]-xRel[4][2]-xRel[7][2]);
+    
+    const su2double V6x = 0.125*(xRel[1][0]+xRel[6][0]+xRel[7][0]-xRel[2][0]-xRel[3][0]-xRel[4][0]-xRel[5][0]);
+    const su2double V6y = 0.125*(xRel[1][1]+xRel[6][1]+xRel[7][1]-xRel[2][1]-xRel[3][1]-xRel[4][1]-xRel[5][1]);
+    const su2double V6z = 0.125*(xRel[1][2]+xRel[6][2]+xRel[7][2]-xRel[2][2]-xRel[3][2]-xRel[4][2]-xRel[5][2]);
+    
+    const su2double V7x = 0.125*(xRel[1][0]+xRel[3][0]+xRel[4][0]+xRel[6][0]-xRel[2][0]-xRel[5][0]-xRel[7][0]);
+    const su2double V7y = 0.125*(xRel[1][1]+xRel[3][1]+xRel[4][1]+xRel[6][1]-xRel[2][1]-xRel[5][1]-xRel[7][1]);
+    const su2double V7z = 0.125*(xRel[1][2]+xRel[3][2]+xRel[4][2]+xRel[6][2]-xRel[2][2]-xRel[5][2]-xRel[7][2]);
+    
+    /* Loop over the maximum number of iterations. */
+    unsigned short itCount;
+    for(itCount=0; itCount<maxIt; ++itCount) {
+        
+        const su2double f0 = V0x - parCoor[0]*V1x - parCoor[1]*V2x - parCoor[2]*V3x
+        - parCoor[0]*parCoor[1]*V4x - parCoor[0]*parCoor[2]*V5x
+        - parCoor[1]*parCoor[2]*V6x - parCoor[0]*parCoor[1]*parCoor[2]*V7x;
+        const su2double f1 = V0y - parCoor[0]*V1y - parCoor[1]*V2y - parCoor[2]*V3y
+        - parCoor[0]*parCoor[1]*V4y - parCoor[0]*parCoor[2]*V5y
+        - parCoor[1]*parCoor[2]*V6y - parCoor[0]*parCoor[1]*parCoor[2]*V7y;
+        const su2double f2 = V0z - parCoor[0]*V1z - parCoor[1]*V2z - parCoor[2]*V3z
+        - parCoor[0]*parCoor[1]*V4z - parCoor[0]*parCoor[2]*V5z
+        - parCoor[1]*parCoor[2]*V6z - parCoor[0]*parCoor[1]*parCoor[2]*V7z;
+        
+        /* Compute the negative of the Jacobian matrix. */
+        const su2double a00 = V1x + parCoor[1]*V4x + parCoor[2]*V5x + parCoor[1]*parCoor[2]*V7x;
+        const su2double a01 = V2x + parCoor[0]*V4x + parCoor[2]*V6x + parCoor[0]*parCoor[2]*V7x;
+        const su2double a02 = V3x + parCoor[0]*V5x + parCoor[1]*V6x + parCoor[0]*parCoor[1]*V7x;
+        
+        const su2double a10 = V1y + parCoor[1]*V4y + parCoor[2]*V5y + parCoor[1]*parCoor[2]*V7y;
+        const su2double a11 = V2y + parCoor[0]*V4y + parCoor[2]*V6y + parCoor[0]*parCoor[2]*V7y;
+        const su2double a12 = V3y + parCoor[0]*V5y + parCoor[1]*V6y + parCoor[0]*parCoor[1]*V7y;
+        
+        const su2double a20 = V1z + parCoor[1]*V4z + parCoor[2]*V5z + parCoor[1]*parCoor[2]*V7z;
+        const su2double a21 = V2z + parCoor[0]*V4z + parCoor[2]*V6z + parCoor[0]*parCoor[2]*V7z;
+        const su2double a22 = V3z + parCoor[0]*V5z + parCoor[1]*V6z + parCoor[0]*parCoor[1]*V7z;
+        
+        /* Compute the update of the parametric coordinates. */
+        const su2double detInv = 1.0/(a00*a11*a22 - a00*a12*a21 - a01*a10*a22
+                                      +      a01*a12*a20 + a02*a10*a21 - a02*a11*a20);
+        const su2double dr =  detInv*(a01*a12*f2 - a01*a22*f1 - a02*a11*f2
+                                      +          a02*a21*f1 + a11*a22*f0 - a12*a21*f0);
+        const su2double ds = -detInv*(a00*a12*f2 - a00*a22*f1 - a02*a10*f2
+                                      +          a02*a20*f1 + a10*a22*f0 - a12*a20*f0);
+        const su2double dt =  detInv*(a00*a11*f2 - a00*a21*f1 - a01*a10*f2
+                                      +          a01*a20*f1 + a10*a21*f0 - a11*a20*f0);
+        
+        /* Update the parametric coordinates. Note that the negative of the
+         Jacobian is used, so the update must be added. */
+        parCoor[0] += dr;
+        parCoor[1] += ds;
+        parCoor[2] += dt;
+        
+        /* Check for convergence. */
+        if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton && fabs(dt) <= tolNewton) break;
+    }
+    
+    /* Terminate if the optimization process did not converge. */
+    if(itCount == maxIt){
+        cout << "Newton did not converge"<< endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /* Check if the coordinate is inside the prism. */
+    bool coorIsInside = false;
+    if((parCoor[0] >= paramLowerBound) && (parCoor[0] <= paramUpperBound) &&
+       (parCoor[1] >= paramLowerBound) && (parCoor[1] <= paramUpperBound) &&
+       (parCoor[2] >= paramLowerBound) && (parCoor[2] <= paramUpperBound))
+        coorIsInside = true;
+    
+    /* Return the value of coorIsInside. */
+    return coorIsInside;
+}
+
+bool COutput::InitialGuessContainmentHexahedron(const su2double xRelC[3],
+                                                         const su2double xRel[8][3],
+                                                         su2double       *parCoor) {
+    const su2double tolInsideElem   =  1.e-10;
+    const su2double paramLowerBound = -1.0 - tolInsideElem;
+    const su2double paramUpperBound =  1.0 + tolInsideElem;
+    
+    /* Tetrahedron, 0-1-2-5.
+     Create the coordinates of the tetrahedron and of the point. */
+    su2double x1 = xRel[1][0], y1 = xRel[1][1], z1 = xRel[1][2];
+    su2double x2 = xRel[2][0], y2 = xRel[2][1], z2 = xRel[2][2];
+    su2double x3 = xRel[5][0], y3 = xRel[5][1], z3 = xRel[5][2];
+    
+    su2double xc = xRelC[0], yc = xRelC[1], zc = xRelC[2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    su2double detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    su2double r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    su2double s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    su2double t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = r; parCoor[1] = s; parCoor[2] = t;
+        return true;
+    }
+    
+    /* Tetrahedron, 4-7-5-0.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[7][0]-xRel[4][0]; y1 = xRel[7][1]-xRel[4][1]; z1 = xRel[7][2]-xRel[4][2];
+    x2 = xRel[5][0]-xRel[4][0]; y2 = xRel[5][1]-xRel[4][1]; z2 = xRel[5][2]-xRel[4][2];
+    x3 = xRel[0][0]-xRel[4][0]; y3 = xRel[0][1]-xRel[4][1]; z3 = xRel[0][2]-xRel[4][2];
+    
+    xc = xRelC[0]-xRel[4][0]; yc = xRelC[1]-xRel[4][1]; zc = xRelC[2]-xRel[4][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = s; parCoor[1] = r; parCoor[2] = 1.0 - t;
+        return true;
+    }
+    
+    /* Tetrahedron, 6-7-5-2.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[7][0]-xRel[6][0]; y1 = xRel[7][1]-xRel[6][1]; z1 = xRel[7][2]-xRel[6][2];
+    x2 = xRel[5][0]-xRel[6][0]; y2 = xRel[5][1]-xRel[6][1]; z2 = xRel[5][2]-xRel[6][2];
+    x3 = xRel[2][0]-xRel[6][0]; y3 = xRel[2][1]-xRel[6][1]; z3 = xRel[2][2]-xRel[6][2];
+    
+    xc = xRelC[0]-xRel[6][0]; yc = xRelC[1]-xRel[6][1]; zc = xRelC[2]-xRel[6][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = 1.0 - s; parCoor[1] = 1.0 - r; parCoor[2] = 1.0 - t;
+        return true;
+    }
+    
+    /* Tetrahedron, 3-0-2-7.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[0][0]-xRel[3][0]; y1 = xRel[0][1]-xRel[3][1]; z1 = xRel[0][2]-xRel[3][2];
+    x2 = xRel[2][0]-xRel[3][0]; y2 = xRel[2][1]-xRel[3][1]; z2 = xRel[2][2]-xRel[3][2];
+    x3 = xRel[7][0]-xRel[3][0]; y3 = xRel[7][1]-xRel[3][1]; z3 = xRel[7][2]-xRel[3][2];
+    
+    xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = 1.0 - s; parCoor[1] = r; parCoor[2] = 1.0 - t;
+        return true;
+    }
+    
+    /* Tetrahedron, 0-5-2-7.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[5][0]; y1 = xRel[5][1]; z1 = xRel[5][2];
+    x2 = xRel[2][0]; y2 = xRel[2][1]; z2 = xRel[2][2];
+    x3 = xRel[7][0]; y3 = xRel[7][1]; z3 = xRel[7][2];
+    
+    xc = xRelC[0]; yc = xRelC[1]; zc = xRelC[2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = 1.0+r+s; parCoor[1] = 1.0+s+t; parCoor[2] = 1.0+r+t;
+        return true;
+    }
+    
+    /* Tetrahedron, 0-1-3-4.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[1][0]; y1 = xRel[1][1]; z1 = xRel[1][2];
+    x2 = xRel[3][0]; y2 = xRel[3][1]; z2 = xRel[3][2];
+    x3 = xRel[4][0]; y3 = xRel[4][1]; z3 = xRel[4][2];
+    
+    xc = xRelC[0]; yc = xRelC[1]; zc = xRelC[2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = r; parCoor[1] = s; parCoor[2] = t;
+        return true;
+    }
+    
+    /* Tetrahedron, 7-6-4-3.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[6][0]-xRel[7][0]; y1 = xRel[6][1]-xRel[7][1]; z1 = xRel[6][2]-xRel[7][2];
+    x2 = xRel[4][0]-xRel[7][0]; y2 = xRel[4][1]-xRel[7][1]; z2 = xRel[4][2]-xRel[7][2];
+    x3 = xRel[3][0]-xRel[7][0]; y3 = xRel[3][1]-xRel[7][1]; z3 = xRel[3][2]-xRel[7][2];
+    
+    xc = xRelC[0]-xRel[7][0]; yc = xRelC[1]-xRel[7][1]; zc = xRelC[2]-xRel[7][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = r; parCoor[1] = 1.0 - s; parCoor[2] = 1.0 - t;
+        return true;
+    }
+    
+    /* Tetrahedron, 5-4-6-1.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[4][0]-xRel[5][0]; y1 = xRel[4][1]-xRel[5][1]; z1 = xRel[4][2]-xRel[5][2];
+    x2 = xRel[6][0]-xRel[5][0]; y2 = xRel[6][1]-xRel[5][1]; z2 = xRel[6][2]-xRel[5][2];
+    x3 = xRel[1][0]-xRel[5][0]; y3 = xRel[1][1]-xRel[5][1]; z3 = xRel[1][2]-xRel[5][2];
+    
+    xc = xRelC[0]-xRel[5][0]; yc = xRelC[1]-xRel[5][1]; zc = xRelC[2]-xRel[5][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = 1.0 - r; parCoor[1] = s; parCoor[2] = 1.0 - t;
+        return true;
+    }
+    
+    /* Tetrahedron, 2-3-1-6.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[3][0]-xRel[2][0]; y1 = xRel[3][1]-xRel[2][1]; z1 = xRel[3][2]-xRel[2][2];
+    x2 = xRel[1][0]-xRel[2][0]; y2 = xRel[1][1]-xRel[2][1]; z2 = xRel[1][2]-xRel[2][2];
+    x3 = xRel[6][0]-xRel[2][0]; y3 = xRel[6][1]-xRel[2][1]; z3 = xRel[6][2]-xRel[2][2];
+    
+    xc = xRelC[0]-xRel[2][0]; yc = xRelC[1]-xRel[2][1]; zc = xRelC[2]-xRel[2][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = 1.0 - r; parCoor[1] = 1.0 - s; parCoor[2] = t;
+        return true;
+    }
+    
+    /* Tetrahedron, 3-4-1-6.
+     Create the coordinates of the tetrahedron and of the point. */
+    x1 = xRel[4][0]-xRel[3][0]; y1 = xRel[4][1]-xRel[3][1]; z1 = xRel[4][2]-xRel[3][2];
+    x2 = xRel[1][0]-xRel[3][0]; y2 = xRel[1][1]-xRel[3][1]; z2 = xRel[1][2]-xRel[3][2];
+    x3 = xRel[6][0]-xRel[3][0]; y3 = xRel[6][1]-xRel[3][1]; z3 = xRel[6][2]-xRel[3][2];
+    
+    xc = xRelC[0]-xRel[3][0]; yc = xRelC[1]-xRel[3][1]; zc = xRelC[2]-xRel[3][2];
+    
+    /* Determine the parametric coordinates inside this tetrahedron. */
+    detInv = 2.0/(x1*y2*z3 - x1*y3*z2 - x2*y1*z3 + x2*y3*z1 + x3*y1*z2 - x3*y2*z1);
+    r =  detInv*(x2*y3*zc - x2*yc*z3 - x3*y2*zc + x3*yc*z2 + xc*y2*z3 - xc*y3*z2) - 1.0;
+    s = -detInv*(x1*y3*zc - x1*yc*z3 - x3*y1*zc + x3*yc*z1 + xc*y1*z3 - xc*y3*z1) - 1.0;
+    t =  detInv*(x1*y2*zc - x1*yc*z2 - x2*y1*zc + x2*yc*z1 + xc*y1*z2 - xc*y2*z1) - 1.0;
+    
+    /* If the point is inside this tetrahedron, set the parametric coordinates for
+     the real hexahedron and return true. */
+    if((r >= paramLowerBound) && (s >= paramLowerBound) && (t >= paramLowerBound) &&
+       ((r+s+t) <= paramLowerBound)) {
+        parCoor[0] = 1.0+s+t; parCoor[1] = -1.0-r-s; parCoor[2] = 1.0+r+t;
+        return true;
+    }
+    
+    /* The coordinate is in none of the ten sub-tetrahedra of the hexahedron.
+     This implies that the point is not inside the true hexahedron either
+     and hence false is returned. */
+    return false;
+}
+
 
 /* FOR 3D GEOMETRIES */
 bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigned long jElem){
