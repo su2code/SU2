@@ -6435,7 +6435,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
 
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -6981,7 +6981,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -7324,7 +7324,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- If more than one, find the zone in the mesh file ---*/
   
 
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);

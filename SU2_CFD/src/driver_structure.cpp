@@ -126,7 +126,7 @@ CDriver::CDriver(char* confFile,
 
     /*--- Read the number of instances for each zone ---*/
 
-    nInst[iZone] = config_container[iZone]->GetnInstances();
+    nInst[iZone] = config_container[iZone]->GetnTimeInstances();
 
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
@@ -416,8 +416,11 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-        iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, INST_0, 0, 0);
+      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+        for (iInst = 0; iInst < nInst[iZone]; iInst++){
+          iteration_container[ZONE_0][iInst]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, iInst, 0, 0);
+        }
+      }
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN) {
@@ -4407,12 +4410,12 @@ void CHBDriver::Run() {
   for (iInst = 0; iInst < nInstHB; iInst++)
     iteration_container[ZONE_0][iInst]->Preprocess(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, iZone, INST_0);
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
   for (iInst = 0; iInst < nInstHB; iInst++)
     iteration_container[ZONE_0][iInst]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, iZone, INST_0);
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
 }
 
@@ -4435,7 +4438,7 @@ void CHBDriver::Update() {
     /*--- Update the harmonic balance terms across all zones ---*/
     iteration_container[ZONE_0][iInst]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, iZone, INST_0);
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
   }
 

@@ -179,12 +179,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   }
 
-  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
-  	nZone = config->GetnTimeInstances();
-  }
-
   return (unsigned short) nZone;
 }
 
