@@ -274,7 +274,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   virtual void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief A virtual member.
@@ -289,7 +289,7 @@ public:
    */
   virtual void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                 unsigned long Iteration, unsigned short iZone);
+                 unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief A virtual member.
@@ -401,7 +401,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   virtual void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
 
   /*!
@@ -414,7 +414,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   virtual void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
   
   /*! 
@@ -474,7 +474,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
@@ -489,7 +489,7 @@ public:
    */
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                     unsigned long Iteration, unsigned short iZone);
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief Compute the non-dimensional parameters.
@@ -643,7 +643,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
@@ -703,7 +703,7 @@ public:
    * \param[in] Iteration - Current iteration.
    */
   void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
 };
 
