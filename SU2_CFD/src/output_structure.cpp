@@ -4519,6 +4519,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   unsigned long iExtIter    = config[val_iZone]->GetExtIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone      = config[val_iZone]->GetnZone();
+  unsigned short nInst      = config[val_iZone]->GetnTimeInstances();
   bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool incload              = config[val_iZone]->GetIncrementalLoad();
@@ -4582,7 +4583,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Output a file with the forces breakdown. ---*/
       
       if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iZone, nZone, output_files);
+        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
       }
       
       /*--- Compute span-wise values file for turbomachinery. ---*/
@@ -11566,7 +11567,7 @@ void COutput::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geometry, C
   }
 }
 
-void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) {
+void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) {
   
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
@@ -11576,7 +11577,7 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****g
   su2double *sbuf_var = NULL,  *rbuf_var = NULL;
 
   /*--- Other variables ---*/
-  unsigned short iVar, kZone;
+  unsigned short iVar, kInst;
   unsigned short nVar_output = 5;
   unsigned long current_iter = config[ZONE_0]->GetExtIter();
 
@@ -11596,7 +11597,7 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****g
     HB_output_file <<  "\"time_instance\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\"" << endl;
 
     mean_HB_file.precision(15);
-    if (current_iter == 0 && iZone == 1) {
+    if (current_iter == 0 && iInst == 1) {
       mean_HB_file.open("history_HB.plt", ios::trunc);
       mean_HB_file << "TITLE = \"SU2 HARMONIC BALANCE SIMULATION\"" << endl;
       mean_HB_file <<  "VARIABLES = \"Iteration\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
@@ -11611,32 +11612,32 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****g
     /*--- Run through the zones, collecting the output variables
        N.B. Summing across processors within a given zone is being done
        elsewhere. ---*/
-    for (kZone = 0; kZone < val_nZone; kZone++) {
+    for (kInst = 0; kInst < val_nInst; kInst++) {
       
       /*--- Flow solution coefficients (parallel) ---*/
-      sbuf_var[0] = solver[kZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL();
-      sbuf_var[1] = solver[kZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
-      sbuf_var[2] = solver[kZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMx();
-      sbuf_var[3] = solver[kZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMy();
-      sbuf_var[4] = solver[kZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMz();
+      sbuf_var[0] = solver[ZONE_0][kInst][MESH_0][FLOW_SOL]->GetTotal_CL();
+      sbuf_var[1] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CD();
+      sbuf_var[2] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CMx();
+      sbuf_var[3] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CMy();
+      sbuf_var[4] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CMz();
       
       for (iVar = 0; iVar < nVar_output; iVar++) {
         rbuf_var[iVar] = sbuf_var[iVar];
       }
 
-      HB_output_file << kZone << ", ";
+      HB_output_file << kInst << ", ";
       for (iVar = 0; iVar < nVar_output; iVar++)
         HB_output_file << rbuf_var[iVar] << ", ";
       HB_output_file << endl;
 
       /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
       for (iVar = 0; iVar < nVar_output; iVar++) {
-        averages[iVar] += (1.0/su2double(val_nZone))*rbuf_var[iVar];
+        averages[iVar] += (1.0/su2double(val_nInst))*rbuf_var[iVar];
       }
     }
   }
 
-  if (rank == MASTER_NODE && iZone == ZONE_0) {
+  if (rank == MASTER_NODE && iInst == INST_0) {
 
     mean_HB_file << current_iter << ", ";
     for (iVar = 0; iVar < nVar_output; iVar++) {
@@ -16386,7 +16387,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   
   /*--- Local variables ---*/
   
-  unsigned short nZone = geometry->GetnZone(), nInst = config->GetnInstances();
+  unsigned short nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -16517,7 +16518,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnInstances();
+  unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
