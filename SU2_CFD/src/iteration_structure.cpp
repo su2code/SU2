@@ -67,7 +67,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
   /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
   if (harmonic_balance) {
-    ExtIter = val_iZone;
+    ExtIter = val_iInst;
     Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
   }
 
@@ -491,6 +491,7 @@ void CFluidIteration::Iterate(COutput *output,
       
   }
   
+
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
   integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
