@@ -7116,7 +7116,8 @@ void CMultiphysicsZonalDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-      if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+      // When running a unsteady simulation, we have to adapt CFL values here.
+      if (unsteady && (config_container[ZONE_0]->GetCFL_Adapt() == YES)) {
           output->SetCFL_Number(solver_container, config_container, iZone);
       }
 
