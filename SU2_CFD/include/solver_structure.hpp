@@ -11125,6 +11125,16 @@ public:
 
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iMesh, unsigned long Iteration);
+
+  /*!
+   * \brief Set the initial condition for the FEM structural problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
