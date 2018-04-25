@@ -8290,12 +8290,12 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iVar, jVar, iDim, jDim, Wall_Function;
+  unsigned short iVar, jVar, iDim, Wall_Function;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
 
   su2double *GridVel;
   su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij;
-  su2double Twall, Tconjugate, dTdn;
+  su2double Tconjugate, dTdn;
   su2double thermal_conductivity;
   su2double Temperature_Ref = config->GetTemperature_Ref();
 

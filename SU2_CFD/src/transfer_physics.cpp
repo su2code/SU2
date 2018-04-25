@@ -693,7 +693,6 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
   su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall = 0.0, Tnormal = 0.0,
       dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity, thermal_conductivityND, heat_flux_density, conductivity_over_dist, Temperature_Ref;
-  su2double Prandtl_Turb, eddy_viscosity;
   su2double Gamma = donor_config->GetGamma();
   su2double Gas_Constant = donor_config->GetGas_ConstantND();
   su2double Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
@@ -710,7 +709,6 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
   Prandtl_Lam       = donor_config->GetPrandtl_Lam();
-  Prandtl_Turb      = donor_config->GetPrandtl_Turb();
   laminar_viscosity = donor_config->GetMu_ConstantND(); // TDE check for consistency
   cp_fluid          = donor_config->GetSpecific_Heat_Cp();
   rho_cp_solid      = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
@@ -778,6 +776,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
     iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
     thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
+    thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
 
     switch (donor_config->GetKind_ConductivityModel()) {
 
@@ -797,7 +796,6 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
     iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
-    eddy_viscosity          = donor_solution->node[iPoint]->GetEddyViscosity();
     thermal_conductivityND  = laminar_viscosity/Prandtl_Lam;
     thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref()*cp_fluid;
 
