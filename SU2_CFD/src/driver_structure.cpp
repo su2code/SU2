@@ -7145,10 +7145,6 @@ void CMultiphysicsZonalDriver::Run() {
 
   unsteady = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-  if ( unsteady ) {
-    SU2_MPI::Error("The multi physical zones driver is not ready yet for unsteady simulations!", CURRENT_FUNCTION);
-  }
-
   /*--- Zone preprocessing ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -7181,6 +7177,11 @@ void CMultiphysicsZonalDriver::Run() {
     /*--- For each zone runs one single iteration including the data transfers to it ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
+
+      if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+          output->SetCFL_Number(solver_container, config_container, iZone);
+      }
+
       config_container[iZone]->SetIntIter(IntIter);
 
       for (jZone = 0; jZone < nZone; jZone++)
