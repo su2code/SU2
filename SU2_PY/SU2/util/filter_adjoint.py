@@ -3,7 +3,7 @@
 ## \file filter_adjoint.py
 #  \brief Applies various filters to the adjoint surface sensitivities of an airfoil
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>

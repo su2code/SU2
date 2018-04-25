@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -587,16 +587,7 @@ CHeatSolverFVM::CHeatSolverFVM(void) : CSolver() {
 CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
   unsigned short iVar, iDim, nLineLets, iMarker;
-  unsigned long iPoint, index, iVertex;
-  su2double dull_val;
-
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  unsigned long iPoint, iVertex;
 
   int rank = MASTER_NODE;
 
@@ -606,7 +597,6 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
   bool heat_equation      = config->GetKind_Solver() == HEAT_EQUATION_FVM;
-  unsigned short turbulent = config->GetKind_Turb_Model();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -809,9 +799,8 @@ void CHeatSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
-  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
-  unsigned short turb_model = config->GetKind_Turb_Model();
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
@@ -819,10 +808,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   bool heat_equation = config->GetKind_Solver() == HEAT_EQUATION_FVM;
 
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   string UnstExt, text_line;
@@ -1034,10 +1021,9 @@ void CHeatSolverFVM::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config
 }
 
 void CHeatSolverFVM::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
+  su2double *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -1117,9 +1103,7 @@ void CHeatSolverFVM::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *c
 void CHeatSolverFVM::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-          **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad, Non_Physical = 1.0;
-  unsigned short iDim, iVar;
+  su2double *V_i, *V_j, Temp_i, Temp_j;
   unsigned long iEdge, iPoint, jPoint;
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
@@ -1395,8 +1379,9 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
                                        unsigned short val_marker) {
 
   unsigned long iPoint, iVertex, Point_Normal;
-  unsigned short iVar, iDim;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  unsigned short iDim;
+  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
+  //su2double Prandtl_Turb;
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
@@ -1405,8 +1390,10 @@ void CHeatSolverFVM::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
                || (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   Prandtl_Lam = config->GetPrandtl_Lam();
-  Prandtl_Turb = config->GetPrandtl_Turb();
+//  Prandtl_Turb = config->GetPrandtl_Turb();
   laminar_viscosity = config->GetMu_ConstantND();
+  //Prandtl_Turb = config->GetPrandtl_Turb();
+  //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -1458,7 +1445,7 @@ void CHeatSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double Wall_HeatFlux, Area, Total_Area, *Normal;
+  su2double Wall_HeatFlux, Area, *Normal;
 
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
@@ -1537,10 +1524,13 @@ void CHeatSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
-  su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
+  //su2double Prandtl_Turb;
   Prandtl_Lam = config->GetPrandtl_Lam();
-  Prandtl_Turb = config->GetPrandtl_Turb();
+//  Prandtl_Turb = config->GetPrandtl_Turb();
   laminar_viscosity = config->GetMu_ConstantND();
+  //laminar_viscosity = config->GetViscosity_FreeStreamND(); //TDE check for consistency with CHT
+
   Twall = config->GetTemperature_FreeStreamND();
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1639,11 +1629,9 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double *Flow_Dir,  Vel_Mag;
   su2double *V_outlet, *V_domain;
 
   bool flow                 = (config->GetKind_Solver() != HEAT_EQUATION);
-  bool viscous              = config->GetViscous();
   bool grid_movement        = config->GetGrid_Movement();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -1707,15 +1695,13 @@ void CHeatSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iVertex, iPoint, total_index, Point_Normal;
+  unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar, iMarker;
 
-  su2double *Coord_i, *Coord_j;
-  su2double Area, dist_ij, rho_cp_solid,
+  su2double Area, rho_cp_solid,
       Temperature_Ref, Tinterface, T_Conjugate, Tnormal_Conjugate, Conductance, HeatFluxDensity, HeatFluxValue;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
@@ -1736,8 +1722,6 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (geometry->node[iPoint]->GetDomain()) {
-
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
@@ -1772,8 +1756,6 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 
           if (geometry->node[iPoint]->GetDomain()) {
 
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             Area = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -1805,9 +1787,9 @@ void CHeatSolverFVM::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 void CHeatSolverFVM::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned long iVertex, iPoint, iPointNormal;
-  unsigned short Boundary, Monitoring, iMarker, iMarker_HeatFlux, iDim;
+  unsigned short Boundary, Monitoring, iMarker, iDim;
   su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, cp_fluid, rho_cp_solid,
-      eddy_viscosity, thermal_conductivity, thermal_diffusivity;
+      thermal_conductivity, thermal_diffusivity;
   string Marker_Tag, HeatFlux_Tag;
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
@@ -2194,7 +2176,7 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  su2double Min_Delta, Delta, Delta_Flow, Vol, *local_Res_TruncError;
+  su2double Delta, Vol, *local_Res_TruncError;
   bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
                || (config->GetKind_Solver() == RANS)
                || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
@@ -2286,9 +2268,9 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
 void CHeatSolverFVM::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 #ifdef HAVE_MPI
   int send_to, receive_from;
   MPI_Status status;
@@ -2358,10 +2340,9 @@ void CHeatSolverFVM::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 }
 
 void CHeatSolverFVM::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -2623,12 +2604,11 @@ void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, jVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
+  unsigned short iVar, jVar;
+  unsigned long iPoint;
 
-  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
-  su2double Volume_nM1, Volume_nP1, TimeStep;
-  su2double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
+  su2double *U_time_n, *U_time_nP1, *U_time_nM1;
+  su2double Volume_nP1, TimeStep;
 
   bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
