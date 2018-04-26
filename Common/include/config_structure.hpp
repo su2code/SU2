@@ -401,6 +401,7 @@ private:
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
   CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
+  CFL_Poisson,  		/*!< \brief CFL for Poisson problem. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -1886,6 +1887,25 @@ public:
    */
   su2double GetElasticyMod(unsigned short id_val);
   
+  /*!
+   * \brief Get the value of the Poisson_Coeff.
+   * \return Poisson_Coeff.
+   */
+  su2double GetPoisson_Coeff(void);
+  
+  /*!
+   * \brief Get the Courant Friedrich Levi number for Poisson solvers.
+   * \return CFL number for Poisson solver.
+   */
+  su2double GetCFL_Poisson(void);
+  
+   /*!
+   * \brief Set the Courant Friedrich Levi number for Poisson solvers.
+   * \return CFL number for Poisson solver.
+   */
+  void SetCFL_Poisson(su2double val_CFL);
+
+
   /*!
     * \brief Decide whether to apply DE effects to the model.
     * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
@@ -5992,13 +6012,6 @@ public:
    * \return The inlet velocity vector.
    */
   su2double* GetInlet_Velocity(string val_index);
-  
-  /*!
-   * \brief Get the fixed value at the Dirichlet boundary.
-   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetDirichlet_Value(string val_index);
   
   /*!
    * \brief Get whether this is a Dirichlet or a Neumann boundary.

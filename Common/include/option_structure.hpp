@@ -788,12 +788,14 @@ enum ENUM_TIME_INT {
   EULER_EXPLICIT = 2,   	/*!< \brief Explicit Euler time integration definition. */
   EULER_IMPLICIT = 3,   	/*!< \brief Implicit Euler time integration definition. */
   CLASSICAL_RK4_EXPLICIT = 4,   	/*!< \brief Calssical RK4 time integration definition. */
+  DIRECT_SOLVE = 5,   	    /*!< \brief Solve the system of equations directly. */
 };
 static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_TIME_INT>
 ("RUNGE-KUTTA_EXPLICIT", RUNGE_KUTTA_EXPLICIT)
 ("EULER_EXPLICIT", EULER_EXPLICIT)
 ("EULER_IMPLICIT", EULER_IMPLICIT)
-("CLASSICAL_RK4_EXPLICIT", CLASSICAL_RK4_EXPLICIT);
+("CLASSICAL_RK4_EXPLICIT", CLASSICAL_RK4_EXPLICIT)
+("DIRECT_SOLVE", DIRECT_SOLVE);
 
 /*!
  * \brief type of heat timestep calculation

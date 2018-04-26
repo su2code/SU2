@@ -1047,6 +1047,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
+  /* DESCRIPTION: Courant-Friedrichs-Lewy number for the Poisson problem */
+  addDoubleOption("CFL_POISSON", CFL_Poisson, 1.0);
   /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
@@ -2415,11 +2417,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
   if ((Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+      (Kind_Solver == WAVE_EQUATION) ) {
     nMGLevels = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    //nMGLevels = 0;
+    //if (Kind_TimeIntScheme_Poisson == DIRECT_SOLVE) nExtIter = 5;
+  }  
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
@@ -4910,7 +4917,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
-      cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
+      cout << "Average of gradients with correction for viscous terms computation of the poisson equation." << endl;
     }
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
@@ -6870,13 +6877,6 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
     if (Marker_Moving[iMarker_Moving] == val_marker) break;
 
   return iMarker_Moving;
-}
-
-su2double CConfig::GetDirichlet_Value(string val_marker) {
-  unsigned short iMarker_Dirichlet;
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++)
-    if (Marker_Dirichlet[iMarker_Dirichlet] == val_marker) break;
-  return Dirichlet_Value[iMarker_Dirichlet];
 }
 
 bool CConfig::GetDirichlet_Boundary(string val_marker) {

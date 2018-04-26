@@ -427,7 +427,7 @@ CDriver::CDriver(char* confFile,
 
 
   if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
-  PythonInterface_Preprocessing();
+  //PythonInterface_Preprocessing();
 
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -725,6 +725,7 @@ void CDriver::Geometrical_Preprocessing() {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Loop over all the new grid ---*/
+    
 
     for (iMGlevel = 1; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
 
@@ -899,7 +900,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
     }
     if (poisson) {
-      solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
+		solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[iMGlevel], config);
+	  //FEM solver will be deleted soon 
+      //solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
     }
     if (wave) {
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
@@ -1046,7 +1049,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
       no_restart = true;
     }
     if (poisson) {
-      no_restart = true;
+      solver_container[MESH_0][POISSON_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (wave) {
       no_restart = true;
@@ -1241,7 +1244,8 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
-  if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
+  //if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
+  if (poisson) integration_container[POISSON_SOL] = new CMultiGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat || heat_fvm) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
@@ -1777,11 +1781,21 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (poisson) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+		numerics_container[iMGlevel][POISSON_SOL][VISC_TERM] = new CAvgGradCorrected_Poisson(nDim, nVar_Poisson, config);
+		numerics_container[iMGlevel][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+    
+		/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		numerics_container[iMGlevel][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);//new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+		numerics_container[iMGlevel][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+	}
+    
+    /*--------------------FVM discretizations will be deleted soon---------------------*/
+    //numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-    numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+    //numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+    //numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
     
   }
   
@@ -3147,6 +3161,7 @@ void CDriver::StartSolver() {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
 
+ 
   while ( ExtIter < config_container[ZONE_0]->GetnExtIter() ) {
 
     /*--- Perform some external iteration preprocessing. ---*/
@@ -3284,6 +3299,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
       StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
     case HEAT_EQUATION:
       StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+    case POISSON_EQUATION:
+      StopCalc = integration_container[ZONE_0][POISSON_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:

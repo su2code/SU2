@@ -50,10 +50,28 @@ CPotentialVariable::CPotentialVariable(su2double val_potential,
                                        CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config) {
-  unsigned short iVar;
+  unsigned short iVar,iMesh ,nMGSmooth = 0;
   
   Residual_Old = new su2double [nVar];
   Residual_Sum = new su2double [nVar];
+  
+  /*--- Allocate residual structures ---*/
+  
+  Res_TruncError = new su2double [nVar];
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
+  
+  /*--- Only for residual smoothing (multigrid) ---*/
+  
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  
+  if (nMGSmooth > 0) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
   
   /*--- Initialization of variables ---*/
   for (iVar = 0; iVar< nVar; iVar++) {

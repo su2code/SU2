@@ -350,6 +350,18 @@ void CVariable::SetVelSolutionOldZero(void) {
   
 }
 
+void CVariable::SetSolutionOldVal(unsigned short val_var, su2double val) {
+  
+    Solution_Old[val_var] = val;
+  
+}
+
+void CVariable::SetSolutionVal(unsigned short val_var, su2double val) {
+  
+    Solution[val_var] = val;
+  
+}
+
 void CVariable::SetVelSolutionOldVector(su2double *val_vector) {
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++)

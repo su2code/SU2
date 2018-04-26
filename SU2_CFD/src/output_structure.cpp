@@ -4628,8 +4628,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000],
-    begin_fem[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
+    begin_fem[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],poisson_resid[1000],
     fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
+
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker_Monitoring;
@@ -4657,6 +4658,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) || (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) || (config[val_iZone]->GetWeakly_Coupled_Heat());
     bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
+    bool poisson = (config[val_iZone]->GetKind_Solver() == POISSON_EQUATION);
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
@@ -4731,6 +4733,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fea          = NULL;
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
+    su2double *residual_poisson      = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -4750,7 +4753,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
     nVar_AdjFlow = 0, nVar_AdjTurb = 0,
-    nVar_FEM = 0;
+    nVar_FEM = 0, nVar_Poisson = 0;
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
@@ -4763,6 +4766,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (transition) nVar_Trans = 2;
     if (wave) nVar_Wave = 2;
     if (heat) nVar_Heat = 1;
+    if (poisson) nVar_Poisson = 1;
 
     if (fem) {
       if (linear_analysis) nVar_FEM = nDim;
@@ -4787,6 +4791,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_transition = new su2double[nVar_Trans];
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
+    residual_poisson    = new su2double[nVar_Poisson];
     residual_fem        = new su2double[nVar_FEM];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
@@ -5056,7 +5061,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
 
         break;
+
+        case POISSON_EQUATION:
+        /*--- Poisson Residuals ---*/
         
+        for (iVar = 0; iVar < nVar_Poisson; iVar++) {
+          residual_poisson[iVar] = solver_container[val_iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(iVar);
+        }
+        
+        break;       
+       
       case FEM_ELASTICITY:
         
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
@@ -5372,6 +5386,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
             
+          case POISSON_EQUATION:
+            
+            SPRINTF (poisson_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_poisson[0]), dummy, dummy, dummy, dummy );
+            //cout<<"In switch case of sprintf"<<endl;
+          
+            break;
           case FEM_ELASTICITY:
             
             SPRINTF (begin_fem, ", %14.8e", 0.0);
@@ -5661,12 +5681,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               cout << "      Res[Heat]" << "   CHeat(Total)"<<  endl;
               break;
-
+              
             case HEAT_EQUATION_FVM :
               if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
               else cout << endl << " IntIter" << "  ExtIter";
 
               cout <<  "      Res[Heat]" << "   HFlux(Total)";
+              break;
+              
+            case POISSON_EQUATION :
+              cout << endl << " Iter" << "    Time(s)";
+              cout << "   Res[Poisson]" << "            "<<  endl;
+              
               break;
 
             case FEM_ELASTICITY :
@@ -6032,13 +6058,27 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.width(14); cout << Total_CHeat;
             cout << endl;
           }
-          break;
+          break;          
 
         case HEAT_EQUATION_FVM:
 
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
+          }
+          break;
+          
+        case POISSON_EQUATION:
+          
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << poisson_resid << end;
+            ConvHist_file[0].flush();
+          }
+          if (val_iZone == 0 || fluid_structure){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(14); cout << log10(residual_poisson[0]);
+            cout << endl;
           }
           break;
 
