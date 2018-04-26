@@ -310,13 +310,13 @@ CDriver::CDriver(char* confFile,
      fluxes, loops over the nodes to compute source terms, and routines for
      imposing various boundary condition type for the PDE. ---*/
 
-    if (rank == MASTER_NODE)
-      cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
-
     solver_container[iZone] = new CSolver*** [nInst[iZone]];
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
        solver_container[iZone][iInst] = NULL;
+
+     if (rank == MASTER_NODE)
+       cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
 
     solver_container[iZone][iInst] = new CSolver** [config_container[iZone]->GetnMGLevels()+1];
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
@@ -408,8 +408,8 @@ CDriver::CDriver(char* confFile,
 
     if (config_container[iZone]->GetGrid_Movement() ||
         (config_container[iZone]->GetDirectDiff() == D_DESIGN)) {
-        if (rank == MASTER_NODE)
-          cout << "Setting dynamic mesh structure for zone "<< iZone<<"." << endl;
+      if (rank == MASTER_NODE)
+        cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
         grid_movement[iZone][iInst] = new CVolumetricMovement(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
       }
@@ -418,6 +418,7 @@ CDriver::CDriver(char* confFile,
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
         for (iInst = 0; iInst < nInst[iZone]; iInst++){
+          if (rank == MASTER_NODE) cout << "Instance "<< iInst + 1 <<"." << endl;
           iteration_container[ZONE_0][iInst]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, iInst, 0, 0);
         }
       }
@@ -435,7 +436,7 @@ CDriver::CDriver(char* confFile,
        This computes the derivative of the volume mesh with respect to the surface nodes ---*/
 
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
-      grid_movement[iZone][iInst]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0],config_container[iZone], true, true);
+      grid_movement[iZone][iInst]->SetVolume_Deformation(geometry_container[iZone][iInst][MESH_0],config_container[iZone], true, true);
 
       /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
 
@@ -503,10 +504,13 @@ CDriver::CDriver(char* confFile,
   /*--- Open the convergence history file ---*/
 
   if (rank == MASTER_NODE){
-    ConvHist_file = new ofstream[nZone];
+    ConvHist_file = new ofstream*[nZone];
     for (iZone = 0; iZone < nZone; iZone++) {
-      output->SetConvHistory_Header(&ConvHist_file[iZone], config_container[iZone], iZone);
-      config_container[iZone]->SetHistFile(&ConvHist_file[iZone]);
+      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      output->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
+      config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
+      }
     }
   }
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
@@ -553,7 +557,10 @@ void CDriver::Postprocessing() {
 
     /*--- Close the convergence history file. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      ConvHist_file[iZone].close();
+      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      ConvHist_file[iZone][iInst].close();
+      }
+      delete [] ConvHist_file[iZone];
     }
     delete [] ConvHist_file;
 
@@ -2647,9 +2654,12 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
 void CDriver::Iteration_Preprocessing() {
 
-  /*--- Initial print to console for this zone. ---*/
+  for (iInst = 0; iInst < nInst[iZone]; iInst++)  {
 
-  if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
+    /*--- Initial print to console for this zone. ---*/
+
+    if (rank == MASTER_NODE) cout << "Zone " << iZone+1;
+    if ((rank == MASTER_NODE) && (nInst[iZone] > 1)) cout << ", instance: " << iInst+1;
 
   /*--- Loop over all zones and instantiate the physics iteration. ---*/
 
@@ -2660,14 +2670,12 @@ void CDriver::Iteration_Preprocessing() {
       if(config_container[iZone]->GetBoolTurbomachinery()){
         if (rank == MASTER_NODE)
           cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CTurboIteration(config_container[iZone]);
 
       }
       else{
         if (rank == MASTER_NODE)
           cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CFluidIteration(config_container[iZone]);
       }
       break;
@@ -2675,60 +2683,54 @@ void CDriver::Iteration_Preprocessing() {
     case WAVE_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": wave iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CWaveIteration(config_container[iZone]);
       break;
 
     case HEAT_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": heat iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CHeatIteration(config_container[iZone]);
       break;
 
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
         cout << ": heat iteration (finite volume method)." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CHeatIteration(config_container[iZone]);
       break;
 
     case POISSON_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": poisson iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CPoissonIteration(config_container[iZone]);
       break;
 
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CFEAIteration(config_container[iZone]);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CAdjFluidIteration(config_container[iZone]);
       break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CDiscAdjFluidIteration(config_container[iZone]);
       break;
 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEM structural iteration." << endl;
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
       iteration_container[iZone][iInst] = new CDiscAdjFEAIteration(config_container[iZone]);
       break;
   }
   
+  }
+
 }
 
 void CDriver::Interface_Preprocessing() {
@@ -3369,8 +3371,9 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   
   if (!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      output->SetConvHistory_Body(&ConvHist_file[iZone], geometry_container, solver_container,
-          config_container, integration_container, false, UsedTime, iZone, INST_0);
+      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      output->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+          config_container, integration_container, false, UsedTime, iZone, iInst);
     }
   }
 
@@ -3808,8 +3811,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    output->SetConvHistory_Body(&ConvHist_file[iZone], geometry_container, solver_container,
-        config_container, integration_container, false, UsedTime, iZone, INST_0);
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+    output->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+        config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 
 
@@ -5085,7 +5089,7 @@ void CFSIDriver::Run() {
 
       /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-      output->SetConvHistory_Body(&ConvHist_file[ZONE_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
+      output->SetConvHistory_Body(&ConvHist_file[ZONE_0][INST_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
 
       /*--- If the convergence criteria is met for the flow, break the loop ---*/
       StopCalc_Flow = integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence();
@@ -6792,7 +6796,7 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
 
   ofstream ConvHist_file;
   if (rank == MASTER_NODE)
-    output->SetConvHistory_Header(&ConvHist_file, config_container[ZONE_0], ZONE_0);
+    output->SetConvHistory_Header(&ConvHist_file, config_container[ZONE_0], ZONE_0, INST_0);
 
 
   if (kind_recording == FLOW_CONS_VARS) {
