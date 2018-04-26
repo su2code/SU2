@@ -4896,6 +4896,12 @@ public:
   string GetMultiinstance_FileName(string val_filename, int val_iInst);
 
   /*!
+   * \brief Append the zone index to the restart or the solution files.
+   * \return Name of the restart file for the flow variables.
+   */
+  string GetMultiinstance_HistoryFileName(string val_filename, int val_iInst);
+
+  /*!
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
