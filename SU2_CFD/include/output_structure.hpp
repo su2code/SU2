@@ -320,7 +320,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone);
+  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
 
   /*! 
    * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
@@ -331,7 +331,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
+  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Merge the geometry into a data structure used for output file writing.

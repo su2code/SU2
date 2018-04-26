@@ -424,7 +424,7 @@ COutput::~COutput(void) {
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
                                  CSolver *FlowSolver, unsigned long iExtIter,
-                                 unsigned short val_iZone) {
+                                 unsigned short val_iZone, unsigned short val_iInst) {
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
@@ -446,7 +446,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
 
   }else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -767,7 +767,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 }
 
-void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {
+void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst) {
   
 #ifndef HAVE_MPI
   
@@ -782,7 +782,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -7776,12 +7776,12 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
         
       case EULER : case NAVIER_STOKES : case RANS :
         
-        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
         
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
         
     }
@@ -11706,13 +11706,13 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
-                                        solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone);
+                                        solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][iInst][MESH_0],
                                            solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL],
-                                           solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone);
+                                           solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       default: break;
     }
