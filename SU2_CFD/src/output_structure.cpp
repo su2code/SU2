@@ -4271,7 +4271,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
-void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone) {
+void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
   char cstr[200], buffer[50], turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
@@ -4307,6 +4307,9 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   string filename = config->GetConv_FileName();
   if(config->GetnZone() > 1){
     filename = config->GetMultizone_HistoryFileName(filename, val_iZone);
+  }
+  if(config->GetnTimeInstances() > 1){
+    filename = config->GetMultiinstance_HistoryFileName(filename, val_iInst);
   }
   strcpy (cstr, filename.data());
   
@@ -4552,29 +4555,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-            SpecialOutput_AnalyzeSurface(solver_container[val_iZone][INST_0][MESH_0][FLOW_SOL],
-                                         geometry[val_iZone][INST_0][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_AnalyzeSurface(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                         geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-            SpecialOutput_Distortion(solver_container[val_iZone][INST_0][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][INST_0][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_Distortion(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                     geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the equivalent area. ---*/
 
           if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
-            SpecialOutput_SonicBoom(solver_container[val_iZone][INST_0][MESH_0][FLOW_SOL],
-                                    geometry[val_iZone][INST_0][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_SonicBoom(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                    geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
 
           /*--- Compute the forces at different sections. ---*/
 
           if (config[val_iZone]->GetPlot_Section_Forces()) {
-            SpecialOutput_SpanLoad(solver_container[val_iZone][INST_0][MESH_0][FLOW_SOL],
-                                   geometry[val_iZone][INST_0][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_SpanLoad(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                   geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
       
           break;
@@ -4611,10 +4614,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*-- Compute the total objective if a "combo" objective is used ---*/
     
     if (output_comboObj) {
-      solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
+      solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
       switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
-        solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
+        solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
         break;
       }
     }
@@ -4639,7 +4642,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned long LinSolvIter = 0, iPointMaxResid;
     su2double timeiter = timeused/su2double(iExtIter+1);
     
-    unsigned short nDim = geometry[val_iZone][INST_0][FinestMesh]->GetnDim();
+    unsigned short nDim = geometry[val_iZone][val_iInst][FinestMesh]->GetnDim();
     
     bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
@@ -4818,19 +4821,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Flow solution coefficients ---*/
         
-        Total_CL       = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CL();
-        Total_CD       = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CD();
-        Total_CSF      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CSF();
-        Total_CEff     = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CEff();
-        Total_CMx      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-        Total_CMy      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-        Total_CMz      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-        Total_CFx      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-        Total_CFy      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-        Total_CFz      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-        Total_ComboObj = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
+        Total_CL       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CL();
+        Total_CD       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CD();
+        Total_CSF      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CSF();
+        Total_CEff     = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+        Total_CMx      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+        Total_CMy      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+        Total_CMz      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+        Total_CFx      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+        Total_CFy      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+        Total_CFz      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+        Total_ComboObj = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
         Total_AoA      = config[val_iZone]->GetAoA() - config[val_iZone]->GetAoA_Offset();
-        Total_Custom_ObjFunc = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
+        Total_Custom_ObjFunc = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
 
         if (direct_diff != NO_DERIVATIVE) {
           D_Total_CL             = SU2_TYPE::GetDerivative(Total_CL);
@@ -4856,36 +4859,36 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
        
         if (thermal) {
-          Total_Heat     = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
-          Total_MaxHeat  = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
-          Total_Temperature  = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_Temperature();
+          Total_Heat     = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
+          Total_MaxHeat  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
+          Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Temperature();
 
           if(weakly_coupled_heat) {
-            Total_Heat     = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-            Total_MaxHeat  = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-            Total_Temperature  = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
+            Total_Heat     = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+            Total_MaxHeat  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
+            Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
           }
         }
         
         if (equiv_area) {
-          Total_CEquivArea    = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CEquivArea();
-          Total_CNearFieldOF  = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
+          Total_CEquivArea    = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CEquivArea();
+          Total_CNearFieldOF  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
           
           Total_CEquivArea    = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CEquivArea;
           Total_CNearFieldOF  = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CNearFieldOF;
         }
         
         if (engine || actuator_disk) {
-          Total_AeroCD  = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
-          Total_SolidCD = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
-          Total_IDR     = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_IDR();
-          Total_IDC     = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_IDC();
+          Total_AeroCD  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
+          Total_SolidCD = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
+          Total_IDR     = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_IDR();
+          Total_IDC     = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_IDC();
         }
         
         if (rotating_frame) {
-          Total_CT      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CT();
-          Total_CQ      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CQ();
-          Total_CMerit  = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMerit();
+          Total_CT      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CT();
+          Total_CQ      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CQ();
+          Total_CMerit  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMerit();
         }
         
         if (aeroelastic) {
@@ -4899,16 +4902,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (output_per_surface) {
           /*--- Look over the markers being monitored and get the desired values ---*/
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-            Surface_CL[iMarker_Monitoring]      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CL(iMarker_Monitoring);
-            Surface_CD[iMarker_Monitoring]      = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CD(iMarker_Monitoring);
-            Surface_CSF[iMarker_Monitoring] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CSF(iMarker_Monitoring);
-            Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
-            Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
-            Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
-            Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
-            Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
-            Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
-            Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
+            Surface_CL[iMarker_Monitoring]      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CL(iMarker_Monitoring);
+            Surface_CD[iMarker_Monitoring]      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CD(iMarker_Monitoring);
+            Surface_CSF[iMarker_Monitoring] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CSF(iMarker_Monitoring);
+            Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
+            Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
+            Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
+            Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
+            Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
+            Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
+            Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
           }
         }
         
@@ -4949,18 +4952,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Flow Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Flow; iVar++)
-          residual_flow[iVar] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
+          residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
         /*--- Turbulent residual ---*/
         
         if (turbulent) {
           for (iVar = 0; iVar < nVar_Turb; iVar++)
-            residual_turbulent[iVar] = solver_container[val_iZone][INST_0][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
+            residual_turbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
 
         if (weakly_coupled_heat) {
           for (iVar = 0; iVar < nVar_Heat; iVar++) {
-            residual_heat[iVar] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+            residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
           }
 
         }
@@ -4969,7 +4972,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (transition) {
           for (iVar = 0; iVar < nVar_Trans; iVar++)
-            residual_transition[iVar] = solver_container[val_iZone][INST_0][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
+            residual_transition[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
         }
         
         
@@ -4981,7 +4984,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Iterations of the linear solver ---*/
         
-        LinSolvIter = (unsigned long) solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetIterLinSolver();
+        LinSolvIter = (unsigned long) solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetIterLinSolver();
         
         /*--- Adjoint solver ---*/
         
@@ -4989,17 +4992,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           /*--- Adjoint solution coefficients ---*/
           
-          Total_Sens_Geo   = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
-          Total_Sens_Mach  = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
-          Total_Sens_AoA   = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
-          Total_Sens_Press = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
-          Total_Sens_Temp  = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
-          Total_Sens_BPressure = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
+          Total_Sens_Geo   = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
+          Total_Sens_Mach  = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
+          Total_Sens_AoA   = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
+          Total_Sens_Press = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
+          Total_Sens_Temp  = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_BPressure = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
           
           /*--- Adjoint flow residuals ---*/
           
           for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
-            residual_adjflow[iVar] = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(iVar);
+            residual_adjflow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(iVar);
           }
           
           /*--- Adjoint turbulent residuals ---*/
@@ -5007,7 +5010,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (turbulent) {
             if (!frozen_visc) {
               for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
-                residual_adjturbulent[iVar] = solver_container[val_iZone][INST_0][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
+                residual_adjturbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
             }
           }
           
@@ -5019,12 +5022,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Wave coefficients  ---*/
         
-        Total_CWave = solver_container[val_iZone][INST_0][FinestMesh][WAVE_SOL]->GetTotal_CWave();
+        Total_CWave = solver_container[val_iZone][val_iInst][FinestMesh][WAVE_SOL]->GetTotal_CWave();
         
         /*--- Wave Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Wave; iVar++) {
-          residual_wave[iVar] = solver_container[val_iZone][INST_0][FinestMesh][WAVE_SOL]->GetRes_RMS(iVar);
+          residual_wave[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][WAVE_SOL]->GetRes_RMS(iVar);
         }
         
         break;
@@ -5033,12 +5036,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Heat coefficients  ---*/
         
-        Total_CHeat = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
+        Total_CHeat = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
         
         /*--- Wave Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Heat; iVar++) {
-          residual_heat[iVar] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+          residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
         }
         
         break;
@@ -5047,14 +5050,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- Heat coefficients  ---*/
 
-        Total_Heat     = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-        Total_MaxHeat  = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-        Total_Temperature  = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
+        Total_Heat     = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+        Total_MaxHeat  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
+        Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
 
         /*--- Heat Residuals ---*/
 
         for (iVar = 0; iVar < nVar_Heat; iVar++) {
-          residual_heat[iVar] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+          residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
         }
 
         break;
@@ -5063,13 +5066,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
         
-        Total_VMStress = solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_VMStress = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetTotal_CFEA();
         
-        Total_ForceCoeff = solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetForceCoeff();
+        Total_ForceCoeff = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetForceCoeff();
 
-        Total_IncLoad = solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetLoad_Increment();
+        Total_IncLoad = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetLoad_Increment();
 
-        LinSolvIter = (unsigned long) solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetIterLinSolver();
+        LinSolvIter = (unsigned long) solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetIterLinSolver();
 
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -5077,12 +5080,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (linear_analysis) {
           for (iVar = 0; iVar < nVar_FEM; iVar++) {
-            residual_fem[iVar] = solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
+            residual_fem[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
           }
         }
         else if (nonlinear_analysis) {
           for (iVar = 0; iVar < nVar_FEM; iVar++) {
-            residual_fem[iVar] = solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetRes_FEM(iVar);
+            residual_fem[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetRes_FEM(iVar);
           }
         }
         
@@ -5092,13 +5095,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
 
-        Total_CFEM = solver_container[val_iZone][INST_0][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_CFEM = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetTotal_CFEA();
 
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
         /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
          for (iVar = 0; iVar < nVar_FEM; iVar++) {
-           residual_fem[iVar] = solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetRes_RMS(iVar);
+           residual_fem[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetRes_RMS(iVar);
          }
 
         break;
@@ -5107,9 +5110,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
 
     if (extra_heat_output) {
-      Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-      //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
-      Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
+      Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+      //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
+      Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
     /*--- Header frequency ---*/
@@ -5176,8 +5179,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e", Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
             if (rotating_frame) SPRINTF (rotating_frame_coeff, ", %14.8e, %14.8e, %14.8e", Total_CMerit, Total_CT, Total_CQ);
             if (inv_design) {
-              SPRINTF (Cp_inverse_design, ", %14.8e", solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CpDiff());
-              if (thermal && !turbo) SPRINTF (Heat_inverse_design, ", %14.8e", solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff());
+              SPRINTF (Cp_inverse_design, ", %14.8e", solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CpDiff());
+              if (thermal && !turbo) SPRINTF (Heat_inverse_design, ", %14.8e", solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff());
             }
             
             if (direct_diff != NO_DERIVATIVE) {
@@ -5406,7 +5409,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         }
       }
-      if (val_iZone == 0 || fluid_structure){
+      if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
         /*--- Write the screen header---*/
         if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
             (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
@@ -5421,8 +5424,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
 
                 for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-                  cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][INST_0][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
-                  ". Max. DT: " << solver_container[val_iZone][INST_0][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
+                  cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+                  ". Max. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                   ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
 
                   if (nZone > 1)
@@ -5497,11 +5500,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (flow) {
                 if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
                 {
-                  cout << endl << "Min DT: " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
                 } else if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
-                  cout << endl << "Min DT: " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][INST_0][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
+                  cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][val_iInst][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
                 } else {
-                  cout << endl << "Min DT: " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
                 }
               } else {
                 cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
@@ -5518,12 +5521,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case EULER :                  case NAVIER_STOKES:
 
             /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+            iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
 
             cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
 
-            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
 
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
@@ -5582,12 +5585,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case RANS :
 
             /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+            iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
 
             cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
 
-            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
@@ -5598,7 +5601,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (nDim == 3) cout << ", " << Coord[2]*12.0;
               cout <<   ")." << endl;
             }
-            cout <<"Maximum Omega " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
+            cout <<"Maximum Omega " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
 
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)
@@ -5698,9 +5701,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
 
               /*--- Visualize the maximum residual ---*/
-              iPointMaxResid = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
-              Coord = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
-              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+              iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
               if (config[val_iZone]->GetSystemMeasurements() == SI) {
                 cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
                 if (nDim == 3) cout << ", " << Coord[2];
@@ -5735,9 +5738,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case ADJ_RANS : case DISC_ADJ_RANS:
 
               /*--- Visualize the maximum residual ---*/
-              iPointMaxResid = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
-              Coord = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
-              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+              iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
               if (config[val_iZone]->GetSystemMeasurements() == SI) {
                 cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
                 if (nDim == 3) cout << ", " << Coord[2];
@@ -5789,9 +5792,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
       }
 
-      /*--- Write the solution on the screen and history file ---*/
+      /*--- Write the solution on the screen ---*/
       
-      if (val_iZone == 0 || fluid_structure){
+      if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5855,7 +5858,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           /*--- Write screen output ---*/
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -5943,7 +5946,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           /*--- Write screen output ---*/
 
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6012,7 +6015,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_wave[0]);
@@ -6027,7 +6030,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_heat[0]);
@@ -6084,16 +6087,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 
           if (config[val_iZone]->GetnElasticityMod() == 1){
-            cout.width(14); cout << solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-            cout.width(14); cout << solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+            cout.width(14); cout << solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+            cout.width(14); cout << solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
           }
           else{
             Total_SensE = 0.0; Total_SensNu = 0.0;
             for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
-                Total_SensE += solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0)
-                    *solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-                Total_SensNu += solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
-                    *solver_container[val_iZone][INST_0][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+                Total_SensE += solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+                    *solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+                Total_SensNu += solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+                    *solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
             }
             Total_SensE = sqrt(Total_SensE);
             Total_SensNu = sqrt(Total_SensNu);
@@ -6111,7 +6114,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6155,7 +6158,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6165,7 +6168,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               else {
                 if (compressible) {
-                  if (geometry[val_iZone][INST_0][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
+                  if (geometry[val_iZone][val_iInst][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
                   else { cout.width(15); cout << log10(residual_adjflow[4]); }
                 }
                 if (incompressible) {
