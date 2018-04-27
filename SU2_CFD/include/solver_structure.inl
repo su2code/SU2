@@ -84,7 +84,7 @@ inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solv
 
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
-inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) { }
+inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) { }
   
 inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
