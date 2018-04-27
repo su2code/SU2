@@ -13597,7 +13597,7 @@ void CEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, bgs_sol;
+  su2double residual;
 
   /*--- Set Residuals to zero ---*/
 
