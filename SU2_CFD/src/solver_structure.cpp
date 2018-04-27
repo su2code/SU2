@@ -2989,8 +2989,11 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1  || config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+  if (nZone > 1)
     filename = config->GetMultizone_FileName(filename, iZone);
+
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    filename = config->GetMultiinstance_FileName(filename, config->GetiInst());
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady()) {
@@ -3438,6 +3441,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (nZone > 1 )
     filename = config->GetMultizone_FileName(filename, iZone);
 
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    filename = config->GetMultiinstance_FileName(filename, config->GetiInst());
+
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
@@ -3548,7 +3554,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
 }
 
-void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/
   string filename;

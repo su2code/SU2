@@ -73,8 +73,8 @@ protected:
                 iZone,                          /*!< \brief Iterator on zones.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim,                           /*!< \brief Number of dimensions.*/
-				iInst,                          /*!< \brief Iterator on instance levels.*/
-				*nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
+                iInst,                          /*!< \brief Iterator on instance levels.*/
+                *nInst,                         /*!< \brief Total number of instances in the problem (per zone). */
                 **transfer_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
