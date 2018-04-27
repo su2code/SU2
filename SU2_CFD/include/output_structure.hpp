@@ -790,6 +790,8 @@ public:
     
     bool SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], unsigned long jElem, short iFace);
     
+    bool SegmentIntersectsFace_1(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], su2double **Coord_face);
+    
     void Isoparameters_1(unsigned short nDim, unsigned short nDonor,
                                   su2double *X, su2double *xj, su2double *isoparams);
    void Isoparameters(unsigned short nDim, unsigned short nDonor,

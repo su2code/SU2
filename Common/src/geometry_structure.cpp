@@ -454,7 +454,6 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
   
   det = DOT(edge1, pvec);
   
-  
   if (det > -EPSILON && det < EPSILON) return(false);
   
   inv_det = 1.0 / det;
@@ -466,8 +465,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
   /*--- Calculate U parameter and test bounds ---*/
   
   u = inv_det * DOT(tvec, pvec);
-  
-  if (u < 0.0 || u > 1.0) return(false);
+  if (u <= 0.0-EPSILON || u >= 1.0+EPSILON) return(false);
   
   /*--- prepare to test V parameter ---*/
   
@@ -476,8 +474,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
   /*--- Calculate V parameter and test bounds ---*/
   
   v = inv_det * DOT(dir, qvec);
-  
-  if (v < 0.0 || u + v > 1.0) return(false);
+  if (v < 0.0-EPSILON || u + v > 1.0+EPSILON) return(false);
   
   /*--- Calculate t, ray intersects triangle ---*/
   
@@ -684,7 +681,6 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
     Aux = Numerator * Denominator;
     
     /*--- Intersection outside the segment ---*/
-    
     if (Aux > 0.0) return (false);
     
   }
