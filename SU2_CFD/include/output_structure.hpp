@@ -788,15 +788,11 @@ public:
    /* For 3D point search */
    bool IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigned long jElem);
     
-    bool SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], unsigned long jElem, short iFace);
-    
-    bool SegmentIntersectsFace_1(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], su2double **Coord_face);
+    bool SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], su2double **Coord_face);
     
     void Isoparameters_1(unsigned short nDim, unsigned short nDonor,
                                   su2double *X, su2double *xj, su2double *isoparams);
-   void Isoparameters(unsigned short nDim, unsigned short nDonor,
-                                su2double *X, su2double *xj, su2double *isoparams);
-    
+   
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
    * \param[in] config - Definition of the particular problem.

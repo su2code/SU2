@@ -16071,10 +16071,10 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 probe_check[0] = 0.6; probe_check[1] = 0.6; probe_check[2] = 0.6;
                 cout << "Befor probe check " << endl;
                 bool Inside_check = false;
-                Inside_check = IsPointInsideHex(geometry, probe_check, 10);
+                Inside_check = IsPointInsideHex(geometry, probe_check, 54);
                 if(Inside_check)
                     cout << "\\\\\\\\######## probe check point is inside the 2.5x2.5x2.5 cube at origin" << endl;
-                unsigned long probelem_check = FindProbeLocElement_fromNearestNodeElem3D(geometry, 10, probe_check);
+                unsigned long probelem_check = FindProbeLocElement_fromNearestNodeElem3D(geometry, 54, probe_check);
             
                 if(Inside_check)
                     cout << "\\\\\\\\######## probe check point is inside the 2.5x2.5x2.5 cube at origin" << endl;
@@ -16266,7 +16266,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                         }
                     }
                     
-                    Isoparameters(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
+                    Isoparameters_1(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
                     
                     for (unsigned short iNode=0; iNode < nNodes_elem; iNode++) {
                         unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
@@ -16467,7 +16467,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
     vector<unsigned long> ElemIntersectProbeSeg;
     
     //if (abs(probe_loc[0] - 0.1)<1e-5 && abs(probe_loc[1]) < 1e-4)
-    cout << "IFor probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << ", NN[2] = " << geometry->node[pointID]->GetCoord(2) << endl;
+    //cout << "IFor probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << ", NN[2] = " << geometry->node[pointID]->GetCoord(2) << endl;
     
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
@@ -16492,8 +16492,8 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
         /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
         for (iFace =0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++)
         {
-            cout << "iFace = " << iFace << endl;
-            cout << "Entering SegInterFace with NN coords NN[0] = " << pointID_Coord[0] << ", " << pointID_Coord[1] << ", " << pointID_Coord[2] << endl;
+            //cout << "iFace = " << iFace << endl;
+            //cout << "Entering SegInterFace with NN coords NN[0] = " << pointID_Coord[0] << ", " << pointID_Coord[1] << ", " << pointID_Coord[2] << endl;
             
             for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
                 unsigned long face_point = geometry->elem[jElem]->GetNode(geometry->elem[jElem]->GetFaces(iFace, iNode));
@@ -16502,10 +16502,10 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
                 //            Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
                 for (unsigned short iDim =0; iDim < nDim; iDim++)
                     Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
-                    cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
+                    //cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
             }
             
-            FaceIntersect = SegmentIntersectsFace_1(geometry, probe_loc, pointID_Coord, Coord_face);
+            FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, pointID_Coord, Coord_face);
             
             if(FaceIntersect)  {
                 cout << " 11111-------- Face Intersect --------" << endl;
@@ -16554,10 +16554,10 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
                 //            Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
                 for (unsigned short iDim =0; iDim < nDim; iDim++)
                     Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
-                cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
+                //cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
             }
             
-            FaceIntersect = SegmentIntersectsFace_1(geometry, probe_loc, pointID_Coord, Coord_face);
+            FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, pointID_Coord, Coord_face);
             
                 //cout << "Facepoint 1 coord[0] = " << face_point1[0] << ", coord[1] = " << face_point1[1] << endl;
                 //cout << "Facepoint 2 coord[0] = " << face_point2[0] << ", coord[1] = " << face_point2[1] << endl;
@@ -17422,59 +17422,16 @@ bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigne
 
 }
 
-bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], unsigned long jElem, short iFace){
-    
-    bool Intersect;
-    unsigned short nDim = geometry->GetnDim();
-    unsigned short iNode, nNodes_face;
-
-    nNodes_face = geometry->elem[jElem]->GetnNodesFace(0);
-    
-    cout << "In SegIntersectsFace NN - segpoint2[0] = " << segpoint2[0] << ", segpoint2[1] = " << segpoint2[1] << ", segpoint2[2] = " << segpoint2[2] << endl;
-    
-    /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
-    su2double **Coord_face = new su2double*[nNodes_face];
-    for (unsigned short iNode = 0; iNode < nNodes_face; iNode++)
-        Coord_face[iNode] = new su2double[nDim];
-    
-    for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
-        unsigned long face_point = geometry->elem[jElem]->GetNode(geometry->elem[jElem]->GetFaces(iFace, iNode));
-        
-//        for (unsigned short iDim =0; iDim < nDim; iDim++)
-//            Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
-        Coord_face[iNode] = geometry->node[face_point]->GetCoord();
-        for (unsigned short iDim =0; iDim < nDim; iDim++)
-            cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
-    }
-    
-    /* It intersects the quad face if it intersects either of the two triangles that make up the quad */
-    bool Intersect1 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[0], Coord_face[1], Coord_face[2]);
-    bool Intersect2 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[2], Coord_face[3], Coord_face[0]);
-    
-    if (Intersect1 || Intersect2)
-        Intersect = true;
-    else
-        Intersect = false;
-    
-    for (iNode = 0; iNode < nNodes_face; iNode++)
-        delete [] Coord_face[iNode];
-    delete [] Coord_face;
-    cout << " SegIntersectFace for iFace = " << iFace << " is " << Intersect << endl;
-    return Intersect;
-    
-}
-
-bool COutput::SegmentIntersectsFace_1(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], su2double **Coord_face){
+bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3], su2double segpoint2[3], su2double **Coord_face){
     
     bool Intersect;
     unsigned short nDim = 3;
     unsigned short iNode, nNodes_face;
-    su2double Coord0[3], Coord1[3], Coord2[3], Coord3[3];
     nNodes_face = 4;
     
-    cout << "In SegIntersectsFace NN - segpoint2[0] = " << segpoint2[0] << ", segpoint2[1] = " << segpoint2[1] << ", segpoint2[2] = " << segpoint2[2] << endl;
+    //cout << "In SegIntersectsFace NN - segpoint2[0] = " << segpoint2[0] << ", segpoint2[1] = " << segpoint2[1] << ", segpoint2[2] = " << segpoint2[2] << endl;
     
-    cout << "In SegIntersectsFace probe_loc - segpoint1[0] = " << segpoint1[0] << ", segpoint1[1] = " << segpoint1[1] << ", segpoint1[2] = " << segpoint1[2] << endl;
+    //cout << "In SegIntersectsFace probe_loc - segpoint1[0] = " << segpoint1[0] << ", segpoint1[1] = " << segpoint1[1] << ", segpoint1[2] = " << segpoint1[2] << endl;
     
     /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
     
@@ -17483,26 +17440,11 @@ bool COutput::SegmentIntersectsFace_1(CGeometry *geometry, su2double segpoint1[3
             cout << "iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
     }
     
-    for (unsigned short iDim =0; iDim < nDim; iDim++) {
-        Coord0[iDim] =Coord_face[0][iDim]; Coord1[iDim] =Coord_face[1][iDim];
-        Coord2[iDim] =Coord_face[2][iDim]; Coord3[iDim] =Coord_face[3][iDim];
-    }
-        
     /* It intersects the quad face if it intersects either of the two triangles that make up the quad */
     
-   // bool Intersect1 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[0], Coord_face[1], Coord_face[2]);
-    bool Intersect1 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord0, Coord1, Coord2);
+    bool Intersect1 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[0], Coord_face[1], Coord_face[2]);
     
-    if (Intersect1)
-        cout << "Yes, Intersect trianle with coord 0,1,2 = " << Intersect1 << endl;
-    else
-        cout << "No, Intersect trianle with coord 0,1,2 = " << Intersect1 << endl;
-    
-    bool Intersect2 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord2, Coord3, Coord0);
-    if (Intersect2)
-        cout << "Yes, Intersect trianle with coord 2,3,0 = " << Intersect2 << endl;
-    else
-        cout << "No, Intersect trianle with coord 2,3,0 = " << Intersect2 << endl;
+    bool Intersect2 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[2], Coord_face[3], Coord_face[0]);
     
     if (Intersect1 || Intersect2)
         Intersect = true;
@@ -17592,207 +17534,6 @@ void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
         
     }
 }
-
-
-
-void COutput::Isoparameters(unsigned short nDim, unsigned short nDonor,
-                                   su2double *X, su2double *xj, su2double *isoparams) {
-
-    short iDonor,iDim,k; // indices
-    su2double tmp, tmp2;
-    su2double x[nDim+1];
-    su2double x_tmp[nDim+1];
-    su2double Q[nDonor*nDonor];
-    su2double R[nDonor*nDonor];
-    su2double A[(nDim+1)*nDonor];
-    su2double *A2    = NULL;
-    su2double x2[nDim+1];
-    
-    bool test[nDim+1];
-    bool testi[nDim+1];
-    
-    su2double eps = 1E-10;
-    
-    short n = nDim+1;
-    
-    if (nDonor>2) {
-        /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
-        /*--- Right hand side is [1, \vec{x}']'---*/
-        for (iDonor=0; iDonor<nDonor; iDonor++) {
-            isoparams[iDonor]=0;
-            A[iDonor] = 1.0;
-            for (iDim=0; iDim<nDim; iDim++)
-                A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
-        }
-        
-        x[0] = 1.0;
-        for (iDim=0; iDim<nDim; iDim++)
-            x[iDim+1]=xj[iDim];
-        
-        /*--- Eliminate degenerate rows:
-         * for example, if z constant including the z values will make the system degenerate
-         * TODO: improve efficiency of this loop---*/
-        test[0]=true; // always keep the 1st row
-        for (iDim=1; iDim<nDim+1; iDim++) {
-            // Test this row against all previous
-            test[iDim]=true; // Assume that it is not degenerate
-            for (k=0; k<iDim; k++) {
-                tmp=0; tmp2=0;
-                for (iDonor=0;iDonor<nDonor;iDonor++) {
-                    tmp+= A[iDim*nDonor+iDonor]*A[iDim*nDonor+iDonor];
-                    tmp2+=A[k*nDonor+iDonor]*A[k*nDonor+iDonor];
-                }
-                tmp  = pow(tmp,0.5);
-                tmp2 = pow(tmp2,0.5);
-                testi[k]=false;
-                for (iDonor=0; iDonor<nDonor; iDonor++) {
-                    // If at least one ratio is non-matching row iDim is not degenerate w/ row k
-                    if (A[iDim*nDonor+iDonor]/tmp != A[k*nDonor+iDonor]/tmp2)
-                        testi[k]=true;
-                }
-                // If any of testi (k<iDim) are false, row iDim is degenerate
-                test[iDim]=(test[iDim] && testi[k]);
-            }
-            if (!test[iDim]) n--;
-        }
-
-        /*--- Initialize A2 now that we might have a smaller system --*/
-        A2 = new su2double[n*nDonor];
-        iDim=0;
-
-        /*--- Copy only the rows that are non-degenerate ---*/
-        for (k=0; k<nDim+1; k++) {
-            if (test[k]) {
-                for (iDonor=0;iDonor<nDonor;iDonor++ ) {
-                    A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
-                }
-                x2[iDim]=x[k];
-                iDim++;
-            }
-        }
-        /*--- Initialize Q,R to 0 --*/
-        for (k=0; k<nDonor*nDonor; k++) {
-            Q[k]=0;
-            R[k]=0;
-        }
-        /*--- TODO: make this loop more efficient ---*/
-        /*--- Solve for rectangular Q1 R1 ---*/
-        for (iDonor=0; iDonor<nDonor; iDonor++) {
-            tmp=0;
-            for (iDim=0; iDim<n; iDim++)
-                tmp += (A2[iDim*nDonor+iDonor])*(A2[iDim*nDonor+iDonor]);
-            
-            R[iDonor*nDonor+iDonor]= pow(tmp,0.5);
-            if (tmp>eps && iDonor<n) {
-                for (iDim=0; iDim<n; iDim++)
-                    Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/R[iDonor*nDonor+iDonor];
-            }
-            else if (tmp!=0) {
-                for (iDim=0; iDim<n; iDim++)
-                    Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/tmp;
-            }
-            for (iDim=iDonor+1; iDim<nDonor; iDim++) {
-                tmp=0;
-                for (k=0; k<n; k++)
-                    tmp+=A2[k*nDonor+iDim]*Q[k*nDonor+iDonor];
-                
-                R[iDonor*nDonor+iDim]=tmp;
-                
-                for (k=0; k<n; k++)
-                    A2[k*nDonor+iDim]=A2[k*nDonor+iDim]-Q[k*nDonor+iDonor]*R[iDonor*nDonor+iDim];
-            }
-        }
-
-        /*--- x_tmp = Q^T * x2 ---*/
-        for (iDonor=0; iDonor<nDonor; iDonor++)
-            x_tmp[iDonor]=0.0;
-        for (iDonor=0; iDonor<nDonor; iDonor++) {
-            for (iDim=0; iDim<n; iDim++)
-                x_tmp[iDonor]+=Q[iDim*nDonor+iDonor]*x2[iDim];
-        }
-        
-        /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
-        for (iDonor = n-1; iDonor>=0; iDonor--) {
-            if (R[iDonor*nDonor+iDonor]>eps)
-                isoparams[iDonor]=x_tmp[iDonor]/R[iDonor*nDonor+iDonor];
-            else
-                isoparams[iDonor]=0;
-            for (k=0; k<iDonor; k++)
-                x_tmp[k]=x_tmp[k]-R[k*nDonor+iDonor]*isoparams[iDonor];
-        }
-    }
-    else {
-        /*-- For 2-donors (lines) it is simpler: */
-        tmp =  pow(X[0*nDonor+0]- X[0*nDonor+1],2.0);
-        tmp += pow(X[1*nDonor+0]- X[1*nDonor+1],2.0);
-        tmp = sqrt(tmp);
-        
-        tmp2 = pow(X[0*nDonor+0] - xj[0],2.0);
-        tmp2 += pow(X[1*nDonor+0] - xj[1],2.0);
-        tmp2 = sqrt(tmp2);
-        isoparams[1] = tmp2/tmp;
-        
-        tmp2 = pow(X[0*nDonor+1] - xj[0],2.0);
-        tmp2 += pow(X[1*nDonor+1] - xj[1],2.0);
-        tmp2 = sqrt(tmp2);
-        isoparams[0] = tmp2/tmp;
-    }
-
-    /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
-    if (nDonor==4) {
-        //-- Bilinear coordinates, bounded by [-1,1]
-        su2double xi, eta;
-        xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
-        eta =  isoparams[2]*4/(1+xi) - 1;
-        
-        if (xi>1.001) xi=1.0;
-        if (xi<-1.001) xi=-1.0;
-        if (eta>1.001) eta=1.0;
-        if (eta<-1.001) eta=-1.0;
-        cout << "xi = " << xi << ", eta = " << eta << endl;
-        cout << "OldIsoparam[0] = " << isoparams[0] << ", OldIsoparams[1] = " << isoparams[1] << ", OldIsoparams[2] = " << isoparams[2] <<  ", OldIsoparams[3] = " << isoparams[3] << endl;
-        
-        isoparams[0]=0.25*(1-xi)*(1-eta);
-        isoparams[1]=0.25*(1+xi)*(1-eta);
-        isoparams[2]=0.25*(1+xi)*(1+eta);
-        isoparams[3]=0.25*(1-xi)*(1+eta);
-        //cout << "To bound by [-1,1]" << endl;
-        //cout << "NewIsoparam[0] = " << isoparams[0] << ", NewIsoparams[1] = " << isoparams[1] << ", NewIsoparams[2] = " << isoparams[2] <<  ", NewIsoparams[3] = " << isoparams[3] << endl;
-        //isoparams[0]=0.25; isoparams[1]=0.25;
-        //isoparams[2]=0.25; isoparams[3]=0.25;
-        
-    }
-  
-    /*cout << "After bilinear " << endl;
-    if (nDonor<4) {
-        tmp = 0.0; // value for normalization
-        tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
-        k=0; // index for maximum value
-        for (iDonor=0; iDonor< nDonor; iDonor++) {
-            if (isoparams[iDonor]>tmp2) {
-                k=iDonor;
-                tmp2=isoparams[iDonor];
-            }
-            // [0,1]
-            if (isoparams[iDonor]<0) isoparams[iDonor]=0;
-            if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
-            tmp +=isoparams[iDonor];
-        }
-        if (tmp>0)
-            for (iDonor=0; iDonor< nDonor; iDonor++)
-                isoparams[iDonor]=isoparams[iDonor]/tmp;
-        else {
-            isoparams[k] = 1.0;
-        }
-    }*/
-    
-    if (A2 != NULL) delete [] A2;
-    /*delete [] x2;
-    
-    delete [] test;
-    delete [] testi;*/
-}
-
 
 void COutput::Probe_sol(CSolver *solver, CGeometry *geometry, CConfig *config,
                         su2double *probe_loc){
