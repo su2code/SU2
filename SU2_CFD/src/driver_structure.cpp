@@ -1425,8 +1425,8 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 
   if (disc_adj){
     if(fem_euler || fem_ns){
-      integration_container[ADJFLOW_SOL] = new CFEM_DG_Integration(config);
-      //integration_container[ADJFLOW_SOL] = new CIntegration(config);
+      // integration_container[ADJFLOW_SOL] = new CFEM_DG_Integration(config);
+      integration_container[ADJFLOW_SOL] = new CIntegration(config);
     }
     else{
       integration_container[ADJFLOW_SOL] = new CIntegration(config);
