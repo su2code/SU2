@@ -3387,12 +3387,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
    */
-  virtual void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver,
-                               CConfig *config, int val_iter);
+  virtual void LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter);
   
   /*!
    * \brief A virtual member.
@@ -4193,7 +4191,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
    */
-  void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter);
 
   /*!
    * \brief Set the number of variables and string names from the restart file.
