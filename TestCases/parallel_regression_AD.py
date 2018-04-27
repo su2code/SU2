@@ -3,20 +3,24 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 5.0.0 "Raven"
+#  \version 6.0.1 "Falcon"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,6 +34,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
 
 import sys
 from TestCase import TestCase    
@@ -50,12 +57,23 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606963, -9.034619, -0.000000, 0.005688] #last 4 columns
+    discadj_naca0012.test_vals = [-3.606841, -9.035214, -0.000000, 0.005688] #last 4 columns
     discadj_naca0012.su2_exec  = "parallel_computation.py -f"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
     test_list.append(discadj_naca0012)
    
+    # Inviscid Cylinder 3D (multiple markers)
+    discadj_cylinder3D           = TestCase('discadj_cylinder3D')
+    discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
+    discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
+    discadj_cylinder3D.test_iter = 5
+    discadj_cylinder3D.test_vals = [-3.720476, -4.039256, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
+    discadj_cylinder3D.timeout   = 1600
+    discadj_cylinder3D.tol       = 0.00001
+    test_list.append(discadj_cylinder3D)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -65,7 +83,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751997, 0.485368, 0.182890, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751965, 0.485796, 0.182895, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -76,11 +94,56 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.655243, -0.507187, 0.129010, -0.000013] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.654193, -0.499281, 0.145545, -0.000018] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
+
+    #######################################
+    ### Disc. adj. incompressible Euler ###
+    #######################################
+
+    # Adjoint Incompressible Inviscid NACA0012
+    discadj_incomp_NACA0012           = TestCase('discadj_incomp_NACA0012')
+    discadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
+    discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
+    discadj_incomp_NACA0012.test_iter = 20
+    discadj_incomp_NACA0012.test_vals = [-2.917789, -2.714752, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_NACA0012.timeout   = 1600
+    discadj_incomp_NACA0012.tol       = 0.00001
+    test_list.append(discadj_incomp_NACA0012)
+
+    #####################################
+    ### Disc. adj. incompressible N-S ###
+    #####################################
+
+    # Adjoint Incompressible Viscous Cylinder
+    discadj_incomp_cylinder           = TestCase('discadj_incomp_cylinder')
+    discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
+    discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
+    discadj_incomp_cylinder.test_iter = 20
+    discadj_incomp_cylinder.test_vals = [-2.727423, -2.272530, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_cylinder.timeout   = 1600
+    discadj_incomp_cylinder.tol       = 0.00001
+    test_list.append(discadj_incomp_cylinder)
+
+    ######################################
+    ### Disc. adj. incompressible RANS ###
+    ######################################
+
+    # Adjoint Incompressible Turbulent NACA 0012
+    discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
+    discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
+    discadj_incomp_turb_NACA0012.test_iter = 100
+    discadj_incomp_turb_NACA0012.test_vals = [-3.645810, -1.625922, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_turb_NACA0012.timeout   = 1600
+    discadj_incomp_turb_NACA0012.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012)
 
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
@@ -90,14 +153,59 @@ def main():
     discadj_cylinder           = TestCase('unsteady_cylinder')
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg" 
-    discadj_cylinder.test_iter = 10
-    discadj_cylinder.test_vals = [3.522085, -1.787791, -0.012031, 0.000017] #last 4 columns
+    discadj_cylinder.test_iter = 9
+    discadj_cylinder.test_vals = [3.746900, -1.544893, -8.3447e-03, 1.3808e-05] #last 4 columns
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.00001
     discadj_cylinder.unsteady  = True
-    test_list.append(discadj_cylinder
-)
+    test_list.append(discadj_cylinder)
+    
+    #######################################################
+    ### Disc. adj. turbomachinery                       ###
+    #######################################################
+    
+    # Transonic Stator 2D
+    discadj_trans_stator           = TestCase('transonic_stator')
+    discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
+    discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
+    discadj_trans_stator.test_iter = 79
+    discadj_trans_stator.test_vals = [-2.001081, -2.115303, -0.450996, -15.778175] #last 4 columns
+    discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
+    discadj_trans_stator.timeout   = 1600
+    discadj_trans_stator.tol       = 0.00001
+    test_list.append(discadj_trans_stator)
+    
+    ###################################
+    ### Structural Adjoint          ###
+    ###################################
+   
+    # Turbulent Cylinder
+    discadj_fea           = TestCase('discadj_fea')
+    discadj_fea.cfg_dir   = "disc_adj_fea"
+    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.test_iter = 9
+    discadj_fea.test_vals = [-4.872191, -5.131614, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.su2_exec  = "parallel_computation.py -f"
+    discadj_fea.timeout   = 1600
+    discadj_fea.tol       = 0.00001
+    test_list.append(discadj_fea) 
+    
+    ###################################
+    ### Coupled FSI Adjoint         ###
+    ###################################
+   
+    # Structural model
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
+    discadj_fsi.su2_exec  = "parallel_computation.py -f"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -105,13 +213,14 @@ def main():
     pass_list = [ test.run_test() for test in test_list ]
 
     # Tests summary
-    print '=================================================================='
-    print 'Summary of the parallel tests'
+    print('==================================================================')
+    print('Summary of the parallel tests')
+    print('python version:', sys.version)
     for i, test in enumerate(test_list):
         if (pass_list[i]):
-            print '  passed - %s'%test.tag
+            print('  passed - %s'%test.tag)
         else:
-            print '* FAILED - %s'%test.tag
+            print('* FAILED - %s'%test.tag)
 
     if all(pass_list):
         sys.exit(0)
