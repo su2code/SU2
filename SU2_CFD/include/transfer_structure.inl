@@ -2,20 +2,24 @@
  * \file transfer_structure.inl
  * \brief In-Line subroutines of the <i>transfer_structure.hpp</i> file.
  * \author R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
- *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,5 +46,11 @@ inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *don
                      unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
 inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                      CConfig *target_config, unsigned long Marker_Target,
-                      unsigned long Vertex_Target, unsigned long Point_Target) { }
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long Vertex_Target, unsigned long Point_Target) { }
+
+inline void CTransfer::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) { }
+
+inline void CTransfer::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) { }
+
+inline void CTransfer::SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }

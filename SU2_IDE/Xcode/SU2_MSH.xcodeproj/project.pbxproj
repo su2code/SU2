@@ -17,7 +17,6 @@
 		05E6DB5117EB61CC00FA1F7E /* primal_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB4817EB61CC00FA1F7E /* primal_grid_structure.cpp */; };
 		05E6DB5217EB61CC00FA1F7E /* vector_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */; };
 		05E6DC5117EB637300FA1F7E /* SU2_MSH.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */; };
-		E941BBF41B71DB1D005C6C06 /* datatype_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF11B71DB1D005C6C06 /* datatype_structure.cpp */; };
 		E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */; };
 /* End PBXBuildFile section */
@@ -35,7 +34,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		05978B061A871E8700BEF32E /* config_template_basic.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template_basic.cfg; path = ../../config_template_basic.cfg; sourceTree = "<group>"; };
 		05978B071A871E8700BEF32E /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 		05AB07A313764A35008163E7 /* SU2_MSH */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_MSH; sourceTree = BUILT_PRODUCTS_DIR; };
 		05E6DA7B17EB5FC300FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -68,7 +66,6 @@
 		05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = vector_structure.cpp; path = ../../Common/src/vector_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DC4F17EB636E00FA1F7E /* SU2_MSH.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; lineEnding = 2; name = SU2_MSH.hpp; path = ../../SU2_MSH/include/SU2_MSH.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 2; name = SU2_MSH.cpp; path = ../../SU2_MSH/src/SU2_MSH.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E941BBF11B71DB1D005C6C06 /* datatype_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = datatype_structure.cpp; path = ../../Common/src/datatype_structure.cpp; sourceTree = "<group>"; };
 		E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = linear_solvers_structure_b.cpp; path = ../../Common/src/linear_solvers_structure_b.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBF71B71DB3D005C6C06 /* datatype_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = datatype_structure.inl; path = ../../Common/include/datatype_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -144,7 +141,6 @@
 		08FB7794FE84155DC02AAC07 /* SU2_MSH */ = {
 			isa = PBXGroup;
 			children = (
-				05978B061A871E8700BEF32E /* config_template_basic.cfg */,
 				05978B071A871E8700BEF32E /* config_template.cfg */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				05AB07B813764A93008163E7 /* InLine */,
@@ -168,7 +164,6 @@
 				05E6DB4717EB61CC00FA1F7E /* matrix_structure.cpp */,
 				05E6DB4817EB61CC00FA1F7E /* primal_grid_structure.cpp */,
 				05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */,
-				E941BBF11B71DB1D005C6C06 /* datatype_structure.cpp */,
 				E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */,
 			);
 			name = Source;
@@ -258,7 +253,6 @@
 				E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */,
 				05E6DB4A17EB61CC00FA1F7E /* config_structure.cpp in Sources */,
-				E941BBF41B71DB1D005C6C06 /* datatype_structure.cpp in Sources */,
 				05E6DB4B17EB61CC00FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB4C17EB61CC00FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB4D17EB61CC00FA1F7E /* grid_adaptation_structure.cpp in Sources */,
