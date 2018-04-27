@@ -804,6 +804,7 @@ private:
   unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
+  unsigned short iInst;       /*!< \brief Current instance value */
   su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
   su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
@@ -7803,6 +7804,18 @@ public:
    */
   su2double GetCurrent_DynTime(void);
   
+  /*!
+   * \brief Get the current instance.
+   * \return Current instance identifier.
+   */
+  unsigned short GetiInst(void);
+
+  /*!
+   * \brief Set the current instance.
+   * \param[in] iInst - current instance identifier.
+   */
+  void SetiInst(unsigned short val_iInst);
+
   /*!
    * \brief Get information about writing dynamic structural analysis headers and file extensions.
    * \return 	<code>TRUE</code> means that dynamic structural analysis solution files will be written.

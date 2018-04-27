@@ -128,38 +128,38 @@ CDriver::CDriver(char* confFile,
 
     nInst[iZone] = config_container[iZone]->GetnTimeInstances();
 
-    /*--- Definition of the geometry class to store the primal grid in the
+    geometry_container[iZone] = new CGeometry** [nInst[iZone]];
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      config_container[iZone]->SetiInst(iInst);
+
+      /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
 
-    CGeometry *geometry_aux = NULL;
+      CGeometry *geometry_aux = NULL;
 
-    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
 
-    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-    /*--- Allocate the memory of the current domain, and divide the grid
+      /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-    geometry_container[iZone] = new CGeometry** [nInst[iZone]];
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
       geometry_container[iZone][iInst] = NULL;
 
       geometry_container[iZone][iInst] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
       geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
 
-    }
+      /*--- Deallocate the memory of geometry_aux ---*/
 
-    /*--- Deallocate the memory of geometry_aux ---*/
+      delete geometry_aux;
 
-    delete geometry_aux;
-
-    /*--- Set the transfer information between processors ---*/
-
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      /*--- Set the transfer information between processors ---*/
 
       /*--- Add the Send/Receive boundaries ---*/
 
@@ -501,10 +501,11 @@ CDriver::CDriver(char* confFile,
   output = new COutput(config_container[ZONE_0]);
 
   /*--- Open the convergence history file ---*/
-
-  if (rank == MASTER_NODE){
-    ConvHist_file = new ofstream*[nZone];
-    for (iZone = 0; iZone < nZone; iZone++) {
+  ConvHist_file = NULL;
+  ConvHist_file = new ofstream*[nZone];
+  for (iZone = 0; iZone < nZone; iZone++) {
+    ConvHist_file[iZone] = NULL;
+    if (rank == MASTER_NODE){
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
         output->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
