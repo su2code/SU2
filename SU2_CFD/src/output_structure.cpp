@@ -4704,7 +4704,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0,
-    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Temperature = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
+    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Temperature = 0.0, Total_Custom_ObjFunc = 0.0,
     Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0;
@@ -5095,7 +5095,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
 
-        Total_CFEM = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_VMStress = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetTotal_CFEA();
 
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -10679,12 +10679,10 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
   if ((rank == MASTER_NODE) && (header)){
 
     char cstr[200], buffer[50], turb_resid[1000];
-    unsigned short iMarker_Monitoring;
     string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
 
     bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
                        (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
-    bool disc_adj = config[ZONE_FLOW]->GetDiscrete_Adjoint();
 
     unsigned short direct_diff = config[ZONE_FLOW]->GetDirectDiff();
 
@@ -10720,8 +10718,6 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
     char flow_coeff[]= ",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CL/CD\"";
     char fem_coeff[]= ",\"VM_Stress\"";
-    char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
-    bool struct_of=false;
     char of_1[] = ",\"TgtGeom\"";
     char of_2[] = ",\"TgtNode\"";
 
@@ -10838,13 +10834,8 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
       bool first_iter = ((iExtIter==0) && (iFSIIter == 0));
 
-      bool flow = (config[ZONE_FLOW]->GetKind_Solver() == EULER) || (config[ZONE_FLOW]->GetKind_Solver() == NAVIER_STOKES) ||
-      (config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_EULER) ||
-      (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
       bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
       bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
-      bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
-                        (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
 
       bool fem = ((config[ZONE_STRUCT]->GetKind_Solver() == FEM_ELASTICITY) ||
               (config[ZONE_STRUCT]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -10860,8 +10851,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
       char begin[1000], direct_coeff[1000],
       fsi_resid[1000], fsi_coeffs[1000],
-      flow_resid[1000], adj_flow_resid[1000],
-      adj_fem_resid[1000], fem_resid[1000],
+      flow_resid[1000], fem_resid[1000],
       objective_function[1000], end[1000];
 
       su2double *residual_flow         = NULL;
@@ -10891,7 +10881,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
       /*--- Initialize variables to store information from all domains (direct solution) ---*/
 
       su2double Total_CL = 0.0, Total_CD = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
-                Total_CFEM = 0.0, Total_OF = 0.0;
+                Total_OF = 0.0;
 
       Total_CL       = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL();
       Total_CD       = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
