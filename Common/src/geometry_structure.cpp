@@ -6184,7 +6184,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   if (val_nZone > 1 || harmonic_balance) {
     if (harmonic_balance) {
-      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << ":" << endl;
+      if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << ":" << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
