@@ -157,6 +157,46 @@ void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
       A[ii] = augmentedmatrix[i][j+n];
 }
 
+void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
+                                                const vector<su2double> &r,
+                                                vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
+
+  /*--- Compute the Vandermonde matrix. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<nDOFs; ++i) {
+    for(unsigned short k=0; k<nRows; ++k, ++ii) {
+      V[ii] = NormJacobi(i, 0, 0, r[k]);
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOFs,
+                                                    const vector<su2double> &r,
+                                                    vector<su2double>       &VDr) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimension of VDr is correct.     ---*/
+  unsigned short nRows = r.size();
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities)
+    SU2_MPI::Error("Wrong size of the VDr matrix", CURRENT_FUNCTION);
+
+  /*--- Compute the gradient of the Vandermonde matrix. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<nDOFs; ++i) {
+    for(unsigned short k=0; k<nRows; ++k, ++ii) {
+      VDr[ii] = GradNormJacobi(i, 0, 0, r[k]);
+    }
+  }
+}
+
 /*----------------------------------------------------------------------------------*/
 /*         Protected member functions of FEMStandardElementBaseClass.               */
 /*----------------------------------------------------------------------------------*/
@@ -975,6 +1015,37 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
 }
 
+void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
+                                                 const unsigned short nPoints,
+                                                 const vector<su2double> &A,
+                                                 const vector<su2double> &B,
+                                                 vector<su2double>       &C) {
+
+  /*--- Check if the dimensions of the matrices correspond to the
+        assumptions made in this function.                    ---*/
+  const unsigned int dimA = nDOFs*nPoints;
+  const unsigned int dimB = nDOFs*nDOFs;
+
+  if(A.size() != dimA || B.size() != dimB || C.size() != dimA)
+    SU2_MPI::Error("Unexpected size of the matrices", CURRENT_FUNCTION);
+
+  /*--- Carry out the actual matrix matrix multiplication and store the result
+        in row major order (the matrices A and B are in column major order).  ---*/
+  for(unsigned short j=0; j<nDOFs; ++j) {
+    for(unsigned short i=0; i<nPoints; ++i) {
+      const unsigned int ii = i*nDOFs + j;
+      C[ii] = 0.0;
+
+      for(unsigned short k=0; k<nDOFs; ++k) {
+        const unsigned int indA = k*nPoints + i;
+        const unsigned int indB = j*nDOFs + k;
+
+        C[ii] += A[indA]*B[indB];
+      }
+    }
+  }
+}
+
 void FEMStandardElementBaseClass::SubConnForPlottingLine(
                                          const unsigned short   nPoly,
                                          vector<unsigned short> &subConn) {
@@ -1055,210 +1126,6 @@ void FEMStandardElementBaseClass::SubConnForPlottingTriangle(
   }
 }
 
-su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
-                                       const unsigned short VTK_TypeElem, 
-                                       const unsigned short nPolyElem) {
-
-  /*--- Determine the element type and set the value of the penalty
-        parameter accordingly. ---*/
-  su2double penParam = 0;  // To avoid a compiler warning.
-
-  switch( VTK_TypeElem ) {
-    case TRIANGLE:
-      penParam = (nPolyElem+1)*(nPolyElem+2)*0.5;
-      break;
-    case QUADRILATERAL:
-      penParam = (nPolyElem+1)*(nPolyElem+1);
-      break;
-    case TETRAHEDRON:
-      penParam = (nPolyElem+1)*(nPolyElem+3)/3.0;
-      break;
-    case PYRAMID:
-      if(VTK_Type == TRIANGLE) penParam = (nPolyElem+1)*(2*nPolyElem+3)*1.05/3.0;
-      else                     penParam = (nPolyElem+1)*(nPolyElem+3)/3.0;
-      break;
-    case PRISM:
-      if(VTK_Type == TRIANGLE) penParam = (nPolyElem+1)*(nPolyElem+1);
-      else                     penParam = (nPolyElem+1)*(nPolyElem+2)*0.5;
-      break;
-    case HEXAHEDRON:
-      penParam = (nPolyElem+1)*(nPolyElem+1);
-      break;
-  }
-
-  /* Return the value of penParam. */
-  return penParam;
-}
-
-/*----------------------------------------------------------------------------------*/
-/*          Private member functions of FEMStandardElementBaseClass.                */
-/*----------------------------------------------------------------------------------*/
-
-void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoints,
-                                                        vector<su2double> &GLWeights) {
-
-  /* The class used to determine the integration points operate on passivedoubles.
-     Allocate the memory for the help vectors. */
-  vector<passivedouble> GLPointsPas(GLPoints.size());
-  vector<passivedouble> GLWeightsPas(GLWeights.size());
-
-  /* Gauss Legendre quadrature is a special case of Gauss Jacobi integration.
-     Determine the integration points for this case. */
-  CGaussJacobiQuadrature GaussJacobi;
-  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPointsPas, GLWeightsPas);
-
-  /* Copy the data back into GLPoints and GLWeights. */
-  for(unsigned long i=0; i<GLPoints.size(); ++i) {
-    GLPoints[i]  = GLPointsPas[i];
-    GLWeights[i] = GLWeightsPas[i];
-  }
-}
-
-void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
-                                                 const unsigned short nPoints,
-                                                 const vector<su2double> &A,
-                                                 const vector<su2double> &B,
-                                                 vector<su2double>       &C) {
-
-  /*--- Check if the dimensions of the matrices correspond to the
-        assumptions made in this function.                    ---*/
-  const unsigned int dimA = nDOFs*nPoints;
-  const unsigned int dimB = nDOFs*nDOFs;
-
-  if(A.size() != dimA || B.size() != dimB || C.size() != dimA)
-    SU2_MPI::Error("Unexpected size of the matrices", CURRENT_FUNCTION);
-
-  /*--- Carry out the actual matrix matrix multiplication and store the result
-        in row major order (the matrices A and B are in column major order).  ---*/
-  for(unsigned short j=0; j<nDOFs; ++j) {
-    for(unsigned short i=0; i<nPoints; ++i) {
-      const unsigned int ii = i*nDOFs + j;
-      C[ii] = 0.0;
-
-      for(unsigned short k=0; k<nDOFs; ++k) {
-        const unsigned int indA = k*nPoints + i;
-        const unsigned int indB = j*nDOFs + k;
-
-        C[ii] += A[indA]*B[indB];
-      }
-    }
-  }
-}
-
-su2double FEMStandardElementBaseClass::NormJacobi(unsigned short n,
-                                                  unsigned short alpha,
-                                                  unsigned short beta,
-                                                  su2double      x) {
-  /*--- Some abbreviations. ---*/
-  su2double ap1   = alpha + 1;
-  su2double bp1   = beta  + 1;
-  su2double apb   = alpha + beta;
-  su2double apbp1 = apb + 1;
-  su2double apbp2 = apb + 2;
-  su2double apbp3 = apb + 3;
-  su2double b2ma2 = beta*beta - alpha*alpha;
-
-  /*--- Determine the term, which involves the gamma function for P0. As the
-        arguments are integers, this term can be computed easily, because
-        Gamma(n+1) = n!. ---*/
-  su2double Gamap1 = 1.0, Gambp1 = 1.0, Gamapbp2 = 1.0;
-  for(unsigned short i=2; i<=alpha; ++i)          Gamap1   *= i;
-  for(unsigned short i=2; i<=beta; ++i)           Gambp1   *= i;
-  for(unsigned short i=2; i<=(alpha+beta+1); ++i) Gamapbp2 *= i;
-
-  /*--- Initialize the normalized polynomials. ---*/
-  su2double Pnm1 = sqrt(pow(0.5,apbp1)*Gamapbp2/(Gamap1*Gambp1));
-  su2double Pn   = 0.5*Pnm1*(apbp2*x + alpha - beta)*sqrt(apbp3/(ap1*bp1));
-
-  /*--- Take care of the special situation of n == 0. ---*/
-  if(n == 0) Pn = Pnm1;
-  else
-  {
-    /*--- The value of the normalized Jacobi polynomial must be obtained via recursion. ---*/
-    for(unsigned short i=2; i<=n; ++i)
-    {
-      /*--- Compute the coefficients a for i and i-1 and the coefficient bi. ---*/
-      unsigned short j = i-1;
-      su2double   tmp  = 2*j + apb;
-      su2double   aim1 = 2.0*sqrt(j*(j+apb)*(j+alpha)*(j+beta)/((tmp-1.0)*(tmp+1.0)))
-                       / tmp;
-
-      su2double bi = b2ma2/(tmp*(tmp+2.0));
-
-      tmp          = 2*i + apb;
-      su2double ai = 2.0*sqrt(i*(i+apb)*(i+alpha)*(i+beta)/((tmp-1.0)*(tmp+1.0)))
-                   / tmp;
-
-      /*--- Compute the new value of Pn and make sure to store Pnm1 correctly. ---*/
-      tmp  = Pnm1;
-      Pnm1 = Pn;
-
-      Pn = ((x-bi)*Pn - aim1*tmp)/ai;
-    }
-  }
-
-  /*--- Return Pn. ---*/
-  return Pn;
-}
-
-su2double FEMStandardElementBaseClass::GradNormJacobi(unsigned short n,
-                                                      unsigned short alpha,
-                                                      unsigned short beta,
-                                                      su2double      x) {
-
-  /*--- Make a distinction for n == 0 and n > 0. For n == 0 the derivative is
-        zero, because the polynomial itself is constant. ---*/
-  su2double grad;
-  if(n == 0) grad = 0.0;
-  else
-  {
-    su2double tmp = n*(n+alpha+beta+1.0);
-    grad          = sqrt(tmp)*NormJacobi(n-1, alpha+1, beta+1, x);
-  }
-
-  /*--- Return the gradient. ---*/
-  return grad;
-}
-
-void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
-                                                const vector<su2double> &r,
-                                                vector<su2double>       &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  unsigned long  nEntities = nRows*nDOFs;
-  if(V.size() != nEntities)
-    SU2_MPI::Error("Wrong size of the V matrix", CURRENT_FUNCTION);
-
-  /*--- Compute the Vandermonde matrix. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<nDOFs; ++i) {
-    for(unsigned short k=0; k<nRows; ++k, ++ii) {
-      V[ii] = NormJacobi(i, 0, 0, r[k]);
-    }
-  }
-}
-
-void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOFs,
-                                                    const vector<su2double> &r,
-                                                    vector<su2double>       &VDr) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimension of VDr is correct.     ---*/
-  unsigned short nRows = r.size();
-  unsigned long  nEntities = nRows*nDOFs;
-  if(VDr.size() != nEntities)
-    SU2_MPI::Error("Wrong size of the VDr matrix", CURRENT_FUNCTION);
-
-  /*--- Compute the gradient of the Vandermonde matrix. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<nDOFs; ++i) {
-    for(unsigned short k=0; k<nRows; ++k, ++ii) {
-      VDr[ii] = GradNormJacobi(i, 0, 0, r[k]);
-    }
-  }
-}
 
 void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short          nPoly,
                                                          unsigned short          nDOFs,
@@ -1905,6 +1772,140 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short   
   }
 }
 
+su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
+                                       const unsigned short VTK_TypeElem,
+                                       const unsigned short nPolyElem) {
+
+  /*--- Determine the element type and set the value of the penalty
+        parameter accordingly. ---*/
+  su2double penParam = 0;  // To avoid a compiler warning.
+
+  switch( VTK_TypeElem ) {
+    case TRIANGLE:
+      penParam = (nPolyElem+1)*(nPolyElem+2)*0.5;
+      break;
+    case QUADRILATERAL:
+      penParam = (nPolyElem+1)*(nPolyElem+1);
+      break;
+    case TETRAHEDRON:
+      penParam = (nPolyElem+1)*(nPolyElem+3)/3.0;
+      break;
+    case PYRAMID:
+      if(VTK_Type == TRIANGLE) penParam = (nPolyElem+1)*(2*nPolyElem+3)*1.05/3.0;
+      else                     penParam = (nPolyElem+1)*(nPolyElem+3)/3.0;
+      break;
+    case PRISM:
+      if(VTK_Type == TRIANGLE) penParam = (nPolyElem+1)*(nPolyElem+1);
+      else                     penParam = (nPolyElem+1)*(nPolyElem+2)*0.5;
+      break;
+    case HEXAHEDRON:
+      penParam = (nPolyElem+1)*(nPolyElem+1);
+      break;
+  }
+
+  /* Return the value of penParam. */
+  return penParam;
+}
+
+/*----------------------------------------------------------------------------------*/
+/*          Private member functions of FEMStandardElementBaseClass.                */
+/*----------------------------------------------------------------------------------*/
+
+void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoints,
+                                                        vector<su2double> &GLWeights) {
+
+  /* The class used to determine the integration points operate on passivedoubles.
+     Allocate the memory for the help vectors. */
+  vector<passivedouble> GLPointsPas(GLPoints.size());
+  vector<passivedouble> GLWeightsPas(GLWeights.size());
+
+  /* Gauss Legendre quadrature is a special case of Gauss Jacobi integration.
+     Determine the integration points for this case. */
+  CGaussJacobiQuadrature GaussJacobi;
+  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPointsPas, GLWeightsPas);
+
+  /* Copy the data back into GLPoints and GLWeights. */
+  for(unsigned long i=0; i<GLPoints.size(); ++i) {
+    GLPoints[i]  = GLPointsPas[i];
+    GLWeights[i] = GLWeightsPas[i];
+  }
+}
+
+su2double FEMStandardElementBaseClass::NormJacobi(unsigned short n,
+                                                  unsigned short alpha,
+                                                  unsigned short beta,
+                                                  su2double      x) {
+  /*--- Some abbreviations. ---*/
+  su2double ap1   = alpha + 1;
+  su2double bp1   = beta  + 1;
+  su2double apb   = alpha + beta;
+  su2double apbp1 = apb + 1;
+  su2double apbp2 = apb + 2;
+  su2double apbp3 = apb + 3;
+  su2double b2ma2 = beta*beta - alpha*alpha;
+
+  /*--- Determine the term, which involves the gamma function for P0. As the
+        arguments are integers, this term can be computed easily, because
+        Gamma(n+1) = n!. ---*/
+  su2double Gamap1 = 1.0, Gambp1 = 1.0, Gamapbp2 = 1.0;
+  for(unsigned short i=2; i<=alpha; ++i)          Gamap1   *= i;
+  for(unsigned short i=2; i<=beta; ++i)           Gambp1   *= i;
+  for(unsigned short i=2; i<=(alpha+beta+1); ++i) Gamapbp2 *= i;
+
+  /*--- Initialize the normalized polynomials. ---*/
+  su2double Pnm1 = sqrt(pow(0.5,apbp1)*Gamapbp2/(Gamap1*Gambp1));
+  su2double Pn   = 0.5*Pnm1*(apbp2*x + alpha - beta)*sqrt(apbp3/(ap1*bp1));
+
+  /*--- Take care of the special situation of n == 0. ---*/
+  if(n == 0) Pn = Pnm1;
+  else
+  {
+    /*--- The value of the normalized Jacobi polynomial must be obtained via recursion. ---*/
+    for(unsigned short i=2; i<=n; ++i)
+    {
+      /*--- Compute the coefficients a for i and i-1 and the coefficient bi. ---*/
+      unsigned short j = i-1;
+      su2double   tmp  = 2*j + apb;
+      su2double   aim1 = 2.0*sqrt(j*(j+apb)*(j+alpha)*(j+beta)/((tmp-1.0)*(tmp+1.0)))
+                       / tmp;
+
+      su2double bi = b2ma2/(tmp*(tmp+2.0));
+
+      tmp          = 2*i + apb;
+      su2double ai = 2.0*sqrt(i*(i+apb)*(i+alpha)*(i+beta)/((tmp-1.0)*(tmp+1.0)))
+                   / tmp;
+
+      /*--- Compute the new value of Pn and make sure to store Pnm1 correctly. ---*/
+      tmp  = Pnm1;
+      Pnm1 = Pn;
+
+      Pn = ((x-bi)*Pn - aim1*tmp)/ai;
+    }
+  }
+
+  /*--- Return Pn. ---*/
+  return Pn;
+}
+
+su2double FEMStandardElementBaseClass::GradNormJacobi(unsigned short n,
+                                                      unsigned short alpha,
+                                                      unsigned short beta,
+                                                      su2double      x) {
+
+  /*--- Make a distinction for n == 0 and n > 0. For n == 0 the derivative is
+        zero, because the polynomial itself is constant. ---*/
+  su2double grad;
+  if(n == 0) grad = 0.0;
+  else
+  {
+    su2double tmp = n*(n+alpha+beta+1.0);
+    grad          = sqrt(tmp)*NormJacobi(n-1, alpha+1, beta+1, x);
+  }
+
+  /*--- Return the gradient. ---*/
+  return grad;
+}
+
 /*----------------------------------------------------------------------------------*/
 /*           Public member functions of FEMStandardElementClass.                    */
 /*----------------------------------------------------------------------------------*/
@@ -2081,6 +2082,74 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   }
 }
 
+void FEMStandardElementClass::BasisFunctionsAndDerivativesInPoint(
+                                           const su2double            *parCoor,
+                                           vector<su2double>          &lagBasis,
+                                           vector<vector<su2double> > &dLagBasis) {
+
+  /* Allocate the memory for the help vectors for computing the Vandermonde
+     matrices and its derivatives. */
+  vector<vector<su2double> > rPoints(dLagBasis.size(), vector<su2double>(1));
+  vector<vector<su2double> > VDr(dLagBasis.size(), vector<su2double>(nDOFs));
+
+  vector<su2double> V(nDOFs);
+
+  /* Copy the parametric coordinates in rPoints, such that the functions to
+     compute the Vandermonde matrices can be used. */
+  for(unsigned long i=0; i<rPoints.size(); ++i)
+    rPoints[i][0] = parCoor[i];
+
+  /* Determine the element type and call the appropriate function to compute
+     the Vandermonde matrix and the derivative of the Vandermonde matrix. */
+  switch(VTK_Type) {
+    case LINE:
+      Vandermonde1D(nDOFs, rPoints[0], V);
+      GradVandermonde1D(nDOFs, rPoints[0], VDr[0]);
+      break;
+
+    case TRIANGLE:
+      Vandermonde2D_Triangle(nPoly, nDOFs, rPoints[0], rPoints[1], V);
+      GradVandermonde2D_Triangle(nPoly, nDOFs, rPoints[0], rPoints[1], VDr[0], VDr[1]);
+      break;
+
+    case QUADRILATERAL:
+      Vandermonde2D_Quadrilateral(nPoly, nDOFs, rPoints[0], rPoints[1], V);
+      GradVandermonde2D_Quadrilateral(nPoly, nDOFs, rPoints[0], rPoints[1], VDr[0], VDr[1]);
+      break;
+
+    case TETRAHEDRON:
+      Vandermonde3D_Tetrahedron(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      GradVandermonde3D_Tetrahedron(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2],
+                                    VDr[0], VDr[1], VDr[2]);
+      break;
+
+    case PYRAMID:
+      Vandermonde3D_Pyramid(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      GradVandermonde3D_Pyramid(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2],
+                                VDr[0], VDr[1], VDr[2]);
+      break;
+
+    case PRISM:
+      Vandermonde3D_Prism(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      GradVandermonde3D_Prism(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2],
+                              VDr[0], VDr[1], VDr[2]);
+      break;
+
+    case HEXAHEDRON:
+      Vandermonde3D_Hexahedron(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      GradVandermonde3D_Hexahedron(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2],
+                                   VDr[0], VDr[1], VDr[2]);
+      break;
+  }
+
+  /* Carry out the matrix multiplication to obtain the values of the Lagrangian
+     basis functions and its derivatives in the given parametric coordinate. */
+  MatMulRowMajor(nDOFs, 1, V, matVandermondeInv, lagBasis);
+
+  for(unsigned long i=0; i<dLagBasis.size(); ++i)
+    MatMulRowMajor(nDOFs, 1, VDr[i], matVandermondeInv, dLagBasis[i]);
+}
+
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
                                                   unsigned short val_nPoly,
                                                   bool           val_constJac) {
@@ -2101,7 +2170,7 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
 
   nPoly = other.nPoly;
   nDOFs = other.nDOFs;
-  
+
   VTK_Type1 = other.VTK_Type1;
   VTK_Type2 = other.VTK_Type2;
 
@@ -2274,7 +2343,7 @@ void FEMStandardElementClass::DataStandardLine(void) {
 
   /*--- Determine the local subconnectivity used for plotting purposes. ---*/
   SubConnForPlottingLine(nPoly, subConn1ForPlotting);
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = LINE;
   VTK_Type2 = NONE;
@@ -2288,7 +2357,7 @@ void FEMStandardElementClass::DataStandardTriangle(void) {
   LagrangianBasisFunctionAndDerivativesTriangle(nPoly, rIntegration, sIntegration,
                                                 nDOFs, rDOFs, sDOFs,
                                                 matVandermondeInvDummy,
-                                                lagBasisIntegration,                                                
+                                                lagBasisIntegration,
                                                 drLagBasisIntegration,
                                                 dsLagBasisIntegration);
 
@@ -2304,7 +2373,7 @@ void FEMStandardElementClass::DataStandardTriangle(void) {
   /*--- Determine the local subconnectivity of the triangular element used for
         plotting purposes. ---*/
   SubConnForPlottingTriangle(nPoly, subConn1ForPlotting);
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = TRIANGLE;
   VTK_Type2 = NONE;
@@ -2339,7 +2408,7 @@ void FEMStandardElementClass::DataStandardQuadrilateral(void) {
   /*--- Determine the local subconnectivity of the quadrilateral element used for
         plotting purposes. ---*/
   SubConnForPlottingQuadrilateral(nPoly, subConn1ForPlotting);
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = QUADRILATERAL;
   VTK_Type2 = NONE;
@@ -2394,7 +2463,7 @@ void FEMStandardElementClass::DataStandardTetrahedron(void) {
         plotting purposes. The high order tetrahedron is split in several
         linear subtetrahedra.           ---*/
   SubConnTetrahedron();
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = TETRAHEDRON;
   VTK_Type2 = NONE;
@@ -2456,7 +2525,7 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
         plotting purposes. The high order pyramid is split in several
         linear subpyramids and subtetrahedra, i.e. two element types. ---*/
   SubConnPyramid();
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = PYRAMID;
   VTK_Type2 = TETRAHEDRON;
@@ -2519,7 +2588,7 @@ void FEMStandardElementClass::DataStandardPrism(void) {
         plotting purposes. The high order prism is split in several
         linear subprisms.                      ---*/
   SubConnPrism();
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = PRISM;
   VTK_Type2 = NONE;
@@ -2585,14 +2654,14 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
         plotting purposes. The high order hexahedron is split in several
         linear subhexahedra.                      ---*/
   SubConnHexahedron();
-  
+
   /*--- Set the VTK_type(s) for this sub element. ---*/
   VTK_Type1 = HEXAHEDRON;
   VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::SubConnTetrahedron(void) {
-  
+
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges present in the tetrahedron. Also initialize the
         current k offset to zero.    ---*/
@@ -2785,7 +2854,7 @@ void FEMStandardElementClass::SubConnTetrahedron(void) {
 }
 
 void FEMStandardElementClass::SubConnPyramid(void) {
-  
+
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges on the base of the pyramid. Also initialize the
         current k offset to zero.     ---*/
@@ -2941,7 +3010,7 @@ void FEMStandardElementClass::SubConnPyramid(void) {
 }
 
 void FEMStandardElementClass::SubConnPrism(void) {
-  
+
   /*--- Determine the number of DOFs for a triangle. This is the offset in
         k-direction, the structured direction of a prisms.    ---*/
   unsigned short nDOFTria = (nPoly+1)*(nPoly+2)/2;
@@ -3015,7 +3084,7 @@ void FEMStandardElementClass::SubConnPrism(void) {
 }
 
 void FEMStandardElementClass::SubConnHexahedron(void) {
-  
+
   /*--- Determine the nodal offset in j- and k-direction. ---*/
   unsigned short jOff = nPoly+1;
   unsigned short kOff = jOff*jOff;
@@ -3060,7 +3129,7 @@ void FEMStandardElementClass::SubConnHexahedron(void) {
 }
 
 unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
-  
+
   /*--- Distinguish between the possible element types for a linear
    sub-element and set the nDOFs accordingly. ---*/
   unsigned short nDOFsSubElem = 0;   // To avoid a compiler warning.
@@ -3079,7 +3148,7 @@ unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VT
               << ", encountered.";
       SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
   }
-  
+
   /* Return the number of DOFs for a subface. */
   return nDOFsSubElem;
 }

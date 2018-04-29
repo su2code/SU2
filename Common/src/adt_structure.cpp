@@ -1275,7 +1275,7 @@ bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
     if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton) break;
   }
 
-  /* Terminate if the optimization process did not converge. */
+  /* Terminate if the Newton algorithm did not converge. */
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
@@ -1489,7 +1489,7 @@ bool su2_adtElemClass::CoorInPyramid(const unsigned long elemID,
     if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton && fabs(dt) <= tolNewton) break;
   }
 
-  /* Terminate if the optimization process did not converge. */
+  /* Terminate if the Newton algorithm did not converge. */
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
@@ -1762,7 +1762,7 @@ bool su2_adtElemClass::CoorInPrism(const unsigned long elemID,
     if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton && fabs(dt) <= tolNewton) break;
   }
 
-  /* Terminate if the optimization process did not converge. */
+  /* Terminate if the Newton algorithm did not converge. */
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
@@ -2086,7 +2086,7 @@ bool su2_adtElemClass::CoorInHexahedron(const unsigned long elemID,
     if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton && fabs(dt) <= tolNewton) break;
   }
 
-  /* Terminate if the optimization process did not converge. */
+  /* Terminate if the Newton algorithm did not converge. */
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
@@ -2528,7 +2528,7 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
     if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton) break;
   }
 
-  /*--- Terminate if the optimization process did not converge. ---*/
+  /* Terminate if the Newton algorithm did not converge. */
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 

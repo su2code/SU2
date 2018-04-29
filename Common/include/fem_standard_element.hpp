@@ -209,6 +209,118 @@ protected:
                                                 vector<su2double> &dtLagBasisIntegration);
 
   /*!
+  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard triangle.
+  * \param[in]  nPoly - Polynomial degree of the triangle.
+  * \param[in]  nDOFs - Number of DOFs of the triangle.
+  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r- and s-locations.
+  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r- and s-locations.
+  */
+  void GradVandermonde2D_Triangle(unsigned short          nPoly,
+                                  unsigned short          nDOFs,
+                                  const vector<su2double> &r,
+                                  const vector<su2double> &s,
+                                  vector<su2double>       &VDr,
+                                  vector<su2double>       &VDs);
+
+  /*!
+  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard quadrilateral.
+  * \param[in]  nPoly - Polynomial degree of the quadrilateral.
+  * \param[in]  nDOFs - Number of DOFs of the quadrilateral.
+  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r- and s-locations.
+  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r- and s-locations.
+  */
+  void GradVandermonde2D_Quadrilateral(unsigned short          nPoly,
+                                       unsigned short          nDOFs,
+                                       const vector<su2double> &r,
+                                       const vector<su2double> &s,
+                                       vector<su2double>       &VDr,
+                                       vector<su2double>       &VDs);
+
+  /*!
+  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard tetrahedron.
+  * \param[in]  nPoly - Polynomial degree of the tetrahedron.
+  * \param[in]  nDOFs - Number of DOFs of the tetrahedron.
+  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  */
+  void GradVandermonde3D_Tetrahedron(unsigned short          nPoly,
+                                     unsigned short          nDOFs,
+                                     const vector<su2double> &r,
+                                     const vector<su2double> &s,
+                                     const vector<su2double> &t,
+                                     vector<su2double>       &VDr,
+                                     vector<su2double>       &VDs,
+                                     vector<su2double>       &VDt);
+
+  /*!
+  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard pyramid.
+  * \param[in]  nPoly - Polynomial degree of the pyramid.
+  * \param[in]  nDOFs - Number of DOFs of the pyramid.
+  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  */
+  void GradVandermonde3D_Pyramid(unsigned short          nPoly,
+                                 unsigned short          nDOFs,
+                                 const vector<su2double> &r,
+                                 const vector<su2double> &s,
+                                 const vector<su2double> &t,
+                                 vector<su2double>       &VDr,
+                                 vector<su2double>       &VDs,
+                                 vector<su2double>       &VDt);
+
+  /*!
+  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard prism.
+  * \param[in]  nPoly - Polynomial degree of the prism.
+  * \param[in]  nDOFs - Number of DOFs of the prism.
+  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  */
+  void GradVandermonde3D_Prism(unsigned short          nPoly,
+                               unsigned short          nDOFs,
+                               const vector<su2double> &r,
+                               const vector<su2double> &s,
+                               const vector<su2double> &t,
+                               vector<su2double>       &VDr,
+                               vector<su2double>       &VDs,
+                               vector<su2double>       &VDt);
+
+  /*!
+  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard hexahedron.
+  * \param[in]  nPoly - Polynomial degree of the hexahedron.
+  * \param[in]  nDOFs - Number of DOFs of the hexahedron.
+  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
+  */
+  void GradVandermonde3D_Hexahedron(unsigned short          nPoly,
+                                    unsigned short          nDOFs,
+                                    const vector<su2double> &r,
+                                    const vector<su2double> &s,
+                                    const vector<su2double> &t,
+                                    vector<su2double>       &VDr,
+                                    vector<su2double>       &VDs,
+                                    vector<su2double>       &VDt);
+
+  /*!
   * \brief Function, which determines the values of the Lagrangian interpolation
            functions and its derivatives in the given set of points for a line.
   * \param[in]  nPoly            - Polynomial degree of the interpolation functions.
@@ -443,6 +555,26 @@ protected:
                                                        vector<su2double>       &dtLagBasisPoints);
 
   /*!
+  * \brief Function, which carries out a matrix matrix multiplication to obtain
+           data in points and stores the result row major order.
+  * \param[in]  nDOFs   - Dimension of the matrices. This typically corresponds
+                          to the number of DOFs that are considered.
+  * \param[in]  nPoints - Dimension of the matrices. This typically corresponds
+                          to the number of integration points used.
+  * \param[in]  A       - First matrix in the matrix matrix product A*B, dimension nPoints X nDOFs.
+                          A is stored in column major order.
+  * \param[in]  B       - Second matrix in the matrix matrix product A*B, dimension nDOFs X nDOFs.
+                          B is stored in column major order.
+  * \param[out] C       - Result of A*B, dimension nPoints X nDOFs. The result is stored in row
+                          major order
+  */
+  void MatMulRowMajor(const unsigned short nDOFs,
+                      const unsigned short nPoints,
+                      const vector<su2double> &A,
+                      const vector<su2double> &B,
+                      vector<su2double>       &C);
+
+  /*!
   * \brief Function, which computes the local connectivity of linear subelements of
            a line, which can be used for plotting.
   * \param[in]  nPoly    - Polynomial degree of the line.
@@ -468,225 +600,6 @@ protected:
   */
   void SubConnForPlottingTriangle(const unsigned short   nPoly,
                                   vector<unsigned short> &subConn);
-
-  /*!
-  * \brief Function, which computes the constant in the penalty terms for a
-           a viscous discretization.
-  * \param[in] VTK_TypeElem - The element type, using the VTK convention,
-                              adjacent to the face.
-  * \param[in] nPolyElem    - The polynomial degree of the adjacent element.
-  * \return                   The value of the viscous penalty parameter.
-  */
-  su2double ViscousPenaltyParameter(const unsigned short VTK_TypeElem,
-                                    const unsigned short nPolyElem);
-private:
-  /*!
-  * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
-  * \param[in,out] GLPoints  - The location of the Gauss-Legendre integration points.
-  * \param[in,out] GLWeights - The weights of the Gauss-Legendre integration points.
-  */
-  void GaussLegendrePoints1D(vector<su2double> &GLPoints,
-                             vector<su2double> &GLWeights);
-
-  /*!
-  * \brief Function, which computes the value of the gradient of the Jacobi polynomial for the given x-coordinate.
-  * \param[in] n     - Order of the Jacobi polynomial.
-  * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
-  * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
-  * \param[in] x     - Coordinate (-1 <= x <= 1) for which the gradient of the Jacobi polynomial must be evaluated.
-  * \return            The value of the gradient of the normalized Jacobi polynomial f order n for the given value of x.
-  */
-  su2double GradNormJacobi(unsigned short n,
-                           unsigned short alpha,
-                           unsigned short beta,
-                           su2double      x);
-
-  /*!
-  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard triangle.
-  * \param[in]  nPoly - Polynomial degree of the triangle.
-  * \param[in]  nDOFs - Number of DOFs of the triangle.
-  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r- and s-locations.
-  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r- and s-locations.
-  */
-  void GradVandermonde2D_Triangle(unsigned short          nPoly,
-                                  unsigned short          nDOFs,
-                                  const vector<su2double> &r,
-                                  const vector<su2double> &s,
-                                  vector<su2double>       &VDr,
-                                  vector<su2double>       &VDs);
-
-  /*!
-  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard quadrilateral.
-  * \param[in]  nPoly - Polynomial degree of the quadrilateral.
-  * \param[in]  nDOFs - Number of DOFs of the quadrilateral.
-  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r- and s-locations.
-  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r- and s-locations.
-  */
-  void GradVandermonde2D_Quadrilateral(unsigned short          nPoly,
-                                       unsigned short          nDOFs,
-                                       const vector<su2double> &r,
-                                       const vector<su2double> &s,
-                                       vector<su2double>       &VDr,
-                                       vector<su2double>       &VDs);
-
-  /*!
-  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard tetrahedron.
-  * \param[in]  nPoly - Polynomial degree of the tetrahedron.
-  * \param[in]  nDOFs - Number of DOFs of the tetrahedron.
-  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  */
-  void GradVandermonde3D_Tetrahedron(unsigned short          nPoly,
-                                     unsigned short          nDOFs,
-                                     const vector<su2double> &r,
-                                     const vector<su2double> &s,
-                                     const vector<su2double> &t,
-                                     vector<su2double>       &VDr,
-                                     vector<su2double>       &VDs,
-                                     vector<su2double>       &VDt);
-
-  /*!
-  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard pyramid.
-  * \param[in]  nPoly - Polynomial degree of the pyramid.
-  * \param[in]  nDOFs - Number of DOFs of the pyramid.
-  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  */
-  void GradVandermonde3D_Pyramid(unsigned short          nPoly,
-                                 unsigned short          nDOFs,
-                                 const vector<su2double> &r,
-                                 const vector<su2double> &s,
-                                 const vector<su2double> &t,
-                                 vector<su2double>       &VDr,
-                                 vector<su2double>       &VDs,
-                                 vector<su2double>       &VDt);
-
-  /*!
-  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard prism.
-  * \param[in]  nPoly - Polynomial degree of the prism.
-  * \param[in]  nDOFs - Number of DOFs of the prism.
-  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  */
-  void GradVandermonde3D_Prism(unsigned short          nPoly,
-                               unsigned short          nDOFs,
-                               const vector<su2double> &r,
-                               const vector<su2double> &s,
-                               const vector<su2double> &t,
-                               vector<su2double>       &VDr,
-                               vector<su2double>       &VDs,
-                               vector<su2double>       &VDt);
-
-  /*!
-  * \brief Function, which computes the gradients of the Vandermonde matrix for a standard hexahedron.
-  * \param[in]  nPoly - Polynomial degree of the hexahedron.
-  * \param[in]  nDOFs - Number of DOFs of the hexahedron.
-  * \param[in]  r     - Parametric coordinate in r-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  s     - Parametric coordinate in s-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[in]  t     - Parametric coordinate in t-direction for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient in r-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDs   - Matrix to store the gradient in s-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  * \param[out] VDt   - Matrix to store the gradient in t-direction of the Vandermonde matrix in all r-, s- and t-locations.
-  */
-  void GradVandermonde3D_Hexahedron(unsigned short          nPoly,
-                                    unsigned short          nDOFs,
-                                    const vector<su2double> &r,
-                                    const vector<su2double> &s,
-                                    const vector<su2double> &t,
-                                    vector<su2double>       &VDr,
-                                    vector<su2double>       &VDs,
-                                    vector<su2double>       &VDt);
-
-  /*!
-  * \brief Function, which determines the integration points for a line
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsLine(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a triangle
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsTriangle(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a quadrilateral
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsQuadrilateral(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a tetrahedron
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsTetrahedron(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a pyramid
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsPyramid(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a prism
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsPrism(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a hexahedron
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsHexahedron(void);
-
-  /*!
-  * \brief Function, which carries out a matrix matrix multiplication to obtain
-           data in points and stores the result row major order.
-  * \param[in]  nDOFs   - Dimension of the matrices. This typically corresponds
-                          to the number of DOFs that are considered.
-  * \param[in]  nPoints - Dimension of the matrices. This typically corresponds
-                          to the number of integration points used.
-  * \param[in]  A       - First matrix in the matrix matrix product A*B, dimension nPoints X nDOFs.
-                          A is stored in column major order.
-  * \param[in]  B       - Second matrix in the matrix matrix product A*B, dimension nDOFs X nDOFs.
-                          B is stored in column major order.
-  * \param[out] C       - Result of A*B, dimension nPoints X nDOFs. The result is stored in row
-                          major order
-  */
-  void MatMulRowMajor(const unsigned short nDOFs,
-                      const unsigned short nPoints,
-                      const vector<su2double> &A,
-                      const vector<su2double> &B,
-                      vector<su2double>       &C);
-
-  /*!
-  * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
-  * \param[in] n     - Order of the Jacobi polynomial.
-  * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
-  * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
-  * \param[in] x     - Coordinate (-1 <= x <= 1) for which the Jacobi polynomial must be evaluated.
-  * \return            The value of the normalized Jacobi polynomial f order n for the given value of x.
-  */
-  su2double NormJacobi(unsigned short n,
-                       unsigned short alpha,
-                       unsigned short beta,
-                       su2double      x);
 
   /*!
    * \brief Function, which computes the Vandermonde matrix for a standard triangle.
@@ -779,6 +692,93 @@ private:
                                 const vector<su2double> &s,
                                 const vector<su2double> &t,
                                 vector<su2double>       &V);
+
+  /*!
+  * \brief Function, which computes the constant in the penalty terms for a
+           a viscous discretization.
+  * \param[in] VTK_TypeElem - The element type, using the VTK convention,
+                              adjacent to the face.
+  * \param[in] nPolyElem    - The polynomial degree of the adjacent element.
+  * \return                   The value of the viscous penalty parameter.
+  */
+  su2double ViscousPenaltyParameter(const unsigned short VTK_TypeElem,
+                                    const unsigned short nPolyElem);
+private:
+  /*!
+  * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
+  * \param[in,out] GLPoints  - The location of the Gauss-Legendre integration points.
+  * \param[in,out] GLWeights - The weights of the Gauss-Legendre integration points.
+  */
+  void GaussLegendrePoints1D(vector<su2double> &GLPoints,
+                             vector<su2double> &GLWeights);
+
+  /*!
+  * \brief Function, which computes the value of the gradient of the Jacobi polynomial for the given x-coordinate.
+  * \param[in] n     - Order of the Jacobi polynomial.
+  * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
+  * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
+  * \param[in] x     - Coordinate (-1 <= x <= 1) for which the gradient of the Jacobi polynomial must be evaluated.
+  * \return            The value of the gradient of the normalized Jacobi polynomial f order n for the given value of x.
+  */
+  su2double GradNormJacobi(unsigned short n,
+                           unsigned short alpha,
+                           unsigned short beta,
+                           su2double      x);
+
+  /*!
+  * \brief Function, which determines the integration points for a line
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsLine(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a triangle
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsTriangle(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a quadrilateral
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsQuadrilateral(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a tetrahedron
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsTetrahedron(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a pyramid
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsPyramid(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a prism
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsPrism(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a hexahedron
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsHexahedron(void);
+
+  /*!
+  * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
+  * \param[in] n     - Order of the Jacobi polynomial.
+  * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
+  * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
+  * \param[in] x     - Coordinate (-1 <= x <= 1) for which the Jacobi polynomial must be evaluated.
+  * \return            The value of the normalized Jacobi polynomial f order n for the given value of x.
+  */
+  su2double NormJacobi(unsigned short n,
+                       unsigned short alpha,
+                       unsigned short beta,
+                       su2double      x);
 };
 
 /*!
@@ -789,12 +789,13 @@ private:
  */
 class FEMStandardElementClass : public FEMStandardElementBaseClass {
 private:
+
   unsigned short nPoly;        /*!< \brief Polynomial degree of the element. */
   unsigned short nDOFs;        /*!< \brief Number of DOFs of the element. */
-  
+
   unsigned short VTK_Type1;    /*!< \brief VTK type for elements of type 1 in subConn1ForPlotting. */
   unsigned short VTK_Type2;    /*!< \brief VTK type for elements of type 2 in subConn2ForPlotting. */
-  
+
   vector<su2double> rDOFs;     /*!< \brief r-location of the DOFs for this standard element. */
   vector<su2double> sDOFs;     /*!< \brief s-location of the DOFs for this standard element, if needed. */
   vector<su2double> tDOFs;     /*!< \brief t-location of the DOFs for this standard element, if needed. */
@@ -810,7 +811,7 @@ private:
   vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
   vector<su2double> dtLagBasisIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the integration points. */
 
-  vector<su2double> matVandermondeInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the solution DOFs for this standard element.
+  vector<su2double> matVandermondeInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the DOFs for this standard element.
                                                       This data is needed for the computation of shock sensing. */
 
   vector<su2double> matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
@@ -839,7 +840,7 @@ private:
                                                 of the DOFs is such that the element is to the left of the face. */
   vector<unsigned short> connFace5; /*!< \brief Local connectivity of face 5 of the element, if present. The numbering
                                                 of the DOFs is such that the element is to the left of the face. */
-  
+
   vector<unsigned short> subConn1ForPlotting; /*!< \brief Local subconnectivity of element type 1 of the high order element.
                                                           Used for plotting. */
   vector<unsigned short> subConn2ForPlotting; /*!< \brief Local subconnectivity of element type 2 of the high order element.
@@ -891,6 +892,19 @@ public:
   * \return The current object, after the member variables were assigned the correct value.
   */
   FEMStandardElementClass& operator=(const FEMStandardElementClass &other);
+
+  /*!
+  * \brief Function, which computes the Lagrangian basis functions and its
+           derivatives for the given parametric coordinates.
+  * \param[in]  parCoor   - Parametric coordinates for which the basis functions
+                            and derivatives must be computed.
+  * \param[out] lagBasis  - The values of the Lagrangian basis functions in parCoor.
+  * \param[out] dLagBasis - The values of the derivatives of the basis functions
+                            in parCoor.
+  */
+  void BasisFunctionsAndDerivativesInPoint(const su2double            *parCoor,
+                                           vector<su2double>          &lagBasis,
+                                           vector<vector<su2double> > &dLagBasis);
 
   /*!
   * \brief Function, which makes available the values of the basis functions in the integration points.
@@ -1012,19 +1026,19 @@ public:
   * \return  The polynomial degree of this standard element.
   */
   unsigned short GetNPoly(void) const;
-  
+
   /*!
    * \brief Function, which makes available the type of the element in subConn1ForPlotting.
    * \return  The type of the elements in subConn1ForPlotting using the VTK convention.
    */
   unsigned short GetVTK_Type1(void) const;
-  
+
   /*!
    * \brief Function, which makes available the number of sub-elements of type 1 for plotting.
    * \return  The number of sub-elements of type 1 for plotting.
    */
   unsigned short GetNSubElemsType1(void) const;
-  
+
   /*!
    * \brief Function, which makes available the the connectivity of the linear elements of type 1 as a const pointer.
    * \return  The pointer to the local connectivity of the linear elements of type 1.
@@ -1036,19 +1050,19 @@ public:
    * \return  The type of the elements in subConn2ForPlotting using the VTK convention.
    */
   unsigned short GetVTK_Type2(void) const;
-  
+
   /*!
    * \brief Function, which makes available the number of sub-elements of type 2 for plotting.
    * \return  The number of sub-elements of type 2 for plotting.
    */
   unsigned short GetNSubElemsType2(void) const;
-  
+
   /*!
    * \brief Function, which makes available the the connectivity of the linear elements of type 2 as a const pointer.
    * \return  The pointer to the local connectivity of the linear elements of type 2.
    */
   const unsigned short *GetSubConnType2(void) const;
-  
+
   /*!
    * \brief Function, which makes available the number of DOFs of a linear element, used for plotting.
    * \return  The number of DOFs of the linear elements.
@@ -1075,7 +1089,7 @@ public:
    * \return  The address of the vector, which stores the t-location of the DOFs.
    */
   const vector<su2double> *GetTDOFs(void) const;
-  
+
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.
   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
@@ -1093,7 +1107,7 @@ public:
   * \param[in] config - Object, which contains the input parameters.
   */
   su2double WorkEstimateMetis(CConfig *config);
-  
+
 private:
   /*!
   * \brief Function, which changes the given quadrilateral connectivity, such that the direction coincides
