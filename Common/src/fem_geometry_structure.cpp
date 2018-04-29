@@ -6177,16 +6177,20 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
-  /*---         the local trees.                                           ---*/
+  /*---         the local elements.                                        ---*/
   /*--------------------------------------------------------------------------*/
+
+  /* Define the vectors to store donor elements and the parametric coordinates
+     in the donor element. */
+  vector<unsigned long> donorElements;
+  vector<su2double>     parCoorInDonor;
 
   /* Define the vectors to store the information of the points for which
      a global search, i.e. on other ranks, must be carried out.
      These variables are only needed in parallel mode. */
 #ifdef HAVE_MPI
-  vector<unsigned short> markersGlobalSearch, intPointGlobalSearch;
-  vector<unsigned long>  surfElemGlobalSearch;
-  vector<su2double>      coorExGlobalSearch;
+  vector<unsigned long> indexGlobalSearch;
+  vector<su2double>     coorExGlobalSearch;
 #endif
 
   /* Loop over the markers and select the ones for which a wall function
@@ -6241,8 +6245,13 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                 /* Subelement found that contains the exchange location. However,
                    what is needed is the location in the high order parent element.
                    Determine this. */
-                cout << "High order containment search not implemented yet" << endl;
-                exit(1);
+                HighOrderContainmentSearch(coorExchange, parElem, subElem,
+                                           weightsInterpol, parCoor);
+
+                /* Store the info in donorElements and parCoorInDonor. */
+                donorElements.push_back(parElem);
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  parCoorInDonor.push_back(parCoor[iDim]);
               }
               else {
 
@@ -6251,11 +6260,13 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                    a sequential executable is built. */
 #ifdef HAVE_MPI
                 /* Parallel mode. Store it in the vectors for the global search. */
-                markersGlobalSearch.push_back(iMarker);
-                surfElemGlobalSearch.push_back(l);
-                intPointGlobalSearch.push_back(i);
-                for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                 coorExGlobalSearch.push_back(coorExchange[iDim]);
+                indexGlobalSearch.push_back(donorElements.size());
+                donorElements.push_back(-1);   // To create a very large number.
+
+                for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+                  coorExGlobalSearch.push_back(coorExchange[iDim]);
+                  parCoorInDonor.push_back(-10.0);
+                }
 #else
                 /* Sequential mode. Create an error message and exit. */
                 SU2_MPI::Error("Exchange location not found in ADT",
@@ -6280,18 +6291,440 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
 #ifdef HAVE_MPI
 
-  /* Determine the total number of points for which a global search must
-     be carried out. */
-  unsigned long nLocalSearchPoints = markersGlobalSearch.size();
-  unsigned long nGlobalSearchPoints;
-  SU2_MPI::Allreduce(&nLocalSearchPoints, &nGlobalSearchPoints, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  /* Determine the number of search points for which a global search must be
+     carried out for each rank and store them in such a way that the info can
+     be used directly in Allgatherv. */
+  int mpirank, mpisize;
+  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &mpirank);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &mpisize);
 
-  /* Return if there are no points to be searched. */
-  if(nGlobalSearchPoints == 0) return;
+  vector<int> recvCounts(mpisize), displs(mpisize);
+  int nLocalSearchPoints = (int) indexGlobalSearch.size();
 
-  cout << "Global search not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1,
+                     MPI_INT, MPI_COMM_WORLD);
+  displs[0] = 0;
+  for(int i=1; i<mpisize; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
+
+  int nGlobalSearchPoints = displs.back() + recvCounts.back();
+
+  /* Check if there actually are global searches to be carried out. */
+  if(nGlobalSearchPoints > 0) {
+
+    /* Create a cumulative storage version of recvCounts. */
+    vector<int> nSearchPerRank(mpisize+1);
+    nSearchPerRank[0] = 0;
+
+    for(int i=0; i<mpisize; ++i)
+      nSearchPerRank[i+1] = nSearchPerRank[i] + recvCounts[i];
+
+    /* Gather the data of the search points for which a global search must
+       be carried out on all ranks. */
+    vector<unsigned long> bufIndexGlobalSearch(nGlobalSearchPoints);
+
+    SU2_MPI::Allgatherv(indexGlobalSearch.data(), nLocalSearchPoints,
+                        MPI_UNSIGNED_LONG, bufIndexGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
+                        MPI_COMM_WORLD);
+
+    for(int i=0; i<mpisize; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
+
+    vector<su2double> bufCoorExGlobalSearch(nDim*nGlobalSearchPoints);
+
+    SU2_MPI::Allgatherv(coorExGlobalSearch.data(), nDim*nLocalSearchPoints,
+                        MPI_DOUBLE, bufCoorExGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_DOUBLE,
+                        MPI_COMM_WORLD);
+
+    /* Buffers to store the return information. */
+    vector<unsigned long> indexGlobalSearchReturn;
+    vector<unsigned long> volElemIDDonorReturn;
+    vector<su2double> parCoorReturn;
+
+    /* Loop over the number of global search points to check if these points
+       are contained in the volume elements of this rank. The loop is carried
+       out as a double loop, such that the rank where the point resides is
+       known as well. Furthermore, it is not necessary to search the points
+       that were not found earlier on this rank. The vector recvCounts is used
+       as storage for the number of search items that must be returned to the
+       other ranks. */
+    for(int rank=0; rank<mpisize; ++rank) {
+      recvCounts[rank] = 0;
+      if(rank != mpirank) {
+        for(int i=nSearchPerRank[rank]; i<nSearchPerRank[rank+1]; ++i) {
+
+          /* Search the local ADT for the coordinate of the exchange point
+             and check if it is found. */
+          unsigned short subElem;
+          unsigned long  parElem;
+          int            rankDonor;
+          su2double      parCoor[3], weightsInterpol[8];
+          if( localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                        subElem, parElem, rankDonor, parCoor,
+                                                        weightsInterpol) ) {
+
+            /* Check if the found parent element is an owned element. Only owned
+               elements must be considered here, but in the ADT also halo
+               elements are present. */
+            if(parElem < nVolElemOwned) {
+
+              /* A lower order sub-element containing the point was found.
+                 However, the parametric weights of the true high order element
+                 are needed. Determine this. */
+              HighOrderContainmentSearch(bufCoorExGlobalSearch.data() + i*nDim,
+                                         parElem, subElem, weightsInterpol, parCoor);
+
+              /* Store the required data in the return buffers. */
+              ++recvCounts[rank];
+              indexGlobalSearchReturn.push_back(bufIndexGlobalSearch[i]);
+              volElemIDDonorReturn.push_back(parElem);
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                parCoorReturn.push_back(parCoor[iDim]);
+            }
+          }
+        }
+      }
+    }
+
+    /* Create a cumulative version of recvCounts. */
+    for(int i=0; i<mpisize; ++i)
+      nSearchPerRank[i+1] = nSearchPerRank[i] + recvCounts[i];
+
+    /* Determine the number of return messages this rank has to receive.
+       Use displs and recvCounts as temporary storage. */
+    int nRankSend = 0;
+    for(int i=0; i<mpisize; ++i) {
+      if( recvCounts[i] ) {recvCounts[i] = 1; ++nRankSend;}
+      displs[i] = 1;
+    }
+
+    int nRankRecv;
+    SU2_MPI::Reduce_scatter(recvCounts.data(), &nRankRecv, displs.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    /* Send the data using nonblocking sends to avoid deadlock. */
+    vector<SU2_MPI::Request> commReqs(3*nRankSend);
+    nRankSend = 0;
+    for(int i=0; i<mpisize; ++i) {
+      if( recvCounts[i] ) {
+        const int sizeMessage = nSearchPerRank[i+1] - nSearchPerRank[i];
+        SU2_MPI::Isend(indexGlobalSearchReturn.data() + nSearchPerRank[i],
+                       sizeMessage, MPI_UNSIGNED_LONG, i, i, MPI_COMM_WORLD,
+                       &commReqs[nRankSend++]);
+        SU2_MPI::Isend(volElemIDDonorReturn.data() + nSearchPerRank[i],
+                       sizeMessage, MPI_UNSIGNED_LONG, i, i+1, MPI_COMM_WORLD, 
+                       &commReqs[nRankSend++]);
+        SU2_MPI::Isend(parCoorReturn.data() + nDim*nSearchPerRank[i],
+                       nDim*sizeMessage, MPI_DOUBLE, i, i+2, MPI_COMM_WORLD,
+                       &commReqs[nRankSend++]);
+      }
+    }
+
+    /* Define the vectors to store the return data. */
+    vector<int> sourceReturn(nRankRecv);
+    vector<vector<unsigned long> > bufReturnIndexGlobalSearch;
+    vector<vector<unsigned long> > bufVolElemIDDonorReturn;
+    vector<vector<su2double> > bufParCoorReturn;
+
+    bufReturnIndexGlobalSearch.resize(nRankRecv);
+    bufVolElemIDDonorReturn.resize(nRankRecv);
+    bufParCoorReturn.resize(nRankRecv);
+
+    /* Loop over the number of ranks from which I receive return data. */
+    for(int i=0; i<nRankRecv; ++i) {
+
+      /* Block until a message with unsigned longs arrives from any processor.
+         Determine the source and the size of the message.   */
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, mpirank, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+      sourceReturn[i] = source;
+
+      int sizeMess;
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+      /* Allocate the memory for the receive buffers. */
+      bufReturnIndexGlobalSearch[i].resize(sizeMess);
+      bufVolElemIDDonorReturn[i].resize(sizeMess);
+      bufParCoorReturn[i].resize(nDim*sizeMess);
+
+      /* Receive the three messages using blocking receives. */
+      SU2_MPI::Recv(bufReturnIndexGlobalSearch[i].data(), sizeMess,
+                    MPI_UNSIGNED_LONG, source, rank, MPI_COMM_WORLD, &status);
+
+      SU2_MPI::Recv(bufVolElemIDDonorReturn[i].data(), sizeMess,
+                    MPI_UNSIGNED_LONG, source, rank+1, MPI_COMM_WORLD, &status);
+
+      SU2_MPI::Recv(bufParCoorReturn[i].data(), nDim*sizeMess,
+                    MPI_DOUBLE, source, rank+2, MPI_COMM_WORLD, &status);
+    }
+
+    /* Complete the non-blocking sends. */
+    SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
+
+    /* Wild cards have been used in the communication,
+       so synchronize the ranks to avoid problems. */
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+    /* Determine the elements that must be added to the communication pattern. */
+    vector<vector<unsigned long> > newVolElements;
+    newVolElements.resize(nRankRecv);
+
+    for(int i=0; i<nRankRecv; ++i) {
+      vector<unsigned long> tmp = bufVolElemIDDonorReturn[i];
+      sort(tmp.begin(), tmp.end());
+      vector<unsigned long>::iterator lastEntry = unique(tmp.begin(), tmp.end());
+      tmp.erase(lastEntry, tmp.end());
+
+      newVolElements[i] = tmp;
+    }
+
+    /* Add the elements to the halo's and determine the new numbering of
+       the current halo elements. Also the halo numbering of the newly
+       added elements is determined. */
+    vector<unsigned long> oldToNewOrHaloElements;
+    vector<vector<unsigned long> > volIDNewElements;
+    const unsigned long nVolElemTotOr = nVolElemTot;
+
+    AddVolumeElementsToHalos(sourceReturn, newVolElements, volIDNewElements,
+                             oldToNewOrHaloElements);
+                             
+    /* Adapt the numbering of donorElements to the new situation. */
+    for(unsigned long i=0; i<donorElements.size(); ++i) {
+      if((donorElements[i] >= nVolElemOwned) && (donorElements[i] < nVolElemTotOr)) {
+        const unsigned long ii = donorElements[i] - nVolElemOwned;
+         donorElements[i] = oldToNewOrHaloElements[ii];
+      }
+    }
+
+    /* Loop over the ranks on which additional donors are stored for the
+       exchange data of local integration points. */
+    for(int i=0; i<nRankRecv; ++i) {
+
+      /* Loop over the integration points that were found on this rank. */
+      for(unsigned long j=0; j<bufReturnIndexGlobalSearch[i].size(); ++j) {
+
+        /* Search for position in newVolElements that corresponds to the
+           donor element of this integration point. */
+        vector<unsigned long>::const_iterator low;
+        low = lower_bound(newVolElements[i].begin(), newVolElements[i].end(),
+                          bufVolElemIDDonorReturn[i][j]);
+        const unsigned long ind = low - newVolElements[i].begin();
+
+        /* Store the interpolation information in the correct positions of
+           donorElements and parCoorInDonor. */
+        unsigned long ii = bufReturnIndexGlobalSearch[i][j];
+        donorElements[ii] = volIDNewElements[i][ind];
+
+        ii *= nDim;
+        const unsigned long jj = nDim*j;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          parCoorInDonor[ii+iDim] = bufParCoorReturn[i][jj+iDim];
+      }
+    }
+  }
 
 #endif
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 5: Convert the parametric coordinates to interpolation        ---*/
+  /*---         weights and store these weights in the data structures to  ---*/
+  /*---         be used in the actual implementation of the wall functions.---*/
+  /*--------------------------------------------------------------------------*/
+
+  SU2_MPI::Error("Conversion not implemented yet", CURRENT_FUNCTION);
 }
+
+void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
+                                             const unsigned long  parElem,
+                                             const unsigned short subElem,
+                                             const su2double      *weightsSubElem,
+                                             su2double            *parCoor) {
+
+  /* Definition of the maximum number of iterations in the Newton solver
+     and the tolerance level. */
+  const unsigned short maxIt = 50;
+  const su2double tolNewton  = 1.e-10;
+
+  /*--------------------------------------------------------------------------*/
+  /* Step 1: Create an initial guess for the parametric coordinates from      */
+  /*         interpolation in the linear sub-element of the parent element.   */
+  /*--------------------------------------------------------------------------*/
+
+  /* Abbreviate the index in the standard element a bit easier. */
+  const unsigned short ind = volElem[parElem].indStandardElement;
+
+  /* Define the variables to store the number of DOFs and the connectivity
+     of the sub element in which the given coordinate resides. */
+  unsigned short nDOFsPerSubElem = 0;
+  const unsigned short *connSubElems;
+
+  /* Check if the sub element is of the first sub-element type. */
+  const unsigned short nSubElemType1 = standardElementsGrid[ind].GetNSubElemsType1();
+  if(subElem < nSubElemType1) {
+
+    /* Determine the element type and set nDOFsPerSubElem. */
+    switch( standardElementsGrid[ind].GetVTK_Type1() ) {
+      case TRIANGLE:      nDOFsPerSubElem = 3; break;
+      case QUADRILATERAL: nDOFsPerSubElem = 4; break;
+      case TETRAHEDRON:   nDOFsPerSubElem = 4; break;
+      case PYRAMID:       nDOFsPerSubElem = 5; break;
+      case PRISM:         nDOFsPerSubElem = 6; break;
+      case HEXAHEDRON:    nDOFsPerSubElem = 8; break;
+      default: break; /* Just to avoid a compiler warning. */
+    }
+
+    /* Set the connectivity for the correct subelement. */
+    connSubElems = standardElementsGrid[ind].GetSubConnType1()
+                 + subElem*nDOFsPerSubElem;
+  }
+  else {
+
+    /* The sub-element is of the second sub-element type. Determine the
+       element type and set nDOFsPerSubElem. */
+    switch( standardElementsGrid[ind].GetVTK_Type2() ) {
+      case TRIANGLE:      nDOFsPerSubElem = 3; break;
+      case QUADRILATERAL: nDOFsPerSubElem = 4; break;
+      case TETRAHEDRON:   nDOFsPerSubElem = 4; break;
+      case PYRAMID:       nDOFsPerSubElem = 5; break;
+      case PRISM:         nDOFsPerSubElem = 6; break;
+      case HEXAHEDRON:    nDOFsPerSubElem = 8; break;
+      default: break; /* Just to avoid a compiler warning. */
+    }
+
+    /* Set the connectivity for the correct subelement. */
+    connSubElems = standardElementsGrid[ind].GetSubConnType2()
+                 + (subElem-nSubElemType1)*nDOFsPerSubElem;
+  }
+
+  /* Get the parametric coordinates of the DOFs from the standard element. */
+  const vector<su2double> *locDOFs[] = {standardElementsGrid[ind].GetRDOFs(),
+                                        standardElementsGrid[ind].GetSDOFs(),
+                                        standardElementsGrid[ind].GetTDOFs()};
+
+  /* Create the initial guess of the parametric coordinates by interpolation
+     in the sub-element. */
+  for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+    parCoor[iDim] = 0.0;
+    const su2double *coorDOFs = locDOFs[iDim]->data();
+    for(unsigned short i=0; i<nDOFsPerSubElem; ++i)
+      parCoor[iDim] += weightsSubElem[i]*coorDOFs[connSubElems[i]];
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /* Step 2: The Newton algorithm to compute the parametric coordinates in    */
+  /*         the high order element.                                          */
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the number of DOFs of the standard element and allocate the
+     memory to store the basis functions and its derivatives. */
+  const unsigned short nDOFs = standardElementsGrid[ind].GetNDOFs();
+
+  vector<su2double> lagBasis(nDOFs);
+  vector<vector<su2double> > dLagBasis(nDim, vector<su2double>(nDOFs));
+
+  /* Abbreviate the grid DOFs of this element a bit easier. */
+  const unsigned long *DOFs = volElem[parElem].nodeIDsGrid.data();
+
+  /* Loop over the maximum number of iterations. */
+  unsigned short itCount;
+  for(itCount=0; itCount<maxIt; ++itCount) {
+
+    /* Compute the Lagrangian basis functions and its derivatives in
+       the current parametric coordinate. */
+    standardElementsGrid[ind].BasisFunctionsAndDerivativesInPoint(parCoor, lagBasis,
+                                                                  dLagBasis);
+
+    /* Make a distinction between 2D and 3D in order to have the most
+       efficient code. */
+    bool converged = false;
+    switch( nDim ) {
+      case 2: {
+        /* Two dimensional computation. Compute the values of the function
+           and minus the Jacobian matrix. */
+        su2double f0 = coor[0], f1 = coor[1];
+        su2double a00 = 0.0, a01 = 0.0, a10 = 0.0, a11 = 0.0;
+        for(unsigned short i=0; i<nDOFs; ++i) {
+          const su2double x = meshPoints[DOFs[i]].coor[0];
+          const su2double y = meshPoints[DOFs[i]].coor[1];
+
+          f0 -= x*lagBasis[i]; f1 -= y*lagBasis[i];
+
+          a00 += x*dLagBasis[0][i]; a01 += x*dLagBasis[1][i];
+          a10 += y*dLagBasis[0][i]; a11 += y*dLagBasis[1][i];
+        }
+
+        /* Compute the updates of the parametric values. As minus the
+           Jacobian is computed, the updates should be added to parCoor. */
+        const su2double detInv = 1.0/(a00*a11 - a01*a10);
+        const su2double dr = detInv*(f0*a11 - f1*a01);
+        const su2double ds = detInv*(f1*a00 - f0*a10);
+
+        parCoor[0] += dr;
+        parCoor[1] += ds;
+
+        /* Check for convergence. */
+        if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton) converged = true;
+        break;
+      }
+
+      case 3: {
+        /* Three dimensional computation. Compute the values of the function
+           and minus the Jacobian matrix. */
+        su2double f0 = coor[0], f1 = coor[1], f2 = coor[2];
+        su2double a00 = 0.0, a01 = 0.0, a02 = 0.0;
+        su2double a10 = 0.0, a11 = 0.0, a12 = 0.0;
+        su2double a20 = 0.0, a21 = 0.0, a22 = 0.0;
+
+        for(unsigned short i=0; i<nDOFs; ++i) {
+          const su2double x = meshPoints[DOFs[i]].coor[0];
+          const su2double y = meshPoints[DOFs[i]].coor[1];
+          const su2double z = meshPoints[DOFs[i]].coor[2];
+
+          f0 -= x*lagBasis[i]; f1 -= y*lagBasis[i]; f2 -= z*lagBasis[i];
+
+          a00 += x*dLagBasis[0][i]; a01 += x*dLagBasis[1][i]; a02 += x*dLagBasis[2][i];
+          a10 += y*dLagBasis[0][i]; a11 += y*dLagBasis[1][i]; a12 += y*dLagBasis[2][i];
+          a20 += z*dLagBasis[0][i]; a21 += z*dLagBasis[1][i]; a22 += z*dLagBasis[2][i];
+        }
+
+        /* Compute the updates of the parametric values. As minus the
+           Jacobian is computed, the updates should be added to parCoor. */
+        const su2double detInv = 1.0/(a00*a11*a22 - a00*a12*a21 - a01*a10*a22
+                               +      a01*a12*a20 + a02*a10*a21 - a02*a11*a20);
+        const su2double dr =  detInv*(a01*a12*f2 - a01*a22*f1 - a02*a11*f2
+                           +          a02*a21*f1 + a11*a22*f0 - a12*a21*f0);
+        const su2double ds = -detInv*(a00*a12*f2 - a00*a22*f1 - a02*a10*f2
+                           +          a02*a20*f1 + a10*a22*f0 - a12*a20*f0);
+        const su2double dt =  detInv*(a00*a11*f2 - a00*a21*f1 - a01*a10*f2
+                           +          a01*a20*f1 + a10*a21*f0 - a11*a20*f0);
+        parCoor[0] += dr;
+        parCoor[1] += ds;
+        parCoor[2] += dt;
+
+        /* Check for convergence. */
+        if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton && fabs(dt) <= tolNewton)
+          converged = true;
+        break;
+      }
+    }
+
+    /* Break the loop if the Newton algorithm converged. */
+    if( converged ) break;
+  }
+
+  /* Terminate if the Newton algorithm did not converge. */
+  if(itCount == maxIt)
+    SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
+}
+
+#ifdef HAVE_MPI
+void CMeshFEM_DG::AddVolumeElementsToHalos(
+                           const vector<int>                    &rankNewHalos,
+                           const vector<vector<unsigned long> > &newVolElements,
+                           vector<vector<unsigned long> >       &volIDNewElements,
+                           vector<unsigned long>                &oldToNewOrHaloElements) {
+
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+}
+#endif
