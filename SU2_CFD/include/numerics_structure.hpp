@@ -89,9 +89,6 @@ public:
   su2double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
-  Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
-  su2double Poisson_Coeff_i, /*!< \brief Poisson coefficient at point i. */
-  Poisson_Coeff_j; /*!< \brief Poisson coefficient at point j. */
   Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
@@ -124,8 +121,6 @@ public:
   dist_j;      /*!< \brief Distance of point j to the nearest wall. */
   su2double Temp_i,  /*!< \brief Temperature at point i. */
   Temp_j;      /*!< \brief Temperature at point j. */
-  su2double Poissonval_i,  /*!< \brief Temperature at point i. */
-  Poissonval_j; /*!< \brief Temperature at point j. */
   su2double *Temp_tr_i, /*!< \brief Temperature transl-rot at point i. */
   *Temp_tr_j;/*!< \brief Temperature transl-rot at point j. */
   su2double *Temp_vib_i, /*!< \brief Temperature vibrational at point i. */
@@ -737,20 +732,6 @@ public:
   void SetDissipation(su2double diss_i, su2double diss_j);
   
   /*!
-   * \brief Set the Poisson coefficient 
-   * \param[in] val_Poisson coefficient_i - Value of the Poisson coefficient at point i.
-   * \param[in] val_Poisson coefficient_j - Value of the Poisson coefficient at point j.
-   */
-  void SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j);
-  
-  /*!
-   * \brief Set the Poisson value 
-   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
-   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
-   */
-  void SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j); 
-  
-  /*!
   * \brief Get the final Roe dissipation factor.
   */
   su2double GetDissipation();
@@ -838,7 +819,7 @@ public:
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
     
-  /*!
+  /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
@@ -1976,6 +1957,63 @@ public:
                        su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+
+/*--------------------------------------------------------------------------------------------------------
+ *----------------------------------- New defintion for pressure-based methods--------------------------*/
+ 
+
+/*!
+ * \class CUpwPB_Flow
+ * \brief Class for solving an approximate Riemann solver of Roe for the pressure based incompressible flow equations.
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ */
+class CUpwPB_Flow : public CNumerics {
+private:
+  bool implicit;
+  bool gravity;
+  su2double Froude;
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *MeanVelocity;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double Proj_ModJac_Tensor_ij, Pressure_i,
+  Pressure_j, MeanDensity, MeanSoundSpeed, MeanPressure, MeanBetaInc2,
+  ProjVelocity;
+  unsigned short iDim, iVar, jVar, kVar;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwPB_Flow(void);
+  
+  /*!
+   * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+
+
+
+
+/*------------------------------------End definition Akshay----------------------------------------------*/
+/*-------------------------------------------------------------------------------------------------------*/
 /*!
  * \class CUpwRoeArtComp_AdjFlow
  * \brief Class for solving an approximate Riemann solver of Roe
@@ -2765,6 +2803,61 @@ public:
                        CConfig *config);
 };
 
+/*--------------------------------------------------------------------------------------------------------*/
+/*------------------------New definition for pressure-based flows-Akshay----------------------------------*/
+/*!
+ * \class CCentJSTArtComp_Flow
+ * \brief Class for centered scheme - JST (artificial compressibility).
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ */
+class CCentJSTPB_Flow : public CNumerics {
+  
+private:
+  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
+  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
+  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
+  Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
+  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
+  Epsilon_2, Epsilon_4, cte_0, cte_1; /*!< \brief Artificial dissipation values. */
+  bool implicit, /*!< \brief Implicit calculation. */
+  grid_movement, /*!< \brief Modification for grid movement. */
+  gravity; /*!< \brief computation with gravity force. */
+  su2double Froude; /*!< \brief Froude number. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentJSTPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCentJSTPB_Flow(void);
+  
+  /*!
+   * \brief Compute the flow residual using a JST method.
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config);
+};
+/*------------------------New definition for pressure-based flows-Akshay----------------------------------*/
+/*--------------------------------------------------------------------------------------------------------*/
 /*!
  * \class CCentJST_AdjFlow
  * \brief Class for and adjoint centered scheme - JST.
@@ -3013,7 +3106,62 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                        CConfig *config);
 };
+/*--------------------------------------------------------------------------------------------------*/
+/*-----------------------------New definition for pressure-based method - Akshay--------------------*/
 
+/*!
+ * \class CCentLaxArtComp_Flow
+ * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ */
+class CCentLaxPB_Flow : public CNumerics {
+private:
+  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+  su2double *Diff_U, /*!< \brief Difference of conservative variables. */
+  *Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
+  *MeanVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+  *ProjFlux,  /*!< \brief Projected inviscid flux tensor. */
+  sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
+  MeanDensity, MeanPressure, MeanBetaInc2, /*!< \brief Mean values of primitive variables. */
+  Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
+  Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
+  Phi_i, Phi_j, sc0, StretchingFactor, /*!< \brief Streching parameters. */
+  Epsilon_0; /*!< \brief Artificial dissipation values. */
+  bool implicit, /*!< \brief Implicit calculation. */
+  grid_movement, /*!< \brief Modification for grid movement. */
+  gravity; /*!< \brief Modification for for gravity force. */
+  su2double Froude;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentLaxPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCentLaxPB_Flow(void);
+  
+  /*!
+   * \brief Compute the flow residual using a Lax method.
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+/*---------------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------------*/
 /*!
  * \class CCentLax_AdjFlow
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
@@ -4025,87 +4173,6 @@ public:
 
   /*!
    * \brief Compute the viscous heat residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CAvgGrad_Poisson
- * \brief Class for computing viscous term using average of gradients without correction (Poisson equation).
- * \ingroup ViscDiscr
- */
-class CAvgGrad_Poisson : public CNumerics {
-private:
-
-  su2double *Edge_Vector;
-  bool implicit;
-  su2double **Mean_GradPoissonVar;
-  su2double *Proj_Mean_GradPoissonVar_Normal, *Proj_Mean_GradPoissonVar_Corrected;
-  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean ;
-  unsigned short iVar, iDim;
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGrad_Poisson(void);
-
-  /*!
-   * \brief Compute the viscous heat residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CAvgGradCorrected_Poisson
- * \brief Class for computing viscous term using average of gradients with correction (Poisson equation).
- * \ingroup ViscDiscr
- */
-
-class CAvgGradCorrected_Poisson : public CNumerics {
-private:
-
-  su2double *Edge_Vector;
-  bool implicit;
-  su2double **Mean_GradPoissonVar;
-  su2double *Proj_Mean_GradPoissonVar_Kappa, *Proj_Mean_GradPoissonVar_Edge, *Proj_Mean_GradPoissonVar_Corrected;
-  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
-  unsigned short iVar, iDim;
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrected_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_Poisson(void);
-
-  /*!
-   * \brief Compute the viscous residual using an average of gradients with correction.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -5573,38 +5640,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CSource_Template(void);
-};
-
-/*!
- * \class CSource_Poisson
- * \brief Class for source term of the Poisson equation.
- * \ingroup SourceDiscr
- */
-class CSource_PoissonFVM : public CNumerics {
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config -  Name of the input config file
-   *
-   */
-  CSource_PoissonFVM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-
-  /*!
-   * \brief Residual for source term integration.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSource_PoissonFVM(void);
 };
 
 /*!

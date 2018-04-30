@@ -4148,6 +4148,28 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
+  
+  
+  /*!
+   * \brief A virtual member
+   * Correct velocity
+   */
+  virtual void CorrectVelocity(); 
+
+
+  /*!
+   * \brief A virtual member
+   * Correct pressure
+   */
+  virtual void CorrectPressure(); 
+  
+  
+    /*!
+   * \brief A virtual member
+   * Set source term for pressure correction
+   */
+  virtual void SetPressureCorrectionSource(); 
+
 
 };
 
@@ -7880,7 +7902,51 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
 };
+//--------------------------------------------------------------------------------------------------------------------------
 
+
+/*!
+ * \class CIncEulerSolver
+ * \brief Main class for defining the incompressible Euler flow solver.
+ * \ingroup Euler_Equations
+ * \author F. Palacios, T. Economon, T. Albring
+ * \version 4.2.0 "Cardinal"
+ */
+class CPBIncEulerSolver : public CSolver {
+protected:
+  
+  su2double
+  Density_Inf,  /*!< \brief Density at the infinity. */
+  Temperature_Inf,      /*!< \brief Energy at the infinity. */
+  Pressure_Inf,    /*!< \brief Pressure at the infinity. */
+  *Velocity_Inf;    /*!< \brief Flow Velocity vector at the infinity. */
+  
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPBIncEulerSolver(void);
+  
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPBIncEulerSolver(void);  
+  
+
+  
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------------
 /*!
  * \class CNSSolver
  * \brief Main class for defining the Navier-Stokes flow solver.
@@ -11301,6 +11367,11 @@ public:
    */
   
   void Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  
+  void CorrectPressure();
+  
+  void CorrectVelocity();
   
 };
 
