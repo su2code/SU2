@@ -304,6 +304,40 @@ void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
   
 }
 
+//-----------------------------------------------------------------------------------------------------------------
+//----------------------------------Inviscid flux for pressure-based system----------------------------------------
+//-----------------------------------------------------------------------------------------------------------------
+
+void CNumerics::GetInviscidPBProjFlux(su2double *val_density,
+                                           su2double *val_velocity,
+                                           su2double *val_pressure,
+                                           su2double *val_betainc2,
+                                           su2double *val_normal,
+                                           su2double *val_Proj_Flux) {
+    su2double rhou, rhov, rhow;
+    
+     if (nDim == 2) {
+      rhou = (*val_density)*val_velocity[0];
+      rhov = (*val_density)*val_velocity[1];
+      
+      val_Proj_Flux[0] = (rhou*val_velocity[0])*val_normal[0] + rhou*val_velocity[1]*val_normal[1];
+      val_Proj_Flux[1] = rhov*val_velocity[0]*val_normal[0] + (rhov*val_velocity[1])*val_normal[1];
+  }
+  else {
+    rhou = (*val_density)*val_velocity[0];
+    rhov = (*val_density)*val_velocity[1];
+    rhow = (*val_density)*val_velocity[2];
+    
+    val_Proj_Flux[0] = (rhou*val_velocity[0])*val_normal[0] + rhou*val_velocity[1]*val_normal[1] + rhou*val_velocity[2]*val_normal[2];
+    val_Proj_Flux[1] = rhov*val_velocity[0]*val_normal[0] + (rhov*val_velocity[1])*val_normal[1] + rhov*val_velocity[2]*val_normal[2];
+    val_Proj_Flux[2] = rhow*val_velocity[0]*val_normal[0] + rhow*val_velocity[1]*val_normal[1] + (rhow*val_velocity[2])*val_normal[2];
+  }
+  
+}
+//-----------------------------------------------------------------------------------------------------------------
+//----------------------------------Inviscid flux for pressure-based system----------------------------------------
+//-----------------------------------------------------------------------------------------------------------------
+
 void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
                                    su2double *val_normal, su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) {
@@ -426,7 +460,47 @@ void CNumerics::GetInviscidArtCompProjJac(su2double *val_density, su2double *val
   }
   AD_END_PASSIVE
 }
+//-----------------------------------------------------------------------------------------------------------------
+//----------------------------------Inviscid Jacobian for pressure-based system------------------------------------
+//-----------------------------------------------------------------------------------------------------------------
+void CNumerics::GetInviscidPBProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_normal,
+    su2double val_scale, su2double **val_Proj_Jac_Tensor) {
+  AD_BEGIN_PASSIVE
+  unsigned short iDim;
+  su2double proj_vel;
 
+  proj_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    proj_vel += val_velocity[iDim]*val_normal[iDim];
+
+  if (nDim == 2) {
+    val_Proj_Jac_Tensor[0][0] = val_scale*(val_velocity[0]*val_normal[0] + proj_vel);
+    val_Proj_Jac_Tensor[0][1] = val_scale*val_velocity[0]*val_normal[1];
+
+    val_Proj_Jac_Tensor[1][0] = val_scale*val_velocity[1]*val_normal[0];
+    val_Proj_Jac_Tensor[1][1] = val_scale*(val_velocity[1]*val_normal[1] + proj_vel);
+  }
+  else {
+    val_Proj_Jac_Tensor[0][0] = val_scale*(proj_vel+val_velocity[0]*val_normal[0]);
+    val_Proj_Jac_Tensor[0][1] = val_scale*(val_velocity[0]*val_normal[1]);
+    val_Proj_Jac_Tensor[0][2] = val_scale*(val_velocity[0]*val_normal[2]);
+
+    val_Proj_Jac_Tensor[1][0] = val_scale*(val_velocity[1]*val_normal[0]);
+    val_Proj_Jac_Tensor[1][1] = val_scale*(proj_vel+val_velocity[1]*val_normal[1]);
+    val_Proj_Jac_Tensor[1][2] = val_scale*(val_velocity[1]*val_normal[2]);
+
+    val_Proj_Jac_Tensor[2][0] = val_scale*(val_velocity[2]*val_normal[0]);
+    val_Proj_Jac_Tensor[2][1] = val_scale*(val_velocity[2]*val_normal[1]);
+    val_Proj_Jac_Tensor[2][2] = val_scale*(proj_vel+val_velocity[2]*val_normal[2]);
+
+  }
+  AD_END_PASSIVE
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------
+//----------------------------------Inviscid Jacobian for pressure-based system------------------------------------
+//-----------------------------------------------------------------------------------------------------------------
 void CNumerics::SetPastSol (su2double *val_u_nM1, su2double *val_u_n, su2double *val_u_nP1) {
   unsigned short iVar;
 
