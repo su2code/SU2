@@ -453,9 +453,13 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
   /*--- If determinant is near zero, ray lies in plane of triangle ---*/
   
   det = DOT(edge1, pvec);
+    cout << " det = " << det << endl;
+    
+  /* Changing for now from return false to true */
+  if (det > -1e-13 && det < 1e-13) return(false);
+  //if (det > -EPSILON && det < EPSILON) return(false);
   
-  if (det > -EPSILON && det < EPSILON) return(false);
-  
+    
   inv_det = 1.0 / det;
   
   /*--- Calculate distance from vert0 to ray origin ---*/
@@ -465,6 +469,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
   /*--- Calculate U parameter and test bounds ---*/
   
   u = inv_det * DOT(tvec, pvec);
+    cout << "u = " << u << endl;
   if (u <= 0.0-EPSILON || u >= 1.0+EPSILON) return(false);
   
   /*--- prepare to test V parameter ---*/
@@ -474,7 +479,8 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
   /*--- Calculate V parameter and test bounds ---*/
   
   v = inv_det * DOT(dir, qvec);
-  if (v < 0.0-EPSILON || u + v > 1.0+EPSILON) return(false);
+    cout << "v = " << v << endl;
+  if (v < 0.0-EPSILON || ((u + v) > (1.0+EPSILON))) return(false);
   
   /*--- Calculate t, ray intersects triangle ---*/
   
@@ -665,7 +671,7 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
   SUB(dir, point1, point0);
   
   if (RayIntersectsTriangle(point0, dir, vert0, vert1, vert2, intersect)) {
-    
+      cout << "Yes, ray intersects trianel" << endl;
     /*--- Check that the intersection is in the segment ---*/
     
     SUB(u, point0, intersect);
@@ -679,7 +685,7 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
     Numerator = DOT(Plane_Normal, v);
     
     Aux = Numerator * Denominator;
-    
+      cout << "Aux = " << Aux << endl;
     /*--- Intersection outside the segment ---*/
     if (Aux > 0.0) return (false);
     
@@ -730,7 +736,7 @@ bool CGeometry::IsPointInsideFace_3D(su2double *q,su2double **p,short n){
     //cout << " AngleSUm  = " << anglesum*360/TWOPI << endl;
     if (abs(anglesum*360/TWOPI - 360) < EPSILON_ang)
         Inside = true;
-    
+    cout << "Checking Is point inside face - angle diff = " << abs(anglesum*360/TWOPI - 360) << endl;
     return Inside;
 }
 
