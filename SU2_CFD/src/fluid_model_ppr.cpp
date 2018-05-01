@@ -51,12 +51,7 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
   TstarCrit = Tstar;
   Zed=1.0;
 
-  if (w <= 0.49)
-        k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
-        else
-        k = 0.379642 + 1.48503 * w - 0.164423 * w*w + 0.016666 * w*w*w;
-
-
+  k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
 }
 
 CPengRobinson::~CPengRobinson(void) { }
