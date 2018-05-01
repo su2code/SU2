@@ -16157,9 +16157,13 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                     
                     cout << " ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!!" << endl;
                     cout << "Probe_loc[0] = " << probe_loc[0] << "Probe_loc[1] = " << probe_loc[1] << "Probe_loc[2] = " << probe_loc[2] << endl;
+                    cout << "nElem_node = " << geometry->node[pointID]->GetnElem() << " MAY BE BOUNDARY ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!! with z = " << probe_loc[2] << endl;
+                    cout << "     parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;
+                    //if ( fabs(probe_loc[2] - 0.025) < 1e-4 )
+                      //  exit(EXIT_FAILURE);
                 }
 
-                cout << "     parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;
+               
             }
             
             for (unsigned  short iNode=0; iNode < nNodes_elem; iNode++) {
@@ -16477,13 +16481,16 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
     
     vector<unsigned long> ElemIntersectProbeSeg;
 
-    cout << "In FindElem3D routine, For probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", probe_loc[2] = " << probe_loc[2] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << ", NN[2] = " << geometry->node[pointID]->GetCoord(2) << endl;
+    cout << "nElem_node = " << nElem_node << ",  In FindElem3D routine, For probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", probe_loc[2] = " << probe_loc[2] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << ", NN[2] = " << geometry->node[pointID]->GetCoord(2) << endl;
     
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
         /*--- Determine whether the probe point is inside the element ---*/
         //Inside = IsPointInsideHex(geometry, probe_loc,jElem);
         Inside = CoorInHexahedron(geometry, jElem, probe_loc, parCoor);
+        if (fabs(probe_loc[0] - 0.0996638) < 1e-7 &&  fabs(probe_loc[1] + 0.00017285) < 1e-7 &&  fabs(probe_loc[2] - 0.025) < 1e-5){
+            cout << "Hex parcoord[1] = (" << parCoor[0] << ", " << parCoor[1] << ", " << parCoor[2] << ")" << endl;
+        }
         
         if (Inside) {
             probe_elem = jElem;
@@ -16518,21 +16525,24 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
             for (unsigned short iNode = 0; iNode < nNodes_face-1; iNode++)
                 same_z += fabs(Coord_face[iNode][2] -  Coord_face[iNode+1][2] );
             
-            if (same_z < 1e-12){
+            if (same_z < 1e-15){
                 same_z += fabs(probe_loc[2] -  Coord_face[0][2] );
-                if (same_z < 1e-12) {
+                if (same_z < 1e-15) {
                     cout << "Face on same z plane" << endl;
                     count_intersect_min = 2;
                 }
             }
             
             FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, pointID_Coord, Coord_face);
+        
             
             if(FaceIntersect)  {
                 cout << " 11111-------- Face Intersect --------" << endl;
                 count+=1;
                 
             }
+            
+            
             if (count > count_intersect_min){
                 elemID = jElem;
                 ElemIntersectProbeSeg.push_back(elemID);
@@ -16970,6 +16980,9 @@ bool COutput::CoorInHexahedron(CGeometry *geometry,
         iPoint = geometry->elem[jElem]->GetNode(iNode);
         for (unsigned short iDim=0; iDim < nDim; iDim++) {
             coorPoints[nDim*iNode + iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        }
+        if (fabs(coor[0] - 0.0996638) < 1e-9 &&  fabs(coor[1] + 0.00017285) < 1e-9 &&  fabs(coor[2] - 0.025) < 1e-7){
+            cout << "Hex coord[1] = (" << coorPoints[nDim*iNode + 0] << ", " << coorPoints[nDim*iNode + 1] << ", " << coorPoints[nDim*iNode + 2] << ")" << endl;
         }
     }
     
@@ -17490,10 +17503,10 @@ bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3],
     
     /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
     
-    for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
+    /*for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
         for (unsigned short iDim =0; iDim < nDim; iDim++)
             cout << "iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
-    }
+    }*/
     
     /* It intersects the quad face if it intersects either of the two triangles that make up the quad */
     
@@ -17501,10 +17514,6 @@ bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3],
     
     bool Intersect2 = geometry->SegmentIntersectsTriangle(segpoint1, segpoint2, Coord_face[2], Coord_face[3], Coord_face[0]);
     
-    if (Intersect1)
-        cout << "In trianlge with coord 0,1,2" << endl;
-    if(Intersect2)
-        cout << "In triangle with coord 2,3,0" << endl;
     if (Intersect1 || Intersect2)
         Intersect = true;
     else

@@ -456,7 +456,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3],su2double dir[3],
     cout << " det = " << det << endl;
     
   /* Changing for now from return false to true */
-  if (det > -1e-13 && det < 1e-13) return(false);
+  if (det > -1e-20 && det < 1e-20) return(false);
   //if (det > -EPSILON && det < EPSILON) return(false);
   
     
@@ -687,7 +687,7 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
     Aux = Numerator * Denominator;
       cout << "Aux = " << Aux << endl;
     /*--- Intersection outside the segment ---*/
-    if (Aux > 0.0) return (false);
+    if (Aux > 0.0+1e-30) return (false);
     
   }
   else {
