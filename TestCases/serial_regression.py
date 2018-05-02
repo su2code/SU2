@@ -327,7 +327,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-8.287314, -14.278189, 0.000050, 0.007986] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.287490, -14.278189, 0.000050, 0.007986] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -790,7 +790,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -8.019796, -2440.403387] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -8.020366, -2443.152348] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
