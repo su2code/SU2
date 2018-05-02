@@ -595,3 +595,733 @@ CPBIncEulerSolver::~CPBIncEulerSolver(void) {
   
   if (FluidModel != NULL) delete FluidModel;
 }
+
+
+void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  unsigned long iEdge, iPoint, jPoint;
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  bool grid_movement = config->GetGrid_Movement();
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    /*--- Points in edge, set normal vectors, and number of neighbors ---*/
+
+    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+
+    /*--- Set primitive variables w/o reconstruction ---*/
+
+    numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
+
+    /*--- Set the largest convective eigenvalue ---*/
+
+    numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
+
+    /*--- Set undivided laplacian and pressure-based sensor ---*/
+
+    /*if (jst_scheme) {
+      numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
+      numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
+    }*/
+
+    /*--- Grid movement ---*/
+
+    if (grid_movement) {
+      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+    }
+
+    /*--- Compute residuals, and Jacobians ---*/
+
+    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+
+    /*--- Update convective and artificial dissipation residuals ---*/
+
+    LinSysRes.AddBlock(iPoint, Res_Conv);
+    LinSysRes.SubtractBlock(jPoint, Res_Conv);
+
+    /*--- Store implicit contributions from the reisdual calculation. ---*/
+
+    if (implicit) {
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    }
+  }
+
+}
+
+
+void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
+                                   CConfig *config, unsigned short iMesh) {
+
+  unsigned short iVar;
+  unsigned long iEdge, iPoint, jPoint;
+
+
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rotating_frame   = config->GetRotating_Frame();
+  bool axisymmetric     = config->GetAxisymmetric();
+  bool gravity          = (config->GetGravityForce() == YES);
+
+  /*--- Initialize the source residual to zero ---*/
+  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+  if (rotating_frame) {
+
+    /*--- Loop over all points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Load the conservative variables ---*/
+
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
+
+      /*--- Load the volume of the dual mesh cell ---*/
+
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the rotating frame source residual ---*/
+
+      numerics->ComputeResidual(Residual, Jacobian_i, config);
+
+      /*--- Add the source residual to the total ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Add the implicit Jacobian contribution ---*/
+
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  if (axisymmetric) {
+
+    /*--- Zero out Jacobian structure ---*/
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar ++)
+        for (unsigned short jVar = 0; jVar < nVar; jVar ++)
+          Jacobian_i[iVar][jVar] = 0.0;
+    }
+
+    /*--- loop over points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Set solution  ---*/
+
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
+
+      /*--- Set incompressible density  ---*/
+
+      numerics->SetDensity(node[iPoint]->GetDensity(),
+                           node[iPoint]->GetDensity());
+
+      /*--- Set control volume ---*/
+
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Set y coordinate ---*/
+
+      numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                         geometry->node[iPoint]->GetCoord());
+
+      /*--- Compute Source term Residual ---*/
+
+      numerics->ComputeResidual(Residual, Jacobian_i, config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  if (gravity) {
+
+    /*--- loop over points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Set solution  ---*/
+
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
+
+      /*--- Set incompressible density  ---*/
+
+      numerics->SetDensity(node[iPoint]->GetDensity(),
+                           node[iPoint]->GetDensity());
+
+      /*--- Set control volume ---*/
+
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute Source term Residual ---*/
+
+      numerics->ComputeResidual(Residual, config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+    }
+
+  }
+
+  /*--- Compute pressure term ---*/
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    /*--- Points in edge, set normal vectors, and number of neighbors ---*/
+
+    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    second_numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+
+    /*--- Set primitive variables w/o reconstruction ---*/
+
+    second_numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
+
+    /*--- Compute residuals, and Jacobians ---*/
+    second_numerics->ComputeResidual(Residual,config);
+
+    /*--- Add the source residual to the total ---*/
+
+    LinSysRes.AddBlock(iPoint, Residual);
+  }
+}
+
+
+
+void CPBIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
+  unsigned long iPoint, jPoint, iEdge, iVertex;
+  unsigned short iDim, iVar, iMarker;
+  su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
+  Partial_Gradient, Partial_Res, *Normal;
+
+  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
+
+  PrimVar_Vertex = new su2double [nPrimVarGrad];
+  PrimVar_i = new su2double [nPrimVarGrad];
+  PrimVar_j = new su2double [nPrimVarGrad];
+
+  /*--- Set Gradient_Primitive to zero ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
+
+  /*--- Loop interior edges ---*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+      PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
+    }
+
+    Normal = geometry->edge[iEdge]->GetNormal();
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Partial_Res = PrimVar_Average*Normal[iDim];
+        if (geometry->node[iPoint]->GetDomain())
+          node[iPoint]->AddGradient_Primitive(iVar, iDim, Partial_Res);
+        if (geometry->node[jPoint]->GetDomain())
+          node[jPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
+      }
+    }
+  }
+
+  /*--- Loop boundary edges ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+          PrimVar_Vertex[iVar] = node[iPoint]->GetPrimitive(iVar);
+
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Partial_Res = PrimVar_Vertex[iVar]*Normal[iDim];
+            node[iPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
+          }
+      }
+    }
+  }
+
+  /*--- Update gradient value ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
+        node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
+      }
+    }
+  }
+
+  delete [] PrimVar_Vertex;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+
+  //Set_MPI_Primitive_Gradient(geometry, config);
+
+}
+
+void CPBIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar, iDim, jDim, iNeigh;
+  unsigned long iPoint, jPoint;
+  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
+  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
+  bool singular;
+
+  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
+
+  /*--- Loop over points of the grid ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Set the value of the singular ---*/
+    singular = false;
+
+    /*--- Get coordinates ---*/
+
+    Coord_i = geometry->node[iPoint]->GetCoord();
+
+    /*--- Get primitives from CVariable ---*/
+
+    PrimVar_i = node[iPoint]->GetPrimitive();
+
+    /*--- Inizialization of variables ---*/
+
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      for (iDim = 0; iDim < nDim; iDim++)
+        Cvector[iVar][iDim] = 0.0;
+
+    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
+    AD::SetPreaccIn(Coord_i, nDim);
+
+    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      Coord_j = geometry->node[jPoint]->GetCoord();
+
+      PrimVar_j = node[jPoint]->GetPrimitive();
+
+      //AD::SetPreaccIn(Coord_j, nDim);
+      //AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
+
+      weight = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+
+      /*--- Sumations for entries of upper triangular matrix R ---*/
+
+      if (weight != 0.0) {
+
+        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+
+        if (nDim == 3) {
+          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+        }
+
+        /*--- Entries of c:= transpose(A)*b ---*/
+
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+
+      }
+
+    }
+
+    /*--- Entries of upper triangular matrix R ---*/
+
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+
+    if (nDim == 3) {
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
+    }
+
+    /*--- Compute determinant ---*/
+
+    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
+    else detR2 = (r11*r22*r33)*(r11*r22*r33);
+
+    /*--- Detect singular matrices ---*/
+
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
+
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+
+    if (singular) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          Smatrix[iDim][jDim] = 0.0;
+    }
+    else {
+      if (nDim == 2) {
+        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+        Smatrix[0][1] = -r11*r12/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = r11*r11/detR2;
+      }
+      else {
+        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
+        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
+        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+        Smatrix[0][2] = (z13*z33)/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+        Smatrix[1][2] = (z23*z33)/detR2;
+        Smatrix[2][0] = Smatrix[0][2];
+        Smatrix[2][1] = Smatrix[1][2];
+        Smatrix[2][2] = (z33*z33)/detR2;
+      }
+    }
+
+    /*--- Computation of the gradient: S*c ---*/
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        product = 0.0;
+        for (jDim = 0; jDim < nDim; jDim++) {
+          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
+        }
+
+        node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
+      }
+    }
+
+    //AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
+    //AD::EndPreacc();
+  }
+
+ // Set_MPI_Primitive_Gradient(geometry, config);
+
+}
+
+
+
+
+
+void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  unsigned short iVar;
+  unsigned long iPoint, total_index, IterLinSol = 0;
+  su2double Delta, *local_Res_TruncError, Vol;
+
+  bool adjoint = config->GetContinuous_Adjoint();
+
+  /*--- Set maximum residual to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Build implicit system ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+
+    /*--- Read the volume ---*/
+
+    Vol = geometry->node[iPoint]->GetVolume();
+
+    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+
+    if (node[iPoint]->GetDelta_Time() != 0.0) {
+      Delta = Vol / node[iPoint]->GetDelta_Time();
+      Jacobian.AddVal2Diag(iPoint, Delta);
+    } else {
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
+    }
+
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+      LinSysSol[total_index] = 0.0;
+      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+    }
+
+  }
+
+  /*--- Initialize residual and solution at the ghost points ---*/
+
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
+    }
+  }
+
+  /*--- Solve or smooth the linear system ---*/
+
+  CSysSolve system;
+  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  /*--- The the number of iterations of the linear solver ---*/
+
+  SetIterLinSolver(IterLinSol);
+
+  /*--- Update solution (system written in terms of increments) ---*/
+
+  if (!adjoint) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
+      }
+    }
+  }
+
+  /*--- MPI solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+
+  SetResidual_RMS(geometry, config);
+
+}
+
+
+
+void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                unsigned short iMesh, unsigned long Iteration) {
+
+  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
+  Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_DensityInc,
+  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
+
+  unsigned long iEdge, iVertex, iPoint, jPoint;
+  unsigned short iDim, iMarker;
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool time_steping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time     = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+
+  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    node[iPoint]->SetMax_Lambda_Inv(0.0);
+
+  /*--- Loop interior edges ---*/
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    /*--- Point identification, Normal vector and area ---*/
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    Normal = geometry->edge[iEdge]->GetNormal();
+
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+    Area = sqrt(Area);
+
+    /*--- Mean Values ---*/
+
+    Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
+    Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
+    Mean_DensityInc = 0.5 * (node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
+    Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
+
+    /*--- Adjustment for grid movement ---*/
+
+    if (grid_movement) {
+      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      ProjVel_i = 0.0; ProjVel_j = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
+        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
+      }
+      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+    }
+
+    /*--- Inviscid contribution ---*/
+
+    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Inv(Lambda);
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
+
+  }
+
+  /*--- Loop boundary edges ---*/
+
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+      /*--- Point identification, Normal vector and area ---*/
+
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt(Area);
+
+      /*--- Mean Values ---*/
+
+      Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
+      Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
+      Mean_DensityInc = node[iPoint]->GetDensity();
+      Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
+
+      /*--- Adjustment for grid movement ---*/
+
+      if (grid_movement) {
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        ProjVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVel += GridVel[iDim]*Normal[iDim];
+        Mean_ProjVel -= ProjVel;
+      }
+
+      /*--- Inviscid contribution ---*/
+
+      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+      if (geometry->node[iPoint]->GetDomain()) {
+        node[iPoint]->AddMax_Lambda_Inv(Lambda);
+      }
+
+    }
+  }
+
+  /*--- Local time-stepping: each element uses their own speed for steady state
+   simulations or for pseudo time steps in a dual time simulation. ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    Vol = geometry->node[iPoint]->GetVolume();
+
+    if (Vol != 0.0) {
+      Local_Delta_Time  = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time    = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
+      if (Local_Delta_Time > config->GetMax_DeltaTime())
+        Local_Delta_Time = config->GetMax_DeltaTime();
+      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    }
+    else {
+      node[iPoint]->SetDelta_Time(0.0);
+    }
+
+  }
+
+  /*--- Compute the max and the min dt (in parallel) ---*/
+
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Min_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Min_Delta_Time = rbuf_time;
+
+    sbuf_time = Max_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Max_Delta_Time = rbuf_time;
+#endif
+  }
+
+  /*--- For time-accurate simulations use the minimum delta time of the whole mesh (global) ---*/
+
+  if (time_steping) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_Time = rbuf_time;
+#endif
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+
+      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+
+      config->SetCFL(iMesh,config->GetUnst_CFL());
+
+      /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+       it computes the time step based on the unsteady CFL ---*/
+
+      if (config->GetCFL(iMesh) == 0.0){
+        node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+      } else {
+        node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      }
+    }
+  }
+
+  /*--- Recompute the unsteady time step for the dual time strategy
+   if the unsteady CFL is diferent from 0 ---*/
+
+  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_UnstTimeND;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_UnstTimeND = rbuf_time;
+#endif
+    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+  }
+
+  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+
+  if (dual_time)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if (!implicit) {
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
+        node[iPoint]->SetDelta_Time(Local_Delta_Time);
+      }
+    }
+
+}
