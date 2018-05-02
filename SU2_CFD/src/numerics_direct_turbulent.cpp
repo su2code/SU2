@@ -73,14 +73,8 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
 
   ExtraADPreaccIn();
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
+  Density_i = V_i[nDim+2];
+  Density_j = V_j[nDim+2];
 
   q_ij = 0.0;
   if (grid_movement) {
@@ -1094,14 +1088,10 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+3);
-    AD::SetPreaccIn(V_j, nDim+3);
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+3);
-    AD::SetPreaccIn(V_j, nDim+3);
-  }
+
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
+  
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(su2double *val_residual,
