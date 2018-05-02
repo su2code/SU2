@@ -5472,44 +5472,44 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-//      if (viscous) {
-//        
-//        /*--- Set transport properties at the inlet ---*/
-//        
-//        V_inlet[nDim+4] = node[iPoint]->GetLaminarViscosity();
-//        V_inlet[nDim+5] = node[iPoint]->GetEddyViscosity();
-//        V_inlet[nDim+6] = node[iPoint]->GetThermalConductivity();
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//        
-//        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-//                                geometry->node[Point_Normal]->GetCoord());
-//        
-//        /*--- Primitive variables, and gradient ---*/
-//        
-//        visc_numerics->SetPrimitive(V_domain, V_inlet);
-//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-//                                          node[iPoint]->GetGradient_Primitive());
-//        
-//        /*--- Turbulent kinetic energy ---*/
-//        
-//        if (config->GetKind_Turb_Model() == SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-//                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-//        
-//        /*--- Compute and update residual ---*/
-//        
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-//        
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        
-//        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//        
-//      }
+      if (viscous) {
+        
+        /*--- Set transport properties at the inlet ---*/
+        
+        V_inlet[nDim+4] = node[iPoint]->GetLaminarViscosity();
+        V_inlet[nDim+5] = node[iPoint]->GetEddyViscosity();
+        V_inlet[nDim+6] = node[iPoint]->GetThermalConductivity();
+
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                                geometry->node[Point_Normal]->GetCoord());
+        
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_inlet);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                          node[iPoint]->GetGradient_Primitive());
+        
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+        /*--- Compute and update residual ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
+      }
 
     }
   }
@@ -5622,43 +5622,43 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-//      if (viscous) {
-//
-//        /*--- Set transport properties at the outlet. ---*/
-//
-//        V_outlet[nDim+4] = node[iPoint]->GetLaminarViscosity();
-//        V_outlet[nDim+5] = node[iPoint]->GetEddyViscosity();
-//        V_outlet[nDim+6] = node[iPoint]->GetThermalConductivity();
-//
-//        /*--- Set the normal vector and the coordinates ---*/
-//        
-//        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-//                                geometry->node[Point_Normal]->GetCoord());
-//        
-//        /*--- Primitive variables, and gradient ---*/
-//        
-//        visc_numerics->SetPrimitive(V_domain, V_outlet);
-//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-//                                          node[iPoint]->GetGradient_Primitive());
-//        
-//        /*--- Turbulent kinetic energy ---*/
-//        
-//        if (config->GetKind_Turb_Model() == SST)
-//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
-//                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-//        
-//        /*--- Compute and update residual ---*/
-//        
-//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//        
-//        LinSysRes.SubtractBlock(iPoint, Residual);
-//        
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//        
-//      }
+      if (viscous) {
+
+        /*--- Set transport properties at the outlet. ---*/
+
+        V_outlet[nDim+4] = node[iPoint]->GetLaminarViscosity();
+        V_outlet[nDim+5] = node[iPoint]->GetEddyViscosity();
+        V_outlet[nDim+6] = node[iPoint]->GetThermalConductivity();
+
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                                geometry->node[Point_Normal]->GetCoord());
+        
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_outlet);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                          node[iPoint]->GetGradient_Primitive());
+        
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+        /*--- Compute and update residual ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
+      }
 
     }
   }
@@ -5733,7 +5733,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        time discretization scheme (1st- or 2nd-order). Note that for an
        incompressible problem, the pressure equation does not have a
        contribution, as the time derivative should always be zero. ---*/
-       //TDE check
       
       for (iVar = 1; iVar < nVar; iVar++) {
         if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -7457,7 +7456,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
-      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc(); //TDE check
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
       Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
       Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
