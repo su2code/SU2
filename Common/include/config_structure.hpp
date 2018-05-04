@@ -431,6 +431,7 @@ private:
   su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   *Kind_Solver_PerZone,  /*!< \brief Kind of solvers for each zone Euler, NS, Continuous adjoint, etc.  */
+  Kind_MZSolver,         /*!< \brief Kind of multizone solver.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
@@ -623,6 +624,8 @@ private:
   *Marker_PyCustom,            /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
+  string *Config_Filenames;               /*!< \brief List of names for configuration files. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -3288,6 +3291,12 @@ public:
    */
   void SetKind_Solver(unsigned short val_solver);
   
+  /*!
+   * \brief Kind of Multizone Solver.
+   * \return Governing equation that we are solving.
+   */
+  unsigned short GetKind_MZSolver(void);
+
   
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -5567,6 +5576,18 @@ public:
   int GetMarker_ZoneInterface(string val_marker);
   
   /*!
+   * \brief  Get the name of the marker <i>val_iMarker</i>.
+   * \return The name of the marker in the interface
+   */
+  string GetMarkerTag_ZoneInterface(unsigned short val_iMarker);
+
+  /*!
+   * \brief  Get the number of markers in the multizone interface.
+   * \return The number markers in the multizone interface
+   */
+  unsigned short GetnMarker_ZoneInterface(void);
+
+  /*!
    * \brief Determines if problem is adjoint
    * \return true if Adjoint
    */
@@ -7679,6 +7700,12 @@ public:
   su2double* GetFreeStreamTurboNormal(void);
 
   /*!
+   *
+   * \brief Set freestream turbonormal for initializing solution.
+   */
+  void SetMultizone(CConfig *driver_config);
+
+  /*!
    * \brief Get the verbosity level of the console output.
    * \return Verbosity level for the console output.
    */
@@ -7954,6 +7981,12 @@ public:
    */
   bool GetFSI_Simulation(void);
   
+  /*!
+   * \brief Set that the simulation we are running is a FSI simulation
+   * \param[in] FSI_sim - boolean that determines is FSI_Problem is true/false.
+   */
+  void SetFSI_Simulation(bool FSI_sim);
+
    /*!
     * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
     * \return ID
@@ -8049,6 +8082,18 @@ public:
    * \brief Set the ofstream of the history file for the current zone.
    */
   void SetHistFile(ofstream *HistFile);
+
+  /*!
+   * \brief Get the filenames of the individual config files
+   * \return File name of the config file for zone "index"
+   */
+  string GetConfigFilename(unsigned short index);
+
+  /*!
+   * \brief Get the number of config files
+   * \return Number of config filenames in CONFIG_LIST
+   */
+  unsigned short GetnConfigFiles(void);
 };
 
 #include "config_structure.inl"

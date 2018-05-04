@@ -210,7 +210,8 @@ enum ENUM_SOLVER {
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
-  DISC_ADJ_FEM = 40
+  DISC_ADJ_FEM = 40,
+  MULTIZONE = 99
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -232,7 +233,26 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-("ZONE_SPECIFIC", ZONE_SPECIFIC);
+("ZONE_SPECIFIC", ZONE_SPECIFIC)
+("MULTIZONE", MULTIZONE);
+
+/*!
+ * \brief different solver types for the multizone environment component
+ */
+enum ENUM_MULTIZONE {
+  MZ_NO_SOLVER = 0,                     /*!< \brief Definition of no multizone solver. */
+  MZ_FLUID_STRUCTURE_INTERACTION = 1,   /*!< \brief Definition of a FSI solver. */
+  MZ_TURBOMACHINERY = 2,                /*!< \brief Definition of a Turbomachinery solver. */
+  MZ_SLIDING_MESH = 3,                  /*!< \brief Definition of a Multizone Sliding mesh solver. */
+  MZ_GENERIC = 4                        /*!< \brief Definition of a Generic Multizone solver. */
+};
+/* BEGIN_CONFIG_ENUMS */
+static const map<string, ENUM_MULTIZONE> Multizone_Map = CCreateMap<string, ENUM_MULTIZONE>
+("NONE", MZ_NO_SOLVER)
+("FLUID_STRUCTURE_INTERACTION", MZ_FLUID_STRUCTURE_INTERACTION)
+("TURBOMACHINERY", MZ_TURBOMACHINERY)
+("SLIDING_MESH", MZ_SLIDING_MESH)
+("GENERIC", MZ_GENERIC);
 
 /*!
  * \brief types of fluid solvers
