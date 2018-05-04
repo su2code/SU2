@@ -57,6 +57,10 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
+  Physical_Constants = NULL;
+  Donor_Variable     = NULL;
+  Target_Variable    = NULL;
+
   unsigned short iVar;
   
   Physical_Constants = new su2double[val_nConst];
