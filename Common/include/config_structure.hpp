@@ -74,6 +74,7 @@ private:
   int rank, size;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
+  unsigned short Ref_Inc_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_AverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_MixingPlaneInterface; /*!< \brief Kind of mixing process.*/
@@ -358,8 +359,13 @@ private:
   su2double *Surface_Density;    /*!< \brief Density at the boundaries. */
   su2double *Surface_Enthalpy;    /*!< \brief Enthalpy at the boundaries. */
   su2double *Surface_NormalVelocity;    /*!< \brief Normal velocity at the boundaries. */
+  su2double *Surface_Uniformity;  /*!< \brief Integral measure of the streamwise uniformity (absolute) at the boundaries (non-dim). */
+  su2double *Surface_SecondaryStrength;     /*!< \brief Integral measure of the strength of secondary flows (absolute) at the boundaries (non-dim). */
+  su2double *Surface_SecondOverUniform;   /*!< \brief Integral measure of the strength of secondary flows (relative to streamwise) at the boundaries (non-dim). */
+  su2double *Surface_MomentumDistortion;    /*!< \brief Integral measure of the streamwise uniformity (relative to plug flow) at the boundaries (non-dim). */
   su2double *Surface_TotalTemperature;   /*!< \brief Total temperature at the boundaries. */
   su2double *Surface_TotalPressure;    /*!< \brief Total pressure at the boundaries. */
+  su2double *Surface_PressureDrop;    /*!< \brief Pressure drop between boundaries. */
   su2double *Surface_DC60;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_IDC;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Surface_IDC_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -440,6 +446,7 @@ private:
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
+  Kind_DensityModel,				/*!< \brief Kind of the density model for incompressible flows. */
   *Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
   Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
@@ -493,6 +500,7 @@ private:
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
@@ -510,7 +518,9 @@ private:
   Kind_DV_FEA;				/*!< \brief Kind of Design Variable for FEA problems.*/
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
+  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
+  unsigned short nInc_Inlet;  /*!< \brief Number of inlet boundary treatment types listed. */
+  bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
@@ -725,6 +735,7 @@ private:
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
+  Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
@@ -733,6 +744,20 @@ private:
   ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
   Gas_Constant,     /*!< \brief Specific gas constant. */
   Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
+  Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
+  Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
+  Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
+  Specific_Heat_Cv,     /*!< \brief Specific heat at constant volume. */
+  Specific_Heat_CvND,     /*!< \brief Non-dimensional specific heat at constant volume. */
+  Thermal_Expansion_Coeff,     /*!< \brief Thermal expansion coefficient. */
+  Thermal_Expansion_CoeffND,     /*!< \brief Non-dimensional thermal expansion coefficient. */
+  Inc_Density_Ref,    /*!< \brief Reference density for custom incompressible non-dim. */
+  Inc_Velocity_Ref,    /*!< \brief Reference velocity for custom incompressible non-dim. */
+  Inc_Temperature_Ref,    /*!< \brief Reference temperature for custom incompressible non-dim. */
+  Inc_Density_Init,    /*!< \brief Initial density for incompressible flows. */
+  *Inc_Velocity_Init,    /*!< \brief Initial velocity vector for incompressible flows. */
+  Inc_Temperature_Init,    /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
+  Heat_Flux_Ref,  /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
   Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
   Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
@@ -748,8 +773,6 @@ private:
   Mu_Temperature_RefND,   /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,     /*!< \brief Reference S for Sutherland model.  */
   Mu_SND,   /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  Specific_Heat_Fluid, /*!< \brief Specific heat in fluids. */
-  Specific_Heat_Solid, /*!< \brief Specific heat in solids. */
   Thermal_Conductivity_Solid, /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid, /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid, /*!< \brief Temperature in solids at freestream conditions. */
@@ -769,6 +792,7 @@ private:
   SecondaryFlow_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
+  Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
@@ -787,6 +811,7 @@ private:
   Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
   Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
   Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
+  Pressure_ThermodynamicND,   /*!< \brief Farfield thermodynamic pressure value. */
   Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
   Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
@@ -979,6 +1004,7 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
+  su2double Max_Beta; /*!< \brief Maximum Beta parameter (incompressible preconditioning) in the domain */
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1532,6 +1558,36 @@ public:
   su2double GetGas_ConstantND(void);
   
   /*!
+   * \brief Get the value of specific heat at constant pressure.
+   * \return Value of the constant: Cp
+   */
+  su2double GetSpecific_Heat_Cp(void);
+
+  /*!
+   * \brief Get the value of the specific heat for solids.
+   * \return Specific heat number (solid).
+   */
+  su2double GetSpecific_Heat_Cp_Solid(void);
+  
+  /*!
+   * \brief Get the non-dimensional value of specific heat at constant pressure.
+   * \return Value of the non-dim. constant: Cp
+   */
+  su2double GetSpecific_Heat_CpND(void);
+
+  /*!
+   * \brief Get the value of specific heat at constant volume.
+   * \return Value of the constant: Cv
+   */
+  su2double GetSpecific_Heat_Cv(void);
+  
+  /*!
+   * \brief Get the non-dimensional value of specific heat at constant volume.
+   * \return Value of the non-dim. constant: Cv
+   */
+  su2double GetSpecific_Heat_CvND(void);
+
+  /*!
    * \brief Get the coefficients of the Blottner viscosity model
    * \param[in] val_Species - Index of the species
    * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
@@ -1557,6 +1613,12 @@ public:
    */
   su2double GetGas_Constant_Ref(void);
   
+  /*!
+   * \brief Get the reference value for the heat flux.
+   * \return Reference value for the heat flux.
+   */
+  su2double GetHeat_Flux_Ref(void);
+
   /*!
    * \brief Get the value of the frestream temperature.
    * \return Freestream temperature.
@@ -1616,18 +1678,6 @@ public:
    * \return Turbulent Prandtl number.
    */
   su2double GetPrandtl_Turb(void);
-
-  /*!
-   * \brief Get the value of the specific heat for fluids.
-   * \return Specific heat number (fluid).
-   */
-  su2double GetSpecificHeat_Fluid(void);
-
-  /*!
-   * \brief Get the value of the specific heat for solids.
-   * \return Specific heat number (solid).
-   */
-  su2double GetSpecificHeat_Solid(void);
 
   /*!
    * \brief Get the value of the thermal conductivity for solids.
@@ -1738,6 +1788,18 @@ public:
    */
   su2double GetPressure_FreeStreamND(void);
   
+  /*!
+   * \brief Get the value of the thermodynamic pressure.
+   * \return Thermodynamic pressure.
+   */
+  su2double GetPressure_Thermodynamic(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized thermodynamic pressure.
+   * \return Non-dimensionalized thermodynamic pressure.
+   */
+  su2double GetPressure_ThermodynamicND(void);
+
   /*!
    * \brief Get the vector of the dimensionalized freestream velocity.
    * \return Dimensionalized freestream velocity vector.
@@ -1884,6 +1946,66 @@ public:
    */
   su2double GetThermalDiffusivity(void);
   
+  /*!
+   * \brief Get the thermal expansion coefficient.
+   * \return Value of the thermal expansion coefficient.
+   */
+  su2double GetThermal_Expansion_Coeff(void);
+
+  /*!
+   * \brief Get the non-dim. thermal expansion coefficient.
+   * \return Value of the non-dim. thermal expansion coefficient.
+   */
+  su2double GetThermal_Expansion_CoeffND(void);
+
+  /*!
+   * \brief Set the thermal expansion coefficient.
+   * \param[in] val_thermal_expansion - thermal expansion coefficient
+   */
+  void SetThermal_Expansion_Coeff(su2double val_thermal_expansion);
+
+  /*!
+   * \brief Set the non-dim. thermal expansion coefficient.
+   * \param[in] val_thermal_expansion - non-dim. thermal expansion coefficient
+   */
+  void SetThermal_Expansion_CoeffND(su2double val_thermal_expansionnd);
+
+  /*!
+   * \brief Get the value of the reference density for custom incompressible non-dimensionalization.
+   * \return Reference density for custom incompressible non-dimensionalization.
+   */
+  su2double GetInc_Density_Ref(void);
+
+  /*!
+   * \brief Get the value of the reference velocity for custom incompressible non-dimensionalization.
+   * \return Reference velocity for custom incompressible non-dimensionalization.
+   */
+  su2double GetInc_Velocity_Ref(void);
+
+  /*!
+   * \brief Get the value of the reference temperature for custom incompressible non-dimensionalization.
+   * \return Reference temperature for custom incompressible non-dimensionalization.
+   */
+  su2double GetInc_Temperature_Ref(void);
+
+  /*!
+   * \brief Get the value of the initial density for incompressible flows.
+   * \return Initial density for incompressible flows.
+   */
+  su2double GetInc_Density_Init(void);
+
+  /*!
+   * \brief Get the value of the initial velocity for incompressible flows.
+   * \return Initial velocity for incompressible flows.
+   */
+  su2double* GetInc_Velocity_Init(void);
+
+  /*!
+   * \brief Get the value of the initial temperature for incompressible flows.
+   * \return Initial temperature for incompressible flows.
+   */
+  su2double GetInc_Temperature_Init(void);
+
   /*!
    * \brief Get the Young's modulus of elasticity.
    * \return Value of the Young's modulus of elasticity.
@@ -2230,6 +2352,36 @@ public:
   void SetGas_Constant(su2double val_gas_constant);
   
   /*!
+   * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
+   * \param[in] val_specific_heat_cp - specific heat at constant pressure.
+   */
+  void SetSpecific_Heat_Cp(su2double val_specific_heat_cp);
+
+  /*!
+   * \brief Set the non-dimensional value of the specific heat at constant pressure (incompressible fluids with energy equation).
+   * \param[in] val_specific_heat_cpnd - non-dim. specific heat at constant pressure.
+   */
+  void SetSpecific_Heat_CpND(su2double val_specific_heat_cpnd);
+
+  /*!
+   * \brief Set the value of the specific heat at constant volume (incompressible fluids with energy equation).
+   * \param[in] val_specific_heat_cv - specific heat at constant volume.
+   */
+  void SetSpecific_Heat_Cv(su2double val_specific_heat_cv);
+
+  /*!
+   * \brief Set the non-dimensional value of the specific heat at constant volume (incompressible fluids with energy equation).
+   * \param[in] val_specific_heat_cvnd - non-dim. specific heat at constant pressure.
+   */
+  void SetSpecific_Heat_CvND(su2double val_specific_heat_cvnd);
+
+  /*!
+   * \brief Set the heat flux reference value.
+   * \return Value of the reference heat flux.
+   */
+  void SetHeat_Flux_Ref(su2double val_heat_flux_ref);
+
+  /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
    */
@@ -2253,6 +2405,18 @@ public:
    */
   void SetPressure_FreeStream(su2double val_pressure_freestream);
   
+  /*!
+   * \brief Set the non-dimensionalized thermodynamic pressure for low Mach problems.
+   * \return Value of the non-dimensionalized thermodynamic pressure.
+   */
+  void SetPressure_ThermodynamicND(su2double val_pressure_thermodynamicnd);
+  
+  /*!
+   * \brief Set the thermodynamic pressure for low Mach problems.
+   * \return Value of the thermodynamic pressure.
+   */
+  void SetPressure_Thermodynamic(su2double val_pressure_thermodynamic);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
@@ -2301,6 +2465,13 @@ public:
    */
   void SetGas_ConstantND(su2double val_gas_constantnd);
   
+  /*!
+   * \brief Set the free-stream velocity.
+   * \param[in] val_velocity_freestream - Value of the free-stream velocity component.
+   * \param[in] val_dim - Value of the current dimension.
+   */
+  void SetVelocity_FreeStream(su2double val_velocity_freestream, unsigned short val_dim);
+
   /*!
    * \brief Set the Froude number for free surface problems.
    * \return Value of the Froude number.
@@ -2898,6 +3069,12 @@ public:
   void SetWrt_InletFile(bool val_wrt_inletfile);
 
   /*!
+   * \brief Get information about writing a 1D slice of a 2D cartesian solution.
+   * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
+   */
+  bool GetWrt_Slice(void);
+
+  /*!
    * \brief Get information about writing sectional force files.
    * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
    */
@@ -3331,6 +3508,18 @@ public:
   unsigned short GetKind_FluidModel(void);
   
   /*!
+   * \brief Option to define the density model for incompressible flows.
+   * \return Density model option
+   */
+  unsigned short GetKind_DensityModel(void);
+  
+  /*!
+   * \brief Flag for whether to solve the energy equation for incompressible flows.
+   * \return Flag for energy equation
+   */
+  bool GetEnergy_Equation(void);
+
+  /*!
    * \brief free stream option to initialize the solution
    * \return free stream option
    */
@@ -3702,6 +3891,12 @@ public:
    */
   unsigned short GetRef_NonDim(void);
   
+  /*!
+   * \brief Get the kind of incompressible non-dimensionalization.
+   * \return Kind of incompressible non-dimensionalization.
+   */
+  unsigned short GetRef_Inc_NonDim(void);
+
   /*!
    * \brief Get the kind of SU2 software component.
    * \return Kind of the SU2 software component.
@@ -4196,6 +4391,24 @@ public:
    */
   su2double GetInlet_Profile_Matching_Tolerance(void);
   
+  /*!
+   * \brief Get the type of incompressible inlet from the list.
+   * \return Kind of the incompressible inlet.
+   */
+  unsigned short GetKind_Inc_Inlet(string val_marker);
+
+  /*!
+   * \brief Get the total number of types in Kind_Inc_Inlet list
+   * \return Total number of types in Kind_Inc_Inlet list
+   */
+  unsigned short GetnInc_Inlet(void);
+
+  /*!
+   * \brief Flag for whether the local boundary normal is used as the flow direction for an incompressible pressure inlet.
+   * \return <code>FALSE</code> means the prescribed flow direction is used.
+   */
+  bool GetInc_Inlet_UseNormal(void);
+
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
    * \return Kind of mixing process.
@@ -6046,7 +6259,14 @@ public:
    * \return The total pressure.
    */
   su2double GetInlet_Ptotal(string val_index);
-  
+
+  /*!
+   * \brief Set the total pressure at an inlet boundary.
+   * \param[in] val_pressure - Pressure value at the inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   */
+  void SetInlet_Ptotal(su2double val_pressure, string val_marker);
+
   /*!
    * \brief Get the total pressure at an nacelle boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -6073,7 +6293,14 @@ public:
    * \return The outlet pressure.
    */
   su2double GetOutlet_Pressure(string val_index);
-  
+
+  /*!
+   * \brief Set the back pressure (static) at an outlet boundary.
+   * \param[in] val_pressure - Pressure value at the outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   */
+  void SetOutlet_Pressure(su2double val_pressure, string val_marker);
+
   /*!
    * \brief Get the var 1 at Riemann boundary.
    * \param[in] val_marker - Index corresponding to the Riemann boundary.
@@ -6161,6 +6388,42 @@ public:
    * \param[in] val_temp - New value of the outlet pressure.
    */
   void SetPressureOut_BC(su2double val_press);
+
+  /*!
+   * \brief Get the inlet velocity or pressure imposed for incompressible flow.
+   * \return inlet velocity or pressure
+   */
+  su2double GetIncInlet_BC();
+
+  /*!
+   * \brief Set the inlet velocity or pressure imposed as BC for incompressible flow.
+   * \param[in] val_in - New value of the inlet velocity or pressure.
+   */
+  void SetIncInlet_BC(su2double val_in);
+
+  /*!
+   * \brief Get the inlet temperature imposed as BC for incompressible flow.
+   * \return inlet temperature
+   */
+  su2double GetIncTemperature_BC();
+
+  /*!
+   * \brief Set the inlet temperature imposed as BC for incompressible flow.
+   * \param[in] val_temperature - New value of the inlet temperature.
+   */
+  void SetIncTemperature_BC(su2double val_temperature);
+
+  /*!
+   * \brief Get the outlet pressure imposed as BC for incompressible flow.
+   * \return outlet pressure
+   */
+  su2double GetIncPressureOut_BC();
+
+  /*!
+   * \brief Set the outlet pressure imposed as BC for incompressible flow.
+   * \param[in] val_pressure - New value of the outlet pressure.
+   */
+  void SetIncPressureOut_BC(su2double val_pressure);
 
   /*!
    * \brief Get the inlet total pressure imposed as BC for internal flow.
@@ -6883,6 +7146,34 @@ public:
   void SetSurface_NormalVelocity(unsigned short val_imarker, su2double val_surface_normalvelocity);
 
   /*!
+   * \brief Set the streamwise flow uniformity at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_streamwiseuniformity - Value of the streamwise flow uniformity.
+   */
+  void SetSurface_Uniformity(unsigned short val_imarker, su2double val_surface_streamwiseuniformity);
+
+  /*!
+   * \brief Set the secondary flow strength at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_secondarystrength - Value of the secondary flow strength.
+   */
+  void SetSurface_SecondaryStrength(unsigned short val_imarker, su2double val_surface_secondarystrength);
+
+  /*!
+   * \brief Set the relative secondary flow strength at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_secondaryoverstream - Value of the relative seondary flow strength.
+   */
+  void SetSurface_SecondOverUniform(unsigned short val_imarker, su2double val_surface_secondaryoverstream);
+
+  /*!
+   * \brief Set the momentum distortion at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_momentumdistortion - Value of the momentum distortion.
+   */
+  void SetSurface_MomentumDistortion(unsigned short val_imarker, su2double val_surface_momentumdistortion);
+
+  /*!
    * \brief Set the total temperature at the surface.
    * \param[in] val_imarker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_totaltemperature - Value of the total temperature.
@@ -6895,7 +7186,14 @@ public:
    * \param[in] val_surface_totalpressure - Value of the total pressure.
    */
   void SetSurface_TotalPressure(unsigned short val_imarker, su2double val_surface_totalpressure);
-  
+
+  /*!
+   * \brief Set the pressure drop between two surfaces.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_pressuredrop - Value of the pressure drop.
+   */
+  void SetSurface_PressureDrop(unsigned short val_imarker, su2double val_surface_pressuredrop);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -7112,6 +7410,35 @@ public:
    * \return The normal velocity.
    */
   su2double GetSurface_NormalVelocity(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the streamwise flow uniformity at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \return The streamwise flow uniformity.
+   */
+  su2double GetSurface_Uniformity(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the secondary flow strength at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \return The secondary flow strength.
+   */
+  su2double GetSurface_SecondaryStrength(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the relative secondary flow strength at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \return The relative seondary flow strength.
+   */
+  su2double GetSurface_SecondOverUniform(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the momentum distortion at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \return The momentum distortion.
+   */
+  su2double GetSurface_MomentumDistortion(unsigned short val_imarker);
+
   /*!
    * \brief Get the total temperature at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -7125,7 +7452,14 @@ public:
    * \return The total pressure.
    */
   su2double GetSurface_TotalPressure(unsigned short val_imarker);
-   
+
+  /*!
+   * \brief Get the pressure drop between two surfaces.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The pressure drop.
+   */
+  su2double GetSurface_PressureDrop(unsigned short val_imarker);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -8001,6 +8335,18 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Set the maximum Beta parameter (artificial compressibility) in the domain.
+   * \param[in] Value of the max Beta parameter (artificial compressibility).
+   */
+  void SetMax_Beta(su2double val_maxBeta);
+
+  /*!
+   * \brief Get the maximum Beta parameter (artificial compressibility) in the domain.
+   * \return Value of the max Beta parameter (artificial compressibility) in the domain.
+   */
+  su2double GetMax_Beta(void);
 
   /*!
    * \brief Get the frequency for writing the surface solution file in Dual Time.
