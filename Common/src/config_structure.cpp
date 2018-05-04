@@ -303,6 +303,8 @@ void CConfig::SetPointersNull(void) {
   IntInfo_WallFunctions    = NULL;
   DoubleInfo_WallFunctions = NULL;
   
+  Config_Filenames = NULL;
+
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
@@ -588,6 +590,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
+  /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
+  addEnumOption("MULTIZONE_PROBLEM", Kind_MZSolver, Multizone_Map, MZ_NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -1845,6 +1849,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   *  Options: NO, YES \ingroup Config */
   addBoolOption("MATCHING_MESH", MatchingMesh, true);
 
+  /*!\par CONFIG_CATEGORY: Multiphysics definition \ingroup Config*/
+  /*--- Options related to multiphysics problems ---*/
+
+  /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
+  addStringListOption("CONFIG_LIST", nConfig_Files, Config_Filenames);
+
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
    * Sets Kind_Interpolation \ingroup Config
@@ -2387,6 +2397,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
   }
   else { FSI_Problem = false; }
+
+  if (Kind_Solver == MULTIZONE) {
+    /*--- Initialize the derivative values ---*/
+    switch (Kind_MZSolver) {
+      case MZ_FLUID_STRUCTURE_INTERACTION:
+        FSI_Problem = true;
+        break;
+      default:
+        /*--- All other cases are handled in the specific solver ---*/
+        break;
+      }
+  }
+
 
   if(Kind_Solver == HEAT_EQUATION_FVM) {
     Linear_Solver_Iter = Linear_Solver_Iter_Heat;
@@ -4204,6 +4227,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
+
+  if (nConfig_Files != 0) {
+    cout << "List of config files: ";
+    for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
+      cout << Config_Filenames[iConfig];
+      if (iConfig < nConfig_Files-1) cout << ", ";
+      else cout <<".";
+    }
+    cout<< endl;
+  }
 
   if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
@@ -6070,6 +6103,8 @@ CConfig::~CConfig(void) {
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
+  if (Config_Filenames != NULL) delete[] Config_Filenames;
+
   if (IntInfo_WallFunctions != NULL) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
       if (IntInfo_WallFunctions[iMarker] != NULL)
@@ -7621,3 +7656,50 @@ void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
   FreeStreamTurboNormal[2] = 0.0;
 
 }
+
+void CConfig::SetMultizone(CConfig *driver_config){
+
+  unsigned short iMarker_CfgFile, iMarker_ZoneInterface;
+
+  /*--- If the command MARKER_ZONE_INTERFACE is not in the config file, nMarker_ZoneInterface will be 0 ---*/
+  if (nMarker_ZoneInterface == 0){
+
+    /*--- Copy the marker interface from the driver configuration file ---*/
+
+    nMarker_ZoneInterface = driver_config->GetnMarker_ZoneInterface();
+    Marker_ZoneInterface = new string[nMarker_ZoneInterface];
+
+    /*--- Set the Markers at the interface from the main config file ---*/
+    for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
+      Marker_ZoneInterface[iMarker_ZoneInterface] = driver_config->GetMarkerTag_ZoneInterface(iMarker_ZoneInterface);
+    }
+
+    /*--- Identification of Multizone markers ---*/
+    if (rank == MASTER_NODE) cout << endl << "-------------------- Interface Boundary Information ---------------------" << endl;
+    if (rank == MASTER_NODE) cout << "The interface markers are: ";
+
+    unsigned short indexOutput = 0;
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      unsigned short indexMarker = 0;
+      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
+      for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
+        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface]){
+          indexMarker = (int)(iMarker_ZoneInterface/2+1);
+          indexOutput++;
+          if (rank == MASTER_NODE) cout << Marker_CfgFile_TagBound[iMarker_CfgFile];
+        }
+      }
+      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
+      if (rank == MASTER_NODE){
+        if (indexMarker > 0 && (indexOutput < (nMarker_ZoneInterface/2))) cout << ", ";
+        else if (indexMarker > 0 && (indexOutput == (nMarker_ZoneInterface/2))) cout << ".";
+      }
+    }
+    if (rank == MASTER_NODE) cout << endl;
+  }
+
+  if (driver_config->GetKind_MZSolver() == MZ_FLUID_STRUCTURE_INTERACTION)
+    FSI_Problem = true;
+
+}
+
