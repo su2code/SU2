@@ -199,7 +199,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CHT_WALL_INTERFACE: 
-        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && config->GetKind_Regime() == COMPRESSIBLE)) {
+        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         }
         else {
