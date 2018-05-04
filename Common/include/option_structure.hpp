@@ -130,7 +130,7 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-const su2double STANDART_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
@@ -339,10 +339,10 @@ enum ENUM_TRANSFER {
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
   MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
-  CONJUGATE_HEAT_COMPRESSIBLE_FS    = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
-  CONJUGATE_HEAT_INCOMPRESSIBLE_FS  = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
-  CONJUGATE_HEAT_COMPRESSIBLE_SF    = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
-  CONJUGATE_HEAT_INCOMPRESSIBLE_SF  = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CONJUGATE_HEAT_FS                 = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
+  CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
+  CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
+  CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
 };
 static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_TRANSFER>
 ("ZONES_ARE_EQUAL", ZONES_ARE_EQUAL)
@@ -354,10 +354,10 @@ static const map<string, ENUM_TRANSFER> Transfer_Map = CCreateMap<string, ENUM_T
 ("SLIDING_INTERFACE", SLIDING_INTERFACE)
 ("CONSERVATIVE_VARIABLES", CONSERVATIVE_VARIABLES)
 ("MIXING_PLANE", MIXING_PLANE)
-("CONJUGATE_HEAT_COMPRESSIBLE_FS", CONJUGATE_HEAT_COMPRESSIBLE_FS)
-("CONJUGATE_HEAT_INCOMPRESSIBLE_FS", CONJUGATE_HEAT_INCOMPRESSIBLE_FS)
-("CONJUGATE_HEAT_COMPRESSIBLE_SF", CONJUGATE_HEAT_COMPRESSIBLE_SF)
-("CONJUGATE_HEAT_INCOMPRESSIBLE_SF", CONJUGATE_HEAT_INCOMPRESSIBLE_SF);
+("CONJUGATE_HEAT_FS", CONJUGATE_HEAT_FS)
+("CONJUGATE_HEAT_WEAKLY_FS", CONJUGATE_HEAT_WEAKLY_FS)
+("CONJUGATE_HEAT_SF", CONJUGATE_HEAT_SF)
+("CONJUGATE_HEAT_WEAKLY_SF", CONJUGATE_HEAT_WEAKLY_SF);
 /*!
  * \brief different regime modes
  */
@@ -373,16 +373,20 @@ static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIM
  * \brief different non-dimensional modes
  */
 enum ENUM_KIND_NONDIM {
-  DIMENSIONAL = 0,			    /*!< \brief Dimensional simulation. */
-  FREESTREAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional simulation. */
-  FREESTREAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional simulation. */
-  FREESTREAM_VEL_EQ_ONE = 3 /*!< \brief Non-dimensional simulation. */
+  DIMENSIONAL = 0,			    /*!< \brief Dimensional simulation (compressible or incompressible). */
+  FREESTREAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional compressible simulation with freestream pressure equal to 1.0. */
+  FREESTREAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional compressible simulation with freestream velocity equal to Mach number. */
+  FREESTREAM_VEL_EQ_ONE = 3, /*!< \brief Non-dimensional compressible simulation with freestream pressure equal to 1.0. */
+  INITIAL_VALUES   = 4, /*!< \brief Non-dimensional incompressible simulation based on intial values for external flow. */
+  REFERENCE_VALUES = 5 /*!< \brief Non-dimensional incompressible simulation based on custom reference values. */
 };
 static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_KIND_NONDIM>
 ("DIMENSIONAL", DIMENSIONAL)
 ("FREESTREAM_PRESS_EQ_ONE", FREESTREAM_PRESS_EQ_ONE)
-("FREESTREAM_VEL_EQ_MACH", FREESTREAM_VEL_EQ_MACH)
-("FREESTREAM_VEL_EQ_ONE", FREESTREAM_VEL_EQ_ONE);
+("FREESTREAM_VEL_EQ_MACH",  FREESTREAM_VEL_EQ_MACH)
+("FREESTREAM_VEL_EQ_ONE",   FREESTREAM_VEL_EQ_ONE)
+("INITIAL_VALUES",   INITIAL_VALUES)
+("REFERENCE_VALUES", REFERENCE_VALUES);
 
 /*!
  * \brief different system of measurements
@@ -497,14 +501,35 @@ enum ENUM_FLUIDMODEL {
 	STANDARD_AIR = 0,
 	IDEAL_GAS = 1, /*!< \brief _____. */
 	VW_GAS = 2,
-	PR_GAS = 3
+	PR_GAS = 3,
+  CONSTANT_DENSITY = 4,
+  INC_STANDARD_AIR = 5,
+  INC_IDEAL_GAS = 6 
+
 };
 
 static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
 ("STANDARD_AIR", STANDARD_AIR)
 ("IDEAL_GAS", IDEAL_GAS)
 ("VW_GAS", VW_GAS)
-("PR_GAS", PR_GAS);
+("PR_GAS", PR_GAS)
+("CONSTANT_DENSITY", CONSTANT_DENSITY)
+("INC_STANDARD_AIR", INC_STANDARD_AIR)
+("INC_IDEAL_GAS", INC_IDEAL_GAS);
+
+/*!
+ * \brief types of density models
+ */
+enum ENUM_DENSITYMODEL {
+	CONSTANT = 0,
+  BOUSSINESQ = 1,
+	VARIABLE = 2
+};
+
+static const map<string, ENUM_DENSITYMODEL> DensityModel_Map = CCreateMap<string, ENUM_DENSITYMODEL>
+("CONSTANT", CONSTANT)
+("BOUSSINESQ", BOUSSINESQ)
+("VARIABLE", VARIABLE);
 
 /*!
  * \brief types of initialization option
@@ -1134,12 +1159,16 @@ enum TURBO_MARKER_TYPE{
 enum INLET_TYPE {
   TOTAL_CONDITIONS = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW = 2,           /*!< \brief User specifies density and velocity (mass flow). */
-  INPUT_FILE = 3           /*!< \brief User specifies an input file. */
+  INPUT_FILE = 3,           /*!< \brief User specifies an input file. */
+  VELOCITY_INLET = 4,       /*!< \brief Velocity inlet for an incompressible flow. */
+  PRESSURE_INLET = 5        /*!< \brief Total pressure inlet for an incompressible flow. */
 };
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW)
-("INPUT_FILE", INPUT_FILE);
+("INPUT_FILE", INPUT_FILE)
+("VELOCITY_INLET", VELOCITY_INLET)
+("PRESSURE_INLET", PRESSURE_INLET);
 
 /*!
  * \brief types engine inflow boundary treatments
@@ -1214,6 +1243,11 @@ enum ENUM_OBJECTIVE {
   SURFACE_STATIC_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,           /*!< \brief Mach number objective function definition. */
+  SURFACE_UNIFORMITY = 52,           /*!< \brief Flow uniformity objective function definition. */
+  SURFACE_SECONDARY = 53,           /*!< \brief Secondary flow strength objective function definition. */
+  SURFACE_MOM_DISTORTION = 54,           /*!< \brief Momentum distortion objective function definition. */
+  SURFACE_SECOND_OVER_UNIFORM = 55,   /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
+  SURFACE_PRESSURE_DROP = 56, 	    /*!< \brief Pressure drop objective function definition. */
   CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
@@ -1255,6 +1289,10 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
 ("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
 ("SURFACE_MACH", SURFACE_MACH)
+("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
+("SURFACE_SECONDARY", SURFACE_SECONDARY)
+("SURFACE_MOM_DISTORTION", SURFACE_MOM_DISTORTION)
+("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
 ("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
