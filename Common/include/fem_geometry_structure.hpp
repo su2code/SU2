@@ -1037,24 +1037,6 @@ public:
   void WallFunctionPreprocessing(CConfig *config);
 
 private:
-
-#ifdef HAVE_MPI
- /*!
-  * \brief Function, which adds halo elements to the volume elements.
-  * \param[in]  rankNewHalos           MPI ranks which own the to be added halo
-                                       elements.
-  * \param[in]  newVolElements         Volume ID's of the to be added halo elements
-                                       on the ranks which own these elements.
-  * \param[out] volIDNewElements       Volume ID's of the to be added halo elements
-                                       on the current rank.
-  * \param[out] oldToNewOrHaloElements New volume ID of the original halo elements.
-  */
-  void AddVolumeElementsToHalos(const vector<int>                    &rankNewHalos,
-                                const vector<vector<unsigned long> > &newVolElements,
-                                vector<vector<unsigned long> >       &volIDNewElements,
-                                vector<unsigned long>                &oldToNewOrHaloElements);
-#endif
-
  /*!
   * \brief Function, which computes the correct sequence of the connectivities
            of a face, such that it matches the sequence of the given corner points.

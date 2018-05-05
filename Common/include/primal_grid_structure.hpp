@@ -433,6 +433,36 @@ public:
   * \param[in] val_offsetRank - The offset that must be added for this rank.
   */
  virtual void AddOffsetGlobalDOFs(const unsigned long val_offsetRank);
+
+ /*!
+  * \brief Virtual function to add the given donor ID to the donor elements for the wall function treatment.
+  * \param[in] donorElement - Element to be added to donor elements.
+  */
+ virtual void AddDonorWallFunctions(const unsigned long donorElement);
+
+ /*!
+  * \brief Virtual function to make available the number of donor elements for the wall function treatment.
+  * \return The number of donor elements.
+  */
+ virtual unsigned short GetNDonorsWallFunctions(void);
+
+ /*!
+  * \brief Virtual function to make available the pointer to the vector for the donor elements
+           for the wall function treatment.
+  * \return The pointer to the data of donorElementsWallFunctions.
+  */
+ virtual unsigned long *GetDonorsWallFunctions(void);
+
+ /*!
+  * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.
+  * \param[in] donorElements - Vector, which contain the donor elements.
+  */
+ virtual void SetDonorsWallFunctions(const vector<unsigned long> &donorElements);
+
+ /*!
+  * \brief Virtual function to remove the multiple donors for the wall function treatment.
+  */
+ virtual void RemoveMultipleDonorsWallFunctions(void);
 };
 
 /*!
@@ -1645,6 +1675,8 @@ private:
 
  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
 
+ vector<unsigned long> donorElementsWallFunctions; /*!< \brief The global ID's of the donor elements
+                                                               for the wall function treatment. */
 public:
 
  /*!
@@ -1787,6 +1819,36 @@ public:
   * \return The global ID of this element.
   */
  unsigned long GetGlobalElemID(void);
+
+ /*!
+  * \brief Add the given donor ID to the donor elements for the wall function treatment.
+  * \param[in] donorElement - Element to be added to donor elements.
+  */
+ void AddDonorWallFunctions(const unsigned long donorElement);
+
+ /*!
+  * \brief Make available the number of donor elements for the wall function treatment.
+  * \return The number of donor elements.
+  */
+ unsigned short GetNDonorsWallFunctions(void);
+
+ /*!
+  * \brief Make available the pointer to the vector for the donor elements
+           for the wall function treatment.
+  * \return The pointer to the data of donorElementsWallFunctions.
+  */
+ unsigned long *GetDonorsWallFunctions(void); 
+
+ /*!
+  * \brief Set the global ID's of the donor elements for the wall function treatment.
+  * \param[in] donorElements - Vector, which contain the donor elements.
+  */
+ void SetDonorsWallFunctions(const vector<unsigned long> &donorElements);
+
+ /*!
+  * \brief Function to remove the multiple donors for the wall function treatment.
+  */
+ void RemoveMultipleDonorsWallFunctions(void);
 };
 
 #include "primal_grid_structure.inl"
