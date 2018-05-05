@@ -890,3 +890,14 @@ void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
   for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
     faceConn[0][j] = Nodes[thisFaceConn[j]];
 }
+
+void CPrimalGridBoundFEM::RemoveMultipleDonorsWallFunctions(void) {
+
+  /* Sort donorElementsWallFunctions in increasing order and remove the
+     the double entities. */
+  sort(donorElementsWallFunctions.begin(), donorElementsWallFunctions.end());
+  vector<unsigned long>::iterator lastEntry;
+  lastEntry = unique(donorElementsWallFunctions.begin(),
+                     donorElementsWallFunctions.end());
+  donorElementsWallFunctions.erase(lastEntry, donorElementsWallFunctions.end());
+}

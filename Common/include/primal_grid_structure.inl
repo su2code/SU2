@@ -115,6 +115,16 @@ inline void CPrimalGrid::SetJacobianConsideredConstant(bool val_JacobianConsider
 
 inline void CPrimalGrid::AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
 
+inline void CPrimalGrid::AddDonorWallFunctions(const unsigned long donorElement) {}
+
+inline unsigned short CPrimalGrid::GetNDonorsWallFunctions(void) {return 0;}
+
+inline unsigned long *CPrimalGrid::GetDonorsWallFunctions(void) {return NULL;}
+
+inline void CPrimalGrid::SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {}
+
+inline void CPrimalGrid::RemoveMultipleDonorsWallFunctions(void) {}
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -379,3 +389,11 @@ inline unsigned short CPrimalGridBoundFEM::GetVTK_Type(void) { return VTK_Type; 
 inline unsigned short CPrimalGridBoundFEM::GetNPolyGrid(void) { return nPolyGrid; }
 
 inline unsigned short CPrimalGridBoundFEM::GetNDOFsGrid(void) { return nDOFsGrid; }
+
+inline void CPrimalGridBoundFEM::AddDonorWallFunctions(const unsigned long donorElement) {donorElementsWallFunctions.push_back(donorElement);}
+
+inline unsigned short CPrimalGridBoundFEM::GetNDonorsWallFunctions(void) {return donorElementsWallFunctions.size();}
+
+inline unsigned long *CPrimalGridBoundFEM::GetDonorsWallFunctions(void) {return donorElementsWallFunctions.data();}
+
+inline void CPrimalGridBoundFEM::SetDonorsWallFunctions(const vector<unsigned long> &donorElements) {donorElementsWallFunctions = donorElements;}
