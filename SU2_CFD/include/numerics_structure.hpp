@@ -1510,9 +1510,9 @@ public:
   void CreateBasis(su2double *val_Normal);
   
   /*!
-   * \brief
-   * \param[in] val_tauwall_i -
-   * \param[in] val_tauwall_j -
+   * \brief Set the value of the Tauwall
+   * \param[in] val_tauwall_i - Tauwall at point i
+   * \param[in] val_tauwall_j - Tauwall at point j
    */
   virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
   
@@ -3168,7 +3168,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author M.Pini, S. Vitale
- * \version 3.2.1 "eagle"
  */
 
 class CGeneralAvgGrad_Flow : public CNumerics {
@@ -3593,7 +3592,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author M. Pini, S. Vitale
- * \version 3.2.1 "eagle"
  */
 class CGeneralAvgGradCorrected_Flow : public CNumerics {
 private:

@@ -1748,19 +1748,19 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += val_gradprimvar[iDim+1][iDim];
+  
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
       - TWO3*total_viscosity*div_vel*delta[iDim][jDim]
                                                  - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   
-  /*--- If we are using wall functions, modify the shear stress ---*/
+  /*--- If we are using wall functions, modify the shear stress, tau wall is provided ---*/
   
   if (val_tau_wall > 0.0) {
     
     su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
     
-    /*--- Normalized normal vector ---*/
     Area = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       Area += val_normal[iDim]*val_normal[iDim];
@@ -1802,7 +1802,8 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   /*--- Apply the QCR correction ---*/
   
   if (val_qcr) {
-    su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+    
+    su2double den_aux, c_cr1= 0.3, O_ik, O_jk;
     unsigned short kDim;
     
     /*--- Denominator Antisymmetric normalized rotation tensor ---*/
@@ -1859,11 +1860,13 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][2];
   }
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
+  
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,

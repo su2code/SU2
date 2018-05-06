@@ -3081,7 +3081,6 @@ public:
  * \class CFEABoundVariable
  * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
  * \author R. Sanchez.
- * \version 3.2.3 "eagle"
  */
 class CFEABoundVariable : public CVariable {
 protected:
