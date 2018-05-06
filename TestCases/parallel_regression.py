@@ -284,7 +284,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-3.544713, -3.135163, 0.968232, 0.010161] #last 4 columns
+    inc_euler_naca0012.test_vals = [-4.839173, -3.765131, 0.504724, 0.007563] #last 4 columns
     inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_euler_naca0012.timeout   = 1600
     inc_euler_naca0012.tol       = 0.00001
@@ -299,7 +299,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-3.755682, -3.318630, -0.005906, 6.254292] #last 4 columns
+    inc_lam_cylinder.test_vals = [-3.989004, -3.177762, -0.000215, 7.733233] #last 4 columns
     inc_lam_cylinder.su2_exec  = "parallel_computation.py -f"
     inc_lam_cylinder.timeout   = 1600
     inc_lam_cylinder.tol       = 0.00001
@@ -314,7 +314,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.708166, -11.010137, 0.000002, 0.207683] #last 4 columns
+    inc_turb_naca0012.test_vals = [-4.788498, -11.040505, 0.000003, 0.309508] #last 4 columns
     inc_turb_naca0012.su2_exec  = "parallel_computation.py -f"
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
@@ -329,7 +329,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-8.280255, -14.505575, 0.000068, 0.005669] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.225238, -14.278195, 0.000045, 0.007987] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -456,36 +456,6 @@ def main():
     contadj_rans_rae2822.timeout   = 1600
     contadj_rans_rae2822.tol       = 0.00001
     test_list.append(contadj_rans_rae2822)
-
-    #######################################
-    ### Cont. adj. incompressible Euler ###
-    #######################################
-
-    # Adjoint Incompressible Inviscid NACA0012
-    contadj_incomp_NACA0012           = TestCase('contadj_incomp_NACA0012')
-    contadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
-    contadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012.cfg"
-    contadj_incomp_NACA0012.test_iter = 5
-    contadj_incomp_NACA0012.test_vals = [-11.968536, -12.133235, 1.939900, 0.000000] #last 4 columns
-    contadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
-    contadj_incomp_NACA0012.timeout   = 1600
-    contadj_incomp_NACA0012.tol       = 0.00001
-    test_list.append(contadj_incomp_NACA0012)
-
-    #####################################
-    ### Cont. adj. incompressible N-S ###
-    #####################################
-
-    # Adjoint Incompressible Viscous Cylinder
-    contadj_incomp_cylinder           = TestCase('contadj_incomp_cylinder')
-    contadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
-    contadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder.cfg"
-    contadj_incomp_cylinder.test_iter = 25
-    contadj_incomp_cylinder.test_vals = [-5.721205, -6.989432, 2.932100, 0.000000] #last 4 columns
-    contadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
-    contadj_incomp_cylinder.timeout   = 1600
-    contadj_incomp_cylinder.tol       = 0.00001
-    test_list.append(contadj_incomp_cylinder)
 
     ######################################                                                                                  
     ### Harmonic Balance               ###                                                                                  
@@ -809,7 +779,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-6.153795, -44082.624869, -7.448554, 24831.915190] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.962470, -4634.558027] #last 4 columns
     cht_incompressible.su2_exec  = "parallel_computation.py -f"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
