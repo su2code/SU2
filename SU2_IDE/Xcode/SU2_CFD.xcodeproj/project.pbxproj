@@ -70,6 +70,7 @@
 		05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108991978D2AE00F2F288 /* fluid_model.cpp */; };
 		05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108A31978D2F200F2F288 /* transport_model.cpp */; };
 		05F8F2682008A1C8000FEA01 /* python_wrapper_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F8F2672008A1C7000FEA01 /* python_wrapper_structure.cpp */; };
+		E90D35F7203F9C5800A3290D /* fluid_model_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */; };
 		E9225F761FCBC36D002F3682 /* solver_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */; };
 		E9225F771FCBC36D002F3682 /* variable_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F751FCBC36D002F3682 /* variable_adjoint_elasticity.cpp */; };
 		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
@@ -81,11 +82,8 @@
 		E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */; };
 		E9D9CE891C62A1C8004119E9 /* transfer_physics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE871C62A1C8004119E9 /* transfer_physics.cpp */; };
 		E9D9CE8A1C62A1C8004119E9 /* transfer_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE881C62A1C8004119E9 /* transfer_structure.cpp */; };
-		E9F130CB1D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130C51D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp */; };
 		E9F130CC1D513DA300EC8963 /* numerics_direct_mean_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130C61D513DA300EC8963 /* numerics_direct_mean_inc.cpp */; };
-		E9F130CD1D513DA300EC8963 /* solver_adjoint_mean_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130C71D513DA300EC8963 /* solver_adjoint_mean_inc.cpp */; };
 		E9F130CE1D513DA300EC8963 /* solver_direct_mean_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130C81D513DA300EC8963 /* solver_direct_mean_inc.cpp */; };
-		E9F130CF1D513DA300EC8963 /* variable_adjoint_mean_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130C91D513DA300EC8963 /* variable_adjoint_mean_inc.cpp */; };
 		E9F130D01D513DA300EC8963 /* variable_direct_mean_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130CA1D513DA300EC8963 /* variable_direct_mean_inc.cpp */; };
 		E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */; };
 		E9F512C91CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */; };
@@ -205,6 +203,7 @@
 		05F108A11978D2D700F2F288 /* transport_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = transport_model.inl; path = ../../SU2_CFD/include/transport_model.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05F108A31978D2F200F2F288 /* transport_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = transport_model.cpp; path = ../../SU2_CFD/src/transport_model.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05F8F2672008A1C7000FEA01 /* python_wrapper_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = python_wrapper_structure.cpp; path = ../../SU2_CFD/src/python_wrapper_structure.cpp; sourceTree = "<group>"; };
+		E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fluid_model_inc.cpp; path = ../../SU2_CFD/src/fluid_model_inc.cpp; sourceTree = "<group>"; };
 		E91CAD081B8C117A00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
 		E91CAD091B8C117A00EE3FCC /* mesh_NACA0012_inv.su2 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mesh_NACA0012_inv.su2; sourceTree = "<group>"; };
 		E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_elasticity.cpp; path = ../../SU2_CFD/src/solver_adjoint_elasticity.cpp; sourceTree = "<group>"; };
@@ -242,11 +241,8 @@
 		E9D9CE951C62A272004119E9 /* transfer_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = transfer_structure.hpp; path = ../../SU2_CFD/include/transfer_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D9CE961C62A272004119E9 /* transfer_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = transfer_structure.inl; path = ../../SU2_CFD/include/transfer_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = interpolation_structure.hpp; path = ../../Common/include/interpolation_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		E9F130C51D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/numerics_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
 		E9F130C61D513DA300EC8963 /* numerics_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_mean_inc.cpp; path = ../../SU2_CFD/src/numerics_direct_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F130C71D513DA300EC8963 /* solver_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/solver_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
 		E9F130C81D513DA300EC8963 /* solver_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = solver_direct_mean_inc.cpp; path = ../../SU2_CFD/src/solver_direct_mean_inc.cpp; sourceTree = "<group>"; };
-		E9F130C91D513DA300EC8963 /* variable_adjoint_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = variable_adjoint_mean_inc.cpp; path = ../../SU2_CFD/src/variable_adjoint_mean_inc.cpp; sourceTree = "<group>"; };
 		E9F130CA1D513DA300EC8963 /* variable_direct_mean_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = variable_direct_mean_inc.cpp; path = ../../SU2_CFD/src/variable_direct_mean_inc.cpp; sourceTree = "<group>"; };
 		E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_elasticity_linear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_linear.cpp; sourceTree = "<group>"; };
 		E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = numerics_direct_elasticity_nonlinear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_nonlinear.cpp; sourceTree = "<group>"; };
@@ -279,7 +275,6 @@
 				05E6DBFA17EB62A100FA1F7E /* variable_direct_transition.cpp */,
 				05E6DBFC17EB62A100FA1F7E /* variable_direct_wave.cpp */,
 				05E6DBEF17EB62A100FA1F7E /* variable_adjoint_mean.cpp */,
-				E9F130C91D513DA300EC8963 /* variable_adjoint_mean_inc.cpp */,
 				E941BBAD1B71D564005C6C06 /* variable_adjoint_discrete.cpp */,
 				05E6DBF217EB62A100FA1F7E /* variable_adjoint_turbulent.cpp */,
 				E9225F751FCBC36D002F3682 /* variable_adjoint_elasticity.cpp */,
@@ -301,7 +296,6 @@
 				05E6DBE517EB62A100FA1F7E /* solver_direct_transition.cpp */,
 				05E6DBE717EB62A100FA1F7E /* solver_direct_wave.cpp */,
 				05E6DBDA17EB62A100FA1F7E /* solver_adjoint_mean.cpp */,
-				E9F130C71D513DA300EC8963 /* solver_adjoint_mean_inc.cpp */,
 				E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */,
 				05E6DBDD17EB62A100FA1F7E /* solver_adjoint_turbulent.cpp */,
 				E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */,
@@ -448,7 +442,6 @@
 				05E6DBCE17EB62A100FA1F7E /* numerics_direct_transition.cpp */,
 				05E6DBD017EB62A100FA1F7E /* numerics_direct_wave.cpp */,
 				05E6DBC317EB62A100FA1F7E /* numerics_adjoint_mean.cpp */,
-				E9F130C51D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp */,
 				05E6DBC617EB62A100FA1F7E /* numerics_adjoint_turbulent.cpp */,
 				05E6DBD317EB62A100FA1F7E /* numerics_structure.cpp */,
 				05E6DBD417EB62A100FA1F7E /* numerics_template.cpp */,
@@ -459,6 +452,7 @@
 		05F108951978D28F00F2F288 /* FluidModel */ = {
 			isa = PBXGroup;
 			children = (
+				E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */,
 				05F108961978D2AE00F2F288 /* fluid_model_pig.cpp */,
 				05F108971978D2AE00F2F288 /* fluid_model_ppr.cpp */,
 				05F108981978D2AE00F2F288 /* fluid_model_pvdw.cpp */,
@@ -624,7 +618,6 @@
 				05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */,
 				05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */,
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
-				E9F130CD1D513DA300EC8963 /* solver_adjoint_mean_inc.cpp in Sources */,
 				05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB9517EB61E600FA1F7E /* grid_adaptation_structure.cpp in Sources */,
 				05AF9F221BE1E1830062E1F1 /* gauss_structure.cpp in Sources */,
@@ -657,6 +650,7 @@
 				05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */,
 				E9FDF6EA1D2DD0560066E49C /* adt_structure.cpp in Sources */,
 				05E6DC0E17EB62A100FA1F7E /* numerics_direct_heat.cpp in Sources */,
+				E90D35F7203F9C5800A3290D /* fluid_model_inc.cpp in Sources */,
 				05F1089A1978D2AE00F2F288 /* fluid_model_pig.cpp in Sources */,
 				05E6DC1017EB62A100FA1F7E /* numerics_direct_mean.cpp in Sources */,
 				E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */,
@@ -681,7 +675,6 @@
 				05E6DC2517EB62A100FA1F7E /* solver_direct_heat.cpp in Sources */,
 				05E6DC2717EB62A100FA1F7E /* solver_direct_mean.cpp in Sources */,
 				E9F512C91CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp in Sources */,
-				E9F130CF1D513DA300EC8963 /* variable_adjoint_mean_inc.cpp in Sources */,
 				05E6DC2A17EB62A100FA1F7E /* solver_direct_transition.cpp in Sources */,
 				E9F130CC1D513DA300EC8963 /* numerics_direct_mean_inc.cpp in Sources */,
 				05E6DC2B17EB62A100FA1F7E /* solver_direct_turbulent.cpp in Sources */,
@@ -698,7 +691,6 @@
 				05E6DC4017EB62A100FA1F7E /* variable_direct_turbulent.cpp in Sources */,
 				E9F130CE1D513DA300EC8963 /* solver_direct_mean_inc.cpp in Sources */,
 				05E6DC4117EB62A100FA1F7E /* variable_direct_wave.cpp in Sources */,
-				E9F130CB1D513DA300EC8963 /* numerics_adjoint_mean_inc.cpp in Sources */,
 				E9D9CE891C62A1C8004119E9 /* transfer_physics.cpp in Sources */,
 				E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				05E6DC4417EB62A100FA1F7E /* variable_structure.cpp in Sources */,
