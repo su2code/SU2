@@ -921,7 +921,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-        solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
       }
     }
     if (adj_ns) {
@@ -929,7 +929,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-        solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjIncNSSolver(geometry[iMGlevel], config, iMGlevel);
+        SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
       }
     }
     if (adj_turb) {
@@ -1660,11 +1660,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       
       if (config->GetBody_Force() == YES)
-        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBodyForce(nDim, nVar_Flow, config);
+        if (incompressible) numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
+        else numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBodyForce(nDim, nVar_Flow, config);
+      else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ))
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       else if (config->GetRotating_Frame() == YES)
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
       else if (config->GetAxisymmetric() == YES)
-        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
+        if (incompressible) numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncAxisymmetric_Flow(nDim, nVar_Flow, config);
+      else numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
       else if (config->GetGravityForce() == YES)
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
       else if (config->GetWind_Gust() == YES)
@@ -1858,22 +1862,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         }
         
         if (incompressible) {
-          
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          
-          switch (config->GetKind_Centered_AdjFlow()) {
-            case NO_CENTERED : cout << "No centered scheme." << endl; break;
-            case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJSTArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
-          }
-          
-          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-          
-          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-          
+
+          SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
+
         }
         
         break;
@@ -1898,18 +1889,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         
         if (incompressible) {
           
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          
-          switch (config->GetKind_Upwind_AdjFlow()) {
-            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE:
-              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-                numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-              }
-              break;
-            default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
-          }
+          SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
+
         }
         
         break;
@@ -1937,16 +1918,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     
     if (incompressible) {
       
-      /*--- Incompressible flow, use artificial compressibility method ---*/
-      
-      numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-      numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-      
-      for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-        numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-      }
-      
+      SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
+
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1985,9 +1958,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       
       if (incompressible) {
         
-        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-        
+        SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
+
       }
       
     }
@@ -2891,10 +2863,10 @@ void CDriver::Interface_Preprocessing() {
       else if (fluid_donor && heat_target) {
         nVarTransfer = 0;
         nVar = 4;
-        if(config_container[donorZone]->GetKind_Regime() == COMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_COMPRESSIBLE_FS;
-        else if (config_container[donorZone]->GetKind_Regime() == INCOMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_INCOMPRESSIBLE_FS;
+        if(config_container[donorZone]->GetEnergy_Equation())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_FS;
+        else if (config_container[donorZone]->GetWeakly_Coupled_Heat())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_FS;
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
@@ -2902,10 +2874,10 @@ void CDriver::Interface_Preprocessing() {
       else if (heat_donor && fluid_target) {
         nVarTransfer = 0;
         nVar = 4;
-        if(config_container[targetZone]->GetKind_Regime() == COMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_COMPRESSIBLE_SF;
-        else if (config_container[targetZone]->GetKind_Regime() == INCOMPRESSIBLE)
-          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_INCOMPRESSIBLE_SF;
+        if(config_container[targetZone]->GetEnergy_Equation())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_SF;
+        else if (config_container[targetZone]->GetWeakly_Coupled_Heat())
+          transfer_types[donorZone][targetZone] = CONJUGATE_HEAT_WEAKLY_SF;
         else { }
         transfer_container[donorZone][targetZone] = new CTransfer_ConjugateHeatVars(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "conjugate heat variables. " << endl;
@@ -3282,7 +3254,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
       StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
     case WAVE_EQUATION:
       StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
-    case HEAT_EQUATION:
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
       StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
@@ -7111,14 +7083,12 @@ void CMultiphysicsZonalDriver::Run() {
 
   unsteady = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-  if ( unsteady ) {
-    SU2_MPI::Error("The multi physical zones driver is not ready yet for unsteady simulations!", CURRENT_FUNCTION);
-  }
-
   /*--- Zone preprocessing ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++)
+  for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+    config_container[iZone]->SetDelta_UnstTimeND(config_container[ZONE_0]->GetDelta_UnstTimeND());
+  }
 
   /*--- Updating zone interface communication patterns,
    needed only for unsteady simulation since for steady problems
@@ -7145,6 +7115,12 @@ void CMultiphysicsZonalDriver::Run() {
     /*--- For each zone runs one single iteration including the data transfers to it ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
+
+      // When running a unsteady simulation, we have to adapt CFL values here.
+      if (unsteady && (config_container[ZONE_0]->GetCFL_Adapt() == YES)) {
+          output->SetCFL_Number(solver_container, config_container, iZone);
+      }
+
       config_container[iZone]->SetIntIter(IntIter);
 
       for (jZone = 0; jZone < nZone; jZone++)
@@ -7220,22 +7196,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
                 geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
                 config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
@@ -7257,22 +7233,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
                 geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
                 config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
         }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
           transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
@@ -7297,22 +7273,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
         transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
@@ -7343,22 +7319,22 @@ void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned 
               geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
               config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_FS) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_COMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
       }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_INCOMPRESSIBLE_SF) {
+      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
         transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][HEAT_SOL],solver_container[targetZone][MESH_0][HEAT_SOL],
             geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
             config_container[donorZone], config_container[targetZone]);
