@@ -3811,7 +3811,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  virtual void SetTauWall_FW(CGeometry *geometry, CSolver** solver_container, CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -3819,7 +3819,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+  virtual void SetNuTilde_FW(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
@@ -8334,12 +8334,12 @@ public:
   void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief A virtual member.
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  void SetTauWall_FW(CGeometry *geometry, CSolver** solver_container, CConfig* config);
  
 };
 
@@ -9221,10 +9221,15 @@ public:
   void SetInlet(CConfig *config);
   
   /*!
-   * \brief
-   * \param[in]
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+  void SetNuTilde_FW(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
 };
