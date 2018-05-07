@@ -919,6 +919,8 @@ private:
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
+  bool Predictor,             /*!< \brief Determines whether a predictor step is used. */
+  Relaxation;                 /*!< \brief Determines whether a relaxation step is used. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
@@ -980,6 +982,11 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
+  bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
+  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
+  Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
+  Time_Iter;                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -7969,12 +7976,24 @@ public:
     */
    su2double GetTotalDV_Penalty(void);
   
+   /*!
+    * \brief Get whether a predictor is used for FSI applications.
+    * \return  Bool: determines if predictor is used or not
+    */
+   bool GetPredictor(void);
+
   /*!
    * \brief Get the order of the predictor for FSI applications.
    * \return 	Order of predictor
    */
   unsigned short GetPredictorOrder(void);
   
+  /*!
+   * \brief Get whether a relaxation parameter is used for FSI applications.
+   * \return Bool: determines if relaxation parameter  is used or not
+   */
+  bool GetRelaxation(void);
+
   /*!
    * \brief Check if the simulation we are running is a FSI simulation
    * \return Value of the physical time in an unsteady simulation.
@@ -8094,6 +8113,36 @@ public:
    * \return Number of config filenames in CONFIG_LIST
    */
   unsigned short GetnConfigFiles(void);
+
+  /*!
+   * \brief Check if the multizone problem is solved for time domain.
+   * \return YES if time-domain is considered.
+   */
+  bool GetTime_Domain(void);
+
+  /*!
+   * \brief Get the number of inner iterations
+   * \return Number of inner iterations on each multizone block
+   */
+  unsigned long GetnInner_Iter(void);
+
+  /*!
+   * \brief Get the number of outer iterations
+   * \return Number of outer iterations for the multizone problem
+   */
+  unsigned long GetnOuter_Iter(void);
+
+  /*!
+   * \brief Get the number of time iterations
+   * \return Number of time steps run for the multizone problem
+   */
+  unsigned long GetnTime_Iter(void);
+
+  /*!
+   * \brief Get the time step for multizone problems
+   * \return Time step for multizone problems, it is set on all the zones
+   */
+  su2double GetTime_Step(void);
 };
 
 #include "config_structure.inl"

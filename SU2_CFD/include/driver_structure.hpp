@@ -1448,13 +1448,25 @@ public:
 };
 
 /*!
- * \class CMultiphysicsZonalDriver
+ * \class CMultizoneDriver
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
  * \version 6.0.1 "Falcon"
  */
-class CMultiphysicsDriver : public CDriver {
+class CMultizoneDriver : public CDriver {
 protected:
+
+  bool fsi;
+
+  unsigned short *nVarZone;
+  su2double **init_res,      /*!< \brief Stores the initial residual. */
+            **residual,      /*!< \brief Stores the current residual. */
+            **residual_rel;  /*!< \brief Stores the residual relative to the initial. */
+
+  su2double flow_criteria,
+            flow_criteria_rel,
+            structure_criteria,
+            structure_criteria_rel;
 
 public:
 
@@ -1464,7 +1476,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CMultiphysicsDriver(char* confFile,
+  CMultizoneDriver(char* confFile,
              unsigned short val_nZone,
              unsigned short val_nDim,
              SU2_Comm MPICommunicator);
@@ -1472,12 +1484,22 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiphysicsDriver(void);
+  ~CMultizoneDriver(void);
 
   /*!
-   * \brief Run one iteration in all physical zones.
+   * \brief Preprocess the multizone iteration
    */
   void Preprocess();
+
+  /*!
+   * \brief Use a predictor to initialize the iteration.
+   */
+  void Predictor();
+
+  /*!
+   * \brief Use a relaxation step to prevent convergence issues.
+   */
+  void Relaxation();
 
   /*!
    * \brief Run one iteration in all physical zones.
@@ -1490,14 +1512,20 @@ public:
   void Update();
 
   /*!
+   * \brief Check the convergence at the outer level.
+   */
+  bool OuterConvergence(unsigned long OuterIter);
+
+  /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
   /*!
    * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
+   * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
    */
-  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+  bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
 };
 
