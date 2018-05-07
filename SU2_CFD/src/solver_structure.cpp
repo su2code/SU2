@@ -2,20 +2,24 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,17 +38,24 @@
 #include "../include/solver_structure.hpp"
 
 CSolver::CSolver(void) {
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   
   /*--- Array initialization ---*/
   
   OutputHeadingNames = NULL;
   Residual_RMS       = NULL;
   Residual_Max       = NULL;
+  Residual_BGS       = NULL;
+  Residual_Max_BGS   = NULL;
   Residual           = NULL;
   Residual_i         = NULL;
   Residual_j         = NULL;
   Point_Max          = NULL;
   Point_Max_Coord    = NULL;
+  Point_Max_BGS      = NULL;
+  Point_Max_Coord_BGS = NULL;
   Solution           = NULL;
   Solution_i         = NULL;
   Solution_j         = NULL;
@@ -100,11 +111,22 @@ CSolver::~CSolver(void) {
   if (Residual_j != NULL) delete [] Residual_j;
   if (Point_Max != NULL) delete [] Point_Max;
 
+  if (Residual_BGS != NULL) delete [] Residual_BGS;
+  if (Residual_Max_BGS != NULL) delete [] Residual_Max_BGS;
+  if (Point_Max_BGS != NULL) delete [] Point_Max_BGS;
+
   if (Point_Max_Coord != NULL) {
     for (iVar = 0; iVar < nVar; iVar++) {
       delete [] Point_Max_Coord[iVar];
     }
     delete [] Point_Max_Coord;
+  }
+
+  if (Point_Max_Coord_BGS != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord_BGS[iVar];
+    }
+    delete [] Point_Max_Coord_BGS;
   }
 
   if (Solution != NULL) delete [] Solution;
@@ -182,8 +204,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) {
     
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      exit(EXIT_FAILURE);
+        SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
 
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
@@ -192,10 +213,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #else
   
-  int nProcessor, iProcessor, rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+  int nProcessor = size, iProcessor;
+
   su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
   unsigned short iDim;
@@ -216,14 +235,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) {
     
     if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
-      
-      if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-      
+      SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
     }
     
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
@@ -271,6 +283,97 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #endif
   
+}
+
+void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar;
+
+#ifndef HAVE_MPI
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+
+    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
+      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+    }
+
+    SetRes_BGS(iVar, max(EPS*EPS, sqrt(GetRes_BGS(iVar)/geometry->GetnPoint())));
+
+  }
+
+#else
+
+  int nProcessor = size, iProcessor;
+
+  su2double *sbuf_residual, *rbuf_residual, *sbuf_coord, *rbuf_coord, *Coord;
+  unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
+  unsigned short iDim;
+
+  /*--- Set the L2 Norm residual in all the processors ---*/
+
+  sbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  rbuf_residual  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_BGS(iVar);
+  Local_nPointDomain = geometry->GetnPointDomain();
+
+
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+
+    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+
+      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
+
+    }
+
+    SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+
+  }
+
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+
+  /*--- Set the Maximum residual in all the processors ---*/
+  sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+  sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+
+  rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+  rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+  rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    sbuf_residual[iVar] = GetRes_Max_BGS(iVar);
+    sbuf_point[iVar] = GetPoint_Max_BGS(iVar);
+    Coord = GetPoint_Max_Coord_BGS(iVar);
+    for (iDim = 0; iDim < nDim; iDim++)
+      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
+  }
+
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      AddRes_Max_BGS(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+    }
+  }
+
+  delete [] sbuf_residual;
+  delete [] rbuf_residual;
+
+  delete [] sbuf_point;
+  delete [] rbuf_point;
+
+  delete [] sbuf_coord;
+  delete [] rbuf_coord;
+
+#endif
+
 }
 
 void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
@@ -553,7 +656,8 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       Solution_Vertex = node[Point]->GetSolution();
@@ -1788,11 +1892,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
   unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -1810,13 +1909,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   restart_file_n.open(filename_n.data(), ios::in);
   if (restart_file_n.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no flow restart file!! " << filename_n.data() << "."<< endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("There is no flow restart file ") + filename_n, CURRENT_FUNCTION);
   }
 
   /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-  iPoint_Global_Local = 0, iPoint_Global = 0;
+  iPoint_Global_Local = 0; iPoint_Global = 0;
 
   /*--- Read all lines in the restart file ---*/
   /*--- The first line is the header ---*/
@@ -1847,7 +1944,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
   if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
@@ -1857,17 +1954,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Close the restart file ---*/
@@ -1892,13 +1980,12 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     restart_file_n.open(filename_n1.data(), ios::in);
     if (restart_file_n.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename_n1.data() << "."<< endl;
-      exit(EXIT_FAILURE);
+        SU2_MPI::Error(string("There is no flow restart file ") + filename_n1, CURRENT_FUNCTION);
+
     }
 
     /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-    iPoint_Global_Local = 0, iPoint_Global = 0;
+    iPoint_Global_Local = 0; iPoint_Global = 0;
 
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
@@ -1930,7 +2017,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+    rbuf_NotMatching = 0; sbuf_NotMatching = 0;
 
     if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
@@ -1940,17 +2027,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
     if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
 
     /*--- Close the restart file ---*/
@@ -1975,11 +2053,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
   int counter = 0;
   config->fields.clear();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   Restart_Vars = new int[5];
 
@@ -1995,27 +2068,29 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   FILE *fhw;
   fhw = fopen(fname,"rb");
+  size_t ret;
 
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
-    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + fname, CURRENT_FUNCTION);
   }
 
   /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-  fread(&magic_number, sizeof(int), 1, fhw);
+  ret = fread(&magic_number, sizeof(int), 1, fhw);
+  if (ret != 1) {
+    SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  }
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
   if (magic_number == 535532) {
-    cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-    cout << " SU2 reads/writes binary restart files by default." << endl;
-    cout << " Note that backward compatibility for ASCII restart files is" << endl;
-    cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                   string("SU2 reads/writes binary restart files by default.\n") +
+                   string("Note that backward compatibility for ASCII restart files is\n") +
+                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
   }
 
   fclose(fhw);
@@ -2026,7 +2101,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   MPI_File fhw;
   int ierr;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   /*--- All ranks open the file using MPI. ---*/
 
@@ -2035,11 +2109,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    if (rank == MASTER_NODE)
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- Have the master attempt to read the magic number. ---*/
@@ -2055,15 +2125,10 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
    have the hex representation of "SU2" as the first int in the file. ---*/
 
   if (magic_number == 535532) {
-    if (rank == MASTER_NODE) {
-      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                   string("SU2 reads/writes binary restart files by default.\n") +
+                   string("Note that backward compatibility for ASCII restart files is\n") +
+                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
   }
 
   MPI_File_close(&fhw);
@@ -2077,15 +2142,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   /*--- In case there is no restart file ---*/
 
   if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "SU2 ASCII solution file " << val_filename << " not found." << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("SU2 ASCII solution file  ") + string(fname) + string(" not found."), CURRENT_FUNCTION);
   }
 
   /*--- Identify the number of fields (and names) in the restart file ---*/
@@ -2154,27 +2211,29 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   FILE *fhw;
   fhw = fopen(fname,"rb");
+  size_t ret;
 
   /*--- Error check for opening the file. ---*/
 
   if (!fhw) {
-    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, read the number of variables and points. ---*/
 
-  fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  if (ret != (unsigned long)nRestart_Vars) {
+    SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  }
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
 
   if (Restart_Vars[0] != 535532) {
-    cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-    cout << " SU2 reads/writes binary restart files by default." << endl;
-    cout << " Note that backward compatibility for ASCII restart files is" << endl;
-    cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                   string("SU2 reads/writes binary restart files by default.\n") +
+                   string("Note that backward compatibility for ASCII restart files is\n") +
+                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
   }
 
   /*--- Store the number of fields to be read for clarity. ---*/
@@ -2188,7 +2247,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   config->fields.push_back("Point_ID");
   for (iVar = 0; iVar < nFields; iVar++) {
-    fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    if (ret != (unsigned long)CGNS_STRING_SIZE) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
     config->fields.push_back(str_buf);
   }
 
@@ -2198,7 +2260,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
+  ret = fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
+  if (ret != (unsigned long)nFields*geometry->GetnPointDomain()) {
+    SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+  }
 
   /*--- Close the file. ---*/
 
@@ -2209,14 +2274,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Parallel binary input using MPI I/O. ---*/
 
   MPI_File fhw;
-  MPI_Status status;
+  SU2_MPI::Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
   unsigned long iPoint_Global, index, iChar;
   string field_buf;
 
-  int rank = MASTER_NODE, ierr;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int ierr;
 
   /*--- All ranks open the file using MPI. ---*/
 
@@ -2225,11 +2289,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Error check opening the file. ---*/
 
   if (ierr) {
-    if (rank == MASTER_NODE)
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
   }
 
   /*--- First, read the number of variables and points (i.e., cols and rows),
@@ -2247,15 +2307,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    have the hex representation of "SU2" as the first int in the file. ---*/
 
   if (Restart_Vars[0] != 535532) {
-    if (rank == MASTER_NODE) {
-      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+    SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                   string("SU2 reads/writes binary restart files by default.\n") +
+                   string("Note that backward compatibility for ASCII restart files is\n") +
+                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
   }
 
   /*--- Store the number of fields to be read for clarity. ---*/
@@ -2285,7 +2340,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   for (iVar = 0; iVar < nFields; iVar++) {
     index = iVar*CGNS_STRING_SIZE;
     field_buf.append("\"");
-    for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+    for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
       str_buf[iChar] = mpi_str_buf[index + iChar];
     }
     field_buf.append(str_buf);
@@ -2327,7 +2382,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
 
-  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+  MPI_File_set_view(fhw, disp, etype, filetype, (char*)"native", MPI_INFO_NULL);
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -2361,16 +2416,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
  su2double dCMx_dCL_ = config->GetdCMx_dCL();
  su2double dCMy_dCL_ = config->GetdCMy_dCL();
  su2double dCMz_dCL_ = config->GetdCMz_dCL();
-	su2double dCD_dCMy_ = config->GetdCD_dCMy();
-	string::size_type position;
+  string::size_type position;
 	unsigned long ExtIter_ = 0;
 	ifstream restart_file;
 	bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-
-	int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	if (config->GetRead_Binary_Restart()) {
 
@@ -2388,27 +2437,29 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		FILE *fhw;
 		fhw = fopen(fname,"rb");
+    size_t ret;
 
 		/*--- Error check for opening the file. ---*/
 
 		if (!fhw) {
-			cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-			exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open restart file ") + string(fname), CURRENT_FUNCTION);
 		}
 
 		/*--- First, read the number of variables and points. ---*/
 
-		fread(var_buf, sizeof(int), nVar_Buf, fhw);
+		ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (var_buf[0] != 535532) {
-      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
@@ -2417,11 +2468,20 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		/*--- Read the external iteration. ---*/
 
-		fread(&Restart_Iter, 1, sizeof(int), fhw);
+		ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
 		/*--- Read the metadata. ---*/
 
-		fread(Restart_Meta_Passive, 8, sizeof(passivedouble), fhw);
+		ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    if (ret != 8) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
+
+    for (unsigned short iVar = 0; iVar < 8; iVar++)
+      Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
 		/*--- Close the file. ---*/
 
@@ -2433,8 +2493,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		MPI_File fhw;
 		MPI_Offset disp;
-		int rank = MASTER_NODE, ierr;
-		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int ierr;
 
 		/*--- All ranks open the file using MPI. ---*/
 
@@ -2443,11 +2502,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		/*--- Error check opening the file. ---*/
 
 		if (ierr) {
-			if (rank == MASTER_NODE)
-				cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Abort(MPI_COMM_WORLD,1);
-			MPI_Finalize();
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
 		}
 
 		/*--- First, read the number of variables and points (i.e., cols and rows),
@@ -2465,15 +2520,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (var_buf[0] != 535532) {
-      if (rank == MASTER_NODE) {
-        cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-        cout << " SU2 reads/writes binary restart files by default." << endl;
-        cout << " Note that backward compatibility for ASCII restart files is" << endl;
-        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     /*--- Access the metadata. ---*/
@@ -2537,27 +2587,29 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     fclose(fhw);
@@ -2568,7 +2620,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     MPI_File fhw;
     int ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
@@ -2577,11 +2628,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      if (rank == MASTER_NODE)
-        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Have the master attempt to read the magic number. ---*/
@@ -2597,15 +2644,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      if (rank == MASTER_NODE) {
-        cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-        cout << " SU2 reads/writes binary restart files by default." << endl;
-        cout << " Note that backward compatibility for ASCII restart files is" << endl;
-        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
     
     MPI_File_close(&fhw);
@@ -2700,12 +2742,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
        if (position != string::npos) {
          text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
        }
-       /*--- dCD_dCMy coefficient ---*/
-       
-       position = text_line.find ("DCD_DCMY_VALUE=",0);
-       if (position != string::npos) {
-							text_line.erase (0,15); dCD_dCMy_ = atof(text_line.c_str());
-						}
        
 					}
 
@@ -2732,7 +2768,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
 				cout.precision(6);
-				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+				cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
 				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
 			}
 			config->SetAoA(AoA_ + config->GetAoA_Offset());
@@ -2747,7 +2783,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
 				cout.precision(6);
-				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+				cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
 				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
 			}
 			config->SetAoS(AoS_ + config->GetAoS_Offset());
@@ -2860,12 +2896,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 	}
 
-
 	/*--- External iteration ---*/
 
-	if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
-			(adjoint && config->GetRestart()))
-		config->SetExtIter_OffSet(ExtIter_);
+  if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
+    config->SetExtIter_OffSet(ExtIter_);
 
 }
 
@@ -2875,6 +2909,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iVar;
+  
+  nPoint = geometry->GetnPoint();
 
   /*--- Define geometry constants in the solver structure ---*/
 
@@ -2902,6 +2938,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned long iPoint;
   unsigned short iVar;
+  
+  nPoint = geometry->GetnPoint();
 
   config->fields = field_names;
 
@@ -2930,11 +2968,6 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   /*--- Open the ASCII restart file and extract the nVar and field names. ---*/
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
@@ -2984,27 +3017,29 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
     
     /*--- First, read the number of variables and points. ---*/
 
-    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (var_buf[0] != 535532) {
-      cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
     
     /*--- Close the file. ---*/
@@ -3016,9 +3051,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-    int rank = MASTER_NODE, ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
+    int ierr;
+    
     /*--- All ranks open the file using MPI. ---*/
 
     ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
@@ -3026,11 +3060,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      if (rank == MASTER_NODE)
-        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
@@ -3049,15 +3079,10 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (var_buf[0] != 535532) {
-      if (rank == MASTER_NODE) {
-        cout << endl << endl << "Error: file " << fname << " is not a binary SU2 restart file." << endl;
-        cout << " SU2 reads/writes binary restart files by default." << endl;
-        cout << " Note that backward compatibility for ASCII restart files is" << endl;
-        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     /*--- All ranks close the file after writing. ---*/
@@ -3085,27 +3110,29 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     FILE *fhw;
     fhw = fopen(fname,"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-      cout << " SU2 reads/writes binary restart files by default." << endl;
-      cout << " Note that backward compatibility for ASCII restart files is" << endl;
-      cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
 
     fclose(fhw);
@@ -3116,7 +3143,6 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     MPI_File fhw;
     int ierr;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
@@ -3125,11 +3151,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      if (rank == MASTER_NODE)
-        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Have the master attempt to read the magic number. ---*/
@@ -3145,15 +3167,10 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      if (rank == MASTER_NODE) {
-        cout << endl << endl << "Error: file " << fname << " is a binary SU2 restart file, expected ASCII." << endl;
-        cout << " SU2 reads/writes binary restart files by default." << endl;
-        cout << " Note that backward compatibility for ASCII restart files is" << endl;
-        cout << " possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options." << endl << endl;
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+                     string("SU2 reads/writes binary restart files by default.\n") +
+                     string("Note that backward compatibility for ASCII restart files is\n") +
+                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
     }
     
     MPI_File_close(&fhw);
@@ -3167,16 +3184,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- In case there is no restart file ---*/
 
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "SU2 solution file " << filename << " not found." << endl;
-
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error(string("SU2 solution file ") + filename + string(" not found"), CURRENT_FUNCTION);
     }
     
     /*--- Identify the number of fields (and names) in the restart file ---*/
@@ -3221,7 +3229,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3393,11 +3401,6 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
 void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Restart the solution from file information ---*/
 
   string filename;
@@ -3549,11 +3552,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 }
 
 void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Restart the solution from file information ---*/
   string filename;

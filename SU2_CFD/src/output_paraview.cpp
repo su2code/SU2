@@ -2,20 +2,24 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,19 +54,21 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+
 
   char cstr[200], buffer[50];
   string filename, fieldname;
     
   /*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (adjoint || disc_adj)
+    if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetSurfAdjCoeff_FileName();
     else
       filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
-    if (adjoint || disc_adj)
+    if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();
@@ -73,6 +79,13 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetSurfStructure_FileName().c_str();
     else
       filename = config->GetStructure_FileName().c_str();
+  }
+
+  if (Kind_Solver == DISC_ADJ_FEM) {
+    if (surf_sol)
+      filename = config->GetAdjSurfStructure_FileName().c_str();
+    else
+      filename = config->GetAdjStructure_FileName().c_str();
   }
   
   if (Kind_Solver == WAVE_EQUATION)
@@ -345,20 +358,80 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
       fieldname = config->fields[iField];
 
+      fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+
       bool output_variable = true;
-      size_t found = config->fields[iField].find("\"x\"");
-      if (found!=string::npos) output_variable = false;
-      found = config->fields[iField].find("\"y\"");
-      if (found!=string::npos) output_variable = false;
-      found = config->fields[iField].find("\"z\"");
-      if (found!=string::npos) output_variable = false;
-      
-      if (output_variable) {
-        fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+      if (fieldname == "x") {
+        output_variable = false;
+        //skip
+        VarCounter++;
+      }
+      if (fieldname == "y")  {
+        output_variable = false;
+        //skip
+        VarCounter++;
+      }
+      if (fieldname == "z")  {
+        output_variable = false;
+        //skip
+        VarCounter++;
+      }
+
+      bool isVector = false;
+      size_t found = config->fields[iField].find("X-");
+      if (found!=string::npos) {
+        output_variable = true;
+        isVector = true;
+      }
+      found = config->fields[iField].find("Y-");
+      if (found!=string::npos) {
+        output_variable = false;
+        //skip
+        VarCounter++;
+      }
+      found = config->fields[iField].find("Z-");
+      if (found!=string::npos) {
+        output_variable = false;
+        //skip
+        VarCounter++;
+      }
+
+      if (output_variable && isVector) {
+
+        /*--- Several output variables should be written as vectors. ---*/
+
+        fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+
+        if (rank == MASTER_NODE) {
+          Paraview_File << "\nVECTORS " << fieldname << " float\n";
+        }
+
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (surf_sol) {
+            if (LocalIndex[iPoint+1] != 0) {
+              /*--- Loop over the vars/residuals and write the values to file ---*/
+              Paraview_File << scientific << Data[VarCounter+0][iPoint] << "\t" << Data[VarCounter+1][iPoint] << "\t";
+              if (nDim == 3) Paraview_File << scientific << Data[VarCounter+2][iPoint] << "\t";
+              if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+
+            }
+          } else {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter+0][iPoint] << "\t" << Data[VarCounter+1][iPoint] << "\t";
+            if (nDim == 3) Paraview_File << scientific << Data[VarCounter+2][iPoint] << "\t";
+            if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+          }
+        }
+
+        VarCounter++;
+
+      }
+
+      else if (output_variable) {
 
         Paraview_File << "\nSCALARS " << fieldname << " float 1\n";
         Paraview_File << "LOOKUP_TABLE default\n";
-        
+
         for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
           if (surf_sol) {
             if (LocalIndex[iPoint+1] != 0) {
@@ -370,20 +443,18 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
             Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
           }
         }
-      }
-      
-      VarCounter++;
 
+        VarCounter++;
+        
+      }
       
     }
     
-  }  
-  
-  else {
+  } else {
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-      if (Kind_Solver == FEM_ELASTICITY)
+      if ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM))
         Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
       else
         Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
@@ -909,6 +980,44 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())) {
+
+      Paraview_File << "\nSCALARS CrossTerm_1 float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      Paraview_File << "\nSCALARS CrossTerm_2 float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      if (nDim == 3){
+
+        Paraview_File << "\nSCALARS CrossTerm_3 float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (! surf_sol) {
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+
+      }
+
+    }
+
   }
   
   Paraview_File.close();
@@ -1752,13 +1861,6 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   int iProcessor;
 
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
   /*--- Write file name with extension ---*/
   if (surf_sol) {
     if (adjoint || disc_adj)
@@ -1861,7 +1963,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   Paraview_File.close();
 
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -1892,7 +1994,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     }
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   }
 
@@ -1936,7 +2038,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   /*--- Write connectivity data. ---*/
@@ -1949,8 +2051,8 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
       iNode = iElem*N_POINTS_LINE;
       Paraview_File << N_POINTS_LINE << "\t";
-      Paraview_File << Conn_Line_Par[iNode+0]-1 << "\t";
-      Paraview_File << Conn_Line_Par[iNode+1]-1 << "\t";
+      Paraview_File << Conn_BoundLine_Par[iNode+0]-1 << "\t";
+      Paraview_File << Conn_BoundLine_Par[iNode+1]-1 << "\t";
     }
 
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
@@ -2024,7 +2126,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   }
 
@@ -2037,7 +2139,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -2057,7 +2159,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       }
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
   }
   
@@ -2070,7 +2172,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
 
   unsigned short varStart = 2;
@@ -2085,42 +2187,115 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
 
-    if (rank == MASTER_NODE) {
-
-      Paraview_File << "\nSCALARS " << fieldname << " float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
+    bool output_variable = true, isVector = false;
+    size_t found = Variable_Names[iField].find("X-");
+    if (found!=string::npos) {
+      output_variable = true;
+      isVector = true;
     }
-
-    Paraview_File.flush();
-#ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-    /*--- Write surface and volumetric point coordinates. ---*/
-
-    for (iProcessor = 0; iProcessor < size; iProcessor++) {
-      if (rank == iProcessor) {
-
-        /*--- Write the node data from this proc ---*/
-
-        if (surf_sol) {
-          for (iPoint = 0; iPoint < nSurf_Poin_Par; iPoint++) {
-            Paraview_File << scientific << Parallel_Surf_Data[VarCounter][iPoint] << "\t";
-          }
-        } else {
-          for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
-            Paraview_File << scientific << Parallel_Data[VarCounter][iPoint] << "\t";
-          }
-        }
-      }
+    found = Variable_Names[iField].find("Y-");
+    if (found!=string::npos) {
+      output_variable = false;
+      //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
+      VarCounter++;
     }
-    
-    VarCounter++;
-    
+found = Variable_Names[iField].find("Z-");
+    if (found!=string::npos) {
+      output_variable = false;
+      //skip
+      Paraview_File.flush();
+#ifdef HAVE_MPI
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+      VarCounter++;
+    }
+
+    if (output_variable && isVector) {
+
+      fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+
+      if (rank == MASTER_NODE) {
+        Paraview_File << "\nVECTORS " << fieldname << " float\n";
+      }
+
+      Paraview_File.flush();
+#ifdef HAVE_MPI
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+
+      /*--- Write surface and volumetric point coordinates. ---*/
+
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
+        if (rank == iProcessor) {
+
+          /*--- Write the node data from this proc ---*/
+
+          if (surf_sol) {
+            for (iPoint = 0; iPoint < nSurf_Poin_Par; iPoint++) {
+              /*--- Loop over the vars/residuals and write the values to file ---*/
+              Paraview_File << scientific << Parallel_Surf_Data[VarCounter+0][iPoint] << "\t" << Parallel_Surf_Data[VarCounter+1][iPoint] << "\t";
+              if (nDim == 3) Paraview_File << scientific << Parallel_Surf_Data[VarCounter+2][iPoint] << "\t";
+              if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+            }
+          } else {
+            for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+              Paraview_File << scientific << Parallel_Data[VarCounter+0][iPoint] << "\t" << Parallel_Data[VarCounter+1][iPoint] << "\t";
+              if (nDim == 3) Paraview_File << scientific << Parallel_Data[VarCounter+2][iPoint] << "\t";
+              if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
+            }
+          }
+        }
+        Paraview_File.flush();
+#ifdef HAVE_MPI
+        SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+      }
+
+      VarCounter++;
+
+    } else if (output_variable) {
+
+      if (rank == MASTER_NODE) {
+
+        Paraview_File << "\nSCALARS " << fieldname << " float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+      }
+
+      Paraview_File.flush();
+#ifdef HAVE_MPI
+      SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+
+      /*--- Write surface and volumetric point coordinates. ---*/
+
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
+        if (rank == iProcessor) {
+
+          /*--- Write the node data from this proc ---*/
+
+          if (surf_sol) {
+            for (iPoint = 0; iPoint < nSurf_Poin_Par; iPoint++) {
+              Paraview_File << scientific << Parallel_Surf_Data[VarCounter][iPoint] << "\t";
+            }
+          } else {
+            for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+              Paraview_File << scientific << Parallel_Data[VarCounter][iPoint] << "\t";
+            }
+          }
+        }
+        Paraview_File.flush();
+#ifdef HAVE_MPI
+        SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+      }
+      
+      VarCounter++;
+    }
+
   }
 
   Paraview_File.close();

@@ -2,20 +2,24 @@
  * \file interpolation_structure.cpp
  * \brief Main subroutines used by SU2_FSI
  * \author H. Kline
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +38,9 @@
 #include "../include/interpolation_structure.hpp"
 
 CInterpolator::CInterpolator(void) {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
 
   nZone = 0;
   Geometry = NULL;
@@ -79,6 +86,9 @@ CInterpolator::~CInterpolator(void) {
 
 
 CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone) {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
 
   /* Store pointers*/
   Geometry = geometry_container;
@@ -110,13 +120,6 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
   unsigned short iDonor;
   unsigned int nFaces=0, iFace, nNodes=0;
   bool face_on_marker = true;
-
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
 
   for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
     iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
@@ -206,14 +209,6 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
   /* Only needed if face data is also collected */
   su2double  *Normal;
 
-#ifdef HAVE_MPI
-  int rank;
-  int nProcessor = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
-
-
   for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) {
     Buffer_Send_GlobalPoint[iVertex] = 0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -287,7 +282,6 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
   CGeometry *geom = Geometry[val_zone][MESH_0];
     
-  int rank;
   unsigned long iVertex, jVertex, kVertex;
     
   unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
@@ -310,15 +304,8 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
 
 #ifdef HAVE_MPI
-  int nProcessor, iRank;
+  int nProcessor = size, iRank;
   unsigned long iTmp2, tmp_index, tmp_index_2;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-
-#else
-
-  rank = MASTER_NODE;
-
 #endif
         
   /*--- Copy coordinates and point to the auxiliar vector ---*/
@@ -531,10 +518,7 @@ bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget){
   #ifdef HAVE_MPI
     
   int *Buffer_Recv_mark = NULL;
-  int iRank,  rank, nProcessor;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  int iRank, nProcessor = size;
   
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[nProcessor];
@@ -609,7 +593,7 @@ CNearestNeighbor::~CNearestNeighbor() {}
 
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
-  int iProcessor, pProcessor, nProcessor;
+  int iProcessor, pProcessor, nProcessor = size;
   int markDonor, markTarget;
 
   unsigned short nDim, iMarkerInt, nMarkerInt, iDonor;    
@@ -618,12 +602,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
   su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
-
-#ifdef HAVE_MPI
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-#endif
 
   /*--- Initialize variables --- */
   
@@ -783,17 +761,9 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   unsigned long storeGlobal[10];
   int storeProc[10];
 
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
+  int nProcessor = size;
   Coord = new su2double[nDim];
   Normal = new su2double[nDim];
-
-#ifdef HAVE_MPI  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-#endif
 
   nMarkerInt = (config[donorZone]->GetMarker_n_ZoneInterface())/2;
 
@@ -1318,15 +1288,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
   unsigned long faceindex;
 
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = SINGLE_NODE;
-#endif
+  int nProcessor = size;
 
   su2double *Buffer_Send_Coeff, *Buffer_Receive_Coeff;
   su2double coeff;
@@ -1602,12 +1564,6 @@ void CSlidingMesh::Set_TransferCoeff(CConfig **config){
   su2double **donor_element, *DonorPoint_Coord;
     
   /*  1 - Variable pre-processing - */
-
-#ifdef HAVE_MPI
-  int rank, nProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
 
   nDim = donor_geometry->GetnDim();
 
@@ -2280,7 +2236,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     jPoint = ptr[jNode];
     for( kNode = 0; kNode < nOuterNodes; kNode++ ){
       if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-        OuterNodesNeighbour[iNode][count] = kNode;
+        OuterNodesNeighbour[iNode][count] = (int)kNode;
         count++;
         break;
       }
@@ -2289,7 +2245,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
 
   // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
   if( count == 1 ) 
-    StartIndex = iNode;
+    StartIndex = (int)iNode;
   }
 
   /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
@@ -2339,7 +2295,7 @@ int CSlidingMesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
     delete [] OuterNodesNeighbour[ iNode ];
   delete [] OuterNodesNeighbour;
 
-  return iElementNode;
+  return (int)iElementNode;
   
 }
 

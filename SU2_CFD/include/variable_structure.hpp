@@ -4,20 +4,24 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +55,6 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CVariable {
 protected:
@@ -71,9 +74,8 @@ protected:
   su2double Max_Lambda,  /*!< \brief Maximun eingenvalue. */
   Max_Lambda_Inv,    /*!< \brief Maximun inviscid eingenvalue. */
   Max_Lambda_Visc,  /*!< \brief Maximun viscous eingenvalue. */
-  Lambda,        /*!< \brief Value of the eingenvalue. */
-  TranspVel;     /*!< \brief Value of the transpiration velocity. */
-  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme. */
+  Lambda;        /*!< \brief Value of the eingenvalue. */
+  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme and Roe dissipation. */
   su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
@@ -88,6 +90,7 @@ protected:
   unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
+  su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
   
 public:
   
@@ -163,6 +166,13 @@ public:
   su2double GetSolution_Old(unsigned short val_var);
 
   /*!
+   * \brief Get the old solution of the discrete adjoint problem (for multiphysics subiterations=
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_Old_Adj(unsigned short val_var);
+
+  /*!
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
@@ -186,8 +196,13 @@ public:
   void Set_Solution(void);
 
   /*!
-   * \brief Set the variable solution at time n.
+   * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
    */
+  void Set_OldSolution_Adj(void);
+
+  /*!
+   * \brief Set the variable solution at time n.
+   */  
   void Set_Solution_time_n(void);
   
   /*!
@@ -250,6 +265,36 @@ public:
    * \return Pointer to the old solution vector.
    */
   virtual su2double GetSolution_New(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetRoe_Dissipation(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation(su2double val_dissipation);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation_FD(su2double val_wall_dist);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation_NTS();
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetDES_LengthScale(su2double val_des_lengthscale);
 
   /*!
    * \brief A virtual member.
@@ -313,6 +358,12 @@ public:
   void SetTranspiration(su2double val);
 
   su2double GetTranspiration(void);
+
+  /*!
+   * \brief Get the fem solution at time n.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  virtual su2double *Get_femSolution_time_n(void);
 
   /*!
    * \brief Set the value of the old residual.
@@ -971,6 +1022,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the specific heat at constant V
+   */
+  virtual su2double GetSpecificHeatCv(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the thermal conductivity (vibrational)
    */
   virtual su2double GetThermalConductivity_ve(void);
@@ -1179,7 +1236,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetDensity(su2double val_density);
+  virtual bool SetDensity(su2double val_density);
   
   /*!
    * \brief A virtual member.
@@ -1400,6 +1457,11 @@ public:
   virtual void Add_SurfaceLoad_Res(su2double *val_surfForce);
   
   /*!
+   * \brief  A virtual member.
+   */
+  virtual void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
+  
+  /*!
    * \brief A virtual member.
    */
   virtual su2double *Get_SurfaceLoad_Res(void);
@@ -1520,6 +1582,12 @@ public:
    */
   virtual void SetSpecificHeatCp(su2double Cp);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] Cv - Constant volume specific heat.
+   */
+  virtual void SetSpecificHeatCv(su2double Cv);
+
   /*!
    * \brief A virtual member.
    */
@@ -1765,8 +1833,146 @@ public:
   virtual su2double GetTranspiration_Direct(void);
   
   /*!
-   * STRUCTURAL ANALYSIS: NEW VARIABLES
+   * \brief A virtual member. Set the restart geometry (coordinate of the converged solution)
+   * \param[in] val_coordinate_direct - Value of the restart coordinate.
    */
+  virtual void SetGeometry_Direct(su2double *val_coordinate_direct);
+  
+  /*!
+   * \brief A virtual member. Get the restart geometry (coordinate of the converged solution).
+   * \return Pointer to the restart coordinate vector.
+   */
+  virtual su2double *GetGeometry_Direct(void);
+  
+  /*!
+   * \brief A virtual member. Get the restart geometry (coordinate of the converged solution).
+   * \return Coordinate of the direct solver restart for .
+   */
+  virtual su2double GetGeometry_Direct(unsigned short val_dim);
+  
+  /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetSolution_Geometry(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetSolution_Geometry(su2double *val_solution_geometry);
+  
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetSolution_Geometry(unsigned short val_var, su2double val_solution_geometry);
+  
+  /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetGeometry_CrossTerm_Derivative(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+  
+  /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetGeometry_CrossTerm_Derivative_Flow(unsigned short iDim, su2double der);
+  
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_OldSolution_Geometry(void);
+  
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_OldSolution_Geometry(unsigned short iDim);
+  
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_BGSSolution(unsigned short iDim, su2double val_solution);
+  
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_BGSSolution_k(void);
+  
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_BGSSolution(unsigned short iDim);
+  
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_BGSSolution_k(unsigned short iDim);
+  
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_BGSSolution_Geometry(void);
+  
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_BGSSolution_Geometry(unsigned short iDim);
+  
+  /*!
+   * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
+   */
+  virtual void SetCross_Term_Derivative(unsigned short iVar, su2double der);
+  
+  /*!
+   * \brief  A virtual member. Get the contribution of crossed terms into the derivative.
+   * \return The contribution of crossed terms into the derivative.
+   */
+  virtual su2double GetCross_Term_Derivative(unsigned short iVar);
+  
+  /*!
+   * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct velocity solution.
+   */
+  virtual void SetSolution_Vel_Direct(su2double *sol);
+  
+  /*!
+   * \brief A virtual member. Set the direct acceleration solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct acceleration solution.
+   */
+  virtual void SetSolution_Accel_Direct(su2double *sol);
+  
+  /*!
+   * \brief A virtual member. Get the direct velocity solution for the adjoint solver.
+   * \return Pointer to the direct velocity solution vector.
+   */
+  virtual su2double* GetSolution_Vel_Direct();
+  
+  /*!
+   * \brief A virtual member. Get the direct acceleraction solution for the adjoint solver.
+   * \return Pointer to the direct acceleraction solution vector.
+   */
+  virtual su2double* GetSolution_Accel_Direct();
   
   /*!
    * \brief Set the value of the old solution.
@@ -1908,6 +2114,15 @@ public:
    */
   virtual su2double *GetSolution_Accel_time_n(void);
   
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Set_OldSolution_Vel(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Set_OldSolution_Accel(void);
   
   /*!
    * \brief  A virtual member. Set the value of the solution predictor.
@@ -1972,6 +2187,16 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double *GetReference_Geometry(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
   virtual void SetPrestretch(unsigned short iVar, su2double val_prestretch);
   
   /*!
@@ -1984,6 +2209,76 @@ public:
    */
   virtual su2double GetPrestretch(unsigned short iVar);
   
+  /*!
+   * \brief A virtual member.
+   */
+   virtual su2double GetReference_Geometry(unsigned short iVar);
+
+   /*!
+    * \brief A virtual member.
+    */
+   virtual void Register_femSolution_time_n();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Vel(bool input);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Vel_time_n();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Accel(bool input);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Accel_time_n();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Vel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Vel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Vel_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Vel_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Accel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Accel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Accel_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
+
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
@@ -2074,13 +2369,51 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+  
+  /*!
+   * \brief Virtual member. 
+   */
+  virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+ 
+  /*!
+   * \brief Virtual member. 
+   */
+  virtual su2double GetVortex_Tilting();
+  
+  virtual void SetDynamic_Derivative(unsigned short iVar, su2double der);
+
+  virtual void SetDynamic_Derivative_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDynamic_Derivative(unsigned short iVar);
+
+  virtual su2double GetDynamic_Derivative_n(unsigned short iVar);
+
+  virtual void SetDynamic_Derivative_Vel(unsigned short iVar, su2double der);
+
+  virtual void SetDynamic_Derivative_Vel_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDynamic_Derivative_Vel(unsigned short iVar);
+
+  virtual su2double GetDynamic_Derivative_Vel_n(unsigned short iVar);
+
+  virtual void SetDynamic_Derivative_Accel(unsigned short iVar, su2double der);
+
+  virtual void SetDynamic_Derivative_Accel_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDynamic_Derivative_Accel(unsigned short iVar);
+
+  virtual su2double GetDynamic_Derivative_Accel_n(unsigned short iVar);
+
+  virtual su2double GetSolution_Old_Vel(unsigned short iVar);
+
+  virtual su2double GetSolution_Old_Accel(unsigned short iVar);
+
 };
 
 /*!
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 5.0.0 "Raven"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2110,7 +2443,6 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CPotentialVariable : public CVariable {
   su2double *Charge_Density;
@@ -2154,7 +2486,6 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2196,11 +2527,43 @@ public:
 };
 
 /*!
+ * \class CHeatFVMVariable
+ * \brief Main class for defining the variables of the finite-volume heat equation solver.
+ * \author O. Burghardt
+ * \version 6.0.1 "Falcon"
+ */
+class CHeatFVMVariable : public CVariable {
+protected:
+  su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHeatFVMVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_Heat - Values of the Heat solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHeatFVMVariable(void);
+
+};
+
+/*!
  * \class CHeatVariable
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2242,13 +2605,13 @@ public:
 };
 
 /*!
- * \class CFEM_ElasVariable
+ * \class CFEAVariable
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
  * \version 4.0.0 "Cardinal"
  */
-class CFEM_ElasVariable : public CVariable {
+class CFEAVariable : public CVariable {
 protected:
   
   bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
@@ -2276,7 +2639,11 @@ protected:
   su2double *Solution_Pred,          /*!< \brief Predictor of the solution for FSI purposes */
   *Solution_Pred_Old;            /*!< \brief Predictor of the solution at time n for FSI purposes */
   
+  su2double *Reference_Geometry;      /*!< \brief Reference solution for optimization problems */
+  
   su2double *Prestretch;        /*!< \brief Prestretch geometry */
+  
+  su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
   
   
 public:
@@ -2284,7 +2651,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEM_ElasVariable(void);
+  CFEAVariable(void);
   
   /*!
    * \overload
@@ -2293,12 +2660,12 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEM_ElasVariable(void);
+  ~CFEAVariable(void);
   
   /*!
    * \brief Get the value of the stress.
@@ -2324,6 +2691,11 @@ public:
    * \brief Add surface load to the residual term
    */
   void Add_SurfaceLoad_Res(su2double *val_surfForce);
+  
+  /*!
+   * \brief Set surface load of the residual term (for dampers - deletes all the other loads)
+   */
+  void Set_SurfaceLoad_Res(unsigned short iVar, su2double val_surfForce);
   
   /*!
    * \brief Get the residual term due to surface load
@@ -2461,6 +2833,18 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   su2double GetSolution_time_n(unsigned short val_var);
+  
+  /*!
+   * \brief Get the fem solution at time n.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  su2double *Get_femSolution_time_n(void);
+  
+  /*!
+   * \brief Get the solution at time n.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  su2double *GetSolution_time_n(void);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -2635,7 +3019,109 @@ public:
    */
   su2double GetVonMises_Stress(void);
   
+  /*!
+   * \brief Set the reference geometry.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
   
+  /*!
+   * \brief Get the pointer to the reference geometry
+   */
+  su2double *GetReference_Geometry(void);
+  
+  /*!
+   * \brief Get the value of the reference geometry for the coordinate iVar
+   */
+  su2double GetReference_Geometry(unsigned short iVar);
+  
+  /*!
+   * \brief Register the variables in the solution time_n array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void Register_femSolution_time_n();
+  
+  /*!
+   * \brief Register the variables in the velocity array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolution_Vel(bool input);
+  
+  /*!
+   * \brief Register the variables in the velocity time_n array as input/output variable.
+   */
+  void RegisterSolution_Vel_time_n();
+  
+  /*!
+   * \brief Register the variables in the acceleration array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolution_Accel(bool input);
+  
+  /*!
+   * \brief Register the variables in the acceleration time_n array as input/output variable.
+   */
+  void RegisterSolution_Accel_time_n();
+  
+  /*!
+   * \brief Set the velocity adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_Vel(su2double *adj_sol);
+  
+  /*!
+   * \brief Get the velocity adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_Vel(su2double *adj_sol);
+  
+  /*!
+   * \brief Set the velocity adjoint values of the solution at time n.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_Vel_time_n(su2double *adj_sol);
+  
+  /*!
+   * \brief Get the velocity adjoint values of the solution at time n.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_Vel_time_n(su2double *adj_sol);
+  
+  /*!
+   * \brief Set the acceleration adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_Accel(su2double *adj_sol);
+  
+  /*!
+   * \brief Get the acceleration adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_Accel(su2double *adj_sol);
+  
+  /*!
+   * \brief Set the acceleration adjoint values of the solution at time n.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_Accel_time_n(su2double *adj_sol);
+  
+  /*!
+   * \brief Get the acceleration adjoint values of the solution at time n.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
+  
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
+
 };
 
 /*!
@@ -2699,7 +3185,6 @@ public:
  * \brief Main class for defining the variables of the compressible Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -2724,6 +3209,9 @@ protected:
   /*--- New solution container for Classical RK4 ---*/
 
   su2double *Solution_New;
+
+  /*--- Old solution container for BGS iterations ---*/
+  su2double* Solution_BGS_k;
   
 public:
   
@@ -3125,6 +3613,17 @@ public:
    * \param[in] Value of the derivatives of the wind gust
    */
   void SetWindGustDer(su2double* val_WindGust);
+
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
 };
 
 /*!
@@ -3132,7 +3631,6 @@ public:
  * \brief Main class for defining the variables of the incompressible Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CIncEulerVariable : public CVariable {
 protected:
@@ -3147,6 +3645,9 @@ protected:
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   
+  /*--- Old solution container for BGS iterations ---*/
+  su2double* Solution_BGS_k;
+
 public:
   
   /*!
@@ -3158,11 +3659,12 @@ public:
    * \overload
    * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_temperature - Value of the temperature (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
+  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim,
                     unsigned short val_nvar, CConfig *config);
   
   /*!
@@ -3278,12 +3780,17 @@ public:
   /*!
    * \brief Set the value of the density for the incompressible flows.
    */
-  void SetDensity(su2double val_density);
+  bool SetDensity(su2double val_density);
   
   /*!
    * \brief Set the value of the density for the incompressible flows.
    */
   void SetVelocity(void);
+
+  /*!
+   * \brief Set the value of the temperature for incompressible flows with energy equation.
+   */
+  bool SetTemperature(su2double val_temperature);
   
   /*!
    * \brief Set the value of the beta coeffient for incompressible flows.
@@ -3314,6 +3821,12 @@ public:
    */
   su2double GetDensity(void);
   
+  /*!
+   * \brief Get the temperature of the flow.
+   * \return Value of the temperature of the flow.
+   */
+  su2double GetTemperature(void);
+
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] val_dim - Index of the dimension.
@@ -3361,8 +3874,41 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
-  bool SetPrimVar(su2double Density_Inf, CConfig *config);
+  bool SetPrimVar(CFluidModel *FluidModel);
+
+  /*!
+   * \brief Set the specific heat Cp.
+   */
+  void SetSpecificHeatCp(su2double Cp);
+
+  /*!
+   * \brief Set the specific heat Cv.
+   */
+  void SetSpecificHeatCv(su2double Cv);
+
+  /*!
+   * \brief Get the specific heat at constant P of the flow.
+   * \return Value of the specific heat at constant P of the flow.
+   */
+  su2double GetSpecificHeatCp(void);
+
+  /*!
+   * \brief Get the specific heat at constant V of the flow.
+   * \return Value of the specific heat at constant V of the flow.
+   */
+  su2double GetSpecificHeatCv(void);
   
+  /*!
+   * \brief Set the value of the solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+
+  /*!
+   * \brief Get the value of the solution in the previous BGS subiteration.
+   * \param[out] val_solution - solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
+
 };
 
 /*!
@@ -3370,7 +3916,6 @@ public:
  * \brief Main class for defining the variables of the compressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3381,6 +3926,11 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double DES_LengthScale; /*!< \brief DES Length Scale. */
+  su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
+  su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
+  su2double Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  
 public:
   
   /*!
@@ -3527,6 +4077,40 @@ public:
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
+  
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);
+  
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation_NTS();
+    
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation_FD(su2double wall_distance);
+    
+  /*!
+ * \brief Get the Roe Dissipation Coefficient.
+ * \return Value of the Roe Dissipation.
+ */
+  su2double GetRoe_Dissipation(void);
+  
+  /*!
+ * \brief Set the Roe Dissipation Coefficient.
+ * \param[in] val_dissipation - Value of the Roe dissipation factor.
+ */
+  void SetRoe_Dissipation(su2double val_dissipation);
+  
 };
 
 /*!
@@ -3534,7 +4118,6 @@ public:
  * \brief Main class for defining the variables of the incompressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CIncNSVariable : public CIncEulerVariable {
 private:
@@ -3545,6 +4128,8 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  
+  su2double DES_LengthScale;
 public:
   
   /*!
@@ -3556,11 +4141,12 @@ public:
    * \overload
    * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_temperature - Value of the temperature (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CIncNSVariable(su2double val_pressure, su2double *val_velocity, su2double val_temperature, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \overload
@@ -3610,6 +4196,17 @@ public:
   su2double GetEddyViscosity(void);
   
   /*!
+   * \brief Set the thermal conductivity.
+   */
+  void SetThermalConductivity(su2double thermalConductivity);
+
+  /*!
+   * \brief Get the thermal conductivity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  su2double GetThermalConductivity(void);
+
+  /*!
    * \brief Get the value of the vorticity.
    * \param[in] val_dim - Index of the dimension.
    * \return Value of the vorticity.
@@ -3625,8 +4222,19 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
   using CVariable::SetPrimVar;
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);  
+    
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
   
 };
 
@@ -3635,7 +4243,6 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -3679,14 +4286,15 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 
 class CTurbSAVariable : public CTurbVariable {
 
 private:
   su2double gamma_BC; /*!< \brief Value of the intermittency for the BC trans. model. */
-
+  su2double DES_LengthScale;
+  su2double Vortex_Tilting;
+  
 public:
   /*!
    * \brief Constructor of the class.
@@ -3734,6 +4342,28 @@ public:
    */
   void SetGammaBC(su2double val_gamma);
   
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);  
+  
+  /*!
+   * \brief Set the vortex tilting measure for computation of the EDDES length scale
+   */
+  void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
+  
+  /*!
+   * \brief Get the vortex tilting measure for computation of the EDDES length scale
+   * \return Value of the DES length Scale
+   */
+  su2double GetVortex_Tilting();
+  
 };
 
 /*!
@@ -3741,7 +4371,6 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3794,7 +4423,6 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -3859,7 +4487,6 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3963,120 +4590,11 @@ public:
   su2double GetHarmonicBalance_Source(unsigned short val_var);
 };
 
-/*!
- * \class CAdjIncEulerVariable
- * \brief Main class for defining the variables of the adjoint incompressible Euler solver.
- * \ingroup Euler_Equations
- * \author F. Palacios, T. Economon, T. Albring
- * \version 5.0.0 "Raven"
- */
-class CAdjIncEulerVariable : public CVariable {
-protected:
-  su2double *Psi;    /*!< \brief Vector of the adjoint variables. */
-  su2double *ForceProj_Vector;  /*!< \brief Vector d. */
-  su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  su2double *IntBoundary_Jump;  /*!< \brief Interior boundary jump vector. */
-  bool incompressible;
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CAdjIncEulerVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_psirho - Value of the adjoint density (initialization value).
-   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
-   * \param[in] val_psie - Value of the adjoint energy (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjIncEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CAdjIncEulerVariable(void);
-  
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
-  /*!
-   * \brief Set the value of the adjoint velocity.
-   * \param[in] val_phi - Value of the adjoint velocity.
-   */
-  void SetPhi_Old(su2double *val_phi);
-  
-  /*!
-   * \brief Set the value of the force projection vector.
-   * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
-   */
-  void SetForceProj_Vector(su2double *val_ForceProj_Vector);
-  
-  /*!
-   * \brief Set the value of the objective function source.
-   * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
-   */
-  void SetObjFuncSource(su2double *val_SetObjFuncSource);
-  
-  /*!
-   * \brief Set the value of the interior boundary jump vector vector.
-   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
-   */
-  void SetIntBoundary_Jump(su2double *val_IntBoundary_Jump);
-  
-  /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  su2double *GetForceProj_Vector(void);
-  
-  /*!
-   * \brief Get the value of the objective function source.
-   * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
-   */
-  su2double *GetObjFuncSource(void);
-  
-  /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  su2double *GetIntBoundary_Jump(void);
-  
-  /*!
-   * \brief Set the time spectral source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
-   */
-  void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
-  
-  /*!
-   * \brief Get the time spectral source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the time spectral source term for the index <i>val_var</i>.
-   */
-  su2double GetTimeSpectral_Source(unsigned short val_var);
-};
-
 /*! 
  * \class CAdjNSVariable
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CAdjNSVariable : public CAdjEulerVariable {  
 private:
@@ -4143,84 +4661,11 @@ public:
   
 };
 
-/*!
- * \class CAdjIncNSVariable
- * \brief Main class for defining the variables of the adjoint incompressible Navier-Stokes solver.
- * \ingroup Navier_Stokes_Equations
- * \author F. Palacios, T. Economon, T. Albring
- * \version 5.0.0 "Raven"
- */
-class CAdjIncNSVariable : public CAdjIncEulerVariable {
-private:
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CAdjIncNSVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_psirho - Value of the adjoint density (initialization value).
-   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
-   * \param[in] val_psie - Value of the adjoint energy (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjIncNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \overload
-   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAdjIncNSVariable(void);
-  
-  /*!
-   * \brief Set the value of the adjoint velocity.
-   * \param[in] val_phi - Value of the adjoint velocity.
-   */
-  void SetPhi_Old(su2double *val_phi);
-  
-  /*!
-   * \brief Set the value of the force projection vector.
-   * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
-   */
-  void SetForceProj_Vector(su2double *val_ForceProj_Vector);
-  
-  /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  su2double *GetForceProj_Vector(void);
-  
-  /*!
-   * \brief Set the value of the force projection vector on the solution vector.
-   */
-  void SetVelSolutionOldDVector(void);
-  
-  /*!
-   * \brief Set the value of the force projection vector on the old solution vector.
-   */
-  void SetVelSolutionDVector(void);
-  
-};
-
 /*! 
  * \class CAdjTurbVariable
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -4270,7 +4715,6 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -4300,7 +4744,6 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjVariable : public CVariable {
 private:
@@ -4310,6 +4753,18 @@ private:
   su2double* DualTime_Derivative;
   su2double* DualTime_Derivative_n;
   su2double TranspVel;
+  
+  su2double* Cross_Term_Derivative;
+  su2double* Geometry_CrossTerm_Derivative;
+  su2double* Geometry_CrossTerm_Derivative_Flow;
+  
+  su2double* Solution_Geometry;
+  su2double* Solution_Geometry_Old;
+  su2double* Geometry_Direct;
+  
+  su2double* Solution_BGS;
+  su2double* Solution_BGS_k;
+  su2double* Solution_Geometry_BGS_k;
   
 public:
   /*!
@@ -4372,6 +4827,371 @@ public:
   void SetTranspiration_Direct(su2double sol);
   
   su2double GetTranspiration_Direct();
+
+  /*!
+   * \brief Set the restart geometry (coordinate of the converged solution)
+   * \param[in] val_coordinate_direct - Value of the restart coordinate.
+   */
+  void SetGeometry_Direct(su2double *val_coordinate_direct);
+  
+  /*!
+   * \brief Get the restart geometry (coordinate of the converged solution).
+   * \return Pointer to the restart coordinate vector.
+   */
+  su2double *GetGeometry_Direct(void);
+  
+  /*!
+   * \brief Get the restart geometry (coordinate of the converged solution).
+   * \return Coordinate val_dim of the geometry_direct vector.
+   */
+  su2double GetGeometry_Direct(unsigned short val_dim);
+  
+  /*!
+   * \brief Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  su2double GetSolution_Geometry(unsigned short val_var);
+  
+  /*!
+   * \brief Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  void SetSolution_Geometry(su2double *val_solution_geometry);
+  
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  void SetSolution_Geometry(unsigned short val_var, su2double val_solution_geometry);
+  
+  /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  su2double GetGeometry_CrossTerm_Derivative(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] der - cross term derivative.
+   */
+  void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+  
+  /*!
+   * \brief Get the mesh cross term derivative from the flow solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned short val_var);
+  
+  /*!
+   * \brief Set the value of the mesh cross term derivative from the flow solution (adjoint).
+   * \param[in] der - cross term derivative.
+   */
+  void SetGeometry_CrossTerm_Derivative_Flow(unsigned short iDim, su2double der);
+  
+  /*!
+   * \brief Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  void Set_OldSolution_Geometry(void);
+  
+  /*!
+   * \brief Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  su2double Get_OldSolution_Geometry(unsigned short iDim);
+  
+  /*!
+   * \brief Set the value of the adjoint solution in the current BGS subiteration.
+   */
+  void Set_BGSSolution(unsigned short iDim, su2double val_solution);
+  
+  /*!
+   * \brief Set the value of the adjoint solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_k(void);
+  
+  /*!
+   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution(unsigned short iDim);
+  
+  /*!
+   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_k(unsigned short iDim);
+
+  /*!
+   * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
+   */
+  void Set_BGSSolution_Geometry(void);
+
+  /*!
+   * \brief Get the value of the adjoint geometry solution in the previous BGS subiteration.
+   * \param[out] val_solution - geometrical adjoint solution in the previous BGS subiteration.
+   */
+  su2double Get_BGSSolution_Geometry(unsigned short iDim);
+
+  /*!
+   * \brief Set the contribution of crossed terms into the derivative.
+   */
+  void SetCross_Term_Derivative(unsigned short iVar, su2double der);
+  
+  /*!
+   * \brief Get the contribution of crossed terms into the derivative.
+   */
+  su2double GetCross_Term_Derivative(unsigned short iVar);
+};
+
+/*!
+ * \class CDiscAdjFEAVariable
+ * \brief Main class for defining the variables of the adjoint solver.
+ * \ingroup Discrete_Adjoint
+ * \author T. Albring, R. Sanchez.
+ * \version 4.2.0 "Cardinal"
+ */
+class CDiscAdjFEAVariable : public CVariable {
+private:
+    su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+    su2double* Solution_Direct;
+
+    su2double* Dynamic_Derivative;
+    su2double* Dynamic_Derivative_n;
+    su2double* Dynamic_Derivative_Vel;
+    su2double* Dynamic_Derivative_Vel_n;
+    su2double* Dynamic_Derivative_Accel;
+    su2double* Dynamic_Derivative_Accel_n;
+
+    su2double* Solution_Vel;
+    su2double* Solution_Accel;
+
+    su2double* Solution_Vel_time_n;
+    su2double* Solution_Accel_time_n;
+
+    su2double* Solution_Old_Vel;
+    su2double* Solution_Old_Accel;
+
+    su2double* Solution_Direct_Vel;
+    su2double* Solution_Direct_Accel;
+
+    su2double* Cross_Term_Derivative;
+    su2double* Geometry_CrossTerm_Derivative;
+
+    su2double* Solution_BGS;
+    su2double* Solution_BGS_k;
+
+public:
+    /*!
+     * \brief Constructor of the class.
+     */
+    CDiscAdjFEAVariable(void);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CDiscAdjFEAVariable(void);
+
+    /*!
+     * \overload
+     * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+     * \param[in] val_ndim - Number of dimensions of the problem.
+     * \param[in] val_nvar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CDiscAdjFEAVariable(su2double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+
+    /*!
+     * \overload
+     * \param[in] val_solution       - Pointer to the adjoint value (initialization value).
+     * \param[in] val_solution_accel - Pointer to the adjoint value (initialization value).
+     * \param[in] val_solution_vel   - Pointer to the adjoint value (initialization value).
+     * \param[in] val_ndim - Number of dimensions of the problem.
+     * \param[in] val_nvar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CDiscAdjFEAVariable(su2double *val_solution, su2double *val_solution_accel, su2double *val_solution_vel, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+
+    /*!
+     * \brief Set the sensitivity at the node
+     * \param[in] iDim - spacial component
+     * \param[in] val - value of the Sensitivity
+     */
+    void SetSensitivity(unsigned short iDim, su2double val);
+
+    /*!
+     * \brief Get the Sensitivity at the node
+     * \param[in] iDim - spacial component
+     * \return value of the Sensitivity
+     */
+    su2double GetSensitivity(unsigned short iDim);
+
+    void SetDynamic_Derivative(unsigned short iVar, su2double der);
+
+    void SetDynamic_Derivative_n(unsigned short iVar, su2double der);
+
+    su2double GetDynamic_Derivative(unsigned short iVar);
+
+    su2double GetDynamic_Derivative_n(unsigned short iVar);
+
+    void SetDynamic_Derivative_Vel(unsigned short iVar, su2double der);
+
+    void SetDynamic_Derivative_Vel_n(unsigned short iVar, su2double der);
+
+    su2double GetDynamic_Derivative_Vel(unsigned short iVar);
+
+    su2double GetDynamic_Derivative_Vel_n(unsigned short iVar);
+
+    void SetDynamic_Derivative_Accel(unsigned short iVar, su2double der);
+
+    void SetDynamic_Derivative_Accel_n(unsigned short iVar, su2double der);
+
+    su2double GetDynamic_Derivative_Accel(unsigned short iVar);
+
+    su2double GetDynamic_Derivative_Accel_n(unsigned short iVar);
+
+    void SetSolution_Direct(su2double *sol);
+
+    void SetSolution_Vel_Direct(su2double *sol);
+
+    void SetSolution_Accel_Direct(su2double *sol);
+
+    su2double* GetSolution_Direct();
+
+    su2double* GetSolution_Vel_Direct();
+
+    su2double* GetSolution_Accel_Direct();
+
+    su2double GetSolution_Old_Vel(unsigned short iVar);
+
+    su2double GetSolution_Old_Accel(unsigned short iVar);
+
+    /*!
+      * \brief Get the acceleration (Structural Analysis).
+      * \param[in] val_var - Index of the variable.
+      * \return Value of the solution for the index <i>val_var</i>.
+      */
+     su2double GetSolution_Accel(unsigned short val_var);
+
+     /*!
+      * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
+      * \param[in] val_var - Index of the variable.
+      * \return Pointer to the old solution vector.
+      */
+     su2double GetSolution_Accel_time_n(unsigned short val_var);
+
+     /*!
+      * \brief Get the velocity (Structural Analysis).
+      * \param[in] val_var - Index of the variable.
+      * \return Value of the solution for the index <i>val_var</i>.
+      */
+     su2double GetSolution_Vel(unsigned short val_var);
+
+     /*!
+      * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+      * \param[in] val_var - Index of the variable.
+      * \return Pointer to the old solution vector.
+      */
+     su2double GetSolution_Vel_time_n(unsigned short val_var);
+
+       /*!
+      * \brief Get the solution at time n.
+      * \param[in] val_var - Index of the variable.
+      * \return Value of the solution for the index <i>val_var</i>.
+      */
+     su2double GetSolution_time_n(unsigned short val_var);
+
+    /*!
+     * \brief Set the value of the old solution.
+     * \param[in] val_solution_old - Pointer to the residual vector.
+     */
+    void SetSolution_time_n(void);
+
+    /*!
+     * \brief Set the value of the acceleration (Structural Analysis - adjoint).
+     * \param[in] val_solution - Solution of the problem (acceleration).
+     */
+    void SetSolution_Accel(su2double *val_solution_accel);
+
+    /*!
+     * \brief Set the value of the velocity (Structural Analysis - adjoint).
+     * \param[in] val_solution - Solution of the problem (velocity).
+     */
+    void SetSolution_Vel(su2double *val_solution_vel);
+
+    /*!
+     * \brief Set the value of the adjoint acceleration (Structural Analysis) at time n.
+     * \param[in] val_solution_old - Pointer to the residual vector.
+     */
+    void SetSolution_Accel_time_n(su2double *val_solution_accel_time_n);
+
+    /*!
+     * \brief Set the value of the adjoint velocity (Structural Analysis) at time n.
+     * \param[in] val_solution_old - Pointer to the residual vector.
+     */
+    void SetSolution_Vel_time_n(su2double *val_solution_vel_time_n);
+
+    /*!
+     * \brief Set the value of the old acceleration (Structural Analysis - adjoint).
+     * \param[in] val_solution - Old solution of the problem (acceleration).
+     */
+    void Set_OldSolution_Accel(void);
+
+    /*!
+     * \brief Set the value of the old velocity (Structural Analysis - adjoint).
+     * \param[in] val_solution - Old solution of the problem (velocity).
+     */
+    void Set_OldSolution_Vel(void);
+
+    /*!
+     * \brief Set the contribution of crossed terms into the derivative.
+     */
+    void SetCross_Term_Derivative(unsigned short iVar, su2double der);
+
+    /*!
+     * \brief Get the contribution of crossed terms into the derivative.
+     */
+    su2double GetCross_Term_Derivative(unsigned short iVar);
+
+    /*!
+     * \brief A virtual member. Get the geometry solution.
+     * \param[in] val_var - Index of the variable.
+     * \return Value of the solution for the index <i>val_var</i>.
+     */
+    su2double GetGeometry_CrossTerm_Derivative(unsigned short val_var);
+
+    /*!
+     * \brief A virtual member. Set the value of the mesh solution (adjoint).
+     * \param[in] der - cross term derivative.
+     */
+    void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+
+
+    /*!
+     * \brief Set the value of the adjoint solution in the current BGS subiteration.
+     */
+    void Set_BGSSolution(unsigned short iDim, su2double val_solution);
+
+    /*!
+     * \brief Set the value of the adjoint solution in the previous BGS subiteration.
+     */
+    void Set_BGSSolution_k(void);
+
+    /*!
+     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution(unsigned short iDim);
+
+    /*!
+     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution_k(unsigned short iDim);
+
 };
 
 

@@ -2,20 +2,24 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,17 +47,19 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  bool periodic = false;
 
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-  MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -71,7 +77,8 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_SOL);
 
-  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
 
@@ -110,10 +117,15 @@ int main(int argc, char *argv[]) {
 
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-    /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
+    /*--- Until we finish the new periodic BC implementation, use the old
+     partitioning routines for cases with periodic BCs. The old routines 
+     will be entirely removed eventually in favor of the new methods. ---*/
 
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    if (periodic) {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    } else {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+    }
 
     /*--- Deallocate the memory of geometry_aux ---*/
 
@@ -163,8 +175,7 @@ int main(int argc, char *argv[]) {
   if (fsi){
 
     if (nZone < 2){
-      cout << "For multizone computations, please add the number of zones as a second argument for SU2_SOL. " << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
     }
 
     su2double Physical_dt, Physical_t;
@@ -177,8 +188,7 @@ int main(int argc, char *argv[]) {
       iExtIterFlow = config_container[ZONE_0]->GetUnst_RestartIter();
       iExtIterFEM = config_container[ZONE_1]->GetDyn_RestartIter();
       if (iExtIterFlow != iExtIterFEM) {
-        if (rank == MASTER_NODE) cout << "The restart iteration is different from Flow to Structure!!" << endl;
-        exit(EXIT_FAILURE);
+        SU2_MPI::Error("For multizone computations, please add the number of zones as a second argument for SU2_SOL.", CURRENT_FUNCTION);
       }
       else {
         iExtIter = iExtIterFlow;
@@ -414,6 +424,44 @@ int main(int argc, char *argv[]) {
     
   }
   
+  delete config;
+  config = NULL;
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+  
+  if (geometry_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != NULL) {
+        delete geometry_container[iZone];
+      }
+    }
+    delete [] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+  
+  if (solver_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (solver_container[iZone] != NULL) {
+        delete solver_container[iZone];
+      }
+    }
+    delete [] solver_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
+  
+  if (config_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  
+  if (output != NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -440,7 +488,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

@@ -2,20 +2,24 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,6 +39,11 @@
 
 CSysMatrix::CSysMatrix(void) {
   
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
+  ilu_fill_in       = 0;
+
   /*--- Array initialization ---*/
 
   matrix            = NULL;
@@ -336,6 +345,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
         ((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
         ((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
         (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+        (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
         (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
       
       /*--- Reserve memory for the ILU matrix. ---*/
@@ -355,7 +365,8 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     	((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
-      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI))   {
+      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI) ||
+      (config->GetFSI_Simulation() && config->GetKind_Deform_Linear_Solver_Prec() == JACOBI))   {
     
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
     
@@ -399,6 +410,7 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2doubl
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
+//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
           matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = SU2_TYPE::GetValue(val_block[iVar][jVar]);
       break;
     }
@@ -415,6 +427,7 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, su2doubl
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
+//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
           matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = SU2_TYPE::GetValue(val_block[iVar*nVar+jVar]);
       break;
     }
@@ -431,6 +444,7 @@ void CSysMatrix::AddBlock(unsigned long block_i, unsigned long block_j, su2doubl
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
+//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
           matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += SU2_TYPE::GetValue(val_block[iVar][jVar]);
       break;
     }
@@ -447,6 +461,7 @@ void CSysMatrix::SubtractBlock(unsigned long block_i, unsigned long block_j, su2
     if (col_ind[index] == block_j) {
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
+//         matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
           matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= SU2_TYPE::GetValue(val_block[iVar][jVar]);
       break;
     }
@@ -550,6 +565,7 @@ void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
     step++;
     if (col_ind[index] == block_i) {	// Only elements on the diagonal
       for (iVar = 0; iVar < nVar; iVar++)
+//        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix;  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
         matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += SU2_TYPE::GetValue(val_matrix);
       break;
     }
@@ -570,6 +586,7 @@ void CSysMatrix::SetVal2Diag(unsigned long block_i, su2double val_matrix) {
           matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
       
       for (iVar = 0; iVar < nVar; iVar++)
+//        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = val_matrix;  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
         matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = SU2_TYPE::GetValue(val_matrix);
       
       break;
@@ -900,7 +917,7 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -988,7 +1005,7 @@ void CSysMatrix::SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geome
 
 #ifdef HAVE_MPI
   int send_to, receive_from;
-  MPI_Status status;
+  SU2_MPI::Status status;
 #endif
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1136,14 +1153,10 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
-    cerr << "CSysMatrix::MatrixVectorProductTransposed(const CSysVector&, CSysVector): "
-    << "nVar values incompatible." << endl;
-    throw(-1);
+    SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
   }
   if ( (nPoint != vec.GetNBlk()) || (nPoint != prod.GetNBlk()) ) {
-    cerr << "CSysMatrix::MatrixVectorProductTransposed(const CSysVector&, CSysVector): "
-    << "nPoint and nBlk values incompatible." << endl;
-    throw(-1);
+    SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
 
   prod = su2double(0.0); // set all entries of prod to zero
@@ -1369,23 +1382,13 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::Jacobi_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Create vectors to hold the residual and the Matrix-Vector product
@@ -1619,23 +1622,13 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   su2double *Block_ij, omega = 1.0;
   long iPoint, jPoint;
   unsigned short iVar;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::ILU_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Create vectors to hold the residual and the Matrix-Vector product
@@ -1809,23 +1802,13 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   unsigned long iPoint, iVar;
   su2double omega = 1.0;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   
   /*---  Check the number of iterations requested ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysMatrix::LU_SGS_Smoother(): illegal value for smoothing iterations, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for smoothing iterations, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*--- Create vectors to hold the residual and the Matrix-Vector product
@@ -2132,14 +2115,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   long iElemLoop;
   su2double *block;
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   if (size == SINGLE_NODE) {
     
     /*--- Jacobi preconditioning if there is no linelet ---*/
@@ -2231,17 +2206,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     
   }
   else {
-    
-    if (rank == MASTER_NODE) cout << "ERROR: Linelet not implemented in parallel." << endl;
-    
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-    
+    SU2_MPI::Error("Linelet not implemented in parallel.", CURRENT_FUNCTION);
   }
   
 }
