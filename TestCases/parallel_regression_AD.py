@@ -124,7 +124,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.800629, -2.222069, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.800569, -2.222937, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
