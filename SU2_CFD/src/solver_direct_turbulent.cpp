@@ -1386,15 +1386,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   Inlet_TurbVars = new su2double**[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
       Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
       for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
         Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
         Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
       }
-    } else {
-      Inlet_TurbVars[iMarker] = NULL;
-    }
   }
 
 }
@@ -3440,19 +3436,15 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
    * due to arbitrary number of turbulence variables ---*/
 
-  Inlet_TurbVars = new su2double**[nMarker];
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
-      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
-        Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-        Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+      Inlet_TurbVars = new su2double**[nMarker];
+      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+        Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+          Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+          Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+          Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+        }
       }
-    } else {
-      Inlet_TurbVars[iMarker] = NULL;
-    }
-  }
 
 }
 

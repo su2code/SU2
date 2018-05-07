@@ -3102,7 +3102,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     Inlet_Values = new su2double[maxCol_InletFile];
     Inlet_Fine   = new su2double[maxCol_InletFile];
 
-    bool global_failure, local_failure = false;
+    unsigned short global_failure = 0, local_failure = 0;
     ostringstream error_msg;
 
     const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
@@ -3177,7 +3177,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                 cout << endl;
                 cout << "You can widen the tolerance for point matching by changing the value" << endl;
                 cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
-                local_failure = true;
+                local_failure++;
                 break;
 
               }
@@ -3186,16 +3186,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         }
       }
 
-      if (local_failure) break;
+      if (local_failure > 0) break;
     }
 
     global_failure = local_failure;
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI::BOOL, MPI_LOR,
+    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM,
                        MPI_COMM_WORLD);
 #endif
 
-    if (global_failure) {
+    if (global_failure > 0) {
       SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
     }
 
@@ -3282,9 +3282,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
           solver[iMesh][KIND_SOLVER]->SetUniformInlet(config, iMarker);
-        }
       }
     }
 
