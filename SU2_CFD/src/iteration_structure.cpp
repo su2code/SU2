@@ -469,12 +469,12 @@ void CFluidIteration::Preprocess(COutput *output,
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
-  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+  unsigned long OuterIter = config_container[val_iZone]->GetOuterIter();
 
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-  if( fsi  && ( FSIIter == 0 ) ){
+  if( fsi  && ( OuterIter == 0 ) ){
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone][val_iInst], solver_container[val_iZone][val_iInst], config_container[val_iZone], ExtIter);
   }
   
@@ -1666,14 +1666,14 @@ void CFEAIteration::Relaxation(COutput *output,
                         unsigned short val_iZone,
                         unsigned short val_iInst)      {
 
-  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+  unsigned long OuterIter = config_container[val_iZone]->GetOuterIter();
 
   /*-------------------- Aitken's relaxation ------------------------*/
 
   /*------------------- Compute the coefficient ---------------------*/
 
   solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[val_iZone][INST_0], config_container[val_iZone],
-      solver_container[val_iZone][INST_0], FSIIter);
+      solver_container[val_iZone][INST_0], OuterIter);
 
   /*----------------- Set the relaxation parameter ------------------*/
 

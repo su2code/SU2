@@ -98,7 +98,7 @@ void CMultizoneDriver::Run() {
   unsigned long ExtIter = 0;
   bool Convergence = false;
 
-  unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
+  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
   /*--- First, some preprocessing is required. This will determine the kind of problem(s) involved ---*/
   Preprocess();
@@ -112,8 +112,8 @@ void CMultizoneDriver::Run() {
     /*--- Loop over the number of zones (IZONE) ---*/
     for (iZone = 0; iZone < nZone; iZone++){
 
-      /*--- Set the FSI Iter (this needs to be changed into "BlockIter" ---*/
-      config_container[iZone]->SetFSIIter(iOuter_Iter);
+      /*--- Set the FSI Iter (this needs to be changed into "OuterIter" ---*/
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){

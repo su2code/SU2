@@ -174,7 +174,7 @@ public:
    * \param[in] Iteration - Current iteration.
    * \param[in] monitor - Objective function that is use to study its convergence.
    */
-  void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
+  void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter);
 
   /*!
    * \brief Do the convergence analysis to determine if the adjoint FEM analysis has converged.
@@ -184,7 +184,7 @@ public:
    * \param[in] Iteration - Current iteration.
    * \param[in] monitor - Objective function that is use to study its convergence.
    */
-  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
+  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter);
 
 
   /*!
@@ -194,7 +194,7 @@ public:
    * \param[in] Iteration - Current iteration.
    * \param[in] monitor - Objective function that is use to study its convergence.
    */
-  void Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter);
+  void Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iOuterIter);
 
 
   /*!
