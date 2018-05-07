@@ -12755,13 +12755,6 @@ public:
    * \param[in] config_container - The particular config.
    */
   void RegisterSolution(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Registers transpiration velocities on the tape. Called while tape is active.
-   * \param[in] geometry_container - The geometry container holding all grid levels.
-   * \param[in] config_container - The particular config.
-   */
-  void RegisterTranspiration(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -12823,20 +12816,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Extract and set the transpiration velocity sensitivity.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSensitivityTranspiration(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Write the transpiration velocity sensitivity file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Set the objective function.
