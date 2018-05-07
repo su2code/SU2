@@ -10829,10 +10829,10 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
       unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
       unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
-      unsigned long iFSIIter = config[ZONE_STRUCT]->GetFSIIter();
+      unsigned long iOuterIter = config[ZONE_STRUCT]->GetOuterIter();
       su2double dummy = 0.0;
 
-      bool first_iter = ((iExtIter==0) && (iFSIIter == 0));
+      bool first_iter = ((iExtIter==0) && (iOuterIter == 0));
 
       bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
       bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
@@ -10929,7 +10929,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
       }
 
       /*--- Write the begining of the history file ---*/
-      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iFSIIter));
+      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iOuterIter));
       /*--- Write the end of the history file ---*/
       SPRINTF (end, "\n");
 

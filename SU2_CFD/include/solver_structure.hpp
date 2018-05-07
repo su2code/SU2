@@ -3300,7 +3300,7 @@ public:
   virtual void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                          CConfig *fea_config,
                                          CSolver ***fea_solution,
-                                         unsigned long iFSIIter);
+                                         unsigned long iOuterIter);
   
   
   /*!
@@ -12189,7 +12189,7 @@ public:
   void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                  CConfig *fea_config,
                                  CSolver ***fea_solution,
-                                 unsigned long iFSIIter);
+                                 unsigned long iOuterIter);
   
   /*!
    * \brief Aitken's relaxation of the solution.

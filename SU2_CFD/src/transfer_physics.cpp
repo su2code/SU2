@@ -96,7 +96,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
   if ((flow_config->GetUnsteady_Simulation() == STEADY) && (struct_config->GetDynamic_Analysis() == STATIC)){
     Physical_Constants[1] = 1.0;
     if (Ramp_Load){
-      CurrentTime = static_cast<su2double>(struct_config->GetFSIIter());
+      CurrentTime = static_cast<su2double>(struct_config->GetOuterIter());
       Ramp_Time = static_cast<su2double>(struct_config->GetnIterFSI_Ramp() - 1);
 
       ModAmpl = struct_solution->Compute_LoadCoefficient(CurrentTime, Ramp_Time, struct_config);
