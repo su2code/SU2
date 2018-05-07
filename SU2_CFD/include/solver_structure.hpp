@@ -3655,7 +3655,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
+  // virtual void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
   
@@ -12539,7 +12539,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
+  // void OutputTranspirationSensitivity(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Provide the total shape sensitivity coefficient.
