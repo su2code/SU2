@@ -6757,14 +6757,12 @@ public:
 
 };
 
-  
-
 /*!
  * \class CIncEulerSolver
  * \brief Main class for defining the incompressible Euler flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.2.0 "Cardinal"
+ * \version 6.0.1 "Falcon"
  */
 class CIncEulerSolver : public CSolver {
 protected:
@@ -6839,6 +6837,9 @@ protected:
   *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
   *MomentMomentum,  /*!< \brief Inviscid moment for each boundary. */
   InverseDesign;  /*!< \brief Inverse design functional for each boundary. */
+  su2double **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
+  **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
+  ***Inlet_FlowDir;    /*!< \brief Value of the Flow Direction. */
   
   su2double
   AllBound_CD_Inv,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
@@ -7004,13 +7005,6 @@ public:
    */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Impose the send-receive boundary condition.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Set the fluid solver nondimensionalization.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -7023,7 +7017,6 @@ public:
    * \return Value of the pressure at the infinity.
    */
   CFluidModel* GetFluidModel(void);
-  
   
   /*!
    * \brief Compute the density at the infinity.
@@ -8103,6 +8096,65 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPreconditioner(CConfig *config, unsigned long iPoint);
+  
+  /*!
+   * \brief Value of the total temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
+   * \return Value of the total temperature
+   */
+  su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
+   */
+  su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
+   */
+  su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+  
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
 
 };
 
