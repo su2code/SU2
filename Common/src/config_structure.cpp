@@ -1808,6 +1808,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
   addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
 
+  /* DESCRIPTION: Use of predictor */
+  addBoolOption("PREDICTOR", Predictor, false);
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
@@ -1849,11 +1851,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   *  Options: NO, YES \ingroup Config */
   addBoolOption("MATCHING_MESH", MatchingMesh, true);
 
-  /*!\par CONFIG_CATEGORY: Multiphysics definition \ingroup Config*/
-  /*--- Options related to multiphysics problems ---*/
+  /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
+  /*--- Options related to multizone problems ---*/
 
   /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("CONFIG_LIST", nConfig_Files, Config_Filenames);
+
+  /* DESCRIPTION: Determines if the multizone problem is solved for time-domain. */
+  addBoolOption("TIME_DOMAIN", Time_Domain, false);
+  /* DESCRIPTION: Number of outer iterations in the multizone problem. */
+  addUnsignedLongOption("OUTER_ITER", Outer_Iter, 1);
+  /* DESCRIPTION: Number of inner iterations in each multizone block. */
+  addUnsignedLongOption("INNER_ITER", Inner_Iter, 1);
+  /* DESCRIPTION: Number of time steps solved in the multizone problem. */
+  addUnsignedLongOption("TIME_ITER", Time_Iter, 1);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("TIME_STEP", Time_Step, 0.0);
+
 
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
@@ -1873,7 +1887,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
-
+  /* DESCRIPTION: Type of gust */
+  addBoolOption("RELAXATION", Relaxation, false);
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
   /*--- options related to the wave solver ---*/

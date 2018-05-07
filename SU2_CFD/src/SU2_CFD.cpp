@@ -98,6 +98,12 @@ int main(int argc, char *argv[]) {
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
 
+  } else if (config->GetKind_Solver() == MULTIZONE) {
+
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
+
+    driver = new CMultizoneDriver(config_file_name, nZone, nDim, MPICommunicator);
+
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/

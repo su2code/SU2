@@ -1726,7 +1726,11 @@ inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
 
 inline su2double CConfig::GetTotalDV_Penalty(void) { return DV_Penalty; }
 
+inline bool CConfig::GetPredictor(void) { return Predictor; }
+
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
+
+inline bool CConfig::GetRelaxation(void) { return Relaxation; }
 
 inline bool CConfig::GetIncrementalLoad(void) { return IncrementalLoad; }
 
@@ -1804,3 +1808,12 @@ inline unsigned short CConfig::GetnMarker_ZoneInterface(void) { return nMarker_Z
 
 inline string CConfig::GetMarkerTag_ZoneInterface(unsigned short val_iMarker) { return Marker_ZoneInterface[val_iMarker]; }
 
+inline bool CConfig::GetTime_Domain(void) { return Time_Domain; }
+
+inline unsigned long CConfig::GetnInner_Iter(void) { return Inner_Iter; }
+
+inline unsigned long CConfig::GetnOuter_Iter(void) { return Outer_Iter; }
+
+inline unsigned long CConfig::GetnTime_Iter(void) { return Time_Iter; }
+
+inline su2double CConfig::GetTime_Step(void) { return Time_Step; }

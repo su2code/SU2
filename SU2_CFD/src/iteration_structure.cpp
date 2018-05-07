@@ -390,7 +390,40 @@ void CIteration::Iterate(COutput *output,
                          CFreeFormDefBox*** FFDBox,
                          unsigned short val_iZone,
                          unsigned short val_iInst) { }
+void CIteration::Iterate_Block(COutput *output,
+                         CIntegration ****integration_container,
+                         CGeometry ****geometry_container,
+                         CSolver *****solver_container,
+                         CNumerics ******numerics_container,
+                         CConfig **config_container,
+                         CSurfaceMovement **surface_movement,
+                         CVolumetricMovement ***grid_movement,
+                         CFreeFormDefBox*** FFDBox,
+                         unsigned short val_iZone,
+                         unsigned short val_iInst) { }
 void CIteration::Update(COutput *output,
+                        CIntegration ****integration_container,
+                        CGeometry ****geometry_container,
+                        CSolver *****solver_container,
+                        CNumerics ******numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement ***grid_movement,
+                        CFreeFormDefBox*** FFDBox,
+                        unsigned short val_iZone,
+                        unsigned short val_iInst)      { }
+void CIteration::Predictor(COutput *output,
+                        CIntegration ****integration_container,
+                        CGeometry ****geometry_container,
+                        CSolver *****solver_container,
+                        CNumerics ******numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement ***grid_movement,
+                        CFreeFormDefBox*** FFDBox,
+                        unsigned short val_iZone,
+                        unsigned short val_iInst)      { }
+void CIteration::Relaxation(COutput *output,
                         CIntegration ****integration_container,
                         CGeometry ****geometry_container,
                         CSolver *****solver_container,
@@ -615,6 +648,60 @@ void CFluidIteration::Postprocess(COutput *output,
                                   CFreeFormDefBox*** FFDBox,
                                   unsigned short val_iZone,
                                   unsigned short val_iInst) { }
+
+void CFluidIteration::Iterate_Block(COutput *output,
+                                 CIntegration ****integration_container,
+                                 CGeometry ****geometry_container,
+                                 CSolver *****solver_container,
+                                 CNumerics ******numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement ***grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
+                                 unsigned short val_iZone,
+                                 unsigned short val_iInst) {
+
+  /*--- Boolean to determine if we are running a static or dynamic case ---*/
+  bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool unsteady = ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  unsigned short Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
+  bool StopCalc_Flow = false;
+
+  /*--- Preprocess the solver ---*/
+  Preprocess(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+    /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+    /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
+
+    for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
+
+      /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+      if (steady) config_container[val_iZone]->SetExtIter(Inner_Iter);
+      /*--- For unsteady flow simulations, we need to loop over IntIter for the number of time steps ---*/
+      if (unsteady) config_container[val_iZone]->SetIntIter(Inner_Iter);
+
+      Iterate(output, integration_container, geometry_container,
+          solver_container, numerics_container, config_container,
+          surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+      /*--- Write the convergence history for the fluid (only screen output) ---*/
+      if (steady) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
+
+      /*--- If convergence was reached in every zone --*/
+      StopCalc_Flow = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
+      if (StopCalc_Flow) break;
+
+    }
+
+    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+    integration_container[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+
+    //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
+
+}
 
 void CFluidIteration::SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
   // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is described in the
@@ -990,6 +1077,20 @@ void CWaveIteration::Postprocess(COutput *output,
                                  unsigned short val_iZone,
                                  unsigned short val_iInst) { }
 
+void CWaveIteration::Iterate_Block(COutput *output,
+                             CIntegration ****integration_container,
+                             CGeometry ****geometry_container,
+                             CSolver *****solver_container,
+                             CNumerics ******numerics_container,
+                             CConfig **config_container,
+                             CSurfaceMovement **surface_movement,
+                             CVolumetricMovement ***grid_movement,
+                             CFreeFormDefBox*** FFDBox,
+                             unsigned short val_iZone,
+                             unsigned short val_iInst) {
+
+}
+
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 
@@ -1102,6 +1203,19 @@ void CHeatIteration::Postprocess(COutput *output,
                                  unsigned short val_iZone,
                                  unsigned short val_iInst) { }
 
+void CHeatIteration::Iterate_Block(COutput *output,
+                             CIntegration ****integration_container,
+                             CGeometry ****geometry_container,
+                             CSolver *****solver_container,
+                             CNumerics ******numerics_container,
+                             CConfig **config_container,
+                             CSurfaceMovement **surface_movement,
+                             CVolumetricMovement ***grid_movement,
+                             CFreeFormDefBox*** FFDBox,
+                             unsigned short val_iZone,
+                             unsigned short val_iInst) {
+
+}
 
 CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
 CPoissonIteration::~CPoissonIteration(void) { }
@@ -1167,7 +1281,19 @@ void CPoissonIteration::Postprocess(COutput *output,
                         CFreeFormDefBox*** FFDBox,
                         unsigned short val_iZone,
                         unsigned short val_iInst) { }
+void CPoissonIteration::Iterate_Block(COutput *output,
+                                CIntegration ****integration_container,
+                                CGeometry ****geometry_container,
+                                CSolver *****solver_container,
+                                CNumerics ******numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement ***grid_movement,
+                                CFreeFormDefBox*** FFDBox,
+                                unsigned short val_iZone,
+                                unsigned short val_iInst) {
 
+}
 
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
@@ -1505,6 +1631,61 @@ void CFEAIteration::Update(COutput *output,
   }
 
 }
+
+void CFEAIteration::Predictor(COutput *output,
+                        CIntegration ****integration_container,
+                        CGeometry ****geometry_container,
+                        CSolver *****solver_container,
+                        CNumerics ******numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement ***grid_movement,
+                        CFreeFormDefBox*** FFDBox,
+                        unsigned short val_iZone,
+                        unsigned short val_iInst)      {
+
+  /*--- Predict displacements ---*/
+
+  solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[val_iZone][val_iInst], config_container[val_iZone],
+      solver_container[val_iZone][val_iInst]);
+
+  /*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
+
+  solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
+}
+void CFEAIteration::Relaxation(COutput *output,
+                        CIntegration ****integration_container,
+                        CGeometry ****geometry_container,
+                        CSolver *****solver_container,
+                        CNumerics ******numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement ***grid_movement,
+                        CFreeFormDefBox*** FFDBox,
+                        unsigned short val_iZone,
+                        unsigned short val_iInst)      {
+
+  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+
+  /*-------------------- Aitken's relaxation ------------------------*/
+
+  /*------------------- Compute the coefficient ---------------------*/
+
+  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[val_iZone][INST_0], config_container[val_iZone],
+      solver_container[val_iZone][INST_0], FSIIter);
+
+  /*----------------- Set the relaxation parameter ------------------*/
+
+  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->SetAitken_Relaxation(geometry_container[val_iZone][INST_0], config_container[val_iZone],
+      solver_container[val_iZone][INST_0]);
+
+  /*----------------- Communicate the predicted solution and the old one ------------------*/
+  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
+
+
+}
+
 void CFEAIteration::Monitor()     { }
 void CFEAIteration::Output()      { }
 void CFEAIteration::Postprocess(COutput *output,
@@ -1519,6 +1700,31 @@ void CFEAIteration::Postprocess(COutput *output,
                                           unsigned short val_iZone,
                                           unsigned short val_iInst) { }
 
+void CFEAIteration::Iterate_Block(COutput *output,
+                                CIntegration ****integration_container,
+                                CGeometry ****geometry_container,
+                                CSolver *****solver_container,
+                                CNumerics ******numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement ***grid_movement,
+                                CFreeFormDefBox*** FFDBox,
+                                unsigned short val_iZone,
+                                unsigned short val_iInst
+                                ) {
+
+  /*------------------ Structural subiteration ----------------------*/
+  Iterate(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+  /*--- Write the convergence history for the structure (only screen output) ---*/
+  output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
+
+  /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
+  integration_container[val_iZone][INST_0][FEA_SOL]->SetConvergence(false);
+
+}
 
 CAdjFluidIteration::CAdjFluidIteration(CConfig *config) : CIteration(config) { }
 CAdjFluidIteration::~CAdjFluidIteration(void) { }
