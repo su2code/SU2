@@ -5040,8 +5040,8 @@ void CFSIDriver::Run() {
                    && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC));
 
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-  unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
+  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
   unsigned long nIntIter;
 
   bool Convergence = false;
@@ -5072,7 +5072,7 @@ void CFSIDriver::Run() {
 
   Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
-  while (FSIIter < nFSIIter) {
+  while (OuterIter < nOuterIter) {
 
     /*-----------------------------------------------------------------*/
     /*------------------- Transfer Displacements ----------------------*/
@@ -5179,13 +5179,13 @@ void CFSIDriver::Run() {
     /*----------------- Displacements relaxation ----------------------*/
     /*-----------------------------------------------------------------*/
 
-    Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, FSIIter);
+    Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, OuterIter);
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Check convergence --------------------------*/
     /*-----------------------------------------------------------------*/
 
-    Convergence = BGSConvergence(FSIIter, ZONE_FLOW, ZONE_STRUCT);
+    Convergence = BGSConvergence(OuterIter, ZONE_FLOW, ZONE_STRUCT);
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Output FSI history -------------------------*/
@@ -5198,10 +5198,10 @@ void CFSIDriver::Run() {
     if (Convergence) break;
 
     /*-----------------------------------------------------------------*/
-    /*--------------------- Update FSIIter ---------------------------*/
+    /*--------------------- Update OuterIter ---------------------------*/
     /*-----------------------------------------------------------------*/
 
-    FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
+    OuterIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
   }
 
@@ -5350,14 +5350,14 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
 
 }
 
-void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter) {
+void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long OuterIter) {
 
   /*-------------------- Aitken's relaxation ------------------------*/
 
   /*------------------- Compute the coefficient ---------------------*/
 
   solver_container[donorZone][INST_0][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[donorZone][INST_0], config_container[donorZone],
-      solver_container[donorZone][INST_0], FSIIter);
+      solver_container[donorZone][INST_0], OuterIter);
 
   /*----------------- Set the relaxation parameter ------------------*/
 
@@ -5370,7 +5370,7 @@ void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned sho
 
 }
 
-void CFSIDriver::Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter) {
+void CFSIDriver::Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long OuterIter) {
 
 }
 
@@ -5736,7 +5736,7 @@ void CDiscAdjFSIDriver::Run( ) {
   unsigned short iZone;
 
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-  unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
+  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
@@ -6812,7 +6812,7 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
                                                       unsigned short ZONE_STRUCT,
                                                       unsigned short kind_recording){
 
-  unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetFSIIter();
+  unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetOuterIter();
 
 
   ofstream ConvHist_file;
@@ -6860,18 +6860,18 @@ void CDiscAdjFSIDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
 
   unsigned short iZone;
 
-  unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
-  for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
+  for (iOuterIter = 0; iOuterIter < nOuterIter; iOuterIter++){
 
     if (rank == MASTER_NODE){
       cout << endl << "                    ****** BGS ITERATION ";
-      cout << iFSIIter;
+      cout << iOuterIter;
       cout << " ******" << endl;
     }
 
-    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
+    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
 
     /*--- Iterate fluid (including cross term) ---*/
 
@@ -6899,7 +6899,7 @@ void CDiscAdjFSIDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
 
 
     /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
+    BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
 
     if (BGS_Converged) break;
 
@@ -6916,20 +6916,20 @@ void CDiscAdjFSIDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
 
   unsigned short iZone;
 
-  unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
   ofstream myfile_struc, myfile_flow, myfile_geo;
 
-  for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
+  for (iOuterIter = 0; iOuterIter < nOuterIter; iOuterIter++){
 
     if (rank == MASTER_NODE){
       cout << endl << "                    ****** BGS ITERATION ";
-      cout << iFSIIter;
+      cout << iOuterIter;
       cout << " ******" << endl;
     }
 
-    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
+    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
 
     /*--- Iterate structure first ---*/
 
@@ -6957,7 +6957,7 @@ void CDiscAdjFSIDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
 
 
     /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
+    BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
 
     if (BGS_Converged) break;
 

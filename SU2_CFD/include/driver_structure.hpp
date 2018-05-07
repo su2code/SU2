@@ -254,17 +254,17 @@ public:
    * \brief A virtual member.
    * \param[in] donorZone - origin of the information.
    * \param[in] targetZone - destination of the information.
-   * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
+   * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
+  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
 
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - origin of the information.
    * \param[in] targetZone - destination of the information.
-   * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
+   * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
+  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter) {};
 
   /*!
    * \brief A virtual member.
@@ -1102,17 +1102,17 @@ public:
    * \brief Apply a relaxation method into the computed displacements.
    * \param[in] donorZone - origin of the information.
    * \param[in] targetZone - destination of the information.
-   * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
+   * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+  void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter);
 
   /*!
    * \brief Apply a relaxation method into the computed tractions.
    * \param[in] donorZone - origin of the information.
    * \param[in] targetZone - destination of the information.
-   * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
+   * \param[in] iOuterIter - Fluid-Structure Interaction subiteration.
    */
-  void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+  void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iOuterIter);
 
   /*!
    * \brief Check the convergence of BGS subiteration process

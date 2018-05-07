@@ -279,7 +279,7 @@ inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
 inline void CConfig::SetExtIter_OffSet(unsigned long val_iter) { ExtIter_OffSet = val_iter; }
 
-inline void CConfig::SetFSIIter(unsigned long val_iter) { FSIIter = val_iter; }
+inline void CConfig::SetOuterIter(unsigned long val_iter) { OuterIter = val_iter; }
 
 inline void CConfig::SetIntIter(unsigned long val_iter) { IntIter = val_iter; }
 
@@ -287,7 +287,7 @@ inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
 
 inline unsigned long CConfig::GetExtIter_OffSet(void) { return ExtIter_OffSet; }
 
-inline unsigned long CConfig::GetFSIIter(void) { return FSIIter; }
+inline unsigned long CConfig::GetOuterIter(void) { return OuterIter; }
 
 inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
