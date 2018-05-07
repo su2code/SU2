@@ -1885,9 +1885,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.5);
   /* DESCRIPTION: Aitken's dynamic minimum relaxation factor for the first iteration */
   addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
-  /* DESCRIPTION: Type of gust */
+  /* DESCRIPTION: Kind of relaxation */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
-  /* DESCRIPTION: Type of gust */
+  /* DESCRIPTION: Relaxation required */
   addBoolOption("RELAXATION", Relaxation, false);
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
@@ -2455,6 +2455,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
+    Relaxation = true;  // For FSI problems, the relaxation stage is always called
     if (Dynamic_Analysis == STATIC)
 	nExtIter = 1;
   }

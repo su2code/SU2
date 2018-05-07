@@ -134,6 +134,8 @@ void CMultizoneDriver::Run() {
 
     Convergence = OuterConvergence(iOuter_Iter);
 
+    if (Convergence) break;
+
   }
 
 }
