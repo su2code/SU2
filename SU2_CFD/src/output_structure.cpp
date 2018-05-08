@@ -4368,9 +4368,9 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
         /*--- Loop over the variables and write the values to file ---*/
         for (iVar = 0; iVar < nVar_Total; iVar++) {
             restart_file << scientific << Data[iVar][iPoint] << "\t";
-            if (iPoint == 0){
+            /*if (iPoint == 0){
                 cout << "In SetBaseline Restart for iPoint == 0, iVar =  " << iVar << ", solution = " << Data[iVar][iPoint] << endl;
-            }
+            }*/
         }
         //cout << "Set Vars done " << endl;
         restart_file << "\n";
@@ -15754,11 +15754,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     
     /* number of pointIDs current proc receives from each proc to be located in the chunk of its old mesh */
     unsigned long nPointIDs_proc_recv[size];
-    
-        for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
-            cout << "------- Beginning for pointiD= 0, Solution in fine ref mesh for iVar = " << iVar  << ", " <<  solver[FLOW_SOL]->node[0]->GetSolution(iVar) << endl;
-        }
-    
 
     /*--- Loop over all interior mesh nodes and compute the distances to each
      of the no-slip boundary nodes. Store the minimum distance to the wall
@@ -15790,12 +15785,10 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         for (unsigned short iDim=0; iDim < nDim; iDim++)
             NN[iDim] = geometry->node[pointID]->GetCoord(iDim);
         
-        if (pointID == 0){
+        /*if (pointID == 0){
             cout << "In ADT, probe_loc[0] = " << probe_loc[0] << ", " << probe_loc[1] << ", " << probe_loc[2] << endl;
             cout << "NN Coord = " << NN[0] << ", " << NN[1] << ", " << NN[2] << endl;
-        }
-        //if (abs(probe_loc[0] - 0.1)<1e-5 && abs(probe_loc[1]) < 1e-4)
-        //cout << "for porbe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", probe_loc[2] = " << probe_loc[2] << ", NN[0] = " << NN[0] << ", NN[1] = " << NN[1]  << ", NN[2] = " << NN[2] << endl;
+        }*/
         
         bool FoundNearestNode = 1;
         for (unsigned short iDim=0; iDim < nDim; iDim++){
@@ -16087,13 +16080,15 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
                 }
                 
-                if (pointID == 0){
+                /*if (pointID == 0){
                     for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
                         cout << "Rank " << rank << " LOCATED probe with XCoord = " << probe_loc[0] << ", YCoord = " << probe_loc[1] << " intersects with reference mesh node number " << geometry->node[pointID]->GetCoord(0) <<  ", " << geometry->node[pointID]->GetCoord(1) << endl;
                         cout << "Sending for pointiD= 0, Solution in fine ref mesh for iVar = " << iVar  << ", " <<  solver[FLOW_SOL]->node[pointID]->GetSolution(iVar) << endl;
+                        cout << "##### With Local point ID Sending for pointiD= 0, Solution in fine ref mesh with local pointID for iVar = " << iVar  << ", " <<  solver[FLOW_SOL]->node[pointID]->GetSolution(iVar) << endl;
+                        
                         cout << "Sending for pointiD= 0, Solution in interpoalted mesh for iVar = " << iVar << ", "  << Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] << endl;
                     }
-                }
+                }*/
                     
                 /*for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
                     cout << "Buffer_send_InterpSolution[" << iProc << "][" << iNode_proc << "][" << iVar << "] = " << Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] << endl;
@@ -16187,8 +16182,9 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 
                 if (!isIn){
                     
-                    cout << "nElem_node = " << geometry->node[pointID]->GetnElem() << " MAY BE BOUNDARY ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!! with z = " << probe_loc[2] << "Probe_loc[0] = " << probe_loc[0] << "Probe_loc[1] = " << probe_loc[1] << "Probe_loc[2] = " << probe_loc[2] << endl;
-                    cout << " MAY BE BOUNDARY    parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;
+                    /*cout << "nElem_node = " << geometry->node[pointID]->GetnElem() << " MAY BE BOUNDARY ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!! with z = " << probe_loc[2] << "Probe_loc[0] = " << probe_loc[0] << "Probe_loc[1] = " << probe_loc[1] << "Probe_loc[2] = " << probe_loc[2] << endl;
+                    cout << " MAY BE BOUNDARY    parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;*/
+                    
                     //if ( fabs(probe_loc[2] - 0.025) < 1e-4 )
                       //  exit(EXIT_FAILURE);
                     su2double *probe_loc_tmp;
@@ -16210,11 +16206,6 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 
                 Isoparams_hex(parCoor, isoparams);
                 
-                if (iNode_proc == 0){
-                    cout << "In finding isoparms parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoord[2] = " << parCoor[0] << endl;
-                    for (short i =0; i<8 ; i++ )
-                        cout << "isoparam[" << i << isoparams[i] << endl;
-                }
             }
             
             for (unsigned  short iNode=0; iNode < nNodes_elem; iNode++) {
@@ -16257,10 +16248,10 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 //cout << "Buffer_recv_Interp[ " << iProc << "][" << iNode_proc << "][" << iVar << "] = " << Buffer_recv_InterpSolution[iProc][iNode_proc*nVar + iVar] << endl;
                 solver_interp[FLOW_SOL]->node[interpmesh_Point]->SetSolution(iVar,Buffer_recv_InterpSolution[iProc][iNode_proc*nVar+iVar]);
             }
-            if (interpmesh_Point == 0){
+            /*if (interpmesh_Point == 0){
                 for (unsigned short iVar = 0; iVar < nVar; iVar++)
                     cout << "Received Solver interp mesh for pointiD= 0, Solution in fine ref mesh for iVar = " << iVar  << ", " << solver_interp[FLOW_SOL]->node[interpmesh_Point]->GetSolution(iVar) << endl;
-            }
+            }*/
         }
         
     }
