@@ -41,6 +41,7 @@
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  unsigned short val_nDim,
+                 bool val_periodic,
                  SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
 
 
@@ -135,7 +136,16 @@ CDriver::CDriver(char* confFile,
      between the ranks. ---*/
 
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+
+    /*--- Until we finish the new periodic BC implementation, use the old
+     partitioning routines for cases with periodic BCs. The old routines 
+     will be entirely removed eventually in favor of the new methods. ---*/
+
+    if (val_periodic) {
+      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    } else {
+      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], val_periodic);
+    }
 
     /*--- Deallocate the memory of geometry_aux ---*/
 
@@ -3351,10 +3361,11 @@ CDriver::~CDriver(void) {}
 
 
 CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
-                               unsigned short val_nDim, 
+                               unsigned short val_nDim, bool val_periodic,
                                SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                    val_nZone,
                                                                    val_nDim,
+                                                                   val_periodic,
                                                                    MPICommunicator) { }
 
 CGeneralDriver::~CGeneralDriver(void) { }
@@ -3408,7 +3419,7 @@ void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   }
 }
 
-CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator) { }
 
 CFluidDriver::~CFluidDriver(void) { }
 
@@ -3563,9 +3574,10 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
     unsigned short val_nZone,
-    unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+    unsigned short val_nDim, bool val_periodic, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
         val_nZone,
         val_nDim,
+        val_periodic,
         MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
@@ -3785,9 +3797,13 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
                                                  unsigned short val_nZone,
-                                                 unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
-                                                                                    val_nZone,
-                                                                                    val_nDim, MPICommunicator) {
+                                                 unsigned short val_nDim, bool val_periodic,
+                                         SU2_Comm MPICommunicator) : CFluidDriver(confFile,
+																										 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	val_nZone,
+                                                                                    val_nDim,
+                                                                                    val_periodic,
+                                                                                    MPICommunicator) {
+
   RecordingState = NONE;
   unsigned short iZone;
 
@@ -4136,7 +4152,8 @@ void CDiscAdjFluidDriver::DirectRun(){
 CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nZone,
                                                            unsigned short val_nDim,
-                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, MPICommunicator){ }
+                                                           bool val_periodic,
+                                                           SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator){ }
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 }
@@ -4242,9 +4259,11 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
 CHBDriver::CHBDriver(char* confFile,
     unsigned short val_nZone,
     unsigned short val_nDim,
+    bool val_periodic,
     SU2_Comm MPICommunicator) : CDriver(confFile,
         val_nZone,
         val_nDim,
+        val_periodic,
         MPICommunicator) {
   unsigned short kZone;
 
@@ -4803,10 +4822,12 @@ void CHBDriver::ComputeHB_Operator() {
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
+                       bool val_periodic,
                        SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                          val_nZone,
-                                                          val_nDim,
-                                                          MPICommunicator) {
+                                                           val_nZone,
+                                                           val_nDim,
+                                                           val_periodic,
+                                                           MPICommunicator) {
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
 
@@ -4825,8 +4846,6 @@ CFSIDriver::CFSIDriver(char* confFile,
          break;
     }
   }
-
-
 
   init_res_flow   = new su2double[nVar_Flow];
   init_res_struct = new su2double[nVar_Struct];
@@ -5393,15 +5412,15 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
 }
 
-
 CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
-                                                   unsigned short val_nZone,
-                                                   unsigned short val_nDim,
-                                                   SU2_Comm MPICommunicator) : CFSIDriver(confFile,
-                                                                                          val_nZone,
-                                                                                          val_nDim,
-                                                                                          MPICommunicator) {
-
+                                     unsigned short val_nZone,
+                                     unsigned short val_nDim,
+                                     bool val_periodic,
+                                     SU2_Comm MPICommunicator) : CFSIDriver(confFile,
+                                                                            val_nZone,
+                                                                            val_nDim,
+                                                                            val_periodic,
+                                                                            MPICommunicator) {
 
   unsigned short iVar;
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
@@ -7038,12 +7057,14 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
 }
 
 CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
-                       unsigned short val_nZone,
-                       unsigned short val_nDim,
-                       SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                          val_nZone,
-                                                          val_nDim,
-                                                          MPICommunicator) { }
+                                                   unsigned short val_nZone,
+                                                   unsigned short val_nDim,
+                                                   bool val_periodic,
+                                                   SU2_Comm MPICommunicator) : CDriver(confFile,
+                                                                                       val_nZone,
+                                                                                       val_nDim,
+                                                                                       val_periodic,
+                                                                                       MPICommunicator) { }
 
 CMultiphysicsZonalDriver::~CMultiphysicsZonalDriver(void) { }
 
