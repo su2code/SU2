@@ -1340,6 +1340,15 @@ public:
    * \return Total number of domains in the grid file.
    */
   static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
+
+  /*!
+   * \brief Determine whether there are periodic BCs in the grid.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] config - Definition of the particular problem.
+   * \return Boolean for whether or not there are periodic BCs in the grid.
+   */
+  static bool GetPeriodic(string val_mesh_filename, unsigned short val_format, CConfig *config);
   
   /*!
    * \brief Initializes pointers to null
@@ -2833,6 +2842,12 @@ public:
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Analyze(void);
+
+  /*!
+   * \brief Get the total number of periodic markers.
+   * \return Total number of periodic markers.
+   */
+  unsigned short GetnMarker_Periodic(void);
 
   /*!
    * \brief Get the total number of heat flux markers.
