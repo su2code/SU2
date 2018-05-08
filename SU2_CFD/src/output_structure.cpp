@@ -3854,19 +3854,16 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << iPoint << "\t";
     
     /*--- Write the grid coordinates first if it is not called by SU2_SOL(for interpolated mesh solution to write restarts)---*/
-    //if (!(config->GetKind_SU2() == SU2_SOL)) {
+    if (!(config->GetKind_SU2() == SU2_SOL)) {
         for (iDim = 0; iDim < nDim; iDim++) {
               restart_file << scientific << Coords[iDim][iPoint] << "\t";
         }
-    //}
+    }
       
     /*--- Loop over the variables and write the values to file ---*/
-    /*for (iVar = 0; iVar < nVar_Total; iVar++) {
+    for (iVar = 0; iVar < nVar_Total; iVar++) {
       restart_file << scientific << Data[iVar][iPoint] << "\t";
-    }*/
-      for (iVar = nDim; iVar < nVar_Total; iVar++) {
-          restart_file << scientific << Data[iVar][iPoint] << "\t";
-      }
+    }
       //cout << "Set Vars done " << endl;
     restart_file << "\n";
   }
