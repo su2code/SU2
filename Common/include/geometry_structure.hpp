@@ -176,6 +176,7 @@ public:
   unsigned long *starting_node;
   unsigned long *ending_node;
   unsigned long *npoint_procs;
+  unsigned long *nPoint_Linear;
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   idx_t * adjacency;
@@ -1327,9 +1328,9 @@ public:
 
 /*!
  * \class CPhysicalGeometry
- * \brief Class for reading a defining the primal grid which is read from the 
- *        grid file in .su2 format.
- * \author F. Palacios
+ * \brief Class for reading a defining the primal grid which is read from the
+ *        grid file in .su2 or .cgns format.
+ * \author F. Palacios, T. Economon, J. Alonso
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1340,6 +1341,65 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long *adj_counter; /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
+
+  vector<unsigned long> LocalPoints;
+  vector<vector<unsigned long> > Neighbors;
+  map<unsigned long, unsigned long> Color_List;
+  vector<string> Marker_Tags;
+  unsigned long nLocal_Point,
+  nLocal_PointDomain,
+  nLocal_PointGhost,
+  nLocal_PointPeriodic,
+  nLocal_Elem,
+  nLocal_Bound_Elem,
+  nGlobal_Elem,
+  nGlobal_Bound_Elem,
+  nLocal_Line,
+  nLocal_BoundTria,
+  nLocal_BoundQuad,
+  nLinear_Line,
+  nLinear_BoundTria,
+  nLinear_BoundQuad,
+  nLocal_Tria,
+  nLocal_Quad,
+  nLocal_Tetr,
+  nLocal_Hexa,
+  nLocal_Pris,
+  nLocal_Pyra;
+  unsigned long nMarker_Global;
+  su2double *Local_Coords;
+  unsigned long *Local_Points;
+  unsigned long *Local_Colors;
+  unsigned long *Conn_Line;
+  unsigned long *Conn_BoundTria;
+  unsigned long *Conn_BoundQuad;
+  unsigned long *Conn_Line_Linear;
+  unsigned long *Conn_BoundTria_Linear;
+  unsigned long *Conn_BoundQuad_Linear;
+  unsigned long *Conn_Tria;
+  unsigned long *Conn_Quad;
+  unsigned long *Conn_Tetr;
+  unsigned long *Conn_Hexa;
+  unsigned long *Conn_Pris;
+  unsigned long *Conn_Pyra;
+  unsigned long *ID_Line;
+  unsigned long *ID_BoundTria;
+  unsigned long *ID_BoundQuad;
+  unsigned long *ID_Line_Linear;
+  unsigned long *ID_BoundTria_Linear;
+  unsigned long *ID_BoundQuad_Linear;
+  unsigned long *ID_Tria;
+  unsigned long *ID_Quad;
+  unsigned long *ID_Tetr;
+  unsigned long *ID_Hexa;
+  unsigned long *ID_Pris;
+  unsigned long *ID_Pyra;
+  unsigned long *Elem_ID_Line;
+  unsigned long *Elem_ID_BoundTria;
+  unsigned long *Elem_ID_BoundQuad;
+  unsigned long *Elem_ID_Line_Linear;
+  unsigned long *Elem_ID_BoundTria_Linear;
+  unsigned long *Elem_ID_BoundQuad_Linear;
 
 public:
   
@@ -1370,11 +1430,118 @@ public:
 	 */
   CPhysicalGeometry(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \overload
+   * \brief Accepts a geometry container holding a linearly partitioned grid
+   *        with coloring performed by ParMETIS, and this routine distributes
+   *        the points and cells to all partitions based on the coloring.
+   * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPhysicalGeometry(CGeometry *geometry, CConfig *config, bool val_flag);
+
 	/*!
 	 * \brief Destructor of the class.
 	 */
 	~CPhysicalGeometry(void);
-  
+
+  /*!
+   * \brief Distributes the coloring from ParMETIS so that each rank has complete information about the local grid points.
+   * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void DistributeColoring(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DistributePoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void DistributeVolumeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Distribute the connectivity for a single surface element type in all markers across all ranks based on a ParMETIS coloring.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void DistributeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Broadcast the marker tags for all boundaries from the master rank to all other ranks.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DistributeMarkerTags(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Partition the marker connectivity held on the master rank according to a linear partitioning.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being distributed.
+   */
+  void PartitionSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
+  /*!
+   * \brief Load the local grid points after partitioning (owned and ghost) into the geometry class objects.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void LoadPoints(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Load the local volume elements after partitioning (owned and ghost) into the geometry class objects.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void LoadVolumeElements(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Load the local surface elements after partitioning (owned and ghost) into the geometry class objects.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void LoadSurfaceElements(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Routine to launch non-blocking sends and recvs amongst all processors.
+   * \param[in] bufSend - Buffer of data to be sent.
+   * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage format.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] bufRecv - Buffer of data to be received.
+   * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative storage format.
+   * \param[in] sendReq - Array of MPI recv requests.
+   * \param[in] countPerElem - Pieces of data per element communicated.
+   */
+  void InitiateComms(void *bufSend,
+                     int *nElemSend,
+                     SU2_MPI::Request *sendReq,
+                     void *bufRecv,
+                     int *nElemRecv,
+                     SU2_MPI::Request *recvReq,
+                     unsigned short countPerElem,
+                     unsigned short commType);
+
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
+   * \param[in] nSends - Number of sends to be completed.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] nRecvs - Number of receives to be completed.
+   * \param[in] sendReq - Array of MPI recv requests.
+   */
+  void CompleteComms(int nSends,
+                     SU2_MPI::Request *sendReq,
+                     int nRecvs,
+                     SU2_MPI::Request *recvReq);
+
   /*!
 	 * \brief Set the send receive boundaries of the grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1420,7 +1587,6 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
-    
 
   /*!
    * \brief Reads the geometry of the grid and adjust the boundary
@@ -2313,7 +2479,7 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void FindNormal_Neighbor(CConfig *config);
-
+  
 	/*!
 	 * \brief Indentify geometrical planes in the mesh
 	 */
