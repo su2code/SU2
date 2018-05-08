@@ -3854,16 +3854,19 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << iPoint << "\t";
     
     /*--- Write the grid coordinates first if it is not called by SU2_SOL(for interpolated mesh solution to write restarts)---*/
-    if (!(config->GetKind_SU2() == SU2_SOL)) {
+    //if (!(config->GetKind_SU2() == SU2_SOL)) {
         for (iDim = 0; iDim < nDim; iDim++) {
               restart_file << scientific << Coords[iDim][iPoint] << "\t";
         }
-    }
+    //}
       
     /*--- Loop over the variables and write the values to file ---*/
-    for (iVar = 0; iVar < nVar_Total; iVar++) {
+    /*for (iVar = 0; iVar < nVar_Total; iVar++) {
       restart_file << scientific << Data[iVar][iPoint] << "\t";
-    }
+    }*/
+      for (iVar = nDim; iVar < nVar_Total; iVar++) {
+          restart_file << scientific << Data[iVar][iPoint] << "\t";
+      }
       //cout << "Set Vars done " << endl;
     restart_file << "\n";
   }
@@ -3935,8 +3938,13 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
     if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
     nVar_Consv = nVar_First + nVar_Second + nVar_Third;
     //nVar_Total = nVar_Consv;
-    nVar_Consv = 4;
+    
+    if (nDim == 2)
+        nVar_Consv = 4;
+    else
+        nVar_Consv = 5;
     cout << "%%%%%%%%%%%%% nVar_Consv in SetBaselineRestart = " << nVar_Consv << endl;
+    cout << "%%%%%%%%%%%%% nVar_Total in SetBaselineRestart = " << nVar_Total << endl;
     /*for (iVar = 0; iVar < nVar_Total; iVar++) {
         cout << "In SetBaselineRestart, Data[" << iVar << "][iPoint=0] = " << Data[iVar][0] << endl;
     }*/
@@ -4363,6 +4371,9 @@ void COutput::SetBaselineRestart(CConfig *config, CGeometry *geometry, CSolver *
         /*--- Loop over the variables and write the values to file ---*/
         for (iVar = 0; iVar < nVar_Total; iVar++) {
             restart_file << scientific << Data[iVar][iPoint] << "\t";
+            if (iPoint == 0){
+                cout << "In SetBaseline Restart for iPoint == 0, iVar =  " << iVar << ", solution = " << Data[iVar][iPoint] << endl;
+            }
         }
         //cout << "Set Vars done " << endl;
         restart_file << "\n";
@@ -7699,7 +7710,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             
             /*--- Write a Tecplot ASCII file ---*/
             
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
+            if (rank == MASTER_NODE) cout << "Writing nVar_Total in SetTecplotASCII ASCII file volume solution file." << endl;
             SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
@@ -15665,7 +15676,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Request *send_req1, *recv_req1,*send_req2, *recv_req2,*send_req3, *recv_req3;
+    MPI_Request *send_req1, *recv_req1,*send_req2, *recv_req2,*send_req3, *recv_req3,*send_req4, *recv_req4;
     MPI_Status status;
     int ind;
 #endif
@@ -15728,6 +15739,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     send_req1 = new MPI_Request[size]; recv_req1 = new MPI_Request[size];
     send_req2 = new MPI_Request[size]; recv_req2 = new MPI_Request[size];
     send_req3 = new MPI_Request[size]; recv_req3 = new MPI_Request[size];
+    send_req4 = new MPI_Request[size]; recv_req4 = new MPI_Request[size];
     
     /* Creating containers to store nearest nodes and rankIDs to be sent to all procs owning the corresponding old mesh */
     vector<vector<unsigned long> > Buffer_send_pointIDs;
@@ -15746,6 +15758,11 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     /* number of pointIDs current proc receives from each proc to be located in the chunk of its old mesh */
     unsigned long nPointIDs_proc_recv[size];
     
+        for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
+            cout << "------- Beginning for pointiD= 0, Solution in fine ref mesh for iVar = " << iVar  << ", " <<  solver[FLOW_SOL]->node[0]->GetSolution(iVar) << endl;
+        }
+    
+
     /*--- Loop over all interior mesh nodes and compute the distances to each
      of the no-slip boundary nodes. Store the minimum distance to the wall
      for each interior mesh node. ---*/
@@ -15776,6 +15793,10 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         for (unsigned short iDim=0; iDim < nDim; iDim++)
             NN[iDim] = geometry->node[pointID]->GetCoord(iDim);
         
+        if (pointID == 0){
+            cout << "In ADT, probe_loc[0] = " << probe_loc[0] << ", " << probe_loc[1] << ", " << probe_loc[2] << endl;
+            cout << "NN Coord = " << NN[0] << ", " << NN[1] << ", " << NN[2] << endl;
+        }
         //if (abs(probe_loc[0] - 0.1)<1e-5 && abs(probe_loc[1]) < 1e-4)
         //cout << "for porbe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", probe_loc[2] = " << probe_loc[2] << ", NN[0] = " << NN[0] << ", NN[1] = " << NN[1]  << ", NN[2] = " << NN[2] << endl;
         
@@ -15933,13 +15954,13 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         /* Send to Z Coord only those procs which have to send non-zero number of pointIDs  */
         for (int iProc = 0; iProc < nProcs_send; iProc++) {
             /* iProc_send[iRank] determines which rank we are sending the pointIDs to */
-            SU2_MPI::Isend(&(Buffer_send_Zcoord[iProc_send[iProc]][0]), nPointIDs_proc_send[iProc_send[iProc]], MPI_DOUBLE, iProc_send[iProc], rank +1 + 2*size, MPI_COMM_WORLD,&(send_req3[iProc]));
+            SU2_MPI::Isend(&(Buffer_send_Zcoord[iProc_send[iProc]][0]), nPointIDs_proc_send[iProc_send[iProc]], MPI_DOUBLE, iProc_send[iProc], rank +1 + 2*size, MPI_COMM_WORLD,&(send_req4[iProc]));
         }
         
         /* Receive from only those ranks which are sending non-zero number of pointIDs */
         for (int iProc = 0; iProc < nProcs_recv; iProc++) {
             /* iProc_send[iRank] determines which rank we are sending the pointIDs to */
-            SU2_MPI::Irecv(&(Buffer_recv_Zcoord[iProc][0]), nPointIDs_proc_recv[iProc_recv[iProc]], MPI_DOUBLE, iProc_recv[iProc], iProc_recv[iProc]+1+2*size, MPI_COMM_WORLD,&(recv_req3[iProc]));
+            SU2_MPI::Irecv(&(Buffer_recv_Zcoord[iProc][0]), nPointIDs_proc_recv[iProc_recv[iProc]], MPI_DOUBLE, iProc_recv[iProc], iProc_recv[iProc]+1+2*size, MPI_COMM_WORLD,&(recv_req4[iProc]));
         }
     }
  
@@ -15972,6 +15993,17 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
         SU2_MPI::Waitany(number, recv_req3, &ind, &status);
     }
     
+    if (nDim == 3){
+        number = nProcs_send;
+        for (int ii = 0; ii < number; ii++) {
+            SU2_MPI::Waitany(number, send_req4, &ind, &status);
+        }
+        
+        number = nProcs_recv;
+        for (int ii = 0; ii < number; ii++) {
+            SU2_MPI::Waitany(number, recv_req4, &ind, &status);
+        }
+    }
     /*for (int iProc = 0; iProc < nProcs_recv; iProc++) {
         for (int iPointID = 0; iPointID < nPointIDs_proc_recv[iProc_recv[iProc]]; iPointID++) {
             cout << "Received PointIDS buffer in rank " << rank << " from rank " << iProc_recv[iProc] << " are " << Buffer_recv_pointIDs[iProc][iPointID] << " with Xcoord " << Buffer_recv_Xcoord[iProc][iPointID] << ", YCoord = " << Buffer_recv_Ycoord[iProc][iPointID] << endl;
@@ -16044,7 +16076,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             /* First two variables represent the x and y coords of the node */
             Buffer_send_InterpSolution[iProc][iNode_proc*nVar+0] = probe_loc[0];
             Buffer_send_InterpSolution[iProc][iNode_proc*nVar+1] = probe_loc[1];
-            if (nDim ==3)
+            if (nDim == 3)
                 Buffer_send_InterpSolution[iProc][iNode_proc*nVar+2] = probe_loc[2];
             
             su2double dist_probe = sqrt((probe_loc[0] - geometry->node[pointID]->GetCoord(0))*(probe_loc[0] - geometry->node[pointID]->GetCoord(0)) + (probe_loc[1] - geometry->node[pointID]->GetCoord(1))*(probe_loc[1] - geometry->node[pointID]->GetCoord(1)));
@@ -16053,11 +16085,19 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
             
             if (dist_probe < 1e-8) {
                 //cout << "Rank " << rank << " LOCATED probe with XCoord = " << probe_loc[0] << ", YCoord = " << probe_loc[1] << " intersects with reference mesh node number " << geometry->node[pointID]->GetGlobalIndex() << endl;
-                
-                for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
+            
+                for (unsigned short iVar = nDim; iVar < nVar; iVar++)  {
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] = solver[FLOW_SOL]->node[pointID]->GetSolution(iVar);
                 }
                 
+                if (pointID == 0){
+                    for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
+                        cout << "Rank " << rank << " LOCATED probe with XCoord = " << probe_loc[0] << ", YCoord = " << probe_loc[1] << " intersects with reference mesh node number " << geometry->node[pointID]->GetCoord(0) <<  ", " << geometry->node[pointID]->GetCoord(1) << endl;
+                        cout << "Sending for pointiD= 0, Solution in fine ref mesh for iVar = " << iVar  << ", " <<  solver[FLOW_SOL]->node[pointID]->GetSolution(iVar) << endl;
+                        cout << "Sending for pointiD= 0, Solution in interpoalted mesh for iVar = " << iVar << ", "  << Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] << endl;
+                    }
+                }
+                    
                 /*for (unsigned short iVar = 0; iVar < nVar; iVar++)  {
                     cout << "Buffer_send_InterpSolution[" << iProc << "][" << iNode_proc << "][" << iVar << "] = " << Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] << endl;
                 }*/
@@ -16093,19 +16133,14 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 if (nDim == 2)
                     probe_elem = FindProbeLocElement_fromNearestNodeElem(geometry, pointID, probe_loc);
                 if (nDim == 3) {
-                    cout << "Before entering probe elem 3D search" << endl;
                     probe_elem = FindProbeLocElement_fromNearestNodeElem3D(geometry, pointID, probe_loc);
                 }
                 
                 MeshInterp_Location[i_count] = probe_elem;
-                
-                /*if (i_count == 202)
-                    cout << "#Ext iter number = " << config->GetExtIter() << ", elem = " << probe_elem << endl;*/
+            
             }
             else{
                 probe_elem = MeshInterp_Location[i_count];
-                /*if (i_count == 202)
-                    cout << "*Ext iter number = " << config->GetExtIter() << ", elem = " << probe_elem << endl;*/
             }
             
             nNodes_elem = geometry->elem[probe_elem]->GetnNodes();
@@ -16117,11 +16152,9 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 for (unsigned short iDim=0; iDim < nDim; iDim++) {
                     X_donor[iDim*nNodes_elem + iNode] = geometry->node[iPoint_loc]->GetCoord(iDim);
                 }
-                 cout << "Located inside element with coords= (" << geometry->node[iPoint_loc]->GetCoord(0) << ", " << geometry->node[iPoint_loc]->GetCoord(1) << ", " << geometry->node[iPoint_loc]->GetCoord(2) << ")" << endl; ;
+                 //cout << "Located inside element with coords= (" << geometry->node[iPoint_loc]->GetCoord(0) << ", " << geometry->node[iPoint_loc]->GetCoord(1) << ", " << geometry->node[iPoint_loc]->GetCoord(2) << ")" << endl; ;
             }
             
-            //if (probe_loc[0]>0.009 && probe_loc[0] < 0.1001)
-              //  cout << "1 -Nearest node found Xcoord = " << geometry->node[pointID]->GetCoord(0) << ", YCoord = " << geometry->node[pointID]->GetCoord(1) << endl;
             if (nDim ==2 )
                 Isoparameters_1(nDim, nNodes_elem, X_donor, probe_loc, isoparams);
             
@@ -16153,22 +16186,43 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                     }
                     cout << endl;*/
                 }
+                
+                
                 if (!isIn){
                     
-                    cout << " ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!!" << endl;
-                    cout << "Probe_loc[0] = " << probe_loc[0] << "Probe_loc[1] = " << probe_loc[1] << "Probe_loc[2] = " << probe_loc[2] << endl;
-                    cout << "nElem_node = " << geometry->node[pointID]->GetnElem() << " MAY BE BOUNDARY ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!! with z = " << probe_loc[2] << endl;
-                    cout << "     parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;
+                    cout << "nElem_node = " << geometry->node[pointID]->GetnElem() << " MAY BE BOUNDARY ----------!!!!!!!!!-------- Not inside the Hex------------!!!!!!!!!! with z = " << probe_loc[2] << "Probe_loc[0] = " << probe_loc[0] << "Probe_loc[1] = " << probe_loc[1] << "Probe_loc[2] = " << probe_loc[2] << endl;
+                    cout << " MAY BE BOUNDARY    parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoor[2] = " << parCoor[2] << endl;
                     //if ( fabs(probe_loc[2] - 0.025) < 1e-4 )
                       //  exit(EXIT_FAILURE);
+                    su2double *probe_loc_tmp;
+                    probe_loc_tmp = new su2double[3];
+                    // This is for 0.5 mesh rod-arifoil 3D
+                    probe_loc_tmp[0] = 0.0996638; probe_loc_tmp[1] = -0.000172853; probe_loc_tmp[2] = probe_loc[2];
+                    
+                    probe_elem = FindProbeLocElement_fromNearestNodeElem3D(geometry, pointID, probe_loc_tmp);
+                    
+                    isIn = CoorInHexahedron(geometry, probe_elem, probe_loc_tmp, parCoor);
+                    
+                    if (!isIn)
+                        cout << " ----------!!!!!!!!!--------Stilllll Not inside the Hex------------!!!!!!!!!!" << endl;
+                    
+                    MeshInterp_Location[i_count] = probe_elem;
+                    
+                    delete [] probe_loc_tmp;
                 }
-
-               
+                
+                Isoparams_hex(parCoor, isoparams);
+                
+                if (iNode_proc == 0){
+                    cout << "In finding isoparms parCoor[0] = " << parCoor[0] << ", parCoor[1] = " << parCoor[1] << ", parCoord[2] = " << parCoor[0] << endl;
+                    for (short i =0; i<8 ; i++ )
+                        cout << "isoparam[" << i << isoparams[i] << endl;
+                }
             }
             
             for (unsigned  short iNode=0; iNode < nNodes_elem; iNode++) {
                 unsigned long iPoint_loc = geometry->elem[probe_elem]->GetNode(iNode);
-                for (unsigned short iVar = 2; iVar < nVar; iVar++)  {
+                for (unsigned short iVar = nDim; iVar < nVar; iVar++)  {
                     Buffer_send_InterpSolution[iProc][iNode_proc*nVar+iVar] += solver[FLOW_SOL]->node[iPoint_loc]->GetSolution(iVar)*isoparams[iNode];
                 }
             }
@@ -16206,6 +16260,10 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
                 //cout << "Buffer_recv_Interp[ " << iProc << "][" << iNode_proc << "][" << iVar << "] = " << Buffer_recv_InterpSolution[iProc][iNode_proc*nVar + iVar] << endl;
                 solver_interp[FLOW_SOL]->node[interpmesh_Point]->SetSolution(iVar,Buffer_recv_InterpSolution[iProc][iNode_proc*nVar+iVar]);
             }
+            if (interpmesh_Point == 0){
+                for (unsigned short iVar = 0; iVar < nVar; iVar++)
+                    cout << "Received Solver interp mesh for pointiD= 0, Solution in fine ref mesh for iVar = " << iVar  << ", " << solver_interp[FLOW_SOL]->node[interpmesh_Point]->GetSolution(iVar) << endl;
+            }
         }
         
     }
@@ -16214,6 +16272,7 @@ void COutput::Solution_Interpolation(CSolver **solver, CGeometry *geometry,
     delete [] send_req1; delete [] recv_req1;
     delete [] send_req2; delete [] recv_req2;
     delete [] send_req3; delete [] recv_req3;
+    delete [] send_req4; delete [] recv_req4;
     
     if(Buffer_send_InterpSolution != NULL) {
         for (int iProc=0; iProc < nProcs_recv; iProc++) {
@@ -16481,20 +16540,17 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
     
     vector<unsigned long> ElemIntersectProbeSeg;
 
-    cout << "nElem_node = " << nElem_node << ",  In FindElem3D routine, For probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", probe_loc[2] = " << probe_loc[2] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << ", NN[2] = " << geometry->node[pointID]->GetCoord(2) << endl;
+    //cout << "nElem_node = " << nElem_node << ",  In FindElem3D routine, For probe[0] = " << probe_loc[0] << ", probe_loc[1] = " << probe_loc[1] << ", probe_loc[2] = " << probe_loc[2] << ", NN[0] = " <<  geometry->node[pointID]->GetCoord(0) << ", NN[1] = " << geometry->node[pointID]->GetCoord(1) << ", NN[2] = " << geometry->node[pointID]->GetCoord(2) << endl;
     
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
         /*--- Determine whether the probe point is inside the element ---*/
         //Inside = IsPointInsideHex(geometry, probe_loc,jElem);
         Inside = CoorInHexahedron(geometry, jElem, probe_loc, parCoor);
-        if (fabs(probe_loc[0] - 0.0996638) < 1e-7 &&  fabs(probe_loc[1] + 0.00017285) < 1e-7 &&  fabs(probe_loc[2] - 0.025) < 1e-5){
-            cout << "Hex parcoord[1] = (" << parCoor[0] << ", " << parCoor[1] << ", " << parCoor[2] << ")" << endl;
-        }
         
         if (Inside) {
             probe_elem = jElem;
-            cout << "Yes inside Elem " << jElem << endl;
+            //cout << "Yes inside Elem " << jElem << endl;
             return probe_elem;
         }
     }
@@ -16505,13 +16561,13 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
     for (unsigned short iElem = 0; iElem < nElem_node; iElem++) {
         jElem = geometry->node[pointID]->GetElem(iElem);
     
-        cout << "1111111---------- Checking for elem " << geometry->elem[jElem]->GetGlobalIndex() << endl;
+        //cout << "1111111---------- Checking for elem " << geometry->elem[jElem]->GetGlobalIndex() << endl;
         
         count=0;
         /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
         for (iFace =0; iFace < geometry->elem[jElem]->GetnFaces(); iFace++)
         {
-            cout << "iFace = " << iFace << endl;
+            //cout << "iFace = " << iFace << endl;
             //cout << "Entering SegInterFace with NN coords NN[0] = " << pointID_Coord[0] << ", " << pointID_Coord[1] << ", " << pointID_Coord[2] << endl;
             su2double same_z = 0;
             for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
@@ -16519,7 +16575,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
                 
                 for (unsigned short iDim =0; iDim < nDim; iDim++)
                     Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
-                cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
+                //cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
                 
             }
             for (unsigned short iNode = 0; iNode < nNodes_face-1; iNode++)
@@ -16528,7 +16584,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
             if (same_z < 1e-15){
                 same_z += fabs(probe_loc[2] -  Coord_face[0][2] );
                 if (same_z < 1e-15) {
-                    cout << "Face on same z plane" << endl;
+                    //cout << "Face on same z plane" << endl;
                     count_intersect_min = 2;
                 }
             }
@@ -16537,7 +16593,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
         
             
             if(FaceIntersect)  {
-                cout << " 11111-------- Face Intersect --------" << endl;
+                //cout << " 11111-------- Face Intersect --------" << endl;
                 count+=1;
                 
             }
@@ -16552,24 +16608,24 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
         //if (count ==4)
         if (count > count_intersect_min)
         {
-            cout << "First Elem to begin with " << geometry->elem[elemID]->GetGlobalIndex() << endl;
+            //cout << "First Elem to begin with " << geometry->elem[elemID]->GetGlobalIndex() << endl;
             // Found element where the segment intersects twice
             break;
         }
     }
     
     unsigned long iter =0, newElem=elemID, neighbor_elem;
-    cout << "Before entering while loop " << endl;
+    //cout << "Before entering while loop " << endl;
     while (iter < 50)
     {
         /* Check if probe is inside the new element */
-        cout << "---Directed search checking if inside elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
+        //cout << "---Directed search checking if inside elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
         //Inside = IsPointInsideHex(geometry, probe_loc,newElem);
         Inside = CoorInHexahedron(geometry, newElem, probe_loc, parCoor);
         
         if (Inside)
         {
-            cout << "----------------Finally !!! Found inside elem " <<  newElem << endl;
+            //cout << "----------------Finally !!! Found inside elem " <<  newElem << endl;
             probe_elem = newElem;
             break;
             //return newElem;
@@ -16578,12 +16634,9 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
         /* Find the next neighboring element through wchih the probe-NN connecting segment passes */
         count=0;
         
-        //if (probe_loc[0]==0.1 && probe_loc[1]==6.72e-05)
-        //cout << "---------- Checking for elem " << geometry->elem[newElem]->GetGlobalIndex() << endl;
-        
         /* For each of the faces of element, find if it intersects the probe to NearestNode line segment */
         for (iFace =0; iFace < geometry->elem[newElem]->GetnFaces(); iFace++) {
-            cout << "iFace = " << iFace << endl;
+            //cout << "iFace = " << iFace << endl;
             for (unsigned short iNode = 0; iNode < nNodes_face; iNode++) {
                 unsigned long face_point = geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, iNode));
                 
@@ -16591,7 +16644,7 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
                 //            Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
                 for (unsigned short iDim =0; iDim < nDim; iDim++)
                     Coord_face[iNode][iDim] = geometry->node[face_point]->GetCoord(iDim);
-                cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
+                //cout << "For Face " << iFace << ", iNode = " << iNode << ", Coord[0] = " << Coord_face[iNode][0] << ", Coord[1] = " << Coord_face[iNode][1] << ", Coord[2] = " << Coord_face[iNode][2] << endl;
             }
             
             FaceIntersect = SegmentIntersectsFace(geometry, probe_loc, pointID_Coord, Coord_face);
@@ -16601,23 +16654,23 @@ unsigned long COutput::FindProbeLocElement_fromNearestNodeElem3D(CGeometry *geom
             
             
                 if(FaceIntersect)   {
-                    cout << " -------- Face Intersect --------" << endl;
+                    //cout << " -------- Face Intersect --------" << endl;
                 
                     if (geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 0)) == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 1)) == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 2)) == pointID || geometry->elem[newElem]->GetNode(geometry->elem[newElem]->GetFaces(iFace, 3)) == pointID)
                         /* Ignore the face with nearest node */
                         continue;
-                    cout << "Intersected face - Not the face containing the pointID" << endl;
+                    //cout << "Intersected face - Not the face containing the pointID" << endl;
                     if (geometry->elem[newElem]->GetNeighbor_Elements(iFace) == -1)
                         return newElem;
                 
                     neighbor_elem = geometry->elem[newElem]->GetNeighbor_Elements(iFace);
                 
-                    cout << "Neighboring elements are " << neighbor_elem << endl;
+                    //cout << "Neighboring elements are " << neighbor_elem << endl;
                     
                     if (neighbor_elem != ElemIntersectProbeSeg.back())  {
                         ElemIntersectProbeSeg.push_back(newElem);
                         newElem = neighbor_elem;
-                        cout << "NewElem --------- ====== " << newElem << endl;
+                        //cout << "NewElem --------- ====== " << newElem << endl;
                         count += 1;
                     }
                 }
@@ -16980,9 +17033,6 @@ bool COutput::CoorInHexahedron(CGeometry *geometry,
         iPoint = geometry->elem[jElem]->GetNode(iNode);
         for (unsigned short iDim=0; iDim < nDim; iDim++) {
             coorPoints[nDim*iNode + iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        }
-        if (fabs(coor[0] - 0.0996638) < 1e-9 &&  fabs(coor[1] + 0.00017285) < 1e-9 &&  fabs(coor[2] - 0.025) < 1e-7){
-            cout << "Hex coord[1] = (" << coorPoints[nDim*iNode + 0] << ", " << coorPoints[nDim*iNode + 1] << ", " << coorPoints[nDim*iNode + 2] << ")" << endl;
         }
     }
     
@@ -17408,7 +17458,7 @@ bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigne
             /*if (jElem == 0)*/
             Elem_CG[iDim] += Coord_elem[iNode][iDim]/nNodes_elem;
         }
-        cout << "Elem "  << jElem << " Node Xcoord = " << Coord_elem[iNode][0] << ", YCoord = " << Coord_elem[iNode][1] << ", ZCoord = " << Coord_elem[iNode][2] << endl;
+        //cout << "Elem "  << jElem << " Node Xcoord = " << Coord_elem[iNode][0] << ", YCoord = " << Coord_elem[iNode][1] << ", ZCoord = " << Coord_elem[iNode][2] << endl;
     }
     
     for (unsigned short iDim =0; iDim < nDim; iDim++)
@@ -17438,7 +17488,7 @@ bool COutput::IsPointInsideHex(CGeometry *geometry, su2double *probe_loc,unsigne
         
         if (Intersect1 || Intersect2)
         {
-            cout << "Checking inside face " << endl;
+            //cout << "Checking inside face " << endl;
             /* Check if probe is on a face */
             bool IsPointOnFace = geometry->IsPointInsideFace_3D(probe_loc, Coord_face, nNodes_face);
             
@@ -17497,9 +17547,9 @@ bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3],
     unsigned short iNode, nNodes_face;
     nNodes_face = 4;
     
-    cout << "In SegIntersectsFace NN - segpoint2[0] = " << segpoint2[0] << ", segpoint2[1] = " << segpoint2[1] << ", segpoint2[2] = " << segpoint2[2] << endl;
+    //cout << "In SegIntersectsFace NN - segpoint2[0] = " << segpoint2[0] << ", segpoint2[1] = " << segpoint2[1] << ", segpoint2[2] = " << segpoint2[2] << endl;
     
-    cout << "In SegIntersectsFace probe_loc - segpoint1[0] = " << segpoint1[0] << ", segpoint1[1] = " << segpoint1[1] << ", segpoint1[2] = " << segpoint1[2] << endl;
+    //cout << "In SegIntersectsFace probe_loc - segpoint1[0] = " << segpoint1[0] << ", segpoint1[1] = " << segpoint1[1] << ", segpoint1[2] = " << segpoint1[2] << endl;
     
     /* Determine if segment connecting the probe and element CG intersects any of the edges(2D)/plane(3D) containing the element */
     
@@ -17524,6 +17574,23 @@ bool COutput::SegmentIntersectsFace(CGeometry *geometry, su2double segpoint1[3],
     
 }
 
+void COutput::Isoparams_hex(su2double *parCoor, su2double *isoparams){
+    /* The hexahedron is parametrized by X-X0 = (Xi-X0)*li, where the sum runs
+     over i = 0..7, although i = 0 does not give a contribution. The Lagrangian
+     interpolation functions for the hexahedron are given by:
+     l0 = (1-r)*(1-s)*(1-t)/8, l1 = (1+r)*(1-s)*(1-t)/8,
+     l2 = (1+r)*(1+s)*(1-t)/8, l3 = (1-r)*(1+s)*(1-t)/8,
+     l4 = (1-r)*(1-s)*(1+t)/8, l5 = (1+r)*(1-s)*(1+t)/8,
+     l6 = (1+r)*(1+s)*(1+t)/8, l7 = (1-r)*(1+s)*(1+t)/8.
+     The boundaries are -1 <= r,s,t <= 1. */
+    su2double r, s, t;
+    r = parCoor[0]; s = parCoor[1]; t = parCoor[3];
+    isoparams[0] = (1-r)*(1-s)*(1-t)/8;     isoparams[1] = (1+r)*(1-s)*(1-t)/8;
+    isoparams[2] = (1+r)*(1+s)*(1-t)/8;     isoparams[3] = (1-r)*(1+s)*(1-t)/8;
+    isoparams[4] = (1-r)*(1-s)*(1+t)/8;     isoparams[5] = (1+r)*(1-s)*(1+t)/8;
+    isoparams[6] = (1+r)*(1+s)*(1+t)/8;     isoparams[7] = (1-r)*(1+s)*(1+t)/8;
+    
+}
 
 void COutput::Isoparameters_1(unsigned short nDim, unsigned short nDonor,
                             su2double *X, su2double *xj, su2double *isoparams) {
