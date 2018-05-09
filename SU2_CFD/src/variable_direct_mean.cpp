@@ -628,9 +628,11 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   AD::SetPreaccIn(Vorticity, 3);
   AD::SetPreaccIn(StrainMag);
   AD::SetPreaccIn(delta);
-  /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(Primitive[nDim+5]);  
+  /*--- Density ---*/
+  AD::SetPreaccIn(Solution[0]);
   /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+5]);
+  /*--- Eddy viscosity ---*/
   AD::SetPreaccIn(Primitive[nDim+6]);
 
   /*--- Central/upwind blending based on:
@@ -652,7 +654,9 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   
   Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
   
-  Lturb = (GetEddyViscosity() + GetLaminarViscosity())/sqrt(cnu*Kaux);
+  const su2double nu = GetLaminarViscosity()/GetDensity();
+  const su2double nu_t = GetEddyViscosity()/GetDensity();
+  Lturb = (nu + nu_t)/sqrt(cnu*Kaux);
   
   Aaux = ch2*max((C_DES*delta/Lturb)/Gaux -  0.5, 0.0);
   
