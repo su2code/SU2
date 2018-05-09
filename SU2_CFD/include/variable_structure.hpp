@@ -284,7 +284,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetRoe_Dissipation_NTS();
+  virtual void SetRoe_Dissipation_NTS(su2double val_delta);
   
   /*!
    * \brief A virtual member.
@@ -4013,7 +4013,7 @@ public:
   /*!
    * \brief Set the new solution for Roe Dissipation.
    */
-  void SetRoe_Dissipation_NTS();
+  void SetRoe_Dissipation_NTS(su2double val_delta);
     
   /*!
    * \brief Set the new solution for Roe Dissipation.
