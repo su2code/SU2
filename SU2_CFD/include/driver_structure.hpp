@@ -101,11 +101,13 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
           unsigned short val_nDim,
+          bool val_periodic,
           SU2_Comm MPICommunicator);
 
   /*!
@@ -647,11 +649,13 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CGeneralDriver(char* confFile,
                  unsigned short val_nZone,
                  unsigned short val_nDim,
+                 bool val_periodic,
                  SU2_Comm MPICommunicator);
 
   /*!
@@ -709,11 +713,13 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile,
                unsigned short val_nZone,
                unsigned short val_nDim,
+               bool val_periodic,
                SU2_Comm MPICommunicator);
 
   /*!
@@ -811,10 +817,13 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] val_periodic - Bool for periodic BCs.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CTurbomachineryDriver(char* confFile,
                         unsigned short val_nZone,
                         unsigned short val_nDim,
+                        bool val_periodic,
                         SU2_Comm MPICommunicator);
 
   /*!
@@ -867,10 +876,13 @@ public:
     * \param[in] confFile - Configuration file name.
     * \param[in] val_nZone - Total number of zones.
     * \param[in] val_nDim - Number of dimensions.
+    * \param[in] val_periodic - Bool for periodic BCs.
+    * \param[in] MPICommunicator - MPI communicator for SU2.
     */
   CDiscAdjFluidDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim,
+                   bool val_periodic,
                    SU2_Comm MPICommunicator);
 
   /*!
@@ -921,10 +933,14 @@ public:
 	   * \param[in] confFile - Configuration file name.
 	   * \param[in] val_nZone - Total number of zones.
 	   * \param[in] val_nDim - Number of dimensions.
+     * \param[in] val_periodic - Bool for periodic BCs.
+     * \param[in] MPICommunicator - MPI communicator for SU2.
 	   */
   CDiscAdjTurbomachineryDriver(char* confFile,
                    unsigned short val_nZone,
-                   unsigned short val_nDim, SU2_Comm MPICommunicator);
+                   unsigned short val_nDim,
+                   bool val_periodic,
+                   SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
@@ -971,11 +987,13 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CHBDriver(char* confFile,
             unsigned short val_nZone,
             unsigned short val_nDim,
+            bool val_periodic,
             SU2_Comm MPICommunicator);
 
   /*!
@@ -1044,11 +1062,13 @@ public:
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_periodic - Bool for periodic BCs.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFSIDriver(char* confFile,
              unsigned short val_nZone,
              unsigned short val_nDim,
+             bool val_periodic,
              SU2_Comm MPICommunicator);
 
   /*!
@@ -1165,11 +1185,13 @@ public:
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_periodic - Bool for periodic BCs.
    */
   CDiscAdjFSIDriver(char* confFile,
-                           unsigned short val_nZone,
-                           unsigned short val_nDim,
-                           SU2_Comm MPICommunicator);
+                    unsigned short val_nZone,
+                    unsigned short val_nDim,
+                    bool val_periodic,
+                    SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
@@ -1407,9 +1429,10 @@ public:
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CMultiphysicsZonalDriver(char* confFile,
-             unsigned short val_nZone,
-             unsigned short val_nDim,
-             SU2_Comm MPICommunicator);
+                           unsigned short val_nZone,
+                           unsigned short val_nDim,
+                           bool val_periodic,
+                           SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
