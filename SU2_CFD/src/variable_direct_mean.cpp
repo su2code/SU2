@@ -612,35 +612,51 @@ bool CNSVariable::SetStrainMag(void) {
   
 }
 
-void CNSVariable::SetRoe_Dissipation_NTS(){
+void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   
-  static const su2double cnu = pow(0.09, 1.5), ch3 = 2.0;
+  static const su2double cnu = pow(0.09, 1.5),
+                         ch1 = 3.0,
+                         ch2 = 1.0,
+                         ch3 = 0.5,
+                         C_DES = 0.65,
+                         sigma_max = 1.0;
   
   unsigned short iDim;
-  su2double Omega = 0, Omega_2 = 0, Baux, Gaux, Lturb, Kaux;
+  su2double Omega = 0, Omega_2 = 0, Baux, Gaux, Lturb, Kaux, Aaux;
   
   AD::StartPreacc();
   AD::SetPreaccIn(Vorticity, 3);
   AD::SetPreaccIn(StrainMag);
+  AD::SetPreaccIn(delta);
   /*--- Eddy viscosity ---*/
   AD::SetPreaccIn(Primitive[nDim+5]);  
   /*--- Laminar viscosity --- */
   AD::SetPreaccIn(Primitive[nDim+6]);
 
+  /*--- Central/upwind blending based on:
+   * Travin A., Shur M., Strelets M., Spalart P.R. (2002) Physical
+   * and Numerical Upgrades in the Detached-Eddy Simulation of Complex
+   * Turbulent Flows. In: Friedrich R., Rodi W. (eds) Advances in LES
+   * of Complex Flows. Fluid Mechanics and Its Applications, vol 65.
+   * Springer, Dordrecht. http://dx.doi.org/10.1007/0-306-48383-1_16
+   */
+
   for (iDim = 0; iDim < 3; iDim++){
-    Omega += Vorticity[iDim]*Vorticity[iDim];
+    Omega += 2.0*Vorticity[iDim]*Vorticity[iDim];
   }
   Omega = sqrt(Omega);
   
   Omega_2 = pow(Omega,2.0);
-  Baux = (ch3 * Omega * max(StrainMag, Omega)) / max(sqrt((pow(StrainMag,2)+Omega_2)*0.5),1E-20);
+  Baux = (ch3 * Omega * max(StrainMag, Omega)) / max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
   
   Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
   
-  Lturb = sqrt((GetEddyViscosity() + GetLaminarViscosity())/(cnu*Kaux));
+  Lturb = (GetEddyViscosity() + GetLaminarViscosity())/sqrt(cnu*Kaux);
   
-  Roe_Dissipation = Lturb*Gaux;
+  Aaux = ch2*max((C_DES*delta/Lturb)/Gaux -  0.5, 0.0);
+  
+  Roe_Dissipation = sigma_max * tanh(pow(Aaux, ch1)); 
   
   AD::SetPreaccOut(Roe_Dissipation);
   AD::EndPreacc();
