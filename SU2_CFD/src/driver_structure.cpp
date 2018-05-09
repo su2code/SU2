@@ -5195,23 +5195,23 @@ void CFSIDriver::Run() {
   /*------------------ Update coupled solver ------------------------*/
   /*-----------------------------------------------------------------*/
 
-  //Update(ZONE_FLOW, ZONE_STRUCT);
+  Update(ZONE_FLOW, ZONE_STRUCT);
 
   /*-----------------------------------------------------------------*/
   /*-------------------- Update fluid solver ------------------------*/
   /*-----------------------------------------------------------------*/
 
-  //iteration_container[ZONE_FLOW][INST_0]->Update(output, integration_container, geometry_container,
-  //                     solver_container, numerics_container, config_container,
-  //                     surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
+  iteration_container[ZONE_FLOW][INST_0]->Update(output, integration_container, geometry_container,
+                       solver_container, numerics_container, config_container,
+                       surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
   /*-----------------------------------------------------------------*/
   /*----------------- Update structural solver ----------------------*/
   /*-----------------------------------------------------------------*/
 
-  //iteration_container[ZONE_STRUCT][INST_0]->Update(output, integration_container, geometry_container,
-  //                       solver_container, numerics_container, config_container,
-  //                       surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
+  iteration_container[ZONE_STRUCT][INST_0]->Update(output, integration_container, geometry_container,
+                         solver_container, numerics_container, config_container,
+                         surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
 
 
   /*-----------------------------------------------------------------*/
