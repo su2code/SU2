@@ -17025,8 +17025,16 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
     tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
     su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     su2double VelEps = 0.0;
+    su2double Riemann, SoundSpeed2, Vel_Mag;
+    su2double *V_inlet, *V_domain;
+
     bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
     bool grid_movement  = config->GetGrid_Movement();
+    su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
+    su2double Gas_Constant       = config->GetGas_ConstantND();
+    bool gravity = (config->GetGravityForce());
+    bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                      (config->GetKind_Turb_Model() == SST));
 
     /*--- Identify the boundary by string name ---*/
 
@@ -17047,6 +17055,10 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      /*--- Allocate the value at the inlet ---*/
+    
+      V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -17096,6 +17108,116 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
          Compute the residual due to the prescribed heat flux. ---*/
 
         Res_Visc[nDim+1] = Wall_HeatFlux * Area;
+
+        /*--- Retrieve solution at this boundary node ---*/
+
+        V_domain = node[iPoint]->GetPrimitive();
+
+        /*--- Retrieve the specified mass flow for the inlet. ---*/
+
+        Density  = node[iPoint]->GetDensity();
+
+        /*--- Get primitives from current inlet state. ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+        Pressure    = node[iPoint]->GetPressure();
+        SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
+
+        /*--- Compute the acoustic Riemann invariant that is extrapolated
+           from the domain interior. ---*/
+
+        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+        for (iDim = 0; iDim < nDim; iDim++)
+          Riemann += Velocity[iDim]*UnitNormal[iDim];
+
+        /*--- Speed of sound squared for fictitious inlet state ---*/
+
+        SoundSpeed2 = Riemann;
+        for (iDim = 0; iDim < nDim; iDim++)
+          SoundSpeed2 -= VelEps*UnitNormal[iDim]*UnitNormal[iDim];
+
+        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+
+        /*--- Pressure for the fictitious inlet state ---*/
+
+        Pressure = SoundSpeed2*Density/Gamma;
+
+        /*--- Energy for the fictitious inlet state ---*/
+
+        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*VelEps*VelEps;
+        if (tkeNeeded) Energy += GetTke_Inf();
+
+        /*--- Primitive variables, using the derived quantities ---*/
+
+        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Vector[iDim];
+        V_inlet[nDim+1] = Pressure;
+        V_inlet[nDim+2] = Density;
+        V_inlet[nDim+3] = Energy + Pressure/Density;
+              
+        /*--- Set various quantities in the solver class ---*/
+
+        conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+        if (grid_movement)
+          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+        /*--- Compute the residual using an upwind scheme ---*/
+
+        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+        /*--- Update residual value ---*/
+
+        LinSysRes.AddBlock(iPoint, Residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+
+        if (implicit)
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+        /*--- Roe Turkel preconditioning, set the value of beta ---*/
+
+        if (config->GetKind_Upwind() == TURKEL)
+          node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
+
+        // /*--- Viscous contribution, commented out because serious convergence problems ---*/
+        //
+        // if (viscous) {
+        //
+        //  /*--- Set laminar and eddy viscosity at the infinity ---*/
+        //
+        //  V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+        //  V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+        //
+        //  /*--- Set the normal vector and the coordinates ---*/
+        //
+        //  visc_numerics->SetNormal(Normal);
+        //  visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        //
+        //  /*--- Primitive variables, and gradient ---*/
+        //
+        //  visc_numerics->SetPrimitive(V_domain, V_inlet);
+        //  visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+        //
+        //  /*--- Turbulent kinetic energy ---*/
+        //
+        //  if (config->GetKind_Turb_Model() == SST)
+        //    visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        //
+        //  /*--- Compute and update residual ---*/
+        //
+        //  visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        //  LinSysRes.SubtractBlock(iPoint, Residual);
+        //
+        //  /*--- Jacobian contribution for implicit integration ---*/
+        //
+        //  if (implicit)
+        //    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        //
+        // }
 
         /*--- If the wall is moving, there are additional residual contributions
          due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
@@ -17255,6 +17377,9 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
       }
     }
 
+  /*--- Free locally allocated memory ---*/
+  
+  delete [] Normal;
 
 }
 
