@@ -14599,7 +14599,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
         else
           while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
         
-        /*--- If we have not visted this element yet, increment our
+        /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
         
         if ((nElem_Flag[iProcessor] != ii)) {
@@ -14616,8 +14616,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15189,7 +15189,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
             else
               while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
             
-            /*--- If we have not visted this element yet, increment our
+            /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
             
             if ((nElem_Flag[iProcessor] != ii)) {
@@ -15208,8 +15208,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -15628,7 +15628,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       else
         while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
       
-      /*--- If we have not visted this node yet, increment our
+      /*--- If we have not visited this node yet, increment our
        number of elements that must be sent to a particular proc. ---*/
       
       if (nPoint_Flag[iProcessor] != (int)iPoint) {
@@ -15644,8 +15644,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -15933,7 +15933,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*---         We need to identify which nodes in the volume data are     ---*/
   /*---         also surface points. Our first step is to loop over all    ---*/
   /*---         of the sorted surface connectivity and create a data       ---*/
-  /*---         structure on each proc that can idenify the local surf     ---*/
+  /*---         structure on each proc that can identify the local surf    ---*/
   /*---         points. Note that the linear partitioning is slightly      ---*/
   /*---         different between the nodes and elements, so we will       ---*/
   /*---         have to move between the two systems in this routine.      ---*/
@@ -16048,7 +16048,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       else
         while(Global_Index <  nPoint_Linear_Nodes[iProcessor])   iProcessor--;
       
-      /*--- If we have not visted this element yet, increment our
+      /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
       
       if ((nElem_Flag[iProcessor] != iNode)) {
@@ -16082,7 +16082,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       else
         while(Global_Index <  nPoint_Linear_Nodes[iProcessor])   iProcessor--;
       
-      /*--- If we have not visted this element yet, increment our
+      /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
       
       if ((nElem_Flag[iProcessor] != iNode)) {
@@ -16116,7 +16116,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
       else
         while(Global_Index <  nPoint_Linear_Nodes[iProcessor])   iProcessor--;
       
-      /*--- If we have not visted this element yet, increment our
+      /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
       
       if ((nElem_Flag[iProcessor] != iNode)) {
@@ -16132,8 +16132,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many nodes it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -16398,8 +16398,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   for (int ii=1; ii < size+1; ii++) nPoint_Send[ii]= (int)nSurf_Poin_Par;
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nPoint_Recv[1] = nPoint_Send[1];
 #endif
@@ -16671,7 +16671,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     else
       while(Global_Index <  nPoint_Linear_Elems[iProcessor])   iProcessor--;
     
-    /*--- If we have not visted this element yet, increment our
+    /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
     
     if ((nElem_Flag[iProcessor] != ii)) {
@@ -16686,8 +16686,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -17015,7 +17015,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     else
       while(Global_Index <  nPoint_Linear_Nodes[iProcessor])   iProcessor--;
     
-    /*--- If we have not visted this element yet, increment our
+    /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
     
     if ((nElem_Flag[iProcessor] != ii)) {
@@ -17030,8 +17030,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
   nElem_Recv[1] = nElem_Send[1];
 #endif
@@ -17077,7 +17077,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
     else
       while(Global_Index <  nPoint_Linear_Nodes[iProcessor])   iProcessor--;
     
-    /*--- If we have not visted this element yet, increment our
+    /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
     
     if ((nElem_Flag[iProcessor] != ii)) {
