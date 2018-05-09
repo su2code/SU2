@@ -665,7 +665,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, VERB_HIGH);
+  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, VERB_NONE);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial

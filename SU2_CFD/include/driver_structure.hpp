@@ -304,6 +304,11 @@ public:
   virtual void DynamicMeshUpdate(unsigned long ExtIter) { };
 
   /*!
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
+   */
+  virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter) { };
+
+  /*!
    * \brief Perform a static mesh deformation, without considering grid velocity.
    */
   virtual void StaticMeshUpdate() { };
@@ -1544,6 +1549,11 @@ public:
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
+   */
+  void DynamicMeshUpdate(unsigned short val_iZone, unsigned long ExtIter);
 
   /*!
    * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
