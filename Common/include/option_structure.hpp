@@ -252,7 +252,8 @@ enum ENUM_MULTIZONE {
   MZ_FLUID_STRUCTURE_INTERACTION = 1,   /*!< \brief Definition of a FSI solver. */
   MZ_TURBOMACHINERY = 2,                /*!< \brief Definition of a Turbomachinery solver. */
   MZ_SLIDING_MESH = 3,                  /*!< \brief Definition of a Multizone Sliding mesh solver. */
-  MZ_GENERIC = 4                        /*!< \brief Definition of a Generic Multizone solver. */
+  MZ_CONJUGATE_HEAT = 4,                /*!< \brief Definition of a Conjugate Heat solver. */
+  MZ_GENERIC = 5                        /*!< \brief Definition of a Generic Multizone solver. */
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_MULTIZONE> Multizone_Map = CCreateMap<string, ENUM_MULTIZONE>
@@ -260,6 +261,7 @@ static const map<string, ENUM_MULTIZONE> Multizone_Map = CCreateMap<string, ENUM
 ("FLUID_STRUCTURE_INTERACTION", MZ_FLUID_STRUCTURE_INTERACTION)
 ("TURBOMACHINERY", MZ_TURBOMACHINERY)
 ("SLIDING_MESH", MZ_SLIDING_MESH)
+("CONJUGATE_HEAT", MZ_CONJUGATE_HEAT)
 ("GENERIC", MZ_GENERIC);
 
 /*!

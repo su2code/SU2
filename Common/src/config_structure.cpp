@@ -2574,7 +2574,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Kind_Solver == ZONE_SPECIFIC) {
-
     ZoneSpecific_Problem = true;
     Kind_Solver = Kind_Solver_PerZone[val_izone];
   }
