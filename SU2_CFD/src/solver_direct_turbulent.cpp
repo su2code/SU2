@@ -1610,18 +1610,26 @@ void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double *V_inlet, *V_domain, *Normal, #Velocity;
+  su2double *V_inlet, *V_domain, *Normal, *UnitNormal, *Velocity;
+  su2double VelEps = 0.0;
+  su2double Riemann, SoundSpeed2, VelEps;
+  su2double Pressure, Density, SoundSpeed2, Riemann, TwoGamma_M1 = 2.0/Gamma_Minus_One,
+            Energy, Gas_Constant = config->GetGas_ConstantND(), GridVel;
+
   bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
   Normal = new su2double[nDim];
+  UnitNormal = new su2double[nDim];
   Velocity = new su2double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                      (config->GetKind_Turb_Model() == SST));
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -1636,9 +1644,14 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          UnitNormal[iDim] = Normal[iDim]/Area;
+
+        VelEps = solver_container[FLOW_SOL]->node[iPoint]->GetTranspiration();
       
         /*--- Store the corrected velocity at the wall which will
          be zero (v = 0), unless there are moving walls (v = u_wall)---*/
@@ -1762,6 +1775,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   /*--- Free locally allocated memory ---*/
   delete[] Normal;
   delete[] Velocity;
+  delete[] UnitNormal;
 
 }
 
