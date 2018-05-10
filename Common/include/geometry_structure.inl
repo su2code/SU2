@@ -47,6 +47,16 @@ inline unsignedLong2T::unsignedLong2T(const unsignedLong2T &other){Copy(other);}
 
 inline unsignedLong2T& unsignedLong2T::operator=(const unsignedLong2T &other){Copy(other); return (*this);}
 
+inline unsignedShort2T::unsignedShort2T(){short0 = short1 = 0;}
+
+inline unsignedShort2T::unsignedShort2T(const unsigned short a, const unsigned short b){short0 = a; short1 = b;}
+
+inline unsignedShort2T::~unsignedShort2T(){}
+
+inline unsignedShort2T::unsignedShort2T(const unsignedShort2T &other){Copy(other);}
+
+inline unsignedShort2T& unsignedShort2T::operator=(const unsignedShort2T &other){Copy(other); return (*this);}
+
 inline FaceOfElementClass::FaceOfElementClass(const FaceOfElementClass &other){Copy(other);}
 
 inline FaceOfElementClass& FaceOfElementClass::operator=(const FaceOfElementClass &other){Copy(other); return (*this);}

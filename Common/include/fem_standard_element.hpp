@@ -1776,6 +1776,16 @@ public:
   */
   su2double WorkEstimateMetis(CConfig *config);
 
+  /*!
+  * \brief Function, which estimates the additional amount of work for an element
+           of this type when a wall function treatment is used. This information
+           is used to determine a well balanced partition.
+  * \param[in] config    - Object, which contains the input parameters.
+  * \param[in] nPointsWF - Number of points to discretize the wall model.
+  */
+  su2double WorkEstimateMetisWallFunctions(CConfig              *config,
+                                           const unsigned short nPointsWF);
+
 private:
   /*!
   * \brief Function, which copies the data of the given object into the current object.

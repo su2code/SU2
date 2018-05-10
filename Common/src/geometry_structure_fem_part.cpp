@@ -57,6 +57,25 @@ void unsignedLong2T::Copy(const unsignedLong2T &other) {
   long1 = other.long1;
 }
 
+bool unsignedShort2T::operator<(const unsignedShort2T &other) const {
+  if(short0 != other.short0) return (short0 < other.short0);
+  if(short1 != other.short1) return (short1 < other.short1);
+
+  return false;
+}
+
+bool unsignedShort2T::operator==(const unsignedShort2T &other) const {
+  if(short0 != other.short0) return false;
+  if(short1 != other.short1) return false;
+
+  return true;
+}
+
+void unsignedShort2T::Copy(const unsignedShort2T &other) {
+  short0 = other.short0;
+  short1 = other.short1;
+}
+
 FaceOfElementClass::FaceOfElementClass(){
   nCornerPoints   = 0;
   cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
@@ -2416,7 +2435,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine the time levels of the elements. This is only relevant
         when time accurate local time stepping is employed. ---*/
-  map<unsigned long, unsigned short> mapExternalElemIDToTimeLevel;
+  map<unsigned long, unsignedShort2T> mapExternalElemIDToTimeLevel;
   DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
 
   /*--- Determine the ownership of the internal faces, i.e. which adjacent
@@ -2441,9 +2460,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       }
       else {
 
-        map<unsigned long,unsigned short>::const_iterator MI;
+        map<unsigned long,unsignedShort2T>::const_iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(localFaces[i].elemID1);
-        timeLevel1 = MI->second;
+        if(MI == mapExternalElemIDToTimeLevel.end())
+          SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
+        timeLevel1 = MI->second.short0;
       }
 
       /* Check if both elements have the same time level. */
@@ -2512,61 +2533,174 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     }
   }
 
-  /*-- Create the vectors that describe the connectivity of the graph. ---*/
-  vector<unsigned long> xadj_l(nElem+1, 0);
+  /*--- Create the vector of vectors that describe the connectivity
+        of the graph. First the faces. ---*/
+  vector<vector<unsigned long> > adjacency(nElem, vector<unsigned long>(0));
   for(unsigned long i=0; i<nFacesLoc; ++i) {
     long ii = localFaces[i].elemID0 - starting_node[rank];
-    ++xadj_l[ii+1];
+    adjacency[ii].push_back(localFaces[i].elemID1);
 
     if(localFaces[i].periodicIndex == 0) {
       ii = localFaces[i].elemID1 - starting_node[rank];
-      if(ii >= 0 && ii < (long) nElem) ++xadj_l[ii+1];
+      if(ii >= 0 && ii < (long) nElem)
+        adjacency[ii].push_back(localFaces[i].elemID0);
     }
   }
 
-  for(unsigned long i=0; i<nElem; ++i)
-    xadj_l[i+1] += xadj_l[i];
-
-  vector<unsigned long> xxadj_l = xadj_l;
-  vector<unsigned long> adjacency_l(xadj_l[nElem]);
-  for(unsigned long i=0; i<nFacesLoc; ++i) {
-    long ii = localFaces[i].elemID0 - starting_node[rank];
-    adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID1;
-
-    if(localFaces[i].periodicIndex == 0) {
-      ii = localFaces[i].elemID1 - starting_node[rank];
-      if(ii >= 0 && ii < (long) nElem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
-    }
-  }
-
-  for(unsigned long i=0; i<nElem; ++i)
-    sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
-
-  /*--- Compute the weigts of the graph. ---*/
-  vector<su2double> vwgt(2*nElem);
-  vector<su2double> adjwgt(xadj_l[nElem]);
-
-  ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l,
-                         mapExternalElemIDToTimeLevel, vwgt, adjwgt);
-
-  /*--- It is possible that some neighbors appear multiple times due to e.g.
-        periodic boundary conditions. ParMETIS is not able to deal with this
-        situation, hence these multiple entries must be removed. ---*/
-  unsigned long ii = 0, indBeg = 0;
+  /* It is possible that some neighbors appear multiple times due to e.g.
+     periodic boundary conditions. ParMETIS is not able to deal with this
+     situation, hence these multiple entries must be removed. */
   for(unsigned long i=0; i<nElem; ++i) {
-    for(unsigned long j=indBeg; j<xadj_l[i+1];) {
-      adjacency_l[ii] = adjacency_l[j];
-      adjwgt[ii]      = adjwgt[j++];
-      while(j<xadj_l[i+1] && adjacency_l[ii] == adjacency_l[j])
-        adjwgt[ii] += adjwgt[j++];
-      ++ii;
+    sort(adjacency[i].begin(), adjacency[i].end());
+    vector<unsigned long>::iterator lastEntry;
+    lastEntry = unique(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].erase(lastEntry, adjacency[i].end());
+  }
+
+  /*--- Possibly add the connectivities in the graph from the wall function
+        treatment. As these connectivities are one-sided, they must be stored
+        and communicated later. ---*/
+  vector<unsigned long> additionalExternalEntriesGraph;
+
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l) {
+
+      /* Get the global and local element ID adjacent to this boundary face. */
+      const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
+      const unsigned long elemID       = globalElemID - starting_node[rank];
+
+      /* Get the number of donor elements for the wall function treatment
+         and the pointer to the array which stores this info. */
+      const unsigned short nDonors = bound[iMarker][l]->GetNDonorsWallFunctions();
+      const unsigned long  *donors = bound[iMarker][l]->GetDonorsWallFunctions();
+
+      /* Loop over the number of donors and add the entry in the graph,
+         if not already present. */
+      for(unsigned short i=0; i<nDonors; ++i) {
+
+        if(donors[i] != globalElemID) {
+          if( !binary_search(adjacency[elemID].begin(), adjacency[elemID].end(),
+                             donors[i]) ) {
+
+            /* Donor not present in the graph for elemID. Add it and sort it
+               afterwards, such that a binary search can be applied later. */
+            adjacency[elemID].push_back(donors[i]);
+            sort(adjacency[elemID].begin(), adjacency[elemID].end());
+
+            /* Check if the donor element is stored locally. */
+            if(donors[i] >= starting_node[rank] &&
+               donors[i] <  starting_node[rank]+nElem) {
+
+              /* Donor is stored locally. Add the entry to the graph
+                 and sort it afterwards. */
+              const unsigned long localDonorID = donors[i] - starting_node[rank];
+              adjacency[localDonorID].push_back(globalElemID);
+              sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
+            }
+            else {
+
+              /* Donor is stored externally. Store the graph entry in
+                 additionalExternalEntriesGraph. */
+              additionalExternalEntriesGraph.push_back(donors[i]);
+              additionalExternalEntriesGraph.push_back(globalElemID);
+            }
+          }
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Create the send buffers with the additional graph data and determine
+        to which ranks data is sent. ---*/
+  vector<vector<unsigned long> > sendBufsGraphData(size, vector<unsigned long>(0));
+  vector<int> sendToRank(size, 0);
+
+  for(unsigned long i=0; i<additionalExternalEntriesGraph.size(); i+=2) {
+
+    /* Determine the rank where this external is stored. */
+    const unsigned long elemID = additionalExternalEntriesGraph[i];
+    int rankElem;
+    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    else {
+      const unsigned long *low;
+      low = lower_bound(starting_node, starting_node+size, elemID);
+
+      rankElem = low - starting_node;
+      if(*low > elemID) --rankElem;
     }
 
-    /* Set indBeg for the next element and store the corrected
-       value for xadj_l[i+1]. */
-    indBeg = xadj_l[i+1];
-    xadj_l[i+1] = ii;
+    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i]);
+    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i+1]);
+    sendToRank[rankElem] = 1;
   }
+
+  /*-- Determine to how many ranks this rank will send data and from how
+       many ranks it will receive data. ---*/
+  int nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if( sendToRank[i] ) ++nRankSend;
+  }
+
+  int nRankRecv;
+  vector<int> sizeSend(size, 1);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeSend.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /* Send the data using non-blocking sends. */
+  vector<SU2_MPI::Request> sendReqs(nRankSend);
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if( sendToRank[i] )
+      SU2_MPI::Isend(sendBufsGraphData[i].data(), sendBufsGraphData[i].size(),
+                     MPI_UNSIGNED_LONG, i, i, MPI_COMM_WORLD,
+                     &sendReqs[nRankSend++]);
+  }
+
+  /* Loop over the number of ranks from which this rank receives data. */
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message with unsigned longs arrives from any processor.
+       Determine the source and the size of the message.   */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for the receive buffer and receive the message
+       using a blocking receive. */
+    vector<unsigned long> recvBuf(sizeMess);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                   source, rank, MPI_COMM_WORLD, &status);
+
+    /* Loop over the contents of the receive buffer and update the
+       graph accordingly. */
+    for(int j=0; j<sizeMess; j+=2) {
+      const unsigned long elemID = recvBuf[j] - starting_node[rank];
+      adjacency[elemID].push_back(recvBuf[j+1]);
+      sort(adjacency[elemID].begin(), adjacency[elemID].end());
+    }
+  }
+
+  /* Complete the non-blocking sends amd synchronize the ranks, because
+     wild cards have been used in the above communication. */
+  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /* Allocate the memory to store the weights of the graph. */
+  vector<su2double> vwgt(2*nElem);
+  vector<vector<su2double> > adjwgt(nElem, vector<su2double>(0));
+
+  for(unsigned long i=0; i<nElem; ++i)
+    adjwgt[i].resize(adjacency[i].size());
+
+  /* Compute the weigts of the graph. */
+  ComputeFEMGraphWeights(config, localFaces, adjacency,
+                         mapExternalElemIDToTimeLevel, vwgt, adjwgt);
 
   /*--- The remainder of this function should only be called if we have parallel
         support with MPI and have the ParMETIS library compiled and linked. ---*/
@@ -2594,25 +2728,36 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     for(int i=0; i<size; ++i)
       vtxdist[i+1] = (idx_t)ending_node[i];
 
-    /*--- Copy some of the vectors needed for the call the ParMETIS,
-          but now with the data type used by ParMETIS.   ---*/
+    /* Create the array xadjPar, which contains the number of edges for each
+       vertex of the graph in ParMETIS format. */
     vector<idx_t> xadjPar(nElem+1);
-    for(unsigned long i=0; i<=nElem; ++i)
-      xadjPar[i] = (idx_t) xadj_l[i];
+    xadjPar[0] = 0;
+    for(unsigned long i=0; i<nElem; ++i)
+      xadjPar[i+1] = xadjPar[i] + (idx_t)adjacency[i].size();
 
-    vector<idx_t> adjacencyPar(xadj_l[nElem]);
-    for(unsigned long i=0; i<xadj_l[nElem]; ++i)
-      adjacencyPar[i] = adjacency_l[i];
+    /* Create the adjacency information in ParMETIS format. */
+    vector<idx_t> adjacencyPar(xadjPar[nElem]);
+    unsigned long ii = 0;
+    for(unsigned long i=0; i<nElem; ++i) {
+      for(unsigned long j=0; j<adjacency[i].size(); ++j, ++ii)
+        adjacencyPar[ii] = adjacency[i][j];
+    }
 
+    /* Create the vertex weights in ParMETIS format. */
     vector<idx_t> vwgtPar(nElem*ncon);
     for(unsigned long i=0; i<nElem*ncon; ++i)
       vwgtPar[i] = (idx_t) ceil(vwgt[i]);
 
-    vector<idx_t> adjwgtPar(xadj_l[nElem]);
-    for(unsigned long i=0; i<xadj_l[nElem]; ++i)
-      adjwgtPar[i] = (idx_t) ceil(adjwgt[i]);
+    /* Create the adjacency weight in ParMETIS format. */
+    vector<idx_t> adjwgtPar(xadjPar[nElem]);
+    ii = 0;
+    for(unsigned long i=0; i<nElem; ++i) {
+      for(unsigned long j=0; j<adjwgt[i].size(); ++j, ++ii)
+        adjwgtPar[ii] = (idx_t) ceil(adjwgt[i][j]);
+    }
 
-    vector<real_t> tpwgts(size*ncon, 1.0/((real_t)size));  // Equal distribution.
+    /* Make sure that an equal distribution is obtained. */
+    vector<real_t> tpwgts(size*ncon, 1.0/((real_t)size));
 
     /*--- Calling ParMETIS ---*/
     vector<idx_t> part(nElem);
@@ -3504,6 +3649,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
             /* Determine whether or not the Jacobian of the boundary face
                is constant. */
             const bool constJac = elem[elemID]->GetJacobianConstantFace(ii);
+            bound[iMarker][l]->SetJacobianConsideredConstant(constJac);
 
             /* Determine the corresponding standard element. If it does not
                exist yet, it will be created. Note that the polynomial degree
@@ -3698,7 +3844,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   if( markerIDGlobalSearch.size() ) {
     ostringstream message;
     message << markerIDGlobalSearch.size() << " integration points for which "
-            << "no donor elements for the wall functions were found." << endl;
+            << "no donor elements for the wall functions were found." << endl
             << "Something is seriously wrong";
     SU2_MPI::Error("message.str()", CURRENT_FUNCTION);
   }
@@ -3897,8 +4043,12 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
 void CPhysicalGeometry::DetermineTimeLevelElements(
                           CConfig *config,
-                          const vector<FaceOfElementClass>   &localFaces,
-                          map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel) {
+                          const vector<FaceOfElementClass>    &localFaces,
+                          map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Initialize the map mapExternalElemIDToTimeLevel.           ---*/
+  /*--------------------------------------------------------------------------*/
 
   /*--- Initialize the time level of external elements to zero.
         First the externals from the faces. ---*/
@@ -3911,13 +4061,20 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
-        map<unsigned long,unsigned short>::iterator MI;
+        map<unsigned long,unsignedShort2T>::iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if(MI == mapExternalElemIDToTimeLevel.end())
-          mapExternalElemIDToTimeLevel[FI->elemID1] = 0;
+          mapExternalElemIDToTimeLevel[FI->elemID1] = unsignedShort2T(0,0);
       }
     }
   }
+
+  /* Define the communication buffers to send additional externals
+     to other ranks. Also define the buffer recvFromRank which is used
+     in Reduce_scatter later on. It indicates whether or not a message
+     is sent to a certain rank. */
+  vector<vector<unsigned long> > sendBufAddExternals(size, vector<unsigned long>(0));
+  vector<int> recvFromRank(size, 0);
 
   /*--- Add the externals from the wall function donors. Loop over the
         boundary elements of all markers. ---*/
@@ -3936,14 +4093,100 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
         if(donors[i] <  starting_node[rank] ||
            donors[i] >= starting_node[rank]+nElem) {
 
-          map<unsigned long,unsigned short>::iterator MI;
+          map<unsigned long,unsignedShort2T>::iterator MI;
           MI = mapExternalElemIDToTimeLevel.find(donors[i]);
-          if(MI == mapExternalElemIDToTimeLevel.end())
-            mapExternalElemIDToTimeLevel[donors[i]] = 0;
+          if(MI == mapExternalElemIDToTimeLevel.end()) {
+
+            /* Element not present in external. Add it. */
+            mapExternalElemIDToTimeLevel[donors[i]] = unsignedShort2T(0,0);
+          }
+
+          /* The reverse connection may not be present either. Store the global
+             ID of this element in the send buffers for the additional
+             externals. */
+          int rankDonor;
+          if(donors[i] >= starting_node[size-1]) rankDonor = size-1;
+          else {
+            const unsigned long *low;
+            low = lower_bound(starting_node, starting_node+size, donors[i]);
+
+            rankDonor = low - starting_node;
+            if(*low > donors[i]) --rankDonor;
+          }
+
+          sendBufAddExternals[rankDonor].push_back(bound[iMarker][l]->GetDomainElement());
+          recvFromRank[rankDonor] = 1;
         }
       }
     }
   }
+
+#ifdef HAVE_MPI
+
+  /* Determine the number of messages this rank will receive with additional
+     externals to be stored. */
+  int nRankRecv;
+  vector<int> sizeSend(size, 1);
+  SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankRecv, sizeSend.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /* Determine the number of messages this rank will send. */
+  int nRankSend = 0;
+  for(int i=0; i<size; ++i)
+    nRankSend += recvFromRank[i];
+
+  /* Send the data using non-blocking sends to avoid deadlock. */
+  vector<SU2_MPI::Request> sendReqs(nRankSend);
+  nRankSend = 0;
+  for(int i=0; i<size; ++i) {
+    if( recvFromRank[i] ) {
+      sort(sendBufAddExternals[i].begin(), sendBufAddExternals[i].end());
+      vector<unsigned long>::iterator lastElem = unique(sendBufAddExternals[i].begin(),
+                                                        sendBufAddExternals[i].end());
+      sendBufAddExternals[i].erase(lastElem, sendBufAddExternals[i].end());
+
+      SU2_MPI::Isend(sendBufAddExternals[i].data(), sendBufAddExternals[i].size(),
+                     MPI_UNSIGNED_LONG, i, i, MPI_COMM_WORLD, &sendReqs[nRankSend++]);
+    }
+  }
+
+  /* Loop over the number of ranks from which this rank will receive data
+     to be stored in mapExternalElemIDToTimeLevel. */
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message arrives and determine the source and size
+       of the message. Allocate the memory for a receive buffer. */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    vector<unsigned long> recvBuf(sizeMess);
+
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  source, rank, MPI_COMM_WORLD, &status);
+
+    /* Loop over the entries of recvBuf and add them to
+       mapExternalElemIDToTimeLevel, if not present already. */
+    for(int j=0; j<sizeMess; ++j) {
+      map<unsigned long,unsignedShort2T>::iterator MI;
+      MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
+      if(MI == mapExternalElemIDToTimeLevel.end())
+        mapExternalElemIDToTimeLevel[recvBuf[j]] = unsignedShort2T(0,0);
+    }
+  }
+
+  /* Complete the non-blocking sends. Synchronize the processors afterwards,
+     because wild cards have been used in the communication. */
+  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Initialize the time level of the owned elements.           ---*/
+  /*--------------------------------------------------------------------------*/
 
   /*--- Get the number of time levels used and check whether or not
         time accurate local time stepping is used. ---*/
@@ -3974,10 +4217,6 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     VelMag = sqrt(VelMag);
 
     const su2double SoundSpeed = VelMag/config->GetMach();
-
-    /*------------------------------------------------------------------------*/
-    /*--- Step 1: Estimate the time steps of the locally owned elements.   ---*/
-    /*------------------------------------------------------------------------*/
 
     /* In the estimate of the time step the spectral radius of the inviscid terms is
        needed. As the current estimate is based on the free stream, the value of this
@@ -4020,129 +4259,6 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     SU2_MPI::Allreduce(&locVal, &minDeltaT, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #endif
 
-    /*------------------------------------------------------------------------*/
-    /*--- Step 2: Set up the variables to carry out the MPI communication  ---*/
-    /*---         of the external element data.                            ---*/
-    /*------------------------------------------------------------------------*/
-
-#ifdef HAVE_MPI
-
-    /*--- Determine the ranks from which I receive element data during
-          the actual exchange. ---*/
-    vector<int> recvFromRank(size, 0);
-
-    map<unsigned long,unsigned short>::iterator MI;
-    for(MI =mapExternalElemIDToTimeLevel.begin();
-        MI!=mapExternalElemIDToTimeLevel.end(); ++MI) {
-
-      /* Determine the rank where this external is stored. */
-      const unsigned long elemID = MI->first;
-      int rankElem;
-      if(elemID >= starting_node[size-1]) rankElem = size-1;
-      else {
-        const unsigned long *low;
-        low = lower_bound(starting_node, starting_node+size, elemID);
-
-        rankElem = low - starting_node;
-        if(*low > elemID) --rankElem;
-      }
-
-      /* Set the corresponding index of recvFromRank to 1. */
-      recvFromRank[rankElem] = 1;
-    }
-
-    map<int,int> mapRankToIndRecv;
-    for(int i=0; i<size; ++i) {
-      if( recvFromRank[i] ) {
-        int ind = mapRankToIndRecv.size();
-        mapRankToIndRecv[i] = ind;
-      }
-    }
-
-    /* Determine the number of ranks from which I will receive data and to
-       which I will send data. */
-    int nRankRecv = mapRankToIndRecv.size();
-    int nRankSend;
-
-    vector<int> sizeSend(size, 1);
-    SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
-                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-    /*--- Create the vector of vectors of the global element ID's that
-          will be received from other ranks. ---*/
-    vector<vector<unsigned long> > recvElem(nRankRecv, vector<unsigned long>(0));
-
-    for(MI =mapExternalElemIDToTimeLevel.begin();
-        MI!=mapExternalElemIDToTimeLevel.end(); ++MI) {
-
-      const unsigned long elemID = MI->first;
-      int rankElem;
-      if(elemID >= starting_node[size-1]) rankElem = size-1;
-      else {
-        const unsigned long *low;
-        low = lower_bound(starting_node, starting_node+size, elemID);
-
-        rankElem = low - starting_node;
-        if(*low > elemID) --rankElem;
-      }
-
-      map<int,int>::const_iterator MRI = mapRankToIndRecv.find(rankElem);
-      recvElem[MRI->second].push_back(elemID);
-    }
-
-    /*--- Loop over the ranks from which I receive data during the actual
-          exchange and send over the global element ID's. In order to avoid
-          unnecessary communication, multiple entries are filtered out. ---*/
-    vector<SU2_MPI::Request> sendReqs(nRankRecv);
-    map<int,int>::const_iterator MRI = mapRankToIndRecv.begin();
-
-    for(int i=0; i<nRankRecv; ++i, ++MRI) {
-
-      sort(recvElem[i].begin(), recvElem[i].end());
-      vector<unsigned long>::iterator lastElem = unique(recvElem[i].begin(),
-                                                        recvElem[i].end());
-      recvElem[i].erase(lastElem, recvElem[i].end());
-
-      SU2_MPI::Isend(recvElem[i].data(), recvElem[i].size(), MPI_UNSIGNED_LONG,
-                     MRI->first, MRI->first, MPI_COMM_WORLD, &sendReqs[i]);
-    }
-
-    /*--- Receive the messages in arbitrary sequence and store the requested
-          element ID's, which are converted to local ID's. Furthermore, store
-          the processors from which the requested element ID's came from. ---*/
-    vector<vector<unsigned long> > sendElem(nRankSend, vector<unsigned long>(0));
-    vector<int> sendRank(nRankSend);
-
-    for(int i=0; i<nRankSend; ++i) {
-
-      SU2_MPI::Status status;
-      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
-      sendRank[i] = status.MPI_SOURCE;
-
-      int sizeMess;
-      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-      sendElem[i].resize(sizeMess);
-
-      SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG,
-                    sendRank[i], rank, MPI_COMM_WORLD, &status);
-
-      for(int j=0; j<sizeMess; ++j)
-        sendElem[i][j] -= starting_node[rank];
-    }
-
-    /* Complete the non-blocking sends. Synchronize the processors afterwards,
-       because wild cards have been used in the communication. */
-    SU2_MPI::Waitall(nRankRecv, sendReqs.data(), MPI_STATUSES_IGNORE);
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
-
-    /*------------------------------------------------------------------------*/
-    /*--- Step 3: Determine the time levels of the owned elements as well  ---*/
-    /*---         the external elements. The information of the latter is  ---*/
-    /*---         stored in the map mapExternalElemIDToTimeLevel.          ---*/
-    /*------------------------------------------------------------------------*/
-
     /* Initial estimate of the time level of the owned elements. */
     for(unsigned long i=0; i<nElem; ++i) {
       unsigned short timeLevel;
@@ -4154,60 +4270,193 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
       elem[i]->SetTimeLevel(timeLevel);
     }
+  }
 
-    /*--- Communicate the information of the externals, if needed. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Set up the variables to carry out the MPI communication    ---*/
+  /*---         of the external element data.                              ---*/
+  /*--------------------------------------------------------------------------*/
+
+  map<unsigned long,unsignedShort2T>::iterator MI;
 #ifdef HAVE_MPI
 
-    /* Define the send buffers and resize the vector of send requests. */
-    vector<vector<unsigned short> > sendBuf(nRankSend, vector<unsigned short>(0));
-    sendReqs.resize(nRankSend);
+  /*--- Determine the ranks from which I receive element data during
+        the actual exchange. ---*/
+  recvFromRank.assign(size, 0);
 
-    /* Define the return buffers and the vector of return requests. */
-    vector<vector<unsigned short> > returnBuf(nRankRecv, vector<unsigned short>(0));
-    vector<SU2_MPI::Request> returnReqs(nRankRecv);
+  for(MI =mapExternalElemIDToTimeLevel.begin();
+      MI!=mapExternalElemIDToTimeLevel.end(); ++MI) {
 
-    /*--- Copy the information of the time level into the send buffers
-          and send the data using non-blocking sends. ---*/
-    for(int i=0; i<nRankSend; ++i) {
+    /* Determine the rank where this external is stored. */
+    const unsigned long elemID = MI->first;
+    int rankElem;
+    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    else {
+      const unsigned long *low;
+      low = lower_bound(starting_node, starting_node+size, elemID);
 
-      sendBuf[i].resize(sendElem[i].size());
-      for(unsigned long j=0; j<sendElem[i].size(); ++j)
-        sendBuf[i][j] = elem[sendElem[i][j]]->GetTimeLevel();
-
-      SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_SHORT,
-                     sendRank[i], sendRank[i], MPI_COMM_WORLD, &sendReqs[i]);
-    } 
-
-    /*--- Receive the data for the externals. As this data is needed
-          immediately, blocking communication is used. The time level of the
-          externals is stored in mapExternalElemIDToTimeLevel, whose second
-          element, which contains the time level, is set accordingly. ---*/
-    MRI = mapRankToIndRecv.begin();
-    for(int i=0; i<nRankRecv; ++i, ++MRI) {
-
-      returnBuf[i].resize(recvElem[i].size());
-      SU2_MPI::Status status;
-      SU2_MPI::Recv(returnBuf[i].data(), returnBuf[i].size(), MPI_UNSIGNED_SHORT,
-                    MRI->first, rank, MPI_COMM_WORLD, &status);
-
-      for(unsigned long j=0; j<returnBuf[i].size(); ++j) {
-        MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
-        MI->second = returnBuf[i][j];
-      }
+      rankElem = low - starting_node;
+      if(*low > elemID) --rankElem;
     }
 
-    /* Complete the nonblocking sends. */
-    SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+    /* Set the corresponding index of recvFromRank to 1. */
+    recvFromRank[rankElem] = 1;
+  }
+
+  map<int,int> mapRankToIndRecv;
+  for(int i=0; i<size; ++i) {
+    if( recvFromRank[i] ) {
+      int ind = mapRankToIndRecv.size();
+      mapRankToIndRecv[i] = ind;
+    }
+  }
+
+  /* Determine the number of ranks from which I will receive data and to
+     which I will send data. */
+  nRankRecv = mapRankToIndRecv.size();
+  SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Create the vector of vectors of the global element ID's that
+        will be received from other ranks. ---*/
+  vector<vector<unsigned long> > recvElem(nRankRecv, vector<unsigned long>(0));
+
+  for(MI =mapExternalElemIDToTimeLevel.begin();
+      MI!=mapExternalElemIDToTimeLevel.end(); ++MI) {
+
+    const unsigned long elemID = MI->first;
+    int rankElem;
+    if(elemID >= starting_node[size-1]) rankElem = size-1;
+    else {
+      const unsigned long *low;
+      low = lower_bound(starting_node, starting_node+size, elemID);
+
+      rankElem = low - starting_node;
+      if(*low > elemID) --rankElem;
+    }
+
+    map<int,int>::const_iterator MRI = mapRankToIndRecv.find(rankElem);
+    recvElem[MRI->second].push_back(elemID);
+  }
+
+  /*--- Loop over the ranks from which I receive data during the actual
+        exchange and send over the global element ID's. In order to avoid
+        unnecessary communication, multiple entries are filtered out. ---*/
+  sendReqs.resize(nRankRecv);
+  map<int,int>::const_iterator MRI = mapRankToIndRecv.begin();
+
+  for(int i=0; i<nRankRecv; ++i, ++MRI) {
+
+    sort(recvElem[i].begin(), recvElem[i].end());
+    vector<unsigned long>::iterator lastElem = unique(recvElem[i].begin(),
+                                                      recvElem[i].end());
+    recvElem[i].erase(lastElem, recvElem[i].end());
+
+    SU2_MPI::Isend(recvElem[i].data(), recvElem[i].size(), MPI_UNSIGNED_LONG,
+                   MRI->first, MRI->first, MPI_COMM_WORLD, &sendReqs[i]);
+  }
+
+  /*--- Receive the messages in arbitrary sequence and store the requested
+        element ID's, which are converted to local ID's. Furthermore, store
+        the processors from which the requested element ID's came from. ---*/
+  vector<vector<unsigned long> > sendElem(nRankSend, vector<unsigned long>(0));
+  vector<int> sendRank(nRankSend);
+
+  for(int i=0; i<nRankSend; ++i) {
+
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    sendRank[i] = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+    sendElem[i].resize(sizeMess);
+
+    SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+                  sendRank[i], rank, MPI_COMM_WORLD, &status);
+
+    for(int j=0; j<sizeMess; ++j)
+      sendElem[i][j] -= starting_node[rank];
+  }
+
+  /* Complete the non-blocking sends. Synchronize the processors afterwards,
+     because wild cards have been used in the communication. */
+  SU2_MPI::Waitall(nRankRecv, sendReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #endif
 
-    /*--- Iterative algorithm to make sure that neighboring elements differ
-          at most one time level. This is no fundamental issue, but it makes
-          the parallel implementation easier, while the penalty in efficiency
-          should be small for most cases. Furthermore, also for practical
-          reasons, make sure that the donor elements for the wall function
-          treatment have the same time level as the element to which the
-          boundary face belongs. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 4: Communicate the data of the externals. This data is the    ---*/
+  /*---         time level and the number of DOFs of the element.          ---*/
+  /*--------------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+
+  /* Define the send buffers and resize the vector of send requests. */
+  vector<vector<unsigned short> > sendBuf(nRankSend, vector<unsigned short>(0));
+  sendReqs.resize(nRankSend);
+
+  /* Define the return buffers and the vector of return requests. */
+  vector<vector<unsigned short> > returnBuf(nRankRecv, vector<unsigned short>(0));
+  vector<SU2_MPI::Request> returnReqs(nRankRecv);
+
+  /*--- Copy the information of the time level and number of DOFs into the
+        send buffers and send the data using non-blocking sends. ---*/
+  for(int i=0; i<nRankSend; ++i) {
+
+    sendBuf[i].resize(2*sendElem[i].size());
+    for(unsigned long j=0; j<sendElem[i].size(); ++j) {
+      sendBuf[i][2*j]   = elem[sendElem[i][j]]->GetTimeLevel();
+      sendBuf[i][2*j+1] = elem[sendElem[i][j]]->GetNDOFsSol();
+    }
+
+    SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_SHORT,
+                   sendRank[i], sendRank[i], MPI_COMM_WORLD, &sendReqs[i]);
+  }
+
+  /*--- Receive the data for the externals. As this data is needed immediately,
+        blocking communication is used. The time level and the number of DOFs
+        of the externals is stored in the second entry of the
+        mapExternalElemIDToTimeLevel, which is set accordingly. ---*/
+  MRI = mapRankToIndRecv.begin();
+  for(int i=0; i<nRankRecv; ++i, ++MRI) {
+
+    returnBuf[i].resize(2*recvElem[i].size());
+    SU2_MPI::Status status;
+    SU2_MPI::Recv(returnBuf[i].data(), returnBuf[i].size(), MPI_UNSIGNED_SHORT,
+                  MRI->first, rank, MPI_COMM_WORLD, &status);
+
+    for(unsigned long j=0; j<recvElem[i].size(); ++j) {
+      MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
+      if(MI == mapExternalElemIDToTimeLevel.end())
+        SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
+      MI->second.short0 = returnBuf[i][2*j];
+      MI->second.short1 = returnBuf[i][2*j+1];
+    }
+  }
+
+  /* Complete the nonblocking sends. */
+  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+
+#endif
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 5: Only when time accurate local time stepping is employed.   ---*/
+  /*---         Iterative algorithm to make sure that neighboring elements ---*/
+  /*---         differ at most one time level. This is no fundamental      ---*/
+  /*---         issue, but it makes the parallel implementation easier,    ---*/
+  /*---         while the penalty in efficiency should be small for most   ---*/
+  /*---         cases. Furthermore, also for practical reasons, make sure  ---*/
+  /*---         that the donor elements for the wall function treatment    ---*/
+  /*---         have the same time level as the element to which the       ---*/
+  /*---         boundary face belongs.                                     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Test for time accurate local time stepping. */
+  if(nTimeLevels > 1) {
+
+    /* Infinite loop for the iterative algorithm. */
     for(;;) {
 
       /* Variable to indicate whether the local situation has changed. */
@@ -4265,7 +4514,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                  and determine the minimum time level. */
               const unsigned short timeLevelB = elem[elemID]->GetTimeLevel();
               MI = mapExternalElemIDToTimeLevel.find(donors[i]);
-              const unsigned short timeLevel = min(timeLevelB, MI->second);
+              if(MI == mapExternalElemIDToTimeLevel.end())
+                SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel",
+                               CURRENT_FUNCTION);
+              const unsigned short timeLevel = min(timeLevelB, MI->second.short0);
 
               /* If the time level of either element is larger than timeLevel,
                  adapt the time levels and indicate that the local situation
@@ -4275,8 +4527,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                 localSituationChanged = 1;
               }
 
-              if(MI->second > timeLevel) {
-                MI->second = timeLevel;
+              if(MI->second.short0 > timeLevel) {
+                MI->second.short0 = timeLevel;
                 localSituationChanged = 1;
               }
             }
@@ -4326,7 +4578,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
                Retrieve its time level from mapExternalElemIDToTimeLevel
                and determine the minimum time level. */
             MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
-            const unsigned short timeLevel = min(timeLevel0, MI->second);
+            if(MI == mapExternalElemIDToTimeLevel.end())
+              SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel",
+                             CURRENT_FUNCTION);
+            const unsigned short timeLevel = min(timeLevel0, MI->second.short0);
 
             /* If the time level of either element is larger than timeLevel+1,
                adapt the time levels and indicate that the local situation
@@ -4336,8 +4591,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
               localSituationChanged = 1;
             }
 
-            if(MI->second > timeLevel+1) {
-              MI->second = timeLevel+1;
+            if(MI->second.short0 > timeLevel+1) {
+              MI->second.short0 = timeLevel+1;
               localSituationChanged = 1;
             }
           }
@@ -4358,13 +4613,15 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 #ifdef HAVE_MPI
 
       /*--- Copy the information of the time level into the send buffers
-            and send the data using non-blocking sends. ---*/
+            and send the data using non-blocking sends. Note that the size
+            of sendElem is used and not sendBuf, because the size of sendBuf
+            is twice the size, see step 4.  ---*/
       for(int i=0; i<nRankSend; ++i) {
 
         for(unsigned long j=0; j<sendElem[i].size(); ++j)
           sendBuf[i][j] = elem[sendElem[i][j]]->GetTimeLevel();
 
-        SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_SHORT,
+        SU2_MPI::Isend(sendBuf[i].data(), sendElem[i].size(), MPI_UNSIGNED_SHORT,
                        sendRank[i], sendRank[i], MPI_COMM_WORLD, &sendReqs[i]);
       }
 
@@ -4374,25 +4631,29 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
             element, which contains the time level, is updated accordingly.
             Note that the minimum of the two levels is taken, such that changes
             for the external are also incorporated. As such this information
-            must be returned to the original rank. ---*/
+            must be returned to the original rank. Also note that the size
+            of recvElem is used and not returnBuf, because the latter is twice
+            as large, see step 4. ---*/
       MRI = mapRankToIndRecv.begin();
       for(int i=0; i<nRankRecv; ++i, ++MRI) {
 
         SU2_MPI::Status status;
-        SU2_MPI::Recv(returnBuf[i].data(), returnBuf[i].size(), MPI_UNSIGNED_SHORT,
+        SU2_MPI::Recv(returnBuf[i].data(), recvElem[i].size(), MPI_UNSIGNED_SHORT,
                       MRI->first, rank, MPI_COMM_WORLD, &status);
 
-        for(unsigned long j=0; j<returnBuf[i].size(); ++j) {
+        for(unsigned long j=0; j<recvElem[i].size(); ++j) {
           MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
-          MI->second      = min(returnBuf[i][j], MI->second);
-          returnBuf[i][j] = MI->second;
+          if(MI == mapExternalElemIDToTimeLevel.end())
+            SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
+          MI->second.short0 = min(returnBuf[i][j], MI->second.short0);
+          returnBuf[i][j]   = MI->second.short0;
         }
 
-        SU2_MPI::Isend(returnBuf[i].data(), returnBuf[i].size(), MPI_UNSIGNED_SHORT,
+        SU2_MPI::Isend(returnBuf[i].data(), recvElem[i].size(), MPI_UNSIGNED_SHORT,
                        MRI->first, MRI->first+1, MPI_COMM_WORLD, &returnReqs[i]);
       }
 
-      /* Complete the first round of nonblocking sends, such that the 
+      /* Complete the first round of nonblocking sends, such that the
          original send buffers can be used as receive buffers for the
          second round of messages. */
       SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
@@ -4403,7 +4664,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
       for(int i=0; i<nRankSend; ++i) {
 
         SU2_MPI::Status status;
-        SU2_MPI::Recv(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_SHORT,
+        SU2_MPI::Recv(sendBuf[i].data(), sendElem[i].size(), MPI_UNSIGNED_SHORT,
                       sendRank[i], rank+1, MPI_COMM_WORLD, &status);
 
         for(unsigned long j=0; j<sendElem[i].size(); ++j)
@@ -4416,7 +4677,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     }
 
     /*------------------------------------------------------------------------*/
-    /*--- Step 4: Print a nice output about the number of elements per     ---*/
+    /*--- Step 6: Print a nice output about the number of elements per     ---*/
     /*---         time level.                                              ---*/
     /*------------------------------------------------------------------------*/
 
@@ -4451,12 +4712,11 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
 void CPhysicalGeometry::ComputeFEMGraphWeights(
               CConfig                                  *config,
-              const vector<FaceOfElementClass>         &localFaces,
-              const vector<unsigned long>              &xadj_l,
-              const vector<unsigned long>              &adjacency_l,
-              const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
-                    vector<su2double>                  &vwgt,
-                    vector<su2double>                  &adjwgt){
+              const vector<FaceOfElementClass>          &localFaces,
+              const vector<vector<unsigned long> >      &adjacency,
+              const map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                   &vwgt,
+                    vector<vector<su2double> >          &adjwgt) {
 
   /*--- Determine the maximum time level that occurs in the grid. ---*/
   unsigned short maxTimeLevel = 0;
@@ -4468,6 +4728,14 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
   SU2_MPI::Allreduce(&maxTimeLevelLocal, &maxTimeLevel, 1,
                      MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
 #endif
+
+  /*--------------------------------------------------------------------------*/
+  /* Step 1: Determine the vertex weights of the graph. Per element two       */
+  /*         weights are determined. The first weight is proportional to the  */
+  /*         amount of work for the volume element. The second weight is the  */
+  /*         number of DOFs of the element, such that the number of DOFs per  */
+  /*         rank will also be the same.                                      */
+  /*--------------------------------------------------------------------------*/
 
   /*--- Define the standard elements for the volume elements, the boundary faces
         and the matching internal faces. ---*/
@@ -4603,18 +4871,86 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       }
     }
 
-    /* The final weight is obtained by taking the amount of work in time into
-       account. Note that this correction is only relevant when time accurate
-       local time stepping is employed. */
-    const unsigned short diffLevel = maxTimeLevel - elem[i]->GetTimeLevel();
-    vwgt[ind0] *= pow(2, diffLevel);
-
     /* Set the value of the second vertex weight to the number of DOFs. */
     vwgt[ind1] = elem[i]->GetNDOFsSol();
   }
 
-  /*--- Determine the minimum of the workload, i.e. 1st vertex weight,
-        over the entire domain. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Check for boundary faces for which a wall function treatment       ---*/
+  /*--- must be used. This type of boundary condition treatment is         ---*/
+  /*--- computationally intensive and must be added to the vertex weight   ---*/
+  /*--- of the corresponding element.                                      ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Loop over the markers and select the ones for which a wall function
+     treatment must be carried out. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+
+          /* Retrieve the integer information for this boundary marker.
+             The number of points in normal direction for the wall function
+             treatment is the first element of this array. */
+          const unsigned short *shortInfo = config->GetWallFunction_IntInfo(Marker_Tag);
+
+          /* Loop over the local boundary elements for this marker. */
+          for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l) {
+
+            /* Get the required data to define the standard boundary element. */
+
+            /* Easier storage of the element type, the corresponding volume
+               element, the polynomial degree for the solution and whether or
+               not the Jacobian can be considered constant. */
+            const unsigned short VTK_Type_Face = bound[iMarker][l]->GetVTK_Type();
+            const unsigned long  elemID        = bound[iMarker][l]->GetDomainElement()
+                                               - starting_node[rank];
+            const unsigned short nPolySol      = elem[elemID]->GetNPolySol();
+            const unsigned short VTK_Type_Elem = elem[elemID]->GetVTK_Type();
+            const bool JacIsConstant           = bound[iMarker][l]->GetJacobianConsideredConstant();
+
+            /* Determine the corresponding entry in the standard elements for
+               boundary faces. This entry must be found. */
+            unsigned long ii;
+            for(ii=0; ii<standardBoundaryFaces.size(); ++ii) {
+              if(standardBoundaryFaces[ii].SameStandardBoundaryFace(VTK_Type_Face, JacIsConstant,
+                                                                    VTK_Type_Elem, nPolySol, false) )
+                break;
+            }
+
+            if(ii == standardBoundaryFaces.size())
+              SU2_MPI::Error("No matching standard boundary element found", CURRENT_FUNCTION);
+
+            /* Update the computational work for the corresponding volume element,
+               i.e. the 1st vertex weight. */
+            vwgt[2*elemID] += standardBoundaryFaces[ii].WorkEstimateMetisWallFunctions(config, shortInfo[0]);
+          }
+        }
+
+        break;
+      }
+
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- The final weight is obtained by taking the amount of work in time  ---*/
+  /*--- into account. Note that this correction is only relevant when time ---*/
+  /*--- accurate local time stepping is employed.                          ---*/
+  /*--------------------------------------------------------------------------*/
+
+  for(unsigned long i=0; i<nElem; ++i) {
+    const unsigned short diffLevel = maxTimeLevel - elem[i]->GetTimeLevel();
+    vwgt[2*i] *= pow(2, diffLevel);
+  }
+
+  /*--- Determine the minimum of the workload of the elements, i.e. 1st vertex
+        weight, over the entire domain. ---*/
   su2double minvwgt = vwgt[0];
   for(unsigned long i=0; i<nElem; ++i) minvwgt = min(minvwgt, vwgt[2*i]);
 
@@ -4630,63 +4966,61 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
   minvwgt = 100.0/minvwgt;
   for(unsigned long i=0; i<nElem; ++i) vwgt[2*i] *= minvwgt;
 
-  /*--- Create a map of the two global element IDs adjacent to the face to
-        the index in localFaces. This map is used for an efficient search
-        to determine the edge weights of the graph.   ---*/
-  map<unsignedLong2T, unsigned long> mapElemIDsToFaceInd;
-  for(unsigned long i=0; i<localFaces.size(); ++i) {
-    unsigned long e0 = min(localFaces[i].elemID0, localFaces[i].elemID1);
-    unsigned long e1 = max(localFaces[i].elemID0, localFaces[i].elemID1);
-    mapElemIDsToFaceInd[unsignedLong2T(e0, e1)] = i;
-  }
+  /*--------------------------------------------------------------------------*/
+  /* Step 2: Determine the adjacency weights, which are proportional to the   */
+  /*         amount of communication needed when the two neighboring          */
+  /*         elements are stored on different ranks.                          */
+  /*--------------------------------------------------------------------------*/
 
   /*--- Determine the edge weights by a double loop over the local elements
         and its edges. The map mapElemIDsToFaceInd is used to determine
         the corresponding index in localFaces.   ---*/
   for(unsigned long i=0; i<nElem; ++i) {
 
-    const unsigned short timeLevelCur = elem[i]->GetTimeLevel();
-    const unsigned long  elemID0      = starting_node[rank] + i;
+    /* Easier storage of the time level of the current element and the
+       number of solution DOFs. */
+    const unsigned short timeLevel0 = elem[i]->GetTimeLevel();
+    const unsigned short nDOFs0     = elem[i]->GetNDOFsSol();
 
-    for(unsigned long j=xadj_l[i]; j<xadj_l[i+1]; ++j) {
-      const unsigned long e0 = min(elemID0, adjacency_l[j]);
-      const unsigned long e1 = max(elemID0, adjacency_l[j]);
+    /* Loop over the number of entries in the graph for this element. */
+    for(unsigned long j=0; j<adjacency[i].size(); ++j) {
 
-      /* Determine the index of this edge in localFaces. */
-      unsignedLong2T elemIDs(e0, e1);
-      map<unsignedLong2T, unsigned long>::const_iterator MI = mapElemIDsToFaceInd.find(elemIDs);
-      if(MI == mapElemIDsToFaceInd.end())
-        SU2_MPI::Error("Entry not found in map", CURRENT_FUNCTION);
+      /* Define the variables for the time level and number of solution
+         DOFs for the neighboring element. */
+      unsigned short timeLevel1, nDOFs1;
 
-      unsigned long ind = MI->second;
+      /* Check if the neighor is stored locally. */
+      if(adjacency[i][j] >= starting_node[rank] &&
+         adjacency[i][j] <  starting_node[rank]+nElem) {
 
-      /* Determine the time level of the adjacent element. A distinction must be
-         made whether or not the element is currently stored on this rank. */
-      unsigned short timeLevelAdj;
-      if(adjacency_l[j] >= starting_node[rank] &&
-         adjacency_l[j] <  starting_node[rank]+nElem) {
-
-        unsigned long elemIDAdj = adjacency_l[j] - starting_node[rank];
-        timeLevelAdj = elem[elemIDAdj]->GetTimeLevel();
+        /* Locally stored element. Determine its local ID and set the
+           time level and number of solution DOFs. */
+        unsigned long elemID1 = adjacency[i][j] - starting_node[rank];
+        timeLevel1 = elem[elemID1]->GetTimeLevel();
+        nDOFs1     = elem[elemID1]->GetNDOFsSol();
       }
       else {
 
-        map<unsigned long,unsigned short>::const_iterator MI;
-        MI = mapExternalElemIDToTimeLevel.find(adjacency_l[j]);
-        timeLevelAdj = MI->second;
+        /* The neighbor is an external element. Find it in mapExternalElemIDToTimeLevel
+           and set the time level and number of solution DOFs accordingly. */
+        map<unsigned long,unsignedShort2T>::const_iterator MI;
+        MI = mapExternalElemIDToTimeLevel.find(adjacency[i][j]);
+        if(MI == mapExternalElemIDToTimeLevel.end())
+          SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
+        timeLevel1 = MI->second.short0;
+        nDOFs1     = MI->second.short1;
       }
 
       /* Determine the difference of the maximum time level that occurs and
          the minimum of the time level of the current and the adjacent element.
          This value can only be nonzero when time accurate local time stepping
          is employed. */
-      const unsigned short diffLevel = maxTimeLevel - min(timeLevelCur, timeLevelAdj);
+      const unsigned short diffLevel = maxTimeLevel - min(timeLevel0, timeLevel1);
 
       /* Set the edge weight. As ParMetis expects an undirected graph, set the edge weight
          to the sum of the number of DOFs on both sides, multiplied by the weight factor
          to account for different time levels. */
-      adjwgt[j] = pow(2, diffLevel)
-                * (localFaces[ind].nDOFsElem0 + localFaces[ind].nDOFsElem1);
+      adjwgt[i][j] = pow(2, diffLevel) *(nDOFs0 + nDOFs1);
     }
   }
 }
