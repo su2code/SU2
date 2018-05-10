@@ -17012,7 +17012,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 }
 
 void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                 CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
 
     unsigned short iDim, jDim, iVar, jVar, Wall_Function;
     unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -17020,12 +17020,12 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
     su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
     su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
     su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0;
-    su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0, 0.0, 0.0}, UnitNormal[3] = {0.0, 0.0, 0.0};
+    su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0, 0.0, 0.0}, UnitNormal[3] = {0.0, 0.0, 0.0}, Velocity[3] = {0.0, 0.0, 0.0};
     su2double laminar_viscosity = 0.0, eddy_viscosity = 0.0, Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
     tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
     su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     su2double VelEps = 0.0;
-    su2double Riemann, SoundSpeed2, Vel_Mag;
+    su2double Riemann, SoundSpeed2, Vel_Mag, Energy;
     su2double *V_inlet, *V_domain;
 
     bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
