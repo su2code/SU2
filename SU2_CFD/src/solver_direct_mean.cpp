@@ -17379,7 +17379,12 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
   /*--- Free locally allocated memory ---*/
   
-  delete [] Normal;
+  if(Normal != NULL) delete [] Normal;
+  if(GridVel != NULL) delete [] GridVel;
+  if(V_inlet != NULL) delete [] V_inlet;
+  if(V_domain != NULL) delete [] V_domain;
+  if(Coord_i != NULL) delete [] Coord_i;
+  if(Coord_j != NULL) delete [] Coord_j;
 
 }
 

@@ -1776,11 +1776,12 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Free locally allocated memory ---*/
-  delete[] Normal;
-  delete[] UnitNormal;
-  delete[] Velocity;
-  delete[] GridVel;
-  
+  if(Normal != NULL) delete[] Normal;
+  if(UnitNormal != NULL) delete[] UnitNormal;
+  if(Velocity != NULL) delete[] Velocity;
+  if(GridVel != NULL) delete[] GridVel;
+  if(V_inlet != NULL) delete[] V_inlet;
+  if(V_domain != NULL) delete[] V_domain;  
 
 }
 
