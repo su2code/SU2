@@ -72,7 +72,6 @@ using namespace std;
 /*!
  * \class unsignedLong2T
  * \brief Help class used to store two unsigned longs as one entity.
- * \version 5.0.0 "Cardinal"
  */
 class unsignedLong2T {
 public:
@@ -100,10 +99,38 @@ private:
 };
 
 /*!
+ * \class unsignedShort2T
+ * \brief Help class used to store two unsigned shorts as one entity.
+ */
+class unsignedShort2T {
+public:
+  unsigned short short0;  /*!< \brief First short to store in this class. */
+  unsigned short short1;  /*!< \brief Second short to store in this class. */
+
+  /* Constructors and destructors. */
+  unsignedShort2T();
+  ~unsignedShort2T();
+
+  unsignedShort2T(const unsigned short a, const unsigned short b);
+
+  unsignedShort2T(const unsignedShort2T &other);
+
+  /* Operators. */
+  unsignedShort2T& operator=(const unsignedShort2T &other);
+
+  bool operator<(const unsignedShort2T &other) const;
+
+  bool operator==(const unsignedShort2T &other) const;
+
+private:
+  /* Copy function. */
+  void Copy(const unsignedShort2T &other);
+};
+
+/*!
  * \class FaceOfElementClass
  * \brief Class used in the partitioning of the FEM grid as well as the building of
           the faces of DG. It stores a face of an element.
- * \version 4.1.0 "Cardinal"
  */
 class FaceOfElementClass {
 public:
@@ -165,8 +192,7 @@ private:
 /*!
  * \class BoundaryFaceClass
  * \brief Help class used in the partitioning of the FEM grid.
- *        It stores a boundary element.
- * \version 5.0.0 "Raven"
+          It stores a boundary element.
  */
 class BoundaryFaceClass {
  public:
@@ -194,7 +220,6 @@ private:
 /*!
  * \class MatchingFaceClass
  * \brief Help class used to determine whether or not (periodic) faces match.
- * \version 5.0.0 "Raven"
  */
 class MatchingFaceClass {
 public:
@@ -1818,20 +1843,19 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Compute the weights of the FEM graph for ParMETIS.
    * \param[in]  config                       - Definition of the particular problem.
    * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
-   * \param[in]  xadj_l                       - Number of neighbors per element, ParMETIS storage format.
-   * \param[in]  adjacency_l                  - Neighbors of the element, ParMETIS storage format.
-   * \param[in]  mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level.
+   * \param[in]  adjacency                    - Neighbors of the element.
+   * \param[in]  mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level
+                                                and number of DOFs.
    * \param[out] vwgt                         - Weights of the vertices of the graph, i.e. the elements.
    * \param[out] adjwgt                       - Weights of the edges of the graph.
    */
   void ComputeFEMGraphWeights(
-              CConfig                                 *config,
-              const vector<FaceOfElementClass>         &localFaces,
-              const vector<unsigned long>              &xadj_l,
-              const vector<unsigned long>              &adjacency_l,
-              const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
-                    vector<su2double>                  &vwgt,
-                    vector<su2double>                  &adjwgt);
+              CConfig                                  *config,
+              const vector<FaceOfElementClass>          &localFaces,
+              const vector<vector<unsigned long> >      &adjacency,
+              const map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                   &vwgt,
+                    vector<vector<su2double> >          &adjwgt);
 
   /*!
    * \brief Determine the donor elements for the boundary elements on viscous
@@ -1862,11 +1886,11 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in]  localFaces                   - Vector, which contains the element
                                                 faces of this rank.
    * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to
-                                                their time level.
+                                                their time level and number of DOFs.
    */
-  void DetermineTimeLevelElements(CConfig                            *config,
-                                  const vector<FaceOfElementClass>   &localFaces,
-                                  map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel);
+  void DetermineTimeLevelElements(CConfig                             *config,
+                                  const vector<FaceOfElementClass>    &localFaces,
+                                  map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Set the rotational velocity at each node.
