@@ -490,16 +490,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       ++longSendBuf[ind][indLongBuf[ind]];
 
+      /* Get the donor information for the wall function treatment. */
+      const unsigned short nDonors = geometry->bound[iMarker][i]->GetNDonorsWallFunctions();
+      const unsigned long  *donors = geometry->bound[iMarker][i]->GetDonorsWallFunctions();
+
       /* Store the data for this boundary element in the communication buffers. */
       shortSendBuf[ind].push_back(geometry->bound[iMarker][i]->GetVTK_Type());
       shortSendBuf[ind].push_back(geometry->bound[iMarker][i]->GetNPolyGrid());
       shortSendBuf[ind].push_back(geometry->bound[iMarker][i]->GetNDOFsGrid());
+      shortSendBuf[ind].push_back(nDonors);
 
       longSendBuf[ind].push_back(geometry->bound[iMarker][i]->GetDomainElement());
       longSendBuf[ind].push_back(geometry->bound[iMarker][i]->GetGlobalElemID());
 
       for(unsigned short j=0; j<geometry->bound[iMarker][i]->GetNDOFsGrid(); ++j)
         longSendBuf[ind].push_back(geometry->bound[iMarker][i]->GetNode(j));
+
+      for(unsigned short j=0; j<nDonors; ++j)
+        longSendBuf[ind].push_back(donors[j]);
     }
   }
 
@@ -625,9 +633,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       nElem_Bound[iMarker] += nBoundElemThisRank;
 
       for(long j=0; j<nBoundElemThisRank; ++j) {
-        short nDOFsBoundElem = shortRecvBuf[i][indS+2];
-        indS += 3;
-        indL += nDOFsBoundElem + 2;
+        short nDOFsBoundElem      = shortRecvBuf[i][indS+2];
+        short nDonorsWallFunction = shortRecvBuf[i][indS+3];
+        indS += 4;
+        indL += nDOFsBoundElem + nDonorsWallFunction + 2;
       }
     }
   }
@@ -715,6 +724,33 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       ownedElements.push_back(CReorderElementClass(globalID, timeLevel, commSol,
                                                    VTK_Type, nPolySol, JacConstant));
     }
+
+    /* Skip the part with the node numbers. */
+    long nNodesThisRank = longRecvBuf[i][indL];
+    indL += nNodesThisRank+1;
+
+    /* Loop over the boundary markers. */
+    for(unsigned iMarker=0; iMarker<nMarker; ++iMarker) {
+      long nBoundElemThisRank = longRecvBuf[i][indL]; ++indL;
+
+      /* Loop over the boundary elements coming from this rank. */
+      for(long j=0; j<nBoundElemThisRank; ++j) {
+        short nDOFsBoundElem       = shortRecvBuf[i][indS+2];
+        short nDonorsWallFunctions = shortRecvBuf[i][indS+3];
+        indS += 4;
+        indL += nDOFsBoundElem + 2;
+
+        /* Loop over the donors for the wall functions. */
+        for(short k=0; k<nDonorsWallFunctions; ++k, ++indL) {
+
+          /* Check for an external donor. If external, store it in
+             haloElements with no periodic transformation. */
+          if( !binary_search(globalElemID.begin(), globalElemID.end(),
+                             longRecvBuf[i][indL]) )
+            haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL], 0));
+        }
+      }
+    }
   }
 
   /* Sort the halo elements in increasing order and remove the double entities. */
@@ -735,7 +771,389 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   config->SetnLevels_TimeAccurateLTS(nTimeLevels);
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 2: Determine the numbering of the owned elements. The following ---*/
+  /*--- Step 2: Find out on which rank the halo elements are stored.         ---*/
+  /*----------------------------------------------------------------------------*/
+
+  /* Determine the number of owned elements and the total number of
+     elements stored on this rank. */
+  nVolElemOwned = globalElemID.size();
+  nVolElemTot   = nVolElemOwned + haloElements.size();
+
+  /* Determine the map from the global element ID to the current storage
+     sequence of ownedElements. */
+  map<unsigned long, unsigned long> mapGlobalElemIDToInd;
+  for(unsigned long i=0; i<nVolElemOwned; ++i)
+    mapGlobalElemIDToInd[ownedElements[i].GetGlobalElemID()] = i;
+
+  /* Determine the number of elements per rank of the originally partitioned grid
+     stored in cumulative storage format. */
+  vector<unsigned long> nElemPerRankOr(size+1);
+
+  for(int i=0; i<size; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
+  nElemPerRankOr[size] = geometry->ending_node[size-1];
+
+  /* Determine to which ranks I have to send messages to find out the information
+     of the halos stored on this rank. */
+  sendToRank.assign(size, 0);
+
+  for(unsigned long i=0; i<haloElements.size(); ++i) {
+
+    /* Determine the rank where this halo element was originally stored. */
+    vector<unsigned long>::iterator low;
+    low = lower_bound(nElemPerRankOr.begin(), nElemPerRankOr.end(),
+                      haloElements[i].long0);
+    unsigned long rankHalo = low - nElemPerRankOr.begin();
+    if(*low > haloElements[i].long0) --rankHalo;
+
+    sendToRank[rankHalo] = 1;
+  }
+
+  rankToIndCommBuf.clear();
+  for(int i=0; i<size; ++i) {
+    if( sendToRank[i] ) {
+      int ind = rankToIndCommBuf.size();
+      rankToIndCommBuf[i] = ind;
+    }
+  }
+
+  /* Resize the first index of the long send buffers for the communication of
+     the halo data.        */
+  nRankSend = rankToIndCommBuf.size();
+  longSendBuf.resize(nRankSend);
+
+  /* Determine the number of ranks, from which this rank will receive elements. */
+  nRankRecv = nRankSend;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  /* Loop over the local halo elements to fill the communication buffers. */
+  for(unsigned long i=0; i<haloElements.size(); ++i) {
+
+    /* Determine the rank where this halo element was originally stored. */
+    vector<unsigned long>::iterator low;
+    low = lower_bound(nElemPerRankOr.begin(), nElemPerRankOr.end(),
+                      haloElements[i].long0);
+    unsigned long ind = low - nElemPerRankOr.begin();
+    if(*low > haloElements[i].long0) --ind;
+
+    /* Convert this rank to the index in the send buffer. */
+    MI = rankToIndCommBuf.find(ind);
+    ind = MI->second;
+
+    /* Store the global element ID and the periodic index in the long buffer.
+       The subtraction of 1 is there to obtain the correct periodic index.
+       In haloElements a +1 is added, because this variable is of unsigned long,
+       which cannot handle negative numbers. */
+    long perIndex = haloElements[i].long1 -1;
+
+    longSendBuf[ind].push_back(haloElements[i].long0);
+    longSendBuf[ind].push_back(perIndex);
+  }
+
+  /* Define a second set of long receive buffers, because the information from
+     the first set is still needed later on. Also define the vector to
+     store the ranks from which the message came. */
+  vector<vector<long> > longSecondRecvBuf(nRankRecv, vector<long>(0));
+  vector<int> sourceRank(nRankRecv);
+
+  /*--- Communicate the data to the correct ranks. Make a distinction
+        between parallel and sequential mode.    ---*/
+
+#ifdef HAVE_MPI
+
+  /* Parallel mode. Send all the data using non-blocking sends. */
+  commReqs.resize(nRankSend);
+  MI = rankToIndCommBuf.begin();
+
+  for(int i=0; i<nRankSend; ++i, ++MI) {
+    int dest = MI->first;
+    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
+                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+  }
+
+  /* Loop over the number of ranks from which I receive data. */
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message with longs arrives from any processor.
+       Determine the source and the size of the message and receive it. */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    sourceRank[i] = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
+
+    longSecondRecvBuf[i].resize(sizeMess);
+    SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
+                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
+
+#else
+
+  /*--- Sequential mode. Simply copy the buffer. ---*/
+  longSecondRecvBuf[0] = longSendBuf[0];
+
+#endif
+
+  /*--- Release the memory of the send buffers. To make sure that all the memory
+        is deleted, the swap function is used. Afterwards resize the first index
+        of the send buffers to nRankRecv, because this number of messages must
+        be sent back to the sending ranks with halo information. ---*/
+  for(int i=0; i<nRankSend; ++i) {
+    vector<long>().swap(longSendBuf[i]);
+  }
+
+  longSendBuf.resize(nRankRecv);
+
+#ifdef HAVE_MPI
+  /* Resize the vector of the communication requests to the number of messages
+     to be sent by this rank. Only in parallel node. */
+  commReqs.resize(nRankRecv);
+#endif
+
+  /*--- Loop over the receive buffers to fill and send the send buffers again. ---*/
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Determine the number of elements present in longSecondRecvBuf[i] and
+       reserve the memory for the send buffer. */
+    const long nElemBuf = longSecondRecvBuf[i].size()/2;
+    longSendBuf[i].reserve(3*nElemBuf);
+
+    /* Loop over the elements stored in the receive buffer. */
+    for(long j=0; j<nElemBuf; ++j) {
+
+      /* Get the global element ID and periodic index from the receive buffer. */
+      const long globalID = longSecondRecvBuf[i][2*j];
+      const long perInd   = longSecondRecvBuf[i][2*j+1];
+
+      /* Determine the local index of the element in the original partitioning.
+         Check if the index is valid. */
+      const long localID = globalID - geometry->starting_node[rank];
+      if(localID < 0 || localID >= (long) geometry->npoint_procs[rank]) {
+        ostringstream message;
+        message << localID << " " << geometry->npoint_procs[rank] << endl;
+        message << "Invalid local element ID";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+
+      /* Determine which rank owns this element and store everything in the
+         send buffer. */
+      longSendBuf[i].push_back(globalID);
+      longSendBuf[i].push_back(perInd);
+      longSendBuf[i].push_back(geometry->elem[localID]->GetColor());
+    }
+
+     /* Release the memory of this receive buffer. */
+    vector<long>().swap(longSecondRecvBuf[i]);
+
+    /*--- Send the send buffer back to the calling rank.
+          Only in parallel mode of course.     ---*/
+#ifdef HAVE_MPI
+    int dest = sourceRank[i];
+    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
+                   dest, dest+1, MPI_COMM_WORLD, &commReqs[i]);
+#endif
+  }
+
+  /*--- Resize the first index of the receive buffers to nRankSend, such that
+        the requested halo information can be received.     ---*/
+  longSecondRecvBuf.resize(nRankSend);
+
+  /*--- Receive the communication data from the correct ranks. Make a distinction
+        between parallel and sequential mode.    ---*/
+#ifdef HAVE_MPI
+
+  /* Parallel mode. Loop over the number of ranks from which I receive data
+     in the return communication, i.e. nRankSend. */
+  for(int i=0; i<nRankSend; ++i) {
+
+    /* Block until a message with longs arrives from any processor.
+       Determine the source and the size of the message.   */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
+
+    /* Allocate the memory for the long receive buffer and receive the message. */
+    longSecondRecvBuf[i].resize(sizeMess);
+    SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
+                  source, rank+1, MPI_COMM_WORLD, &status);
+  }
+
+  /* Complete the non-blocking sends and synchronize the ranks, because
+     wild cards have been used. */
+  SU2_MPI::Waitall(nRankRecv, commReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#else
+
+  /*--- Sequential mode. Simply copy the buffer. ---*/
+  longSecondRecvBuf[0] = longSendBuf[0];
+
+#endif
+
+  /* Release the memory of the send buffers. To make sure that all
+     the memory is deleted, the swap function is used. */
+  for(int i=0; i<nRankRecv; ++i)
+    vector<long>().swap(longSendBuf[i]);
+
+  /* Copy the data from the receive buffers into a class of long3T, such that
+     it can be sorted in increasing order. Note that the rank of the element
+     is stored first, followed by its global ID and last the periodic index. */
+  vector<long3T> haloData;
+  for(int i=0; i<nRankSend; ++i) {
+    const long nElemBuf = longSecondRecvBuf[i].size()/3;
+
+    for(long j=0; j<nElemBuf; ++j) {
+      const long j3 = 3*j;
+      haloData.push_back(long3T(longSecondRecvBuf[i][j3+2], longSecondRecvBuf[i][j3],
+                                longSecondRecvBuf[i][j3+1]));
+    }
+
+    /* Release the memory of this receive buffer. */
+    vector<long>().swap(longSecondRecvBuf[i]);
+  }
+
+  /* Sort halo data in increasing order. */
+  sort(haloData.begin(), haloData.end());
+
+  /* Determine the number of halo elements per rank in cumulative storage.
+     The first element of this vector is nVolElemOwned, such that this vector
+     contains the starting position in the vector volElem. */
+  vector<unsigned long> nHaloElemPerRank(size+1, 0);
+  for(unsigned long i=0; i<haloData.size(); ++i)
+    ++nHaloElemPerRank[haloData[i].long0+1];
+
+  nHaloElemPerRank[0] = nVolElemOwned;
+  for(int i=0; i<size; ++i)
+    nHaloElemPerRank[i+1] += nHaloElemPerRank[i];
+
+  if(nHaloElemPerRank[size] != nVolElemTot)
+    SU2_MPI::Error("Inconsistency in total number of volume elements",
+                   CURRENT_FUNCTION);
+
+  /* Determine the number of ranks to which I have to send data in this cycle. */
+  sendToRank.assign(size, 0);
+  rankToIndCommBuf.clear();
+  for(int i=0; i<size; ++i) {
+    if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
+      sendToRank[i] = 1;
+      int ind = rankToIndCommBuf.size();
+      rankToIndCommBuf[i] = ind;
+    }
+  }
+
+  nRankSend = rankToIndCommBuf.size();
+
+  /* Store the value of nRankSend for later use. */
+  const int nRankSendHaloInfo = nRankSend;
+
+  /* Determine the number of ranks, from which this rank will receive elements. */
+  nRankRecv = nRankSend;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  /* Copy the data to be sent to the send buffers. */
+  longSendBuf.resize(nRankSend);
+  MI = rankToIndCommBuf.begin();
+
+  for(int i=0; i<nRankSend; ++i, ++MI) {
+    int dest = MI->first;
+    for(unsigned long j=nHaloElemPerRank[dest]; j<nHaloElemPerRank[dest+1]; ++j) {
+      const unsigned long jj = j - nVolElemOwned;
+      longSendBuf[i].push_back(haloData[jj].long1);
+      longSendBuf[i].push_back(haloData[jj].long2);
+    }
+  }
+
+  /* Resize the first index of the long receive buffer. */
+  longSecondRecvBuf.resize(nRankRecv);
+
+  /*--- Communicate the data to the correct ranks. Make a distinction
+        between parallel and sequential mode.    ---*/
+#ifdef HAVE_MPI
+
+  /* Parallel mode. Send all the data using non-blocking sends. */
+  commReqs.resize(nRankSend);
+  MI = rankToIndCommBuf.begin();
+
+  for(int i=0; i<nRankSend; ++i, ++MI) {
+    int dest = MI->first;
+    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
+                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+  }
+
+  /* Resize the vector to store the ranks from which the message came. */
+  sourceRank.resize(nRankRecv);
+
+  /* Loop over the number of ranks from which I receive data. */
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message with longs arrives from any processor.
+       Determine the source and the size of the message and receive it. */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    sourceRank[i] = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
+
+    longSecondRecvBuf[i].resize(sizeMess);
+    SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
+                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+  }
+
+  /* Complete the non-blocking sends and synchronize the ranks,
+     because wild cards have been used. */
+  SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#else
+
+  /*--- Sequential mode. Simply copy the buffer. ---*/
+  for(int i=0; i<nRankSend; ++i)
+    longSecondRecvBuf[i] = longSendBuf[i];
+
+#endif
+
+  /* Release the memory of the send buffers. To make sure that all the memory
+     is deleted, the swap function is used. */
+  for(int i=0; i<nRankSend; ++i) {
+    vector<long>().swap(longSendBuf[i]);
+  }
+
+  /*--- Loop over the receive buffers to flag the locally owned elements for
+        communication. Although the face information has already been used to
+        do this when ownedElements are constructed, elements that are donors
+        for the wall function treatment and are not direct neighbors may
+        have been missed. ---*/
+  for(int i=0; i<nRankRecv; ++i) {
+
+    const unsigned long nElemBuf = longSecondRecvBuf[i].size()/2;
+    for(unsigned long j=0; j<nElemBuf; ++j) {
+      const unsigned long elemID = longSecondRecvBuf[i][2*j];
+
+      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
+      if(MMI == mapGlobalElemIDToInd.end())
+        SU2_MPI::Error("Entry not found in mapGlobalElemIDToInd", CURRENT_FUNCTION);
+
+      ownedElements[MMI->second].SetCommSolution(true);
+    }
+  }
+
+  /*----------------------------------------------------------------------------*/
+  /*--- Step 3: Determine the numbering of the owned elements. The following ---*/
   /*---         criteria are used for the owned elements.                    ---*/
   /*---         - Time level of the element: elements with the smallest time ---*/
   /*---           level are number first, etc.                               ---*/
@@ -894,11 +1312,6 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
                                        - nInternalElem[tLev][0];
   }
 
-  /* Determine the number of owned elements and the total number of
-     elements stored on this rank. */
-  nVolElemOwned = globalElemID.size();
-  nVolElemTot   = nVolElemOwned + haloElements.size();
-
   /* Sort the elements of ownedElements in increasing order. */
   sort(ownedElements.begin(), ownedElements.end());
 
@@ -911,13 +1324,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Determine the map from the global element ID to the current storage
      sequence of ownedElements. */
-  map<unsigned long, unsigned long> mapGlobalElemIDToInd;
+  mapGlobalElemIDToInd.clear();
   for(unsigned long i=0; i<nVolElemOwned; ++i)
     mapGlobalElemIDToInd[ownedElements[i].GetGlobalElemID()] = i;
 
   /*--- Create the graph of local elements. The halo elements are ignored. ---*/
   vector<vector<unsigned long> > neighElem(nVolElemOwned, vector<unsigned long>(0));
 
+  nRankRecv = (int) longRecvBuf.size();
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
@@ -1039,7 +1453,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     mapGlobalElemIDToInd[ownedElements[i].GetGlobalElemID()] = oldElemToNewElem[i];
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 3: Store the elements, nodes and boundary elements in the data  ---*/
+  /*--- Step 4: Store the elements, nodes and boundary elements in the data  ---*/
   /*---         structures used by the FEM solver.                           ---*/
   /*----------------------------------------------------------------------------*/
 
@@ -1147,6 +1561,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         thisSurfElem.VTK_Type  = shortRecvBuf[i][indS++];
         thisSurfElem.nPolyGrid = shortRecvBuf[i][indS++];
         thisSurfElem.nDOFsGrid = shortRecvBuf[i][indS++];
+        const short nDonors    = shortRecvBuf[i][indS++];
 
         thisSurfElem.volElemID         = longRecvBuf[i][indL++];
         thisSurfElem.boundElemIDGlobal = longRecvBuf[i][indL++];
@@ -1154,6 +1569,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         thisSurfElem.nodeIDsGrid.resize(thisSurfElem.nDOFsGrid);
         for(unsigned short k=0; k<thisSurfElem.nDOFsGrid; ++k)
           thisSurfElem.nodeIDsGrid[k] = longRecvBuf[i][indL++];
+
+        indL += nDonors;
 
         /* Convert the global volume element ID to the local one.
            It is essential to do this before the sorting. */
@@ -1192,359 +1609,15 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     sort(boundaries[iMarker].surfElem.begin(), boundaries[iMarker].surfElem.end());
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 4: Obtain the information of the halo elements, which are       ---*/
+  /*--- Step 5: Obtain the information of the halo elements, which are       ---*/
   /*---         sorted per time level and afterwards per rank, where the     ---*/
   /*---         sequence is determined by the numbering on the sending rank. ---*/
   /*----------------------------------------------------------------------------*/
 
-  /* Determine the number of elements per rank of the originally partitioned grid
-     stored in cumulative storage format. */
-  vector<unsigned long> nElemPerRankOr(size+1);
-
-  for(int i=0; i<size; ++i) nElemPerRankOr[i] = geometry->starting_node[i];
-  nElemPerRankOr[size] = geometry->ending_node[size-1];
-
-  /* Determine to which ranks I have to send messages to find out the information
-     of the halos stored on this rank. */
-  sendToRank.assign(size, 0);
-
-  for(unsigned long i=0; i<haloElements.size(); ++i) {
-
-    /* Determine the rank where this halo element was originally stored. */
-    vector<unsigned long>::iterator low;
-    low = lower_bound(nElemPerRankOr.begin(), nElemPerRankOr.end(),
-                      haloElements[i].long0);
-    unsigned long rankHalo = low - nElemPerRankOr.begin();
-    if(*low > haloElements[i].long0) --rankHalo;
-
-    sendToRank[rankHalo] = 1;
-  }
-
-  rankToIndCommBuf.clear();
-  for(int i=0; i<size; ++i) {
-    if( sendToRank[i] ) {
-      int ind = rankToIndCommBuf.size();
-      rankToIndCommBuf[i] = ind;
-    }
-  }
-
-  /* Resize the first index of the long send buffers for the communication of
-     the halo data.        */
-  nRankSend = rankToIndCommBuf.size();
-  longSendBuf.resize(nRankSend);
-
-  /* Determine the number of ranks, from which this rank will receive elements. */
-  nRankRecv = nRankSend;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  /* Loop over the local halo elements to fill the communication buffers. */
-  for(unsigned long i=0; i<haloElements.size(); ++i) {
-
-    /* Determine the rank where this halo element was originally stored. */
-    vector<unsigned long>::iterator low;
-    low = lower_bound(nElemPerRankOr.begin(), nElemPerRankOr.end(),
-                      haloElements[i].long0);
-    unsigned long ind = low - nElemPerRankOr.begin();
-    if(*low > haloElements[i].long0) --ind;
-
-    /* Convert this rank to the index in the send buffer. */
-    MI = rankToIndCommBuf.find(ind);
-    ind = MI->second;
-
-    /* Store the global element ID and the periodic index in the long buffer.
-       The subtraction of 1 is there to obtain the correct periodic index.
-       In haloElements a +1 is added, because this variable is of unsigned long,
-       which cannot handle negative numbers. */
-    long perIndex = haloElements[i].long1 -1;
-
-    longSendBuf[ind].push_back(haloElements[i].long0);
-    longSendBuf[ind].push_back(perIndex);
-  }
-
-  /* Resize the first index of the long receive buffer and define the vector
-     to store the ranks from which the message came. */
-  longRecvBuf.resize(nRankRecv);
-  vector<int> sourceRank(nRankRecv);
-
-  /*--- Communicate the data to the correct ranks. Make a distinction
-        between parallel and sequential mode.    ---*/
-
-#ifdef HAVE_MPI
-
-  /* Parallel mode. Send all the data using non-blocking sends. */
-  commReqs.resize(nRankSend);
-  MI = rankToIndCommBuf.begin();
-
-  for(int i=0; i<nRankSend; ++i, ++MI) {
-    int dest = MI->first;
-    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
-  }
-
-  /* Loop over the number of ranks from which I receive data. */
-  for(int i=0; i<nRankRecv; ++i) {
-
-    /* Block until a message with longs arrives from any processor.
-       Determine the source and the size of the message and receive it. */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
-    sourceRank[i] = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
-
-    longRecvBuf[i].resize(sizeMess);
-    SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
-  }
-
-  /* Complete the non-blocking sends. */
-  SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
-
-#else
-
-  /*--- Sequential mode. Simply copy the buffer. ---*/
-  longRecvBuf[0] = longSendBuf[0];
-
-#endif
-
-  /*--- Release the memory of the send buffers. To make sure that all the memory
-        is deleted, the swap function is used. Afterwards resize the first index
-        of the send buffers to nRankRecv, because this number of messages must
-        be sent back to the sending ranks with halo information. ---*/
-  for(int i=0; i<nRankSend; ++i) {
-    vector<long>().swap(longSendBuf[i]);
-  }
-
-  longSendBuf.resize(nRankRecv);
-
-#ifdef HAVE_MPI
-  /* Resize the vector of the communication requests to the number of messages
-     to be sent by this rank. Only in parallel node. */
-  commReqs.resize(nRankRecv);
-#endif
-
-  /*--- Loop over the receive buffers to fill and send the send buffers again. ---*/
-  for(int i=0; i<nRankRecv; ++i) {
-
-    /* Determine the number of elements present in longRecvBuf[i] and reserve
-       the memory for the send buffer. */
-    const long nElemBuf = longRecvBuf[i].size()/2;
-    longSendBuf[i].reserve(3*nElemBuf);
-
-    /* Loop over the elements stored in the receive buffer. */
-    for(long j=0; j<nElemBuf; ++j) {
-
-      /* Get the global element ID and periodic index from the receive buffer. */
-      const long globalID = longRecvBuf[i][2*j];
-      const long perInd   = longRecvBuf[i][2*j+1];
-
-      /* Determine the local index of the element in the original partitioning.
-         Check if the index is valid. */
-      const long localID = globalID - geometry->starting_node[rank];
-      if(localID < 0 || localID >= (long) geometry->npoint_procs[rank]) {
-        ostringstream message;
-        message << localID << " " << geometry->npoint_procs[rank] << endl;
-        message << "Invalid local element ID";
-        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-      }
-
-      /* Determine which rank owns this element and store everything in the
-         send buffer. */
-      longSendBuf[i].push_back(globalID);
-      longSendBuf[i].push_back(perInd);
-      longSendBuf[i].push_back(geometry->elem[localID]->GetColor());
-    }
-
-     /* Release the memory of this receive buffer. */
-    vector<long>().swap(longRecvBuf[i]);
-
-    /*--- Send the send buffer back to the calling rank.
-          Only in parallel mode of course.     ---*/
-#ifdef HAVE_MPI
-    int dest = sourceRank[i];
-    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[i]);
-#endif
-  }
-
-  /*--- Resize the first index of the receive buffers to nRankSend, such that
-        the requested halo information can be received.     ---*/
-  longRecvBuf.resize(nRankSend);
-
-  /*--- Receive the communication data from the correct ranks. Make a distinction
-        between parallel and sequential mode.    ---*/
-#ifdef HAVE_MPI
-
-  /* Parallel mode. Loop over the number of ranks from which I receive data
-     in the return communication, i.e. nRankSend. */
-  for(int i=0; i<nRankSend; ++i) {
-
-    /* Block until a message with longs arrives from any processor.
-       Determine the source and the size of the message.   */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
-    int source = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
-
-    /* Allocate the memory for the long receive buffer and receive the message. */
-    longRecvBuf[i].resize(sizeMess);
-    SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
-  }
-
-  /* Complete the non-blocking sends. */
-  SU2_MPI::Waitall(nRankRecv, commReqs.data(), MPI_STATUSES_IGNORE);
-
-  /* Wild cards have been used in the communication,
-     so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#else
-
-  /*--- Sequential mode. Simply copy the buffer. ---*/
-  longRecvBuf[0] = longSendBuf[0];
-
-#endif
-
-  /* Release the memory of the send buffers. To make sure that all
-     the memory is deleted, the swap function is used. */
-  for(int i=0; i<nRankRecv; ++i)
-    vector<long>().swap(longSendBuf[i]);
-
-  /* Copy the data from the receive buffers into a class of long3T, such that
-     it can be sorted in increasing order. Note that the rank of the element
-     is stored first, followed by its global ID and last the periodic index. */
-  vector<long3T> haloData;
-  for(int i=0; i<nRankSend; ++i) {
-    const long nElemBuf = longRecvBuf[i].size()/3;
-
-    for(long j=0; j<nElemBuf; ++j) {
-      const long j3 = 3*j;
-      haloData.push_back(long3T(longRecvBuf[i][j3+2], longRecvBuf[i][j3],
-                                longRecvBuf[i][j3+1]));
-    }
-
-    /* Release the memory of this receive buffer. */
-    vector<long>().swap(longRecvBuf[i]);
-  }
-
-  /* Sort halo data in increasing order. */
-  sort(haloData.begin(), haloData.end());
-
-  /* Determine the number of halo elements per rank in cumulative storage.
-     The first element of this vector is nVolElemOwned, such that this vector
-     contains the starting position in the vector volElem. Also determine the
-     number of ranks to which I have to send requests for data. */
-  vector<unsigned long> nHaloElemPerRank(size+1, 0);
-  for(unsigned long i=0; i<haloData.size(); ++i)
-    ++nHaloElemPerRank[haloData[i].long0+1];
-
-  nHaloElemPerRank[0] = nVolElemOwned;
-  for(int i=0; i<size; ++i)
-    nHaloElemPerRank[i+1] += nHaloElemPerRank[i];
-
-  if(nHaloElemPerRank[size] != nVolElemTot)
-    SU2_MPI::Error("Inconsistency in total number of volume elements",
-                   CURRENT_FUNCTION);
-
-  /* Determine the number of ranks to which I have to send data and the number
-     of ranks from which I receive data in this cycle. */
-  sendToRank.assign(size, 0);
-  rankToIndCommBuf.clear();
-  for(int i=0; i<size; ++i) {
-    if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
-      sendToRank[i] = 1;
-      int ind = rankToIndCommBuf.size();
-      rankToIndCommBuf[i] = ind;
-    }
-  }
-
-  nRankSend = rankToIndCommBuf.size();
-
-  /* Determine the number of ranks, from which this rank will receive elements. */
-  nRankRecv = nRankSend;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
-  /* Copy the data to be sent to the send buffers. */
-  longSendBuf.resize(nRankSend);
-  MI = rankToIndCommBuf.begin();
-
-  for(int i=0; i<nRankSend; ++i, ++MI) {
-    int dest = MI->first;
-    for(unsigned long j=nHaloElemPerRank[dest]; j<nHaloElemPerRank[dest+1]; ++j) {
-      const unsigned long jj = j - nVolElemOwned;
-      longSendBuf[i].push_back(haloData[jj].long1);
-      longSendBuf[i].push_back(haloData[jj].long2);
-    }
-  }
-
-  /* Resize the first index of the long receive buffer. */
-  longRecvBuf.resize(nRankRecv);
-
-  /*--- Communicate the data to the correct ranks. Make a distinction
-        between parallel and sequential mode.    ---*/
-#ifdef HAVE_MPI
-
-  /* Parallel mode. Send all the data using non-blocking sends. */
-  commReqs.resize(nRankSend);
-  MI = rankToIndCommBuf.begin();
-
-  for(int i=0; i<nRankSend; ++i, ++MI) {
-    int dest = MI->first;
-    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
-  }
-
-  /* Resize the vector to store the ranks from which the message came. */
-  sourceRank.resize(nRankRecv);
-
-  /* Loop over the number of ranks from which I receive data. */
-  for(int i=0; i<nRankRecv; ++i) {
-
-    /* Block until a message with longs arrives from any processor.
-       Determine the source and the size of the message and receive it. */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
-    sourceRank[i] = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
-
-    longRecvBuf[i].resize(sizeMess);
-    SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
-  }
-
-  /* Complete the non-blocking sends. */
-  SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
-
-#else
-
-  /*--- Sequential mode. Simply copy the buffer. ---*/
-  for(int i=0; i<nRankSend; ++i)
-    longRecvBuf[i] = longSendBuf[i];
-
-#endif
-
-  /*--- Release the memory of the send buffers. To make sure that all the memory
-        is deleted, the swap function is used. Afterwards resize the first index
-        of the send buffers to nRankRecv, because this number of messages must
-        be sent back to the sending ranks with halo information. ---*/
-  for(int i=0; i<nRankSend; ++i) {
-    vector<long>().swap(longSendBuf[i]);
-  }
-
+  /*--- Resize the first index of the send buffers to nRankRecv, because this
+        number of messages must be sent back to the sending ranks with halo
+        information. ---*/
+  nRankRecv = (int) longSecondRecvBuf.size();
   shortSendBuf.resize(nRankRecv);
   longSendBuf.resize(nRankRecv);
   doubleSendBuf.resize(nRankRecv);
@@ -1562,24 +1635,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
        index on this rank. Note that also the periodic index must be stored,
        hence use an unsignedLong2T for this purpose. As -1 cannot be stored
        for an unsigned long a 1 is added to the periodic transformation. */
-    const unsigned long nElemBuf = longRecvBuf[i].size()/2;
+    const unsigned long nElemBuf = longSecondRecvBuf[i].size()/2;
     vector<unsignedLong2T> elemBuf(nElemBuf);
 
     for(unsigned long j=0; j<nElemBuf; ++j) {
       const unsigned long j2 = 2*j;
 
-      const unsigned long elemID = longRecvBuf[i][j2];
+      const unsigned long elemID = longSecondRecvBuf[i][j2];
       map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
       if(MMI == mapGlobalElemIDToInd.end())
         SU2_MPI::Error("Entry not found in mapGlobalElemIDToInd", CURRENT_FUNCTION);
 
       elemBuf[j].long0 = MMI->second;
-      elemBuf[j].long1 = longRecvBuf[i][j2+1] + 1;
+      elemBuf[j].long1 = longSecondRecvBuf[i][j2+1] + 1;
     }
 
     /* Release the memory of the long receive buffer via the swap function
        and sort elemBuf in increasing order. */
-    vector<long>().swap(longRecvBuf[i]);
+    vector<long>().swap(longSecondRecvBuf[i]);
 
     sort(elemBuf.begin(), elemBuf.end());
 
@@ -1667,8 +1740,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #endif
   }
 
-  /*--- Resize the first index of the receive buffers to nRankSend, such that
-        the requested halo information can be received.     ---*/
+  /*--- Resize the first index of the receive buffers to nRankSendHaloInfo,
+        such that the requested halo information can be received.     ---*/
+  nRankSend = nRankSendHaloInfo;
   shortRecvBuf.resize(nRankSend);
   longRecvBuf.resize(nRankSend);
   doubleRecvBuf.resize(nRankSend);
@@ -1744,7 +1818,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   }
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 5: Build the layer of halo elements from the information in the ---*/
+  /*--- Step 6: Build the layer of halo elements from the information in the ---*/
   /*---         receive buffers shortRecvBuf, longRecvBuf and doubleRecvBuf. ---*/
   /*----------------------------------------------------------------------------*/
 

@@ -49,3 +49,11 @@ su2double FEMStandardBoundaryFaceClass::WorkEstimateMetis(CConfig *config) {
   /* TEMPORARY IMPLEMENTATION. */
   return nIntegration + 0.05*nDOFsFace;
 }
+
+su2double FEMStandardBoundaryFaceClass::WorkEstimateMetisWallFunctions(
+                                           CConfig              *config,
+                                           const unsigned short nPointsWF) {
+
+  /* TEMPORARY IMPLEMENTATION. */
+  return 0.25*nIntegration*nPointsWF;
+}

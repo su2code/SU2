@@ -1674,6 +1674,8 @@ private:
  unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
 
  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
+ bool JacobianConsideredConstant;    /*!< \brief Whether or not the Jacobian of the transformation to
+                                                 is (almost) constant. */
 
  vector<unsigned long> donorElementsWallFunctions; /*!< \brief The global ID's of the donor elements
                                                                for the wall function treatment. */
@@ -1819,6 +1821,18 @@ public:
   * \return The global ID of this element.
   */
  unsigned long GetGlobalElemID(void);
+
+ /*!
+  * \brief Function to get whether or not the Jacobian is considered constant.
+  * \return True if the Jacobian is (almost) constant and false otherwise.
+  */
+ bool GetJacobianConsideredConstant(void);
+
+ /*!
+  * \brief Function to set the value of JacobianConsideredConstant.
+  * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
+  */
+ void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant);
 
  /*!
   * \brief Add the given donor ID to the donor elements for the wall function treatment.

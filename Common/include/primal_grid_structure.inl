@@ -356,7 +356,7 @@ inline void CPrimalGridFEM::SetColor(unsigned long val_color) { color = val_colo
 
 inline unsigned long CPrimalGridFEM::GetColor(void) { return color; }
 
-inline void CPrimalGridFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) { JacobianConsideredConstant = val_JacobianConsideredConstant; }
+inline void CPrimalGridFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {JacobianConsideredConstant = val_JacobianConsideredConstant;}
 
 inline void CPrimalGridFEM::AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {offsetDOFsSolGlobal += val_offsetRank;}
 
@@ -389,6 +389,10 @@ inline unsigned short CPrimalGridBoundFEM::GetVTK_Type(void) { return VTK_Type; 
 inline unsigned short CPrimalGridBoundFEM::GetNPolyGrid(void) { return nPolyGrid; }
 
 inline unsigned short CPrimalGridBoundFEM::GetNDOFsGrid(void) { return nDOFsGrid; }
+
+inline bool CPrimalGridBoundFEM::GetJacobianConsideredConstant(void) {return JacobianConsideredConstant;}
+
+inline void CPrimalGridBoundFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {JacobianConsideredConstant = val_JacobianConsideredConstant;}
 
 inline void CPrimalGridBoundFEM::AddDonorWallFunctions(const unsigned long donorElement) {donorElementsWallFunctions.push_back(donorElement);}
 
