@@ -1614,10 +1614,9 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double *V_inlet, *V_domain, *Normal, *UnitNormal, *Velocity;
+  su2double *V_inlet, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
   su2double VelEps = 0.0;
-  su2double Riemann, SoundSpeed2, VelEps;
-  su2double Pressure, Density, SoundSpeed2, Riemann, TwoGamma_M1 = 2.0/Gamma_Minus_One,
+  su2double Pressure, Density, SoundSpeed2, Riemann, Two_Gamma_M1 = 2.0/Gamma_Minus_One, Area, 
             Energy, Gas_Constant = config->GetGas_ConstantND(), GridVel;
 
   bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
@@ -1647,6 +1646,11 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt (Area);
 
         for (iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = Normal[iDim]/Area;
@@ -1774,8 +1778,10 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   
   /*--- Free locally allocated memory ---*/
   delete[] Normal;
-  delete[] Velocity;
   delete[] UnitNormal;
+  delete[] Velocity;
+  delete[] GridVel;
+  
 
 }
 
