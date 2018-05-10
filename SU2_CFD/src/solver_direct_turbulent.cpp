@@ -1617,7 +1617,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   su2double *V_inlet, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
   su2double VelEps = 0.0;
   su2double Pressure, Density, SoundSpeed2, Riemann, Two_Gamma_M1 = 2.0/Gamma_Minus_One, Area, 
-            Energy, Gas_Constant = config->GetGas_ConstantND(), GridVel;
+            Energy, Gas_Constant = config->GetGas_ConstantND();
 
   bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
