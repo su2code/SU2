@@ -627,7 +627,8 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
   AD::StartPreacc();
   AD::SetPreaccIn(Vorticity, 3);
   AD::SetPreaccIn(StrainMag);
-  AD::SetPreaccIn(delta);
+  AD::SetPreaccIn(val_delta);
+  AD::SetPreaccIn(val_const_DES);
   /*--- Density ---*/
   AD::SetPreaccIn(Solution[0]);
   /*--- Laminar viscosity --- */
@@ -657,7 +658,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
   const su2double nu_t = GetEddyViscosity()/GetDensity();
   Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
   
-  Aaux = ch2*max((val_const_DES*delta/Lturb)/Gaux -  0.5, 0.0);
+  Aaux = ch2*max((val_const_DES*val_delta/Lturb)/Gaux -  0.5, 0.0);
   
   Roe_Dissipation = sigma_max * tanh(pow(Aaux, ch1)); 
   
