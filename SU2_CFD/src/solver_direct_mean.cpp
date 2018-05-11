@@ -17328,7 +17328,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
        * Since the volume is already computed, using the volume is much faster.
        * ---*/
       const su2double delta = pow(geometry->node[iPoint]->GetVolume(), 1.0/3);
-      node[iPoint]->SetRoe_Dissipation_NTS(delta);
+      node[iPoint]->SetRoe_Dissipation_NTS(delta, config->GetConst_DES());
     }
   }
 }
