@@ -1512,7 +1512,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--------------------------------------------------------------------------*/
 
   /* Determine the number of families in this base and read their names.
-     Not that when multiple zones are present, this step is repeated for
+     Note that when multiple zones are present, this step is repeated for
      every zone. */
   int nFamilies;
   if(cg_nfamilies(fn, iBase, &nFamilies) != CG_OK) cg_error_exit();
@@ -1524,7 +1524,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     familyNames[i-1] = cgnsname;
   }
 
-  /* Determine the number of boundary condtions for this zone. */
+  /* Determine the number of boundary conditions for this zone. */
   int nBCs;
   if(cg_nbocos(fn, iBase, iZone, &nBCs) != CG_OK) cg_error_exit();
 
@@ -2761,8 +2761,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
     /*--- Calling ParMETIS ---*/
     vector<idx_t> part(nElem);
-    if (rank == MASTER_NODE)
-      cout << endl <<"----------------------- Calling ParMETIS --------------------------------" << endl;
+    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
 
     idx_t edgecut;
     MPI_Comm comm = MPI_COMM_WORLD;
@@ -2771,7 +2770,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
                          &ncon, &nparts, tpwgts.data(), ubvec, options,
                          &edgecut, part.data(), &comm);
     if (rank == MASTER_NODE) {
-      cout << "Finished partitioning using ParMETIS (";
+      cout << " graph partitioning complete (";
       cout << edgecut << " edge cuts)." << endl;
     }
 
