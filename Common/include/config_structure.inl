@@ -680,10 +680,6 @@ inline su2double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
 
 inline su2double CConfig::GetMax_DeltaTime(void) {	return Max_DeltaTime; }
 
-inline su2double CConfig::GetCFL_Poisson(void) {return CFL_Poisson; }
-
-inline void CConfig::SetCFL_Poisson(su2double val_cfl) { CFL_Poisson = val_cfl; }
-
 inline su2double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
 
 inline su2double CConfig::GetCoordFFDBox(unsigned short val_ffd, unsigned short val_index) {	return CoordFFDBox[val_ffd][val_index]; }
@@ -754,6 +750,10 @@ inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
 inline void CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
+
+inline unsigned short CConfig::GetKind_Incomp_System(void) { return Kind_Incomp_System; }
+
+inline void CConfig::SetIncomp_System(unsigned short val_system) { Kind_Incomp_System = val_system; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 

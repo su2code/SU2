@@ -143,7 +143,8 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Pressure_based;   /*!< \brief Flag to check if we are using a pressure-based system.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -401,7 +402,6 @@ private:
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
   CFLSolid,       /*!< \brief CFL in (heat) solid solvers. */
   Max_DeltaTime,  		/*!< \brief Max delta time. */
-  CFL_Poisson,  		/*!< \brief CFL for Poisson problem. */
   Unst_CFL;		/*!< \brief Unsteady CFL number. */
   bool ReorientElements;		/*!< \brief Flag for enabling element reorientation. */
   bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -490,7 +490,8 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_Incomp_System;  /*!< \brief Pressure-based solver for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
@@ -1887,25 +1888,6 @@ public:
    */
   su2double GetElasticyMod(unsigned short id_val);
   
-  /*!
-   * \brief Get the value of the Poisson_Coeff.
-   * \return Poisson_Coeff.
-   */
-  su2double GetPoisson_Coeff(void);
-  
-  /*!
-   * \brief Get the Courant Friedrich Levi number for Poisson solvers.
-   * \return CFL number for Poisson solver.
-   */
-  su2double GetCFL_Poisson(void);
-  
-   /*!
-   * \brief Set the Courant Friedrich Levi number for Poisson solvers.
-   * \return CFL number for Poisson solver.
-   */
-  void SetCFL_Poisson(su2double val_CFL);
-
-
   /*!
     * \brief Decide whether to apply DE effects to the model.
     * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
@@ -3307,7 +3289,23 @@ public:
    */
   void SetKind_Solver(unsigned short val_solver);
   
+  /*-------------Type of incompressible system-------------------*/
   
+   /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
+  unsigned short GetKind_Incomp_System(void);
+  
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
+  void SetIncomp_System(unsigned short val_system);
+  
+  /*-------------------------------------------------------------*/
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
    * \param[in] val_zone - Zone where the soler is applied.
@@ -6012,6 +6010,13 @@ public:
    * \return The inlet velocity vector.
    */
   su2double* GetInlet_Velocity(string val_index);
+  
+  /*!
+   * \brief Get the fixed value at the Dirichlet boundary.
+   * \param[in] val_index - Index corresponding to the Dirichlet boundary.
+   * \return The total temperature.
+   */
+  su2double GetDirichlet_Value(string val_index);
   
   /*!
    * \brief Get whether this is a Dirichlet or a Neumann boundary.
