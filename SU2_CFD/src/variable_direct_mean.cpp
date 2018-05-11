@@ -612,13 +612,13 @@ bool CNSVariable::SetStrainMag(void) {
   
 }
 
-void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
+void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
+                                         su2double val_const_DES){
   
   static const su2double cnu = pow(0.09, 1.5),
                          ch1 = 3.0,
                          ch2 = 1.0,
                          ch3 = 2.0,
-                         C_DES = 0.65,
                          sigma_max = 1.0;
   
   unsigned short iDim;
@@ -657,7 +657,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   const su2double nu_t = GetEddyViscosity()/GetDensity();
   Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
   
-  Aaux = ch2*max((C_DES*delta/Lturb)/Gaux -  0.5, 0.0);
+  Aaux = ch2*max((val_const_DES*delta/Lturb)/Gaux -  0.5, 0.0);
   
   Roe_Dissipation = sigma_max * tanh(pow(Aaux, ch1)); 
   
