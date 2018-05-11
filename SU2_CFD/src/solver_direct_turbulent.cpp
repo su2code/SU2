@@ -1634,12 +1634,12 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
+
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -1710,7 +1710,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
 
         V_inlet[0] = Pressure / ( Gas_Constant * Density);
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Velocity[iDim];
+          V_inlet[iDim+1] = -VelEps * UnitNormal[iDim];
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
@@ -1776,12 +1776,12 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Free locally allocated memory ---*/
-  if(Normal != NULL) delete[] Normal;
-  if(UnitNormal != NULL) delete[] UnitNormal;
-  if(Velocity != NULL) delete[] Velocity;
-  if(GridVel != NULL) delete[] GridVel;
-  if(V_inlet != NULL) delete[] V_inlet;
-  if(V_domain != NULL) delete[] V_domain;  
+  // if(Normal != NULL) delete[] Normal;
+  // if(UnitNormal != NULL) delete[] UnitNormal;
+  // if(Velocity != NULL) delete[] Velocity;
+  // if(GridVel != NULL) delete[] GridVel;
+  // if(V_inlet != NULL) delete[] V_inlet;
+  // if(V_domain != NULL) delete[] V_domain;  
 
 }
 

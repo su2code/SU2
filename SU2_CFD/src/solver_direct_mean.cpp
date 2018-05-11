@@ -17067,7 +17067,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         /*--- Compute dual-grid area and boundary normal ---*/
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        VelEps= solver_container[FLOW_SOL]->node[iPoint]->GetTranspiration();
+        VelEps = node[iPoint]->GetTranspiration();
 
         Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -17167,7 +17167,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         /*--- Compute the residual using an upwind scheme ---*/
 
-        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        // conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
         /*--- Update residual value ---*/
 
@@ -17180,8 +17180,8 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         /*--- Roe Turkel preconditioning, set the value of beta ---*/
 
-        if (config->GetKind_Upwind() == TURKEL)
-          node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
+        // if (config->GetKind_Upwind() == TURKEL)
+        //   node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 
         // /*--- Viscous contribution, commented out because serious convergence problems ---*/
         //
