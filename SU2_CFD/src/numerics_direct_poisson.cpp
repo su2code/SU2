@@ -2,7 +2,7 @@
  * \file numerics_direct_poisson.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios
- * \version 6.0.1 "Falcon"
+ * \version 6.0.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -150,6 +150,7 @@ CAvgGradCorrected_Poisson::CAvgGradCorrected_Poisson(unsigned short val_nDim, un
 
   implicit = false;
   implicit = (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT);
+  direct = false;
 
   
   Edge_Vector = new su2double [nDim];
@@ -253,6 +254,8 @@ CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_n
 
   implicit = false;
   implicit = (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT);
+  direct = false;
+
    
   Edge_Vector = new su2double [nDim];
   Proj_Mean_GradPoissonVar_Normal = new su2double [nVar];
@@ -335,26 +338,74 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
 
   /*AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();*/
-
-
-
 }
 
 
-CSource_PoissonFVM::CSource_PoissonFVM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
+CPressure_Poisson::CPressure_Poisson(unsigned short val_nDim, unsigned short val_nVar,
+                                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  implicit = true;
+     
+  Edge_Vector = new su2double [nDim];
+  
+  Poisson_Coeff_i = 1.0;
+  Poisson_Coeff_j = 1.0;
+  
 }
+
+
+CPressure_Poisson::~CPressure_Poisson(void) {
+	
+	unsigned int iDim;
+	delete [] Edge_Vector;
+}
+
+void CPressure_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
+
+  /*AD::StartPreacc();
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Poisson_Coeff_i); AD::SetPreaccIn(Poisson_Coeff_j);*/
+
+  /*--- Compute vector going from iPoint to jPoint ---*/
+
+  dist_ij_2 = 0; proj_vector_ij = 0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+  }
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+
+  Poisson_Coeff_Mean = (config->GetDensity_Ref()*Volume)/(Mom_Coeff_Mean*sqrt(dist_ij_2));
+  
+  val_residual[0] = 0.0;
+    
+  if (implicit){
+	Jacobian_i[0][0] = -Poisson_Coeff_Mean;
+	Jacobian_j[0][0] = Poisson_Coeff_Mean;
+  }
+  /*AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();*/
+}
+
+
+CSource_PoissonFVM::CSource_PoissonFVM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CSource_PoissonFVM::~CSource_PoissonFVM(void) { }
 
 void CSource_PoissonFVM::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
-  unsigned short iVar;
-  su2double src_term;
-
-
+ 
+ su2double src_term;
+ 
  src_term = 10.0; //analytical solution, u = 1+2x^2+3y^2
- for (iVar = 0; iVar < nVar; iVar++)    
-      val_residual[iVar] = src_term*Volume;
+ 
+ if (config->GetKind_Incomp_System()==PRESSURE_BASED) 
+    val_residual[0] = Source_Term;
+ else 
+   val_residual[0] = Source_Term*Volume;
     
 }
 

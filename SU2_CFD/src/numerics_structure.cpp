@@ -311,7 +311,6 @@ void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
 void CNumerics::GetInviscidPBProjFlux(su2double *val_density,
                                            su2double *val_velocity,
                                            su2double *val_pressure,
-                                           su2double *val_betainc2,
                                            su2double *val_normal,
                                            su2double *val_Proj_Flux) {
     su2double rhou, rhov, rhow;
@@ -463,7 +462,7 @@ void CNumerics::GetInviscidArtCompProjJac(su2double *val_density, su2double *val
 //-----------------------------------------------------------------------------------------------------------------
 //----------------------------------Inviscid Jacobian for pressure-based system------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
-void CNumerics::GetInviscidPBProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_normal,
+void CNumerics::GetInviscidPBProjJac(su2double *val_density, su2double *val_velocity, su2double *val_normal,
     su2double val_scale, su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
   unsigned short iDim;
@@ -496,8 +495,6 @@ void CNumerics::GetInviscidPBProjJac(su2double *val_density, su2double *val_velo
   }
   AD_END_PASSIVE
 }
-
-
 //-----------------------------------------------------------------------------------------------------------------
 //----------------------------------Inviscid Jacobian for pressure-based system------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
@@ -1369,6 +1366,16 @@ void CNumerics::GetPArtCompMatrix_inv(su2double *val_density, su2double *val_vel
   }
 
 }
+
+//---------------------------------------------------------------------------------------------------
+void CNumerics::GetPPBMatrix(su2double *val_density, su2double *val_velocity, su2double *val_normal, 
+                                 su2double **val_invp_tensor) { }
+
+
+void CNumerics::GetPPBMatrix_inv(su2double *val_density, su2double *val_velocity, su2double *val_normal, 
+                                 su2double **val_invp_tensor) { }
+//---------------------------------------------------------------------------------------------------
+
 
 void CNumerics::GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val_soundspeed,
     su2double *val_normal, su2double *val_Lambda_Vector) {

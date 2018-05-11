@@ -847,15 +847,15 @@ void CPBFluidIteration::Preprocess(COutput *output,
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   
-  bool fsi = config_container[val_iZone]->GetFSI_Simulation();
-  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+  //bool fsi = config_container[val_iZone]->GetFSI_Simulation();
+  //unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
 
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-  if( fsi  && ( FSIIter == 0 ) ){
+  /*if( fsi  && ( FSIIter == 0 ) ){
     solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
-  }
+  }*/
 }
 
 void CPBFluidIteration::Iterate(COutput *output,
@@ -869,7 +869,7 @@ void CPBFluidIteration::Iterate(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) {
   unsigned long IntIter, ExtIter;
-  unsigned long CorrecIter, nCorrecIter;
+  unsigned long MassIter, nMassIter, PressureIter, nPressureIter;
   
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool frozen_visc = (config_container[val_iZone]->GetContinuous_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Cont()) ||
@@ -885,44 +885,35 @@ void CPBFluidIteration::Iterate(COutput *output,
   
   /* ---- Start velocity and pressure correction loop---*/
   
-  nCorrecIter = 10; 
+  /*--- Have to check net mass flux to stop the loop, this value is provisional ---*/
+  nMassIter = 10; 
   
-  for (CorrecIter = 0; CorrecIter < nCorrecIter; CorrecIter++) {
+  /*--- Have to check convergence within the Poisson iteration, this value is provisional ---*/
+  nPressureIter = 100;
   
-	/*--- Update global parameters ---*/
   
-	switch( config_container[val_iZone]->GetKind_Solver() ) {
-      
-		case EULER: case DISC_ADJ_EULER:
-			config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
-      
-		case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
-			config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;	
-      
-		case RANS: case DISC_ADJ_RANS:
-			config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
-      
-	}
-  
+  for (MassIter = 0; MassIter < nMassIter; MassIter++) {
+
+    config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
 	/*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
-	integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+	integration_container[val_iZone][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
 	
 	/*--- Set source term for pressure correction equation based on current flow solution ---*/
-	solver_container[val_iZone][iMesh][FLOW_SOL]->SetPoissonSourceTerm();
+	solver_container[val_iZone][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
 	
 	
 	/*--- Solve the poisson equation ---*/
-
-	config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_POISSON_SYS, ExtIter);
-	integration_container[val_iZone][POISSON_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+    for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) {
+		config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_POISSON_SYS, ExtIter);
+		integration_container[val_iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone);
-                                                                     
+    }                                                  
     /*--- Correct pressure and velocities ---*/
-    solver_container[val_iZone][MESH_0][POISSON_SOL]->CorrectPressure();
+    solver_container[val_iZone][MESH_0][POISSON_SOL]->CorrectPressure(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
     
-    solver_container[val_iZone][MESH_0][FLOW_SOL]->CorrectVelocity();
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->CorrectVelocity(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
     
     
     /*--- Solve for other scalars like turbulence, transition, heat etc ---*/
@@ -1280,7 +1271,7 @@ void CPoissonIteration::Iterate(COutput *output,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone) {
   
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+ unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Set the value of the internal iteration ---*/
@@ -1290,8 +1281,11 @@ void CPoissonIteration::Iterate(COutput *output,
   
   /*--- Poisson equation ---*/
   config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
-  integration_container[val_iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+  /*integration_container[val_iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                      config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone);*/
+  integration_container[val_iZone][POISSON_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                       config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone);
+  
   
   
 }

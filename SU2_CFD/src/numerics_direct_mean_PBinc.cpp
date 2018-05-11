@@ -124,28 +124,28 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   
   /*--- Compute ProjFlux_i ---*/
   
-  GetInviscidPBProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, Normal, ProjFlux_i);
+  GetInviscidPBProjFlux(&DensityInc_i, Velocity_i, &Pressure_i,  Normal, ProjFlux_i);
   
   /*--- Compute ProjFlux_j ---*/
   
-  GetInviscidPBProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, Normal, ProjFlux_j);
+  GetInviscidPBProjFlux(&DensityInc_j, Velocity_j, &Pressure_j,  Normal, ProjFlux_j);
   
   /*--- Compute P and Lambda (matrix of eigenvalues) ---*/
   
-  GetPPBMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, P_Tensor);
+  GetPPBMatrix(&MeanDensity, MeanVelocity,  UnitNormal, P_Tensor);
   
   /*--- Flow eigenvalues ---*/
   
   if (nDim == 2) {
     Lambda[0] = ProjVelocity;
-    Lambda[1] = ProjVelocity + MeanSoundSpeed;
-    Lambda[2] = ProjVelocity - MeanSoundSpeed;
+    Lambda[1] = ProjVelocity;// + MeanSoundSpeed;
+    Lambda[2] = ProjVelocity;//- MeanSoundSpeed;
   }
   if (nDim == 3) {
     Lambda[0] = ProjVelocity;
     Lambda[1] = ProjVelocity;
-    Lambda[2] = ProjVelocity + MeanSoundSpeed;
-    Lambda[3] = ProjVelocity - MeanSoundSpeed;
+    Lambda[2] = ProjVelocity;// + MeanSoundSpeed;
+    Lambda[3] = ProjVelocity;// - MeanSoundSpeed;
   }
   
   /*--- Absolute value of the eigenvalues ---*/
@@ -155,13 +155,13 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   
   /*--- Compute inverse P ---*/
   
-  GetPPBMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
+  GetPPBMatrix_inv(&MeanDensity, MeanVelocity,  UnitNormal, invP_Tensor);
 
   /*--- Jacobian of the inviscid flux ---*/
 
   if (implicit) {
-    GetInviscidPBProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidPBProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, val_Jacobian_j);
+    GetInviscidPBProjJac(&DensityInc_i, Velocity_i,  Normal, 0.5, val_Jacobian_i);
+    GetInviscidPBProjJac(&DensityInc_j, Velocity_j,  Normal, 0.5, val_Jacobian_j);
   }
   
   /*--- Diference variables iPoint and jPoint ---*/
@@ -257,7 +257,7 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
   
   /*--- Get projected flux tensor ---*/
   
-  GetInviscidPBProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, ProjFlux);
+  GetInviscidPBProjFlux(&MeanDensity, MeanVelocity, &MeanPressure,  Normal, ProjFlux);
   
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = ProjFlux[iVar];
@@ -265,7 +265,7 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
   /*--- Jacobians of the inviscid flux ---*/
   
   if (implicit) {
-    GetInviscidPBProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, Normal, 0.5, val_Jacobian_i);
+    GetInviscidPBProjJac(&MeanDensity, MeanVelocity,  Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
@@ -287,12 +287,9 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
     Area += Normal[iDim]*Normal[iDim];
   }
   Area = sqrt(Area);
-  
-  SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area);
-  SoundSpeed_j = sqrt(ProjVelocity_j*ProjVelocity_j + (BetaInc2_j/DensityInc_j)*Area*Area);
-  
-  Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
-  Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
+    
+  Local_Lambda_i = fabs(ProjVelocity_i);//+SoundSpeed_i;
+  Local_Lambda_j = fabs(ProjVelocity_j);//+SoundSpeed_j;
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
@@ -323,9 +320,6 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
 }
 
 CCentLaxPB_Flow::CCentLaxPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -364,7 +358,6 @@ void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
   DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
-  //BetaInc2_i =    V_i[nDim+2];  BetaInc2_j = V_j[nDim+2];
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
@@ -384,7 +377,6 @@ void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   
   MeanDensity = 0.5*(DensityInc_i+DensityInc_j);
   MeanPressure = 0.5*(Pressure_i+Pressure_j);
-  //MeanBetaInc2 = 0.5*(BetaInc2_i+BetaInc2_j);
   for (iDim = 0; iDim < nDim; iDim++)
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   
@@ -423,11 +415,9 @@ void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   
   //SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area);
   //SoundSpeed_j = sqrt(ProjVelocity_j*ProjVelocity_j + (BetaInc2_j/DensityInc_j)*Area*Area);
-  FreestreamSpeed_i = ProjVelocity_i + config->GetVelocity_Ref();
-  FreestreamSpeed_j = ProjVelocity_j + config->GetVelocity_Ref();
 
-  Local_Lambda_i = fabs(ProjVelocity_i)+FreestreamSpeed_i;
-  Local_Lambda_j = fabs(ProjVelocity_j)+FreestreamSpeed_j;
+  Local_Lambda_i = fabs(ProjVelocity_i);
+  Local_Lambda_j = fabs(ProjVelocity_j);
   MeanLambda = 0.5*(Local_Lambda_i + Local_Lambda_j);
   
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
@@ -450,14 +440,11 @@ void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   
 }
 
-CPressureSource::CPressureSource(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-
-  }
+CPressureSource::CPressureSource(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CPressureSource::~CPressureSource(void) { }
 
-CPressureSource::ComputeResidual(su2double *val_residual, CConfig *config) {
+void CPressureSource::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
     unsigned short iDim;
 

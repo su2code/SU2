@@ -95,16 +95,16 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
     Jacobian_j[iVar] = new su2double [nVar];
   }
   
-  CoeffMatrix_Node = new su2double* [1];
+  /*CoeffMatrix_Node = new su2double* [1];
   for (unsigned short iVar = 0; iVar < 1; iVar++) {
     CoeffMatrix_Node[iVar] = new su2double [1];
-  }
+  }*/
   
   
   /*--- Initialization of the structure of the whole Jacobian ---*/
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Poisson equation)." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  CoeffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  //CoeffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   /*--- Solution and residual vectors ---*/
   
@@ -125,7 +125,8 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+    if (config->GetKind_Incomp_System()==PRESSURE_BASED) node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+    else node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
 }
 
 CPoissonSolverFVM::~CPoissonSolverFVM(void) {
@@ -734,26 +735,20 @@ void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_c
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 										 
 su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j;
+su2double Mom_Coeff;
 unsigned long iEdge, iPoint, jPoint;
 
-    if (config->GetKind_TimeIntScheme() == DIRECT_SOLVE) AssembleCoeffMatrix(geometry, solver_container, numerics, config, iMesh, iRKStep);
+	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-	else 
-		for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-			iPoint = geometry->edge[iEdge]->GetNode(0);
-			jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+		jPoint = geometry->edge[iEdge]->GetNode(1);
     
-			/*--- Points coordinates, and normal vector ---*/
-			
-			
-
-			numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+		/*--- Points coordinates, and normal vector ---*/
+		numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
 						geometry->node[jPoint]->GetCoord());
-			numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-    
+		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-
+		if (config->GetKind_Incomp_System()==PRESSURE_BASED) {
 			Poisson_Coeff_i = 1.0;//config->GetPoisson_Coeff();
 			Poisson_Coeff_j = 1.0;//config->GetPoisson_Coeff();
     
@@ -769,20 +764,28 @@ unsigned long iEdge, iPoint, jPoint;
 			numerics->SetPoissonval(Poissonval_i,Poissonval_j);
     
 			//numerics->SetPoisson_Coeff(Poisson_Coeff_i,Poisson_Coeff_j);
-
-			/*--- Compute residual, and Jacobians ---*/
-			numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-			/*--- Add and subtract residual, and update Jacobians ---*/
-			LinSysRes.SubtractBlock(iPoint, Residual);
-			LinSysRes.AddBlock(jPoint, Residual);
-
-
-			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-			Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-			Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-			Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
 		}
+		else {
+			numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+			
+			Mom_Coeff = solver_container[FLOW_SOL]->node[iPoint]->GetMean_Mom_Coeff();
+			
+			numerics->SetMom_Coeff_Mean(Mom_Coeff);
+		}
+
+		/*--- Compute residual, and Jacobians ---*/
+		numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+		/*--- Add and subtract residual, and update Jacobians ---*/
+		LinSysRes.SubtractBlock(iPoint, Residual);
+		LinSysRes.AddBlock(jPoint, Residual);
+
+
+		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+		Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+		Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+		Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+	}
 	
 }
 
@@ -793,6 +796,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned short iVar;
   unsigned long iPoint;
+  su2double Src_Term;
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -805,6 +809,18 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
+    /*--- Compute the source term ---*/
+    
+    Src_Term = 0.0;
+        
+    if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
+		
+		Src_Term = solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux();
+
+    }
+
+    numerics->SetSourcePoisson(Src_Term);
+    
     /*--- Compute the source residual ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, config);
@@ -1164,7 +1180,6 @@ void CPoissonSolverFVM::Direct_Solve(CGeometry *geometry, CSolver **solver_conta
 	
 }
 
-
 void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh, unsigned long Iteration){
 							
@@ -1279,7 +1294,7 @@ void CPoissonSolverFVM::BC_Dirichlet(CGeometry *geometry, CSolver **solver_conta
     node[Point]->SetSolution(Solution);
     node[Point]->Set_OldSolution();
     
-	CoeffMatrix.DeleteValsRowi(Point);
+	Jacobian.DeleteValsRowi(Point);
     LinSysRes.SetBlock_Zero(Point, iVar);
     node[Point]->SetVal_ResTruncError_Zero(iVar);
     LinSysSol.SetBlock(Point, Solution);

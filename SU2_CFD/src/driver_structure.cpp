@@ -816,7 +816,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED)
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   /*--- Assign booleans ---*/
   
@@ -875,9 +875,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         
         if (pressure_based) {
-			cout<<"Solver container incompressible pressure based. Assign CPBIncEulerSolver here."<<endl;
-			poisson = true;
-			cout<<" Set Poisson equation to true "<<endl;
+	    solver_container[iMGlevel][FLOW_SOL] = new CPBIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[iMGlevel], config);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[iMGlevel][POISSON_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 		}
         
       }
@@ -907,8 +908,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
     }
     if (poisson) {
-      solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
-      if (pressure_based) cout<<" from pressure_based incomp."
+      solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[iMGlevel], config);
     }
     if (wave) {
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
@@ -1055,7 +1055,7 @@ void CDriver::Solver_Restart(CSolver ***solver_container, CGeometry **geometry,
       no_restart = true;
     }
     if (poisson) {
-      no_restart = true;
+      solver_container[MESH_0][POISSON_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (wave) {
       no_restart = true;
@@ -1102,7 +1102,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, heat_fvm, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, disc_adj_turb, disc_adj_fem,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_fem, pressure_based,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
   /*--- Initialize some useful booleans ---*/
@@ -1114,7 +1114,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   wave             = false;  disc_adj        = false;
   fem              = false;  disc_adj_fem    = false;
   heat             = false;  heat_fvm        = false;
-  transition       = false;
+  transition       = false;  pressure_based  = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
 
@@ -1138,6 +1138,8 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
+  
+  if (config->GetKind_Incomp_System()==PRESSURE_BASED) pressure_based = true;
   
   /*--- Assign turbulence model booleans ---*/
   
@@ -1176,6 +1178,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     if (euler || ns) {
       delete solver_container[iMGlevel][FLOW_SOL];
     }
+    if (pressure_based) {
+		delete solver_container[iMGlevel][POISSON_SOL];
+	}
     
     if (turbulent) {
       if (spalart_allmaras || neg_spalart_allmaras || menter_sst || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
@@ -1210,7 +1215,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem, pressure_based;
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
@@ -1219,13 +1224,13 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   wave             = false;
   heat             = false; heat_fvm         = false;
   fem 			       = false; disc_adj_fem     = false;
-  transition       = false;
+  transition       = false; pressure_based = false;
   template_solver  = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
+    case EULER : euler = true; if (config->GetKind_Incomp_System()==PRESSURE_BASED) pressure_based = true; break;
     case NAVIER_STOKES: ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
@@ -1246,14 +1251,18 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
   /*--- Allocate solution for direct problem ---*/
-  if (euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
+  if (euler && !pressure_based) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
-  if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
+  if (poisson) integration_container[POISSON_SOL] = new CMultiGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat || heat_fvm) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
+  if (euler && pressure_based) { 
+	  integration_container[FLOW_SOL] = new CSingleGridIntegration(config);
+	  integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
+  }
 
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
@@ -1268,7 +1277,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem, pressure_based;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1278,13 +1287,13 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   wave             = false;
   heat             = false; heat_fvm         = false;
   fem              = false; disc_adj_fem     = false;
-  transition       = false;
+  transition       = false; pressure_based = false;
   template_solver  = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
+    case EULER : euler = true; if (config->GetKind_Incomp_System()==PRESSURE_BASED) pressure_based = true;break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
@@ -1313,6 +1322,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   if (heat || heat_fvm) delete integration_container[HEAT_SOL];
   if (fem) delete integration_container[FEA_SOL];
   if (disc_adj_fem) delete integration_container[ADJFEA_SOL];
+  if (pressure_based) delete integration_container[POISSON_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
@@ -1356,7 +1366,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
-  bool pressure_based = (config->GetKind_Incomp_System == PRESSURE_BASED);
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
   bool roe_low_dissipation = config->GetKind_RoeLowDiss() != NO_ROELOWDISS;
   
   /*--- Initialize some useful booleans ---*/
@@ -1369,6 +1379,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
   
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -1417,6 +1428,11 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (fem)          nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)         nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   if (heat_fvm)     nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
+  
+  if (euler && pressure_based) {
+	  nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+	  nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
+  }
   
   /*--- Number of variables for adjoint problem ---*/
   
@@ -1500,8 +1516,23 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           
         }
         if (incompressible) {
-		
-		 if (!(pressure_based)) {
+		 if (pressure_based) {
+	     /*--- Incompressible flow, use pressure-based method ---*/
+	     /*--- Momentum Equations ---*/
+          switch (config->GetKind_Centered_Flow()) {
+            case NO_CENTERED : cout << "No centered scheme." << endl; break;
+            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxPB_Flow(nDim, nVar_Flow, config); break;
+            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTPB_Flow(nDim, nVar_Flow, config); break;
+            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
+          }
+          /*for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxPB_Flow(nDim, nVar_Flow, config);*/
+          
+          /*--- Definition of the boundary condition method ---*/
+          //for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+           numerics_container[MESH_0][FLOW_SOL][CONV_BOUND_TERM] = new CUpwPB_Flow(nDim, nVar_Flow, config);
+		  }
+          else {
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Centered_Flow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
@@ -1515,22 +1546,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
-          }
-          else {
-	     /*--- Incompressible flow, use pressure-based method ---*/
-          switch (config->GetKind_Centered_Flow()) {
-            case NO_CENTERED : cout << "No centered scheme." << endl; break;
-            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxPB_Flow(nDim, nVar_Flow, config); break;
-            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTPB_Flow(nDim, nVar_Flow, config); break;
-            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
-          }
-          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxPB_Flow(nDim, nVar_Flow, config);
-          
-          /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwPB_Flow(nDim, nVar_Flow, config);
-			  
 		  }
         }
         break;
@@ -1632,6 +1647,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         if (incompressible) {
 			if(pressure_based) {
 			/*--- Incompressible flow, use pressure-based method ---*/
+			/*--- Momentum Equations ---*/
 			switch (config->GetKind_Upwind_Flow()) {
 				case NO_UPWIND : cout << "No upwind scheme." << endl; break;
 				case ROE:
@@ -1719,13 +1735,13 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       
       numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
-    //---------------PB change here - Akshay---------------------------
-    if (pressure_based) {
-		for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-			numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CPressureSource(nDim, nVar_Flow, config);
-		}
-	}
     
+    /*--- Pressure gradient will be in the source term for pressure based system ---*/
+    
+    if (pressure_based) {
+		numerics_container[MESH_0][FLOW_SOL][SOURCE_SECOND_TERM] = new CPressureSource(nDim, nVar_Flow, config);
+	}
+	
   }
   
   /*--- Solver definition for the turbulent model problem ---*/
@@ -1824,16 +1840,28 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
   }
   
-  /*--- Solver definition for the poisson potential problem ---*/
+ /*--- Solver definition for the poisson/pressure correction problem ---*/
   if (poisson) {
-    
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
-    
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-    numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-    
+	  if (pressure_based) {
+		  /*--- Pressure correction (Poisson) equation ---*/
+           numerics_container[iMGlevel][POISSON_SOL][VISC_TERM] = new CPressure_Poisson(nDim, nVar_Poisson, config);
+		   numerics_container[iMGlevel][POISSON_SOL][VISC_BOUND_TERM] = new CPressure_Poisson(nDim, nVar_Poisson, config);
+
+ 		  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		   numerics_container[iMGlevel][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);//new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+		   numerics_container[iMGlevel][POISSON_SOL][SOURCE_SECOND_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+	  }
+	  else {
+		  /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+		  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+			  numerics_container[iMGlevel][POISSON_SOL][VISC_TERM] = new CAvgGradCorrected_Poisson(nDim, nVar_Poisson, config);
+			  numerics_container[iMGlevel][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+			      
+		      /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+		      numerics_container[iMGlevel][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);//new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+		      numerics_container[iMGlevel][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+		  }
+	  }
   }
   
   /*--- Solver definition of the finite volume heat solver  ---*/
@@ -2616,9 +2644,10 @@ void CDriver::Iteration_Preprocessing() {
       iteration_container[iZone] = new CTurboIteration(config_container[iZone]);
 
       }
-      else if (config_container[iZone]->GetKind_Incomp_System == PRESSURE_BASED) {
-		  cout<<"Pressure_based system"<<endl;
-		  //will assign iteration container here
+      else if (config_container[iZone]->GetKind_Incomp_System() == PRESSURE_BASED) {
+		  if (rank == MASTER_NODE)
+		    cout<<"Pressure_based system"<<endl;
+       iteration_container[iZone] = new CPBFluidIteration(config_container[iZone]);
 	  }
       else{
         if (rank == MASTER_NODE)
@@ -3339,6 +3368,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
       StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
     case HEAT_EQUATION:
       StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+    case POISSON_EQUATION:
+      StopCalc = integration_container[ZONE_0][POISSON_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
       StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -3644,13 +3675,13 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 //-----------------------------------------------------------------------------------------------------------------------------
-CPBFluidDriver::CPBFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
+/*CPBFluidDriver::CPBFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, val_nDim, MPICommunicator) { }
 
 CPBFluidDriver::~CPBFluidDriver(void) { }
 
 void CPBFluidDriver::Run() { }
 
-void CPBFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) { }
+void CPBFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) { }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------
 CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
