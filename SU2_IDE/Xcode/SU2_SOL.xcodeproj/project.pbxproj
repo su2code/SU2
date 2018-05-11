@@ -189,6 +189,8 @@
 				05E6DABD17EB607A00FA1F7E /* geometry_structure.hpp */,
 				05E6DABE17EB607A00FA1F7E /* grid_adaptation_structure.hpp */,
 				05E6DABF17EB607A00FA1F7E /* grid_movement_structure.hpp */,
+				E9304B40208B950300C3E1F6 /* element_structure.hpp */,
+				E9304B42208B950300C3E1F6 /* gauss_structure.hpp */,
 				05E6DAC017EB607A00FA1F7E /* linear_solvers_structure.hpp */,
 				E941BC1F1B71DC4C005C6C06 /* linear_solvers_structure_b.hpp */,
 				05E6DAC117EB607A00FA1F7E /* matrix_structure.hpp */,
@@ -220,6 +222,8 @@
 				05E6DAAA17EB605C00FA1F7E /* geometry_structure.inl */,
 				05E6DAAB17EB605C00FA1F7E /* grid_adaptation_structure.inl */,
 				05E6DAAC17EB605C00FA1F7E /* grid_movement_structure.inl */,
+				E9304B41208B950300C3E1F6 /* element_structure.inl */,
+				E9304B3F208B950300C3E1F6 /* gauss_structure.inl */,
 				05E6DAAD17EB605C00FA1F7E /* linear_solvers_structure.inl */,
 				05E6DAAE17EB605C00FA1F7E /* matrix_structure.inl */,
 				05E6DAAF17EB605C00FA1F7E /* primal_grid_structure.inl */,
@@ -266,6 +270,9 @@
 				05E6DB9D17EB61EC00FA1F7E /* geometry_structure.cpp */,
 				05E6DB9E17EB61EC00FA1F7E /* grid_adaptation_structure.cpp */,
 				05E6DB9F17EB61EC00FA1F7E /* grid_movement_structure.cpp */,
+				E9304B3B208B94E600C3E1F6 /* element_linear.cpp */,
+				E9304B39208B94E500C3E1F6 /* element_structure.cpp */,
+				E9304B3A208B94E500C3E1F6 /* gauss_structure.cpp */,
 				05E6DBA017EB61EC00FA1F7E /* linear_solvers_structure.cpp */,
 				E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */,
 				05E6DBA117EB61EC00FA1F7E /* matrix_structure.cpp */,
@@ -348,6 +355,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9304B3C208B94E600C3E1F6 /* element_structure.cpp in Sources */,
 				05E6DBA417EB61EC00FA1F7E /* config_structure.cpp in Sources */,
 				05E6DBA517EB61EC00FA1F7E /* dual_grid_structure.cpp in Sources */,
 				E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */,

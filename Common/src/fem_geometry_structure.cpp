@@ -896,8 +896,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #else
 
-  /*--- Sequential mode. Simply copy the buffer. ---*/
-  longSecondRecvBuf[0] = longSendBuf[0];
+  /*--- Sequential mode. Simply copy the buffer, if present at all. ---*/
+  for(int i=0; i<nRankRecv; ++i)
+    longSecondRecvBuf[i] = longSendBuf[i];
 
 #endif
 
@@ -995,8 +996,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #else
 
-  /*--- Sequential mode. Simply copy the buffer. ---*/
-  longSecondRecvBuf[0] = longSendBuf[0];
+  /*--- Sequential mode. Simply copy the buffer, if present at all. ---*/
+  for(int i=0; i<nRankRecv; ++i)
+    longSecondRecvBuf[i] = longSendBuf[i];
 
 #endif
 
@@ -1121,7 +1123,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #else
 
-  /*--- Sequential mode. Simply copy the buffer. ---*/
+  /*--- Sequential mode. Simply copy the buffer, if present at all. ---*/
   for(int i=0; i<nRankSend; ++i)
     longSecondRecvBuf[i] = longSendBuf[i];
 
