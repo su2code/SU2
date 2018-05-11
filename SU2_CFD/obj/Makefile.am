@@ -97,6 +97,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
   ../src/numerics_direct_mean_inc.cpp \
+  ../src/numerics_direct_mean_PBinc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
   ../src/numerics_direct_wave.cpp \
@@ -122,6 +123,7 @@ libSU2Core_sources = \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
   ../src/solver_direct_mean_inc.cpp \
+  ../src/solver_direct_mean_PBinc.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
@@ -140,6 +142,7 @@ libSU2Core_sources = \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \
   ../src/variable_direct_mean_inc.cpp \
+  ../src/variable_direct_mean_PBinc.cpp \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_wave.cpp \
