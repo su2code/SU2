@@ -237,17 +237,6 @@ public:
   void SetVelSolutionOldZero(void);
   
   /*!
-   * \brief Set to zero the solution.
-   */
-  void SetSolutionOldVal(unsigned short val_var, su2double val);
-  
-  /*!
-   * \brief Set the solution to given val.
-   */
-  void SetSolutionVal(unsigned short val_var, su2double val);  
-
-  
-  /*!
    * \brief Specify a vector to set the velocity components of the old solution.
    * \param[in] val_vector - Pointer to the vector.
    */
@@ -1148,6 +1137,12 @@ public:
    * \brief A virtual member.
    */
   virtual bool SetPrimVar(su2double Density_Inf, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   */
+  //virtual bool SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config);
+  //inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config) {return true;}
   
   /*!
    * \brief A virtual member.
@@ -1253,6 +1248,13 @@ public:
    * \brief A virtual member.
    */
   virtual void SetBetaInc2(su2double val_betainc2);
+  
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetPressure_val(su2double val_pressure);  
+  
   
   /*!
    * \brief A virtual member.
@@ -2373,6 +2375,16 @@ public:
   virtual su2double GetSolution_Old_Vel(unsigned short iVar);
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
+  
+  virtual void AddMassFlux(su2double val_MassFlux);
+  
+  virtual void SubtractMassFlux(su2double val_MassFlux);
+  
+  virtual void SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff);
+  
+  virtual su2double GetMean_Mom_Coeff();
+  
+  virtual su2double GetMassFlux();
 
 };
 
@@ -3843,6 +3855,243 @@ public:
 
 };
 
+/*------------------------------------------------------------------------------------------------------------
+ * -------------------------------start pressure based solver definition--------------------------------------
+ * -----------------------------------------------------------------------------------------------------------*/
+/*!
+ * \class CIncEulerVariable
+ * \brief Main class for defining the variables of the incompressible Euler solver.
+ * \ingroup Euler_Equations
+ * \author F. Palacios, T. Economon, T. Albring
+ */
+class CPBIncEulerVariable : public CVariable {
+protected:
+  su2double Velocity2;      /*!< \brief Square of the velocity vector. */
+  su2double Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
+  su2double *WindGust;           /*! < \brief Wind gust value */
+  su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
+  
+  /*--- Primitive variable definition ---*/
+  
+  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double MassFlux;   /*!< \brief Massflux associated with each CV */
+  su2double Mean_Mom_Coeff;
+  
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPBIncEulerVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_pressure - value of the pressure.
+   * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPBIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
+                    unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the flow value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPBIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPBIncEulerVariable(void);
+  
+  /*!
+   * \brief Set to zero the gradient of the primitive variables.
+   */
+  void SetGradient_PrimitiveZero(unsigned short val_primvar);
+  
+  /*!
+   * \brief Add <i>val_value</i> to the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value to add to the gradient of the primitive variables.
+   */
+  void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value);
+  
+  /*!
+   * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
+   */
+  void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value);
+  
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  su2double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the primitive variables gradient.
+   */
+  su2double GetLimiter_Primitive(unsigned short val_var);
+  
+  /*!
+   * \brief Set the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value);
+  
+  /*!
+   * \brief Set the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_value - Value of the gradient.
+   */
+  void SetLimiter_Primitive(unsigned short val_var, su2double val_value);
+  
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
+   */
+  su2double **GetGradient_Primitive(void);
+  
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
+   */
+  su2double *GetLimiter_Primitive(void);
+  
+  /*!
+   * \brief Set the value of the pressure.
+   */
+  void SetPressure_val(su2double val_pressure);
+  
+  /*!
+   * \brief Get the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the primitive variable for the index <i>val_var</i>.
+   */
+  su2double GetPrimitive(unsigned short val_var);
+  
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_var - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>val_var</i>.
+   */
+  void SetPrimitive(unsigned short val_var, su2double val_prim);
+  
+  /*!
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>val_var</i>.
+   */
+  void SetPrimitive(su2double *val_prim);
+  
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  su2double *GetPrimitive(void);
+  
+  /*!
+   * \brief Set the value of the density for the incompressible flows.
+   */
+  void SetDensity(su2double val_density);
+  
+  /*!
+   * \brief Set the value of the square of velocity for the incompressible flows.
+   */
+  void SetVelocity2(void);
+  
+  /*!
+   * \brief Get the norm 2 of the velocity.
+   * \return Norm 2 of the velocity vector.
+   */
+  su2double GetVelocity2(void);
+  
+  /*!
+   * \brief Get the flow pressure.
+   * \return Value of the flow pressure.
+   */
+  su2double GetPressure(void);
+  
+  /*!
+   * \brief Get the density of the flow.
+   * \return Value of the density of the flow.
+   */
+  su2double GetDensity(void);
+  
+  /*!
+   * \brief Get the velocity of the flow.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the velocity for the dimension <i>val_dim</i>.
+   */
+  su2double GetVelocity(unsigned short val_dim);
+  
+  /*!
+   * \brief Get the projected velocity in a unitary vector direction 
+   * \param[in] val_vector - Direction of projection.
+   * \return Value of the projected velocity.
+   */
+  su2double GetProjVel(su2double *val_vector);
+  
+  /*!
+   * \brief Get the mass flux 
+   * \param[in] val_density - Direction of projection.
+   * \return Value of the projected velocity.
+   */  
+  void AddMassFlux(su2double val_flux);
+  
+  /*!
+   * \brief Get the mass flux 
+   * \param[in] val_density - Direction of projection.
+   * \return Value of the projected velocity.
+   */  
+  void SubtractMassFlux(su2double val_flux);
+  
+  /*!
+   * \brief Set the velocity vector from the old solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  void SetVelocity_Old(su2double *val_velocity);
+  
+  /*!
+   * \brief Set all the primitive variables for incompressible flows.
+   */
+  bool SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config);
+
+
+
+  su2double GetMassFlux();
+
+
+  su2double GetMean_Mom_Coeff();
+  
+
+
+
+  void SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff);
+
+};
+
+/*------------------------------------------------------------------------------------------------------------
+ * -------------------------------end pressure based solver definition----------------------------------------
+ * -----------------------------------------------------------------------------------------------------------*/
 /*!
  * \class CNSVariable
  * \brief Main class for defining the variables of the compressible Navier-Stokes solver.

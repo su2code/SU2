@@ -288,7 +288,6 @@ inline void CNumerics::SetEddyViscosity(su2double val_eddy_viscosity_i, su2doubl
   Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
-
 inline void CNumerics::SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j) {
   Poisson_Coeff_i = val_Poisson_Coeff_i;
   Poisson_Coeff_j = val_Poisson_Coeff_j;
@@ -485,6 +484,10 @@ inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {
 inline su2double CNumerics::GetDissipation(){
   return Dissipation_ij;
 }
+
+inline void CNumerics::SetMom_Coeff_Mean(su2double val_Mom_Coeff_Mean) { Mom_Coeff_Mean = val_Mom_Coeff_Mean; }
+
+inline void CNumerics::SetSourcePoisson(su2double val_Source_Term) { Source_Term = val_Source_Term; }
 
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 

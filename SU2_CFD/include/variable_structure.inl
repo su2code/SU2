@@ -385,6 +385,8 @@ inline bool CVariable::SetPressure(su2double Gamma, su2double turb_ke) { return 
 
 inline void CVariable::SetPressure() { }
 
+inline void CVariable::SetPressure_val(su2double val_pressure) { }
+
 inline su2double *CVariable::GetdPdU() { return NULL; }
 
 inline su2double *CVariable::GetdTdU() { return NULL; }
@@ -683,6 +685,16 @@ inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
 inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) { }
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
+
+inline void CVariable::AddMassFlux(su2double val_MassFlux){  }
+
+inline void CVariable::SubtractMassFlux(su2double val_MassFlux){  }
+
+inline su2double CVariable::GetMassFlux() {}
+
+inline su2double CVariable::GetMean_Mom_Coeff() {}
+
+inline void CVariable::SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff) {  }
 
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
@@ -1010,7 +1022,72 @@ inline void CIncEulerVariable::Set_BGSSolution_k(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_BGS_k[iVar] = Solution[iVar];
 }
+//-------------------------------------------------------------------------------------------------------------------------------
 
+
+inline su2double CPBIncEulerVariable::GetDensity(void) { return Primitive[nDim+1]; }
+
+inline su2double CPBIncEulerVariable::GetPressure(void) { return Primitive[0]; }
+
+inline su2double CPBIncEulerVariable::GetVelocity(unsigned short val_dim) { return Primitive[val_dim+1]; }
+
+inline su2double CPBIncEulerVariable::GetVelocity2(void) { return Velocity2; }
+
+inline void CPBIncEulerVariable::SetDensity(su2double val_density) { Primitive[nDim+1] = val_density; }
+
+inline void CPBIncEulerVariable::SetPressure_val(su2double val_pressure) { Primitive[0] += val_pressure; }
+
+inline void CPBIncEulerVariable::SetVelocity2(void) {
+  Velocity2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Primitive[iDim+1] = Solution[iDim+1] / Primitive[nDim+1];
+    Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
+  }
+}
+
+inline su2double CPBIncEulerVariable::GetPrimitive(unsigned short val_var) { return Primitive[val_var]; }
+
+inline void CPBIncEulerVariable::SetPrimitive(unsigned short val_var, su2double val_prim) { Primitive[val_var] = val_prim; }
+
+inline void CPBIncEulerVariable::SetPrimitive(su2double *val_prim) {
+  for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+    Primitive[iVar] = val_prim[iVar];
+}
+
+inline su2double *CPBIncEulerVariable::GetPrimitive(void) { return Primitive; }
+
+inline void CPBIncEulerVariable::SetVelocity_Old(su2double *val_velocity) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
+}
+
+inline void CPBIncEulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
+
+inline void CPBIncEulerVariable::SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] -= val_value; }
+
+inline su2double CPBIncEulerVariable::GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) { return Gradient_Primitive[val_var][val_dim]; }
+
+inline su2double CPBIncEulerVariable::GetLimiter_Primitive(unsigned short val_var) { return Limiter_Primitive[val_var]; }
+
+inline void CPBIncEulerVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] = val_value; }
+
+inline void CPBIncEulerVariable::SetLimiter_Primitive(unsigned short val_var, su2double val_value) { Limiter_Primitive[val_var] = val_value; }
+
+inline su2double **CPBIncEulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
+
+inline su2double *CPBIncEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
+
+inline void CPBIncEulerVariable::AddMassFlux(su2double val_MassFlux){ MassFlux += val_MassFlux ; }
+
+inline void CPBIncEulerVariable::SubtractMassFlux(su2double val_MassFlux){ MassFlux -= val_MassFlux ; }
+
+inline su2double CPBIncEulerVariable::GetMassFlux() {return MassFlux;}
+
+inline su2double CPBIncEulerVariable::GetMean_Mom_Coeff() {return Mean_Mom_Coeff;}
+
+inline void CPBIncEulerVariable::SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff) { Mean_Mom_Coeff = val_Mean_Mom_Coeff; }
+
+//-------------------------------------------------------------------------------------------------------------------------------
 
 inline su2double CIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+4]; }
 

@@ -92,6 +92,8 @@ public:
   Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
+  su2double Poisson_Coeff_i, /*!< \brief Poisson coefficient at point i. */
+  Poisson_Coeff_j; /*!< \brief Poisson coefficient at point j. */
   su2double Cp_i, /*!< \brief Cp at point i. */
   Cp_j;         /*!< \brief Cp at point j. */
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
@@ -114,11 +116,15 @@ public:
   su2double LambdaComb_i,  /*!< \brief Spectral radius at point i. */
   LambdaComb_j;      /*!< \brief Spectral radius at point j. */
   su2double SoundSpeed_i,  /*!< \brief Sound speed at point i. */
-  SoundSpeed_j;      /*!< \brief Sound speed at point j. */
+  SoundSpeed_j;      /*!< \brief Sound speed at point j. */\
+  su2double FreestreamSpeed_i,  /*!< \brief Sound speed at point i. */
+  FreestreamSpeed_j;      /*!< \brief Sound speed at point j. */
   su2double Enthalpy_i,  /*!< \brief Enthalpy at point i. */
   Enthalpy_j;      /*!< \brief Enthalpy at point j. */
   su2double dist_i,  /*!< \brief Distance of point i to the nearest wall. */
   dist_j;      /*!< \brief Distance of point j to the nearest wall. */
+  su2double Poissonval_i,  /*!< \brief Temperature at point i. */
+  Poissonval_j; /*!< \brief Temperature at point j. */
   su2double Temp_i,  /*!< \brief Temperature at point i. */
   Temp_j;      /*!< \brief Temperature at point j. */
   su2double *Temp_tr_i, /*!< \brief Temperature transl-rot at point i. */
@@ -205,7 +211,8 @@ public:
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;
   su2double Dissipation_ij;
-    
+  su2double Mom_Coeff_Mean;
+  su2double Source_Term;
   su2double *l, *m;
 
   /*!
@@ -737,6 +744,36 @@ public:
   su2double GetDissipation();
   
   /*!
+   * \brief Set the Poisson coefficient
+   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
+   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
+   */
+   void SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j);  
+  
+  /*!
+   * \brief Set the Poisson value 
+   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
+   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
+   */
+   void SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j);
+   
+   /*!
+   * \brief Set the Poisson value 
+   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
+   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
+   */
+   void SetMom_Coeff_Mean(su2double val_Mom_Coeff_Mean);
+   
+   
+   /*!
+   * \brief Set the Poisson value 
+   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
+   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
+   */
+   void SetSourcePoisson(su2double val_Source_Term);
+   
+  
+  /*!
    * \brief Get the inviscid fluxes.
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Value of the velocity.
@@ -782,7 +819,26 @@ public:
   void GetInviscidArtCompProjFlux(su2double *val_density, su2double *val_velocity,
                                   su2double *val_pressure, su2double *val_betainc2,
                                   su2double *val_normal, su2double *val_Proj_Flux);
-  
+                                  
+//----------------------------------------------------------------------------------------------------------------                     
+
+  /*!
+   * \brief Compute the projected inviscid flux vector for incompresible simulations
+   * \param[in] val_density - Pointer to the density.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] val_pressure - Pointer to the pressure.
+   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_Proj_Flux - Pointer to the projected flux.
+   */
+  void GetInviscidPBProjFlux(su2double *val_density, su2double *val_velocity,
+                                  su2double *val_pressure,
+                                  su2double *val_normal, su2double *val_Proj_Flux);
+
+
+//----------------------------------------------------------------------------------------------------------------
+
+
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
    * \param[in] val_primvar - Primitive variables.
@@ -858,6 +914,26 @@ public:
                                  su2double *val_betainc2, su2double *val_normal,
                                  su2double val_scale,
                                  su2double **val_Proj_Jac_tensor);
+                                 
+//------------------------------------------------------------------------------------------------------------
+                                 
+  /*!
+   * \brief Compute the projection of the inviscid Jacobian matrices (artificial compresibility).
+   * \param[in] val_density - Value of the density.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_scale - Scale of the projection.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetInviscidPBProjJac(su2double *val_density, su2double *val_velocity,
+                                 su2double *val_normal,
+                                 su2double val_scale,
+                                 su2double **val_Proj_Jac_tensor);                                 
+                                 
+//----------------------------------------------------------------------------------------------------------------
+                                 
+
   
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices for general fluid model.
@@ -1076,7 +1152,22 @@ public:
 	void GetPArtCompMatrix(su2double *val_density, su2double *val_velocity,
                          su2double *val_betainv2, su2double *val_normal,
                          su2double **val_p_tensor);
+  //----------------------------------------------------------------------------------------------------------------
   
+  	/*!
+	 * \brief Computation of the matrix P , this matrix diagonalize the conservative Jacobians in
+	 *        the form $P^{-1}(A.Normal)P=Lambda$.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_velocity - Value of the velocity.
+	 * \param[in] val_betainv2 - Value of the compresibility factor.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[out] val_p_tensor - Pointer to the P matrix.
+	 */
+	void GetPPBMatrix(su2double *val_density, su2double *val_velocity,
+                         su2double *val_normal,su2double **val_p_tensor);
+  
+  
+  //-----------------------------------------------------------------------------------------------------------------
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
    * in the form $P^{-1}(A.Normal)P=Lambda$.
@@ -1116,7 +1207,21 @@ public:
   void GetPArtCompMatrix_inv(su2double *val_density, su2double *val_velocity,
                              su2double *val_betainv2, su2double *val_normal,
                              su2double **val_invp_tensor);
-  
+                             
+   //-----------------------------------------------------------------------------------------                          
+      /*!
+   * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] val_density - Value of the density.
+   * \param[in] val_velocity - Value of the velocity.
+   * \param[in] val_betainv2 - Value of the compresibility factor.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
+  void GetPPBMatrix_inv(su2double *val_density, su2double *val_velocity,
+                             su2double *val_normal, su2double **val_invp_tensor);
+   
+     //-----------------------------------------------------------------------------------------         
   /*!
    * \brief Compute viscous residual and jacobian.
    */
@@ -4182,6 +4287,126 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_Poisson
+ * \brief Class for computing viscous term using average of gradients without correction (Poisson equation).
+ * \ingroup ViscDiscr
+ */
+class CAvgGrad_Poisson : public CNumerics {
+private:
+
+  su2double *Edge_Vector;
+  bool implicit,direct;
+  su2double **Mean_GradPoissonVar;
+  su2double *Proj_Mean_GradPoissonVar_Normal, *Proj_Mean_GradPoissonVar_Corrected;
+  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean ;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Poisson(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGradCorrected_Poisson
+ * \brief Class for computing viscous term using average of gradients with correction (Poisson equation).
+ * \ingroup ViscDiscr
+ */
+
+class CAvgGradCorrected_Poisson : public CNumerics {
+private:
+
+  su2double *Edge_Vector;
+  bool implicit,direct;
+  su2double **Mean_GradPoissonVar;
+  su2double *Proj_Mean_GradPoissonVar_Kappa, *Proj_Mean_GradPoissonVar_Edge, *Proj_Mean_GradPoissonVar_Corrected;
+  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_Poisson(void);
+
+  /*!
+   * \brief Compute the viscous residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CAvgGrad_Poisson
+ * \brief Class for computing viscous term using average of gradients without correction (Poisson equation).
+ * \ingroup ViscDiscr
+ */
+class CPressure_Poisson : public CNumerics {
+private:
+
+  su2double *Edge_Vector;
+  bool implicit,direct;
+  su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPressure_Poisson(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CPressure_Poisson(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
+
+/*!
  * \class CGalerkin_Flow
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
@@ -5609,6 +5834,46 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
 };
 
+//--------------------------------------------------------------------------------------------------------------------
+
+/*!
+ * \class CPressureSource
+ * \brief Dummy class.
+ * \ingroup SourceDiscr
+ */
+class CPressureSource : public CNumerics {
+private:
+
+su2double MeanPressure;
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config -  Name of the input config file
+   *
+   */
+  CPressureSource(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CPressureSource(void);
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+
 /*!
  * \class CSource_Template
  * \brief Dummy class.
@@ -5688,6 +5953,41 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
+
+/*!
+ * \class CSource_Poisson
+ * \brief Class for source term of the Poisson equation.
+ * \ingroup SourceDiscr
+ */
+class CSource_PoissonFVM : public CNumerics {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config -  Name of the input config file
+   *
+   */
+  CSource_PoissonFVM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSource_PoissonFVM(void);
+};
+
+
+
 
 /*!
  * \class CViscous_Template
