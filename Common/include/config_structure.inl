@@ -1824,6 +1824,10 @@ inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
 inline void CConfig::SetFSI_Simulation(bool FSI_sim) { FSI_Problem = FSI_sim; }
 
+inline void CConfig::SetMultizone_Problem(bool MZ_problem) { Multizone_Problem = MZ_problem; }
+
+inline bool CConfig::GetMultizone_Problem(void) { return Multizone_Problem; }
+
 inline unsigned short CConfig::GetnID_DV(void) { return nID_DV; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }

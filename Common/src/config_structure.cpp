@@ -8022,6 +8022,9 @@ void CConfig::SetMultizone(CConfig *driver_config){
     if (rank == MASTER_NODE) cout << endl;
   }
 
+  /*--- Set the Multizone Boolean to true ---*/
+  Multizone_Problem = true;
+
   if (driver_config->GetKind_MZSolver() == MZ_FLUID_STRUCTURE_INTERACTION)
     FSI_Problem = true;
 
