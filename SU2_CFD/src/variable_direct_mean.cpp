@@ -617,7 +617,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   static const su2double cnu = pow(0.09, 1.5),
                          ch1 = 3.0,
                          ch2 = 1.0,
-                         ch3 = 0.5,
+                         ch3 = 2.0,
                          C_DES = 0.65,
                          sigma_max = 1.0;
   
@@ -636,12 +636,11 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   AD::SetPreaccIn(Primitive[nDim+6]);
 
   /*--- Central/upwind blending based on:
-   * Travin A., Shur M., Strelets M., Spalart P.R. (2002) Physical
-   * and Numerical Upgrades in the Detached-Eddy Simulation of Complex
-   * Turbulent Flows. In: Friedrich R., Rodi W. (eds) Advances in LES
-   * of Complex Flows. Fluid Mechanics and Its Applications, vol 65.
-   * Springer, Dordrecht. http://dx.doi.org/10.1007/0-306-48383-1_16
-   */
+   * Zhixiang Xiao, Jian Liu, Jingbo Huang, and Song Fu.  "Numerical
+   * Dissipation Effects on Massive Separation Around Tandem Cylinders",
+   * AIAA Journal, Vol. 50, No. 5 (2012), pp. 1119-1136.
+   * https://doi.org/10.2514/1.J051299
+   * ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
     Omega += 2.0*Vorticity[iDim]*Vorticity[iDim];
@@ -649,14 +648,15 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
   Omega = sqrt(Omega);
   
   Omega_2 = pow(Omega,2.0);
-  Baux = (ch3 * Omega * max(StrainMag, Omega)) / max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
+  Baux = (ch3 * Omega * max(StrainMag, Omega)) /
+      max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
   
   Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
   
   const su2double nu = GetLaminarViscosity()/GetDensity();
   const su2double nu_t = GetEddyViscosity()/GetDensity();
-  Lturb = (nu + nu_t)/sqrt(cnu*Kaux);
+  Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
   
   Aaux = ch2*max((C_DES*delta/Lturb)/Gaux -  0.5, 0.0);
   
