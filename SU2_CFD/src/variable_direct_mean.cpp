@@ -622,7 +622,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
                          sigma_max = 1.0;
   
   unsigned short iDim;
-  su2double Omega = 0, Omega_2 = 0, Baux, Gaux, Lturb, Kaux, Aaux;
+  su2double Omega, Omega_2 = 0, Baux, Gaux, Lturb, Kaux, Aaux;
   
   AD::StartPreacc();
   AD::SetPreaccIn(Vorticity, 3);
@@ -643,11 +643,10 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
    * ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
-    Omega += 2.0*Vorticity[iDim]*Vorticity[iDim];
+    Omega_2 += 2.0*Vorticity[iDim]*Vorticity[iDim];
   }
-  Omega = sqrt(Omega);
+  Omega = sqrt(Omega_2);
   
-  Omega_2 = pow(Omega,2.0);
   Baux = (ch3 * Omega * max(StrainMag, Omega)) /
       max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
