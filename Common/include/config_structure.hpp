@@ -506,7 +506,8 @@ private:
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  ZoneSpecific_Problem;   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
+  ZoneSpecific_Problem,   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
+  Multizone_Problem;      /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
@@ -8353,6 +8354,18 @@ public:
    * \param[in] FSI_sim - boolean that determines is FSI_Problem is true/false.
    */
   void SetFSI_Simulation(bool FSI_sim);
+
+  /*!
+   * \brief Set that the simulation we are running is a multizone simulation
+   * \param[in] MZ_problem - boolean that determines is Multizone_Problem is true/false.
+   */
+  void SetMultizone_Problem(bool MZ_problem);
+
+  /*!
+   * \brief Get whether the simulation we are running is a multizone simulation
+   * \return Multizone_Problem - boolean that determines is Multizone_Problem is true/false.
+   */
+  bool GetMultizone_Problem(void);
 
    /*!
     * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
