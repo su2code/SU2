@@ -11188,6 +11188,12 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+
+  /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
 };
 
 

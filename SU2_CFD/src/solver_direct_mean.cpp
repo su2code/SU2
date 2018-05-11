@@ -185,6 +185,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FlowFileName();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
@@ -837,7 +838,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi){
+  if (fsi || multizone){
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
 
@@ -15059,6 +15060,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool fsi     = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -15754,7 +15756,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi){
+  if (fsi || multizone){
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
 
