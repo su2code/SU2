@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   bool fem_solver = false;
+  bool periodic = false;
 
   /*--- MPI initialization ---*/
 
@@ -77,7 +78,8 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_SOL);
 
-  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
 
@@ -127,8 +129,9 @@ int main(int argc, char *argv[]) {
     if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
     else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-    /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
+    /*--- Until we finish the new periodic BC implementation, use the old
+     partitioning routines for cases with periodic BCs. The old routines 
+     will be entirely removed eventually in favor of the new methods. ---*/
 
     if( fem_solver ) {
       switch( config_container[iZone]->GetKind_FEM_Flow() ) {
@@ -139,9 +142,13 @@ int main(int argc, char *argv[]) {
       }
     }
     else {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      if (periodic) {
+        geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      } else {
+        geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+      }
     }
-    
+
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
@@ -531,6 +538,9 @@ int main(int argc, char *argv[]) {
     
   }
   
+  delete config;
+  config = NULL;
+
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
   
