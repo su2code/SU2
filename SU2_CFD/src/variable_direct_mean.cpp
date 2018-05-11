@@ -652,7 +652,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double delta){
       max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
   
-  Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
+  Kaux = max(sqrt((Omega_2 + pow(StrainMag, 2))*0.5), 0.1 * inv_TimeScale);
   
   const su2double nu = GetLaminarViscosity()/GetDensity();
   const su2double nu_t = GetEddyViscosity()/GetDensity();
