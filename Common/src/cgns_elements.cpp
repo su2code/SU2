@@ -462,7 +462,7 @@ void CGNSElementTypeClass::CreateDataBAR_5(unsigned short         &VTK_Type,
                                            unsigned short         &nDOFs,
                                            vector<unsigned short> &SU2ToCGNS) {
 
-  /* The BAR_4 element is a quartic element. SU2 numbers to nodes with
+  /* The BAR_5 element is a quartic element. SU2 numbers to nodes with
      increasing parametric value, while in CGNS the internal nodes are
      numbered last. */
   VTK_Type = LINE;
