@@ -7319,7 +7319,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
          First determine the pointer to the coordinates of this integration
          point and the pointer to the solution. Afterwards call the function
          RinglebSolution to do the actual job. */
-      const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
+      const su2double *coor = surfElem[l].coorIntegrationPoints.data() + i*nDim;
             su2double *UR   = solIntR + i*nVar;
 
       RinglebSolution(coor, UR);
