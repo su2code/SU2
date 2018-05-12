@@ -1610,11 +1610,11 @@ void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double *V_inlet, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
+  su2double *V_transp, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
   su2double VelEps = 0.0;
   su2double Pressure, Density, SoundSpeed2, Riemann, Two_Gamma_M1 = 2.0/Gamma_Minus_One, Area, Energy, Gas_Constant = config->GetGas_ConstantND();
 
@@ -1639,7 +1639,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
     
     if (geometry->node[iPoint]->GetDomain()) {
 
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      V_transp = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -1708,17 +1708,17 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
 
         /*--- Primitive variables, using the derived quantities ---*/
 
-        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+        V_transp[0] = Pressure / ( Gas_Constant * Density);
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = -VelEps * UnitNormal[iDim];
-        V_inlet[nDim+1] = Pressure;
-        V_inlet[nDim+2] = Density;
-        V_inlet[nDim+3] = Energy + Pressure/Density;
-        V_inlet[nDim+4] = sqrt(SoundSpeed2);
+          V_transp[iDim+1] = -VelEps * UnitNormal[iDim];
+        V_transp[nDim+1] = Pressure;
+        V_transp[nDim+2] = Density;
+        V_transp[nDim+3] = Energy + Pressure/Density;
+        V_transp[nDim+4] = sqrt(SoundSpeed2);
       
       /*--- Set various quantities in the solver class ---*/
       
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
+      conv_numerics->SetPrimitive(V_domain, V_transp);
       
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       
@@ -1750,28 +1750,28 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
       
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-//      visc_numerics->SetNormal(Normal);
-//
-//      /*--- Conservative variables w/o reconstruction ---*/
-//
-//      visc_numerics->SetPrimitive(V_domain, V_inlet);
-//
-//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-//
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-//
-//      /*--- Compute residual, and Jacobians ---*/
-//
-//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//
-//      /*--- Subtract residual, and update Jacobians ---*/
-//
-//      LinSysRes.SubtractBlock(iPoint, Residual);
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+     /*--- Viscous contribution, commented out because serious convergence problems ---*/
+
+     visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+     visc_numerics->SetNormal(Normal);
+
+     /*--- Conservative variables w/o reconstruction ---*/
+
+     visc_numerics->SetPrimitive(V_domain, V_transp);
+
+     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+     visc_numerics->SetTurbVar(Solution_i, Solution_j);
+     visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+     /*--- Compute residual, and Jacobians ---*/
+
+     visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+     /*--- Subtract residual, and update Jacobians ---*/
+
+     LinSysRes.SubtractBlock(iPoint, Residual);
+     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -1781,7 +1781,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
   // if(UnitNormal != NULL) delete[] UnitNormal;
   // if(Velocity != NULL) delete[] Velocity;
   // if(GridVel != NULL) delete[] GridVel;
-  // if(V_inlet != NULL) delete[] V_inlet;
+  // if(V_transp != NULL) delete[] V_transp;
   // if(V_domain != NULL) delete[] V_domain;  
 
 }
@@ -3731,7 +3731,7 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CTurbSSTSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
     unsigned long iPoint, jPoint, iVertex, total_index;
     unsigned short iDim, iVar;

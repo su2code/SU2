@@ -781,7 +781,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  virtual void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                              unsigned short val_marker);
   
   /*!
@@ -4948,7 +4948,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
   
   /*!
@@ -7252,7 +7252,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
   
   /*!
@@ -8388,7 +8388,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   /*!
@@ -9326,7 +9326,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   /*!
@@ -9612,7 +9612,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   /*!
@@ -12264,7 +12264,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
   
   /*!

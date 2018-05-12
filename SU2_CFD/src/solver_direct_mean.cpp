@@ -9073,7 +9073,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 }
 
 void CEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                 CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim, iVar, jVar, kVar, jDim;
   unsigned long iPoint, iVertex;
@@ -17012,7 +17012,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 }
 
 void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *conv_numerics, CConfig *config, unsigned short val_marker) {
+                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
     unsigned short iDim, jDim, iVar, jVar, Wall_Function;
     unsigned long iVertex, iPoint, Point_Normal, total_index;
@@ -17026,7 +17026,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
     su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     su2double VelEps = 0.0;
     su2double Riemann, SoundSpeed2, Vel_Mag, Energy;
-    su2double *V_inlet, *V_domain;
+    su2double *V_transp, *V_domain;
 
     bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
     bool grid_movement  = config->GetGrid_Movement();
@@ -17058,7 +17058,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
       /*--- Allocate the value at the inlet ---*/
     
-      V_inlet = GetCharacPrimVar(val_marker, iVertex);
+      V_transp = GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -17151,18 +17151,18 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         /*--- Primitive variables, using the derived quantities ---*/
 
-        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+        V_transp[0] = Pressure / ( Gas_Constant * Density);
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vector[iDim];
-        V_inlet[nDim+1] = Pressure;
-        V_inlet[nDim+2] = Density;
-        V_inlet[nDim+3] = Energy + Pressure/Density;
-        V_inlet[nDim+4] = sqrt(SoundSpeed2);
+          V_transp[iDim+1] = Vector[iDim];
+        V_transp[nDim+1] = Pressure;
+        V_transp[nDim+2] = Density;
+        V_transp[nDim+3] = Energy + Pressure/Density;
+        V_transp[nDim+4] = sqrt(SoundSpeed2);
               
         /*--- Set various quantities in the solver class ---*/
 
         conv_numerics->SetNormal(Normal);
-        conv_numerics->SetPrimitive(V_domain, V_inlet);
+        conv_numerics->SetPrimitive(V_domain, V_transp);
 
         if (grid_movement)
           conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
@@ -17180,40 +17180,40 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-        // /*--- Viscous contribution, commented out because serious convergence problems ---*/
-        //
+        /*--- Viscous contribution, commented out because serious convergence problems ---*/
+        
         // if (viscous) {
-        //
-        //  /*--- Set laminar and eddy viscosity at the infinity ---*/
-        //
-        //  V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
-        //  V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
-        //
-        //  /*--- Set the normal vector and the coordinates ---*/
-        //
-        //  visc_numerics->SetNormal(Normal);
-        //  visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-        //
-        //  /*--- Primitive variables, and gradient ---*/
-        //
-        //  visc_numerics->SetPrimitive(V_domain, V_inlet);
-        //  visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        //
-        //  /*--- Turbulent kinetic energy ---*/
-        //
-        //  if (config->GetKind_Turb_Model() == SST)
-        //    visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        //
-        //  /*--- Compute and update residual ---*/
-        //
-        //  visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        //  LinSysRes.SubtractBlock(iPoint, Residual);
-        //
-        //  /*--- Jacobian contribution for implicit integration ---*/
-        //
-        //  if (implicit)
-        //    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        //
+        
+         /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
+         V_transp[nDim+5] = node[iPoint]->GetLaminarViscosity();
+         V_transp[nDim+6] = node[iPoint]->GetEddyViscosity();
+        
+         /*--- Set the normal vector and the coordinates ---*/
+        
+         visc_numerics->SetNormal(Normal);
+         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        
+         /*--- Primitive variables, and gradient ---*/
+        
+         visc_numerics->SetPrimitive(V_domain, V_transp);
+         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+        
+         /*--- Turbulent kinetic energy ---*/
+        
+         if (config->GetKind_Turb_Model() == SST)
+           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+         /*--- Compute and update residual ---*/
+        
+         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+         LinSysRes.SubtractBlock(iPoint, Residual);
+        
+         /*--- Jacobian contribution for implicit integration ---*/
+        
+         if (implicit)
+           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
         // }
 
         /*--- If the wall is moving, there are additional residual contributions
@@ -17378,7 +17378,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
   
   // if(Normal != NULL) delete [] Normal;
   // if(GridVel != NULL) delete [] GridVel;
-  // if(V_inlet != NULL) delete [] V_inlet;
+  // if(V_transp != NULL) delete [] V_transp;
   // if(V_domain != NULL) delete [] V_domain;
   // if(Coord_i != NULL) delete [] Coord_i;
   // if(Coord_j != NULL) delete [] Coord_j;
