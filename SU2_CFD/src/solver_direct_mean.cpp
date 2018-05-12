@@ -17183,6 +17183,10 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         /*--- Viscous contribution, commented out because serious convergence problems ---*/
         
         // if (viscous) {
+
+         /*--- Index of the closest interior node ---*/
+      
+         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
          /*--- Set laminar and eddy viscosity at the infinity ---*/
         

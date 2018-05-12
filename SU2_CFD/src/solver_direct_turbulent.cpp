@@ -1613,7 +1613,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_transp, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
   su2double VelEps = 0.0;
   su2double Pressure, Density, SoundSpeed2, Riemann, Two_Gamma_M1 = 2.0/Gamma_Minus_One, Area, Energy, Gas_Constant = config->GetGas_ConstantND();
@@ -1638,6 +1638,10 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Index of the closest interior node ---*/
+      
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       V_transp = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
@@ -3733,7 +3737,7 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 void CTurbSSTSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-    unsigned long iPoint, jPoint, iVertex, total_index;
+    unsigned long iPoint, jPoint, iVertex, total_index, Point_Normal;
     unsigned short iDim, iVar;
     su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
 
