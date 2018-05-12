@@ -5153,7 +5153,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIncEulerSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+                                 CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
