@@ -1714,6 +1714,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
+        V_inlet[nDim+4] = sqrt(SoundSpeed2);
       
       /*--- Set various quantities in the solver class ---*/
       

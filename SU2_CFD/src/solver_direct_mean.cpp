@@ -17157,9 +17157,11 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
         V_inlet[nDim+3] = Energy + Pressure/Density;
+        V_inlet[nDim+4] = sqrt(SoundSpeed2);
               
         /*--- Set various quantities in the solver class ---*/
 
+        conv_numerics->SetNormal(Normal);
         conv_numerics->SetPrimitive(V_domain, V_inlet);
 
         if (grid_movement)
@@ -17167,7 +17169,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         /*--- Compute the residual using an upwind scheme ---*/
 
-        // conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
         /*--- Update residual value ---*/
 
@@ -17177,11 +17179,6 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-        /*--- Roe Turkel preconditioning, set the value of beta ---*/
-
-        // if (config->GetKind_Upwind() == TURKEL)
-        //   node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 
         // /*--- Viscous contribution, commented out because serious convergence problems ---*/
         //
@@ -17379,12 +17376,12 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
   /*--- Free locally allocated memory ---*/
   
-  if(Normal != NULL) delete [] Normal;
-  if(GridVel != NULL) delete [] GridVel;
-  if(V_inlet != NULL) delete [] V_inlet;
-  if(V_domain != NULL) delete [] V_domain;
-  if(Coord_i != NULL) delete [] Coord_i;
-  if(Coord_j != NULL) delete [] Coord_j;
+  // if(Normal != NULL) delete [] Normal;
+  // if(GridVel != NULL) delete [] GridVel;
+  // if(V_inlet != NULL) delete [] V_inlet;
+  // if(V_domain != NULL) delete [] V_domain;
+  // if(Coord_i != NULL) delete [] Coord_i;
+  // if(Coord_j != NULL) delete [] Coord_j;
 
 }
 
