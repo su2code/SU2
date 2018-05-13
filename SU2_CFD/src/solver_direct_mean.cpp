@@ -17187,46 +17187,42 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
-        /*--- Viscous contribution, commented out because serious convergence problems ---*/
+        // /*--- Viscous contribution, commented out because serious convergence problems ---*/
         
-        // if (viscous) {
-
-         /*--- Index of the closest interior node ---*/
+         // /*--- Index of the closest interior node ---*/
       
-         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+         // Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
-         /*--- Set laminar and eddy viscosity at the infinity ---*/
+         // /*--- Set laminar and eddy viscosity at the infinity ---*/
         
-         V_transp[nDim+5] = node[iPoint]->GetLaminarViscosity();
-         V_transp[nDim+6] = node[iPoint]->GetEddyViscosity();
+         // V_transp[nDim+5] = node[iPoint]->GetLaminarViscosity();
+         // V_transp[nDim+6] = node[iPoint]->GetEddyViscosity();
         
-         /*--- Set the normal vector and the coordinates ---*/
+         // /*--- Set the normal vector and the coordinates ---*/
         
-         visc_numerics->SetNormal(Normal);
-         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+         // visc_numerics->SetNormal(Normal);
+         // visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
-         /*--- Primitive variables, and gradient ---*/
+         // /*--- Primitive variables, and gradient ---*/
         
-         visc_numerics->SetPrimitive(V_domain, V_transp);
-         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+         // visc_numerics->SetPrimitive(V_domain, V_transp);
+         // visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
-         /*--- Turbulent kinetic energy ---*/
+         // /*--- Turbulent kinetic energy ---*/
         
-         if (config->GetKind_Turb_Model() == SST)
-           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+         // if (config->GetKind_Turb_Model() == SST)
+         //   visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
-         /*--- Compute and update residual ---*/
+         // /*--- Compute and update residual ---*/
         
-         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-         LinSysRes.SubtractBlock(iPoint, Residual);
+         // visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+         // LinSysRes.SubtractBlock(iPoint, Residual);
         
-         /*--- Jacobian contribution for implicit integration ---*/
+         // /*--- Jacobian contribution for implicit integration ---*/
         
-         if (implicit)
-           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+         // if (implicit)
+         //   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
-        // }
-
         /*--- If the wall is moving, there are additional residual contributions
          due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
 

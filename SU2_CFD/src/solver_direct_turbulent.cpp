@@ -1759,26 +1759,26 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
       
      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-     visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-     visc_numerics->SetNormal(Normal);
+     // visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+     // visc_numerics->SetNormal(Normal);
 
-     /*--- Conservative variables w/o reconstruction ---*/
+     // /*--- Conservative variables w/o reconstruction ---*/
 
-     visc_numerics->SetPrimitive(V_domain, V_transp);
+     // visc_numerics->SetPrimitive(V_domain, V_transp);
 
-     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+     // /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-     visc_numerics->SetTurbVar(Solution_i, Solution_j);
-     visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+     // visc_numerics->SetTurbVar(Solution_i, Solution_j);
+     // visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 
-     /*--- Compute residual, and Jacobians ---*/
+     // /*--- Compute residual, and Jacobians ---*/
 
-     visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+     // visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-     /*--- Subtract residual, and update Jacobians ---*/
+     // /*--- Subtract residual, and update Jacobians ---*/
 
-     LinSysRes.SubtractBlock(iPoint, Residual);
-     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+     // LinSysRes.SubtractBlock(iPoint, Residual);
+     // Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
