@@ -17015,11 +17015,11 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
     unsigned short iDim, jDim, iVar, jVar, Wall_Function;
-    unsigned long iVertex, iPoint, Point_Normal, total_index;
+    unsigned long iVertex, iPoint, Point_Normal, total_index, mflux_ramp = 2000;
 
     su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
     su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
-    su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0;
+    su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0, Entropy;
     su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0, 0.0, 0.0}, UnitNormal[3] = {0.0, 0.0, 0.0}, Velocity[3] = {0.0, 0.0, 0.0};
     su2double laminar_viscosity = 0.0, eddy_viscosity = 0.0, Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
     tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
@@ -17068,6 +17068,9 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         VelEps = node[iPoint]->GetTranspiration();
+        if((config->GetKind_Solver() != DISC_ADJ_RANS) && (config->GetKind_Solver() != DISC_ADJ_NAVIER_STOKES)){
+          VelEps *= min(1.0, su2double(config->GetExtIter()/mflux_ramp));
+        }
 
         Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -17139,6 +17142,10 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
         SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+
+        // /*--- Density for the fictitious inlet state ---*/
+
+        // Density = pow(SoundSpeed2/(Gamma*Entropy),1/Gamma_Minus_One);
 
         /*--- Pressure for the fictitious inlet state ---*/
 
