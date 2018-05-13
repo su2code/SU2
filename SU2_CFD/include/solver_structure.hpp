@@ -14556,10 +14556,12 @@ protected:
     /* Determine the end index for this chunk of elements that must be
        treated simulaneously. The elements of this chunk must have the
        same standard element in order to make this work. */
-    ind = elem[l].indStandardElement;
-    lEnd = min(l+nElemSimul, elemEnd);
+    const unsigned long lEndMax = min(l+nElemSimul, elemEnd);
 
-    while(elem[lEnd-1].indStandardElement != ind) --lEnd;
+    ind = elem[l].indStandardElement;
+    for(lEnd=l+1; lEnd<lEndMax; ++lEnd) {
+      if(elem[lEnd].indStandardElement != ind) break;
+    }
 
     /* Store the number of elements that are treated simultaneously in this chunk
        in llEnd and determine the padded N value in the gemm computations. */
