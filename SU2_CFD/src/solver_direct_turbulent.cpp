@@ -1613,7 +1613,7 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
+  unsigned long iVertex, iPoint, Point_Normal, mflux_ramp = 2000;
   su2double *V_transp, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
   su2double VelEps = 0.0;
   su2double Pressure, Density, SoundSpeed2, Riemann, Two_Gamma_M1 = 2.0/Gamma_Minus_One, Area, Energy, Gas_Constant = config->GetGas_ConstantND();
@@ -1659,6 +1659,9 @@ void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver
           UnitNormal[iDim] = Normal[iDim]/Area;
 
         VelEps = solver_container[FLOW_SOL]->node[iPoint]->GetTranspiration();
+        if((config->GetKind_Solver() != DISC_ADJ_RANS) && (config->GetKind_Solver() != DISC_ADJ_NAVIER_STOKES)){
+          VelEps *= min(1.0, su2double(config->GetExtIter()/mflux_ramp));
+        }
       
         /*--- Store the corrected velocity at the wall which will
          be zero (v = 0), unless there are moving walls (v = u_wall)---*/
