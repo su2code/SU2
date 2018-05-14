@@ -114,7 +114,7 @@ void CMultizoneDriver::Run() {
     /*--- Loop over the number of zones (IZONE) ---*/
     for (iZone = 0; iZone < nZone; iZone++){
 
-      /*--- Set the FSI Iter (this needs to be changed into "OuterIter" ---*/
+      /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
@@ -127,9 +127,14 @@ void CMultizoneDriver::Run() {
         }
       }
 
-      /*--- Iterate the zone block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+//      if (config_container[iZone]->GetnInner_Iter() == 1)
+//        /*--- Run one iteration of the solver ---*/
+//        iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container,
+//            numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+//      else
+        /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
+        iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
+            numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A relaxation step can help preventing numerical instabilities ---*/
       Relaxation();
@@ -143,7 +148,7 @@ void CMultizoneDriver::Run() {
   }
 
   /*--- Temporary ---*/
-  Update();
+  if (fsi) Update();
 
 }
 
@@ -267,6 +272,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     }
   }
 
+  /*--- This still has to be generalised ---*/
+  if (fsi){
+
   /*--- This should be possible to change dinamically in the config ---*/
   if (rank == MASTER_NODE){
 
@@ -286,8 +294,6 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     cout << endl;
   }
 
-  /*--- This still has to be generalised ---*/
-  if (fsi){
     integration_container[ZONE_1][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_1][INST_0][MESH_0], config_container[ZONE_1], solver_container[ZONE_1][INST_0][MESH_0][FEA_SOL], OuterIter);
 
     Convergence = integration_container[ZONE_1][INST_0][FEA_SOL]->GetConvergence_FSI();
@@ -309,10 +315,11 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   /*-----------------------------------------------------------------*/
   /*-------------------- Output FSI history -------------------------*/
   /*-----------------------------------------------------------------*/
-
+  if (fsi){
   output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
                             config_container, integration_container, 0,
                             ZONE_0, ZONE_1, false);
+  }
 
   return Convergence;
 
@@ -324,7 +331,7 @@ void CMultizoneDriver::Update() {
   bool UpdateMesh;
 
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
-
+  if (fsi){
   /*--- Loop over the number of zones (IZONE) ---*/
   for (iZone = 0; iZone < nZone; iZone++){
 
@@ -345,9 +352,10 @@ void CMultizoneDriver::Update() {
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
-        integration_container[iZone][INST_0][FEA_SOL]->SetConvergence_FSI(false);
+        integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
     }
 
+  }
   }
 
 }

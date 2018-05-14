@@ -1119,7 +1119,7 @@ void CHeatIteration::Iterate(COutput *output,
                              CFreeFormDefBox*** FFDBox,
                              unsigned short val_iZone,
                              unsigned short val_iInst) {
-  
+
   unsigned long IntIter, ExtIter;
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
@@ -1211,6 +1211,46 @@ void CHeatIteration::Iterate_Block(COutput *output,
                              CFreeFormDefBox*** FFDBox,
                              unsigned short val_iZone,
                              unsigned short val_iInst) {
+
+  /*--- Boolean to determine if we are running a steady or unsteady case ---*/
+  bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool unsteady = ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  unsigned short Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
+  bool StopCalc = false;
+
+  /*--- Preprocess the solver ---*/
+  Preprocess(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+  /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+  /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
+
+  for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
+
+    /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
+    if (steady) config_container[val_iZone]->SetExtIter(Inner_Iter);
+    /*--- For unsteady flow simulations, we need to loop over IntIter for the number of time steps ---*/
+    if (unsteady) config_container[val_iZone]->SetIntIter(Inner_Iter);
+
+    Iterate(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+    /*--- Write the convergence history for the fluid (only screen output) ---*/
+    if (steady) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
+
+    /*--- If convergence was reached in every zone --*/
+    StopCalc = integration_container[val_iZone][INST_0][HEAT_SOL]->GetConvergence();
+    if (StopCalc) break;
+
+  }
+
+  /*--- Set the heat convergence to false (to make sure outer subiterations converge) ---*/
+  integration_container[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
+
+  //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
 
 }
 
