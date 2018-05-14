@@ -5901,29 +5901,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if ((!DualTime_Iteration) && (output_files)) {
             if (!turbo) {
-              ConvHist_file[0] << begin << direct_coeff;
-              if (thermal) ConvHist_file[0] << heat_coeff;
-              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
-              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
+              config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
+              if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
+              if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
               if (inv_design) {
-                ConvHist_file[0] << Cp_inverse_design;
-                if (thermal) ConvHist_file[0] << Heat_inverse_design;
+                config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
+                if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
               }
-              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
-              ConvHist_file[0] << flow_resid;
-              if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+              if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
+              config[val_iZone]->GetHistFile()[0] << flow_resid;
+              if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
             }
             else {
-              ConvHist_file[0] << begin << turbo_coeff << flow_resid;
+              config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid;
             }
             
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_surface) ConvHist_file[0] << surface_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
-            if (output_comboObj) ConvHist_file[0] << combo_obj;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
+            if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
+            if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
+            if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
+            if (direct_diff != NO_DERIVATIVE) config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
+            if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
+            config[val_iZone]->GetHistFile()[0] << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
 
           /*--- Write screen output ---*/
@@ -5992,29 +5992,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if ((!DualTime_Iteration) && (output_files)) {
 
             if (!turbo) {
-              ConvHist_file[0] << begin << direct_coeff;
-              if (thermal) ConvHist_file[0] << heat_coeff;
-              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
-              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
+              config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
+              if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
+              if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
               if (inv_design) {
-                ConvHist_file[0] << Cp_inverse_design;
-                if (thermal) ConvHist_file[0] << Heat_inverse_design;
+                config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
+                if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
               }
-              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
-              ConvHist_file[0] << flow_resid << turb_resid;
-              if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+              if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
+              config[val_iZone]->GetHistFile()[0] << flow_resid << turb_resid;
+              if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
             }
             else {
-              ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+              config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid << turb_resid;
             }
             
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_surface) ConvHist_file[0] << surface_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
-            if (output_comboObj) ConvHist_file[0] << combo_obj;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
+            if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
+            if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
+            if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
+            if (direct_diff != NO_DERIVATIVE) config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
+            if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
+            config[val_iZone]->GetHistFile()[0] << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           
           /*--- Write screen output ---*/
@@ -6085,8 +6085,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case WAVE_EQUATION:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
-            ConvHist_file[0].flush();
+            config[val_iZone]->GetHistFile()[0] << begin << wave_coeff << wave_resid << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             cout.precision(6);
@@ -6100,8 +6100,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case HEAT_EQUATION:
           
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
-            ConvHist_file[0].flush();
+            config[val_iZone]->GetHistFile()[0] << begin << heat_coeff << heat_resid << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             cout.precision(6);
@@ -6115,8 +6115,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case HEAT_EQUATION_FVM:
 
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << direct_coeff << heat_resid << end;
-            ConvHist_file[0].flush();
+            config[val_iZone]->GetHistFile()[0] << begin << direct_coeff << heat_resid << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           break;
 
