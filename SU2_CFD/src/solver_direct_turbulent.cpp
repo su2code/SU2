@@ -1612,184 +1612,38 @@ void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_contai
 void CTurbSASolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal, mflux_ramp = 2000;
-  su2double *V_transp, *V_domain, *Normal, *UnitNormal, *Velocity, *GridVel;
-  su2double VelEps = 0.0;
-  su2double Pressure, Density, SoundSpeed2, Riemann, Two_Gamma_M1 = 2.0/Gamma_Minus_One, Area, Energy, Gas_Constant = config->GetGas_ConstantND();
-
-  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
-  
-  Normal = new su2double[nDim];
-  UnitNormal = new su2double[nDim];
-  Velocity = new su2double[nDim];
-  
-  bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                      (config->GetKind_Turb_Model() == SST));
-  
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  unsigned long iPoint, iVertex;
+  unsigned short iVar;
+  su2double VelEps;
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
     if (geometry->node[iPoint]->GetDomain()) {
 
-      /*--- Index of the closest interior node ---*/
+      VelEps = solver_container[FLOW_SOL]->node[iPoint]->GetTranspiration();
       
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-      V_transp = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      /*--- Get the solution vector ---*/
       
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          UnitNormal[iDim] = Normal[iDim]/Area;
-
-        VelEps = solver_container[FLOW_SOL]->node[iPoint]->GetTranspiration();
-        if((config->GetKind_Solver() != DISC_ADJ_RANS) && (config->GetKind_Solver() != DISC_ADJ_NAVIER_STOKES)){
-          VelEps *= min(1.0, su2double(config->GetExtIter()/mflux_ramp));
+      for (iVar = 0; iVar < nVar; iVar++){
+        if(abs(VelEps) < 1.0E-6){
+          Solution[iVar] = 0.0;
         }
-      
-        /*--- Store the corrected velocity at the wall which will
-         be zero (v = 0), unless there are moving walls (v = u_wall)---*/
-
-        if (grid_movement) {
-          GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = GridVel[iDim] - VelEps * UnitNormal[iDim];
-        } else {
-          for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = -VelEps * UnitNormal[iDim];
+        else{
+          Solution[iVar] = nu_tilde_Inf;
         }
-
-        /*--- Retrieve solution at this boundary node ---*/
-
-        V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-
-        /*--- Retrieve the specified mass flow for the inlet. ---*/
-
-        Density  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-
-        /*--- Get primitives from current inlet state. ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
-        Pressure    = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-        SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
-
-        /*--- Compute the acoustic Riemann invariant that is extrapolated
-           from the domain interior. ---*/
-
-        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-        /*--- Speed of sound squared for fictitious inlet state ---*/
-
-        SoundSpeed2 = Riemann;
-        for (iDim = 0; iDim < nDim; iDim++)
-          SoundSpeed2 -= VelEps*UnitNormal[iDim]*UnitNormal[iDim];
-
-        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-
-        /*--- Pressure for the fictitious inlet state ---*/
-
-        Pressure = SoundSpeed2*Density/Gamma;
-
-        /*--- Energy for the fictitious inlet state ---*/
-
-        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*VelEps*VelEps;
-        if (tkeNeeded) Energy += solver_container[FLOW_SOL]->GetTke_Inf();
-
-        /*--- Primitive variables, using the derived quantities ---*/
-
-        V_transp[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_transp[iDim+1] = -VelEps * UnitNormal[iDim];
-        V_transp[nDim+1] = Pressure;
-        V_transp[nDim+2] = Density;
-        V_transp[nDim+3] = Energy + Pressure/Density;
-        V_transp[nDim+4] = sqrt(SoundSpeed2);
-      
-      /*--- Set various quantities in the solver class ---*/
-      
-      conv_numerics->SetPrimitive(V_domain, V_transp);
-      
-      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
-      
-      Solution_i[0] = node[iPoint]->GetSolution(0);
-
-      if (isCustomizable) {
-        /*--- Only use the array version of the inlet BC when necessary ---*/
-        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      } else {
-        Solution_j[0] = nu_tilde_Inf;
       }
       
-      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
       
-      /*--- Set various other quantities in the conv_numerics class ---*/
+      /*--- includes 1 in the diagonal ---*/
       
-      conv_numerics->SetNormal(Normal);
-      
-      if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
-      
-      /*--- Compute the residual using an upwind scheme ---*/
-      
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Jacobian contribution for implicit integration ---*/
-      
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-     /*--- Viscous contribution, commented out because serious convergence problems ---*/
-
-     // visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-     // visc_numerics->SetNormal(Normal);
-
-     // /*--- Conservative variables w/o reconstruction ---*/
-
-     // visc_numerics->SetPrimitive(V_domain, V_transp);
-
-     // /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-
-     // visc_numerics->SetTurbVar(Solution_i, Solution_j);
-     // visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-
-     // /*--- Compute residual, and Jacobians ---*/
-
-     // visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-     // /*--- Subtract residual, and update Jacobians ---*/
-
-     // LinSysRes.SubtractBlock(iPoint, Residual);
-     // Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
+      Jacobian.DeleteValsRowi(iPoint);
     }
   }
-  
-  /*--- Free locally allocated memory ---*/
-  // if(Normal != NULL) delete[] Normal;
-  // if(UnitNormal != NULL) delete[] UnitNormal;
-  // if(Velocity != NULL) delete[] Velocity;
-  // if(GridVel != NULL) delete[] GridVel;
-  // if(V_transp != NULL) delete[] V_transp;
-  // if(V_domain != NULL) delete[] V_domain;  
 
 }
 

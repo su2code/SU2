@@ -17056,9 +17056,9 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      /*--- Allocate the value at the inlet ---*/
-    
-      V_transp = GetCharacPrimVar(val_marker, iVertex);
+      /// /*--- Allocate the value at the inlet ---*/
+      ///
+      /// V_transp = GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -17090,91 +17090,91 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
           for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -VelEps * UnitNormal[iDim];
         }
 
-        // /*--- Impose the value of the velocity as a strong boundary
-        //  condition (Dirichlet). Fix the velocity and remove any
-        //  contribution to the residual at this node. ---*/
+        /*--- Impose the value of the velocity as a strong boundary
+         condition (Dirichlet). Fix the velocity and remove any
+         contribution to the residual at this node. ---*/
 
-        // node[iPoint]->SetVelocity_Old(Vector);
-
-        // for (iDim = 0; iDim < nDim; iDim++)
-        //   LinSysRes.SetBlock_Zero(iPoint, iDim+1);
-        // node[iPoint]->SetVel_ResTruncError_Zero();
-
-        /*--- Retrieve solution at this boundary node ---*/
-
-        V_domain = node[iPoint]->GetPrimitive();
-
-        /*--- Retrieve the specified mass flow for the inlet. ---*/
-
-        Density  = node[iPoint]->GetDensity();
-
-        /*--- Get primitives from current inlet state. ---*/
+        node[iPoint]->SetVelocity_Old(Vector);
 
         for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
-        Pressure    = node[iPoint]->GetPressure();
-        SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
+          LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        node[iPoint]->SetVel_ResTruncError_Zero();
 
-        /*--- Compute the acoustic Riemann invariant that is extrapolated
-           from the domain interior. ---*/
-
-        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
-
-        /*--- Speed of sound squared for fictitious inlet state ---*/
-
-        SoundSpeed2 = Riemann;
-        for (iDim = 0; iDim < nDim; iDim++)
-          SoundSpeed2 -= VelEps*UnitNormal[iDim]*UnitNormal[iDim];
-
-        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-
-        // /*--- Density for the fictitious inlet state ---*/
-
-        // Entropy_Transp    = pow(Density_Transp, Gamma)/Pressure_Transp;
-        // Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
-
-        /*--- Pressure for the fictitious inlet state ---*/
-
-        Pressure = SoundSpeed2*Density/Gamma;
-
-        /*--- Energy for the fictitious inlet state ---*/
-
-        Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*VelEps*VelEps;
-        if (tkeNeeded) Energy += GetTke_Inf();
-
-        /*--- Primitive variables, using the derived quantities ---*/
-
-        V_transp[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_transp[iDim+1] = Vector[iDim];
-        V_transp[nDim+1] = Pressure;
-        V_transp[nDim+2] = Density;
-        V_transp[nDim+3] = Energy + Pressure/Density;
-        V_transp[nDim+4] = sqrt(SoundSpeed2);
-              
-        /*--- Set various quantities in the solver class ---*/
-
-        conv_numerics->SetNormal(Normal);
-        conv_numerics->SetPrimitive(V_domain, V_transp);
-
-        if (grid_movement)
-          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
-        /*--- Compute the residual using an upwind scheme ---*/
-
-        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
-        /*--- Update residual value ---*/
-
-        LinSysRes.AddBlock(iPoint, Residual);
-
-        /*--- Jacobian contribution for implicit integration ---*/
-
-        if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        /// /*--- Retrieve solution at this boundary node ---*/
+        ///
+        /// V_domain = node[iPoint]->GetPrimitive();
+        ///
+        /// /*--- Retrieve the specified mass flow for the inlet. ---*/
+        ///
+        /// Density  = node[iPoint]->GetDensity();
+        ///
+        /// /*--- Get primitives from current inlet state. ---*/
+        ///
+        /// for (iDim = 0; iDim < nDim; iDim++)
+        ///   Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+        /// Pressure    = node[iPoint]->GetPressure();
+        /// SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
+        ///
+        /// /*--- Compute the acoustic Riemann invariant that is extrapolated
+        ///    from the domain interior. ---*/
+        ///
+        /// Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+        /// for (iDim = 0; iDim < nDim; iDim++)
+        ///   Riemann += Velocity[iDim]*UnitNormal[iDim];
+        ///
+        /// /*--- Speed of sound squared for fictitious inlet state ---*/
+        ///
+        /// SoundSpeed2 = Riemann;
+        /// for (iDim = 0; iDim < nDim; iDim++)
+        ///   SoundSpeed2 -= VelEps*UnitNormal[iDim]*UnitNormal[iDim];
+        ///
+        /// SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+        /// SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+        ///
+        /// /*--- Density for the fictitious inlet state ---*/
+        ///
+        /// Entropy_Transp    = pow(Density_Transp, Gamma)/Pressure_Transp;
+        /// Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+        ///
+        /// /*--- Pressure for the fictitious inlet state ---*/
+        ///
+        /// Pressure = SoundSpeed2*Density/Gamma;
+        ///
+        /// /*--- Energy for the fictitious inlet state ---*/
+        ///
+        /// Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*VelEps*VelEps;
+        /// if (tkeNeeded) Energy += GetTke_Inf();
+        ///
+        /// /*--- Primitive variables, using the derived quantities ---*/
+        ///
+        /// V_transp[0] = Pressure / ( Gas_Constant * Density);
+        /// for (iDim = 0; iDim < nDim; iDim++)
+        ///   V_transp[iDim+1] = Vector[iDim];
+        /// V_transp[nDim+1] = Pressure;
+        /// V_transp[nDim+2] = Density;
+        /// V_transp[nDim+3] = Energy + Pressure/Density;
+        /// V_transp[nDim+4] = sqrt(SoundSpeed2);
+        ///      
+        /// /*--- Set various quantities in the solver class ---*/
+        ///
+        /// conv_numerics->SetNormal(Normal);
+        /// conv_numerics->SetPrimitive(V_domain, V_transp);
+        ///
+        /// if (grid_movement)
+        ///   conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+        ///
+        /// /*--- Compute the residual using an upwind scheme ---*/
+        ///
+        /// conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        ///
+        /// /*--- Update residual value ---*/
+        ///
+        /// LinSysRes.AddBlock(iPoint, Residual);
+        ///
+        /// /*--- Jacobian contribution for implicit integration ---*/
+        ///
+        /// if (implicit)
+        ///   Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
         // /*--- Viscous contribution, commented out because serious convergence problems ---*/
         
@@ -17213,15 +17213,15 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
          //   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
 
-        // /*--- Enforce the no-slip boundary condition in a strong way by
-        //  modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+        /*--- Enforce the no-slip boundary condition in a strong way by
+         modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
-        // if (implicit) {
-        //   for (iVar = 1; iVar <= nDim; iVar++) {
-        //     total_index = iPoint*nVar+iVar;
-        //     Jacobian.DeleteValsRowi(total_index);
-        //   }
-        // }
+        if (implicit) {
+          for (iVar = 1; iVar <= nDim; iVar++) {
+            total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        }
 
       }
     }
