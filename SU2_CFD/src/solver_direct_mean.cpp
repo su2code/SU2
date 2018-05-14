@@ -17015,7 +17015,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
     unsigned short iDim, jDim, iVar, jVar, Wall_Function;
-    unsigned long iVertex, iPoint, Point_Normal, total_index, mflux_ramp = 2000;
+    unsigned long iVertex, iPoint, Point_Normal, total_index, mflux_ramp = 999;
 
     su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
     su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
@@ -17068,7 +17068,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         VelEps = node[iPoint]->GetTranspiration();
-        if((config->GetKind_Solver() != DISC_ADJ_RANS) && (config->GetKind_Solver() != DISC_ADJ_NAVIER_STOKES)){
+        if(!config->GetRestart() && !config->GetRestart_Flow()){
           VelEps *= min(1.0, su2double(config->GetExtIter()/mflux_ramp));
         }
 
