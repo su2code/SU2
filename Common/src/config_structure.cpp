@@ -6635,7 +6635,7 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
     return multizone_filename;
 }
 
-string CConfig::GetMultiinstance_FileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -6648,7 +6648,7 @@ string CConfig::GetMultiinstance_FileName(string val_filename, int val_iInst) {
     return multizone_filename;
 }
 
-string CConfig::GetMultiinstance_HistoryFileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
 
     string multizone_filename = val_filename;
     char buffer[50];
