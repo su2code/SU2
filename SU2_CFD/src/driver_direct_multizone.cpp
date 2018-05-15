@@ -76,6 +76,33 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
     }
   }
 
+  /*----------------------------------------------------*/
+  /*------ Determine the properties of the problem -----*/
+  /*----------------------------------------------------*/
+
+  bool structural_zone = false;
+  bool fluid_zone = false;
+  bool heat_zone = false;
+
+  /*--- If there is at least a fluid and a structural zone ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      fluid_zone = true;
+      break;
+    case FEM_ELASTICITY:
+      structural_zone = true;
+      break;
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+      heat_zone = true;
+      break;
+    }
+  }
+
+  /*--- If the problem has FSI properties ---*/
+  if (fluid_zone && structural_zone) fsi = true;
+
+
 }
 
 CMultizoneDriver::~CMultizoneDriver(void) {
@@ -142,40 +169,11 @@ void CMultizoneDriver::Run() {
 
   }
 
-  /*--- Temporary ---*/
-  if (fsi) Update();
-
 }
 
 void CMultizoneDriver::Preprocess() {
 
   bool time_domain = driver_config->GetTime_Domain();
-
-  /*----------------------------------------------------*/
-  /*------ Determine the properties of the problem -----*/
-  /*----------------------------------------------------*/
-
-  bool structural_zone = false;
-  bool fluid_zone = false;
-  bool heat_zone = false;
-
-  /*--- If there is at least a fluid and a structural zone ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
-    switch (config_container[iZone]->GetKind_Solver()) {
-    case EULER: case NAVIER_STOKES: case RANS:
-      fluid_zone = true;
-      break;
-    case FEM_ELASTICITY:
-      structural_zone = true;
-      break;
-    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-      heat_zone = true;
-      break;
-    }
-  }
-
-  /*--- If the problem has FSI properties ---*/
-  if (fluid_zone && structural_zone) fsi = true;
 
   if (fsi){
     /*--- Loop over the number of zones (IZONE) ---*/
@@ -250,7 +248,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
         /*--- Compute the block residual on each solver ---*/
         solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_BGS(geometry_container[iZone][INST_0][MESH_0],
-                                                                                  config_container[iZone]);
+            config_container[iZone]);
 
         /*--- Loop over all the variables in the solver ---*/
         for (iRes = 0; iRes < nVarSol; iRes++){
@@ -270,24 +268,24 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   /*--- This still has to be generalised ---*/
   if (fsi){
 
-  /*--- This should be possible to change dinamically in the config ---*/
-  if (rank == MASTER_NODE){
+    /*--- This should be possible to change dinamically in the config ---*/
+    if (rank == MASTER_NODE){
 
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << endl;
-    cout << "Convergence summary for BGS iteration ";
-    cout << OuterIter << endl;
-    cout << endl;
-    /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-    cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
-    cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-    cout.width(8); cout << OuterIter*1000;
-    cout.width(15); cout << residual[ZONE_0][0];
-    cout.width(15); cout << residual[ZONE_0][3];
-    cout.width(15); cout << residual[ZONE_1][0];
-    cout.width(15); cout << residual[ZONE_1][1];
-    cout << endl;
-  }
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << endl;
+      cout << "Convergence summary for BGS iteration ";
+      cout << OuterIter << endl;
+      cout << endl;
+      /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+      cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
+      cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+      cout.width(8); cout << OuterIter*1000;
+      cout.width(15); cout << residual[ZONE_0][0];
+      cout.width(15); cout << residual[ZONE_0][3];
+      cout.width(15); cout << residual[ZONE_1][0];
+      cout.width(15); cout << residual[ZONE_1][1];
+      cout << endl;
+    }
 
     integration_container[ZONE_1][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_1][INST_0][MESH_0], config_container[ZONE_1], solver_container[ZONE_1][INST_0][MESH_0][FEA_SOL], OuterIter);
 
@@ -301,7 +299,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
       /*-- If the solver position iSol is enabled --*/
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
         solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
-                                                                          config_container[iZone]);}
+            config_container[iZone]);}
     }
   }
 
@@ -311,9 +309,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   /*-------------------- Output FSI history -------------------------*/
   /*-----------------------------------------------------------------*/
   if (fsi){
-  output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-                            config_container, integration_container, 0,
-                            ZONE_0, ZONE_1, false);
+    output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+        config_container, integration_container, 0,
+        ZONE_0, ZONE_1, false);
   }
 
   return Convergence;
@@ -327,30 +325,30 @@ void CMultizoneDriver::Update() {
 
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
   if (fsi){
-  /*--- Loop over the number of zones (IZONE) ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
+    /*--- Loop over the number of zones (IZONE) ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
 
-    /*--- Transfer from all the remaining zones ---*/
-    for (jZone = 0; jZone < nZone; jZone++){
-      /*--- The target zone is iZone ---*/
-      if (jZone != iZone){
-        UpdateMesh = Transfer_Data(jZone, iZone);
-        /*--- If a mesh update is required due to the transfer of data ---*/
-        if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+      /*--- Transfer from all the remaining zones ---*/
+      for (jZone = 0; jZone < nZone; jZone++){
+        /*--- The target zone is iZone ---*/
+        if (jZone != iZone){
+          UpdateMesh = Transfer_Data(jZone, iZone);
+          /*--- If a mesh update is required due to the transfer of data ---*/
+          if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+        }
       }
+
+      iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
+          solver_container, numerics_container, config_container,
+          surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+      /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
+      for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
+        if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+          integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
+      }
+
     }
-
-    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
-        solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-    /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
-        integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
-    }
-
-  }
   }
 
 }

@@ -3264,31 +3264,17 @@ void CDriver::StartSolver() {
 
     PreprocessExtIter(ExtIter);
 
-    /*--- Perform a single iteration of the chosen PDE solver. ---*/
+    /*--- Perform a dynamic mesh update if required. ---*/
 
-    if (!fsi) {
+    DynamicMeshUpdate(ExtIter);
 
-      /*--- Perform a dynamic mesh update if required. ---*/
+    /*--- Run a single iteration of the problem (fluid, elasticity, wave, heat, ...). ---*/
 
-      DynamicMeshUpdate(ExtIter);
+    Run();
 
-      /*--- Run a single iteration of the problem (fluid, elasticity, wave, heat, ...). ---*/
+    /*--- Update the solution for dual time stepping strategy ---*/
 
-      Run();
-
-      /*--- Update the solution for dual time stepping strategy ---*/
-
-      Update();
-
-    }
-    
-    /*--- In the FSIDriver case, mesh and solution updates are already included into the Run function ---*/
-    
-    else {
-      
-      Run();
-      
-    }
+    Update();
 
     /*--- Monitor the computations after each iteration. ---*/
 
@@ -3379,10 +3365,10 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   }
 
   /*--- Evaluate the new CFL number (adaptive). ---*/
-
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
     for (iZone = 0; iZone < nZone; iZone++){
-      output->SetCFL_Number(solver_container, config_container, iZone);
+      if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
+        output->SetCFL_Number(solver_container, config_container, iZone);
     }
   }
 
@@ -5191,34 +5177,6 @@ void CFSIDriver::Run() {
 
   }
 
-  /*-----------------------------------------------------------------*/
-  /*------------------ Update coupled solver ------------------------*/
-  /*-----------------------------------------------------------------*/
-
-  Update(ZONE_FLOW, ZONE_STRUCT);
-
-  /*-----------------------------------------------------------------*/
-  /*-------------------- Update fluid solver ------------------------*/
-  /*-----------------------------------------------------------------*/
-
-  iteration_container[ZONE_FLOW][INST_0]->Update(output, integration_container, geometry_container,
-                       solver_container, numerics_container, config_container,
-                       surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
-
-  /*-----------------------------------------------------------------*/
-  /*----------------- Update structural solver ----------------------*/
-  /*-----------------------------------------------------------------*/
-
-  iteration_container[ZONE_STRUCT][INST_0]->Update(output, integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
-
-
-  /*-----------------------------------------------------------------*/
-  /*--------------- Update convergence parameter --------------------*/
-  /*-----------------------------------------------------------------*/
-  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->SetConvergence_FSI(false);
-
 }
 
 void CFSIDriver::Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {
@@ -5476,7 +5434,11 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
 
 }
 
-void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+void CFSIDriver::Update() {
+
+  /*--- As of now, we are coding it for just 2 zones. ---*/
+  /*--- This will become more general, but we need to modify the configuration for that ---*/
+  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
 
   unsigned long IntIter = 0; // This doesn't affect here but has to go into the function
   ExtIter = config_container[ZONE_FLOW]->GetExtIter();
@@ -5539,6 +5501,32 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   }
 
+  /*-----------------------------------------------------------------*/
+  /*-------------------- Update fluid solver ------------------------*/
+  /*-----------------------------------------------------------------*/
+
+  iteration_container[ZONE_FLOW][INST_0]->Update(output, integration_container, geometry_container,
+                       solver_container, numerics_container, config_container,
+                       surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
+
+  /*-----------------------------------------------------------------*/
+  /*----------------- Update structural solver ----------------------*/
+  /*-----------------------------------------------------------------*/
+
+  iteration_container[ZONE_STRUCT][INST_0]->Update(output, integration_container, geometry_container,
+                         solver_container, numerics_container, config_container,
+                         surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
+
+
+  /*-----------------------------------------------------------------*/
+  /*--------------- Update convergence parameter --------------------*/
+  /*-----------------------------------------------------------------*/
+  integration_container[ZONE_STRUCT][INST_0][FEA_SOL]->SetConvergence_FSI(false);
+
+
+}
+
+void CFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 }
 
@@ -5713,6 +5701,13 @@ CDiscAdjFSIDriver::~CDiscAdjFSIDriver(void) {
 
 }
 
+void CDiscAdjFSIDriver::Update(){
+
+}
+
+void CDiscAdjFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
+
+}
 
 void CDiscAdjFSIDriver::Run( ) {
 
