@@ -896,6 +896,8 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
             Tr  = 293.15,        // Reference temperature (Absorption)
             Pr  = 101325.;       // Reference pressure (Absorption)
 
+  su2double c0_old;
+
   /*---Preprocess signal for first iteration---*/
   if(iIter == 0){
 
@@ -917,6 +919,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
       p_peak = max(p_peak, signal.p_prime[iPhi][i]);
   	}
     w0 = 2.*M_PI*c0/scale_L; // Characteristic time governed by length of signal
+    c0_old = c0;
     // w0 = 2.*M_PI*flt_M/signal.t[signal.len[iPhi]-1];
     beta = 1. + (atm_g - 1.)/2.;
     // p0 = 50.; // From Robin Cleveland
@@ -946,11 +949,12 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
   }
   else{
+    c0_old = c0;
     AtmosISA(ray_z, T_inf, c0, p_inf, rho0, atm_g);
   }
 
   /*---Compute other coefficients needed for solution of ABE---*/
-
+  w0   = w0*c0/c0_old;
   xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
 
   mu        = mu0*pow(T_inf/T0,1.5)*(T0+Ts)/(T_inf+Ts);
