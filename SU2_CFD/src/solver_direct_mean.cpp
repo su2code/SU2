@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -184,6 +184,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool low_mach_prec = config->Low_Mach_Preconditioning();
 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  bool fsi     = config->GetFSI_Simulation();
   string filename_ = config->GetSolution_FlowFileName();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
@@ -833,6 +834,21 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       counter_local++;
     }
 
+  }
+
+  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  if (fsi){
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
   }
 
   /*--- Warning message about non-physical points ---*/
@@ -3731,7 +3747,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
-  Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
+  Froude            = ModVel_FreeStream/sqrt(STANDARD_GRAVITY*Length_Ref);         config->SetFroude(Froude);
   
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
   
@@ -8792,6 +8808,18 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case SURFACE_MACH:
         Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
         break;
+      case SURFACE_UNIFORMITY:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+        break;
+      case SURFACE_SECONDARY:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+        break;
+      case SURFACE_MOM_DISTORTION:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+        break;
+      case SURFACE_SECOND_OVER_UNIFORM:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+        break;
       case CUSTOM_OBJFUNC:
         Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
         break;
@@ -9352,7 +9380,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       case TOTAL_CONDITIONS_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
-        if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_Total  = config->GetRiemann_Var1(Marker_Tag);
         T_Total  = config->GetRiemann_Var2(Marker_Tag);
         Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9388,7 +9416,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       case STATIC_SUPERSONIC_INFLOW_PT:
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
-        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_static  = config->GetRiemann_Var1(Marker_Tag);
         T_static  = config->GetRiemann_Var2(Marker_Tag);
         Mach = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9416,7 +9444,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Retrieve the specified total conditions for this boundary. ---*/
 
-        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
         else P_static  = config->GetRiemann_Var1(Marker_Tag);
         Rho_static  = config->GetRiemann_Var2(Marker_Tag);
         Mach = config->GetRiemann_FlowDir(Marker_Tag);
@@ -9855,7 +9883,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
           case TOTAL_CONDITIONS_PT:
 
             /*--- Retrieve the specified total conditions for this boundary. ---*/
-            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;/// check in which case is true (only freesurface?)
             else P_Total  = config->GetRiemann_Var1(Marker_Tag);
             T_Total  = config->GetRiemann_Var2(Marker_Tag);
             Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
@@ -11194,10 +11222,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
-          if (gravity) P_Total = Inlet_Ptotal[val_marker][iVertex] - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
-          else P_Total  = Inlet_Ptotal[val_marker][iVertex];
-          T_Total  = Inlet_Ttotal[val_marker][iVertex];
-          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+          if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
+          else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
+          T_Total  = config->GetInlet_Ttotal(Marker_Tag);
+          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
           /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -11472,7 +11500,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
       else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
 
       /*--- Non-dim. the inputs if necessary. ---*/
@@ -11600,7 +11628,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain;
   
-  su2double Density, Pressure, Temperature, Energy, *Velocity, Velocity2;
+  su2double Density, Pressure, Temperature, Energy, *Vel, Velocity2;
   su2double Gas_Constant = config->GetGas_ConstantND();
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -11609,6 +11637,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double *Normal = new su2double[nDim];
+  su2double *Velocity = new su2double[nDim];
   
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
    so all flow variables can be imposed at the inlet.
@@ -11616,22 +11645,21 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   
   Temperature = config->GetInlet_Temperature(Marker_Tag);
   Pressure    = config->GetInlet_Pressure(Marker_Tag);
-  Velocity    = config->GetInlet_Velocity(Marker_Tag);
+  Vel         = config->GetInlet_Velocity(Marker_Tag);
+  
+  /*--- Non-dim. the inputs if necessary. ---*/
+  
+  Temperature /= config->GetTemperature_Ref();
+  Pressure    /= config->GetPressure_Ref();
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
   
   /*--- Density at the inlet from the gas law ---*/
   
   Density = Pressure/(Gas_Constant*Temperature);
   
-  /*--- Non-dim. the inputs if necessary. ---*/
-  
-  Temperature = Temperature/config->GetTemperature_Ref();
-  Pressure    = Pressure/config->GetPressure_Ref();
-  Density     = Density/config->GetDensity_Ref();
-  for (iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Velocity[iDim]/config->GetVelocity_Ref();
-  
   /*--- Compute the energy from the specified state ---*/
-  
+
   Velocity2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity2 += Velocity[iDim]*Velocity[iDim];
@@ -13577,6 +13605,46 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
 
 }
 
+void CEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual, bgs_sol;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
+}
+
+
+void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    node[iPoint]->Set_BGSSolution_k();
+
+  }
+
+}
+
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
@@ -14990,6 +15058,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool fsi     = config->GetFSI_Simulation();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -15265,7 +15334,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 3;
+  unsigned short nHeatConjugateVar = 4;
 
   HeatConjugateVar = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -15682,6 +15751,21 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 #endif
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
+  }
+
+  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  if (fsi){
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/

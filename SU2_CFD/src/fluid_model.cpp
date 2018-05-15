@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -52,6 +52,9 @@ CFluidModel::CFluidModel(void) {
   dTdrho_e = 0.0;
   dTde_rho = 0.0;
   Cp       = 0.0;
+  Cv       = 0.0;
+  Mu       = 0.0;
+  Mu_Turb  = 0.0;
 
   LaminarViscosity = NULL;
   ThermalConductivity = NULL;
@@ -83,7 +86,11 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
     ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
     break;
   case CONSTANT_PRANDTL:
-    ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
+    if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
+      ThermalConductivity = new CConstantPrandtlRANS(config->GetPrandtl_Lam(),config->GetPrandtl_Turb());
+    } else {
+      ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
+    }
     break;
   }
   

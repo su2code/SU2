@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -84,45 +84,13 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   su2double ModAmpl = 0.0;
   su2double CurrentTime = struct_config->GetCurrent_DynTime();
-  su2double Static_Time = struct_config->GetStatic_Time();
   su2double Transfer_Time = 0.0;
 
   bool Ramp_Load = struct_config->GetRamp_Load();
   su2double Ramp_Time = struct_config->GetRamp_Time();
 
-  /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
-  if (CurrentTime < Static_Time){
-    ModAmpl = 0.0;
-  }
-  else if (Ramp_Load){
-    Transfer_Time = (CurrentTime - Static_Time) / Ramp_Time;
-    switch (struct_config->GetDynamic_LoadTransfer()){
-    case INSTANTANEOUS:
-      ModAmpl = 1.0;
-      break;
-    case POL_ORDER_1:
-      ModAmpl = Transfer_Time;
-      break;
-    case POL_ORDER_3:
-      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
-      break;
-    case POL_ORDER_5:
-      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
-      break;
-    case SIGMOID_10:
-      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
-      break;
-    case SIGMOID_20:
-      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
-      break;
-    }
-    ModAmpl = max(ModAmpl,0.0);
-    ModAmpl = min(ModAmpl,1.0);
-  }
-  else{
-    ModAmpl = 1.0;
-  }
-  
+  ModAmpl = struct_solution->Compute_LoadCoefficient(CurrentTime, Ramp_Time, struct_config);
+
   Physical_Constants[1] = ModAmpl;
   
   /*--- For static FSI, we cannot apply the ramp like this ---*/
@@ -131,33 +99,14 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
     if (Ramp_Load){
       CurrentTime = static_cast<su2double>(struct_config->GetFSIIter());
       Ramp_Time = static_cast<su2double>(struct_config->GetnIterFSI_Ramp() - 1);
-      if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
-      switch (struct_config->GetDynamic_LoadTransfer()){
-      case INSTANTANEOUS:
-        ModAmpl = 1.0;
-        break;
-      case POL_ORDER_1:
-        ModAmpl = Transfer_Time;
-        break;
-      case POL_ORDER_3:
-        ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
-        break;
-      case POL_ORDER_5:
-        ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
-        break;
-      case SIGMOID_10:
-        ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
-        break;
-      case SIGMOID_20:
-        ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
-        break;
-      }
-      ModAmpl = max(ModAmpl,0.0);
-      ModAmpl = min(ModAmpl,1.0);
-      if (CurrentTime > Ramp_Time) ModAmpl = 1.0;
+
+      ModAmpl = struct_solution->Compute_LoadCoefficient(CurrentTime, Ramp_Time, struct_config);
       Physical_Constants[1] = ModAmpl;
     }
   }
+
+  /*--- Store the force coefficient ---*/
+  struct_solution->SetForceCoeff(Physical_Constants[1]);
 
 }
 
@@ -735,11 +684,14 @@ CTransfer_ConjugateHeatVars::~CTransfer_ConjugateHeatVars(void) {
 void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                                                 unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned long iPoint, PointNormal;
+  unsigned long iPoint;
+  unsigned long PointNormal;
   unsigned short nDim, iDim;
 
-  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall, Tnormal,
-      dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, Prandtl_Turb, eddy_viscosity, laminar_viscosity,
+  nDim = donor_geometry->GetnDim();
+
+  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area, Twall = 0.0, Tnormal = 0.0,
+      dTdn, cp_fluid, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity, thermal_conductivityND, heat_flux_density, conductivity_over_dist, Temperature_Ref;
   su2double Gamma = donor_config->GetGamma();
   su2double Gas_Constant = donor_config->GetGas_ConstantND();
@@ -752,16 +704,14 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
                || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
                || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
   bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
+  bool incompressible_flow = (donor_config->GetEnergy_Equation()) && flow;
   bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;
-
-  nDim = donor_geometry->GetnDim();
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
   Prandtl_Lam       = donor_config->GetPrandtl_Lam();
-  Prandtl_Turb      = donor_config->GetPrandtl_Turb();
-  laminar_viscosity = donor_config->GetViscosity_FreeStreamND();
-  cp_fluid          = donor_config->GetSpecificHeat_Fluid();
-  rho_cp_solid      = donor_config->GetSpecificHeat_Solid()*donor_config->GetDensity_Solid();
+  laminar_viscosity = donor_config->GetMu_ConstantND(); // TDE check for consistency
+  cp_fluid          = donor_config->GetSpecific_Heat_Cp();
+  rho_cp_solid      = donor_config->GetSpecific_Heat_Cp_Solid()*donor_config->GetDensity_Solid();
 
   PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
   Coord         = donor_geometry->node[Point_Donor]->GetCoord();
@@ -786,6 +736,13 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
 
     Twall   = donor_solution->node[Point_Donor]->GetPrimitive(0)*Temperature_Ref;
     Tnormal = donor_solution->node[PointNormal]->GetPrimitive(0)*Temperature_Ref;
+
+    dTdn = (Twall - Tnormal)/dist;
+  }
+  else if (incompressible_flow) {
+
+    Twall   = donor_solution->node[Point_Donor]->GetTemperature()*Temperature_Ref;
+    Tnormal = donor_solution->node[PointNormal]->GetTemperature()*Temperature_Ref;
 
     dTdn = (Twall - Tnormal)/dist;
   }
@@ -814,11 +771,31 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
     heat_flux_density       = thermal_conductivity*dTdn;
     conductivity_over_dist  = thermal_conductivity/dist;
   }
+  else if (incompressible_flow) {
+
+    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+
+    thermal_conductivityND  = donor_solution->node[iPoint]->GetThermalConductivity();
+    thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
+
+    switch (donor_config->GetKind_ConductivityModel()) {
+
+      case CONSTANT_CONDUCTIVITY:
+        thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
+        break;
+
+      case CONSTANT_PRANDTL:
+        thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()*donor_config->GetViscosity_Ref();
+        break;
+    }
+
+    heat_flux_density       = thermal_conductivity*dTdn;
+    conductivity_over_dist  = thermal_conductivity/dist;
+  }
   else if (flow) {
 
     iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
-    eddy_viscosity          = donor_solution->node[iPoint]->GetEddyViscosity();
     thermal_conductivityND  = laminar_viscosity/Prandtl_Lam;
     thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref()*cp_fluid;
 

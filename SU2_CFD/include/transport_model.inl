@@ -2,7 +2,7 @@
  * \file transport_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -46,5 +46,5 @@ inline void CViscosityModel::SetDerViscosity(su2double T, su2double rho) {}
 inline su2double CConductivityModel::GetConductivity() { return Kt; }
 inline su2double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
 inline su2double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
-inline void CConductivityModel::SetConductivity(su2double T, su2double rho, su2double mu, su2double cp) {}
+inline void CConductivityModel::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {}
 inline void CConductivityModel::SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) {}
