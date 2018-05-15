@@ -918,7 +918,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
       p_peak = max(p_peak, signal.p_prime[iPhi][i]);
   	}
-    w0 = 2.*M_PI*c0/scale_L; // Characteristic time governed by length of signal
+    w0 = 2.*M_PI*flt_M*c0/scale_L; // Characteristic time governed by length of signal
     c0_old = c0;
     // w0 = 2.*M_PI*flt_M/signal.t[signal.len[iPhi]-1];
     beta = 1. + (atm_g - 1.)/2.;
