@@ -1149,11 +1149,14 @@ public:
 
   /*!
    * \brief Enforce the coupling condition at the end of the time step
-   * \param[in] zoneFlow - zone of the flow equations.
-   * \param[in] zoneStruct - zone of the structural equations.
    */
-  void Update(unsigned short zoneFlow, unsigned short zoneStruct);
-  using CDriver::Update;
+  void Update(void);
+
+  /*!
+   * \brief Overload, does nothing but avoids dynamic mesh updates in FSI problems before the iteration
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
+
 };
 
 /*!
@@ -1422,6 +1425,15 @@ public:
   void Postprocess(unsigned short ZONE_FLOW,
                      unsigned short ZONE_STRUCT);
 
+  /*!
+   * \brief Overload, does nothing but avoids updates in adjoint FSI problems before the iteration
+   */
+  void Update(void);
+
+  /*!
+   * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
 
 };
 

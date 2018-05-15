@@ -483,6 +483,12 @@ void CFluidIteration::Preprocess(COutput *output,
   if (config_container[val_iZone]->GetWind_Gust()) {
     SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone][val_iInst], solver_container[val_iZone][val_iInst]);
   }
+
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  if ((config_container[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
+    output->SetCFL_Number(solver_container, config_container, val_iZone);
+  }
+
 }
 
 void CFluidIteration::Iterate(COutput *output,
@@ -1111,7 +1117,16 @@ void CHeatIteration::Preprocess(COutput *output,
                                 CVolumetricMovement ***grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone,
-                                unsigned short val_iInst) { }
+                                unsigned short val_iInst) {
+
+  unsigned long OuterIter = config_container[val_iZone]->GetOuterIter();
+
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  if ((config_container[val_iZone]->GetCFL_Adapt() == YES) && ( OuterIter != 0 ) ) {
+    output->SetCFL_Number(solver_container, config_container, val_iZone);
+  }
+
+}
 
 void CHeatIteration::Iterate(COutput *output,
                              CIntegration ****integration_container,
