@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_FSI.
  *        The subroutines and functions are in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

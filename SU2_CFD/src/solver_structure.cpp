@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -2766,7 +2766,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-				cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+				cout.precision(6);
+				cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
 				cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
 			}
 			config->SetAoA(AoA_ + config->GetAoA_Offset());
@@ -2780,7 +2781,8 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
 		if (config->GetDiscard_InFiles() == false) {
 			if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-				cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+				cout.precision(6);
+				cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
 				cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
 			}
 			config->SetAoS(AoS_ + config->GetAoS_Offset());

@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of a FEM linear elastic structural problem.
  * \author R. Sanchez
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -38,7 +38,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar,
+CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
@@ -51,7 +51,6 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
   Mu = 0.0; Lambda = 0.0; Kappa = 0.0;
 
   /*--- Initialize vector structures for multiple material definition ---*/
-  /*--- TODO: This needs to be changed, to adapt for cases in which the numbers in the config are not the same ---*/
   E_i         = new su2double[config->GetnElasticityMod()];
   for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
     E_i[iVar]        = config->GetElasticyMod(iVar);
@@ -164,7 +163,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
   }
 }
 
-CFEM_Elasticity::~CFEM_Elasticity(void) {
+CFEAElasticity::~CFEAElasticity(void) {
 
   unsigned short iVar;
 
@@ -208,7 +207,7 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 }
 
-void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -259,7 +258,7 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
 }
 
-void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
+void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -276,8 +275,8 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
    */
   su2double g_force[3] = {0.0,0.0,0.0};
 
-  if (nDim == 2) g_force[1] = -1*STANDART_GRAVITY;
-  else if (nDim == 3) g_force[2] = -1*STANDART_GRAVITY;
+  if (nDim == 2) g_force[1] = -1*STANDARD_GRAVITY;
+  else if (nDim == 3) g_force[2] = -1*STANDARD_GRAVITY;
 
   element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
   element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/
@@ -310,7 +309,7 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
 }
 
-void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) {
+void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
 
   E   = E_i[element->Get_iProp()];
   Nu  = Nu_i[element->Get_iProp()];
@@ -336,11 +335,9 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
   Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
   Kappa  = Lambda + (2/3)*Mu;
 
-//  cout << "YOUNG: " << E << " and Mu " << Mu << endl;
-
 }
 
-void CFEM_Elasticity::ReadDV(CConfig *config) {
+void CFEAElasticity::ReadDV(CConfig *config) {
 
   int rank = SU2_MPI::GetRank();
   

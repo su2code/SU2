@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -109,7 +109,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [-2.911277, -2.705448, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [-3.391214, -2.560170, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -124,7 +124,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.731029, -2.243767, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.802148, -2.228080, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -138,8 +138,8 @@ def main():
     discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
     discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
-    discadj_incomp_turb_NACA0012.test_iter = 100
-    discadj_incomp_turb_NACA0012.test_vals = [-3.645349, -1.625510, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.test_iter = 10
+    discadj_incomp_turb_NACA0012.test_vals = [-3.847506, -1.009607, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_turb_NACA0012.timeout   = 1600
     discadj_incomp_turb_NACA0012.tol       = 0.00001

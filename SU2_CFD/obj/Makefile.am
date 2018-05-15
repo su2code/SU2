@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 6.0.0 "Falcon"
+# \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -86,12 +86,12 @@ libSU2Core_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/fluid_model_inc.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
-  ../src/numerics_adjoint_mean_inc.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
   ../src/numerics_direct_poisson.cpp \
   ../src/numerics_direct_heat.cpp \
@@ -114,7 +114,6 @@ libSU2Core_sources = \
   ../src/output_paraview.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
-  ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
   ../src/solver_adjoint_elasticity.cpp \
@@ -132,7 +131,6 @@ libSU2Core_sources = \
   ../src/transfer_structure.cpp \
   ../src/transport_model.cpp \
   ../src/variable_adjoint_mean.cpp \
-  ../src/variable_adjoint_mean_inc.cpp \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
   ../src/variable_adjoint_elasticity.cpp \

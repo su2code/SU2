@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -3328,8 +3328,11 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
             Diff = sqrt(Diff);
             my_MaxDiff = max(my_MaxDiff, Diff);
             
-            cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
-            << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<"." <<endl;
+            if (Diff >= config->GetFFD_Tol()) {
+              cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
+              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<"." <<endl;
+            }
+            
           }
           
         }
@@ -4072,13 +4075,13 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     }
     
     if (polar){
-    	index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    	index[1] = 0;
-     index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+    	 index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    	 index[1] = 0;
+      index[2] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
     }
     else {
-    	index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    	index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+    	 index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    	 index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
       index[2] = 0;
     }
     
@@ -4090,6 +4093,10 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     
     for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
       if (index[1] == FFDBox->Get_Fix_JPlane(iPlane)) return false;
+    }
+    
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
+      if (index[2] == FFDBox->Get_Fix_KPlane(iPlane)) return false;
     }
     
     if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
@@ -8485,7 +8492,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   FFDBox_file << "ASCII" << endl;
   FFDBox_file << "DATASET STRUCTURED_GRID" << endl;
   
-  if (nDim == 2) FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<< endl;
+  if (nDim == 2) FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<<" "<<1<< endl;
   else FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<<" "<<nDegree+1<< endl;
   if (nDim == 2) FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)<<" float"<< endl;
   else FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)*(nDegree+1)<<" float"<< endl;
@@ -8497,7 +8504,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
       for (iDegree = 0; iDegree <= lDegree; iDegree++) {
         for (iDim = 0; iDim < nDim; iDim++)
         FFDBox_file << scientific << Coord_Control_Points[iDegree][jDegree][0][iDim] << "\t";
-        FFDBox_file << "\n";
+        FFDBox_file << " 0.0 \n";
       }
     }
   }
