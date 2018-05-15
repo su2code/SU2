@@ -860,7 +860,7 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
   	Preprocessing(iPhi, iIter);
     Spreading(iPhi);
     Stratification(iPhi);
-    if(flt_h - ray_z > 1000.){
+    if(flt_h - ray_z > 250.){
       Relaxation(iPhi, iIter);
     }
     Attenuation(iPhi);
