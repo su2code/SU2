@@ -127,14 +127,9 @@ void CMultizoneDriver::Run() {
         }
       }
 
-//      if (config_container[iZone]->GetnInner_Iter() == 1)
-//        /*--- Run one iteration of the solver ---*/
-//        iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container,
-//            numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-//      else
-        /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-        iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
-            numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+      /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
+      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
+          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A relaxation step can help preventing numerical instabilities ---*/
       Relaxation();
@@ -299,16 +294,16 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
     Convergence = integration_container[ZONE_1][INST_0][FEA_SOL]->GetConvergence_FSI();
   }
 
-//  /*--- Update the residual for the all the zones ---*/
-//  for (iZone = 0; iZone < nZone; iZone++){
-//    /*--- Accounting for all the solvers ---*/
-//    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-//      /*-- If the solver position iSol is enabled --*/
-//      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
-//        solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
-//                                                                          config_container[iZone]);}
-//    }
-//  }
+  /*--- Update the residual for the all the zones ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    /*--- Accounting for all the solvers ---*/
+    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
+      /*-- If the solver position iSol is enabled --*/
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL){
+        solver_container[iZone][INST_0][MESH_0][iSol]->UpdateSolution_BGS(geometry_container[iZone][INST_0][MESH_0],
+                                                                          config_container[iZone]);}
+    }
+  }
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
 

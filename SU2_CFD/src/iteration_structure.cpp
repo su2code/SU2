@@ -682,6 +682,11 @@ void CFluidIteration::Iterate_Block(COutput *output,
       if (steady) config_container[val_iZone]->SetExtIter(Inner_Iter);
       /*--- For unsteady flow simulations, we need to loop over IntIter for the number of time steps ---*/
       if (unsteady) config_container[val_iZone]->SetIntIter(Inner_Iter);
+      /*--- If only one internal iteration is required, the ExtIter/IntIter is the OuterIter of the block structure ---*/
+      if (nInner_Iter == 1) {
+        if (steady) config_container[val_iZone]->SetExtIter(config_container[val_iZone]->GetOuterIter());
+        if (unsteady) config_container[val_iZone]->SetIntIter(config_container[val_iZone]->GetOuterIter());
+      }
 
       Iterate(output, integration_container, geometry_container,
           solver_container, numerics_container, config_container,
@@ -1233,6 +1238,11 @@ void CHeatIteration::Iterate_Block(COutput *output,
     if (steady) config_container[val_iZone]->SetExtIter(Inner_Iter);
     /*--- For unsteady flow simulations, we need to loop over IntIter for the number of time steps ---*/
     if (unsteady) config_container[val_iZone]->SetIntIter(Inner_Iter);
+    /*--- If only one internal iteration is required, the ExtIter/IntIter is the OuterIter of the block structure ---*/
+    if (nInner_Iter == 1) {
+      if (steady) config_container[val_iZone]->SetExtIter(config_container[val_iZone]->GetOuterIter());
+      if (unsteady) config_container[val_iZone]->SetIntIter(config_container[val_iZone]->GetOuterIter());
+    }
 
     Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
