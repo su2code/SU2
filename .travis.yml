@@ -84,11 +84,11 @@ before_script:
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b master https://github.com/su2code/su2code.github.io ./Tutorials
+    - git clone -b develop https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/
 
 script: 
     # Run the tests via the Python scripts
-    - python $TEST_SCRIPT
+    - travis_wait 90 python $TEST_SCRIPT

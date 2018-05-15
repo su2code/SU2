@@ -25,6 +25,9 @@
 		05E6DC6C17EB658F00FA1F7E /* output_paraview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6817EB658F00FA1F7E /* output_paraview.cpp */; };
 		05E6DC6D17EB658F00FA1F7E /* output_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6917EB658F00FA1F7E /* output_structure.cpp */; };
 		05E6DC6E17EB658F00FA1F7E /* output_tecplot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */; };
+		E9304B3C208B94E600C3E1F6 /* element_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9304B39208B94E500C3E1F6 /* element_structure.cpp */; };
+		E9304B3D208B94E600C3E1F6 /* gauss_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9304B3A208B94E500C3E1F6 /* gauss_structure.cpp */; };
+		E9304B3E208B94E600C3E1F6 /* element_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9304B3B208B94E600C3E1F6 /* element_linear.cpp */; };
 		E941BC0D1B71DC05005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */; };
 		E99D2D5B1E555FFD00C626AD /* adt_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E99D2D5A1E555FFD00C626AD /* adt_structure.cpp */; };
@@ -87,6 +90,13 @@
 		05E6DC6817EB658F00FA1F7E /* output_paraview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_paraview.cpp; path = ../../SU2_CFD/src/output_paraview.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DC6917EB658F00FA1F7E /* output_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_structure.cpp; path = ../../SU2_CFD/src/output_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_tecplot.cpp; path = ../../SU2_CFD/src/output_tecplot.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9304B39208B94E500C3E1F6 /* element_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_structure.cpp; path = ../../Common/src/element_structure.cpp; sourceTree = "<group>"; };
+		E9304B3A208B94E500C3E1F6 /* gauss_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gauss_structure.cpp; path = ../../Common/src/gauss_structure.cpp; sourceTree = "<group>"; };
+		E9304B3B208B94E600C3E1F6 /* element_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_linear.cpp; path = ../../Common/src/element_linear.cpp; sourceTree = "<group>"; };
+		E9304B3F208B950300C3E1F6 /* gauss_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gauss_structure.inl; path = ../../Common/include/gauss_structure.inl; sourceTree = "<group>"; };
+		E9304B40208B950300C3E1F6 /* element_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = element_structure.hpp; path = ../../Common/include/element_structure.hpp; sourceTree = "<group>"; };
+		E9304B41208B950300C3E1F6 /* element_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = element_structure.inl; path = ../../Common/include/element_structure.inl; sourceTree = "<group>"; };
+		E9304B42208B950300C3E1F6 /* gauss_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gauss_structure.hpp; path = ../../Common/include/gauss_structure.hpp; sourceTree = "<group>"; };
 		E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = linear_solvers_structure_b.cpp; path = ../../Common/src/linear_solvers_structure_b.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC0F1B71DC2F005C6C06 /* datatype_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = datatype_structure.inl; path = ../../Common/include/datatype_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -152,6 +162,8 @@
 				05E6DABD17EB607A00FA1F7E /* geometry_structure.hpp */,
 				05E6DABE17EB607A00FA1F7E /* grid_adaptation_structure.hpp */,
 				05E6DABF17EB607A00FA1F7E /* grid_movement_structure.hpp */,
+				E9304B40208B950300C3E1F6 /* element_structure.hpp */,
+				E9304B42208B950300C3E1F6 /* gauss_structure.hpp */,
 				05E6DAC017EB607A00FA1F7E /* linear_solvers_structure.hpp */,
 				E941BC1F1B71DC4C005C6C06 /* linear_solvers_structure_b.hpp */,
 				05E6DAC117EB607A00FA1F7E /* matrix_structure.hpp */,
@@ -176,6 +188,8 @@
 				05E6DAAA17EB605C00FA1F7E /* geometry_structure.inl */,
 				05E6DAAB17EB605C00FA1F7E /* grid_adaptation_structure.inl */,
 				05E6DAAC17EB605C00FA1F7E /* grid_movement_structure.inl */,
+				E9304B41208B950300C3E1F6 /* element_structure.inl */,
+				E9304B3F208B950300C3E1F6 /* gauss_structure.inl */,
 				05E6DAAD17EB605C00FA1F7E /* linear_solvers_structure.inl */,
 				05E6DAAE17EB605C00FA1F7E /* matrix_structure.inl */,
 				05E6DAAF17EB605C00FA1F7E /* primal_grid_structure.inl */,
@@ -204,6 +218,9 @@
 				05E6DB9D17EB61EC00FA1F7E /* geometry_structure.cpp */,
 				05E6DB9E17EB61EC00FA1F7E /* grid_adaptation_structure.cpp */,
 				05E6DB9F17EB61EC00FA1F7E /* grid_movement_structure.cpp */,
+				E9304B3B208B94E600C3E1F6 /* element_linear.cpp */,
+				E9304B39208B94E500C3E1F6 /* element_structure.cpp */,
+				E9304B3A208B94E500C3E1F6 /* gauss_structure.cpp */,
 				05E6DBA017EB61EC00FA1F7E /* linear_solvers_structure.cpp */,
 				E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */,
 				05E6DBA117EB61EC00FA1F7E /* matrix_structure.cpp */,
@@ -261,7 +278,7 @@
 		0593D53C16F2A810007C1809 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0800;
+				LastUpgradeCheck = 0910;
 				ORGANIZATIONNAME = "Francisco Palacios";
 			};
 			buildConfigurationList = 0593D53F16F2A810007C1809 /* Build configuration list for PBXProject "SU2_SOL" */;
@@ -286,6 +303,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9304B3C208B94E600C3E1F6 /* element_structure.cpp in Sources */,
 				05E6DBA417EB61EC00FA1F7E /* config_structure.cpp in Sources */,
 				05E6DBA517EB61EC00FA1F7E /* dual_grid_structure.cpp in Sources */,
 				E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */,
@@ -300,6 +318,7 @@
 				05E6DBAF17EB622100FA1F7E /* SU2_SOL.cpp in Sources */,
 				05E6DC6417EB657400FA1F7E /* solver_structure.cpp in Sources */,
 				05E6DC6617EB657B00FA1F7E /* variable_structure.cpp in Sources */,
+				E9304B3D208B94E600C3E1F6 /* gauss_structure.cpp in Sources */,
 				05E6DC6B17EB658F00FA1F7E /* output_cgns.cpp in Sources */,
 				05E6DC6C17EB658F00FA1F7E /* output_paraview.cpp in Sources */,
 				E99D2D5B1E555FFD00C626AD /* adt_structure.cpp in Sources */,
@@ -307,6 +326,7 @@
 				05E6DC6D17EB658F00FA1F7E /* output_structure.cpp in Sources */,
 				05755F0C1A54B2AF00600019 /* output_su2.cpp in Sources */,
 				05E6DC6E17EB658F00FA1F7E /* output_tecplot.cpp in Sources */,
+				E9304B3E208B94E600C3E1F6 /* element_linear.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,12 +340,18 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -364,12 +390,18 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;

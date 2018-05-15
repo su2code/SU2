@@ -2,7 +2,7 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -73,14 +73,8 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
 
   ExtraADPreaccIn();
 
-  if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
+  Density_i = V_i[nDim+2];
+  Density_j = V_j[nDim+2];
 
   q_ij = 0.0;
   if (grid_movement) {
@@ -179,11 +173,11 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
   ExtraADPreaccIn();
 
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+    AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
 
-    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
-    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
+    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
@@ -349,8 +343,8 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
   su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
 
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
   }
   else {
     Density_i = V_i[nDim+2];
@@ -518,8 +512,8 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -662,8 +656,8 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -799,8 +793,8 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -956,8 +950,8 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
   }
   else {
     Density_i = V_i[nDim+2];
@@ -1094,14 +1088,10 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+2);
-    AD::SetPreaccIn(V_j, nDim+2);
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+3);
-    AD::SetPreaccIn(V_j, nDim+3);
-  }
+
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
+  
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(su2double *val_residual,
@@ -1208,11 +1198,11 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   su2double diverg, pk, pw, zeta;
   
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+5);
+    AD::SetPreaccIn(V_i, nDim+6);
 
-    Density_i = V_i[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];
-    Eddy_Viscosity_i = V_i[nDim+4];
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
+    Eddy_Viscosity_i = V_i[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);

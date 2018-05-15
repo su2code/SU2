@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -592,8 +592,10 @@ CVertex::~CVertex() {
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
 
-  su2double vec_a[3], vec_b[3];
+  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0};
   unsigned short iDim;
+
+  assert(nDim == 3);
 
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord_Edge_CG, nDim);
