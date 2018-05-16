@@ -13516,14 +13516,17 @@ public:
 
   /*!
    * \brief Function, which computes the spatial residual for the DG discretization.
-   * \param[in] timeLevel - Time level of the time accurate local time stepping,
-                            if relevant.
-   * \param[in] config    - Definition of the particular problem.
-   * \param[in] numerics  - Description of the numerical method.
+   * \param[in] timeLevel           - Time level of the time accurate local time stepping,
+                                      if relevant.
+   * \param[in] config              - Definition of the particular problem.
+   * \param[in] numerics            - Description of the numerical method.
+   * \param[in] haloInfoNeededForBC - If true,  treat boundaries for which halo data is needed.
+                                      If false, treat boundaries for which only owned data is needed.
    */
   void Boundary_Conditions(const unsigned short timeLevel,
                            CConfig              *config,
-                           CNumerics            **numerics);
+                           CNumerics            **numerics,
+                           const bool           haloInfoNeededForBC);
 
   /*!
    * \brief Compute the spatial residual for the given range of faces. It is a virtual

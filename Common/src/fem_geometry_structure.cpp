@@ -320,6 +320,11 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
   coorIntegrationPoints = other.coorIntegrationPoints;
   gridVelocities        = other.gridVelocities;
   wallDistance          = other.wallDistance;
+
+  donorsWallFunction       = other.donorsWallFunction;
+  nIntPerWallFunctionDonor = other.nIntPerWallFunctionDonor;
+  intPerWallFunctionDonor  = other.intPerWallFunctionDonor;
+  matWallFunctionDonor     = other.matWallFunctionDonor;
 }
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
@@ -6257,11 +6262,6 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
   /*---         the local elements.                                        ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* Define the vectors to store donor elements and the parametric coordinates
-     in the donor element. */
-  vector<unsigned long> donorElements;
-  vector<su2double>     parCoorInDonor;
-
   /* Loop over the markers and select the ones for which a wall function
      treatment must be carried out. */
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
@@ -6285,6 +6285,12 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                of the solution must be taken and not of the grid. */
             const unsigned short ind  = surfElem[l].indStandardElement;
             const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+            /* Allocate the memory for the memory to store the donors and
+               the parametric weights. The donor elements are stored in an
+               unsignedLong2T, such that they can be sorted. */
+            vector<unsignedLong2T> donorElements(nInt);
+            vector<su2double>      parCoorInDonor(nInt*nDim);
 
             /* Loop over the integration points. */
             for(unsigned short i=0; i<nInt; ++i) {
@@ -6318,9 +6324,10 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                                            weightsInterpol, parCoor);
 
                 /* Store the info in donorElements and parCoorInDonor. */
-                donorElements.push_back(parElem);
+                donorElements[i].long0 = parElem;
+                donorElements[i].long1 = i;
                 for(unsigned short iDim=0; iDim<nDim; ++iDim)
-                  parCoorInDonor.push_back(parCoor[iDim]);
+                  parCoorInDonor[nDim*i+iDim] = parCoor[iDim];
               }
               else {
 
@@ -6329,6 +6336,76 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                    Print an error message and exit. */
                 SU2_MPI::Error("Exchange location not found in ADT",
                                CURRENT_FUNCTION);
+              }
+            }
+
+            /* Sort donorElements in increasing order, such that the
+               integration points with the same donor are grouped together. */
+            sort(donorElements.begin(), donorElements.end());
+
+            /* Store the donor information in the member variables of surfElem. */
+            surfElem[l].donorsWallFunction.push_back(donorElements[0].long0);
+            surfElem[l].nIntPerWallFunctionDonor.push_back(0);
+            surfElem[l].intPerWallFunctionDonor.resize(nInt);
+            surfElem[l].intPerWallFunctionDonor[0] = donorElements[0].long1;
+
+            for(unsigned short i=1; i<nInt; ++i) {
+              if(donorElements[i].long0 != surfElem[l].donorsWallFunction.back()) {
+                surfElem[l].donorsWallFunction.push_back(donorElements[i].long0);
+                surfElem[l].nIntPerWallFunctionDonor.push_back(i);
+              }
+              surfElem[l].intPerWallFunctionDonor[i] = donorElements[i].long1;
+            }
+
+            surfElem[l].nIntPerWallFunctionDonor.push_back(nInt);
+
+            /* Determine whether or not halo information is needed to apply
+               the boundary conditions for this surface. If needed, set
+               haloInfoNeededForBC of the boundary to true. As DonorsWallFunction
+               is sorted in increasing order, it suffices to check the last element. */
+            if(surfElem[l].donorsWallFunction.back() >= nVolElemOwned)
+              boundaries[iMarker].haloInfoNeededForBC = true;
+
+            /* Allocate the memory of the first index of the interpolation
+               matrices for the donordata. */
+            surfElem[l].matWallFunctionDonor.resize(surfElem[l].donorsWallFunction.size());
+
+            /* Loop over the different donors for the wall function data. */
+            for(unsigned long j=0; j<surfElem[l].donorsWallFunction.size(); ++j) {
+
+              /* Easier storage of the donor and the vector for the
+                 interpolation data for this donor. */
+              const unsigned long donor   = surfElem[l].donorsWallFunction[j];
+              vector<su2double> &matDonor = surfElem[l].matWallFunctionDonor[j];
+
+              /* Determine the number of DOFs in the donor element. Note that
+                 the standard element of the solution must be used for this
+                 purpose. */
+              const unsigned short ind   = volElem[donor].indStandardElement;
+              const unsigned short nDOFs = standardElementsSol[ind].GetNDOFs();
+
+              /* Allocate the memory for the vector used to compute the
+                 Lagrangian interpolation functions in the parametric coordinates,
+                 i.e. the interpolation weights, and for matDonor, which stores
+                 all these weights. */
+              const unsigned short nIntThisDonor = surfElem[l].nIntPerWallFunctionDonor[j+1]
+                                                 - surfElem[l].nIntPerWallFunctionDonor[j];
+              vector<su2double> lagBasis(nDOFs);
+              matDonor.reserve(nIntThisDonor*nDOFs);
+
+              /* Loop over the integration points for this donor element. */
+              for(unsigned short i=surfElem[l].nIntPerWallFunctionDonor[j];
+                                 i<surfElem[l].nIntPerWallFunctionDonor[j+1]; ++i) {
+
+                /* Determine the pointer to the parametric coordinates of the
+                   donor point of this integration point. */
+                const unsigned short ii  = surfElem[l].intPerWallFunctionDonor[i];
+                const su2double *parCoor = parCoorInDonor.data() + ii*nDim;
+
+                /* Determine the interpolation weights for this point and
+                   store it in matDonor. */
+                standardElementsSol[ind].BasisFunctionsInPoint(parCoor, lagBasis);
+                matDonor.insert(matDonor.end(), lagBasis.begin(), lagBasis.end());
               }
             }
           }
@@ -6340,15 +6417,6 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
         break;
     }
   }
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 4: Convert the parametric coordinates to interpolation        ---*/
-  /*---         weights and store these weights in the data structures to  ---*/
-  /*---         be used in the actual implementation of the wall functions.---*/
-  /*--------------------------------------------------------------------------*/
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-  SU2_MPI::Error("Conversion not implemented yet", CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
