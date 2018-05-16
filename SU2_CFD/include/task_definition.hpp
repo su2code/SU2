@@ -67,13 +67,14 @@ public:
     VOLUME_RESIDUAL                                   = 11,   /*!< \brief Compute the contribution to the residual from the volume integral. */
     SURFACE_RESIDUAL_OWNED_ELEMENTS                   = 12,   /*!< \brief Compute the contribution to the residual from the interior surface integral between owned elements. */
     SURFACE_RESIDUAL_HALO_ELEMENTS                    = 13,   /*!< \brief Compute the contribution to the residual from the interior surface integral between an owned and halo element. */
-    BOUNDARY_CONDITIONS                               = 14,   /*!< \brief Compute the contribution to the residual from the boundary conditions. */
-    SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS      = 15,   /*!< \brief Sum up all contributions to the residual for the owned elements. */
-    SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS       = 16,   /*!< \brief Sum up all contributions to the residual for the halo elements. */
-    ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS = 17,   /*!< \brief Accumlate the ADER space time residual for the owned elements. */
-    ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS  = 18,   /*!< \brief Accumlate the ADER space time residual for the halo elements. */
-    MULTIPLY_INVERSE_MASS_MATRIX                      = 19,   /*!< \brief Multiply the accumulated residual with the inverse of the mass matrix. */
-    ADER_UPDATE_SOLUTION                              = 20    /*!< \brief Update the solution for the ADER scheme. */
+    BOUNDARY_CONDITIONS_DEPEND_ON_OWNED               = 14,   /*!< \brief Compute the contribution to the residual from the boundary conditions that only depend on owned elements. */
+    BOUNDARY_CONDITIONS_DEPEND_ON_HALO                = 15,   /*!< \brief Compute the contribution to the residual from the boundary conditions that depend on halo elements. */
+    SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS      = 16,   /*!< \brief Sum up all contributions to the residual for the owned elements. */
+    SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS       = 17,   /*!< \brief Sum up all contributions to the residual for the halo elements. */
+    ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS = 18,   /*!< \brief Accumlate the ADER space time residual for the owned elements. */
+    ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS  = 19,   /*!< \brief Accumlate the ADER space time residual for the halo elements. */
+    MULTIPLY_INVERSE_MASS_MATRIX                      = 20,   /*!< \brief Multiply the accumulated residual with the inverse of the mass matrix. */
+    ADER_UPDATE_SOLUTION                              = 21    /*!< \brief Update the solution for the ADER scheme. */
   };
 
   SOLVER_TASK    task;                  /*!< \brief Task to be carried out. */
@@ -82,7 +83,7 @@ public:
   bool           secondPartTimeIntADER; /*!< \brief Whether or not this is the second part of the time interval for elements
                                                     adjacent to a lower time level. */
   unsigned short nIndMustBeCompleted;   /*!< \brief Number of relevant indices in indMustBeCompleted. */
-  int            indMustBeCompleted[4]; /*!< \brief Indices in the list of tasks that must be completed before this task can be carried out. */
+  int            indMustBeCompleted[5]; /*!< \brief Indices in the list of tasks that must be completed before this task can be carried out. */
 
   /*!
    * \brief Constructor of the class.
@@ -98,13 +99,15 @@ public:
    * \param[in] val_ind1MustBeCompleted - Completed index to be set, defaulted to -1.
    * \param[in] val_ind2MustBeCompleted - Completed index to be set, defaulted to -1.
    * \param[in] val_ind3MustBeCompleted - Completed index to be set, defaulted to -1.
+   * \param[in] val_ind4MustBeCompleted - Completed index to be set, defaulted to -1.
    */
   CTaskDefinition(SOLVER_TASK    val_task,
                   unsigned short val_timeLevel,
                   int            val_ind0MustBeCompleted = -1,
                   int            val_ind1MustBeCompleted = -1,
                   int            val_ind2MustBeCompleted = -1,
-                  int            val_ind3MustBeCompleted = -1);
+                  int            val_ind3MustBeCompleted = -1,
+                  int            val_ind4MustBeCompleted = -1);
 
   /*!
    * \brief Destructor of the class.

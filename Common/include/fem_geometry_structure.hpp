@@ -492,6 +492,15 @@ public:
   vector<su2double> wallDistance;          /*!< \brief The wall distances of the integration points
                                                        of the face. */
 
+  vector<unsigned long>  donorsWallFunction;        /*!< \brief Local element IDs of the donors for the wall
+                                                                function treatment. These donors can be halo's. */
+  vector<unsigned short> nIntPerWallFunctionDonor;  /*!< \brief The number of integration points per donor
+                                                                element for the wall function treatment. */
+  vector<unsigned short> intPerWallFunctionDonor;   /*!< \brief The integration points per donor element
+                                                                for the wall function treatment. */
+  vector<vector< su2double> > matWallFunctionDonor; /*!< \brief Matrices, which store the interpolation coefficients
+                                                                for the donors of the integration points.*/
+
   /*!
    * \brief Constructor of the class. Initialize some variables.
    */
@@ -543,7 +552,9 @@ class CBoundaryFEM {
 public:
   string markerTag;  /*!< \brief Marker tag of this boundary. */
 
-  bool periodicBoundary; /*!< \brief Whether or not this boundary is a periodic boundary. */
+  bool periodicBoundary;     /*!< \brief Whether or not this boundary is a periodic boundary. */
+  bool haloInfoNeededForBC;  /*!< \brief Whether or not information of halo elements
+                                         is needed to impose the boundary conditions. */
 
   vector<unsigned long> nSurfElem; /*!< \brief Number of surface elements per time level,
                                                cumulative storage format. */
@@ -551,7 +562,8 @@ public:
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
 
   /*!
-   * \brief Constructor of the class. Nothing to be done.
+   * \brief Constructor of the class. Set the default value for some
+            member variables.
    */
   CBoundaryFEM(void);
 
@@ -1315,7 +1327,7 @@ private:
   void HighOrderContainmentSearch(const su2double      *coor,
                                   const unsigned long  parElem,
                                   const unsigned short subElem,
-                                  const su2double      *weightsSubElem, 
+                                  const su2double      *weightsSubElem,
                                   su2double            *parCoor);
 
   /*!

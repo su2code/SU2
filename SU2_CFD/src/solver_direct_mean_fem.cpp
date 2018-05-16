@@ -1838,7 +1838,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
   /* Check whether an ADER space-time step must be carried out.
-     When only a spatial Jacobian this is false per definition.  */
+     When only a spatial Jacobian is computed this is false per definition.  */
   if( (config->GetKind_TimeIntScheme_Flow() == ADER_DG) &&
      !(config->GetJacobian_Spatial_Discretization_Only()) ) {
 
@@ -1870,9 +1870,9 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       unsigned short timeLevel = 0;
       while( !(ii%2) ) {ii/=2; ++timeLevel;}
 
-      /* Definition of the variable to store a previous indices of
+      /* Definition of the variable to store previous indices of
          tasks that must have been completed. */
-      int prevInd[4];
+      int prevInd[5];
 
       /* Carry out the predictor step of the communication elements of level 0
          if these elements are present on this rank. */
@@ -2061,6 +2061,8 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
               else {
                 prevInd[2] = prevInd[3] = -1;
               }
+
+              prevInd[4] = -1;
             }
             else {
 
@@ -2068,15 +2070,16 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
                  the previous integration point must have been completed, because
                  the solution in the work vectors is overwritten. */
               prevInd[0] = indexInList[CTaskDefinition::VOLUME_RESIDUAL][level];
-              prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level];
-              prevInd[2] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
-              prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
+              prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED][level];
+              prevInd[2] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level];
+              prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+              prevInd[4] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
             }
 
             /* Create the task. */
             indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS][level] = tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS,
-                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3]));
+                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3], prevInd[4]));
 
             /* The info on the integration point and whether or not this
                time integration corresponds to the second part for the
@@ -2129,7 +2132,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
                  the previous integration point must have been completed, because
                  the solution in the work vectors is overwritten. */
               prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
-              prevInd[1] = -1;
+              prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level];
             }
 
             /* Create the task. */
@@ -2175,6 +2178,11 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,
                                                 level, prevInd[0], prevInd[1], prevInd[2]));
 
+            /* Create the task for the boundary conditions that involve halo elements. */
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO,
+                                                level, prevInd[0], prevInd[1], prevInd[2]));
+
             /* Create the task to accumulate the surface residuals of the halo
                elements. Make sure to set the integration point for this task. */
             prevInd[0] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
@@ -2217,8 +2225,9 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             }
           }
 
-          /* Compute the contribution of the volume integral, boundary conditions and
-             surface integral between owned elements for this time level, if present. */
+          /* Compute the contribution of the volume integral, boundary conditions that only
+             involve owned elements and surface integral between owned elements for this
+             time level, if present. */
           if( nOwnedElem ) {
 
             /* Create the dependencies for this task. The shock capturing viscosity of
@@ -2236,8 +2245,8 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL, level,
                                                 prevInd[0], prevInd[1]));
 
-            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level] = tasksList.size();
-            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS, level,
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED, level,
                                                 prevInd[0], prevInd[1]));
 
             if(nMatchingInternalFacesLocalElem[level+1] >
@@ -2254,14 +2263,15 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
             /* Create the dependencies for this task. */
             prevInd[0] = indexInList[CTaskDefinition::VOLUME_RESIDUAL][level];
-            prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS][level];
-            prevInd[2] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
-            prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
+            prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED][level];
+            prevInd[1] = indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level];
+            prevInd[3] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS][level];
+            prevInd[4] = indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level];
 
             /* Create the task. */
             indexInList[CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS][level] = tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS,
-                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3]));
+                                                level, prevInd[0], prevInd[1], prevInd[2], prevInd[3], prevInd[4]));
             tasksList.back().intPointADER = intPoint;
           }
 
@@ -2355,7 +2365,8 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             case CTaskDefinition::VOLUME_RESIDUAL: cout << "VOLUME_RESIDUAL" << endl; break;
             case CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS: cout << "SURFACE_RESIDUAL_OWNED_ELEMENTS" << endl; break;
             case CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS: cout << "SURFACE_RESIDUAL_HALO_ELEMENTS" << endl; break;
-            case CTaskDefinition::BOUNDARY_CONDITIONS: cout << "BOUNDARY_CONDITIONS" << endl; break;
+            case CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED: cout << "BOUNDARY_CONDITIONS_DEPEND_ON_OWNED" << endl; break;
+            case CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO: cout << "BOUNDARY_CONDITIONS_DEPEND_ON_HALO" << endl; break;
             case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS: cout << "SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS" << endl; break;
             case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS: cout << "SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS" << endl; break;
             case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS: cout << "ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS" << endl; break;
@@ -2393,19 +2404,20 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
     /* relatively short tasks list, which can be set easily.                  */
     /*------------------------------------------------------------------------*/
 
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION,                   0));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS,     0));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL,                              0,  1));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION,                   0,  0));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS,      0,  3));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,               0,  1, 4));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS,  0,  5));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,           0,  6));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,              0,  1));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS,                          0,  1));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,           0,  2, 7));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS, 0,  2, 8, 9, 10));
-    tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,                 0, 11));
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_MPI_COMMUNICATION,                   0));                   // Task  0
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS,     0));                   // Task  1
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::VOLUME_RESIDUAL,                              0,  1));               // Task  2
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_MPI_COMMUNICATION,                   0,  0));               // Task  3
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS,      0,  3));               // Task  4
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,               0,  1, 4));            // Task  5
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO,           0,  1, 3));            // Task  6
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS,  0,  5));               // Task  7
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION,           0,  7));               // Task  8
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS,              0,  1));               // Task  9
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED,          0,  1));               // Task 10
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION,           0,  2, 8));            // Task 11
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS, 0,  2, 6, 9, 10, 11)); // Task 12
+    tasksList.push_back(CTaskDefinition(CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX,                 0, 12));               // Task 13
   }
 }
 
@@ -4091,11 +4103,23 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               break;
             }
 
-            case CTaskDefinition::BOUNDARY_CONDITIONS: {
+            case CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED: {
 
-              /*--- Apply the boundary conditions ---*/
+              /*--- Apply the boundary conditions that only depend on data
+                    of owned elements. ---*/
               config->Tick(&tick);
-              Boundary_Conditions(tasksList[i].timeLevel, config, numerics);
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, false);
+              config->Tock(tick,"Boundary_Conditions",3);
+              taskCarriedOut = taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO: {
+
+              /*--- Apply the boundary conditions that also depend on data
+                    of halo elements. ---*/
+              config->Tick(&tick);
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, true);
               config->Tock(tick,"Boundary_Conditions",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -5931,68 +5955,73 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
 void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
                                               CConfig              *config,
-                                              CNumerics            **numerics){
+                                              CNumerics            **numerics,
+                                              const bool           haloInfoNeededForBC){
 
   /* Loop over all boundaries. */
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /* Determine the range of faces for this time level and test if any
-       surface element for this marker must be treated at all. */
-    const unsigned long surfElemBeg = boundaries[iMarker].nSurfElem[timeLevel];
-    const unsigned long surfElemEnd = boundaries[iMarker].nSurfElem[timeLevel+1];
+    /* Check if this boundary marker must be treated at all. */
+    if(boundaries[iMarker].haloInfoNeededForBC == haloInfoNeededForBC) {
 
-    if(surfElemEnd > surfElemBeg) {
+      /* Determine the range of faces for this time level and test if any
+         surface element for this marker must be treated at all. */
+      const unsigned long surfElemBeg = boundaries[iMarker].nSurfElem[timeLevel];
+      const unsigned long surfElemEnd = boundaries[iMarker].nSurfElem[timeLevel+1];
 
-      /* Set the starting position in the vector for the face residuals for
-         this boundary marker and time level and set the pointer to the boundary
-         faces for this boundary marker. */
-      su2double *resFaces = VecResFaces.data()
-                          + nVar*startLocResFacesMarkers[iMarker][timeLevel];
+      if(surfElemEnd > surfElemBeg) {
 
-      const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+        /* Set the starting position in the vector for the face residuals for
+           this boundary marker and time level and set the pointer to the boundary
+           faces for this boundary marker. */
+        su2double *resFaces = VecResFaces.data()
+                            + nVar*startLocResFacesMarkers[iMarker][timeLevel];
 
-      /* Apply the appropriate boundary condition. */
-      switch (config->GetMarker_All_KindBC(iMarker)) {
-        case EULER_WALL:
-          BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                        numerics[CONV_BOUND_TERM]);
-          break;
-        case FAR_FIELD:
-          BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                       numerics[CONV_BOUND_TERM]);
-          break;
-        case SYMMETRY_PLANE:
-          BC_Sym_Plane(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                       numerics[CONV_BOUND_TERM]);
-          break;
-        case INLET_FLOW:
-          BC_Inlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                   numerics[CONV_BOUND_TERM], iMarker);
-          break;
-        case OUTLET_FLOW:
-          BC_Outlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                    numerics[CONV_BOUND_TERM], iMarker);
-          break;
-        case ISOTHERMAL:
-          BC_Isothermal_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                             numerics[CONV_BOUND_TERM], iMarker);
-          break;
-        case HEAT_FLUX:
-          BC_HeatFlux_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                           numerics[CONV_BOUND_TERM], iMarker);
-          break;
-        case RIEMANN_BOUNDARY:
-          BC_Riemann(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+        const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+
+        /* Apply the appropriate boundary condition. */
+        switch (config->GetMarker_All_KindBC(iMarker)) {
+          case EULER_WALL:
+            BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                          numerics[CONV_BOUND_TERM]);
+            break;
+          case FAR_FIELD:
+            BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                         numerics[CONV_BOUND_TERM]);
+            break;
+          case SYMMETRY_PLANE:
+            BC_Sym_Plane(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                         numerics[CONV_BOUND_TERM]);
+            break;
+          case INLET_FLOW:
+            BC_Inlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
                      numerics[CONV_BOUND_TERM], iMarker);
-          break;
-        case CUSTOM_BOUNDARY:
-          BC_Custom(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                    numerics[CONV_BOUND_TERM]);
-          break;
-        case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
-          break;
-        default:
-          SU2_MPI::Error("BC not implemented.", CURRENT_FUNCTION);
+            break;
+          case OUTLET_FLOW:
+            BC_Outlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                      numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case ISOTHERMAL:
+            BC_Isothermal_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                               numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case HEAT_FLUX:
+            BC_HeatFlux_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                             numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case RIEMANN_BOUNDARY:
+            BC_Riemann(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                       numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case CUSTOM_BOUNDARY:
+            BC_Custom(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                      numerics[CONV_BOUND_TERM]);
+            break;
+          case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+            break;
+          default:
+            SU2_MPI::Error("BC not implemented.", CURRENT_FUNCTION);
+        }
       }
     }
   }
@@ -11496,7 +11525,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
   config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_1",
                     nInt*4, NPad, nDOFs);
 
-  /* Compute the second derivatives w.r.t. the parametric coordinates 
+  /* Compute the second derivatives w.r.t. the parametric coordinates
      in the integration points. */
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*6, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
