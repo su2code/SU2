@@ -50,9 +50,6 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
 }
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
-  
-  bool fsi     = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   unsigned short iVar, iDim;
 
@@ -69,21 +66,6 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nVertex = new unsigned long[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
-  
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi || multizone){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
-  }
 
 
 }
@@ -1221,6 +1203,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
+  bool multizone = config->GetMultizone_Problem();
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
@@ -1320,6 +1304,21 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         Cvector[iVar] = new su2double [nDim];
     }
     
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (multizone){
+      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
+      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+      /*--- Define some structures for locating max residuals ---*/
+
+      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_Coord_BGS = new su2double*[nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      }
+    }
+
   }
   
   /*--- Initialize lower and upper limits---*/
@@ -3222,6 +3221,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
+
+  bool multizone = config->GetMultizone_Problem();
   
   /*--- Array initialization ---*/
   
@@ -3303,6 +3304,22 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (multizone){
+      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
+      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+      /*--- Define some structures for locating max residuals ---*/
+
+      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_Coord_BGS = new su2double*[nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      }
+    }
+
   }
   
   /*--- Computation of gradients by least squares ---*/
