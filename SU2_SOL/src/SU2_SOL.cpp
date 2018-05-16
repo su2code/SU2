@@ -361,7 +361,8 @@ int main(int argc, char *argv[]) {
                 cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
               output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
                 
-                
+      
+                //if (config_container[ZONE_0]->GetMesh_Interp()) {
 #ifdef HAVE_MPI
                 {
                     StartTime_interp = MPI_Wtime();
@@ -370,7 +371,7 @@ int main(int argc, char *argv[]) {
                 StartTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
                 
-                output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0],MeshInterp_Location);
+                    output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0],MeshInterp_Location);
                 
 #ifdef HAVE_MPI
                 {
@@ -388,8 +389,8 @@ int main(int argc, char *argv[]) {
                 
                 cout << "Writing volume solution for inteprolated mesh in rank.. " << rank << endl;
                 output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, iExtIter, nZone);
-                
-            }
+                }
+            //}
 
         iExtIter++;
         if (StopCalc) break;
@@ -497,7 +498,7 @@ int main(int argc, char *argv[]) {
       cout << "entering Solution interpolation " << endl;
         
         
-        
+        //if (config_container[ZONE_0]->GetMesh_Interp()){
 #ifdef HAVE_MPI
     {
         //MPI_Barrier(MPI_COMM_WORLD);
@@ -506,8 +507,8 @@ int main(int argc, char *argv[]) {
 #else
         StartTime_interp = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-        
-      output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0], MeshInterp_Location);
+      
+          output->Solution_Interpolation(solver_container, geometry_container[ZONE_0], config_container[ZONE_0],solver_container_interp, geometry_container_interp[ZONE_0], config_container_interp[ZONE_0], MeshInterp_Location);
 
 #ifdef HAVE_MPI
     {
@@ -525,6 +526,7 @@ int main(int argc, char *argv[]) {
       
       cout << "Writing volume solution for inteprolated mesh in rank.. " << rank << endl;
       output->SetBaselineResult_Files(solver_container_interp, geometry_container_interp, config_container_interp, 0, nZone);
+        //}
     }
     
       /* Probing */

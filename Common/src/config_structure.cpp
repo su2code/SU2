@@ -1175,7 +1175,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
-  /* DESCRIPTION:  Mesh input file */
+  addEnumOption("INTERPMESH_FORMAT", InterpMesh_FileFormat, Input_Map, SU2);
+    /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   /*!\brief INTERP_MESH
   * \n DESCRIPTION: Check if solution needs to be interpolated to another mesh

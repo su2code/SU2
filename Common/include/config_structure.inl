@@ -1097,6 +1097,7 @@ inline string CConfig::GetInterpMesh_FileName(void) { return Mesh_interp_FileNam
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
+inline unsigned short CConfig::GetInterpMesh_FileFormat(void) { return InterpMesh_FileFormat; }
 
 inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
 

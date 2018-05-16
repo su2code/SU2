@@ -736,7 +736,7 @@ bool CGeometry::IsPointInsideFace_3D(su2double *q,su2double **p,short n){
     //cout << " AngleSUm  = " << anglesum*360/TWOPI << endl;
     if (abs(anglesum*360/TWOPI - 360) < EPSILON_ang)
         Inside = true;
-    cout << "Checking Is point inside face - angle diff = " << abs(anglesum*360/TWOPI - 360) << endl;
+    //cout << "Checking Is point inside face - angle diff = " << abs(anglesum*360/TWOPI - 360) << endl;
     return Inside;
 }
 
@@ -1507,6 +1507,12 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   string val_mesh_filename  = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
+    if (val_mesh_filename == config->GetInterpMesh_FileName()){
+        val_format = config->GetInterpMesh_FileFormat();
+        cout << "File format for interpolated msh is " << val_format << endl;
+    }
+    else
+        cout << "File format for reference msh is " << val_format << endl;
 
   /*--- Initialize counters for local/global points & elements ---*/
   
