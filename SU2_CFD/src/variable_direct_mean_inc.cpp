@@ -201,6 +201,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution_BGS_k[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
     }
+    Solution_BGS_k[nDim+1] = val_temperature;
   }
 
 }
