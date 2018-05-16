@@ -2517,6 +2517,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         /*--- All other cases are handled in the specific solver ---*/
         break;
       }
+    Multizone_Problem = true;
   }
   else{
     Multizone_Problem = false;
