@@ -37,7 +37,7 @@ inline CTaskDefinition::CTaskDefinition(void) {
   task                = NO_TASK;
   timeLevel           = 0;
   nIndMustBeCompleted = 0;
-  for(int i=0; i<4; ++i) indMustBeCompleted[i] = -1;
+  for(int i=0; i<5; ++i) indMustBeCompleted[i] = -1;
 
   intPointADER = 0;
   secondPartTimeIntADER = false;
@@ -48,7 +48,8 @@ inline CTaskDefinition::CTaskDefinition(SOLVER_TASK    val_task,
                                         int            val_ind0MustBeCompleted,
                                         int            val_ind1MustBeCompleted,
                                         int            val_ind2MustBeCompleted,
-                                        int            val_ind3MustBeCompleted) {
+                                        int            val_ind3MustBeCompleted,
+                                        int            val_ind4MustBeCompleted) {
 
   /* Copy the data from the arguments. */
   task                  = val_task;
@@ -57,12 +58,13 @@ inline CTaskDefinition::CTaskDefinition(SOLVER_TASK    val_task,
   indMustBeCompleted[1] = val_ind1MustBeCompleted;
   indMustBeCompleted[2] = val_ind2MustBeCompleted;
   indMustBeCompleted[3] = val_ind3MustBeCompleted;
+  indMustBeCompleted[4] = val_ind4MustBeCompleted;
 
   /* Make sure that the -1 values are numbered last. */
-  sort(indMustBeCompleted, indMustBeCompleted+4, greater<int>());
+  sort(indMustBeCompleted, indMustBeCompleted+5, greater<int>());
 
   /* Determine the actual number of tasks that must be completed. */
-  for(nIndMustBeCompleted=0; nIndMustBeCompleted<4; ++nIndMustBeCompleted) {
+  for(nIndMustBeCompleted=0; nIndMustBeCompleted<5; ++nIndMustBeCompleted) {
     if(indMustBeCompleted[nIndMustBeCompleted] < 0) break;
   }
 
@@ -84,6 +86,6 @@ inline void CTaskDefinition::Copy(const CTaskDefinition &other) {
   secondPartTimeIntADER = other.secondPartTimeIntADER;
   nIndMustBeCompleted   = other.nIndMustBeCompleted;
 
-  for(int i=0; i<4; ++i)
+  for(int i=0; i<5; ++i)
     indMustBeCompleted[i] = other.indMustBeCompleted[i];
 }

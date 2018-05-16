@@ -894,6 +894,15 @@ public:
   FEMStandardElementClass& operator=(const FEMStandardElementClass &other);
 
   /*!
+  * \brief Function, which computes the Lagrangian basis functions for the
+           given parametric coordinates.
+  * \param[in]  parCoor   - Parametric coordinates for which the basis functions
+                            and derivatives must be computed.
+  * \param[out] lagBasis  - The values of the Lagrangian basis functions in parCoor.
+  */
+  void BasisFunctionsInPoint(const su2double   *parCoor,
+                             vector<su2double> &lagBasis);
+  /*!
   * \brief Function, which computes the Lagrangian basis functions and its
            derivatives for the given parametric coordinates.
   * \param[in]  parCoor   - Parametric coordinates for which the basis functions

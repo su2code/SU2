@@ -2082,6 +2082,69 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   }
 }
 
+void FEMStandardElementClass::BasisFunctionsInPoint(const su2double   *parCoor,
+                                                    vector<su2double> &lagBasis) {
+
+  /* Determine the number of parametric dimensions, depending on the
+     element type. */
+  unsigned short nDimPar = 0;
+  switch(VTK_Type) {
+    case LINE:          nDimPar = 1; break;
+    case TRIANGLE:
+    case QUADRILATERAL: nDimPar = 2; break;
+    case TETRAHEDRON:
+    case PYRAMID:
+    case PRISM:
+    case HEXAHEDRON:    nDimPar = 3; break;
+  }
+
+  /* Allocate the memory for the help vectors for computing the Vandermonde
+     matrix. */
+  vector<vector<su2double> > rPoints(nDimPar, vector<su2double>(1));
+  vector<su2double> V(nDOFs);
+
+  /* Copy the parametric coordinates in rPoints, such that the functions to
+     compute the Vandermonde matrices can be used. */
+  for(unsigned long i=0; i<rPoints.size(); ++i)
+    rPoints[i][0] = parCoor[i];
+
+  /* Determine the element type and call the appropriate function to compute
+     the Vandermonde matrix. */
+  switch(VTK_Type) {
+    case LINE:
+      Vandermonde1D(nDOFs, rPoints[0], V);
+      break;
+
+    case TRIANGLE:
+      Vandermonde2D_Triangle(nPoly, nDOFs, rPoints[0], rPoints[1], V);
+      break;
+
+    case QUADRILATERAL:
+      Vandermonde2D_Quadrilateral(nPoly, nDOFs, rPoints[0], rPoints[1], V);
+      break;
+
+    case TETRAHEDRON:
+      Vandermonde3D_Tetrahedron(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      break;
+
+    case PYRAMID:
+      Vandermonde3D_Pyramid(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      break;
+
+    case PRISM:
+      Vandermonde3D_Prism(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      break;
+
+    case HEXAHEDRON:
+      Vandermonde3D_Hexahedron(nPoly, nDOFs, rPoints[0], rPoints[1], rPoints[2], V);
+      break;
+  }
+
+  /* Carry out the matrix multiplication to obtain the values of the Lagrangian
+     basis functions in the given parametric coordinate. */
+  MatMulRowMajor(nDOFs, 1, V, matVandermondeInv, lagBasis);
+}
+
 void FEMStandardElementClass::BasisFunctionsAndDerivativesInPoint(
                                            const su2double            *parCoor,
                                            vector<su2double>          &lagBasis,
