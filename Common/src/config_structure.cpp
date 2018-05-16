@@ -2518,6 +2518,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       }
   }
+  else{
+    Multizone_Problem = false;
+  }
 
 
   if(Kind_Solver == HEAT_EQUATION_FVM) {
