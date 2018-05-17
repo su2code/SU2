@@ -738,7 +738,7 @@ private:
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
-  ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
+  Beta_Factor,			/*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,     /*!< \brief Specific gas constant. */
   Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
@@ -1001,7 +1001,7 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
-  su2double Max_Beta; /*!< \brief Maximum Beta parameter (incompressible preconditioning) in the domain */
+  su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1546,10 +1546,10 @@ public:
   su2double GetBulk_Modulus(void);
   
   /*!
-   * \brief Get the artificial compresibility factor.
-   * \return Value of the artificial compresibility factor.
+   * \brief Get the epsilon^2 multiplier for Beta in the incompressible preconditioner.
+   * \return Value of the epsilon^2 multiplier for Beta in the incompressible preconditioner.
    */
-  su2double GetArtComp_Factor(void);
+  su2double GetBeta_Factor(void);
   
   /*!
    * \brief Get the value of specific gas constant.
@@ -8325,16 +8325,16 @@ public:
   bool GetAD_Mode(void);
 
   /*!
-   * \brief Set the maximum Beta parameter (artificial compressibility) in the domain.
-   * \param[in] Value of the max Beta parameter (artificial compressibility).
+   * \brief Set the maximum velocity^2 in the domain for the incompressible preconditioner.
+   * \param[in] Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
-  void SetMax_Beta(su2double val_maxBeta);
+  void SetMax_Vel2(su2double val_max_vel2);
 
   /*!
-   * \brief Get the maximum Beta parameter (artificial compressibility) in the domain.
-   * \return Value of the max Beta parameter (artificial compressibility) in the domain.
+   * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.
+   * \return Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
-  su2double GetMax_Beta(void);
+  su2double GetMax_Vel2(void);
 
   /*!
    * \brief Get the frequency for writing the surface solution file in Dual Time.

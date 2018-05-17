@@ -443,7 +443,7 @@ inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[
 
 inline su2double CConfig::GetBulk_Modulus(void) { return Bulk_Modulus; }
 
-inline su2double CConfig::GetArtComp_Factor(void) { return ArtComp_Factor; }
+inline su2double CConfig::GetBeta_Factor(void) { return Beta_Factor; }
 
 inline su2double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 
@@ -1858,9 +1858,9 @@ inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
-inline void CConfig::SetMax_Beta(su2double val_Max_Beta) { Max_Beta = val_Max_Beta; }
+inline void CConfig::SetMax_Vel2(su2double val_max_vel2) { Max_Vel2 = val_max_vel2; }
 
-inline su2double CConfig::GetMax_Beta(void) { return Max_Beta; }
+inline su2double CConfig::GetMax_Vel2(void) { return Max_Vel2; }
 
 inline unsigned long CConfig::GetWrt_Surf_Freq_DualTime(void) { return Wrt_Surf_Freq_DualTime; }
 

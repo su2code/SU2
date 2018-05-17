@@ -7999,7 +7999,7 @@ public:
   void SetFreeStream_Solution(CConfig *config);
 
   /*!
-   * \brief Update the artificial compressibility parameter.
+   * \brief Update the Beta parameter for the incompressible preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
