@@ -1608,8 +1608,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
-  /* DESCRIPTION:  */
-  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 
   /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
   /*--- Options related to grid adaptation ---*/
@@ -1718,6 +1716,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
+  /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
+  addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -2183,6 +2183,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
           if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
           if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
+          if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
           errorString.append(newString);
           err_count++;
         continue;
@@ -4324,7 +4325,21 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
         Marker_CfgFile_DV[iMarker_CfgFile] = YES;
   }
-
+  
+  /*--- Add an extra check for DV_MARKER to make sure that any given marker
+   name is recognized as an existing boundary in the problem. ---*/
+  
+  unsigned short markerCount = 0;
+  for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
+        markerCount++;
+    }
+  }
+  if ((nMarker_DV > 0) && (markerCount != nMarker_DV)) {
+    SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+  }
+  
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Moving[iMarker_CfgFile] = NO;
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
@@ -4714,6 +4729,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       if ((Design_Variable[iDV] != NO_DEFORMATION) &&
           (Design_Variable[iDV] != FFD_SETTING) &&
+          (Design_Variable[iDV] != SCALE_GRID) &&
+          (Design_Variable[iDV] != TRANSLATE_GRID) &&
+          (Design_Variable[iDV] != ROTATE_GRID) &&
           (Design_Variable[iDV] != SURFACE_FILE)) {
         
         if (iDV == 0)
@@ -4813,6 +4831,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       else if (Design_Variable[iDV] == NO_DEFORMATION) {
         cout << "No deformation of the numerical grid. Just output .su2 file." << endl;
+      }
+      
+      else if (Design_Variable[iDV] == SCALE_GRID) {
+        nParamDV = 0;
+        cout << "Scaling of the volume grid by a constant factor." << endl;
+      }
+      
+      else if (Design_Variable[iDV] == TRANSLATE_GRID) {
+        nParamDV = 3;
+        cout << "Rigid translation of the volume grid." << endl;
+      }
+      
+      else if (Design_Variable[iDV] == ROTATE_GRID) {
+        nParamDV = 6;
+        cout << "Rigid rotation of the volume grid." << endl;
       }
 
       else if (Design_Variable[iDV] == FFD_SETTING) {
