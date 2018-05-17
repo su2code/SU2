@@ -488,6 +488,13 @@ public:
   void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_AuxVar_Gradient(CGeometry *geometry, CConfig *config);
+  
+  /*!
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    */

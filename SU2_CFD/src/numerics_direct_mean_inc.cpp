@@ -949,7 +949,7 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
   if (Coord_i[1] > EPS) {
 
-    yinv          = 1.0/Coord_i[1];
+    yinv = 1.0/Coord_i[1];
 
     /*--- Set primitive variables at points iPoint. ---*/
 
@@ -962,7 +962,6 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
-
 
     /*--- Inviscid component of the source term. ---*/
 
@@ -1003,17 +1002,15 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
     if (viscous) {
 
-
       Laminar_Viscosity_i    = V_i[nDim+4];
       Eddy_Viscosity_i       = V_i[nDim+5];
       Thermal_Conductivity_i = V_i[nDim+6];
 
-      //unsigned short iVar, iDim, jDim;
       su2double total_viscosity, div_vel;
 
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
 
-      /*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
+      /*--- The full stress tensor is needed for variable density ---*/
 
       div_vel = 0.0;
       for (iDim = 0 ; iDim < nDim; iDim++)
@@ -1029,11 +1026,10 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
       val_residual[0] -= 0.0;
       val_residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0]);
-      val_residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[1][1] -
+      val_residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
                                  yinv*yinv*2.0*total_viscosity*Velocity_i[1] -
                                  TWO3*AuxVar_Grad_i[1]);
       val_residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
-
 
     }
     
