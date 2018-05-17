@@ -4926,8 +4926,6 @@ public:
  * \author F. Palacios
  */
 class CSourceGravity : public CNumerics {
-  su2double Froude;
-  bool compressible, incompressible;
   
 public:
   
@@ -4959,7 +4957,6 @@ public:
  */
 class CSourceBodyForce : public CNumerics {
   su2double *Body_Force_Vector;
-  bool compressible;
 
 public:
 
