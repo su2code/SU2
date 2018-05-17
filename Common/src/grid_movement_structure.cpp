@@ -3012,31 +3012,33 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
      markers that are specified as part of the motion. ---*/
     if (Surface_File.fail()) {
       
-      if (rank == MASTER_NODE)
-        cout << "No surface file found. Writing a new file: " << filename << "." << endl;
-      
-      Surface_File.open(filename.c_str(), ios::out);
-      Surface_File.precision(15);
-      unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
-            Coords = geometry->node[jPoint]->GetCoord();
-            Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
-            if (geometry->GetnDim() == 2) Surface_File << endl;
-            else Surface_File << "\t" << Coords[2] << endl;
+      if (rank == MASTER_NODE && size == SINGLE_NODE) {
+        cout << "No surface positions file found. Writing a template file: " << filename << "." << endl;
+        
+        Surface_File.open(filename.c_str(), ios::out);
+        Surface_File.precision(15);
+        unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_DV(iMarker) == YES) {
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
+              Coords = geometry->node[jPoint]->GetCoord();
+              Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
+              if (geometry->GetnDim() == 2) Surface_File << endl;
+              else Surface_File << "\t" << Coords[2] << endl;
+            }
           }
         }
+        Surface_File.close();
+        
+      } else {
+        SU2_MPI::Error("No surface positions file found and template writing not yet supported in parallel.\n To generate a template surface positions file, run SU2_DEF again in serial.", CURRENT_FUNCTION);
       }
-      Surface_File.close();
-      
-      /*--- A surface file exists, so read in the coordinates ---*/
-      
     }
     
     else {
+      /*--- A surface file exists, so read in the coordinates ---*/
       Surface_File.close();
       if (rank == MASTER_NODE) cout << "Updating the surface coordinates from the input file." << endl;
       SetExternal_Deformation(geometry, config, ZONE_0, 0);
