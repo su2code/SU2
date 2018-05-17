@@ -1495,13 +1495,16 @@ enum ENUM_PARAM {
   AIRFOIL = 20,		           /*!< \brief Airfoil definition as design variables. */
   CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
-  SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 23,		     /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   DV_EFIELD = 30,            /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 31,
   DV_POISSON = 32,
   DV_RHO = 33,
   DV_RHO_DL = 34,
+  TRANSLATE_GRID = 35,       /*!< \brief Translate the volume grid. */
+  ROTATE_GRID = 36,          /*!< \brief Rotate the volume grid */
+  SCALE_GRID = 37,           /*!< \brief Scale the volume grid. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1538,6 +1541,9 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("POISSON_RATIO", DV_POISSON)
 ("STRUCTURAL_DENSITY", DV_RHO)
 ("DEAD_WEIGHT", DV_RHO_DL)
+("TRANSLATE_GRID", TRANSLATE_GRID)
+("ROTATE_GRID", ROTATE_GRID)
+("SCALE_GRID", SCALE_GRID)
 ;
 
 
@@ -2542,6 +2548,9 @@ public:
         case DV_POISSON:           nParamDV = 0; break;
         case DV_RHO:               nParamDV = 0; break;
         case DV_RHO_DL:            nParamDV = 0; break;
+        case SCALE_GRID:           nParamDV = 0; break;
+        case TRANSLATE_GRID:       nParamDV = 3; break;
+        case ROTATE_GRID:          nParamDV = 6; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2675,6 +2684,13 @@ public:
 
       for (unsigned short iValueDV = 0; iValueDV < nValueDV; iValueDV++) {
 
+        if (i >= option_value.size()) {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": DV_VALUE does not contain enough entries to match DV_KIND or DV_PARAM.");
+          return newstring;
+        }
+        
         ss << option_value[i] << " ";
 
         ss >> this->valueDV[iDV][iValueDV];

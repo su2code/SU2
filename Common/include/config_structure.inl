@@ -1604,7 +1604,7 @@ inline su2double CConfig::GetCyclic_Pitch(void) { return Cyclic_Pitch; }
 
 inline su2double CConfig::GetCollective_Pitch(void) { return Collective_Pitch; }
 
-inline string CConfig::GetMotion_FileName(void) { return Motion_Filename; }
+inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
