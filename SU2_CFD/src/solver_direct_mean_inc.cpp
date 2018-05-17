@@ -4928,42 +4928,44 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh) {
   
-  su2double ArtComp_Factor  = config->GetArtComp_Factor();
-  su2double ArtComp_Default = 4.1;
-  su2double maxVel2 = 0.0, epsilon = 1e-10;
+  su2double epsilon2  = config->GetBeta_Factor();
+  su2double epsilon2_default = 4.1;
+  su2double maxVel2 = 0.0;
   su2double Beta = 1.0;
 
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
- 
-    /*--- Store the local maximum of the squared velocity in the field. ---*/
-
-    if (node[iPoint]->GetVelocity2() > maxVel2)
-      maxVel2 = node[iPoint]->GetVelocity2();
-
-  }
-
-  /*--- Communicate the max globally to give a conservative estimate. ---*/
-
-#ifdef HAVE_MPI
-  su2double myMaxVel2 = maxVel2; maxVel2 = 0.0;
-  SU2_MPI::Allreduce(&myMaxVel2, &maxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
-
-  /*--- Only the finest mesh level should store the value for all levels. ---*/
-
+  /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
+  
   if (iMesh == MESH_0) {
-    Beta = max(epsilon,maxVel2);
-    config->SetMax_Beta(Beta);
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      
+      /*--- Store the local maximum of the squared velocity in the field. ---*/
+      
+      if (node[iPoint]->GetVelocity2() > maxVel2)
+        maxVel2 = node[iPoint]->GetVelocity2();
+      
+    }
+    
+    /*--- Communicate the max globally to give a conservative estimate. ---*/
+    
+#ifdef HAVE_MPI
+    su2double myMaxVel2 = maxVel2; maxVel2 = 0.0;
+    SU2_MPI::Allreduce(&myMaxVel2, &maxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+    
+    Beta = max(1e-10,maxVel2);
+    config->SetMax_Vel2(Beta);
+    
   }
 
-  /*--- Allow an override if user supplies a large Beta factor. ---*/
+  /*--- Allow an override if user supplies a large epsilon^2. ---*/
 
-  ArtComp_Factor = max(ArtComp_Default,ArtComp_Factor);
+  epsilon2 = max(epsilon2_default,epsilon2);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetBetaInc2(ArtComp_Factor*config->GetMax_Beta());
+    node[iPoint]->SetBetaInc2(epsilon2*config->GetMax_Vel2());
 
 }
 

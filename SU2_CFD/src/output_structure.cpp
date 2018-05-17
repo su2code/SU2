@@ -6980,7 +6980,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       Breakdown_file << "Bulk modulus: " << config[val_iZone]->GetBulk_Modulus();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-      Breakdown_file << "Artificial compressibility factor: " << config[val_iZone]->GetArtComp_Factor();
+      Breakdown_file << "Epsilon^2 multiplier of Beta for incompressible preconditioner: " << config[val_iZone]->GetBeta_Factor();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
     }
