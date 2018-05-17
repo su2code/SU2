@@ -249,6 +249,8 @@ inline void CVariable::SetSensor(su2double val_sensor, unsigned short val_iSpeci
 
 inline su2double CVariable::GetDensity(void) {  return 0; }
 
+inline su2double CVariable::GetDensity_Old(void) {  return 0; }
+
 inline su2double CVariable::GetDensity(unsigned short val_iSpecies) {  return 0; }
 
 inline su2double CVariable::GetEnergy(void) { return 0; }
@@ -942,6 +944,8 @@ inline void CAdjNSVariable::SetVelSolutionDVector(void) { for (unsigned short iD
 
 inline su2double CIncEulerVariable::GetDensity(void) { return Primitive[nDim+2]; }
 
+inline su2double CIncEulerVariable::GetDensity_Old(void) { return Density_Old; }
+
 inline su2double CIncEulerVariable::GetBetaInc2(void) { return Primitive[nDim+3]; }
 
 inline su2double CIncEulerVariable::GetPressure(void) { return Primitive[0]; }
@@ -1007,18 +1011,6 @@ inline void CIncEulerVariable::SetLimiter_Primitive(unsigned short val_var, su2d
 inline su2double **CIncEulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
 
 inline su2double *CIncEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
-
-inline void CIncEulerVariable::SetWindGust( su2double* val_WindGust) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    WindGust[iDim] = val_WindGust[iDim];}
-
-inline su2double* CIncEulerVariable::GetWindGust() { return WindGust;}
-
-inline void CIncEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
-  for (unsigned short iDim = 0; iDim < nDim+1; iDim++)
-    WindGustDer[iDim] = val_WindGustDer[iDim];}
-
-inline su2double* CIncEulerVariable::GetWindGustDer() { return WindGustDer;}
 
 inline void CIncEulerVariable::SetSpecificHeatCp(su2double val_Cp) {
   Primitive[nDim+7] = val_Cp;

@@ -4735,7 +4735,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
 
     su2double Total_Sens_BPressure = 0.0;
-    su2double Total_Sens_Density = 0.0;
     su2double Total_Sens_ModVel = 0.0;
 
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
@@ -5026,7 +5025,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_Press     = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp      = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
           Total_Sens_BPressure = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
-          Total_Sens_Density   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Density();
           Total_Sens_ModVel    = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_ModVel();
 
           /*--- Adjoint flow residuals ---*/
@@ -6324,15 +6322,15 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned long ExtIter = config[val_iZone]->GetExtIter();
-  unsigned short nVar;
+  unsigned short nVar = 1;
 
   bool energy = config[val_iZone]->GetEnergy_Equation();
   bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
 
   switch( config[val_iZone]->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES : case RANS:
-      nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
       if (energy) {
+        nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
         RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
       }
       else if (weakly_coupled_heat) {
@@ -6395,17 +6393,20 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   }
 
   switch( config[val_iZone]->GetKind_Solver()) {
-  case EULER : case NAVIER_STOKES : case RANS:
-    if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-    else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    else RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-    break;
-  case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-    break;
-  case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    break;
+    case EULER : case NAVIER_STOKES : case RANS:
+      if (energy) {
+        nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
+        RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
+      }
+      else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+      else RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+      break;
+    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
+      RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+      break;
+    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+      RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+      break;
   }
   
 }
@@ -12397,13 +12398,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
-
-  bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
-
+  
   int *Local_Halo = NULL;
   
   stringstream varname;
@@ -12461,23 +12460,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   nVar_Par += nVar_Consv_Par;
   
-  /*--- For now, leave the names as "Conservative_", etc., in order
-   to avoid confusion with the serial version, which still prints these
-   names. Names can be set alternatively by using the commented code
-   below. ---*/
+  Variable_Names.push_back("Density");
+  Variable_Names.push_back("X-Momentum");
+  Variable_Names.push_back("Y-Momentum");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  Variable_Names.push_back("Energy");
   
-  if (incompressible) {
-    Variable_Names.push_back("Pressure");
-    Variable_Names.push_back("X-Momentum");
-    Variable_Names.push_back("Y-Momentum");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-  } else {
-    Variable_Names.push_back("Density");
-    Variable_Names.push_back("X-Momentum");
-    Variable_Names.push_back("Y-Momentum");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-    Variable_Names.push_back("Energy");
-  }
   if (SecondIndex != NONE) {
     if (config->GetKind_Turb_Model() == SST) {
       Variable_Names.push_back("TKE");
@@ -12487,7 +12475,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Nu_Tilde");
     }
   }
-
+  
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -12497,18 +12485,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      if (incompressible) {
-        Variable_Names.push_back("Limiter_Pressure");
-        Variable_Names.push_back("Limiter_X-Momentum");
-        Variable_Names.push_back("Limiter_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-      } else {
-        Variable_Names.push_back("Limiter_Density");
-        Variable_Names.push_back("Limiter_X-Momentum");
-        Variable_Names.push_back("Limiter_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-        Variable_Names.push_back("Limiter_Energy");
-      }
+      
+      Variable_Names.push_back("Limiter_Density");
+      Variable_Names.push_back("Limiter_X-Momentum");
+      Variable_Names.push_back("Limiter_Y-Momentum");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      Variable_Names.push_back("Limiter_Energy");
+      
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Limiter_TKE");
@@ -12524,18 +12507,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      if (incompressible) {
-        Variable_Names.push_back("Residual_Pressure");
-        Variable_Names.push_back("Residual_X-Momentum");
-        Variable_Names.push_back("Residual_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-      } else {
-        Variable_Names.push_back("Residual_Density");
-        Variable_Names.push_back("Residual_X-Momentum");
-        Variable_Names.push_back("Residual_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-        Variable_Names.push_back("Residual_Energy");
-      }
+      
+      Variable_Names.push_back("Residual_Density");
+      Variable_Names.push_back("Residual_X-Momentum");
+      Variable_Names.push_back("Residual_Y-Momentum");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      Variable_Names.push_back("Residual_Energy");
+      
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Residual_TKE");
@@ -12561,59 +12539,57 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add Pressure, Temperature, Cp, Mach. ---*/
     
-    if (compressible) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Pressure");
-    
-      nVar_Par += 2;
-      Variable_Names.push_back("Temperature");
-      Variable_Names.push_back("Mach");
-    }
-
     nVar_Par += 1;
-		if (config->GetOutput_FileFormat() == PARAVIEW){
-			Variable_Names.push_back("Pressure_Coefficient");
-		} else {
-			Variable_Names.push_back("C<sub>p</sub>");
-		}
+    Variable_Names.push_back("Pressure");
+    
+    nVar_Par += 2;
+    Variable_Names.push_back("Temperature");
+    Variable_Names.push_back("Mach");
+    
+    nVar_Par += 1;
+    if (config->GetOutput_FileFormat() == PARAVIEW){
+      Variable_Names.push_back("Pressure_Coefficient");
+    } else {
+      Variable_Names.push_back("C<sub>p</sub>");
+    }
     
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-			if (config->GetOutput_FileFormat() == PARAVIEW){
-				nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-				nVar_Par += 2;
-				Variable_Names.push_back("X-Skin_Friction_Coefficient");
-				Variable_Names.push_back("Y-Skin_Friction_Coefficient");
-				if (geometry->GetnDim() == 3) {
-					nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
-				}
-				nVar_Par += 2;
-				Variable_Names.push_back("Heat_Flux");
-				Variable_Names.push_back("Y_Plus");
-			} else {
-				nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
-				nVar_Par += 2;
-				Variable_Names.push_back("C<sub>f</sub>_x");
-				Variable_Names.push_back("C<sub>f</sub>_y");
-				if (geometry->GetnDim() == 3) {
-					nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
-				}
-				nVar_Par += 2;
-				Variable_Names.push_back("h");
-				Variable_Names.push_back("y<sup>+</sup>");
-			}
+      if (config->GetOutput_FileFormat() == PARAVIEW){
+        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+        nVar_Par += 2;
+        Variable_Names.push_back("X-Skin_Friction_Coefficient");
+        Variable_Names.push_back("Y-Skin_Friction_Coefficient");
+        if (geometry->GetnDim() == 3) {
+          nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+        }
+        nVar_Par += 2;
+        Variable_Names.push_back("Heat_Flux");
+        Variable_Names.push_back("Y_Plus");
+      } else {
+        nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
+        nVar_Par += 2;
+        Variable_Names.push_back("C<sub>f</sub>_x");
+        Variable_Names.push_back("C<sub>f</sub>_y");
+        if (geometry->GetnDim() == 3) {
+          nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
+        }
+        nVar_Par += 2;
+        Variable_Names.push_back("h");
+        Variable_Names.push_back("y<sup>+</sup>");
+      }
     }
     
     /*--- Add Eddy Viscosity. ---*/
     
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-			if (config->GetOutput_FileFormat() == PARAVIEW){
-				Variable_Names.push_back("Eddy_Viscosity");
-			} else {
-				Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
-			}
+      if (config->GetOutput_FileFormat() == PARAVIEW){
+        Variable_Names.push_back("Eddy_Viscosity");
+      } else {
+        Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
+      }
     }
     
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
@@ -12622,9 +12598,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
-
+    
     /*--- Add the intermittency for the BC trans. model. ---*/
-
+    
     if (transition) {
       nVar_Par += 1;
       if (config->GetOutput_FileFormat() == PARAVIEW){
@@ -12643,9 +12619,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
       nVar_Par +=1;
-      Variable_Names.push_back("Roe_Dissipation");      
+      Variable_Names.push_back("Roe_Dissipation");
     }
-
+    
     /*--- New variables get registered here before the end of the loop. ---*/
     
   }
@@ -12733,7 +12709,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   jPoint = 0;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
+    
     /*--- Check for halos & write only if requested ---*/
     
     if (!Local_Halo[iPoint] || Wrt_Halo) {
@@ -12747,7 +12723,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
         if (config->GetSystemMeasurements() == US)
-        	Local_Data[jPoint][iVar] *= 12.0;
+          Local_Data[jPoint][iVar] *= 12.0;
         iVar++;
       }
       
@@ -12767,7 +12743,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           iVar++;
         }
       }
-
+      
       /*--- If limiters and/or residuals are requested. ---*/
       if (!config->GetLow_MemoryOutput()) {
         
@@ -12820,15 +12796,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
         
-        if (compressible) {
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
-          Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
-          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
-        }
-        if (incompressible) {
-          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
-        }
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
+        Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
+        Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
         
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           
@@ -12862,30 +12833,30 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
         
         /*--- Load data for the intermittency of the BC trans. model. ---*/
-
+        
         if (transition) {
           Local_Data[jPoint][iVar] = solver[TURB_SOL]->node[iPoint]->GetGammaBC(); iVar++;
         }
         
         if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDES_LengthScale(); iVar++; 
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDES_LengthScale(); iVar++;
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetWall_Distance(); iVar++;
         }
         
         if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++; 
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
-
+        
       }
-
+      
       /*--- Increment the point counter, as there may have been halos we
        skipped over during the data loading. ---*/
-
+      
       jPoint++;
-
+      
     }
   }
   
@@ -17876,7 +17847,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #else
   MaxLocalVertex_Surface = nLocalVertex_Surface;
-  Buffer_Recv_nVertex[0] = nLocalVertex_Surface;
+  Buffer_Recv_nVertex[0] = Buffer_Send_nVertex[0];
 #endif
 
   /*--- Send and Recv buffers ---*/

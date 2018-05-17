@@ -2428,7 +2428,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
                                 unsigned short iMesh, unsigned long Iteration) {
   
   su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
-  Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_Density,
+  Mean_BetaInc2, Lambda, Local_Delta_Time,
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   
   unsigned long iEdge, iVertex, iPoint, jPoint;
@@ -2466,7 +2466,6 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
     Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
     Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2()      + node[jPoint]->GetBetaInc2());
-    Mean_Density    = 0.5 * (node[iPoint]->GetDensity()       + node[jPoint]->GetDensity());
     Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
     /*--- Adjustment for grid movement ---*/
@@ -2508,7 +2507,6 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
       Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
       Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
-      Mean_Density    = node[iPoint]->GetDensity();
       Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
       /*--- Adjustment for grid movement ---*/
@@ -2930,7 +2928,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       su2double AuxVar, Total_Viscosity, yCoord, yVelocity;
 
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
         yCoord          = geometry->node[iPoint]->GetCoord(1);
         yVelocity       = node[iPoint]->GetVelocity(1);
@@ -3029,7 +3027,7 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   
-  su2double *Normal, Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Mean_Density,
+  su2double *Normal, Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
   Mean_BetaInc2, Lambda, ProjVel, ProjVel_i, ProjVel_j, *GridVel, *GridVel_i, *GridVel_j;
   
   unsigned long iEdge, iVertex, iPoint, jPoint;
@@ -3061,7 +3059,6 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
     Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
     Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2()      + node[jPoint]->GetBetaInc2());
-    Mean_Density    = 0.5 * (node[iPoint]->GetDensity()       + node[jPoint]->GetDensity());
     Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
 
     /*--- Adjustment for grid movement ---*/
@@ -3102,7 +3099,6 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       
       Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
       Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
-      Mean_Density    = node[iPoint]->GetDensity();
       Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
       
       /*--- Adjustment for grid movement ---*/
@@ -5159,7 +5155,6 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   unsigned long iVertex, iPoint, Point_Normal;
   
   su2double *V_infty, *V_domain;
-  su2double P_Total, Density, Density_Inf, Vel_Mag, Vel_Mag_Inf;
   
   bool implicit      = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool grid_movement = config->GetGrid_Movement();
@@ -5193,33 +5188,11 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = node[iPoint]->GetPrimitive();
-        
-      /*--- The total pressure is equivalent to specifying the
-        dynamic pressure alone, as pressure in the solver has
-        been divided between thermodynamic and hydrodynamic parts.
-        We therefore assume that the baseline (static) pressure is
-        zero at the far-field, and P_Total = 0.5*rho*v^2. ---*/
-
-      Density_Inf = GetDensity_Inf();
-      Vel_Mag_Inf = config->GetModVel_FreeStreamND();
-      P_Total     = 0.5*Density_Inf*Vel_Mag_Inf*Vel_Mag_Inf;
-
-      /*--- Access density at the node. This is either constant by
-        construction, or will be set fixed implicitly by the temperature
-        and equation of state. ---*/
-
-      Density = node[iPoint]->GetDensity();
-
-      /*--- Update the new velocity magnitude using the total pressure. ---*/
-
-      Vel_Mag = sqrt(P_Total/(0.5*Density));
 
       /*--- Recompute and store the velocity in the primitive variable vector. ---*/
 
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = GetVelocity_Inf(iDim);
-      //V_infty[iDim+1] = Vel_Mag*(GetVelocity_Inf(iDim)/Vel_Mag_Inf);
-
 
       /*--- Far-field pressure set to static pressure (0.0). ---*/
 
@@ -5229,9 +5202,9 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       V_infty[nDim+1] = GetTemperature_Inf();
 
-      /*--- Store the density from the node.  ---*/
+      /*--- Store the density.  ---*/
 
-      V_infty[nDim+2] = Density;
+      V_infty[nDim+2] = GetDensity_Inf();
 
       /*--- Beta coefficient stored at the node ---*/
 
