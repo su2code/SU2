@@ -276,7 +276,7 @@ public:
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  void StartSolver();
+  virtual void StartSolver();
 
   /*!
    * \brief A virtual member.
@@ -1497,6 +1497,9 @@ class CMultizoneDriver : public CDriver {
 protected:
 
   bool fsi;
+  bool cht;
+
+  unsigned long TimeIter;
 
   unsigned short *nVarZone;
   su2double **init_res,      /*!< \brief Stores the initial residual. */
@@ -1528,14 +1531,19 @@ public:
   ~CMultizoneDriver(void);
 
   /*!
-   * \brief Preprocess the multizone iteration
+   * \brief [Overload] Launch the computation for multizone problems.
    */
-  void Preprocess();
+  void StartSolver();
 
   /*!
-   * \brief Use a predictor to initialize the iteration.
+   * \brief Restart the multizone problem.
    */
-  void Predictor();
+  void Restart();
+
+  /*!
+   * \brief Preprocess the multizone iteration
+   */
+  void Preprocess(unsigned long TimeIter);
 
   /*!
    * \brief Use a relaxation step to prevent convergence issues.

@@ -1906,4 +1906,6 @@ inline unsigned long CConfig::GetnOuter_Iter(void) { return Outer_Iter; }
 
 inline unsigned long CConfig::GetnTime_Iter(void) { return Time_Iter; }
 
+inline unsigned long CConfig::GetRestart_Iter(void) { return Restart_Iter; }
+
 inline su2double CConfig::GetTime_Step(void) { return Time_Step; }
