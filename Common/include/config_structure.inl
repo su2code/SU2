@@ -1382,6 +1382,8 @@ inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_Ac
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
 
+inline unsigned short CConfig::GetnMarker_Periodic(void) { return nMarker_PerBound; }
+
 inline unsigned short CConfig::GetnMarker_HeatFlux(void) { return nMarker_HeatFlux; }
 
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
