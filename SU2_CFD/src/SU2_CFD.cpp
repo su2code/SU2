@@ -73,8 +73,10 @@ int main(int argc, char *argv[]) {
 
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
-
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  if (config->GetKind_Solver() == MULTIZONE)
+    nZone  = config->GetnConfigFiles();
+  else
+    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
@@ -101,7 +103,7 @@ int main(int argc, char *argv[]) {
 
   } else if (config->GetKind_Solver() == MULTIZONE) {
 
-    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
+    /*--- Multizone Driver. ---*/
 
     driver = new CMultizoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 

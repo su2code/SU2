@@ -191,11 +191,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
           geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
-    /*--- TODO: For FSI, this is set after the mesh has been moved. Check if this is necessary. ----*/
+    /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
     if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
         (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
         (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
-        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], TimeIter);
+        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
   }
 
