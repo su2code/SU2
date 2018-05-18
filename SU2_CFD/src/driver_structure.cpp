@@ -5026,20 +5026,6 @@ void CFSIDriver::Run() {
    from the restart files... this needs to be standardized for the different
    solvers, in particular with FSI. ---*/
 
-  // TODO: Test this
-  bool update_geo = false;
-  //if (config->GetFSI_Simulation()) update_geo = false;
-
-  /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
-  bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
-  ExtIter = config_container[ZONE_FLOW]->GetExtIter();
-
-  if (restart && dyn_fsi && (long)ExtIter == config_container[ZONE_FLOW]->GetUnst_RestartIter()) {
-    solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->Restart_OldGeometry(geometry_container[ZONE_FLOW][INST_0][MESH_0],config_container[ZONE_FLOW]);
-  } else if (restart && stat_fsi){
-    solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_FLOW][INST_0], solver_container[ZONE_FLOW][INST_0], config_container[ZONE_FLOW], 0, update_geo);
-  }
-
   /*-----------------------------------------------------------------*/
   /*---------------- Predict structural displacements ---------------*/
   /*-----------------------------------------------------------------*/
