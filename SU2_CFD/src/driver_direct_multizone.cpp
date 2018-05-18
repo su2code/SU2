@@ -53,7 +53,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   TimeIter = 0;
 
   /*--- Initialize some useful booleans ---*/
-  fsi = false;
+  fsi = false; cht = false;
 
   /*--- Structure for multizone convergence ---*/
   init_res     = new su2double*[nZone];
@@ -133,9 +133,9 @@ void CMultizoneDriver::StartSolver() {
       cout << endl <<"The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
-  /*--- If required, restart the solution for the multizone problem. ---*/
+  /*--- Set the initial time iteration to the restart iteration. ---*/
   if (driver_config->GetRestart())
-    Restart();
+    TimeIter = driver_config->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
   while ( TimeIter < driver_config->GetnTime_Iter() ) {
@@ -167,12 +167,6 @@ void CMultizoneDriver::StartSolver() {
     TimeIter++;
 
   }
-
-}
-
-void CMultizoneDriver::Restart(void) {
-
-  TimeIter = driver_config->GetRestart_Iter();
 
 }
 

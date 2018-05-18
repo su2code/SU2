@@ -1536,11 +1536,6 @@ public:
   void StartSolver();
 
   /*!
-   * \brief Restart the multizone problem.
-   */
-  void Restart();
-
-  /*!
    * \brief Preprocess the multizone iteration
    */
   void Preprocess(unsigned long TimeIter);
