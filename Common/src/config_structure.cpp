@@ -97,6 +97,10 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   SetPostprocessing(val_software, 0, 1);
 
+  /*--- Configuration file boundaries/markers setting ---*/
+
+  SetMarkers(val_software);
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
@@ -282,6 +286,21 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
   mesh_file.close();
 
   return (unsigned short) nDim;
+}
+
+bool CConfig::GetPeriodic(string val_mesh_filename,
+                          unsigned short val_format,
+                          CConfig *config) {
+
+  bool isPeriodic = false;
+
+  /*--- For now, assume that if we have periodic BCs in the config, that
+   the user's intent is for there to be periodic BCs in the mesh too. ---*/
+
+  if (config->GetnMarker_Periodic() > 0) isPeriodic = true;
+
+  return isPeriodic;
+  
 }
 
 void CConfig::SetPointersNull(void) {
