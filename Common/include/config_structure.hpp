@@ -1012,7 +1012,8 @@ private:
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
   unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
   Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
-  Time_Iter;                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -8510,6 +8511,12 @@ public:
    * \return Number of time steps run for the multizone problem
    */
   unsigned long GetnTime_Iter(void);
+
+  /*!
+   * \brief Get the restart iteration
+   * \return Iteration for the restart of multizone problems
+   */
+  unsigned long GetRestart_Iter(void);
 
   /*!
    * \brief Get the time step for multizone problems

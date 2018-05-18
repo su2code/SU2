@@ -49,6 +49,9 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
                                                           val_periodic,
                                                           MPICommunicator) {
 
+  /*--- Initialize the counter for TimeIter ---*/
+  TimeIter = 0;
+
   /*--- Initialize some useful booleans ---*/
   fsi = false;
 
@@ -101,7 +104,8 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
 
   /*--- If the problem has FSI properties ---*/
   if (fluid_zone && structural_zone) fsi = true;
-
+  /*--- If the problem has CHT properties ---*/
+  if (fluid_zone && heat_zone) cht = true;
 
 }
 
@@ -119,6 +123,105 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 
 }
 
+void CMultizoneDriver::StartSolver() {
+
+  /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
+
+  if (rank == MASTER_NODE){
+    cout << endl <<"------------------------- Begin Multizone Solver --------------------------" << endl;
+    if (driver_config->GetTime_Domain())
+      cout << endl <<"The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
+  }
+
+  /*--- If required, restart the solution for the multizone problem. ---*/
+  if (driver_config->GetRestart())
+    Restart();
+
+  /*--- Run the problem until the number of time iterations required is reached. ---*/
+  while ( TimeIter < driver_config->GetnTime_Iter() ) {
+
+    /*--- Perform some preprocessing before starting the time-step simulation. ---*/
+
+    Preprocess(TimeIter);
+
+    /*--- Run a BGS iteration of the multizone problem. ---*/
+
+    Run();
+
+    /*--- Update the solution for dual time stepping strategy ---*/
+
+    Update();
+
+    /*--- Monitor the computations after each iteration. ---*/
+
+    Monitor(TimeIter);
+
+    /*--- Output the solution in files. ---*/
+
+    Output(TimeIter);
+
+    /*--- If the convergence criteria has been met, terminate the simulation. ---*/
+
+    if (StopCalc) break;
+
+    TimeIter++;
+
+  }
+
+}
+
+void CMultizoneDriver::Restart(void) {
+
+  TimeIter = driver_config->GetRestart_Iter();
+
+}
+
+void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
+
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
+    /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
+    config_container[iZone]->SetExtIter(TimeIter);
+
+    /*--- Read the target pressure for inverse design. ---------------------------------------------*/
+    /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
+    if (config_container[iZone]->GetInvDesign_Cp() == YES)
+      output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
+
+    /*--- Read the target heat flux ----------------------------------------------------------------*/
+    /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
+    if (config_container[iZone]->GetInvDesign_HeatFlux() == YES)
+      output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
+
+    /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
+    /*--- TODO: For FSI, this is set after the mesh has been moved. Check if this is necessary. ----*/
+    if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
+        (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
+        (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
+        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], TimeIter);
+    }
+  }
+
+#ifdef HAVE_MPI
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+
+  /*--- Run a predictor step ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    if (config_container[iZone]->GetPredictor())
+      iteration_container[iZone][INST_0]->Predictor(output, integration_container, geometry_container, solver_container,
+          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  }
+
+  /*--- Perform a dynamic mesh update if required. ---*/
+
+  DynamicMeshUpdate(TimeIter);
+
+}
+
 void CMultizoneDriver::Run() {
 
   unsigned long iOuter_Iter;
@@ -128,12 +231,6 @@ void CMultizoneDriver::Run() {
   bool Convergence = false;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
-
-  /*--- First, some preprocessing is required. This will determine the kind of problem(s) involved ---*/
-  Preprocess();
-
-  /*--- A predictor can be useful for different kinds of problems ---*/
-  Predictor();
 
   /*--- Loop over the number of outer iterations ---*/
   for (iOuter_Iter = 0; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
@@ -171,49 +268,7 @@ void CMultizoneDriver::Run() {
 
 }
 
-void CMultizoneDriver::Preprocess() {
 
-  bool time_domain = driver_config->GetTime_Domain();
-
-  if (fsi){
-    /*--- Loop over the number of zones (IZONE) ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
-
-      /*--- For the Fluid zones ---*/
-      if ((config_container[iZone]->GetKind_Solver()==EULER) ||
-          (config_container[iZone]->GetKind_Solver()==NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver()==RANS)){
-
-        /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
-        bool restart = (config_container[iZone]->GetRestart() || config_container[iZone]->GetRestart_Flow());
-        ExtIter = config_container[iZone]->GetExtIter();
-
-        /*--- Different treatment required depending of whether it's time domain problem or not ---*/
-        if (restart && time_domain && (long)ExtIter == config_container[iZone]->GetUnst_RestartIter()) {
-          if (rank == MASTER_NODE) cout << "Restarting geometry structure for previous time steps." << endl;
-          solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Restart_OldGeometry(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
-        } else if (restart && !time_domain){
-          if (rank == MASTER_NODE) cout << "Restarting geometry structure from converged solution." << endl;
-          solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, false);
-        }
-
-      }
-
-    }
-
-  }
-
-}
-
-void CMultizoneDriver::Predictor() {
-
-  for (iZone = 0; iZone < nZone; iZone++){
-    if (config_container[iZone]->GetPredictor())
-      iteration_container[iZone][INST_0]->Predictor(output, integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-  }
-
-}
 
 void CMultizoneDriver::Relaxation() {
 

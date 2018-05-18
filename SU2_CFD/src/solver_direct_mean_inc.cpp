@@ -6579,6 +6579,10 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     }
   }
   
+  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
+  if (dual_time && grid_movement)
+    Restart_OldGeometry(geometry[MESH_0], config);
+
   delete [] Coord;
 
   /*--- Delete the class memory that is used to load the restart. ---*/
