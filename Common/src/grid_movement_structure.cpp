@@ -2793,13 +2793,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       /*--- Check that the user has specified a non-zero number of surfaces to move with DV_MARKER. ---*/
       
-      bool noDV_MARKER = true;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          noDV_MARKER = false;
-        }
-      }
-      if (noDV_MARKER) {
+      if (config->GetnMarker_DV() == 0) {
         SU2_MPI::Error(string("No markers are specified in DV_MARKER, so no deformation will occur.\n") +
                        string("List markers to be deformed in DV_MARKER."), CURRENT_FUNCTION);
       }

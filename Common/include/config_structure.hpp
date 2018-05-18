@@ -2827,6 +2827,12 @@ public:
   unsigned short GetnMarker_Monitoring(void);
   
   /*!
+   * \brief Get the total number of DV markers.
+   * \return Total number of DV markers.
+   */
+  unsigned short GetnMarker_DV(void);
+  
+  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */

@@ -1364,6 +1364,8 @@ inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nM
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
 
+inline unsigned short CConfig::GetnMarker_DV(void) { return nMarker_DV; }
+
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
 inline unsigned short CConfig::GetnMarker_PyCustom(void) { return nMarker_PyCustom; }
