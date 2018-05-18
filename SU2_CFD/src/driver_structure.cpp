@@ -1111,6 +1111,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
 
+  bool mz_time_domain  = driver_config->GetTime_Domain();
+
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
