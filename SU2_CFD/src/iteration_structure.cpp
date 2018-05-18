@@ -473,7 +473,8 @@ void CFluidIteration::Preprocess(COutput *output,
 
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
-  /*--- This must be done only in the first subiteration ---*/
+  /*--- This is done only in the first block subiteration.---*/
+  /*--- From then on, the solver reuses the partially converged solution obtained in the previous subiteration ---*/
   if( fsi  && ( OuterIter == 0 ) ){
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone][val_iInst], solver_container[val_iZone][val_iInst], config_container[val_iZone], ExtIter);
   }

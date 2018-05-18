@@ -1015,6 +1015,7 @@ private:
   Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
+  bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8523,6 +8524,12 @@ public:
    * \return Time step for multizone problems, it is set on all the zones
    */
   su2double GetTime_Step(void);
+
+  /*!
+   * \brief Check if the mesh read supports multiple zones.
+   * \return YES if multiple zones can be contained in the mesh file.
+   */
+  bool GetMultizone_Mesh(void);
 };
 
 #include "config_structure.inl"
