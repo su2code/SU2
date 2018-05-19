@@ -6762,7 +6762,6 @@ public:
  * \brief Main class for defining the incompressible Euler flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 6.0.1 "Falcon"
  */
 class CIncEulerSolver : public CSolver {
 protected:
@@ -11129,7 +11128,6 @@ public:
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
  *  \author O. Burghardt
- *  \version 6.0.1 "Falcon"
  *  \date January 19, 2018.
  */
 class CHeatSolverFVM : public CSolver {
