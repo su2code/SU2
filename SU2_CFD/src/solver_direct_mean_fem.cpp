@@ -9107,31 +9107,25 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
   const su2double rho = pow(a,tovgm1);
   const su2double p   = pow(a,tgovgm1)/Gamma;
 
-  /* Initialize the velocity direction to (0,-1), which corresponds to the
-     direction on the symmetry line. */
-  su2double velDir[] = {0.0, -1.0};
+  /* Determine the derivative of x w.r.t. q and ydxdq. */
+  const su2double dadq   = -0.5*gm1*q/a;
+  const su2double drhodq =  2.0*rho*dadq/(gm1*a);
+  const su2double dJJdq  =  dadq/(pow(a,6)*(a*a-1.0));
 
-  /* Check for a point away from the symmetry line. */
-  if(fabs(y) > 1.e-8) {
+  const su2double dxdq  = -(1.0/(k*k) - 0.5/(q*q))*drhodq/(rho*rho)
+                        +   1.0/(rho*q*q*q) - 0.5*dJJdq;
+  const su2double ydxdq = y*dxdq;
 
-    /*--- Determine the derivatives of x and y w.r.t. q, such that the direction
-          of the streamline can be determined. This direction is identical to the
-          velocity direction. ---*/
-    const su2double dadq   = -0.5*gm1*q/a;
-    const su2double drhodq =  2.0*rho*dadq/(gm1*a);
-    const su2double dJJdq  =  dadq/(pow(a,6)*(a*a-1.0));
+  /* Determine the derivative of 1/2 y2 w.r.t. q, which is ydydq. The reason is
+     that ydydq is always well defined, while dydyq is singular for y = 0. */
+  const su2double ydydq = drhodq*(q*q-k*k)/(k*k*k*k*rho*rho*rho*q*q)
+                        - 1.0/(k*k*rho*rho*q*q*q);
 
-    const su2double dxdq = -(1.0/(k*k) - 0.5/(q*q))*drhodq/(rho*rho)
-                         +   1.0/(rho*q*q*q) - 0.5*dJJdq;
+  /* Determine the direction of the streamline. */
+  const su2double vecLen = sqrt(ydxdq*ydxdq + ydydq*ydydq);
 
-    const su2double dydq = y > 0.0 ? -y*drhodq/rho - 1.0/(rho*q*q*sqrt(k*k - q*q))
-                                   : -y*drhodq/rho + 1.0/(rho*q*q*sqrt(k*k - q*q));
-
-    const su2double vecLen = sqrt(dxdq*dxdq + dydq*dydq);
-
-    velDir[0] = dxdq/vecLen; velDir[1] = dydq/vecLen;
-    if(velDir[1] > 0.0){velDir[0] = -velDir[0]; velDir[1] = -velDir[1];}
-  }
+  su2double velDir[] = {ydxdq/vecLen, ydydq/vecLen};
+  if(velDir[1] > 0.0){velDir[0] = -velDir[0]; velDir[1] = -velDir[1];}
 
   /* Compute the conservative variables. Note that both 2D and 3D
      cases are treated correctly. */
