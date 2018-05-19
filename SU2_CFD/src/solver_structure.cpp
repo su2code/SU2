@@ -3189,22 +3189,15 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       if (local_failure > 0) break;
     }
 
-    global_failure = local_failure;
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM,
-                       MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
+                       MPI_SUM, MPI_COMM_WORLD);
+#else
+    global_failure = local_failure;
 #endif
 
     if (global_failure > 0) {
       SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
-    }
-
-    /*--- Throw an error if the number of markers listed in the inlet
-     profile file is not equal to the number of inlet markers in the
-     calculation. ---*/
-
-    if (Marker_Counter != nMarker_InletFile) {
-      SU2_MPI::Error(string("Mismatch between NMARK in inlet profile file and number of inlets in the config file."), CURRENT_FUNCTION);
     }
 
     /*--- Copy the inlet data down to the coarse levels if multigrid is active.

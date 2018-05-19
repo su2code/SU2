@@ -8720,32 +8720,38 @@ su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
   unsigned short P_position       = nDim+1;
   unsigned short FlowDir_position = nDim+2;
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
-      
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      
-      if (iPoint == val_inlet_point) {
+  if (val_kind_marker == INLET_FLOW) {
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
         
-        /*-- Compute boundary face area for this vertex. ---*/
-        
-        geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
-        
-        /*--- Access and store the inlet variables for this vertex. ---*/
-        
-        val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
-        val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
-        for (iDim = 0; iDim < nDim; iDim++) {
-          val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (iPoint == val_inlet_point) {
+            
+            /*-- Compute boundary face area for this vertex. ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+            
+            /*--- Access and store the inlet variables for this vertex. ---*/
+            
+            val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
+            val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
+            for (iDim = 0; iDim < nDim; iDim++) {
+              val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
+            }
+            
+            /*--- Exit once we find the point. ---*/
+            
+            return Area;
+            
+          }
         }
-        
-        /*--- Exit once we find the point. ---*/
-        
-        return Area;
-        
       }
     }
   }
