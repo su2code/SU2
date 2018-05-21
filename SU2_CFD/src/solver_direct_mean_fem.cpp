@@ -3105,12 +3105,9 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
     /* Loop over the DOFs of this element. */
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
 
-      // Set the pointer to the solution of this DOF and to the
-      // coordinates of its corresponding node ID of the grid.
-      su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      const unsigned long ind = volElem[i].nodeIDsGrid[j];
-      const su2double *coor   = meshPoints[ind].coor;
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
       /* Compute the coordinates relative to the center of the vortex. */
       const su2double dx = coor[0] - x0Vortex;
@@ -3162,12 +3159,9 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
     /* Loop over the DOFs of this element. */
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
 
-      /* Set the pointer to the solution of this DOF and to the
-         coordinates of its corresponding node ID of the grid. */
-      su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      const unsigned long ind = volElem[i].nodeIDsGrid[j];
-      const su2double *coor   = meshPoints[ind].coor;
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
       /* Compute the conservative flow variables of the Ringleb solution for the
          given coordinates. Note that it is possible to run this case in both 2D
@@ -3206,12 +3200,9 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
     /* Loop over the DOFs of this element. */
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
 
-      // Set the pointer to the solution of this DOF and to the
-      // coordinates of its corresponding node ID of the grid.
-      su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-      const unsigned long ind = volElem[i].nodeIDsGrid[j];
-      const su2double *coor   = meshPoints[ind].coor;
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
       su2double coorZ = 0.0;
       if (nDim == 3) coorZ = coor[2];
@@ -6968,11 +6959,6 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
-    /* Store the coordinate of the first vertex of this element to give an
-       indication for the location of the maximum residual. */
-    const unsigned long ind = volElem[l].nodeIDsGrid[0];
-    const su2double *coor   = meshPoints[ind].coor;
-
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double *res        = VecResDOFs.data() + offset;
@@ -6985,6 +6971,8 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     unsigned int i = 0;
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
+
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
         solDOFs[i] = solDOFsOld[i] - tmp*res[i];
 
@@ -6998,20 +6986,44 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
         function cannot be used, because that is for the FV solver.    ---*/
 
 #ifdef HAVE_MPI
-  /*--- Parallel mode. The local L2 norms must be added to obtain the
-        global value. Also check for divergence. ---*/
-  vector<su2double> rbuf(nVar);
-
-  /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
+  /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-    SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- The local L2 norms must be added to obtain the
+          global value. Also check for divergence. ---*/
+    vector<su2double> rbufRes(nVar);
+    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-
-      if (rbuf[iVar] != rbuf[iVar])
+      if (rbufRes[iVar] != rbufRes[iVar])
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
+      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal)));
+    }
+
+    /*--- The global maximum norms must be obtained. ---*/
+    rbufRes.resize(nVar*size);
+    SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
+                       nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+
+    vector<unsigned long> rbufPoint(nVar*size);
+    SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+                       nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+    vector<su2double> sbufCoor(nDim*nVar);
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        sbufCoor[iVar*nDim+iDim] = Point_Max_Coord[iVar][iDim];
+    }
+
+    vector<su2double> rbufCoor(nDim*nVar*size);
+    SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
+                       nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      for(int proc=0; proc<size; ++proc)
+        AddRes_Max(iVar, rbufRes[proc*nVar+iVar], rbufPoint[proc*nVar+iVar],
+                   &rbufCoor[proc*nVar*nDim+iVar*nDim]);
     }
   }
 
@@ -7044,11 +7056,6 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
-    /* Store the coordinate of the first vertex of this element to give an
-     indication for the location of the maximum residual. */
-    const unsigned long ind = volElem[l].nodeIDsGrid[0];
-    const su2double *coor   = meshPoints[ind].coor;
-
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double *res        = VecResDOFs.data()    + offset;
@@ -7066,6 +7073,8 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
     unsigned int i = 0;
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
+
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
 
         if (iRKStep < 3) {
@@ -7086,20 +7095,44 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
    function cannot be used, because that is for the FV solver.    ---*/
 
 #ifdef HAVE_MPI
-  /*--- Parallel mode. The local L2 norms must be added to obtain the
-   global value. Also check for divergence. ---*/
-  vector<su2double> rbuf(nVar);
-
-  /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
+  /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-    SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- The local L2 norms must be added to obtain the
+          global value. Also check for divergence. ---*/
+    vector<su2double> rbufRes(nVar);
+    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-
-      if (rbuf[iVar] != rbuf[iVar])
+      if (rbufRes[iVar] != rbufRes[iVar])
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
+      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal)));
+    }
+
+    /*--- The global maximum norms must be obtained. ---*/
+    rbufRes.resize(nVar*size);
+    SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
+                       nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+
+    vector<unsigned long> rbufPoint(nVar*size);
+    SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+                       nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+    vector<su2double> sbufCoor(nDim*nVar);
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        sbufCoor[iVar*nDim+iDim] = Point_Max_Coord[iVar][iDim];
+    }
+
+    vector<su2double> rbufCoor(nDim*nVar*size);
+    SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
+                       nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      for(int proc=0; proc<size; ++proc)
+        AddRes_Max(iVar, rbufRes[proc*nVar+iVar], rbufPoint[proc*nVar+iVar],
+                   &rbufCoor[proc*nVar*nDim+iVar*nDim]);
     }
   }
 
