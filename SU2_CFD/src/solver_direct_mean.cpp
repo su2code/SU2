@@ -17398,7 +17398,15 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
     }
     
     if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS){
-      node[iPoint]->SetRoe_Dissipation_NTS();
+      /*--- XXX: This grid length does not match the original paper.
+       * Here we use the volume-based grid length,
+       *    delta = (delta_x * delta_y * delta_z)^(1/3)
+       * as an approximation for Travin's max-based grid length,
+       *    delta = max(delta_x, delta_y, delta_z)
+       * Since the volume is already computed, using the volume is much faster.
+       * ---*/
+      const su2double delta = pow(geometry->node[iPoint]->GetVolume(), 1.0/3);
+      node[iPoint]->SetRoe_Dissipation_NTS(delta, config->GetConst_DES());
     }
   }
 }
