@@ -17230,9 +17230,16 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         //   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
           
         // }
+
+
         
-
-
+        /*--- Convective contribution to the residual at the wall ---*/
+      
+        LinSysRes.AddBlock(iPoint, Res_Conv);
+      
+        /*--- Viscous contribution to the residual at the wall ---*/
+      
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
         /*--- Enforce the no-slip boundary condition in a strong way by
          modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
