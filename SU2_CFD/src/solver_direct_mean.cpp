@@ -17144,6 +17144,9 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         Res_Conv[nDim+1] = (Density*Energy + Pressure)*VelEps*Area;
         for (iDim = 0 ; iDim < nDim; iDim++){
           Res_Conv[iDim+1] += Density*Vector[iDim]*Area;
+          for(jDim = 0; jDim < nDim; jDim++){
+            Res_Visc[iDim+1] += tau[iDim][jDim]*UnitNormal[jDim]*Area;
+          }
           Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
         }
         
