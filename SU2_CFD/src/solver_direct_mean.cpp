@@ -17100,118 +17100,139 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
           LinSysRes.SetBlock_Zero(iPoint, iDim+1);
         node[iPoint]->SetVel_ResTruncError_Zero();
 
-        /// /*--- Retrieve solution at this boundary node ---*/
-        ///
-        /// V_domain = node[iPoint]->GetPrimitive();
-        ///
-        /// /*--- Retrieve the specified mass flow for the inlet. ---*/
-        ///
-        /// Density  = node[iPoint]->GetDensity();
-        ///
-        /// /*--- Get primitives from current inlet state. ---*/
-        ///
-        /// for (iDim = 0; iDim < nDim; iDim++)
-        ///   Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
-        /// Pressure    = node[iPoint]->GetPressure();
-        /// SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
-        ///
-        /// /*--- Compute the acoustic Riemann invariant that is extrapolated
-        ///    from the domain interior. ---*/
-        ///
-        /// Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        /// for (iDim = 0; iDim < nDim; iDim++)
-        ///   Riemann += Velocity[iDim]*UnitNormal[iDim];
-        ///
-        /// /*--- Speed of sound squared for fictitious inlet state ---*/
-        ///
-        /// SoundSpeed2 = Riemann;
-        /// for (iDim = 0; iDim < nDim; iDim++)
-        ///   SoundSpeed2 -= VelEps*UnitNormal[iDim]*UnitNormal[iDim];
-        ///
-        /// SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-        /// SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-        ///
-        /// /*--- Density for the fictitious inlet state ---*/
-        ///
-        /// Entropy_Transp    = pow(Density_Transp, Gamma)/Pressure_Transp;
-        /// Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
-        ///
-        /// /*--- Pressure for the fictitious inlet state ---*/
-        ///
-        /// Pressure = SoundSpeed2*Density/Gamma;
-        ///
-        /// /*--- Energy for the fictitious inlet state ---*/
-        ///
-        /// Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*VelEps*VelEps;
-        /// if (tkeNeeded) Energy += GetTke_Inf();
-        ///
-        /// /*--- Primitive variables, using the derived quantities ---*/
-        ///
-        /// V_transp[0] = Pressure / ( Gas_Constant * Density);
-        /// for (iDim = 0; iDim < nDim; iDim++)
-        ///   V_transp[iDim+1] = Vector[iDim];
-        /// V_transp[nDim+1] = Pressure;
-        /// V_transp[nDim+2] = Density;
-        /// V_transp[nDim+3] = Energy + Pressure/Density;
-        /// V_transp[nDim+4] = sqrt(SoundSpeed2);
-        ///      
-        /// /*--- Set various quantities in the solver class ---*/
-        ///
-        /// conv_numerics->SetNormal(Normal);
-        /// conv_numerics->SetPrimitive(V_domain, V_transp);
-        ///
-        /// if (grid_movement)
-        ///   conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-        ///
-        /// /*--- Compute the residual using an upwind scheme ---*/
-        ///
-        /// conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        ///
-        /// /*--- Update residual value ---*/
-        ///
-        /// LinSysRes.AddBlock(iPoint, Residual);
-        ///
-        /// /*--- Jacobian contribution for implicit integration ---*/
-        ///
-        /// if (implicit)
-        ///   Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+           
 
-        // /*--- Viscous contribution, commented out because serious convergence problems ---*/
+
+        /*--- Retrieve other primitive quantities and viscosities ---*/
         
-         // /*--- Index of the closest interior node ---*/
-      
-         // Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        Density  = node[iPoint]->GetSolution(0);
+        Pressure = node[iPoint]->GetPressure();
+        Energy = node[iPoint]->GetEnergy();
+        laminar_viscosity = node[iPoint]->GetLaminarViscosity();
+        eddy_viscosity    = node[iPoint]->GetEddyViscosity();
+        total_viscosity   = laminar_viscosity + eddy_viscosity;
         
-         // /*--- Set laminar and eddy viscosity at the infinity ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0 ; jDim < nDim; jDim++) {
+            Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+          }
+        }
         
-         // V_transp[nDim+5] = node[iPoint]->GetLaminarViscosity();
-         // V_transp[nDim+6] = node[iPoint]->GetEddyViscosity();
+        /*--- Divergence of the velocity ---*/
         
-         // /*--- Set the normal vector and the coordinates ---*/
+        div_vel = 0.0; for (iDim = 0 ; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
         
-         // visc_numerics->SetNormal(Normal);
-         // visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+        /*--- Compute the viscous stress tensor ---*/
         
-         // /*--- Primitive variables, and gradient ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0; jDim < nDim; jDim++) {
+            tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) - TWO3*total_viscosity*div_vel*delta[iDim][jDim];
+          }
+        }
         
-         // visc_numerics->SetPrimitive(V_domain, V_transp);
-         // visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+        /*--- Dot product of the stress tensor with the grid velocity ---*/
         
-         // /*--- Turbulent kinetic energy ---*/
+        for (iDim = 0 ; iDim < nDim; iDim++) {
+          tau_vel[iDim] = 0.0;
+          for (jDim = 0 ; jDim < nDim; jDim++)
+            tau_vel[iDim] += tau[iDim][jDim]*Vector[jDim];
+        }
         
-         // if (config->GetKind_Turb_Model() == SST)
-         //   visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
         
-         // /*--- Compute and update residual ---*/
+        Res_Conv[0]      = Density*VelEps*Area;
+        Res_Conv[nDim+1] = (Density*Energy + Pressure)*VelEps*Area;
+        for (iDim = 0 ; iDim < nDim; iDim++){
+          Res_Conv[iDim+1] += Density*Vector[iDim]*Area;
+          Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
+        }
         
-         // visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-         // LinSysRes.SubtractBlock(iPoint, Residual);
+        // /*--- Implicit Jacobian contributions due to moving walls ---*/
         
-         // /*--- Jacobian contribution for implicit integration ---*/
+        // if (implicit) {
+          
+        //   /*--- Jacobian contribution related to the pressure term ---*/
+          
+        //   GridVel2 = 0.0;
+        //   for (iDim = 0; iDim < nDim; iDim++)
+        //     GridVel2 += Vector[iDim]*Vector[iDim];
+        //   for (iVar = 0; iVar < nVar; iVar++)
+        //     for (jVar = 0; jVar < nVar; jVar++)
+        //       Jacobian_i[iVar][jVar] = 0.0;
+        //   Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*VelEps;
+        //   for (jDim = 0; jDim < nDim; jDim++)
+        //     Jacobian_i[nDim+1][jDim+1] = -(Gamma-1.0)*Vector[jDim]*VelEps;
+        //   Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*VelEps;
+          
+        //   /*--- Add the block to the Global Jacobian structure ---*/
+          
+        //   Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          
+        //   /*--- Now the Jacobian contribution related to the shear stress ---*/
+          
+        //   for (iVar = 0; iVar < nVar; iVar++)
+        //     for (jVar = 0; jVar < nVar; jVar++)
+        //       Jacobian_i[iVar][jVar] = 0.0;
+          
+        //   /*--- Compute closest normal neighbor ---*/
+          
+        //   Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+          
+        //   /*--- Get coordinates of i & nearest normal and compute distance ---*/
+          
+        //   Coord_i = geometry->node[iPoint]->GetCoord();
+        //   Coord_j = geometry->node[Point_Normal]->GetCoord();
+          
+        //   dist_ij = 0;
+        //   for (iDim = 0; iDim < nDim; iDim++)
+        //     dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+        //   dist_ij = sqrt(dist_ij);
+          
+        //   theta2 = 0.0;
+        //   for (iDim = 0; iDim < nDim; iDim++)
+        //     theta2 += UnitNormal[iDim]*UnitNormal[iDim];
+          
+        //   factor = total_viscosity*Area/(Density*dist_ij);
+          
+        //   if (nDim == 2) {
+        //     thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+        //     thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+            
+        //     etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+            
+        //     pix = Vector[0]*thetax + Vector[1]*etaz;
+        //     piy = Vector[0]*etaz   + Vector[1]*thetay;
+            
+        //     Jacobian_i[nDim+1][0] -= factor*(-pix*Vector[0]+piy*Vector[1]);
+        //     Jacobian_i[nDim+1][1] -= factor*pix;
+        //     Jacobian_i[nDim+1][2] -= factor*piy;
+        //   } else {
+        //     thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+        //     thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+        //     thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
+            
+        //     etaz = UnitNormal[0]*UnitNormal[1]/3.0;
+        //     etax = UnitNormal[1]*UnitNormal[2]/3.0;
+        //     etay = UnitNormal[0]*UnitNormal[2]/3.0;
+            
+        //     pix = Vector[0]*thetax + Vector[1]*etaz   + Vector[2]*etay;
+        //     piy = Vector[0]*etaz   + Vector[1]*thetay + Vector[2]*etax;
+        //     piz = Vector[0]*etay   + Vector[1]*etax   + Vector[2]*thetaz;
+            
+        //     Jacobian_i[nDim+1][0] -= factor*(-pix*Vector[0]+piy*Vector[1]+piz*Vector[2]);
+        //     Jacobian_i[nDim+1][1] -= factor*pix;
+        //     Jacobian_i[nDim+1][2] -= factor*piy;
+        //     Jacobian_i[nDim+1][3] -= factor*piz;
+        //   }
+          
+        //   /*--- Subtract the block from the Global Jacobian structure ---*/
+          
+        //   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          
+        // }
         
-         // if (implicit)
-         //   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
+
+
 
         /*--- Enforce the no-slip boundary condition in a strong way by
          modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
