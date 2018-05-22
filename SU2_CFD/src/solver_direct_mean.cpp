@@ -17015,7 +17015,7 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
     unsigned short iDim, jDim, iVar, jVar, Wall_Function;
-    unsigned long iVertex, iPoint, Point_Normal, total_index, mflux_ramp = 100;
+    unsigned long iVertex, iPoint, Point_Normal, total_index, mflux_ramp = 999;
 
     su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
     su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
