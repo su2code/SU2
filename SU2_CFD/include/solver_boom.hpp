@@ -27,8 +27,10 @@ public:
 
   /*---Flight variables---*/
   su2double flt_h;
-  su2double flt_M;
-  su2double flt_psi, flt_gamma, flt_mu;
+  su2double flt_M, flt_U;
+  su2double flt_psi,    // Heading angle
+            flt_gamma,  // Climb angle
+            flt_mu;     // Mach angle
   su2double flt_heading[3];
 
   /*---Atmosphere variables---*/
@@ -39,7 +41,10 @@ public:
   unsigned short ray_N_phi;	// Number of rays
   su2double ray_r0;			// Initial ray distance
   su2double ray_t0;			// Initial ray time
+  su2double *ray_c0;    // Snell's constant
   su2double *ray_phi;		// Ray angles
+  su2double *ray_nu;    // Heading angle of wave normal
+  su2double ray_dt, ray_dphi;  // Perturbations for ray tube
   su2double *ray_x, *ray_y, ray_z, ray_A;
   su2double ray_lambda, *ray_gamma, *ray_theta;
   bool ground_flag;     // Whether or not we've propagated to the ground
@@ -53,6 +58,7 @@ public:
   			w0,				// Reference angular frequency
   			rho0,			// Ambient density (function of altitude)
   			c0,				// Ambient sound speed (function of altitude)
+        M_a,      // Acoustic Mach number
   			dsigma,			// Step size
         dsigma_old, // Previous step size
         dz,       // Change in altitude
