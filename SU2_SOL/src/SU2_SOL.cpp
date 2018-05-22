@@ -462,9 +462,13 @@ int main(int argc, char *argv[]) {
   
   if (geometry_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != NULL) {
-        delete geometry_container[iZone];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (geometry_container[iZone][iInst] != NULL) {
+          delete geometry_container[iZone][iInst];
+        }
       }
+      if (geometry_container[iZone] != NULL)
+        delete geometry_container[iZone];
     }
     delete [] geometry_container;
   }
@@ -472,9 +476,13 @@ int main(int argc, char *argv[]) {
   
   if (solver_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (solver_container[iZone] != NULL) {
-        delete solver_container[iZone];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (solver_container[iZone][iInst] != NULL) {
+          delete solver_container[iZone][iInst];
+        }
       }
+      if (solver_container[iZone] != NULL)
+        delete solver_container[iZone];
     }
     delete [] solver_container;
   }

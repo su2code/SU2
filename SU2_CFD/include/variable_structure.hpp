@@ -283,8 +283,11 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] val_delta - A scalar measure of the grid size
+   * \param[in] val_const_DES - The DES constant (C_DES)
    */
-  virtual void SetRoe_Dissipation_NTS();
+  virtual void SetRoe_Dissipation_NTS(su2double val_delta,
+                                      su2double val_const_DES);
   
   /*!
    * \brief A virtual member.
@@ -4059,8 +4062,10 @@ public:
   
   /*!
    * \brief Set the new solution for Roe Dissipation.
+   * \param[in] val_delta - A scalar measure of the grid size
+   * \param[in] val_const_DES - The DES constant (C_DES)
    */
-  void SetRoe_Dissipation_NTS();
+  void SetRoe_Dissipation_NTS(su2double val_delta, su2double val_const_DES);
     
   /*!
    * \brief Set the new solution for Roe Dissipation.
