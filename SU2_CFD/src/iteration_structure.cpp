@@ -1265,7 +1265,7 @@ void CHeatIteration::Iterate_Block(COutput *output,
         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
     /*--- Write the convergence history for the fluid (only screen output) ---*/
-    if (steady) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
+    if (steady) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
 
     /*--- If convergence was reached in every zone --*/
     StopCalc = integration_container[val_iZone][INST_0][HEAT_SOL]->GetConvergence();

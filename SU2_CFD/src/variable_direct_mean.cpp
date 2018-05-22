@@ -614,35 +614,55 @@ bool CNSVariable::SetStrainMag(void) {
   
 }
 
-void CNSVariable::SetRoe_Dissipation_NTS(){
+void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
+                                         su2double val_const_DES){
   
-  static const su2double cnu = pow(0.09, 1.5), ch3 = 2.0;
+  static const su2double cnu = pow(0.09, 1.5),
+                         ch1 = 3.0,
+                         ch2 = 1.0,
+                         ch3 = 2.0,
+                         sigma_max = 1.0;
   
   unsigned short iDim;
-  su2double Omega = 0, Omega_2 = 0, Baux, Gaux, Lturb, Kaux;
+  su2double Omega, Omega_2 = 0, Baux, Gaux, Lturb, Kaux, Aaux;
   
   AD::StartPreacc();
   AD::SetPreaccIn(Vorticity, 3);
   AD::SetPreaccIn(StrainMag);
-  /*--- Eddy viscosity ---*/
-  AD::SetPreaccIn(Primitive[nDim+5]);  
+  AD::SetPreaccIn(val_delta);
+  AD::SetPreaccIn(val_const_DES);
+  /*--- Density ---*/
+  AD::SetPreaccIn(Solution[0]);
   /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+5]);
+  /*--- Eddy viscosity ---*/
   AD::SetPreaccIn(Primitive[nDim+6]);
 
+  /*--- Central/upwind blending based on:
+   * Zhixiang Xiao, Jian Liu, Jingbo Huang, and Song Fu.  "Numerical
+   * Dissipation Effects on Massive Separation Around Tandem Cylinders",
+   * AIAA Journal, Vol. 50, No. 5 (2012), pp. 1119-1136.
+   * https://doi.org/10.2514/1.J051299
+   * ---*/
+
   for (iDim = 0; iDim < 3; iDim++){
-    Omega += Vorticity[iDim]*Vorticity[iDim];
+    Omega_2 += 2.0*Vorticity[iDim]*Vorticity[iDim];
   }
-  Omega = sqrt(Omega);
+  Omega = sqrt(Omega_2);
   
-  Omega_2 = pow(Omega,2.0);
-  Baux = (ch3 * Omega * max(StrainMag, Omega)) / max(sqrt((pow(StrainMag,2)+Omega_2)*0.5),1E-20);
+  Baux = (ch3 * Omega * max(StrainMag, Omega)) /
+      max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
   
-  Kaux = max(sqrt((Omega_2 + StrainMag)*0.5), 0.1 * inv_TimeScale);
+  Kaux = max(sqrt((Omega_2 + pow(StrainMag, 2))*0.5), 0.1 * inv_TimeScale);
   
-  Lturb = sqrt((GetEddyViscosity() + GetLaminarViscosity())/(cnu*Kaux));
+  const su2double nu = GetLaminarViscosity()/GetDensity();
+  const su2double nu_t = GetEddyViscosity()/GetDensity();
+  Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
   
-  Roe_Dissipation = Lturb*Gaux;
+  Aaux = ch2*max((val_const_DES*val_delta/Lturb)/Gaux -  0.5, 0.0);
+  
+  Roe_Dissipation = sigma_max * tanh(pow(Aaux, ch1)); 
   
   AD::SetPreaccOut(Roe_Dissipation);
   AD::EndPreacc();

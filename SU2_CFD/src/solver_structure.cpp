@@ -2995,7 +2995,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     filename = config->GetMultizone_FileName(filename, iZone);
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiinstance_FileName(filename, config->GetiInst());
+    filename = config->GetMultiInstance_FileName(filename, config->GetiInst());
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady()) {
@@ -3444,7 +3444,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     filename = config->GetMultizone_FileName(filename, iZone);
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-    filename = config->GetMultiinstance_FileName(filename, config->GetiInst());
+    filename = config->GetMultiInstance_FileName(filename, config->GetiInst());
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
