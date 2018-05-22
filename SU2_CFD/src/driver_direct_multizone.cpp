@@ -335,10 +335,12 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
       cout.width(15); cout << residual[ZONE_1][1];
       cout << endl;
     }
-
-    integration_container[ZONE_1][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_1][INST_0][MESH_0], config_container[ZONE_1], solver_container[ZONE_1][INST_0][MESH_0][FEA_SOL], OuterIter);
-
-    Convergence = integration_container[ZONE_1][INST_0][FEA_SOL]->GetConvergence_FSI();
+    for (iZone = 0; iZone < nZone; iZone++){
+      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY){
+        integration_container[iZone][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], solver_container[iZone][INST_0][MESH_0][FEA_SOL], OuterIter);
+        Convergence = integration_container[iZone][INST_0][FEA_SOL]->GetConvergence_FSI();
+      }
+    }
   }
 
   /*--- Update the residual for the all the zones ---*/
@@ -358,9 +360,15 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   /*-------------------- Output FSI history -------------------------*/
   /*-----------------------------------------------------------------*/
   if (fsi){
+    bool ZONE_FLOW=0, ZONE_FEA=1;
+    /*--- This is a hack to test it works. ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
+      if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
+    }
     output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
         config_container, integration_container, 0,
-        ZONE_0, ZONE_1, false);
+        ZONE_FLOW, ZONE_FEA, false);
   }
 
   return Convergence;

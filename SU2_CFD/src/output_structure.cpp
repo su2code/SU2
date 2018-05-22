@@ -4313,7 +4313,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     filename = config->GetMultizone_HistoryFileName(filename, val_iZone);
   }
   if(config->GetnTimeInstances() > 1){
-    filename = config->GetMultiinstance_HistoryFileName(filename, val_iInst);
+    filename = config->GetMultiInstance_HistoryFileName(filename, val_iInst);
   }
   strcpy (cstr, filename.data());
   
@@ -17353,7 +17353,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   
   /*--- Append the zone number if multiple instance problems ---*/
   if (nInst > 1)
-    filename= config->GetMultiinstance_FileName(filename, val_iInst);
+    filename= config->GetMultiInstance_FileName(filename, val_iInst);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
@@ -17479,7 +17479,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Append the zone number if multiple instance problems ---*/
   if (nInst > 1)
-    filename= config->GetMultiinstance_FileName(filename, val_iInst);
+    filename= config->GetMultiInstance_FileName(filename, val_iInst);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {

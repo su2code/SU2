@@ -2741,6 +2741,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- If only one Grid_Movement kind is specified, it is assumed it's the same for all zones. ---*/
+  /*--- TODO: Kind_Grid_Movement should not be an array but rather only one short. ---*/
+  /*--- The distinction comes as each zone has one config container. ---*/
+  if (nGridMovement != nZone){
+    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
+      Kind_GridMovement[iZone] = Kind_GridMovement[ZONE_0];
+  }
+
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
@@ -6693,7 +6701,7 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
     return multizone_filename;
 }
 
-string CConfig::GetMultiinstance_FileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -6706,7 +6714,7 @@ string CConfig::GetMultiinstance_FileName(string val_filename, int val_iInst) {
     return multizone_filename;
 }
 
-string CConfig::GetMultiinstance_HistoryFileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
 
     string multizone_filename = val_filename;
     char buffer[50];
