@@ -674,7 +674,7 @@ inline su2double CVariable::GetRoe_Dissipation(void) { return 0.0; }
 
 inline void CVariable::SetRoe_Dissipation_FD(su2double val_wall_dist) { }
 
-inline void CVariable::SetRoe_Dissipation_NTS() { }
+inline void CVariable::SetRoe_Dissipation_NTS(su2double val_delta, su2double val_const_DES) { }
 
 inline su2double CVariable::GetDES_LengthScale(void) { return 0.0; }
 
