@@ -43,9 +43,9 @@ namespace SU2_TYPE{
 
   inline void SetSecondary(su2double& data, const double &val) {data.setGradient(val);}
 
-  inline double GetSecondary(const su2double& data) { return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);}
+  inline double GetSecondary(const su2double& data) { return AD::globalTape.getGradient(data.getGradientData());}
 
-  inline double GetDerivative(const su2double& data) { return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);}
+  inline double GetDerivative(const su2double& data) { return AD::globalTape.getGradient(data.getGradientData());}
 
   inline void SetDerivative(su2double& data, const double &val) {data.setGradient(val);}
 }
