@@ -3526,32 +3526,51 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
       Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       config->GetTranspirationParams(Marker_Tag, x0, x1, x2, x3, y0, y1, y2, y3, eps0, eps1, eps2, eps3);
 
-      /*--- Bilinear parametric interpolation ---*/
-      a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
-      b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->node[iPoint]->GetDomain()) {
-          x = geometry->node[iPoint]->GetCoord(0);
-          y = geometry->node[iPoint]->GetCoord(1);
-
-          /*--- Quadratic coefficients ---*/
-          aa = a[3]*b[2] - a[2]*b[3];
-          bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
-          cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
-
-          /*--- Logical coordinates ---*/
-          s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
-          //if(s[1] < 0.0 || s[1] > 1.0){s[1] = (-bb - sqrt(bb*bb - 4.*aa*cc))/(2.*aa);}
-          s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
-
-          if(s[0] >= 0. && s[0] <= 1. && s[1] >= 0.0 && s[1] <= 1.0){
-            eps = (1.-s[0])*(1.-s[1])*eps0 + s[0]*(1.-s[1])*eps1 + s[0]*s[1]*eps2 + (1.-s[0])*s[1]*eps3;
+      if(nDim == 2){
+        /*--- Linear interpolation in x ---*/
+        b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            x = geometry->node[iPoint]->GetCoord(0);
+            if(x >= x0 && x <= x1){
+              eps = eps0 + (x - x0)*(eps1-eps0)/(x1-x0);
+            }
+            else{
+              eps = 0.0;
+            }
+            node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
           }
-          else{
-            eps = 0.0;
+        }
+      }
+      else{
+        /*--- Bilinear parametric interpolation ---*/
+        a[0] = x0; a[1] = -x0+x1; a[2] = -x0+x3; a[3] = x0-x1+x2-x3;
+        b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->node[iPoint]->GetDomain()) {
+            x = geometry->node[iPoint]->GetCoord(0);
+            y = geometry->node[iPoint]->GetCoord(1);
+
+            /*--- Quadratic coefficients ---*/
+            aa = a[3]*b[2] - a[2]*b[3];
+            bb = a[3]*b[0] - a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + x*b[3] - y*a[3];
+            cc = a[1]*b[0] - a[0]*b[1] + x*b[1] - y*a[1];
+
+            /*--- Logical coordinates ---*/
+            s[1] = (-bb + sqrt(bb*bb - 4.*aa*cc))/(2.*aa);
+            //if(s[1] < 0.0 || s[1] > 1.0){s[1] = (-bb - sqrt(bb*bb - 4.*aa*cc))/(2.*aa);}
+            s[0] = (x - a[0] - a[2]*s[1])/(a[1] + a[3]*s[1]);
+
+            if(s[0] >= 0. && s[0] <= 1. && s[1] >= 0.0 && s[1] <= 1.0){
+              eps = (1.-s[0])*(1.-s[1])*eps0 + s[0]*(1.-s[1])*eps1 + s[0]*s[1]*eps2 + (1.-s[0])*s[1]*eps3;
+            }
+            else{
+              eps = 0.0;
+            }
+            node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
           }
-          node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
         }
       }
     }
@@ -17043,8 +17062,6 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
     /*--- Get the specified wall heat flux from config as well as the
           wall function treatment.---*/
 
-    //Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-    //Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
     Wall_HeatFlux = 0.0;
     Wall_Function = NO_WALL_FUNCTION;
     if(Wall_Function != NO_WALL_FUNCTION) {
@@ -17055,10 +17072,6 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-      /// /*--- Allocate the value at the inlet ---*/
-      ///
-      /// V_transp = GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -17146,17 +17159,6 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         }
         
         /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
-        
-        // for (iDim = 0 ; iDim < nDim; iDim++){
-        //   Res_Conv[0]      += Density*Vector[iDim]*UnitNormal[iDim]*Area;
-        //   Res_Conv[nDim+1] += (Density*Energy + Pressure)*Vector[iDim]*UnitNormal[iDim]*Area;
-        //   Res_Conv[iDim+1] += Pressure*UnitNormal[iDim]*Area;
-        //   for(jDim = 0; jDim < nDim; jDim++){
-        //     Res_Conv[iDim+1] += Density*Vector[iDim]*Vector[jDim]*UnitNormal[jDim]*Area;
-        //     Res_Visc[iDim+1] += tau[iDim][jDim]*UnitNormal[jDim]*Area;
-        //   }
-        //   Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
-        // }
 
         for (iDim = 0 ; iDim < nDim; iDim++){
           Res_Conv[0]      += Density*Vector[iDim]*UnitNormal[iDim]*Area;
@@ -17250,8 +17252,6 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         //   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
           
         // }
-
-
         
         /*--- Convective contribution to the residual at the wall ---*/
       
