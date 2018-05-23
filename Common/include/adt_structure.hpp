@@ -629,8 +629,9 @@ private:
    * \param[in,out] r         Parametric coordinate of the projection. On input it contains
                               an initial guess.
    * \param[out]    dist2Quad Distance squared from the coordinate to the quadrilateral.
+   * \return     True if the projection is inside the quadrilateral and false otherwise.
    */
-  void Dist2ToQuadrilateral(const unsigned long i0,
+  bool Dist2ToQuadrilateral(const unsigned long i0,
                             const unsigned long i1,
                             const unsigned long i2,
                             const unsigned long i3,
