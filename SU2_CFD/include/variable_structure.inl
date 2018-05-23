@@ -1397,6 +1397,21 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   }
 }
 
+inline void CDiscAdjVariable::RegisterSolution(bool input) {
+  if (input) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(Solution_Direct[iVar]);
+  }
+  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterOutput(Solution[iVar]);}
+}
+
+inline void CDiscAdjVariable::GetAdjointSolution(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Direct[iVar]);
+    }
+}
+
 inline su2double* CDiscAdjVariable::GetGeometry_Direct() { return Geometry_Direct; }
 
 inline su2double CDiscAdjVariable::GetGeometry_Direct(unsigned short val_dim) { return Geometry_Direct[val_dim]; }
