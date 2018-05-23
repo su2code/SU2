@@ -3278,13 +3278,14 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 #endif
 }
 
-void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, double *P, int *skip_row, int* keep_row, double max_diff_tol, bool P_transposed, int &n_polynomial)
+void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2double *P, int *skip_row, int* keep_row, su2double max_diff_tol_in, bool P_transposed, int &n_polynomial)
 {
   int n_rows, *write_row;
   unsigned long iCount, jCount;
   double sum, max_diff, max_coeff, *coeff, *P_tmp;
   CSymmetricMatrix *PPT;
-  
+  double max_diff_tol = SU2_TYPE::GetValue(max_diff_tol_in);
+
   n_rows = 0;
   for (int i=0; i<m; i++) {
     if (skip_row[i] == 0) { n_rows++; }
@@ -3304,7 +3305,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, double 
           sum = 0.0;
           for (unsigned long k = 0; k < n; k ++)
           {
-            sum += (P_transposed)? P[k*m+i]*P[k*m+j] : P[i*n+k]*P[j*n+k];
+            sum += SU2_TYPE::GetValue((P_transposed)? P[k*m+i]*P[k*m+j] : P[i*n+k]*P[j*n+k]);
           }
           PPT->Write(iCount, jCount, sum);
           
@@ -3326,7 +3327,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, double 
       coeff[iCount] = 0;
       for (unsigned long j = 0; j < n; j += 1)
       {
-        coeff[iCount] += (P_transposed)? P[j*m+i] : P[i*n+j];
+        coeff[iCount] += SU2_TYPE::GetValue((P_transposed)? P[j*m+i] : P[i*n+j]);
       }
       iCount++;
     }
@@ -3342,7 +3343,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, double 
     for (int j = 0; j < m; j ++)
     {
       if (skip_row[j] == 0) {
-        sum += (P_transposed)? coeff[iCount]*P[i*m+j] : coeff[iCount]*P[j*n+i];
+        sum += coeff[iCount]*SU2_TYPE::GetValue((P_transposed)? P[i*m+j] : P[j*n+i]);
         iCount++;
       }
     }
@@ -3399,7 +3400,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, double 
       for (int i=0; i<n; i++) {
         for (int j=0; j<m; j++) {
           if (write_row[j] == 1) {
-            P_tmp[iCount] = P[i*m+j];
+            P_tmp[iCount] = SU2_TYPE::GetValue(P[i*m+j]);
             iCount++;
           }
         }
@@ -3409,7 +3410,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, double 
       for (int i=0; i<m; i++) {
         for (int j=0; j<n; j++) {
           if (write_row[i] == 1) {
-            P_tmp[iCount] = P[i*n+j];
+            P_tmp[iCount] = SU2_TYPE::GetValue(P[i*n+j]);
             iCount++;
           }
         }
@@ -3463,7 +3464,10 @@ void CRadialBasisFunction::Get_RadialBasisValue(su2double &dist, CConfig *config
 	
 		case WENDLAND_C2:
 		  dist /= config->GetRadialBasisFunctionParameter();
-		  dist = (dist<1) ? pow((1-dist), 4)*(4*dist+1) : 0;
+		  if(dist < 1)
+            dist = pow((1-dist), 4)*(4*dist+1);
+          else
+            dist = 0;
 		break;
 			
 		case INV_MULTI_QUADRIC:
@@ -3479,7 +3483,10 @@ void CRadialBasisFunction::Get_RadialBasisValue(su2double &dist, CConfig *config
 			
 		case THIN_PLATE_SPLINE:
 		  dist /= config->GetRadialBasisFunctionParameter();
-		  dist = (dist>0) ? dist*dist*log(dist) : 0;
+		  if(dist > numeric_limits<float>::min())
+            dist *= dist*log(dist);
+          else
+            dist = 0;
 		break;
 		
 		case MULTI_QUADRIC:
@@ -3524,7 +3531,7 @@ void CSymmetricMatrix::Initialize(int N)
 	initialized = true;
 }
 
-void CSymmetricMatrix::Initialize(int N, double *formed_val_vec)
+void CSymmetricMatrix::Initialize(int N, su2double *formed_val_vec)
 {
 	int i;
 	
@@ -3532,8 +3539,8 @@ void CSymmetricMatrix::Initialize(int N, double *formed_val_vec)
 	num_val = sz*(sz+1)/2;
 	
 	val_vec = new double [num_val];
-	for (unsigned long i=0; i<num_val; i++) {val_vec[i] = formed_val_vec[i];}
-	
+	for (unsigned long i=0; i<num_val; i++) {val_vec[i] = SU2_TYPE::GetValue(formed_val_vec[i]);}
+
 	initialized = true;
 }
 
@@ -3552,7 +3559,7 @@ inline int CSymmetricMatrix::GetSize()
   return sz;
 }
 
-void CSymmetricMatrix::Write(int i, int j, double val)
+void CSymmetricMatrix::Write(int i, int j, const su2double& val)
 {
 	if (! initialized) {
 		throw invalid_argument("Matrix not initialized.");
@@ -3560,7 +3567,7 @@ void CSymmetricMatrix::Write(int i, int j, double val)
 	else if (i<0 || i>=sz || j<0 || j>=sz) {
 		throw out_of_range("Index to write to matrix out of bounds.");
 	}
-	val_vec[CalcIdx(i, j)] = val;
+	val_vec[CalcIdx(i, j)] = SU2_TYPE::GetValue(val);
 }
 
 void CSymmetricMatrix::CholeskyDecompose(bool overwrite)
@@ -4034,12 +4041,15 @@ void CSymmetricMatrix::MatVecMult(double *v)
 
 }
 
-void CSymmetricMatrix::MatMatMult(bool left_side, double *mat_vec, int N)
+void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
 {
-	double *tmp_res;
-	
+	double *tmp_res, *mat_vec;
+
 	tmp_res = new double [sz*N];
-	
+	mat_vec = new double [sz*N];
+	for(size_t i=0; i<sz*N; ++i)
+	  mat_vec[i] = SU2_TYPE::GetValue(mat_vec_in[i]);
+
 	if ( ! left_side ) {
 	  throw invalid_argument("Matrix right multiply not implemented yet.");
 	}
@@ -4083,7 +4093,7 @@ void CSymmetricMatrix::MatMatMult(bool left_side, double *mat_vec, int N)
 #endif
 
 	delete [] tmp_res;
-	
+    delete [] mat_vec;
 }
 
 void CSymmetricMatrix::Print()
