@@ -17157,6 +17157,15 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         //   }
         //   Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
         // }
+
+        for (iDim = 0 ; iDim < nDim; iDim++){
+          Res_Conv[0]      += Density*Vector[iDim]*UnitNormal[iDim]*Area;
+          Res_Conv[nDim+1] += (Density*Energy + Pressure)*Vector[iDim]*UnitNormal[iDim]*Area;
+          for(jDim = 0; jDim < nDim; jDim++){
+            Res_Conv[iDim+1] += Density*Vector[iDim]*Vector[jDim]*UnitNormal[jDim]*Area;
+          }
+          Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
+        }
         
         // /*--- Implicit Jacobian contributions due to moving walls ---*/
         
