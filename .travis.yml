@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - fix_updatedvalues_fluidmz
+        - develop
 
 python:
     - 2.7
