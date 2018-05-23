@@ -17080,6 +17080,13 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
         for (iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = -Normal[iDim]/Area;
 
+        /*--- Initialize the convective & viscous residuals to zero ---*/
+      
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Conv[iVar] = 0.0;
+          Res_Visc[iVar] = 0.0;
+        }
+
         /*--- Store the corrected velocity at the wall which will
          be zero (v = 0), unless there are moving walls (v = u_wall)---*/
 
