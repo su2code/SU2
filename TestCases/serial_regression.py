@@ -678,7 +678,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.656852, 4.263152, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.660825, 4.259942, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -690,7 +690,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.898984, 4.034096, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -714,7 +714,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [-1.253498, 4.531302, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.test_vals = [-0.105447, 7.077116, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -726,7 +726,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [-1.128085, 4.600597, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-1.137540, 4.588702, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001

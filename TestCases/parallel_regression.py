@@ -667,7 +667,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.656732, 4.263236, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.660882, 4.259964, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -679,7 +679,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [-1.999171, 3.956649, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.995300, 3.960112, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -703,7 +703,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [-0.888640, 4.881651, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.test_vals = [-1.252525, 4.531627, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "parallel_computation.py -f"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -715,7 +715,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [-1.142212, 4.585974, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-1.112264, 4.606470, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "parallel_computation.py -f"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
