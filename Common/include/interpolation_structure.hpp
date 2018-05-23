@@ -425,9 +425,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(CConfig **config);
-  
-  void Check_PolynomialTerms(int m, unsigned long n, double *P, int *skip_row, int *keep_row, double max_diff_tol, bool P_transposed, int &n_polynomial);
-  
+
+  void Check_PolynomialTerms(int m, unsigned long n, su2double *P, int *skip_row, int *keep_row, su2double max_diff_tol_in, bool P_transposed, int &n_polynomial);
+
   void Get_Distance(su2double *coord_i, su2double *coord_j, unsigned short nDim, su2double &dist);
 
   void Get_RadialBasisValue(su2double &dist, CConfig *config);
@@ -461,11 +461,11 @@ class CSymmetricMatrix{
 		~CSymmetricMatrix();
 		
 		void Initialize(int N);
-		void Initialize(int N, double *formed_val_vec);
-		
+		void Initialize(int N, su2double *formed_val_vec);
+
 		inline int GetSize();
-		
-		void Write(int i, int j, double val);
+
+		void Write(int i, int j, const su2double& val);
 		double Read(int i, int j);
 		
 		void CholeskyDecompose(bool overwrite);
@@ -488,7 +488,7 @@ class CSymmetricMatrix{
 		void VecMatMult(double *v, int N);
 		void VecMatMult(double *v, double *res, int N);
 		void MatVecMult(double *v);
-		
-		void MatMatMult(bool left_mult, double *mat_vec, int N);
-		
+
+		void MatMatMult(bool left_mult, su2double *mat_vec, int N);
+
 };
