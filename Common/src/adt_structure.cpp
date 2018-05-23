@@ -1071,14 +1071,16 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
             outside the the element. Therefore in a predictor step the
             quadrilateral is divived into two triangles, for which the mapping
             to the standard element is linear, and it is checked if the
-            projection is inside one of this triangles. ---*/
+            projection is inside one of these triangles. ---*/
       su2double r, s;
+      bool projectionInside = false;
       if( Dist2ToTriangle(i0, i1, i3, coor, dist2Elem, r, s) ) {
 
         /* Projection is inside the triangle i0, i1, i3. Compute the true
            distance to the quadrilateral, where the parametric coordinates
            r and s are used as initial guess. */
-        Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s, dist2Elem);
+        projectionInside = Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s,
+                                                dist2Elem);
       }
       else if( Dist2ToTriangle(i2, i3, i1, coor, dist2Elem, r, s) ) {
 
@@ -1089,9 +1091,11 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
         r = 1.0 - r;
         s = 1.0 - s;
 
-        Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s, dist2Elem);
+        projectionInside = Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s,
+                                                dist2Elem);
       }
-      else {
+
+      if( !projectionInside ) {
 
         /* The projection is outside the quadrilatral. Hence it suffices
            to check the distance to the surrounding lines of the quad. */
@@ -2437,7 +2441,7 @@ bool su2_adtElemClass::Dist2ToTriangle(const unsigned long i0,
   return false;
 }
 
-void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
+bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                             const unsigned long i1,
                                             const unsigned long i2,
                                             const unsigned long i3,
@@ -2532,15 +2536,21 @@ void su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 
-  /*--- Check if the projection is inside the quadrilateral. If not, terminate. ---*/
-  if(r < paramLowerBound || r > paramUpperBound ||
-     s < paramLowerBound || s > paramUpperBound)
-    SU2_MPI::Error("Projection not inside the quadrilateral.", CURRENT_FUNCTION);
+  /*--- Check if the projection is inside the quadrilateral. ---*/
+  if((r >= paramLowerBound) && (s >= paramLowerBound) &&
+     (r <= paramUpperBound) && (s <= paramUpperBound)) {
 
-  /*--- Determine the minimum distance squared. ---*/
-  dist2Quad = 0.0;
-  for(unsigned short k=0; k<nDim; ++k) {
-    const su2double ds = V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
-    dist2Quad += ds*ds;
+    /*--- Determine the minimum distance squared. ---*/
+    dist2Quad = 0.0;
+    for(unsigned short k=0; k<nDim; ++k) {
+      const su2double ds = V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
+      dist2Quad += ds*ds;
+    }
+
+    return true;
   }
+
+  /*--- The projection of the coordinate is outside the quadrilateral.
+        Return false. ---*/
+  return false;
 }
