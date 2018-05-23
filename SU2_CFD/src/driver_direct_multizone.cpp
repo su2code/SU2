@@ -128,7 +128,7 @@ void CMultizoneDriver::StartSolver() {
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE){
-    cout << endl <<"------------------------- Begin Multizone Solver --------------------------" << endl;
+    cout << endl <<"------------------------ Begin Multizone Solver -------------------------" << endl;
     if (driver_config->GetTime_Domain())
       cout << endl <<"The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
@@ -172,6 +172,8 @@ void CMultizoneDriver::StartSolver() {
 
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
+  bool unsteady = driver_config->GetTime_Domain();
+
   for (iZone = 0; iZone < nZone; iZone++){
 
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
@@ -197,6 +199,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
         (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
+
   }
 
 #ifdef HAVE_MPI
@@ -213,6 +216,18 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Perform a dynamic mesh update if required. ---*/
 
   DynamicMeshUpdate(TimeIter);
+
+  /*--- Updating zone interface communication patterns, needed only for unsteady simulation
+   * since for steady problems this is done once in the interpolator_container constructor
+   * at the beginning of the computation ---*/
+  if ( unsteady ) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (unsigned short jZone = 0; jZone < nZone; jZone++){
+        if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
+          interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
+      }
+    }
+  }
 
 }
 
@@ -381,11 +396,10 @@ void CMultizoneDriver::Update() {
   bool UpdateMesh;
 
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
-  if (fsi){
-    /*--- Loop over the number of zones (IZONE) ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
+  /*--- Loop over the number of zones (IZONE) ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
 
-      /*--- Transfer from all the remaining zones ---*/
+      /*--- Transfer from all the remaining zones (JZONE != IZONE)---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
@@ -395,16 +409,14 @@ void CMultizoneDriver::Update() {
         }
       }
 
-      iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
-          solver_container, numerics_container, config_container,
-          surface_movement, grid_movement, FFDBox, iZone, INST_0);
+    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-      /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-      for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
-        if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
-          integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
-      }
-
+    /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
+    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
+        integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
     }
   }
 
