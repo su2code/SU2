@@ -152,7 +152,7 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
 }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
+void CDiscAdjSolver::ResetInputs(CGeometry* geometry, CConfig *config){
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -165,7 +165,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   /*--- Reset the solution to the initial (converged) solution ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
+    AD::ResetInput(direct_solver->node[iPoint]->GetSolution()[iVar]);
   }
 
   if (time_n_needed) {
@@ -183,14 +183,31 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
     }
   }
 
+  /*--- Set indices to zero ---*/
+
+  RegisterVariables(geometry, config, true);
+
+}
+
+void CDiscAdjSolver::ResetSolution(CGeometry* geometry, CConfig *config){
+
+  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  /*--- Reset the solution to the initial (converged) solution ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
+  }
+
   /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
 
   direct_solver->Jacobian.SetValZero();
-
-  /*--- Set indices to zero ---*/
-
-  RegisterVariables(geometry, config, true);
 
 }
 

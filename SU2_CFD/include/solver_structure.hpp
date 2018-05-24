@@ -3799,9 +3799,17 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] kind_recording - Kind of AD recording.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetRecording(CGeometry *geometry, CConfig *config);
+  virtual void ResetSolution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ResetInputs(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -12443,10 +12451,18 @@ public:
   su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
-   * \brief Prepare the solver for a new recording.
-   * \param[in] kind_recording - Kind of AD recording.
+   * \brief Resets the direct solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config);
+  void ResetSolution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Prepare the solver for a new recording.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ResetInputs(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Prepare the solver for a new recording.
@@ -12803,9 +12819,10 @@ public:
   
   /*!
    * \brief Prepare the solver for a new recording.
-   * \param[in] kind_recording - Kind of AD recording.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config);
+  void ResetInputs(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.

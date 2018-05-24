@@ -2527,7 +2527,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
 
-    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->ResetInputs(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
 
     /*--- Clear indices of coupling variables ---*/
 
@@ -2542,7 +2542,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   /*--- Prepare for recording ---*/
 
-  solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+  solver_container[val_iZone][MESH_0][ADJFEA_SOL]->ResetInputs(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
 
   /*--- Start the recording of all operations ---*/
 

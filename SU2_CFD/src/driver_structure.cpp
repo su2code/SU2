@@ -3975,13 +3975,12 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
-      solver_container[iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][iMesh], config_container[iZone]);
+      solver_container[iZone][iMesh][ADJFLOW_SOL]->ResetInputs(geometry_container[iZone][iMesh], config_container[iZone]);
     }
     if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
-      solver_container[iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][MESH_0], config_container[iZone]);
+      solver_container[iZone][MESH_0][ADJTURB_SOL]->ResetInputs(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-
 
   /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
@@ -3997,6 +3996,17 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     }
     for (iZone = 0; iZone < nZone; iZone++) {
       iteration_container[iZone]->RegisterInput(solver_container, geometry_container, config_container, iZone, kind_recording);
+    }
+
+    /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+        solver_container[iZone][iMesh][ADJFLOW_SOL]->ResetSolution(geometry_container[iZone][iMesh], config_container[iZone]);
+      }
+      if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+        solver_container[iZone][MESH_0][ADJTURB_SOL]->ResetSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+      }
     }
 
   }
@@ -6234,10 +6244,12 @@ void CDiscAdjFSIDriver::PrepareRecording(unsigned short ZONE_FLOW,
 
   /*--- Set fluid variables to direct solver values ---*/
   for (iMesh = 0; iMesh <= config_container[ZONE_FLOW]->GetnMGLevels(); iMesh++){
-    solver_container[ZONE_FLOW][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+    solver_container[ZONE_FLOW][iMesh][ADJFLOW_SOL]->ResetInputs(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+    solver_container[ZONE_FLOW][iMesh][ADJFLOW_SOL]->ResetSolution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
   }
   if (turbulent){
-    solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+    solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->ResetInputs(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+    solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->ResetSolution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
   }
 
   /*--- Set geometry to the converged values ---*/
@@ -6246,8 +6258,7 @@ void CDiscAdjFSIDriver::PrepareRecording(unsigned short ZONE_FLOW,
 
   /*--- Set structural variables to direct solver values ---*/
 
-  solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
-
+  solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->ResetInputs(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
 }
 
 void CDiscAdjFSIDriver::RegisterInput(unsigned short ZONE_FLOW,

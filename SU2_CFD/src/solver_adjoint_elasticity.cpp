@@ -492,7 +492,7 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
 }
 
-void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
+void CDiscAdjFEASolver::ResetInputs(CGeometry* geometry, CConfig *config){
 
 
   bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
