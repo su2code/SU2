@@ -2270,7 +2270,7 @@ public:
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void RegisterSolution(bool input);
+  virtual void RegisterSolution(bool input);
   
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -2292,7 +2292,7 @@ public:
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  void GetAdjointSolution(su2double *adj_sol);
+  virtual void GetAdjointSolution(su2double *adj_sol);
   
   /*!
    * \brief Set the adjoint values of the solution at time n.
@@ -4781,6 +4781,18 @@ public:
   void SetSolution_Direct(su2double *sol);
   
   su2double* GetSolution_Direct();
+
+  /*!
+   * \brief Register the variables in the direct solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolution(bool input);
+
+  /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution(su2double *adj_sol);
   
   /*!
    * \brief Set the restart geometry (coordinate of the converged solution)
