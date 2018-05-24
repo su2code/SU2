@@ -54,6 +54,14 @@ CDriver::CDriver(char* confFile,
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
+  /*--- Start timer to track preprocessing for benchmarking. ---*/
+  
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+  
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
    hierarchy over all zones, multigrid levels, equation sets, and equation
@@ -474,8 +482,28 @@ CDriver::CDriver(char* confFile,
                                 ZONE_FLOW, ZONE_STRUCT, true);
   }
 
-  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
+  /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  UsedTimePreproc = UsedTime;
+  UsedTimeCompute = 0.0;
+  UsedTimeOutput  = 0.0;
+  IterCount       = 0;
+  OutputCount     = 0;
+  millionVerts    = 0.0;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    millionVerts += (su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+  }
 
+  /*--- Reset timer for compute/output performance benchmarking. ---*/
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -617,21 +645,42 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
 
-  /*--- Synchronization point after a single solver iteration. Compute the
-   wall clock time required. ---*/
-
+  /*--- Stop the timer and output the final performance summary. ---*/
+  
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StopTime = MPI_Wtime();
 #endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
   UsedTime = StopTime-StartTime;
+  UsedTimeCompute += UsedTime;
+  
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
-    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+    su2double TotalTime = UsedTimePreproc + UsedTimeCompute + UsedTimeOutput;
+    cout.precision(6);
+    cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
+    cout << "Simulation totals:" << endl;
+    cout << setw(27) << "Cores:" << setw(12) << size << endl;
+    cout << setw(27) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << endl;
+    cout << setw(27) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << "Preprocessing phase:" << endl;
+    cout << setw(27) << "Time (s):"  << setw(12)<< UsedTimePreproc << "  ("<< ((UsedTimePreproc * 100.0) / (TotalTime)) << " %)" << endl;
+    cout << "Compute phase:" << endl;
+    cout << setw(27) << "Time (s):"  << setw(12)<< UsedTimeCompute << "  ("<< ((UsedTimeCompute * 100.0) / (TotalTime)) << " %)" << endl;
+    cout << setw(27) << "Iterations:"  << setw(12)<< IterCount << endl;
+    if (IterCount != 0) {
+      cout << setw(27) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
+      cout << setw(27) << "Core-s/iter/mil. points:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/millionVerts << endl;
+    }
+    cout << "Output phase:" << endl;
+    cout << setw(27)<< "Time (s):"  << setw(12)<< UsedTimeOutput << "  ("<< ((UsedTimeOutput * 100.0) / (TotalTime)) << " %)" << endl;
+    cout << setw(27)<< "Output count:" << setw(12)<< OutputCount << endl;
+    if (OutputCount != 0) {
+      cout << setw(27)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
+      cout << setw(27)<< "Core-s/output/mil. points:" << setw(12)<< (su2double)size*UsedTimeOutput/(su2double)OutputCount/millionVerts << endl;
+    }
+    cout << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
   }
 
   /*--- Exit the solver cleanly ---*/
@@ -3225,8 +3274,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 #else
   StopTime = MPI_Wtime();
 #endif
-  
-  UsedTime = (StopTime - StartTime);
+  IterCount++;
+  UsedTime = (StopTime - StartTime) + UsedTimeCompute;
   
   
   /*--- Check if there is any change in the runtime parameters ---*/
@@ -3335,6 +3384,19 @@ void CDriver::Output(unsigned long ExtIter) {
   
   if (output_files) {
     
+    /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+    
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- Execute the routine for writing restart, volume solution,
@@ -3344,6 +3406,20 @@ void CDriver::Output(unsigned long ExtIter) {
     
     
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+    
+    /*--- Store output time and restart the timer for the compute phase. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeOutput += StopTime-StartTime;
+    OutputCount++;
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
     
   }
 
@@ -3668,7 +3744,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 #else
   StopTime = MPI_Wtime();
 #endif
-
+  IterCount++;
   UsedTime = (StopTime - StartTime);
 
 
@@ -4058,6 +4134,8 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjFluidDriver::SetObjFunction(){
 
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+
   ObjFunc = 0.0;
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -4074,7 +4152,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
           output->SpecialOutput_AnalyzeSurface(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone], false);
         
-        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+        if ((config_container[ZONE_0]->GetnMarker_Analyze() != 0) && compressible)
           output->SpecialOutput_Distortion(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
         
         if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)

@@ -4579,13 +4579,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
-          if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-            SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-          }
-
-          /*--- For specific applications, evaluate and plot the surface. ---*/
-
           if ((config[val_iZone]->GetnMarker_Analyze() != 0) && compressible) {
             SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                      geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
@@ -18025,7 +18018,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
-  Enthalpy, Velocity[3], TangVel[3], Velocity2, MassFlow, Density, Area, AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
+  Enthalpy, Velocity[3], TangVel[3], Velocity2, MassFlow, Density, Area,
+  AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
   su2double Gas_Constant      = config->GetGas_ConstantND();
   su2double Gamma             = config->GetGamma();
@@ -18041,40 +18035,40 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   bool axisymmetric               = config->GetAxisymmetric();
   unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
   
-  su2double  *Vector                   = new su2double[nDim];
-  su2double  *Surface_MassFlow         = new su2double[nMarker];
-  su2double  *Surface_Mach             = new su2double[nMarker];
-  su2double  *Surface_Temperature      = new su2double[nMarker];
-  su2double  *Surface_Density          = new su2double[nMarker];
-  su2double  *Surface_Enthalpy         = new su2double[nMarker];
-  su2double  *Surface_NormalVelocity   = new su2double[nMarker];
-  su2double  *Surface_StreamVelocity   = new su2double[nMarker];
-  su2double  *Surface_TransvVelocity   = new su2double[nMarker];
-  su2double  *Surface_Pressure         = new su2double[nMarker];
-  su2double  *Surface_TotalTemperature = new su2double[nMarker];
-  su2double  *Surface_TotalPressure    = new su2double[nMarker];
-  su2double  *Surface_VelocityIdeal    = new su2double[nMarker];
-  su2double  *Surface_Area             = new su2double[nMarker];
-  su2double  *Surface_MassFlow_Abs     = new su2double[nMarker];
+  su2double  *Vector                    = new su2double[nDim];
+  su2double  *Surface_MassFlow          = new su2double[nMarker];
+  su2double  *Surface_Mach              = new su2double[nMarker];
+  su2double  *Surface_Temperature       = new su2double[nMarker];
+  su2double  *Surface_Density           = new su2double[nMarker];
+  su2double  *Surface_Enthalpy          = new su2double[nMarker];
+  su2double  *Surface_NormalVelocity    = new su2double[nMarker];
+  su2double  *Surface_StreamVelocity2   = new su2double[nMarker];
+  su2double  *Surface_TransvVelocity2   = new su2double[nMarker];
+  su2double  *Surface_Pressure          = new su2double[nMarker];
+  su2double  *Surface_TotalTemperature  = new su2double[nMarker];
+  su2double  *Surface_TotalPressure     = new su2double[nMarker];
+  su2double  *Surface_VelocityIdeal     = new su2double[nMarker];
+  su2double  *Surface_Area              = new su2double[nMarker];
+  su2double  *Surface_MassFlow_Abs      = new su2double[nMarker];
   
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    Surface_MassFlow[iMarker]         = 0.0;
-    Surface_Mach[iMarker]             = 0.0;
-    Surface_Temperature[iMarker]      = 0.0;
-    Surface_Density[iMarker]          = 0.0;
-    Surface_Enthalpy[iMarker]         = 0.0;
-    Surface_NormalVelocity[iMarker]   = 0.0;
-    Surface_StreamVelocity[iMarker]   = 0.0;
-    Surface_TransvVelocity[iMarker]   = 0.0;
-    Surface_Pressure[iMarker]         = 0.0;
-    Surface_TotalTemperature[iMarker] = 0.0;
-    Surface_TotalPressure[iMarker]    = 0.0;
-    Surface_VelocityIdeal[iMarker]    = 0.0;
-    Surface_Area[iMarker]             = 0.0;
-    Surface_MassFlow_Abs[iMarker]     = 0.0;
+    Surface_MassFlow[iMarker]          = 0.0;
+    Surface_Mach[iMarker]              = 0.0;
+    Surface_Temperature[iMarker]       = 0.0;
+    Surface_Density[iMarker]           = 0.0;
+    Surface_Enthalpy[iMarker]          = 0.0;
+    Surface_NormalVelocity[iMarker]    = 0.0;
+    Surface_StreamVelocity2[iMarker]   = 0.0;
+    Surface_TransvVelocity2[iMarker]   = 0.0;
+    Surface_Pressure[iMarker]          = 0.0;
+    Surface_TotalTemperature[iMarker]  = 0.0;
+    Surface_TotalPressure[iMarker]     = 0.0;
+    Surface_VelocityIdeal[iMarker]     = 0.0;
+    Surface_Area[iMarker]              = 0.0;
+    Surface_MassFlow_Abs[iMarker]      = 0.0;
 
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
       
@@ -18160,8 +18154,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 
           Weight = abs(Area);
 
-          Surface_StreamVelocity[iMarker]   += Vn2*Weight;
-          Surface_TransvVelocity[iMarker]   += Vtang2*Weight;
+          Surface_StreamVelocity2[iMarker]   += Vn2*Weight;
+          Surface_TransvVelocity2[iMarker]   += Vtang2*Weight;
 
         }
       }
@@ -18172,64 +18166,64 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   
   /*--- Copy to the appropriate structure ---*/
   
-  su2double *Surface_MassFlow_Local         = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Local             = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Local      = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Local         = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_StreamVelocity_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_TransvVelocity_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Local         = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Local = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Local    = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Local             = new su2double [nMarker_Analyze];
-  su2double *Surface_MassFlow_Abs_Local     = new su2double [nMarker_Analyze];
+  su2double *Surface_MassFlow_Local          = new su2double [nMarker_Analyze];
+  su2double *Surface_Mach_Local              = new su2double [nMarker_Analyze];
+  su2double *Surface_Temperature_Local       = new su2double [nMarker_Analyze];
+  su2double *Surface_Density_Local           = new su2double [nMarker_Analyze];
+  su2double *Surface_Enthalpy_Local          = new su2double [nMarker_Analyze];
+  su2double *Surface_NormalVelocity_Local    = new su2double [nMarker_Analyze];
+  su2double *Surface_StreamVelocity2_Local   = new su2double [nMarker_Analyze];
+  su2double *Surface_TransvVelocity2_Local   = new su2double [nMarker_Analyze];
+  su2double *Surface_Pressure_Local          = new su2double [nMarker_Analyze];
+  su2double *Surface_TotalTemperature_Local  = new su2double [nMarker_Analyze];
+  su2double *Surface_TotalPressure_Local     = new su2double [nMarker_Analyze];
+  su2double *Surface_Area_Local              = new su2double [nMarker_Analyze];
+  su2double *Surface_MassFlow_Abs_Local      = new su2double [nMarker_Analyze];
   
-  su2double *Surface_MassFlow_Total         = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Total             = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Total      = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Total         = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_StreamVelocity_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_TransvVelocity_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Total         = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Total = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Total    = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Total             = new su2double [nMarker_Analyze];
-  su2double *Surface_MassFlow_Abs_Total     = new su2double [nMarker_Analyze];
+  su2double *Surface_MassFlow_Total          = new su2double [nMarker_Analyze];
+  su2double *Surface_Mach_Total              = new su2double [nMarker_Analyze];
+  su2double *Surface_Temperature_Total       = new su2double [nMarker_Analyze];
+  su2double *Surface_Density_Total           = new su2double [nMarker_Analyze];
+  su2double *Surface_Enthalpy_Total          = new su2double [nMarker_Analyze];
+  su2double *Surface_NormalVelocity_Total    = new su2double [nMarker_Analyze];
+  su2double *Surface_StreamVelocity2_Total   = new su2double [nMarker_Analyze];
+  su2double *Surface_TransvVelocity2_Total   = new su2double [nMarker_Analyze];
+  su2double *Surface_Pressure_Total          = new su2double [nMarker_Analyze];
+  su2double *Surface_TotalTemperature_Total  = new su2double [nMarker_Analyze];
+  su2double *Surface_TotalPressure_Total     = new su2double [nMarker_Analyze];
+  su2double *Surface_Area_Total              = new su2double [nMarker_Analyze];
+  su2double *Surface_MassFlow_Abs_Total      = new su2double [nMarker_Analyze];
 
   su2double *Surface_MomentumDistortion_Total = new su2double [nMarker_Analyze];
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Local[iMarker_Analyze]         = 0.0;
-    Surface_Mach_Local[iMarker_Analyze]             = 0.0;
-    Surface_Temperature_Local[iMarker_Analyze]      = 0.0;
-    Surface_Density_Local[iMarker_Analyze]          = 0.0;
-    Surface_Enthalpy_Local[iMarker_Analyze]         = 0.0;
-    Surface_NormalVelocity_Local[iMarker_Analyze]   = 0.0;
-    Surface_StreamVelocity_Local[iMarker_Analyze]   = 0.0;
-    Surface_TransvVelocity_Local[iMarker_Analyze]   = 0.0;
-    Surface_Pressure_Local[iMarker_Analyze]         = 0.0;
-    Surface_TotalTemperature_Local[iMarker_Analyze] = 0.0;
-    Surface_TotalPressure_Local[iMarker_Analyze]    = 0.0;
-    Surface_Area_Local[iMarker_Analyze]             = 0.0;
-    Surface_MassFlow_Abs_Local[iMarker_Analyze]     = 0.0;
+    Surface_MassFlow_Local[iMarker_Analyze]          = 0.0;
+    Surface_Mach_Local[iMarker_Analyze]              = 0.0;
+    Surface_Temperature_Local[iMarker_Analyze]       = 0.0;
+    Surface_Density_Local[iMarker_Analyze]           = 0.0;
+    Surface_Enthalpy_Local[iMarker_Analyze]          = 0.0;
+    Surface_NormalVelocity_Local[iMarker_Analyze]    = 0.0;
+    Surface_StreamVelocity2_Local[iMarker_Analyze]   = 0.0;
+    Surface_TransvVelocity2_Local[iMarker_Analyze]   = 0.0;
+    Surface_Pressure_Local[iMarker_Analyze]          = 0.0;
+    Surface_TotalTemperature_Local[iMarker_Analyze]  = 0.0;
+    Surface_TotalPressure_Local[iMarker_Analyze]     = 0.0;
+    Surface_Area_Local[iMarker_Analyze]              = 0.0;
+    Surface_MassFlow_Abs_Local[iMarker_Analyze]      = 0.0;
     
-    Surface_MassFlow_Total[iMarker_Analyze]         = 0.0;
-    Surface_Mach_Total[iMarker_Analyze]             = 0.0;
-    Surface_Temperature_Total[iMarker_Analyze]      = 0.0;
-    Surface_Density_Total[iMarker_Analyze]          = 0.0;
-    Surface_Enthalpy_Total[iMarker_Analyze]         = 0.0;
-    Surface_NormalVelocity_Total[iMarker_Analyze]   = 0.0;
-    Surface_StreamVelocity_Total[iMarker_Analyze]   = 0.0;
-    Surface_TransvVelocity_Total[iMarker_Analyze]   = 0.0;
-    Surface_Pressure_Total[iMarker_Analyze]         = 0.0;
-    Surface_TotalTemperature_Total[iMarker_Analyze] = 0.0;
-    Surface_TotalPressure_Total[iMarker_Analyze]    = 0.0;
-    Surface_Area_Total[iMarker_Analyze]             = 0.0;
-    Surface_MassFlow_Abs_Total[iMarker_Analyze]     = 0.0;
+    Surface_MassFlow_Total[iMarker_Analyze]          = 0.0;
+    Surface_Mach_Total[iMarker_Analyze]              = 0.0;
+    Surface_Temperature_Total[iMarker_Analyze]       = 0.0;
+    Surface_Density_Total[iMarker_Analyze]           = 0.0;
+    Surface_Enthalpy_Total[iMarker_Analyze]          = 0.0;
+    Surface_NormalVelocity_Total[iMarker_Analyze]    = 0.0;
+    Surface_StreamVelocity2_Total[iMarker_Analyze]   = 0.0;
+    Surface_TransvVelocity2_Total[iMarker_Analyze]   = 0.0;
+    Surface_Pressure_Total[iMarker_Analyze]          = 0.0;
+    Surface_TotalTemperature_Total[iMarker_Analyze]  = 0.0;
+    Surface_TotalPressure_Total[iMarker_Analyze]     = 0.0;
+    Surface_Area_Total[iMarker_Analyze]              = 0.0;
+    Surface_MassFlow_Abs_Total[iMarker_Analyze]      = 0.0;
 
     Surface_MomentumDistortion_Total[iMarker_Analyze] = 0.0;
 
@@ -18246,19 +18240,19 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
         /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
         
         if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
-          Surface_MassFlow_Local[iMarker_Analyze]         += Surface_MassFlow[iMarker];
-          Surface_Mach_Local[iMarker_Analyze]             += Surface_Mach[iMarker];
-          Surface_Temperature_Local[iMarker_Analyze]      += Surface_Temperature[iMarker];
-          Surface_Density_Local[iMarker_Analyze]          += Surface_Density[iMarker];
-          Surface_Enthalpy_Local[iMarker_Analyze]         += Surface_Enthalpy[iMarker];
-          Surface_NormalVelocity_Local[iMarker_Analyze]   += Surface_NormalVelocity[iMarker];
-          Surface_StreamVelocity_Local[iMarker_Analyze]   += Surface_StreamVelocity[iMarker];
-          Surface_TransvVelocity_Local[iMarker_Analyze]   += Surface_TransvVelocity[iMarker];
-          Surface_Pressure_Local[iMarker_Analyze]         += Surface_Pressure[iMarker];
-          Surface_TotalTemperature_Local[iMarker_Analyze] += Surface_TotalTemperature[iMarker];
-          Surface_TotalPressure_Local[iMarker_Analyze]    += Surface_TotalPressure[iMarker];
-          Surface_Area_Local[iMarker_Analyze]             += Surface_Area[iMarker];
-          Surface_MassFlow_Abs_Local[iMarker_Analyze]     += Surface_MassFlow_Abs[iMarker];
+          Surface_MassFlow_Local[iMarker_Analyze]          += Surface_MassFlow[iMarker];
+          Surface_Mach_Local[iMarker_Analyze]              += Surface_Mach[iMarker];
+          Surface_Temperature_Local[iMarker_Analyze]       += Surface_Temperature[iMarker];
+          Surface_Density_Local[iMarker_Analyze]           += Surface_Density[iMarker];
+          Surface_Enthalpy_Local[iMarker_Analyze]          += Surface_Enthalpy[iMarker];
+          Surface_NormalVelocity_Local[iMarker_Analyze]    += Surface_NormalVelocity[iMarker];
+          Surface_StreamVelocity2_Local[iMarker_Analyze]   += Surface_StreamVelocity2[iMarker];
+          Surface_TransvVelocity2_Local[iMarker_Analyze]   += Surface_TransvVelocity2[iMarker];
+          Surface_Pressure_Local[iMarker_Analyze]          += Surface_Pressure[iMarker];
+          Surface_TotalTemperature_Local[iMarker_Analyze]  += Surface_TotalTemperature[iMarker];
+          Surface_TotalPressure_Local[iMarker_Analyze]     += Surface_TotalPressure[iMarker];
+          Surface_Area_Local[iMarker_Analyze]              += Surface_Area[iMarker];
+          Surface_MassFlow_Abs_Local[iMarker_Analyze]      += Surface_MassFlow_Abs[iMarker];
         }
         
       }
@@ -18275,8 +18269,8 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   SU2_MPI::Allreduce(Surface_Density_Local, Surface_Density_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_Enthalpy_Local, Surface_Enthalpy_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_NormalVelocity_Local, Surface_NormalVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_StreamVelocity_Local, Surface_StreamVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_TransvVelocity_Local, Surface_TransvVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(Surface_StreamVelocity2_Local, Surface_StreamVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(Surface_TransvVelocity2_Local, Surface_TransvVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_Pressure_Local, Surface_Pressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -18286,19 +18280,19 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 #else
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Total[iMarker_Analyze]         = Surface_MassFlow_Local[iMarker_Analyze];
-    Surface_Mach_Total[iMarker_Analyze]             = Surface_Mach_Local[iMarker_Analyze];
-    Surface_Temperature_Total[iMarker_Analyze]      = Surface_Temperature_Local[iMarker_Analyze];
-    Surface_Density_Total[iMarker_Analyze]          = Surface_Density_Local[iMarker_Analyze];
-    Surface_Enthalpy_Total[iMarker_Analyze]         = Surface_Enthalpy_Local[iMarker_Analyze];
-    Surface_NormalVelocity_Total[iMarker_Analyze]   = Surface_NormalVelocity_Local[iMarker_Analyze];
-    Surface_StreamVelocity_Total[iMarker_Analyze]   = Surface_StreamVelocity_Local[iMarker_Analyze];
-    Surface_TransvVelocity_Total[iMarker_Analyze]   = Surface_TransvVelocity_Local[iMarker_Analyze];
-    Surface_Pressure_Total[iMarker_Analyze]         = Surface_Pressure_Local[iMarker_Analyze];
-    Surface_TotalTemperature_Total[iMarker_Analyze] = Surface_TotalTemperature_Local[iMarker_Analyze];
-    Surface_TotalPressure_Total[iMarker_Analyze]    = Surface_TotalPressure_Local[iMarker_Analyze];
-    Surface_Area_Total[iMarker_Analyze]             = Surface_Area_Local[iMarker_Analyze];
-    Surface_MassFlow_Abs_Total[iMarker_Analyze]     = Surface_MassFlow_Abs_Local[iMarker_Analyze];
+    Surface_MassFlow_Total[iMarker_Analyze]          = Surface_MassFlow_Local[iMarker_Analyze];
+    Surface_Mach_Total[iMarker_Analyze]              = Surface_Mach_Local[iMarker_Analyze];
+    Surface_Temperature_Total[iMarker_Analyze]       = Surface_Temperature_Local[iMarker_Analyze];
+    Surface_Density_Total[iMarker_Analyze]           = Surface_Density_Local[iMarker_Analyze];
+    Surface_Enthalpy_Total[iMarker_Analyze]          = Surface_Enthalpy_Local[iMarker_Analyze];
+    Surface_NormalVelocity_Total[iMarker_Analyze]    = Surface_NormalVelocity_Local[iMarker_Analyze];
+    Surface_StreamVelocity2_Total[iMarker_Analyze]   = Surface_StreamVelocity2_Local[iMarker_Analyze];
+    Surface_TransvVelocity2_Total[iMarker_Analyze]   = Surface_TransvVelocity2_Local[iMarker_Analyze];
+    Surface_Pressure_Total[iMarker_Analyze]          = Surface_Pressure_Local[iMarker_Analyze];
+    Surface_TotalTemperature_Total[iMarker_Analyze]  = Surface_TotalTemperature_Local[iMarker_Analyze];
+    Surface_TotalPressure_Total[iMarker_Analyze]     = Surface_TotalPressure_Local[iMarker_Analyze];
+    Surface_Area_Total[iMarker_Analyze]              = Surface_Area_Local[iMarker_Analyze];
+    Surface_MassFlow_Abs_Total[iMarker_Analyze]      = Surface_MassFlow_Abs_Local[iMarker_Analyze];
   }
   
 #endif
@@ -18335,17 +18329,17 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
 
-    Area = abs(Surface_Area_Total[iMarker_Analyze]);
+    Area = fabs(Surface_Area_Total[iMarker_Analyze]);
 
     if (Area != 0.0) {
-      Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
-      Surface_StreamVelocity_Total[iMarker_Analyze] /= Area;
-      Surface_TransvVelocity_Total[iMarker_Analyze] /= Area;
+      Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity2_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
+      Surface_StreamVelocity2_Total[iMarker_Analyze] /= Area;
+      Surface_TransvVelocity2_Total[iMarker_Analyze] /= Area;
     }
     else {
       Surface_MomentumDistortion_Total[iMarker_Analyze] = 0.0;
-      Surface_StreamVelocity_Total[iMarker_Analyze]     = 0.0;
-      Surface_TransvVelocity_Total[iMarker_Analyze]     = 0.0;
+      Surface_StreamVelocity2_Total[iMarker_Analyze]    = 0.0;
+      Surface_TransvVelocity2_Total[iMarker_Analyze]    = 0.0;
     }
 
   }
@@ -18374,10 +18368,10 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
     su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
     config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
 
-    su2double Uniformity = sqrt(Surface_StreamVelocity_Total[iMarker_Analyze]);
+    su2double Uniformity = sqrt(Surface_StreamVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     config->SetSurface_Uniformity(iMarker_Analyze, Uniformity);
 
-    su2double SecondaryStrength = sqrt(Surface_TransvVelocity_Total[iMarker_Analyze]);
+    su2double SecondaryStrength = sqrt(Surface_TransvVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     config->SetSurface_SecondaryStrength(iMarker_Analyze, SecondaryStrength);
 
     su2double MomentumDistortion = Surface_MomentumDistortion_Total[iMarker_Analyze];
@@ -18412,65 +18406,76 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
     
-    cout.precision(3);
-    cout << endl << "Computing surface mean values." << endl;
+    cout.precision(6);
+    cout.setf(ios::scientific, ios::floatfield);
+    cout << endl << "Computing surface mean values." << endl << endl;
     
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
       cout << "Surface "<< config->GetMarker_Analyze_TagBound(iMarker_Analyze) << ":" << endl;
       
+      if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout << setw(20) << "Area (m^2): "; else cout << setw(20) << "Area (ft^2): "; }
+      else { if (config->GetSystemMeasurements() == SI) cout << setw(20) << "Area (m): "; else cout << setw(20) << "Area (ft): "; }
+      
+      if (config->GetSystemMeasurements() == SI)      cout << setw(15) << fabs(Surface_Area_Total[iMarker_Analyze]);
+      else if (config->GetSystemMeasurements() == US) cout << setw(15) << fabs(Surface_Area_Total[iMarker_Analyze])*12.0*12.0;
+      
+      cout << endl;
+
       su2double MassFlow = config->GetSurface_MassFlow(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Mf (kg/s): " << setw(10) << MassFlow;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Mf (lbs/s): " << setw(10) << MassFlow;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Mf (kg/s): " << setw(15) << MassFlow;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Mf (lbs/s): " << setw(15) << MassFlow;
       
       su2double NormalVelocity = config->GetSurface_NormalVelocity(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Vn (m/s): " << setw(10) << NormalVelocity;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Vn (ft/s): " << setw(10) << NormalVelocity;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Vn (m/s): " << setw(15) << NormalVelocity;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Vn (ft/s): " << setw(15) << NormalVelocity;
       
       cout << endl;
 
       su2double Uniformity = config->GetSurface_Uniformity(iMarker_Analyze);
-      cout << setw(18) << "Uniformity: " << setw(10) << Uniformity;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Uniformity (m/s): " << setw(15) << Uniformity;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Uniformity (ft/s): " << setw(15) << Uniformity;
 
       su2double SecondaryStrength = config->GetSurface_SecondaryStrength(iMarker_Analyze);
-      cout << setw(18) << "Secondary: " << setw(10) << SecondaryStrength;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Secondary (m/s): " << setw(15) << SecondaryStrength;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Secondary (ft/s): " << setw(15) << SecondaryStrength;
 
       cout << endl;
 
       su2double MomentumDistortion = config->GetSurface_MomentumDistortion(iMarker_Analyze);
-      cout << setw(18) << "Mom. Distortion: " << setw(10) << MomentumDistortion;
+      cout << setw(20) << "Mom. Distortion: " << setw(15) << MomentumDistortion;
 
       su2double SecondOverUniform = config->GetSurface_SecondOverUniform(iMarker_Analyze);
-      cout << setw(18) << "Second/Uniform: " << setw(10) << SecondOverUniform;
+      cout << setw(20) << "Second/Uniform: " << setw(15) << SecondOverUniform;
 
       cout << endl;
 
       su2double Pressure = config->GetSurface_Pressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "P (Pa): " << setw(10) << Pressure;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "P (psf): " << setw(10) << Pressure;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "P (Pa): " << setw(15) << Pressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "P (psf): " << setw(15) << Pressure;
       
       su2double TotalPressure = config->GetSurface_TotalPressure(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "PT (Pa): " << setw(10) <<TotalPressure;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "PT (psf): " << setw(10) <<TotalPressure;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "PT (Pa): " << setw(15) <<TotalPressure;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "PT (psf): " << setw(15) <<TotalPressure;
 
       cout << endl;
 
       su2double Mach = config->GetSurface_Mach(iMarker_Analyze);
-      cout << setw(18) << "Mach: " << setw(10) << Mach;
+      cout << setw(20) << "Mach: " << setw(15) << Mach;
 
       su2double Density = config->GetSurface_Density(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "Rho (kg/m^3): " << setw(10) << Density;
-      else if (config->GetSystemMeasurements() == US) cout << setw(18) << "Rho (lb/ft^3): " << setw(10) << Density*32.174;
+      if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "Rho (kg/m^3): " << setw(15) << Density;
+      else if (config->GetSystemMeasurements() == US) cout << setw(20) << "Rho (lb/ft^3): " << setw(15) << Density*32.174;
 
       cout << endl;
 
       if (compressible || energy) {
         su2double Temperature = config->GetSurface_Temperature(iMarker_Analyze);
-        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "T (K): " << setw(10) << Temperature;
-        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "T (R): " << setw(10) << Temperature;
+        if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "T (K): " << setw(15) << Temperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(20) << "T (R): " << setw(15) << Temperature;
 
         su2double TotalTemperature = config->GetSurface_TotalTemperature(iMarker_Analyze);
-        if (config->GetSystemMeasurements() == SI)      cout << setw(18) << "TT (K): " << setw(10) << TotalTemperature;
-        else if (config->GetSystemMeasurements() == US) cout << setw(18) << "TT (R): " << setw(10) << TotalTemperature;
+        if (config->GetSystemMeasurements() == SI)      cout << setw(20) << "TT (K): " << setw(15) << TotalTemperature;
+        else if (config->GetSystemMeasurements() == US) cout << setw(20) << "TT (R): " << setw(15) << TotalTemperature;
 
         cout << endl;
       }
