@@ -18544,8 +18544,6 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
 
   unsigned short nDim = DGGeometry->GetnDim();
 
-  const CPointFEM *meshPoints  = DGGeometry->GetMeshPoints();
-
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
 
@@ -18553,19 +18551,16 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   vector<su2double> DOFsCoords;
   vector<unsigned long> globalID;
 
-  /*--- Update the solution by looping over the owned volume elements. ---*/
+  /*--- Set the global ID and the coordinates of the local DOFs
+        by looping over the owned volume elements. ---*/
   unsigned long nLocalPoint = 0;
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
 
-      /* Store the coordinate of the first vertex of this element to give an
-       indication for the location of the maximum residual. */
-      const unsigned long ind = volElem[l].nodeIDsGrid[j];
-      const su2double *coor   = meshPoints[ind].coor;
-
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       globalID.push_back(globalIndex);
 
+      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
       for(unsigned short k=0; k<nDim; ++k) DOFsCoords.push_back(coor[k]);
 
       nLocalPoint++;
@@ -20067,7 +20062,6 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
-  const CPointFEM *meshPoints = DGGeometry->GetMeshPoints();
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
 
@@ -20117,11 +20111,9 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
       const su2double *U = solDOFs + j*nVar_First;
 
-      /*--- Load the grid node coordinate values. ---*/
+      /*--- Load the coordinate values of the solution DOFs. ---*/
 
-      const unsigned long ind = volElem[l].nodeIDsGrid[j];
-      const su2double *coor   = meshPoints[ind].coor;
-
+      const su2double *coor = volElem[l].coorSolDOFs.data() + j*nDim;
       for(unsigned short k=0; k<nDim; ++k) {
         Local_Data[jPoint][iVar] = coor[k];
         iVar++;
