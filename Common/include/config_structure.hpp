@@ -1001,7 +1001,7 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
-  su2double Restart_Bandwidth_Sum; /*!< \brief The sum of the bandwidth for writing binary restarts (to be averaged later). */
+  su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
@@ -8348,13 +8348,13 @@ public:
    * \brief Set the sum of the bandwidth for writing binary restarts (to be averaged later).
    * \param[in] Sum of the bandwidth for writing binary restarts.
    */
-  void SetRestart_Bandwidth_Sum(su2double val_restart_bandwidth_sum);
+  void SetRestart_Bandwidth_Agg(su2double val_restart_bandwidth_sum);
   
   /*!
    * \brief Set the sum of the bandwidth for writing binary restarts (to be averaged later).
    * \return Sum of the bandwidth for writing binary restarts.
    */
-  su2double GetRestart_Bandwidth_Sum(void);
+  su2double GetRestart_Bandwidth_Agg(void);
 
   /*!
    * \brief Get the frequency for writing the surface solution file in Dual Time.

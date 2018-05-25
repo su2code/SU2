@@ -1864,9 +1864,9 @@ inline void CConfig::SetMax_Vel2(su2double val_max_vel2) { Max_Vel2 = val_max_ve
 
 inline su2double CConfig::GetMax_Vel2(void) { return Max_Vel2; }
 
-inline void CConfig::SetRestart_Bandwidth_Sum(su2double val_restart_bandwidth_sum) { Restart_Bandwidth_Sum = val_restart_bandwidth_sum; }
+inline void CConfig::SetRestart_Bandwidth_Agg(su2double val_restart_bandwidth_sum) { Restart_Bandwidth_Agg = val_restart_bandwidth_sum; }
 
-inline su2double CConfig::GetRestart_Bandwidth_Sum(void) { return Restart_Bandwidth_Sum; }
+inline su2double CConfig::GetRestart_Bandwidth_Agg(void) { return Restart_Bandwidth_Agg; }
 
 inline unsigned long CConfig::GetWrt_Surf_Freq_DualTime(void) { return Wrt_Surf_Freq_DualTime; }
 
