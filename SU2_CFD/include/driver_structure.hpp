@@ -72,8 +72,9 @@ protected:
   su2double BandwidthSum;                       /*!< \brief Aggregate value of the bandwidth for writing restarts (to be average later).*/
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
-  su2double millionVertsDomain;                 /*!< \brief Global number of vertices in the grid in millions (excluding ghost points).*/
-  su2double millionVerts;                       /*!< \brief Global number of vertices in the grid in millions (including ghost points).*/
+  unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
+  su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
+  su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
   ofstream *ConvHist_file;                       /*!< \brief Convergence history file.*/
   ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
