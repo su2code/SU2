@@ -498,11 +498,11 @@ CDriver::CDriver(char* confFile,
   UsedTimeOutput     = 0.0;
   IterCount          = 0;
   OutputCount        = 0;
-  millionVerts       = 0.0;
-  millionVertsDomain = 0.0;
+  MDOFs              = 0.0;
+  MDOFsDomain        = 0.0;
   for (iZone = 0; iZone < nZone; iZone++) {
-    millionVertsDomain += (su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
-    millionVerts       += (su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPoint()/(1.0e6);\
+    MDOFs       += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MDOFsDomain += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
@@ -664,9 +664,10 @@ void CDriver::Postprocessing() {
     cout.precision(6);
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
-    cout << setw(25) << "Cores:" << setw(12) << size << endl;
-    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*millionVertsDomain/(su2double)size;
-    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(millionVerts-millionVertsDomain)/(su2double)size << endl;
+    cout << setw(25) << "Cores:" << setw(12) << size;
+    cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
+    cout << setw(25) << "DOFs/core:" << setw(12) << 1.0e6*MDOFsDomain/(su2double)size;
+    cout << setw(20) << "Ghost DOFs/core:" << setw(12) << 1.0e6*(MDOFs-MDOFsDomain)/(su2double)size << endl;
     cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0);
     cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
     cout << endl;
@@ -680,8 +681,8 @@ void CDriver::Postprocessing() {
     cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount;
     if (IterCount != 0) {
       cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
-      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/millionVertsDomain;
-      cout << setw(20) << "Mpoints/s:" << setw(12)<< millionVertsDomain*(su2double)IterCount/UsedTimeCompute << endl;
+      cout << setw(25) << "Core-s/iter/MDOFs:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/MDOFsDomain;
+      cout << setw(20) << "MDOFs/s:" << setw(12)<< MDOFsDomain*(su2double)IterCount/UsedTimeCompute << endl;
     } else cout << endl;
     cout << endl;
     cout << "Output phase:" << endl;
@@ -691,7 +692,7 @@ void CDriver::Postprocessing() {
     if (OutputCount != 0) {
       cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
       if (isBinary) {
-        cout << setw(25)<< "Restart Bandwidth (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount;
+        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount;
         cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
       }
     } else cout << endl;
@@ -876,6 +877,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   template_solver, disc_adj, disc_adj_turb,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
   
+  /*--- Count the number of DOFs per solution point. ---*/
+  
+  DOFsPerPoint = 0;
+  
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
@@ -935,6 +940,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     
     if (template_solver) {
       solver_container[iMGlevel][TEMPLATE_SOL] = new CTemplateSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][TEMPLATE_SOL]->GetnVar();
     }
     
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
@@ -948,6 +954,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][FLOW_SOL]->GetnVar();
     }
     if (ns) {
       if (compressible) {
@@ -956,6 +963,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (incompressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][FLOW_SOL]->GetnVar();
     }
     if (turbulent) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
@@ -969,24 +977,31 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][TURB_SOL]->GetnVar();
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][TRANS_SOL]->GetnVar();
       }
     }
     if (poisson) {
       solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][POISSON_SOL]->GetnVar();
     }
     if (wave) {
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][WAVE_SOL]->GetnVar();
     }
     if (heat) {
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][HEAT_SOL]->GetnVar();
     }
     if (heat_fvm) {
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolverFVM(geometry[iMGlevel], config, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][HEAT_SOL]->GetnVar();
     }
     if (fem) {
       solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][FEA_SOL]->GetnVar();
     }
     
     /*--- Allocate solution for adjoint problem ---*/
@@ -998,6 +1013,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (incompressible) {
         SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFLOW_SOL]->GetnVar();
     }
     if (adj_ns) {
       if (compressible) {
@@ -1006,19 +1022,25 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (incompressible) {
         SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFLOW_SOL]->GetnVar();
     }
     if (adj_turb) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJTURB_SOL]->GetnVar();
     }
     
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
-      if (disc_adj_turb)
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFLOW_SOL]->GetnVar();
+      if (disc_adj_turb) {
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJTURB_SOL]->GetnVar();
+      }
     }
-
+    
     if (disc_adj_fem) {
       solver_container[iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[iMGlevel], config, solver_container[iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFEA_SOL]->GetnVar();
     }
   }
   
@@ -3431,7 +3453,7 @@ void CDriver::Output(unsigned long ExtIter) {
 #endif
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
-    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Sum();
+    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
 #ifndef HAVE_MPI
     StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else

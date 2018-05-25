@@ -17642,11 +17642,15 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    to write a fresh restart file, so we delete any existing files and create
    a new one. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+                       MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
+                       MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname,
+                         MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
+                         MPI_INFO_NULL, &fhw);
   }
 
   /*--- Error check opening the file. ---*/
@@ -17746,7 +17750,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Compute and store the bandwidth ---*/
   
   Bandwidth = file_size/(1.0e6)/UsedTime;
-  config->SetRestart_Bandwidth_Sum(config->GetRestart_Bandwidth_Sum() + Bandwidth);
+  config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+Bandwidth);
   
   if (rank == MASTER_NODE) {
     cout << "Wrote " << file_size/1.0e6 << " MB to disk in ";
