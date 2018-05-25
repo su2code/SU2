@@ -493,14 +493,16 @@ CDriver::CDriver(char* confFile,
   /*--- Compute/print the total time for performance benchmarking. ---*/
   
   UsedTime = StopTime-StartTime;
-  UsedTimePreproc = UsedTime;
-  UsedTimeCompute = 0.0;
-  UsedTimeOutput  = 0.0;
-  IterCount       = 0;
-  OutputCount     = 0;
-  millionVerts    = 0.0;
+  UsedTimePreproc    = UsedTime;
+  UsedTimeCompute    = 0.0;
+  UsedTimeOutput     = 0.0;
+  IterCount          = 0;
+  OutputCount        = 0;
+  millionVerts       = 0.0;
+  millionVertsDomain = 0.0;
   for (iZone = 0; iZone < nZone; iZone++) {
-    millionVerts += (su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    millionVertsDomain += (su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    millionVerts       += (su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPoint()/(1.0e6);\
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
@@ -514,6 +516,8 @@ CDriver::CDriver(char* confFile,
 
 void CDriver::Postprocessing() {
 
+  bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
+  
     /*--- Output some information to the console. ---*/
 
   if (rank == MASTER_NODE) {
@@ -660,25 +664,37 @@ void CDriver::Postprocessing() {
     cout.precision(6);
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
-    cout << setw(27) << "Cores:" << setw(12) << size << endl;
-    cout << setw(27) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << endl;
-    cout << setw(27) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << setw(25) << "Cores:" << setw(12) << size << endl;
+    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*millionVertsDomain/(su2double)size;
+    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(millionVerts-millionVertsDomain)/(su2double)size << endl;
+    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0);
+    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << endl;
     cout << "Preprocessing phase:" << endl;
-    cout << setw(27) << "Time (s):"  << setw(12)<< UsedTimePreproc << "  ("<< ((UsedTimePreproc * 100.0) / (TotalTime)) << " %)" << endl;
+    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimePreproc;
+    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimePreproc * 100.0) / (TotalTime)) << endl;
+    cout << endl;
     cout << "Compute phase:" << endl;
-    cout << setw(27) << "Time (s):"  << setw(12)<< UsedTimeCompute << "  ("<< ((UsedTimeCompute * 100.0) / (TotalTime)) << " %)" << endl;
-    cout << setw(27) << "Iterations:"  << setw(12)<< IterCount << endl;
+    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimeCompute;
+    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimeCompute * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount;
     if (IterCount != 0) {
-      cout << setw(27) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
-      cout << setw(27) << "Core-s/iter/mil. points:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/millionVerts << endl;
-    }
+      cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
+      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/millionVertsDomain;
+      cout << setw(20) << "Mpoints/s:" << setw(12)<< millionVertsDomain*(su2double)IterCount/UsedTimeCompute << endl;
+    } else cout << endl;
+    cout << endl;
     cout << "Output phase:" << endl;
-    cout << setw(27)<< "Time (s):"  << setw(12)<< UsedTimeOutput << "  ("<< ((UsedTimeOutput * 100.0) / (TotalTime)) << " %)" << endl;
-    cout << setw(27)<< "Output count:" << setw(12)<< OutputCount << endl;
+    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimeOutput;
+    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimeOutput * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Output count:" << setw(12)<< OutputCount;
     if (OutputCount != 0) {
-      cout << setw(27)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
-      cout << setw(27)<< "Core-s/output/mil. points:" << setw(12)<< (su2double)size*UsedTimeOutput/(su2double)OutputCount/millionVerts << endl;
-    }
+      cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
+      if (isBinary) {
+        cout << setw(25)<< "Restart Bandwidth (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount;
+        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
+      }
+    } else cout << endl;
     cout << "-------------------------------------------------------------------------" << endl;
     cout << endl;
   }
@@ -3415,6 +3431,7 @@ void CDriver::Output(unsigned long ExtIter) {
 #endif
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
+    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Sum();
 #ifndef HAVE_MPI
     StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
