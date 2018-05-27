@@ -813,7 +813,26 @@ public:
                           su2double val_eddy_viscosity,
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
-    
+
+  /*!
+   * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_turb_ke - Turbulent kinetic energy
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_reynolds_stress - Reynolds stress.
+   * \param[in] val_perturbed_rsm - Perturbed Reynolds Stress Matrix
+   */
+
+  void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
+                          su2double val_turb_ke, su2double *val_normal,
+                          su2double val_laminar_viscosity,
+                          su2double val_eddy_viscosity,
+                          su2double **val_reynolds_stress,
+                          su2double **val_perturbed_rsm);
+
   /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
@@ -1508,6 +1527,38 @@ public:
                           const su2double Dissipation_i, const su2double Dissipation_j,
                           const su2double Sensor_i, const su2double Sensor_j,
                           su2double& Dissipation_ij, CConfig *config);
+
+  /*!
+   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
+   * \param A_i: symmetric matrix to be decomposed
+   * \param Eig_Vec: strores the eigenvectors
+   * \param Eig_Val: stores the eigenvalues
+   */
+  void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
+
+  /*!
+   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
+   * \param A_ij: recomposed matrix
+   * \param Eig_Vec: eigenvectors
+   * \param Eig_Val: eigenvalues
+   */
+  void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
+
+  /*!
+   * \brief tred2
+   * \param V
+   * \param d
+   * \param e
+   */
+  void tred2(su2double **V, su2double *d, su2double *e);
+
+  /*!
+   * \brief tql2
+   * \param V
+   * \param d
+   * \param e
+   */
+  void tql2(su2double **V, su2double *d, su2double *e);
   
 };
 
