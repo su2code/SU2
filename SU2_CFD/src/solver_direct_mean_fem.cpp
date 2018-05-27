@@ -30,6 +30,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../include/data_manufactured_solutions.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -3226,6 +3227,32 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
       solDOF[2]      = rho*v;
       solDOF[3]      = 0.0;
       solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
+    }
+  }
+
+#elif MANUFACTURED_SOLUTION
+
+  /* Write a message that the solution is initialized for a manufactured solution. */
+  if(rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Solution is initialized for a manufactured solution!!!" << endl;
+    cout << endl << flush;
+  }
+
+  const su2double RGas = config->GetGas_ConstantND();
+
+  /* Loop over the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Loop over the DOFs of this element. */
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+      /* Compute the solution. */
+      DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, solDOF);
     }
   }
 
