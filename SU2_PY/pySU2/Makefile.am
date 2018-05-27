@@ -3,20 +3,24 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python wrapper.
 # \author D. Thomas
-# \version 5.0.0 "Raven"
+# \version 6.0.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -42,12 +46,10 @@ SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
 
-PYTHON_INCLUDE = -I/usr/include/python2.7
+PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages()[0])")
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/site-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I${PYTHON_SITE_PACKAGES}/mpi4py/include \
                  -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
@@ -57,7 +59,8 @@ pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
-PY_LIB = -lpython2.7 \
+PY_LIB = ${PYTHON_LIBS} \
+         -L${PYTHON_EXEC_PREFIX}/lib \
          -L/usr/lib \
          -L/usr/lib/x86_64-linux-gnu
          

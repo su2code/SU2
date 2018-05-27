@@ -3,20 +3,24 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,10 +56,11 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CDriver {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
   char runtime_file_name[MAX_STRING_SIZE];
   su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
@@ -82,9 +87,10 @@ protected:
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
-  su2double APIVarCoord[3];                     /*!< \brief This is used to store the VarCoord of each node. */
-  su2double APINodalForce[3];                   /*!< \brief This is used to store the force at each node. */
-  su2double APINodalForceDensity[3];            /*!< \brief This is used to store the force density at each node. */
+  su2double PyWrapVarCoord[3],                  /*!< \brief This is used to store the VarCoord of each vertex. */
+            PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
+            PyWrapNodalForceDensity[3],         /*!< \brief This is used to store the force density at each vertex. */
+            PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
 
 public:
 	
@@ -185,6 +191,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Initialize Python interface functionalities
+   */
+  void PythonInterface_Preprocessing();
 
   /*!
    * \brief Deallocation routine
@@ -291,6 +302,11 @@ public:
   virtual void SetInitialMesh() { };
 
   /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  virtual void BoundaryConditionsUpdate() { };
+
+  /*!
    * \brief Get the total drag.
    * \return Total drag.
    */
@@ -365,6 +381,18 @@ public:
    * \return Number of external iterations.
    */
   unsigned long GetnExtIter();
+
+  /*!
+   * \brief Get the current external iteration.
+   * \return Current external iteration.
+   */
+  unsigned long GetExtIter();
+
+  /*!
+   * \brief Get the unsteady time step.
+   * \return Unsteady time step.
+   */
+  su2double GetUnsteady_TimeStep();
 
   /*!
    * \brief Get the global index of a vertex on a specified marker.
@@ -486,13 +514,128 @@ public:
    */
   su2double SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
 
+  /*!
+   * \brief Get the temperature at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Temperature of the vertex.
+   */
+  su2double GetVertexTemperature(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the temperature of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_WallTemp - Value of the temperature.
+   */
+  void SetVertexTemperature(unsigned short iMarker, unsigned short iVertex, su2double val_WallTemp);
+
+  /*!
+   * \brief Compute the heat flux at a vertex on a specified marker (3 components).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return True if the vertex is a halo node.
+   */
+  bool ComputeVertexHeatFluxes(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the x component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return x component of the heat flux at the vertex.
+   */
+  su2double GetVertexHeatFluxX(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the y component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return y component of the heat flux at the vertex.
+   */
+  su2double GetVertexHeatFluxY(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the z component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return z component of the heat flux at the vertex.
+   */
+  su2double GetVertexHeatFluxZ(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Wall normal component of the heat flux at the vertex.
+   */
+  su2double GetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_WallHeatFlux - Value of the normal heat flux.
+   */
+  void SetVertexNormalHeatFlux(unsigned short iMarker, unsigned short iVertex, su2double val_WallHeatFlux);
+
+  /*!
+   * \brief Get the thermal conductivity at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Thermal conductivity at the vertex.
+   */
+  su2double GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the unit normal (vector) at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Unit normal (vector) at the vertex.
+   */
+  vector<su2double> GetVertexUnitNormal(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get all the boundary markers tags.
+   * \return List of boundary markers tags.
+   */
+  vector<string> GetAllBoundaryMarkersTag();
+
+  /*!
+   * \brief Get all the moving boundary markers tags.
+   * \return List of moving boundary markers tags.
+   */
+  vector<string> GetAllMovingMarkersTag();
+
+  /*!
+   * \brief Get all the heat transfer boundary markers tags.
+   * \return List of heat transfer boundary markers tags.
+   */
+  vector<string> GetAllCHTMarkersTag();
+
+  /*!
+   * \brief Get all the (subsonic) inlet boundary markers tags.
+   * \return List of inlet boundary markers tags.
+   */
+  vector<string> GetAllInletMarkersTag();
+
+  /*!
+   * \brief Get all the boundary markers tags with their associated indices.
+   * \return List of boundary markers tags with their indices.
+   */
+  map<string, int> GetAllBoundaryMarkers();
+
+  /*!
+   * \brief Get all the boundary markers tags with their associated types.
+   * \return List of boundary markers tags with their types.
+   */
+  map<string, string> GetAllBoundaryMarkersType();
+
 };
 
 /*!
  * \class CGeneralDriver
  * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CGeneralDriver : public CDriver {
 public:
@@ -543,6 +686,11 @@ public:
    * \brief Perform a mesh deformation as initial condition (single zone).
    */
   void SetInitialMesh();
+
+  /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
 };
 
 
@@ -550,7 +698,6 @@ public:
  * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
- * \version 5.0.0 "Raven"
  */
 class CFluidDriver : public CDriver {
 public:
@@ -603,9 +750,49 @@ public:
   void SetInitialMesh();
 
   /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
+
+  /*!
    * \brief Transfer data among different zones (multiple zone).
    */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Set the total temperature of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_Ttotal - Value of the total (stagnation) temperature.
+   */
+  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal);
+
+  /*!
+   * \brief Set the total pressure of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_Ptotal - Value of the total (stagnation) pressure.
+   */
+  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal);
+
+  /*!
+   * \brief Set the flow direction of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the flow direction unit vector
+   * \param[in] val_FlowDir - Component of a unit vector representing the flow direction
+   */
+  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir);
+
+  /*!
+   * \brief Set a turbulence variable on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_tub_var);
+
 };
 
 
@@ -613,7 +800,6 @@ public:
  * \class CTurbomachineryDriver
  * \brief Class for driving an iteration for turbomachinery flow analysis.
  * \author S. Vitale
- * \version 5.0.0 "Raven"
  */
 class CTurbomachineryDriver : public CFluidDriver {
 public:
@@ -664,7 +850,6 @@ public:
  * \class CDiscAdjMultiZoneDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjFluidDriver : public CFluidDriver {
 
@@ -724,7 +909,6 @@ public:
  * \class CDiscAdjTurbomachineryDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author S. Vitale, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
 
@@ -771,7 +955,6 @@ public:
  * \class CHBDriver
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
- * \version 5.0.0 "Raven"
  */
 class CHBDriver : public CDriver {
 
@@ -838,7 +1021,6 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 5.0.0 "Raven"
  */
 class CFSIDriver : public CDriver {
 public:
