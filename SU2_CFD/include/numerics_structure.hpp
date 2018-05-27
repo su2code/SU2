@@ -206,6 +206,11 @@ public:
     
   su2double *l, *m;
 
+  su2double **MeanReynoldsStress;
+  su2double **MeanPerturbedRSM;
+  bool using_uq;
+  su2double PerturbedStrainMag;
+
   /*!
    * \brief Constructor of the class.
    */
@@ -3451,6 +3456,32 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param turb_ke: turbulent kinetic energy of the noce
+   * \param Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
+
+  /*!
+   * \brief Setting the UQ framework usage
+   * \param val_using_uq
+   */
+  void SetUsing_uq(bool val_using_uq);
 };
 
 
