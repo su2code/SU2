@@ -3,20 +3,24 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,10 +71,11 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CGeometry {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
 	unsigned long nPoint,	/*!< \brief Number of points of the mesh. */
 	nPointDomain,						/*!< \brief Number of real points of the mesh. */
 	nPointGhost,					/*!< \brief Number of ghost points of the mesh. */
@@ -107,6 +112,10 @@ protected:
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
 
+  /* --- Custom boundary variables --- */
+  su2double **CustomBoundaryTemperature;
+  su2double **CustomBoundaryHeatFlux;
+
 public:
 	unsigned long *nElem_Bound;			/*!< \brief Number of elements of the boundary. */
 	string *Tag_to_Marker;	/*!< \brief If you know the index of the boundary (depend of the 
@@ -120,7 +129,8 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
   CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
   unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
+  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker, indexed by inflow/outflow */
+  unsigned short *nSpanSectionsByMarker; /*! <\brief Number of Span wise section for each turbo marker, indexed by marker.  Needed for deallocation.*/
   unsigned short nTurboPerf; /*!< \brief Number of Span wise section for each turbo marker. */
   su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
   long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
@@ -599,6 +609,20 @@ public:
 	 */	
 	virtual void SetCoord(CGeometry *geometry);
 
+        /*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        virtual void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+
+        /*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        virtual void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
+
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] val_nSmooth - Number of smoothing iterations.
@@ -663,18 +687,25 @@ public:
 	 */
 	virtual void SetPeriodicBoundary(CGeometry *geometry, CConfig *config);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
+  /*!
+   * \brief Set the data containers for customized boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetCustomBoundary(CConfig *config);
+
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] val_iZone - Index of the current zone.
-	 */
-	virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
+   */
+  virtual void SetRotationalVelocity(CConfig *config, unsigned short val_iZone, bool print);
 
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-   virtual void SetShroudVelocity(CConfig *config);
+  virtual void SetShroudVelocity(CConfig *config);
 
    /*!
     * \brief A virtual member.
@@ -724,12 +755,15 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
-                                      su2double MinXCoord, su2double MaxXCoord, su2double *FlowVariable,
-                                      vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
-                                      vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
-                                      bool original_surface, CConfig *config);
-  
+  void ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Normal,
+                              su2double MinXCoord, su2double MaxXCoord,
+                              su2double MinYCoord, su2double MaxYCoord,
+                              su2double MinZCoord, su2double MaxZCoord,
+                              su2double *FlowVariable,
+                              vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
+                              vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
+                              bool original_surface, CConfig *config);
+
   /*!
 	 * \brief A virtual member.
 	 */
@@ -813,7 +847,7 @@ public:
                             su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
                             su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                             su2double &Wing_MaxDihedral);
-  
+
   /*!
    * \brief A virtual member.
    */
@@ -823,6 +857,16 @@ public:
   		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
   		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
   		su2double &Fuselage_MaxCurvature);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Compute_Nacelle(CConfig *config, bool original_surface,
+                               su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                               su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                               su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                               su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                               su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist);
 
 	/*!
 	 * \brief A virtual member.
@@ -1057,6 +1101,13 @@ public:
   void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
 
   /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \param geometry_container - Geometrical definition.
+   * \param config - Definition of the particular problem.
+   */
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config);
+
+  /*!
    * \brief A virtual member.
    * \param config - Config
    */
@@ -1241,6 +1292,36 @@ public:
    * \param config - Config
    */
   virtual void Check_Periodicity(CConfig *config);
+
+  /*!
+   * \brief Get the value of the customized temperature at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  su2double GetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the value of the customized temperature at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   * \param[in] val_customBoundaryTemperature - Value of the temperature.
+   */
+  void SetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryTemperature);
+
+  /*!
+   * \brief Get the value of the customized normal heat flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  su2double GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the value of the customized normal heat flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   * \param[in] val_customBoundaryHeatFlux - Value of the normal heat flux.
+   */
+  void SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux);
   
 };
 
@@ -1249,7 +1330,6 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1848,10 +1928,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \brief Evaluate geometrical parameters of a wing.
    */
   void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness,
+                    su2double &Wing_MinChord, su2double &Wing_MaxChord,
                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
-                    su2double &Wing_MaxDihedral);
+                    su2double &Wing_MinToC, su2double &Wing_MaxToC,
+                    su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist,
+                    su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
 
   /*!
    * \brief Evaluate geometrical parameters of a wing.
@@ -1862,6 +1944,16 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
   		su2double &Fuselage_MinWaterLineWidth, su2double &Fuselage_MaxWaterLineWidth,
   		su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
   		su2double &Fuselage_MaxCurvature);
+  
+  /*!
+   * \brief Evaluate geometrical parameters of a wing.
+   */
+  void Compute_Nacelle(CConfig *config, bool original_surface,
+                       su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                       su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                       su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                       su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                       su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.
@@ -2063,7 +2155,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -2169,6 +2260,20 @@ public:
 	 */	
 	void SetCoord(CGeometry *geometry);
 
+        /*! 
+	 * \brief Set a representative wall normal heat flux of the agglomerated control volume on a particular boundary marker.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        void SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker);
+
+        /*! 
+	 * \brief Set a representative wall temperature of the agglomerated control volume on a particular boundary marker.
+	 * \param[in] geometry - Geometrical definition of the problem.
+         * \param[in] val_marker - Index of the boundary marker.
+	 */
+        void SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker);
+
 	/*!
 	 * \brief Set the rotational velocity at each grid point on a coarse mesh.
 	 * \param[in] config - Definition of the particular problem.
@@ -2245,7 +2350,6 @@ void SetTranslationalVelocity(CConfig *config, unsigned short val_iZone, bool pr
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -2291,7 +2395,6 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {
