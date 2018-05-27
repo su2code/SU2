@@ -4993,6 +4993,35 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param turb_ke: turbulent kinetic energy of the noce
+   * \param config: config file
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+  /*!
+     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+     * \param turb_ke: turbulent kinetic energy of the node
+     */
+  void SetPerturbedStrainMag(su2double turb_ke);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
+
+  /*!
+   * \brief Setting the UQ framework usage
+   * \param val_using_uq
+   */
+  void SetUsing_uq(bool val_using_uq);
 };
 
 /*!
