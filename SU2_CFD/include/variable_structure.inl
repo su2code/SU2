@@ -2,20 +2,24 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -659,11 +663,38 @@ inline void CVariable::GetAdjointSolution_Accel_time_n(su2double *adj_sol) { }
 
 inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0; }
 
+
+inline su2double CVariable::GetRoe_Dissipation(void) { return 0.0; }
+
+inline void CVariable::SetRoe_Dissipation_FD(su2double val_wall_dist) { }
+
+inline void CVariable::SetRoe_Dissipation_NTS() { }
+
+inline su2double CVariable::GetDES_LengthScale(void) { return 0.0; }
+
+inline void CVariable::SetDES_LengthScale(su2double val_des_lengthscale) { }
+
 inline void CVariable::SetSolution_New(void) { }
 
 inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
 
+inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
+
+inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) { }
+
+inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
+
+inline su2double CNSVariable::GetRoe_Dissipation(void) { return Roe_Dissipation; }
+
+inline su2double CNSVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
+
+inline void CNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
+
+inline void CIncNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
+
+inline su2double CIncNSVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
 
 inline void CEulerVariable::SetSolution_New(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -865,6 +896,10 @@ inline void CNSVariable::SetdktdT_rho(su2double dktdT_rho) {
 inline void CNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+6] = eddy_visc; }
 
 inline void CNSVariable::SetWallTemperature(su2double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
+
+inline void CNSVariable::SetRoe_Dissipation(su2double val_dissipation) { Roe_Dissipation = val_dissipation; }
+
+inline su2double CTurbSAVariable::GetVortex_Tilting() { return Vortex_Tilting; }
 
 inline su2double *CAdjEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -1227,6 +1262,10 @@ inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_v
 inline su2double CTurbSAVariable::GetGammaBC(void) { return gamma_BC; }
 
 inline void CTurbSAVariable::SetGammaBC(su2double val_gamma) { gamma_BC = val_gamma; }
+
+inline su2double CTurbSAVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
+
+inline void CTurbSAVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
 
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 
