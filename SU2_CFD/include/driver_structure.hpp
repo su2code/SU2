@@ -78,7 +78,7 @@ protected:
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
-  COutput *output;                              /*!< \brief Pointer to the COutput class. */
+  COutput **output;                             /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ***geometry_container;              /*!< \brief Geometrical definition of the problem. */
   CSolver ****solver_container;                 /*!< \brief Container vector with all the solutions. */
@@ -200,6 +200,11 @@ public:
    * \brief Initialize Python interface functionalities
    */
   void PythonInterface_Preprocessing();
+
+  /*!
+   * \brief Preprocess the output container.
+   */
+  void Output_Preprocessing();
 
   /*!
    * \brief Deallocation routine
