@@ -66,6 +66,8 @@ using namespace std;
  */
 class COutput {
 
+protected:
+
   unsigned long nGlobal_Poin;   // Global number of nodes with halos
   unsigned long nSurf_Poin;   // Global number of nodes of the surface
   unsigned long nGlobal_Doma;   // Global number of nodes without halos
@@ -185,8 +187,6 @@ class COutput {
         **Turb2LamViscRatioOut,
         **NuFactorIn,
         **NuFactorOut;
-
-protected:
 
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
@@ -626,7 +626,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone);
+  virtual void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone);
 
   /*! 
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -639,7 +639,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+  virtual void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
   
   /*!
@@ -739,7 +739,7 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short val_nZone);
+                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone);
   
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
@@ -855,6 +855,49 @@ public:
    * \param[in] val_direction - Controls the slice direction (0 for constant x/vertical, 1 for constant y/horizontal.
    */
   void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
+
+};
+
+/*! \class CFEAOutput
+ *  \brief Output class for FEA problems.
+ *  \author R. Sanchez.
+ *  \date May 24, 2018.
+ */
+class CFEAOutput : public COutput {
+private:
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEAOutput(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFEAOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+                              CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
 
 };
 

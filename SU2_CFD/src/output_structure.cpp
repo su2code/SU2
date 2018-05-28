@@ -12086,291 +12086,289 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
                                        CGeometry ***geometry,
                                        CConfig **config,
                                        unsigned long iExtIter,
+                                       unsigned short iZone,
                                        unsigned short val_nZone) {
   
-  unsigned short iZone, iVar;
+  unsigned short iVar;
   unsigned long iPoint;
   bool compressible = true;
 
-  for (iZone = 0; iZone < val_nZone; iZone++) {
-    
-    bool cont_adj = config[iZone]->GetContinuous_Adjoint();
-    bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
+  bool cont_adj = config[iZone]->GetContinuous_Adjoint();
+  bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
 
-    /*--- Flags identifying the types of files to be written. ---*/
-    /*--- For now, we are disabling the parallel writers for Tecplot
+  /*--- Flags identifying the types of files to be written. ---*/
+  /*--- For now, we are disabling the parallel writers for Tecplot
           ASCII until we have parallel versions of all file formats
           available. SU2_SOL will remain intact for writing files
           until this capability is completed. ---*/
-    
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
+
+  bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+  bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+  bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
 
 #ifdef HAVE_MPI
-    /*--- Do not merge the connectivity or write the visualization files
+  /*--- Do not merge the connectivity or write the visualization files
      if we are running in parallel. Force the use of SU2_SOL to merge and
      write the viz. files in this case to save overhead. ---*/
 
-    if (size > SINGLE_NODE) {
-      Wrt_Vol = false;
-      Wrt_Srf = false;
-    }
+  if (size > SINGLE_NODE) {
+    Wrt_Vol = false;
+    Wrt_Srf = false;
+  }
 #endif
 
-    /*--- Check for compressible/incompressible flow problems. ---*/
+  /*--- Check for compressible/incompressible flow problems. ---*/
 
-    compressible = (config[iZone]->GetKind_Regime() == COMPRESSIBLE);
+  compressible = (config[iZone]->GetKind_Regime() == COMPRESSIBLE);
 
-    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
-    
-    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
-    
-    switch (config[iZone]->GetKind_Solver()) {
-      case EULER : case NAVIER_STOKES : case RANS :
-        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0],
-                                        solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
-        break;
-      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0],
-                                           solver_container[iZone][MESH_0][ADJFLOW_SOL],
-                                           solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
-        break;
-      default: break;
-    }
-    
-    /*--- This switch statement will become a call to a virtual function
+  /*--- Write out CSV files in parallel for flow and adjoint. ---*/
+
+  if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+
+  switch (config[iZone]->GetKind_Solver()) {
+  case EULER : case NAVIER_STOKES : case RANS :
+    if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0],
+        solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+    break;
+  case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
+  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0],
+        solver_container[iZone][MESH_0][ADJFLOW_SOL],
+        solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+    break;
+  default: break;
+  }
+
+  /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads
      the local data for that particular problem alone. ---*/
-    
+
+  if (rank == MASTER_NODE)
+    cout << "Loading solution output data locally on each rank." << endl;
+
+  switch (config[iZone]->GetKind_Solver()) {
+  case EULER : case NAVIER_STOKES: case RANS :
+    if (compressible)
+      LoadLocalData_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    else
+      LoadLocalData_IncFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    break;
+  case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
+  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    LoadLocalData_AdjFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    break;
+  case FEM_ELASTICITY: case DISC_ADJ_FEM:
+    LoadLocalData_Elasticity(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    break;
+  case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+    LoadLocalData_Base(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    break;
+  default: break;
+  }
+
+  /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
+
+  if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
+      (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
+
     if (rank == MASTER_NODE)
-      cout << "Loading solution output data locally on each rank." << endl;
-    
-    switch (config[iZone]->GetKind_Solver()) {
-      case EULER : case NAVIER_STOKES: case RANS :
-        if (compressible)
-          LoadLocalData_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-        else
-          LoadLocalData_IncFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-        break;
-      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-        break;
-      case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        LoadLocalData_Elasticity(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-        break;
-      case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-        LoadLocalData_Base(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-        break;
-      default: break;
+      cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
+
+    Local_Data_Copy = new su2double*[geometry[iZone][MESH_0]->GetnPoint()];
+    for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+      Local_Data_Copy[iPoint] = new su2double[nVar_Par];
     }
-    
-    /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
-    if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter()-config[iZone]->GetIter_dCL_dAlpha() -1 == iExtIter)) {
-
-      if (rank == MASTER_NODE)
-        cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
-      
-      Local_Data_Copy = new su2double*[geometry[iZone][MESH_0]->GetnPoint()];
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
-        Local_Data_Copy[iPoint] = new su2double[nVar_Par];
+    for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar_Par; iVar++) {
+        Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
       }
-      
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
-          Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
-        }
-      }
-      
     }
-    
-    /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
 
-    if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
-        (config[iZone]->GetnExtIter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
+  }
 
-      if (rank == MASTER_NODE)
-        cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
-      
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
-          Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
-        }
+  /*--- Recover the solution to be used on the final iteration with cte. lift mode. ---*/
+
+  if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
+      (config[iZone]->GetnExtIter() - 1 == iExtIter) && (Local_Data_Copy != NULL)) {
+
+    if (rank == MASTER_NODE)
+      cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
+
+    for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar_Par; iVar++) {
+        Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
       }
-      
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++)
-        delete [] Local_Data_Copy[iPoint];
-      delete [] Local_Data_Copy;
-      
     }
-    
-    /*--- After loading the data local to a processor, we perform a sorting,
+
+    for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++)
+      delete [] Local_Data_Copy[iPoint];
+    delete [] Local_Data_Copy;
+
+  }
+
+  /*--- After loading the data local to a processor, we perform a sorting,
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
-    
-    if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
-    SortOutputData(config[iZone], geometry[iZone][MESH_0]);
-    
-    /*--- Write either a binary or ASCII restart file in parallel. ---*/
 
-    if (config[iZone]->GetWrt_Binary_Restart()) {
-      if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
-      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-    } else {
-      if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
-      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-    }
+  if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
+  SortOutputData(config[iZone], geometry[iZone][MESH_0]);
 
-    /*--- Write a slice on a structured mesh if requested. ---*/
+  /*--- Write either a binary or ASCII restart file in parallel. ---*/
 
-    if (config[iZone]->GetWrt_Slice()) {
-      WriteCSV_Slice(config[iZone], geometry[iZone][MESH_0],
-                     solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone, 0);
-      WriteCSV_Slice(config[iZone], geometry[iZone][MESH_0],
-                     solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
-    }
+  if (config[iZone]->GetWrt_Binary_Restart()) {
+    if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
+    WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+  } else {
+    if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
+    WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+  }
 
-    /*--- Get the file output format ---*/
-    
-    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-    
-    /*--- Write the solution files if they are requested and we are executing
+  /*--- Write a slice on a structured mesh if requested. ---*/
+
+  if (config[iZone]->GetWrt_Slice()) {
+    WriteCSV_Slice(config[iZone], geometry[iZone][MESH_0],
+        solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone, 0);
+    WriteCSV_Slice(config[iZone], geometry[iZone][MESH_0],
+        solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
+  }
+
+  /*--- Get the file output format ---*/
+
+  unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+
+  /*--- Write the solution files if they are requested and we are executing
      with a single rank (all data on one proc and no comm. overhead). Once we
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((size == SINGLE_NODE) && (rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
-      
-      /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
+  if ((size == SINGLE_NODE) && (rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
 
-      if (rank == MASTER_NODE)
-        cout << "Preparing element connectivity across all ranks." << endl;
-      SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
+    /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
-      /*--- Sort the surface data and renumber if for writing. ---*/
+    if (rank == MASTER_NODE)
+      cout << "Preparing element connectivity across all ranks." << endl;
+    SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
 
-      SortOutputData_Surface(config[iZone], geometry[iZone][MESH_0]);
+    /*--- Sort the surface data and renumber if for writing. ---*/
 
-      /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
+    SortOutputData_Surface(config[iZone], geometry[iZone][MESH_0]);
 
-      if (Wrt_Vol) {
+    /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
-        switch (FileFormat) {
+    if (Wrt_Vol) {
 
-          case TECPLOT:
+      switch (FileFormat) {
 
-            /*--- Write a Tecplot ASCII file ---*/
+      case TECPLOT:
 
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
-            break;
+        /*--- Write a Tecplot ASCII file ---*/
 
-          case FIELDVIEW:
+        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
+        WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+            solver_container[iZone][MESH_0], iZone, val_nZone, false);
+        break;
 
-            /*--- We do not yet have a version of FieldView ASCII for new parallel output. ---*/
+      case FIELDVIEW:
 
-            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
+        /*--- We do not yet have a version of FieldView ASCII for new parallel output. ---*/
 
-            break;
+        if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
+        if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
 
-          case TECPLOT_BINARY:
+        break;
 
-            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+      case TECPLOT_BINARY:
 
-            if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
-            break;
+        /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
 
-          case FIELDVIEW_BINARY:
+        if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
+        if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
+        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
+        WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+            solver_container[iZone][MESH_0], iZone, val_nZone, false);
+        break;
 
-            /*--- FieldView binary files not yet available for parallel output. ---*/
+      case FIELDVIEW_BINARY:
 
-            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
-            break;
+        /*--- FieldView binary files not yet available for parallel output. ---*/
 
-          case PARAVIEW:
+        if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
+        if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
+        break;
 
-            /*--- Write a Paraview ASCII file ---*/
+      case PARAVIEW:
 
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
-            break;
+        /*--- Write a Paraview ASCII file ---*/
 
-          default:
-            break;
-        }
+        if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
+        WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+            solver_container[iZone][MESH_0], iZone, val_nZone, false);
+        break;
 
+      default:
+        break;
       }
 
-      if (Wrt_Srf) {
-
-        switch (FileFormat) {
-
-          case TECPLOT:
-
-            /*--- Write a Tecplot ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
-            break;
-
-          case TECPLOT_BINARY:
-
-            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
-
-            if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
-            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
-            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
-            break;
-
-          case PARAVIEW:
-
-            /*--- Write a Paraview ASCII file ---*/
-
-            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                        solver_container[iZone][MESH_0], iZone, val_nZone, true);
-            break;
-            
-          default:
-            break;
-        }
-        
-      }
-
-      /*--- Clean up the connectivity data that was allocated for output. ---*/
-
-      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
-      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], true);
-
-      /*--- Clean up the surface data that was only needed for output. ---*/
-
-      DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][MESH_0]);
-      
     }
-    
-    /*--- Deallocate the nodal data needed for writing restarts. ---*/
-    
-    DeallocateData_Parallel(config[iZone], geometry[iZone][MESH_0]);
-    
-    /*--- Clear the variable names list. ---*/
-    
-    Variable_Names.clear();
+
+    if (Wrt_Srf) {
+
+      switch (FileFormat) {
+
+      case TECPLOT:
+
+        /*--- Write a Tecplot ASCII file ---*/
+
+        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
+        WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+            solver_container[iZone][MESH_0], iZone, val_nZone, true);
+        break;
+
+      case TECPLOT_BINARY:
+
+        /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+
+        if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
+        if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
+        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
+        WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+            solver_container[iZone][MESH_0], iZone, val_nZone, true);
+        break;
+
+      case PARAVIEW:
+
+        /*--- Write a Paraview ASCII file ---*/
+
+        if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
+        WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+            solver_container[iZone][MESH_0], iZone, val_nZone, true);
+        break;
+
+      default:
+        break;
+      }
+
+    }
+
+    /*--- Clean up the connectivity data that was allocated for output. ---*/
+
+    DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
+    DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], true);
+
+    /*--- Clean up the surface data that was only needed for output. ---*/
+
+    DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][MESH_0]);
 
   }
+
+  /*--- Deallocate the nodal data needed for writing restarts. ---*/
+
+  DeallocateData_Parallel(config[iZone], geometry[iZone][MESH_0]);
+
+  /*--- Clear the variable names list. ---*/
+
+  Variable_Names.clear();
+
 }
 
 void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
