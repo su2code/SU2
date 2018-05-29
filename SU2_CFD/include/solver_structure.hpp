@@ -3640,6 +3640,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \return bool - There is NaN in one of the structural residuals
+   */
+  virtual bool Test_Divergence(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
@@ -12015,6 +12021,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
+
+  /*!
+   * \brief Test the structural solver for divergence.
+   * \return bool - There is NaN in one of the structural residuals
+   */
+  bool Test_Divergence(void);
 
 };
 

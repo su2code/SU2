@@ -4796,3 +4796,21 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   Restart_Vars = NULL; Restart_Data = NULL;
   
 }
+
+
+bool CFEASolver::Test_Divergence(void){
+
+  bool Divergence = false;
+
+  if ((Conv_Check[0] != Conv_Check[0]) ||
+      (Conv_Check[1] != Conv_Check[1]) ||
+      (Conv_Check[2] != Conv_Check[2])){
+
+    Divergence = true;
+
+  }
+
+
+  return Divergence;
+
+}

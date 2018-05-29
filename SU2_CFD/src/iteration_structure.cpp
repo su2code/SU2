@@ -1157,7 +1157,6 @@ void CFEAIteration::Iterate(COutput *output,
                                   unsigned short val_iZone
                                 ) {
 
-  su2double loadIncrement;
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 
@@ -1257,14 +1256,17 @@ void CFEAIteration::Iterate(COutput *output,
     /*--- The incremental load is only used in nonlinear cases ---*/
     else if (incremental_load) {
 
+      su2double loadIncrement, currentLoad, previousLoad;
+      bool Primal_Divergence = false;
+
       /*--- Set the initial condition: store the current solution as Solution_Old ---*/
 
       solver_container[val_iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
-      /*--- The load increment is 1.0 ---*/
-      loadIncrement = 1.0;
-      solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-      solver_container[val_iZone][MESH_0][FEA_SOL]->SetForceCoeff(loadIncrement);
+      /*--- The current load is 100% ---*/
+      currentLoad = 1.0;
+      solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(currentLoad);
+      solver_container[val_iZone][MESH_0][FEA_SOL]->SetForceCoeff(currentLoad);
 
       /*--- Set the value of the internal iteration ---*/
 
@@ -1283,91 +1285,60 @@ void CFEAIteration::Iterate(COutput *output,
       integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
           config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
+      /*--- Enter the primal loop ---*/
+      for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
-      /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-      solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
-      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
+        /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+        solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+        output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
-      /*--- Run the second iteration ---*/
-
-      IntIter = 1;
-
-      config_container[val_iZone]->SetIntIter(IntIter);
-
-      integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-          config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
-
-      /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-      solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
-      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
-
-
-      bool meetCriteria;
-      su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-      su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
-
-      Criteria_UTOL = config_container[val_iZone]->GetIncLoad_Criteria(0);
-      Criteria_RTOL = config_container[val_iZone]->GetIncLoad_Criteria(1);
-      Criteria_ETOL = config_container[val_iZone]->GetIncLoad_Criteria(2);
-
-      Residual_UTOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(0));
-      Residual_RTOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(1));
-      Residual_ETOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(2));
-
-      meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-          ( Residual_RTOL <  Criteria_RTOL ) &&
-          ( Residual_ETOL <  Criteria_ETOL ) );
-
-      /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-      if (meetCriteria) {
-
-        for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
-
-          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-          solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
-          output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
-
-          config_container[val_iZone]->SetIntIter(IntIter);
-
-          integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-              config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
-
-          if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
-
+        Primal_Divergence = solver_container[val_iZone][MESH_0][FEA_SOL]->Test_Divergence();
+        if (Primal_Divergence){
+          if (rank == MASTER_NODE) cout << "The structural iteration has diverged. Using incremental approach. " << endl;
+          break;
         }
+
+        config_container[val_iZone]->SetIntIter(IntIter);
+
+        integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+            config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+
+        if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
 
       }
 
-      /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
+      /*--- If the solver has diverged, we enter the incremental approach loop ---*/
+      if (Primal_Divergence){
 
-      else {
+        bool Secondary_Divergence = false, First_Step = false;
+        unsigned short iPrecision = 0;
 
-        /*--- Here we have to restart the solution to the original one of the iteration ---*/
+        /*--- Here we have to restart the solution to the last stable one ---*/
         /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
-
         solver_container[val_iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
-        /*--- For the number of increments ---*/
-        for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
+        /*--- We start with a 10% of the load ---*/
+        previousLoad = 0.1;
+        currentLoad = 0.1;
+        loadIncrement = 0.1;
 
-          loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
+        /*--- Until we reach the total load ---*/
+        while (currentLoad < 1.0 ){
 
-          /*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
-
-          /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
+          /*--- Set the convergence monitor to false, to force the solver to converge every subiteration ---*/
           integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
-
           /*--- FEA equations ---*/
-
           config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-
-          solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+          /*--- Set the current load ---*/
+          solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(currentLoad);
 
           if (rank == MASTER_NODE) {
             cout << endl;
-            cout << "-- Incremental load: increment " << iIncrement + 1 << " ----------------------------------------" << endl;
+            cout.setf(ios::fixed, ios::floatfield); cout.precision(iPrecision);
+            cout << "-- Incremental load: " << currentLoad * 100 << "% load ----------------------------------------" << endl;
+            cout.setf(ios::scientific, ios::floatfield);
           }
 
           /*--- Set the value of the internal iteration ---*/
@@ -1392,6 +1363,22 @@ void CFEAIteration::Iterate(COutput *output,
             solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
             output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
 
+            Secondary_Divergence = solver_container[val_iZone][MESH_0][FEA_SOL]->Test_Divergence();
+
+            if (Secondary_Divergence) {
+              /*--- If we have diverged, we need to make the previous increment smaller --*/
+              /*--- We go back to the previous load which has converged ---*/
+              /*--- If a first step has not yet been converged, we keep dividing the initial load by 10 ---*/
+              if (First_Step == currentLoad)
+                currentLoad = previousLoad;
+              else
+                currentLoad = currentLoad / 10;
+              loadIncrement = loadIncrement / 10;
+              iPrecision++;
+              solver_container[val_iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+              break;
+            }
+
             config_container[val_iZone]->SetIntIter(IntIter);
 
             integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
@@ -1401,12 +1388,66 @@ void CFEAIteration::Iterate(COutput *output,
 
           }
 
-          /*--- Write history for intermediate steps ---*/
-          if (iIncrement < nIncrements - 1){
-            /*--- Write the convergence history (first, compute Von Mises stress) ---*/
-            solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
-            output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
+          /*--- If the Store the current solution as Solution_Old, to have a restart point ---*/
+          if (!Secondary_Divergence){
+            solver_container[val_iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+            First_Step = true;
+            previousLoad = currentLoad;
+            currentLoad += loadIncrement;
           }
+
+          if (iPrecision > 10) break;
+
+        }
+
+        /*--- Finally, solve for the total load ---*/
+        currentLoad = 1.0;
+        if (iPrecision > 10) currentLoad = 0.0; // hack
+
+        /*--- Set the convergence monitor to false, to force the solver to converge every subiteration ---*/
+        integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
+
+        /*--- FEA equations ---*/
+        config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+        /*--- Set the current load ---*/
+        solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(currentLoad);
+
+        if (rank == MASTER_NODE) {
+          cout << endl;
+          cout.setf(ios::fixed, ios::floatfield); cout.precision(2);
+          cout << "-- Incremental load: " << currentLoad * 100 << "% load ----------------------------------------" << endl;
+          cout.setf(ios::scientific, ios::floatfield);
+        }
+
+        /*--- Set the value of the internal iteration ---*/
+        IntIter = 0;
+        config_container[val_iZone]->SetIntIter(IntIter);
+
+        /*--- FEA equations ---*/
+
+        config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+        /*--- Run the iteration ---*/
+
+        integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+            config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+
+
+        /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+
+        for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
+
+          /*--- Write the convergence history (first, compute Von Mises stress) ---*/
+          solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+          output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone);
+
+          config_container[val_iZone]->SetIntIter(IntIter);
+
+          integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+              config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+
+          if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
 
         }
 
