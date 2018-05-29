@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -57,27 +57,27 @@ inline void CNumerics::Compute_Dead_Load(CElement *element_container, CConfig *c
 
 inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
+inline void CFEANonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline su2double CFEM_NonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
+inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
 	if (iVar == jVar) return 1.0; else return 0.0;
 }
 
@@ -89,23 +89,23 @@ inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
 
 inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
 
-inline void CFEM_Elasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
+inline void CFEAElasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
 
-inline su2double CFEM_Elasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+inline su2double CFEAElasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
 
 inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
 
-inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+inline void CFEAElasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
 
 inline void CNumerics::SetElectric_Properties(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
 
-inline void CFEM_Elasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+inline void CFEAElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
 
-inline void CFEM_NonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
+inline void CFEANonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
   EField_Ref_Mod[i_DV] = val_EField; }
 
 inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
@@ -114,43 +114,43 @@ inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val
 
 inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
 
-inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
+inline void CFEAElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
   E_i[0] = val_Young; 
 }
 
-inline void CFEM_NonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+inline void CFEANonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
   E_i[0] = val_Young; 
 }
 
-inline void CFEM_Elasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+inline void CFEAElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
   E_i[iVal] = val_E; 
   Nu_i[iVal] = val_Nu; 
 }
 
-inline void CFEM_NonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+inline void CFEANonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
   E_i[iVal] = val_E; 
   Nu_i[iVal] = val_Nu; 
 }
 
-inline void CFEM_Elasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+inline void CFEAElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
   Rho_s_i[iVal] = val_Rho; 
   Rho_s_DL_i[iVal] = val_Rho_DL;}
 
-inline void CFEM_NonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+inline void CFEANonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
   Rho_s_i[iVal] = val_Rho; 
   Rho_s_DL_i[iVal] = val_Rho_DL;}
 
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
+inline void CFEANonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
+inline void CFEANonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
@@ -271,6 +271,11 @@ inline void CNumerics::SetThermalConductivity(su2double val_therm_conductivity_i
 inline void CNumerics::SetThermalConductivity_ve(su2double val_therm_conductivity_ve_i, su2double val_therm_conductivity_ve_j) {
   Thermal_Conductivity_ve_i = val_therm_conductivity_ve_i;
   Thermal_Conductivity_ve_j = val_therm_conductivity_ve_j;
+}
+
+inline void CNumerics::SetThermalDiffusivity(su2double val_thermal_diffusivity_i,su2double val_thermal_diffusivity_j) {
+  Thermal_Diffusivity_i = val_thermal_diffusivity_i;
+  Thermal_Diffusivity_j = val_thermal_diffusivity_j;
 }
 
 inline void CNumerics::SetDiffusionCoeff(su2double* val_diffusioncoeff_i, su2double* val_diffusioncoeff_j) {

@@ -2,7 +2,7 @@
  * \file gauss_structure.cpp
  * \brief Definition of the Gaussian Points structure for Finite Element applications
  * \author R. Sanchez
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

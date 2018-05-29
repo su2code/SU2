@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -488,8 +488,10 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        su2util.write_plot('history_project.dat',output_format,results_plot)
-        
+        if output_format == 'PARAVIEW':
+          su2util.write_plot('history_project.csv',output_format,results_plot)
+        else:
+          su2util.write_plot('history_project.dat',output_format,results_plot)
         
     def save(self):
         with su2io.redirect_folder(self.folder):

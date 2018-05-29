@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -109,7 +109,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [-2.917789, -2.714752, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [-3.392319, -2.572028, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -124,7 +124,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.727423, -2.272530, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.800569, -2.222937, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -138,8 +138,8 @@ def main():
     discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
     discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
-    discadj_incomp_turb_NACA0012.test_iter = 100
-    discadj_incomp_turb_NACA0012.test_vals = [-3.645810, -1.625922, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.test_iter = 10
+    discadj_incomp_turb_NACA0012.test_vals = [-3.846360, -1.012209, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012.timeout   = 1600
     discadj_incomp_turb_NACA0012.tol       = 0.00001
