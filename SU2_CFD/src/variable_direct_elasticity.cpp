@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -37,7 +37,7 @@
 
 #include "../include/variable_structure.hpp"
 
-CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
+CFEAVariable::CFEAVariable(void) : CVariable() {
   
   dynamic_analysis     = false;
   fsi_analysis       = false;
@@ -68,9 +68,11 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
   
   Reference_Geometry    = NULL;   // Reference geometry for optimization purposes
   
+  Solution_BGS_k    = NULL;       // Old solution stored to check convergence in the BGS loop
+
 }
 
-CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   
   unsigned short iVar;
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
@@ -96,6 +98,11 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
     Solution[iVar] = val_fea[iVar];
   }
   
+  Solution_time_n      =  NULL;
+  Solution_Vel       =  NULL;
+  Solution_Vel_time_n    =  NULL;
+  Solution_Accel       =  NULL;
+  Solution_Accel_time_n  =  NULL;
   if (dynamic_analysis) {
     Solution_time_n      =  new su2double [nVar];
     Solution_Vel       =  new su2double [nVar];
@@ -110,30 +117,25 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
       Solution_Accel_time_n[iVar] = val_fea[iVar+2*nVar];
     }
   }
-  else {
-    Solution_time_n      =  NULL;
-    Solution_Vel       =  NULL;
-    Solution_Vel_time_n    =  NULL;
-    Solution_Accel       =  NULL;
-    Solution_Accel_time_n  =  NULL;
-  }
   
+  FlowTraction       =  NULL;
+  Solution_Pred       =  NULL;
+  Solution_Pred_Old     =  NULL;
+  Solution_Pred_Old   = NULL;
+  FlowTraction_n = NULL;
+  Solution_BGS_k = NULL;
   if (fsi_analysis) {
     FlowTraction       =  new su2double [nVar];
     Solution_Pred       =  new su2double [nVar];
     Solution_Pred_Old     =  new su2double [nVar];
+    Solution_BGS_k       = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       FlowTraction[iVar] = 0.0;
       Solution_Pred[iVar] = val_fea[iVar];
       Solution_Pred_Old[iVar] = val_fea[iVar];
+      Solution_BGS_k[iVar] = 0.0;
     }
   }
-  else {
-    FlowTraction       =  NULL;
-    Solution_Pred       =  NULL;
-    Solution_Pred_Old     =  NULL;
-  }
-  FlowTraction_n = NULL;
   
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
   if (incremental_load && nonlinear_analysis) {
@@ -177,7 +179,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   
 }
 
-CFEM_ElasVariable::~CFEM_ElasVariable(void) {
+CFEAVariable::~CFEAVariable(void) {
   
   if (Stress           != NULL) delete [] Stress;
   if (FlowTraction       != NULL) delete [] FlowTraction;
@@ -203,4 +205,7 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 
   if (Prestretch            != NULL) delete [] Prestretch;
   
+  if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
+
+
 }
