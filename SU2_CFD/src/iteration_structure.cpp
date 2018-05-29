@@ -1369,7 +1369,7 @@ void CFEAIteration::Iterate(COutput *output,
               /*--- If we have diverged, we need to make the previous increment smaller --*/
               /*--- We go back to the previous load which has converged ---*/
               /*--- If a first step has not yet been converged, we keep dividing the initial load by 10 ---*/
-              if (First_Step == currentLoad)
+              if (First_Step == true)
                 currentLoad = previousLoad;
               else
                 currentLoad = currentLoad / 10;
