@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.0 "Falcon"
+#  \version 6.0.1 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -88,7 +88,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-13.393130, -12.928941, 0.282557, 0.012706] #last 4 columns
+    oneram6.test_vals = [-13.395738, -12.930653, 0.282557, 0.012706] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.tol       = 0.00001
@@ -273,7 +273,6 @@ def main():
     turb_naca0012_sst_restart_mg.tol       = 0.000001
     test_list.append(turb_naca0012_sst_restart_mg)
 
-
     #############################
     ### Incompressible Euler  ###
     #############################
@@ -283,7 +282,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-3.590333,-3.151515,0.960192,0.013260] #last 4 columns
+    inc_euler_naca0012.test_vals = [-4.880274, -3.797906, 0.501143, 0.007051] #last 4 columns
     inc_euler_naca0012.su2_exec  = "SU2_CFD"
     inc_euler_naca0012.timeout   = 1600
     inc_euler_naca0012.tol       = 0.00001
@@ -298,7 +297,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-3.778049,-3.380095,-0.004749,6.215563] #last 4 columns
+    inc_lam_cylinder.test_vals = [-4.004277, -3.227956, 0.003852, 7.626578] #last 4 columns
     inc_lam_cylinder.su2_exec  = "SU2_CFD"
     inc_lam_cylinder.timeout   = 1600
     inc_lam_cylinder.tol       = 0.00001
@@ -313,7 +312,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.708169, -11.010140, -0.000002, 0.207687] #last 4 columns
+    inc_turb_naca0012.test_vals = [-4.788495, -11.040511, 0.000023, 0.309503] #last 4 columns
     inc_turb_naca0012.su2_exec  = "SU2_CFD"
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
@@ -328,7 +327,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-8.295514, -14.505574, 0.000073, 0.005669] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.287490, -14.278189, 0.000050, 0.007986] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -354,7 +353,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-12.133352, -12.707213, 6.8590e-01, 0.007594] #last 4 columns
+    contadj_oneram6.test_vals = [-12.133160, -12.706697, 0.685900, 0.007594] #last 4 columns
     contadj_oneram6.su2_exec  = "SU2_CFD"
     contadj_oneram6.timeout   = 1600
     contadj_oneram6.tol       = 0.00001
@@ -391,7 +390,7 @@ def main():
     contadj_ns_cylinder.cfg_dir   = "cont_adj_navierstokes/cylinder"
     contadj_ns_cylinder.cfg_file  = "lam_cylinder.cfg"
     contadj_ns_cylinder.test_iter = 20
-    contadj_ns_cylinder.test_vals = [ -3.661071, -9.126563, 2.056700, -0.000000] #last 4 columns
+    contadj_ns_cylinder.test_vals = [ -3.665848, -9.132055, 2.056700, -0.000000] #last 4 columns
     contadj_ns_cylinder.su2_exec  = "SU2_CFD"
     contadj_ns_cylinder.timeout   = 1600
     contadj_ns_cylinder.tol       = 0.00001
@@ -456,36 +455,6 @@ def main():
     contadj_rans_rae2822.tol       = 0.00001
     test_list.append(contadj_rans_rae2822)
 
-    #######################################
-    ### Cont. adj. incompressible Euler ###
-    #######################################
-
-    # Adjoint Incompressible Inviscid NACA0012
-    contadj_incomp_NACA0012           = TestCase('contadj_incomp_NACA0012')
-    contadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
-    contadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012.cfg"
-    contadj_incomp_NACA0012.test_iter = 5
-    contadj_incomp_NACA0012.test_vals = [-11.980272, -12.146779, 1.9399, 0.000000] #last 4 columns
-    contadj_incomp_NACA0012.su2_exec  = "SU2_CFD"
-    contadj_incomp_NACA0012.timeout   = 1600
-    contadj_incomp_NACA0012.tol       = 0.00001
-    test_list.append(contadj_incomp_NACA0012)
-
-    #####################################
-    ### Cont. adj. incompressible N-S ###
-    #####################################
-
-    # Adjoint Incompressible Viscous Cylinder
-    contadj_incomp_cylinder           = TestCase('contadj_incomp_cylinder')
-    contadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
-    contadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder.cfg"
-    contadj_incomp_cylinder.test_iter = 25
-    contadj_incomp_cylinder.test_vals = [-5.720871, -6.995398, 2.932100, 0.000000] #last 4 columns
-    contadj_incomp_cylinder.su2_exec  = "SU2_CFD"
-    contadj_incomp_cylinder.timeout   = 1600
-    contadj_incomp_cylinder.tol       = 0.00001
-    test_list.append(contadj_incomp_cylinder)
-
     ######################################
     ### Harmonic Balance               ###
     ######################################
@@ -532,7 +501,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.709662, -2.274900, 1.418422, 1.734206] #last 4 columns
+    spinning_cylinder.test_vals = [-7.719686, -2.279638, 1.721316, 1.710472] #last 4 columns
     spinning_cylinder.su2_exec  = "SU2_CFD"
     spinning_cylinder.timeout   = 1600
     spinning_cylinder.tol       = 0.00001
@@ -637,18 +606,18 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.362540, 0.406893, 82.840290, 0.882243] #last 4 columns
+    Jones_tc.test_vals = [-5.304569, 0.419188, 80.085880, 1.034776] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.timeout   = 1600
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
 
-	# Jones APU Turbocharger restart
+    # Jones APU Turbocharger restart
     Jones_tc_rst           = TestCase('jones_turbocharger_restart')
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.265376, -1.422420, 82.253590, 2.776443] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.422871, -1.618084, 82.250580, 2.791307] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.tol       = 0.00001
@@ -709,7 +678,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.656852, 4.263152, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -745,7 +714,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [-1.253451, 4.531335, 0.000000, 0.000000] #last 4 columns
+    rotating_cylinders.test_vals = [-1.253498, 4.531302, 0.000000, 0.000000] #last 4 columns
     rotating_cylinders.su2_exec  = "SU2_CFD"
     rotating_cylinders.timeout   = 1600
     rotating_cylinders.tol       = 0.00001
@@ -757,7 +726,7 @@ def main():
     supersonic_vortex_shedding.cfg_dir   = "sliding_interface/supersonic_vortex_shedding"
     supersonic_vortex_shedding.cfg_file  = "sup_vor_shed_WA.cfg"
     supersonic_vortex_shedding.test_iter = 5
-    supersonic_vortex_shedding.test_vals = [-1.122916, 4.606248, 0.000000, 0.000000] #last 4 columns
+    supersonic_vortex_shedding.test_vals = [-1.128085, 4.600597, 0.000000, 0.000000] #last 4 columns
     supersonic_vortex_shedding.su2_exec  = "SU2_CFD"
     supersonic_vortex_shedding.timeout   = 1600
     supersonic_vortex_shedding.tol       = 0.00001
@@ -812,6 +781,20 @@ def main():
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)    
    
+    ##########################
+    ### Zonal multiphysics ###
+    ##########################
+
+    # CHT incompressible
+    cht_incompressible           = TestCase('cht_incompressible')
+    cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
+    cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
+    cht_incompressible.test_iter = 10
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.992570, -1948.623994] #last 4 columns
+    cht_incompressible.su2_exec  = "SU2_CFD"
+    cht_incompressible.timeout   = 1600
+    cht_incompressible.tol       = 0.00001
+    test_list.append(cht_incompressible)
 
     ######################################
     ### RUN TESTS                      ###
@@ -844,7 +827,7 @@ def main():
     naca0012_def.cfg_dir   = "deformation/naca0012"
     naca0012_def.cfg_file  = "def_NACA0012.cfg"
     naca0012_def.test_iter = 10
-    naca0012_def.test_vals = [4.604230e-03] #residual
+    naca0012_def.test_vals = [0.00344658] #residual
     naca0012_def.su2_exec  = "SU2_DEF"
     naca0012_def.timeout   = 1600
     naca0012_def.tol       = 1e-08
@@ -857,7 +840,7 @@ def main():
     rae2822_def.cfg_dir   = "deformation/rae2822"
     rae2822_def.cfg_file  = "def_RAE2822.cfg"
     rae2822_def.test_iter = 10
-    rae2822_def.test_vals = [8.348610e-09] #residual
+    rae2822_def.test_vals = [7.94218e-09] #residual
     rae2822_def.su2_exec  = "SU2_DEF"
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
@@ -909,7 +892,7 @@ def main():
     brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
     brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
     brick_pyra_def.test_iter = 10
-    brick_pyra_def.test_vals = [1.994770e-03] #residual
+    brick_pyra_def.test_vals = [0.00183115] #residual
     brick_pyra_def.su2_exec  = "SU2_DEF"
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-08
@@ -961,7 +944,7 @@ def main():
     cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
     cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
     cylinder_ffd_def.test_iter = 10
-    cylinder_ffd_def.test_vals = [4.030020e-04] #residual
+    cylinder_ffd_def.test_vals = [0.000470133] #residual
     cylinder_ffd_def.su2_exec  = "SU2_DEF"
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-09
@@ -974,7 +957,7 @@ def main():
     sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def.cfg_file  = "def_spherical.cfg"
     sphere_ffd_def.test_iter = 10
-    sphere_ffd_def.test_vals = [3.733370e-03] #residual
+    sphere_ffd_def.test_vals = [0.00356699] #residual
     sphere_ffd_def.su2_exec  = "SU2_DEF"
     sphere_ffd_def.timeout   = 1600
     sphere_ffd_def.tol       = 1e-08
@@ -987,7 +970,7 @@ def main():
     sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
     sphere_ffd_def_bspline.test_iter = 10
-    sphere_ffd_def_bspline.test_vals = [2.112070e-03] #residual
+    sphere_ffd_def_bspline.test_vals = [0.00206808] #residual
     sphere_ffd_def_bspline.su2_exec  = "SU2_DEF"
     sphere_ffd_def_bspline.timeout   = 1600
     sphere_ffd_def_bspline.tol       = 1e-08
@@ -1090,7 +1073,7 @@ def main():
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1    
-    opt_2surf1obj_py.test_vals = [1, 1, 2.005657E+00, 1.779489E-07] #last 4 columns
+    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005657, 0.000341] #last 4 columns
     opt_2surf1obj_py.su2_exec   = "shape_optimization.py -g CONTINUOUS_ADJOINT  -f"
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001

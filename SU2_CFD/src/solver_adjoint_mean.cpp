@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subroutines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon, H. Kline
- * \version 6.0.0 "Falcon"
+ * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -345,7 +345,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Area_Monitored = myArea_Monitored;
 #endif
 
-  if (config->GetnObj() > 1 and iMesh==MESH_0) {
+  if (config->GetnObj() > 1 && iMesh==MESH_0) {
     if (grid_movement) {
       Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
       RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
@@ -3435,7 +3435,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           }
 
           SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-            if (Vn<SoundSpeed and Vn>0) {
+            if (Vn<SoundSpeed && Vn>0) {
               /*TODO: MDO compatible*/
             Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
             if (config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE)
@@ -6071,7 +6071,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
    Area_Monitored = myArea_Monitored;
  #endif
 
-   if (config->GetnObj() > 1 and iMesh == MESH_0) {
+   if (config->GetnObj() > 1 && iMesh == MESH_0) {
      if (grid_movement) {
        Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
        RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
