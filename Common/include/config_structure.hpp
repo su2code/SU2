@@ -733,6 +733,7 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
@@ -3082,6 +3083,12 @@ public:
    */
   bool GetWrt_Halo(void);
 
+  /*!
+   * \brief Get information about writing the performance summary at the end of a calculation.
+   * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
+   */
+  bool GetWrt_Performance(void);
+  
   /*!
    * \brief Get information about writing a 1D slice of a 2D cartesian solution.
    * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
