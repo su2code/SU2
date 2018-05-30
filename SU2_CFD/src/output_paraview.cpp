@@ -2489,7 +2489,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry,
       if (nDim == 2 && iDim == 2)
         coord_buf[iPoint*3+iDim] = Float2BigEndian(0.0);
       else
-        coord_buf[iPoint*3+iDim] = Float2BigEndian((float)Data[iDim][iPoint]);
+        coord_buf[iPoint*3+iDim] = Float2BigEndian((float)SU2_TYPE::GetValue(Data[iDim][iPoint]));
     }
   }
   fwrite(coord_buf, sizeof(float), 3*nGlobal_Poin, fhw);
@@ -2756,7 +2756,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry,
           if (nDim == 2 && iDim == 2)
             vec_buf[iPoint*3+iDim] = Float2BigEndian(0.0);
           else
-            vec_buf[iPoint*3+iDim] = Float2BigEndian((float)Data[VarCounter+iDim][iPoint]);
+            vec_buf[iPoint*3+iDim] = Float2BigEndian((float)SU2_TYPE::GetValue(Data[VarCounter+iDim][iPoint]));
         }
       
       fwrite(vec_buf, sizeof(float), 3*nGlobal_Poin, fhw);
@@ -2781,7 +2781,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry,
        This will be replaced with a derived data type most likely. ---*/
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++)
-        scalar_buf[iPoint] = Float2BigEndian((float)Data[VarCounter][iPoint]);
+        scalar_buf[iPoint] = Float2BigEndian((float)SU2_TYPE::GetValue(Data[VarCounter][iPoint]));
       
       fwrite(scalar_buf, sizeof(float), nGlobal_Poin, fhw);
       
