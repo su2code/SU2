@@ -1222,10 +1222,6 @@ void CFEAIteration::Iterate(COutput *output,
 
       config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-      /*--- Write the convergence history headers ---*/
-
-      if (!disc_adj_fem) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-
       /*--- Run the iteration ---*/
 
       integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,

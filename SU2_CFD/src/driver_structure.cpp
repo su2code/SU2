@@ -488,7 +488,8 @@ void CDriver::Postprocessing() {
 
     /*--- Close the convergence history file. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
-      ConvHist_file[iZone].close();
+      if (config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY)
+        ConvHist_file[iZone].close();
     }
     delete [] ConvHist_file;
 
@@ -2992,6 +2993,8 @@ void CDriver::InitStaticMeshMovement(){
 
 void CDriver::Output_Preprocessing(){
 
+  bool new_approach = false;
+
   /*--- Definition of the output class (one for each zone). The output class
    manages the writing of all restart, volume solution, surface solution,
    surface comma-separated value, and convergence history files (both in serial
@@ -3040,7 +3043,8 @@ void CDriver::Output_Preprocessing(){
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;
-      output[iZone] = new CFEAOutput(config_container[iZone]);
+      new_approach = true;
+      output[iZone] = new CFEAOutput(config_container[iZone], iZone);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -3069,7 +3073,7 @@ void CDriver::Output_Preprocessing(){
   if (rank == MASTER_NODE){
     ConvHist_file = new ofstream[nZone];
     for (iZone = 0; iZone < nZone; iZone++) {
-      output[iZone]->SetConvHistory_Header(&ConvHist_file[iZone], config_container[iZone], iZone);
+      if (!new_approach) output[iZone]->SetConvHistory_Header(&ConvHist_file[iZone], config_container[iZone], iZone);
       config_container[iZone]->SetHistFile(&ConvHist_file[iZone]);
     }
   }
