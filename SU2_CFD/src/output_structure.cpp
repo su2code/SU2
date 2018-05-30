@@ -17419,6 +17419,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool wrt_perf  = config->GetWrt_Performance();
   ofstream restart_file;
   string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
@@ -17752,7 +17753,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   Bandwidth = file_size/(1.0e6)/UsedTime;
   config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+Bandwidth);
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (wrt_perf)) {
     cout << "Wrote " << file_size/1.0e6 << " MB to disk in ";
     cout << UsedTime << " s. (" << Bandwidth << " MB/s)." << endl;
   }

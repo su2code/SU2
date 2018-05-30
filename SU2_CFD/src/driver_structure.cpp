@@ -517,6 +517,7 @@ CDriver::CDriver(char* confFile,
 void CDriver::Postprocessing() {
 
   bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
+  bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
   
     /*--- Output some information to the console. ---*/
 
@@ -659,7 +660,7 @@ void CDriver::Postprocessing() {
   UsedTime = StopTime-StartTime;
   UsedTimeCompute += UsedTime;
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (wrt_perf)) {
     su2double TotalTime = UsedTimePreproc + UsedTimeCompute + UsedTimeOutput;
     cout.precision(6);
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
