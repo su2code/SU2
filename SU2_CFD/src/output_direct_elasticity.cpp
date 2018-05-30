@@ -74,7 +74,7 @@ CFEAOutput::CFEAOutput(CConfig *config, unsigned short val_iZone) : COutput(conf
     cout << "History filename: " << char_histfile << endl;
     HistFile.open(char_histfile, ios::out);
     HistFile.precision(15);
-    SetConvHistory_Header(NULL, config, val_iZone);
+    SetConvHistory_Header(NULL, config, val_iZone, INST_0);
   }
 
 }
@@ -88,7 +88,7 @@ CFEAOutput::~CFEAOutput(void) {
 
 }
 
-void CFEAOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone) {
+void CFEAOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
 
   bool incload = config->GetIncrementalLoad();
 
@@ -129,13 +129,14 @@ void CFEAOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config,
 
 
 void CFEAOutput::SetConvHistory_Body(ofstream *ConvHist_file,
-                                  CGeometry ***geometry,
-                                  CSolver ****solver_container,
-                                  CConfig **config,
-                                  CIntegration ***integration,
-                                  bool DualTime_Iteration,
-                                  su2double timeused,
-                                  unsigned short val_iZone) {
+                                     CGeometry ****geometry,
+                                     CSolver *****solver_container,
+                                     CConfig **config,
+                                     CIntegration ****integration,
+                                     bool DualTime_Iteration,
+                                     su2double timeused,
+                                     unsigned short val_iZone,
+                                     unsigned short val_iInst) {
 
 
   bool fluid_structure      = (config[val_iZone]->GetFSI_Simulation());
@@ -155,7 +156,7 @@ void CFEAOutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double timeiter = timeused/su2double(iExtIter+1);
 
     unsigned short iVar;
-    unsigned short nDim = geometry[val_iZone][MESH_0]->GetnDim();
+    unsigned short nDim = geometry[val_iZone][INST_0][MESH_0]->GetnDim();
 
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -178,10 +179,10 @@ void CFEAOutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_fem        = new su2double[nVar_FEM];
 
     /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
-    su2double Total_VMStress   = solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_CFEA();
-    su2double Total_ForceCoeff = solver_container[val_iZone][MESH_0][FEA_SOL]->GetForceCoeff();
-    su2double Total_IncLoad    = solver_container[val_iZone][MESH_0][FEA_SOL]->GetLoad_Increment();
-    unsigned long LinSolvIter  = (unsigned long) solver_container[val_iZone][MESH_0][FEA_SOL]->GetIterLinSolver();
+    su2double Total_VMStress   = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA();
+    su2double Total_ForceCoeff = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetForceCoeff();
+    su2double Total_IncLoad    = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetLoad_Increment();
+    unsigned long LinSolvIter  = (unsigned long) solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetIterLinSolver();
 
     /*--- Residuals: ---*/
     /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -189,12 +190,12 @@ void CFEAOutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     if (linear_analysis) {
       for (iVar = 0; iVar < nVar_FEM; iVar++) {
-        residual_fem[iVar] = solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(iVar);
+        residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(iVar);
       }
     }
     else if (nonlinear_analysis) {
       for (iVar = 0; iVar < nVar_FEM; iVar++) {
-        residual_fem[iVar] = solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(iVar);
+        residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(iVar);
       }
     }
 

@@ -1768,6 +1768,10 @@ inline su2double CConfig::GetTotal_DynTime(void) { return Total_DynTime; }
 
 inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
 
+inline unsigned short CConfig::GetiInst(void) { return iInst; }
+
+inline void CConfig::SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
+
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
 inline su2double CConfig::GetNewmark_beta(void) { return Newmark_beta; }
