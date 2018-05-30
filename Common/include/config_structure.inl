@@ -1628,6 +1628,8 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
+inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
+
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
