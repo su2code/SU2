@@ -37,6 +37,128 @@
 
 #include "../include/output_structure.hpp"
 
+/*--- Subroutine to convert little endian float to big endian, which is the
+ required byte ordering for ParaView binary legacy format files. ---*/
+
+float Float2BigEndian(float val_float) {
+  union {float f; int i;} val;
+  val.f = val_float;
+#ifdef htonl
+  val.i = htonl(val.i);
+#endif
+  return val.f;
+}
+
+/*--- Subroutine to convert little endian int to big endian, which is the
+ required byte ordering for ParaView binary legacy format files. ---*/
+
+int Int2BigEndian(int val_int) {
+#ifdef htonl
+  return htonl(val_int);
+#else
+  return val_int;
+#endif
+}
+
+string GetVTKFilename(CConfig *config, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+  
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  
+  unsigned long iExtIter = config->GetExtIter();
+  
+  bool adjoint = config->GetContinuous_Adjoint();
+  bool disc_adj = config->GetDiscrete_Adjoint();
+  
+  char cstr[200], buffer[50];
+  string fileroot, fieldname;
+  ofstream Paraview_File;
+  
+  /*--- Write file name with extension ---*/
+  if (surf_sol) {
+    if (adjoint || disc_adj)
+      fileroot = config->GetSurfAdjCoeff_FileName();
+    else
+      fileroot = config->GetSurfFlowCoeff_FileName();
+  }
+  else {
+    if (adjoint || disc_adj)
+      fileroot = config->GetAdj_FileName();
+    else
+      fileroot = config->GetFlow_FileName();
+  }
+  
+  if (Kind_Solver == FEM_ELASTICITY) {
+    if (surf_sol)
+      fileroot = config->GetSurfStructure_FileName().c_str();
+    else
+      fileroot = config->GetStructure_FileName().c_str();
+  }
+  
+  if (Kind_Solver == WAVE_EQUATION)
+    fileroot = config->GetWave_FileName().c_str();
+  
+  if (Kind_Solver == POISSON_EQUATION)
+    fileroot = config->GetStructure_FileName().c_str();
+  
+  if (Kind_Solver == HEAT_EQUATION)
+    fileroot = config->GetHeat_FileName().c_str();
+  
+  if (config->GetKind_SU2() == SU2_DOT) {
+    if (surf_sol)
+      fileroot = config->GetSurfSens_FileName();
+    else
+      fileroot = config->GetVolSens_FileName();
+  }
+  
+  strcpy (cstr, fileroot.c_str());
+  if (Kind_Solver == POISSON_EQUATION)
+    strcpy (cstr, config->GetStructure_FileName().c_str());
+  
+  /*--- Special cases where a number needs to be appended to the file name. ---*/
+  
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+    
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+    strcat(cstr, buffer);
+  }
+  
+  /*--- Special cases where a number needs to be appended to the file name. ---*/
+  if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+    strcat(cstr, buffer);
+  }
+  
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
+    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iZone));
+    
+  } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
+    
+  } else if (config->GetDynamic_Analysis() && config->GetWrt_Dynamic()) {
+    if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iExtIter));
+  } else {
+    SPRINTF (buffer, ".vtk");
+  }
+  
+  strcat(cstr, buffer);
+  string filename = cstr;
+  return filename;
+}
+
 void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
     
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
@@ -2299,5 +2421,381 @@ found = Variable_Names[iField].find("Z-");
   }
 
   Paraview_File.close();
+  
+}
+
+void COutput::WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+  
+  unsigned short iDim, nDim = geometry->GetnDim();
+  
+  unsigned long iPoint, iElem, iNode, iNode2;
+  
+  unsigned long nSurf_Elem_Storage;
+  unsigned long nGlobal_Elem_Storage;
+  
+  string filename, fieldname;
+  ofstream Paraview_File;
+  
+  filename = GetVTKFilename(config, val_iZone, val_nZone, surf_sol);
+  
+  int MAX_STRING_LENGTH = 255;
+  char str_buf[MAX_STRING_LENGTH];
+  
+#ifndef HAVE_MPI
+  
+  FILE* fhw;
+  fhw = fopen(filename.c_str(), "wb");
+  
+  /*--- Error check for opening the file. ---*/
+  
+  if (!fhw) {
+    SU2_MPI::Error(string("Unable to open VTK binary legacy file ") + filename, CURRENT_FUNCTION);
+  }
+  
+  /*--- File header written in ASCII. ---*/
+  
+  strcpy(str_buf, "# vtk DataFile Version 3.0\n");
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  
+  strcpy(str_buf, "vtk output\n");
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  
+  strcpy(str_buf, "BINARY\n");
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  
+  strcpy(str_buf, "DATASET UNSTRUCTURED_GRID\n");
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  
+  /*--- Write the point coordinates. ---*/
+  
+  unsigned long nGlobal_Poin;
+  su2double **Data;
+  if (surf_sol) {
+    nGlobal_Poin = nSurf_Poin_Par;
+    Data = Parallel_Surf_Data;
+  } else {
+    nGlobal_Poin = nGlobal_Poin_Par;
+    Data = Parallel_Data;
+  }
+  
+  SPRINTF(str_buf, "POINTS %i float\n", (int)nGlobal_Poin);
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  
+  /*--- Load/write the 1D buffer of point coordinates. ---*/
+  
+  float *coord_buf = new float[nGlobal_Poin*3];
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    for (iDim = 0; iDim < 3; iDim++) {
+      if (nDim == 2 && iDim == 2)
+        coord_buf[iPoint*3+iDim] = Float2BigEndian(0.0);
+      else
+        coord_buf[iPoint*3+iDim] = Float2BigEndian((float)Data[iDim][iPoint]);
+    }
+  }
+  fwrite(coord_buf, sizeof(float), 3*nGlobal_Poin, fhw);
+  delete [] coord_buf;
+  
+  /*--- Write the connectivity data. ---*/
+  
+  unsigned long nTot_Line, nTot_BoundTria, nTot_BoundQuad;
+  nTot_Line      = nParallel_Line;
+  nTot_BoundTria = nParallel_BoundTria;
+  nTot_BoundQuad = nParallel_BoundQuad;
+  nSurf_Elem_Storage = nTot_Line*3 +nTot_BoundTria*4 + nTot_BoundQuad*5;
+  
+  unsigned long nTot_Tria, nTot_Quad, nTot_Tetr, nTot_Hexa, nTot_Pris, nTot_Pyra;
+  nTot_Tria = nParallel_Tria;
+  nTot_Quad = nParallel_Quad;
+  nTot_Tetr = nParallel_Tetr;
+  nTot_Hexa = nParallel_Hexa;
+  nTot_Pris = nParallel_Pris;
+  nTot_Pyra = nParallel_Pyra;
+  nGlobal_Elem_Storage = nTot_Tria*4 + nTot_Quad*5 + nTot_Tetr*5 + nTot_Hexa*9 + nTot_Pris*7 + nTot_Pyra*6;
+  
+  int *conn_buf = NULL;
+  
+  if (surf_sol) {
+    SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nSurf_Elem_Par,(int)nSurf_Elem_Storage);
+    fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+    conn_buf = new int[nSurf_Elem_Par*N_POINTS_QUADRILATERAL];
+  } else {
+    SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nGlobal_Elem_Par,(int)nGlobal_Elem_Storage);
+    fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+    conn_buf = new int[nGlobal_Elem_Par*N_POINTS_HEXAHEDRON];
+  }
+  
+  /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
+  
+  if (surf_sol) {
+    
+    for (iElem = 0; iElem < nParallel_Line; iElem++) {
+      iNode  = iElem*N_POINTS_LINE;
+      iNode2 = iElem*(N_POINTS_LINE+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TRIANGLE);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_BoundLine_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_BoundLine_Par[iNode+1]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Line*(N_POINTS_LINE+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
+      iNode  = iElem*N_POINTS_TRIANGLE;
+      iNode2 = iElem*(N_POINTS_TRIANGLE+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TRIANGLE);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_BoundTria_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_BoundTria_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_BoundTria_Par[iNode+2]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_BoundTria*(N_POINTS_TRIANGLE+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
+      iNode  = iElem*N_POINTS_QUADRILATERAL;
+      iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_QUADRILATERAL);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_BoundQuad_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_BoundQuad_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_BoundQuad_Par[iNode+2]-1);
+      conn_buf[iNode2+4] = Int2BigEndian(Conn_BoundQuad_Par[iNode+3]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_BoundQuad*(N_POINTS_QUADRILATERAL+1), fhw);
+    
+  } else {
+    
+    for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+      iNode  = iElem*N_POINTS_TRIANGLE;
+      iNode2 = iElem*(N_POINTS_TRIANGLE+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TRIANGLE);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_Tria_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_Tria_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_Tria_Par[iNode+2]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Tria*(N_POINTS_TRIANGLE+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+      iNode  = iElem*N_POINTS_QUADRILATERAL;
+      iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_QUADRILATERAL);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_Quad_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_Quad_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_Quad_Par[iNode+2]-1);
+      conn_buf[iNode2+4] = Int2BigEndian(Conn_Quad_Par[iNode+3]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Quad*(N_POINTS_QUADRILATERAL+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
+      iNode  = iElem*N_POINTS_TETRAHEDRON;
+      iNode2 = iElem*(N_POINTS_TETRAHEDRON+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TETRAHEDRON);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_Tetr_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_Tetr_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_Tetr_Par[iNode+2]-1);
+      conn_buf[iNode2+4] = Int2BigEndian(Conn_Tetr_Par[iNode+3]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Tetr*(N_POINTS_TETRAHEDRON+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
+      iNode  = iElem*N_POINTS_HEXAHEDRON;
+      iNode2 = iElem*(N_POINTS_HEXAHEDRON+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_HEXAHEDRON);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_Hexa_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_Hexa_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_Hexa_Par[iNode+2]-1);
+      conn_buf[iNode2+4] = Int2BigEndian(Conn_Hexa_Par[iNode+3]-1);
+      conn_buf[iNode2+5] = Int2BigEndian(Conn_Hexa_Par[iNode+4]-1);
+      conn_buf[iNode2+6] = Int2BigEndian(Conn_Hexa_Par[iNode+5]-1);
+      conn_buf[iNode2+7] = Int2BigEndian(Conn_Hexa_Par[iNode+6]-1);
+      conn_buf[iNode2+8] = Int2BigEndian(Conn_Hexa_Par[iNode+7]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Hexa*(N_POINTS_HEXAHEDRON+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_Pris; iElem++) {
+      iNode  = iElem*N_POINTS_PRISM;
+      iNode2 = iElem*(N_POINTS_PRISM+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_PRISM);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_Pris_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_Pris_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_Pris_Par[iNode+2]-1);
+      conn_buf[iNode2+4] = Int2BigEndian(Conn_Pris_Par[iNode+3]-1);
+      conn_buf[iNode2+5] = Int2BigEndian(Conn_Pris_Par[iNode+4]-1);
+      conn_buf[iNode2+6] = Int2BigEndian(Conn_Pris_Par[iNode+5]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Pris*(N_POINTS_PRISM+1), fhw);
+    
+    for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
+      iNode  = iElem*N_POINTS_PYRAMID;
+      iNode2 = iElem*(N_POINTS_PYRAMID+1);
+      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_PYRAMID);
+      conn_buf[iNode2+1] = Int2BigEndian(Conn_Pyra_Par[iNode+0]-1);
+      conn_buf[iNode2+2] = Int2BigEndian(Conn_Pyra_Par[iNode+1]-1);
+      conn_buf[iNode2+3] = Int2BigEndian(Conn_Pyra_Par[iNode+2]-1);
+      conn_buf[iNode2+4] = Int2BigEndian(Conn_Pyra_Par[iNode+3]-1);
+      conn_buf[iNode2+5] = Int2BigEndian(Conn_Pyra_Par[iNode+4]-1);
+      conn_buf[iNode2+6] = Int2BigEndian(Conn_Pyra_Par[iNode+5]-1);
+    }
+    fwrite(conn_buf, sizeof(int), nParallel_Pyra*(N_POINTS_PYRAMID+1), fhw);
+    
+  }
+  
+  /*--- Load/write the cell type for all elements in the file. ---*/
+  
+  if (surf_sol) {
+    SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(nSurf_Elem_Par));
+    fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  } else {
+    SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(nGlobal_Elem_Par));
+    fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  }
+  
+  int *type_buf = NULL;
+  if (surf_sol) {
+    
+    type_buf = new int[nSurf_Elem_Par];
+    
+    for (iElem = 0; iElem < nParallel_Line; iElem++) {
+      type_buf[iElem] = Int2BigEndian(TRIANGLE);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Line, fhw);
+    
+    for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
+      type_buf[iElem] = Int2BigEndian(TRIANGLE);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_BoundTria, fhw);
+    
+    for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
+      type_buf[iElem] = Int2BigEndian(QUADRILATERAL);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_BoundQuad, fhw);
+    
+  } else {
+    
+    type_buf = new int[nGlobal_Elem_Par];
+    
+    for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+      type_buf[iElem] = Int2BigEndian(TRIANGLE);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Tria, fhw);
+    
+    for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+      type_buf[iElem] = Int2BigEndian(QUADRILATERAL);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Quad, fhw);
+    
+    for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
+      type_buf[iElem] = Int2BigEndian(TETRAHEDRON);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Tetr, fhw);
+    
+    for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
+      type_buf[iElem] = Int2BigEndian(HEXAHEDRON);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Hexa, fhw);
+    
+    for (iElem = 0; iElem < nParallel_Pris; iElem++) {
+      type_buf[iElem] = Int2BigEndian(PRISM);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Pris, fhw);
+    
+    for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
+      type_buf[iElem] = Int2BigEndian(PYRAMID);
+    }
+    fwrite(type_buf, sizeof(int), nParallel_Pyra, fhw);
+    
+  }
+  
+  delete [] type_buf;
+  
+  /*--- Now write the scalar and vector data (reuse the counts above). ---*/
+  
+  SPRINTF (str_buf, "\nPOINT_DATA %i\n", (int)nGlobal_Poin);
+  fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+  
+  unsigned short varStart = 2;
+  if (nDim == 3) varStart++;
+  
+  /*--- Need to adjust container location to avoid PointID tag and coords. ---*/
+  
+  unsigned short VarCounter = varStart;
+  for (unsigned short iField = varStart; iField < Variable_Names.size(); iField++) {
+    
+    fieldname = Variable_Names[iField];
+    fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+    
+    bool output_variable = true, isVector = false;
+    size_t found = Variable_Names[iField].find("X-");
+    if (found!=string::npos) {
+      output_variable = true;
+      isVector = true;
+    }
+    found = Variable_Names[iField].find("Y-");
+    if (found!=string::npos) {
+      //skip
+      output_variable = false;
+      VarCounter++;
+    }
+    found = Variable_Names[iField].find("Z-");
+    if (found!=string::npos) {
+      //skip
+      output_variable = false;
+      VarCounter++;
+    }
+    
+    if (output_variable && isVector) {
+      
+      fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+      SPRINTF (str_buf, "\nVECTORS %s float\n", fieldname.c_str());
+      fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+      
+      /*--- Prepare the 1D data buffer on this rank. ---*/
+      
+      float *vec_buf = new float[nGlobal_Poin*3];
+      
+      /*--- For now, create a temp 1D buffer to load up the data for writing.
+       This will be replaced with a derived data type most likely. ---*/
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++)
+        for (iDim = 0; iDim < 3; iDim++) {
+          if (nDim == 2 && iDim == 2)
+            vec_buf[iPoint*3+iDim] = Float2BigEndian(0.0);
+          else
+            vec_buf[iPoint*3+iDim] = Float2BigEndian((float)Data[VarCounter+iDim][iPoint]);
+        }
+      
+      fwrite(vec_buf, sizeof(float), 3*nGlobal_Poin, fhw);
+      
+      delete [] vec_buf;
+      
+      VarCounter++;
+      
+    } else if (output_variable) {
+      
+      SPRINTF (str_buf, "\nSCALARS %s float 1\n", fieldname.c_str());
+      fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+      
+      SPRINTF (str_buf, "LOOKUP_TABLE default\n");
+      fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
+      
+      /*--- Prepare the 1D data buffer on this rank. ---*/
+      
+      float *scalar_buf = new float[nGlobal_Poin];
+      
+      /*--- For now, create a temp 1D buffer to load up the data for writing.
+       This will be replaced with a derived data type most likely. ---*/
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++)
+        scalar_buf[iPoint] = Float2BigEndian((float)Data[VarCounter][iPoint]);
+      
+      fwrite(scalar_buf, sizeof(float), nGlobal_Poin, fhw);
+      
+      delete [] scalar_buf;
+      
+      VarCounter++;
+    }
+    
+  }
+  
+#else
+  
+  /*--- MPI IO implementation here. ---*/
+  
+#endif
   
 }
