@@ -5926,6 +5926,58 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       }
     }
 
+    /* Initialize addSourceTerms to body_force. The value of addSourceTerms
+       is set to true when a manufactured solution is computed. */
+    bool addSourceTerms = body_force;
+
+#ifdef MANUFACTURED_SOLUTION
+
+    /*--- For the manufactured solutions a source term must be added. If a
+          standard source term has not been specified, initialize the source
+          terms to zero and set addSourceTerms to true. ---*/
+    addSourceTerms = true;
+    if( !body_force ) {
+      for(unsigned short i=0; i<(nInt*NPad); ++i)
+        sources[i] = 0.0;
+    }
+
+
+    /* Easier storage of the gas constant. */
+    const su2double RGas = config->GetGas_ConstantND();
+
+    /*--- Loop over the chunk of elements and its integration points. ---*/
+    for(unsigned short ll=0; ll<llEnd; ++ll) {
+      const unsigned short llNVar = ll*nVar;
+      const unsigned long  lInd   = l + ll;
+      for(unsigned short i=0; i<nInt; ++i) {
+        const unsigned short iNPad = i*NPad;
+
+        /* Determine the integration weight multiplied by the Jacobian. */
+        const su2double *metricTerms = volElem[lInd].metricTerms.data()
+                                     + i*nMetricPerPoint;
+        const su2double weightJac    = weights[i]*metricTerms[0];
+
+        /* Set the pointer to the coordinates in this integration point and
+           call the function to compute the source terms for the manufactured
+           solution. Note that this is an inviscid computation, so for
+           viscosity and thermal conductivity a zero is passed. */
+        const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
+
+        su2double sourceMan[5];
+        SourceTermManufacturedSolution(nDim, Gamma, RGas, 0.0, 0.0, coor, sourceMan);
+
+        /*--- Subtract the source term of the manufactured solution, multiplied
+              by the appropriate weight, from the possibly earlier computed
+              source term. It is subtracted in order to be consistent with
+              the definition of the residual used in this code. ---*/
+        su2double *source = sources + iNPad + llNVar;
+        for(unsigned short k=0; k<nVar; ++k)
+          source[k] -= weightJac*sourceMan[k];
+      }
+    }
+
+#endif
+
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
     /*---         integration over the volume element.                     ---*/
@@ -5939,7 +5991,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
     /* Add the contribution from the source terms, if needed. Use solInt
        as temporary storage for the matrix product. */
-    if( body_force ) {
+    if( addSourceTerms ) {
 
       /* Call the general function to carry out the matrix product. */
       config->GEMM_Tick(&tick);
@@ -8402,6 +8454,18 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
               su2double *UR   = solIntR + NPad*i + ll*nVar;
 
         RinglebSolution(coor, UR);
+
+#elif MANUFACTURED_SOLUTION
+
+        /* Manufactured solution. Specify the exact solution for the right solution.
+           First determine the pointer to the coordinates of this integration
+           point and the pointer to the solution. Afterwards call the function
+           DetermineManufacturedSolution to do the actual job. */
+        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
+              su2double *UR   = solIntR + NPad*i + ll*nVar;
+
+        const su2double RGas = config->GetGas_ConstantND();
+        DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, UR);
 
 #else
         /* No compiler directive specified. Write an error message and exit. */
@@ -12685,6 +12749,72 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
       }
     }
 
+    /* Initialize addSourceTerms to body_force. The value of addSourceTerms
+       is set to true when a manufactured solution is computed. */
+    bool addSourceTerms = body_force;
+
+#ifdef MANUFACTURED_SOLUTION
+
+    /*--- For the manufactured solutions a source term must be added. If a
+          standard source term has not been specified, initialize the source
+          terms to zero and set addSourceTerms to true. ---*/
+    addSourceTerms = true;
+    if( !body_force ) {
+      for(unsigned short i=0; i<(nInt*NPad); ++i)
+        sources[i] = 0.0;
+    }
+
+    /* Easier storage of the gas constant. */
+    const su2double RGas = config->GetGas_ConstantND();
+
+    /*--- Loop over the chunk of elements and its integration points. ---*/
+    for(unsigned short ll=0; ll<llEnd; ++ll) {
+      const unsigned short llNVar = ll*nVar;
+      const unsigned long  lInd   = l + ll;
+      for(unsigned short i=0; i<nInt; ++i) {
+        const unsigned short iNPad = i*NPad;
+
+        /* Determine the value of the viscosity and thermal conductivity. */
+        const su2double *sol = solAndGradInt + iNPad + llNVar;
+        const su2double rhoInv = 1.0/sol[0];
+        su2double kinEner = 0.0;
+        for(unsigned short k=1; k<=nDim; ++k) {
+          const su2double vel = sol[k]*rhoInv;
+          kinEner += 0.5*vel*vel;
+        }
+        const double StaticEnergy = sol[nVar-1]*rhoInv - kinEner;
+
+        FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+        const su2double ViscosityLam        = FluidModel->GetLaminarViscosity();
+        const su2double ThermalConductivity = FluidModel->GetThermalConductivity();
+
+        /* Determine the integration weight multiplied by the Jacobian. */
+        const su2double *metricTerms = volElem[lInd].metricTerms.data()
+                                     + i*nMetricPerPoint;
+        const su2double weightJac    = weights[i]*metricTerms[0];
+
+        /* Set the pointer to the coordinates in this integration point and
+           call the function to compute the source terms for the manufactured
+           solution. Note that this is an inviscid computation, so for
+           viscosity and thermal conductivity a zero is passed. */
+        const su2double *coor = volElem[lInd].coorIntegrationPoints.data() + i*nDim;
+
+        su2double sourceMan[5];
+        SourceTermManufacturedSolution(nDim, Gamma, RGas, ViscosityLam,
+                                       ThermalConductivity, coor, sourceMan);
+
+        /*--- Subtract the source term of the manufactured solution, multiplied
+              by the appropriate weight, from the possibly earlier computed
+              source term. It is subtracted in order to be consistent with
+              the definition of the residual used in this code. ---*/
+        su2double *source = sources + iNPad + llNVar;
+        for(unsigned short k=0; k<nVar; ++k)
+          source[k] -= weightJac*sourceMan[k];
+      }
+    }
+
+#endif
+
     config->Tock(tick, "IR_2_1", 4);
 
     /*------------------------------------------------------------------------*/
@@ -12700,7 +12830,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
     /* Add the contribution from the source terms, if needed. Use solAndGradInt
        as temporary storage for the matrix product. */
-    if( body_force ) {
+    if( addSourceTerms ) {
 
       /* Call the general function to carry out the matrix product. */
       config->GEMM_Tick(&tick);
@@ -15038,7 +15168,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
         /* Easier storage of the right solution for this integration point and
            the coordinates of this integration point. */
         const su2double *coor = surfElem[l+ll].coorIntegrationPoints + i*nDim;
-              su2double *UR   = solIntR + NPad*i + nVar*ll;
+              su2double *UR   = solIntR + NPad*i + ll*nVar;
 
         /*--- Set the exact solution in this integration point. ---*/
         const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
@@ -15049,6 +15179,19 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
         UR[2] = -sinFlowAngle*yTilde*yTilde;
         UR[3] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
               +  0.5*yTilde*yTilde*yTilde*yTilde;
+
+#elif MANUFACTURED_SOLUTION
+
+        /* Manufactured solution. Specify the exact solution for the right solution.
+           First determine the pointer to the coordinates of this integration
+           point and the pointer to the solution. Afterwards call the function
+           DetermineManufacturedSolution to do the actual job. */
+        const su2double *coor = surfElem[ll+l].coorIntegrationPoints.data() + i*nDim;
+              su2double *UR   = solIntR + NPad*i + ll*nVar;
+
+        const su2double RGas = config->GetGas_ConstantND();
+        DetermineManufacturedSolution(nDim, Gamma, RGas,  coor, UR);
+
 #else
 
         /* No compiler directive specified. Write an error message and exit. */
