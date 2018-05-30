@@ -859,6 +859,102 @@ public:
 
 };
 
+/*! \class CFlowOutput
+ *  \brief Output class for compressible Flow problems.
+ *  \author R. Sanchez.
+ *  \date May 30, 2018.
+ */
+class CFlowOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+  ofstream HistFile;
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFlowOutput(CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFlowOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+};
+
+/*! \class CFlowOutput
+ *  \brief Output class for compressible Flow problems.
+ *  \author R. Sanchez.
+ *  \date May 30, 2018.
+ */
+class CIncFlowOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+  ofstream HistFile;
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CIncFlowOutput(CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CIncFlowOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+};
+
 /*! \class CFEAOutput
  *  \brief Output class for FEA problems.
  *  \author R. Sanchez.
