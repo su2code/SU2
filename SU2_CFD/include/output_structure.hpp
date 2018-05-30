@@ -865,13 +865,18 @@ public:
  */
 class CFEAOutput : public COutput {
 private:
+
+  char char_histfile[200];
+
+  ofstream HistFile;
+
 public:
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAOutput(CConfig *config);
+  CFEAOutput(CConfig *config, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
