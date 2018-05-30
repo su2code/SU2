@@ -435,7 +435,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     RelaxCoeff        = 1.0;
     ForceCoeff        = 1.0;
 
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
 
     /*--- Define some structures for locating max residuals ---*/
@@ -2795,9 +2795,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double ModAmpl = 1.0;
   
-  bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
-  su2double Transfer_Time = 0.0;
 
   ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
@@ -3273,7 +3271,6 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
   su2double LoadCoeff = 1.0;
 
-  bool apply_coeff = false;
   bool Ramp_Load = config->GetRamp_Load();
   bool Sine_Load = config->GetSine_Load();
   bool Ramp_And_Release = config->GetRampAndRelease_Load();
@@ -4198,7 +4195,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
   unsigned short RelaxMethod_FSI;
   su2double *dispPred, *dispCalc;
   su2double WAitken;
-  su2double CurrentTime=fea_config->GetCurrent_DynTime();
   
   RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
   
@@ -4635,7 +4631,7 @@ void CFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, bgs_sol;
+  su2double residual;
 
   /*--- Set Residuals to zero ---*/
 
