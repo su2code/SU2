@@ -552,10 +552,16 @@ void CDriver::Postprocessing() {
     /*--- Close the convergence history file. ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        if (config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY)
+        if ((config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY) &&
+            (config_container[iZone]->GetKind_Solver() != EULER) &&
+            (config_container[iZone]->GetKind_Solver() != NAVIER_STOKES) &&
+            (config_container[iZone]->GetKind_Solver() != RANS))
         ConvHist_file[iZone][iInst].close();
       }
-      if (config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY)
+      if ((config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY) &&
+          (config_container[iZone]->GetKind_Solver() != EULER) &&
+          (config_container[iZone]->GetKind_Solver() != NAVIER_STOKES) &&
+          (config_container[iZone]->GetKind_Solver() != RANS))
         delete [] ConvHist_file[iZone];
     }
     delete [] ConvHist_file;
@@ -3116,10 +3122,13 @@ void CDriver::Output_Preprocessing(){
     switch (config_container[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-
+      new_approach = true;
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
+      if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE)
+        output[iZone] = new CFlowOutput(config_container[iZone], iZone);
+      else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE)
+        output[iZone] = new CIncFlowOutput(config_container[iZone], iZone);
       break;
 
     case WAVE_EQUATION:

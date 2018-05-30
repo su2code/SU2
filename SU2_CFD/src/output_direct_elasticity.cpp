@@ -1,6 +1,6 @@
 /*!
  * \file output_direct_elasticity.cpp
- * \brief Main subroutines for output solver information
+ * \brief Main subroutines for FEA output
  * \author R. Sanchez
  * \version 6.0.1 "Falcon"
  *
