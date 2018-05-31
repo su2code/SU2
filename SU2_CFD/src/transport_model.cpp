@@ -2,20 +2,24 @@
  * transport_model.cpp
  * \brief Source of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -136,9 +140,9 @@ CConstantPrandtl::CConstantPrandtl(su2double pr_const) : CConductivityModel() {
 
 }
 
-void CConstantPrandtl::SetConductivity(su2double T, su2double rho, su2double mu, su2double cp) {
+void CConstantPrandtl::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
 
-  Kt = mu*cp/Pr_const;
+  Kt = mu_lam*cp/Pr_const;
 
 }
 
@@ -151,3 +155,20 @@ void CConstantPrandtl::SetDerConductivity(su2double T, su2double rho, su2double 
 
 CConstantPrandtl::~CConstantPrandtl(void) { }
 
+CConstantPrandtlRANS::CConstantPrandtlRANS(void) : CConductivityModel() { }
+
+CConstantPrandtlRANS::CConstantPrandtlRANS(su2double pr_lam, su2double pr_turb) : CConductivityModel() {
+
+  /*--- Attributes initialization ---*/
+
+  Prandtl_Lam  = pr_lam;
+  Prandtl_Turb = pr_turb;
+}
+
+void CConstantPrandtlRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+
+  Kt = cp * ((mu_lam/Prandtl_Lam) + (mu_turb/Prandtl_Turb));
+  
+}
+
+CConstantPrandtlRANS::~CConstantPrandtlRANS(void) { }

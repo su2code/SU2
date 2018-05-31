@@ -2,20 +2,24 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +38,8 @@
 #include "../include/integration_structure.hpp"
 
 CIntegration::CIntegration(CConfig *config) {
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   Cauchy_Value = 0;
   Cauchy_Func = 0;
   Old_Func = 0;
@@ -161,18 +167,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case LOAD_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case PRESSURE_BOUNDARY:
-        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case NEUMANN:
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case LOAD_DIR_BOUNDARY:
-    solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-    break;
+        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
       case LOAD_SINE_BOUNDARY:
-    solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-    break;
+        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
     }
   }
 
@@ -195,10 +198,16 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-    }
-
+      case CHT_WALL_INTERFACE: 
+        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        }
+        else {
+          solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        }
+        break;
+    } 
 }
-
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      CSolver **solver_container,
@@ -276,9 +285,9 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
         case LOAD_BOUNDARY:
           solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
           break;
-        case PRESSURE_BOUNDARY:
-          solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-          break;
+        case DAMPER_BOUNDARY:
+          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        break;
       }
     }
 
@@ -388,8 +397,11 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-      break;
+          solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
+        case DISP_DIR_BOUNDARY:
+          solver_container[MainSolver]->BC_DispDir(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
         case DISPLACEMENT_BOUNDARY:
           solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
           break;
@@ -434,8 +446,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
                                           su2double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
-  int rank = MASTER_NODE;
-  
+
   /*--- Initialize some variables for controlling the output frequency. ---*/
   
   bool DualTime_Iteration = false;
@@ -450,12 +461,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
   
   if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
-    
-#ifdef HAVE_MPI
-    int size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
     
     bool Already_Converged = Convergence;
     
@@ -555,15 +560,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
     
     if (monitor != monitor) {
-      if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_DIVERGENCE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
     }
     
     if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
@@ -603,10 +600,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     unsigned long iProcessor, owner, *owner_all = NULL;
     
     string Marker_Tag, Monitoring_Tag;
-  int rank, nProcessor;
-    
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    int nProcessor = size;
 
     /*--- Only if mater node allocate memory ---*/
     
@@ -738,13 +732,6 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
   su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
   
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   bool Already_Converged = Convergence;
   
   Reference_UTOL = config->GetResidual_FEM_UTOL();
@@ -800,15 +787,60 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   
 }
 
+void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+
+  su2double val_I, Max_Val_I;
+
+  bool Already_Converged = Convergence;
+
+  Max_Val_I = config->GetCriteria_FEM_ADJ();
+  val_I     = log10(solver->Get_val_I());
+
+  //  cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
+  //  cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
+
+  if (val_I <= Max_Val_I){
+    Convergence = true;
+  }
+
+  if (Already_Converged) Convergence = true;
+
+
+  /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+
+  sbuf_conv[0] = Convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*-- Compute global convergence criteria in the master node --*/
+
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (sbuf_conv[0] == 1) { Convergence = true; }
+  else { Convergence = false; }
+
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
+
+}
+
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   su2double FEA_check[2] = {0.0, 0.0};
   su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;
@@ -820,39 +852,23 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   unsigned long nPointDomain, nDim;
   su2double *dispPred, *dispPred_Old;
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
-  su2double Static_Time=fea_config->GetStatic_Time();
   su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
-  
-  bool stat_time = (CurrentTime <= Static_Time);
   
   magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
   logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
   
   deltaURes = 0.0;
   
-  ofstream historyFile_FSI;
-  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-  if (writeHistFSI && (rank == MASTER_NODE)) {
-    char cstrFSI[200];
-    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
-    strcpy (cstrFSI, filenameHistFSI.data());
-    historyFile_FSI.open (cstrFSI, std::ios_base::app);
-  }
-  
   /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
   /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
   
-  if ((CurrentTime > Static_Time) && (iFSIIter == 0)) {
+  if (iFSIIter == 0) {
     /*--- Set the convergence values to 0.0 --*/
     fea_solver->SetFSI_ConvValue(0,0.0);
     fea_solver->SetFSI_ConvValue(1,0.0);
     
-    if (writeHistFSI && (rank == MASTER_NODE)) {
-      historyFile_FSI << endl;
-    }
-    
   }
-  else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
+  else if (iFSIIter > 0) {
     
     // We loop only over the points that belong to the processor
     nPointDomain = fea_geometry->GetnPointDomain();
@@ -887,17 +903,16 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 #else
     deltaURes_recv         = deltaURes;
 #endif
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
-    
+
+    /*--- Store the FSI residual ---*/
+    fea_solver->SetFSI_Residual(deltaURes_recv);
+
     if (iFSIIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
       logResidualFSI_initial = log10(deltaURes_recv);
       
       if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
-      
-      if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
-      
+
     }
     else {
       fea_solver->SetFSI_ConvValue(1,deltaURes_recv);
@@ -907,20 +922,11 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       
       magResidualFSI=logResidualFSI-logResidualFSI_initial;
       
-      if (writeHistFSI && (rank == MASTER_NODE)) {
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
-      }
-      
       if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
     }
-    
-    if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI << endl;}
-    
+
   }
-  
-  if (writeHistFSI && (rank == MASTER_NODE)) { historyFile_FSI.close();}
-  
+    
   /*--- Apply the same convergence criteria to all the processors ---*/
   
 #ifdef HAVE_MPI
@@ -971,31 +977,28 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
       cout << "No relaxation parameter used. " << endl;
     }
     
-    cout << endl;
-    cout.setf(ios::fixed, ios::floatfield);
-    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
+    /*--- Store the Relaxation coefficient residual ---*/
+    fea_solver->SetRelaxCoeff(WAitken);
+
     cout.precision(6);
-    cout << endl <<"---------------------- FSI Convergence Summary -------------------------- ";
-    if (stat_time) {
-      cout << endl <<" The structure is being held static. No convergence is checked.";
-    }
-    else {
-      if (iFSIIter == 0) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" <<  endl;
-      else if (iFSIIter == 1) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
-      else cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
+    if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
+    else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+    else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
       
-      cout.width(8); cout << iFSIIter;
-      cout.width(8); cout << iExtIter;
-      cout.width(15); cout << WAitken;
-      cout.width(15);
-      if (iFSIIter == 0) cout << " ";
-      else if (iFSIIter == 1) cout << logResidualFSI_initial;
-      else cout << logResidualFSI;
-      cout.width(15);
-      if (iFSIIter < 2) cout << " ";
-      else cout << magResidualFSI;
-    }
-    
+    cout.width(8); cout << iFSIIter;
+    cout.width(15); cout << iExtIter;
+    cout.width(15); cout << WAitken;
+    cout.width(15);
+    if (iFSIIter == 0) cout << " ";
+    else if (iFSIIter == 1) cout << logResidualFSI_initial;
+    else cout << logResidualFSI;
+    cout.width(15);
+    if (iFSIIter < 2) cout << " ";
+    else cout << magResidualFSI;
+    cout.setf(ios::fixed, ios::floatfield);
+    cout << endl;
+    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
+    cout << endl;
     cout << endl << "------------------------------------------------------------------------- ";
     cout << endl;
   }

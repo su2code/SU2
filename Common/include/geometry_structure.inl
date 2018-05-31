@@ -2,20 +2,24 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -120,6 +124,10 @@ inline void CGeometry::SetRCM_Ordering(CConfig *config) { }
 inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) { }
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
+
+inline void CGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){ }
+
+inline void CGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsigned short val_marker){ }
 
 inline void CGeometry::SetPoint_Connectivity(CGeometry *fine_grid) { }
 
@@ -291,9 +299,11 @@ inline su2double CGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2dou
                                               su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) { return 0; }
 
 inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness,
+                                    su2double &Wing_MinChord, su2double &Wing_MaxChord,
                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
-                                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC,
+                                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                     su2double &Wing_MaxDihedral) { }
 
 
@@ -304,9 +314,24 @@ inline void CGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
   		                                su2double &Fuselage_MinHeight, su2double &Fuselage_MaxHeight,
   		                                su2double &Fuselage_MaxCurvature) { }
 
+inline void CGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
+                                       su2double &Nacelle_Volume, su2double &Nacelle_MinMaxThickness, su2double &Nacelle_MaxMaxThickness,
+                                       su2double &Nacelle_MinChord, su2double &Nacelle_MaxChord,
+                                       su2double &Nacelle_MinLERadius, su2double &Nacelle_MaxLERadius,
+                                       su2double &Nacelle_MinToC, su2double &Nacelle_MaxToC,
+                                       su2double &Nacelle_ObjFun_MinToC, su2double &Nacelle_MaxTwist) { }
+
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
+
+inline su2double CGeometry::GetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryTemperature[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryTemperature(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryTemperature){ CustomBoundaryTemperature[val_marker][val_vertex] = val_customBoundaryTemperature; }
+
+inline su2double CGeometry::GetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex){ return CustomBoundaryHeatFlux[val_marker][val_vertex]; }
+
+inline void CGeometry::SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux){ CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux; }
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 

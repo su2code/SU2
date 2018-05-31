@@ -2,20 +2,24 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.0.1 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -85,16 +89,9 @@ void CSysSolve::SolveReduced(const int & n, const vector<vector<su2double> > & H
 }
 
 void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<CSysVector> & w) {
-  
-  bool Convergence = true;
-  int rank = MASTER_NODE;
 
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
+  bool Convergence = true;
+
   /*--- Parameter for reorthonormalization ---*/
   
   static const su2double reorth = 0.98;
@@ -112,6 +109,9 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
   /*--- Synchronization point to check the convergence of the solver ---*/
 
 #ifdef HAVE_MPI
+
+  int rank = SU2_MPI::GetRank();
+  int size = SU2_MPI::GetSize();
   
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
   sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
@@ -141,15 +141,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<su2double> > & Hsbg, vector<
 #endif
   
   if (!Convergence) {
-    if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-#ifndef HAVE_MPI
-		exit(EXIT_DIVERGENCE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
   }
   
   /*--- Begin main Gram-Schmidt loop ---*/
@@ -200,25 +192,16 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 }
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, bool monitoring) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 
-int rank = 0;
-
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  int rank = SU2_MPI::GetRank();
 
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   CSysVector r(b);
@@ -321,6 +304,7 @@ int rank = 0;
   }
 
   
+  (*residual) = norm_r;
 	return (unsigned long) i;
   
 }
@@ -328,35 +312,22 @@ int rank = 0;
 unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 	
-int rank = 0;
-
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  int rank = SU2_MPI::GetRank();
   
   /*---  Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
 
   /*---  Check the subspace size ---*/
   
-  if (m > 1000) {
-    if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-	MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+  if (m > 5000) {
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   /*---  Define various arrays
@@ -488,22 +459,14 @@ int rank = 0;
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
   
-  int rank = 0;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  int rank = SU2_MPI::GetRank();
   
   /*--- Check the subspace size ---*/
   
   if (m < 1) {
-    if (rank == MASTER_NODE) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    char buf[100];
+    SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
+    SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
   
   CSysVector r(b);
@@ -651,7 +614,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
   if (config->GetKind_Linear_Solver() == BCGSTAB ||
       config->GetKind_Linear_Solver() == FGMRES ||
-      config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
+      config->GetKind_Linear_Solver() == RESTARTED_FGMRES ||
+      config->GetKind_Linear_Solver() == CONJUGATE_GRADIENT) {
     
     mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     CPreconditioner* precond = NULL;
@@ -684,6 +648,9 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         break;
       case FGMRES:
         IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
+        break;
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;
@@ -763,12 +730,86 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
   su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
+#if CODI_PRIMAL_INDEX_TAPE
+  su2double::Real *oldValues = new su2double::Real[size];
+#endif
 
   for (i = 0; i < size; i++) {
 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
     if (!LinSysSol[i].isActive()) {
+#if CODI_PRIMAL_INDEX_TAPE
+      oldValues[i] = AD::globalTape.registerExtFunctionOutput(LinSysSol[i]);
+#else
+      AD::globalTape.registerInput(LinSysSol[i]);
+#endif
+    }
+
+    /*--- Store the indices ---*/
+
+    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
+    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
+  }
+
+  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
+
+  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
+
+  dataHandler->addData(LinSysRes_Indices);
+  dataHandler->addData(LinSysSol_Indices);
+#if CODI_PRIMAL_INDEX_TAPE
+  dataHandler->addData(oldValues);
+#endif
+  dataHandler->addData(size);
+  dataHandler->addData(nBlk);
+  dataHandler->addData(nVar);
+  dataHandler->addData(nBlkDomain);
+  dataHandler->addData(&Jacobian);
+  dataHandler->addData(geometry);
+  dataHandler->addData(config);
+
+  /*--- Build preconditioner for the transposed Jacobian ---*/
+
+  switch(config->GetKind_DiscAdj_Linear_Prec()) {
+    case ILU:
+      Jacobian.BuildILUPreconditioner(true);
+      break;
+    case JACOBI:
+      Jacobian.BuildJacobiPreconditioner(true);
+      break;
+    default:
+      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      break;
+  }
+
+  /*--- Push the external function to the AD tape ---*/
+
+  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
+
+#endif
+}
+
+void CSysSolve::SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
+
+#ifdef CODI_REVERSE_TYPE
+
+  unsigned long size = LinSysRes.GetLocSize();
+  unsigned long i, nBlk = LinSysRes.GetNBlk(),
+                nVar = LinSysRes.GetNVar(),
+                nBlkDomain = LinSysRes.GetNBlkDomain();
+
+  /*--- Arrays to store the indices of the input/output of the linear solver.
+     * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
+
+  su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
+  su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
+
+  for (i = 0; i < size; i++){
+
+    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
+
+    if (!LinSysSol[i].isActive()){
       AD::globalTape.registerInput(LinSysSol[i]);
     }
 
@@ -794,21 +835,21 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   /*--- Build preconditioner for the transposed Jacobian ---*/
 
-  switch(config->GetKind_DiscAdj_Linear_Prec()) {
+  switch(config->GetKind_DiscAdj_Linear_Prec()){
     case ILU:
-      Jacobian.BuildILUPreconditioner(true);
+      Jacobian.BuildILUPreconditioner(false);
       break;
     case JACOBI:
-      Jacobian.BuildJacobiPreconditioner(true);
+      Jacobian.BuildJacobiPreconditioner(false);
       break;
     default:
-      cout << "The specified preconditioner is not yet implemented for the discrete adjoint method." << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      break;
   }
 
   /*--- Push the external function to the AD tape ---*/
 
-  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
+  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_g, dataHandler, &CSysSolve_b::Delete_b);
 
 #endif
 }
