@@ -1644,7 +1644,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Evaluate nu tilde at the closest point to the surface using the wall functions ---*/
     
-    SetNuTilde_FW(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     
   }
 
@@ -2966,7 +2966,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
-void CTurbSASolver::SetNuTilde_FW(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   /*--- Local variables ---*/

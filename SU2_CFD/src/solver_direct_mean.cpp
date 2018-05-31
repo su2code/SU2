@@ -16030,7 +16030,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the TauWall from the wall functions ---*/
   
   if (wall_functions)
-    SetTauWall_FW(geometry, solver_container, config);
+    SetTauWall_WF(geometry, solver_container, config);
 
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -17727,7 +17727,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   }
 }
 
-void CNSSolver::SetTauWall_FW(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
