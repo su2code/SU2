@@ -3836,7 +3836,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetTauWall_FW(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  virtual void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -3844,7 +3844,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetNuTilde_FW(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+  virtual void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
@@ -8484,7 +8484,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_FW(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
  
 };
 
@@ -9439,7 +9439,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void SetNuTilde_FW(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+  void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
 };
