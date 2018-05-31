@@ -3171,6 +3171,47 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
     }
   }
 
+#elif CUSTOM_BC_NSUNITQUAD
+
+  /* Write a message that the solution is initialized for the navier stokes test case
+     on the unit quad. */
+  if(rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Solution is initialized for the Navier Stokes test case on the unit quad!!!" << endl;
+    cout << endl << flush;
+  }
+
+  /* Get the flow angle, which is stored in the angle of attack and the
+     viscosity coefficient. */
+  const su2double flowAngle = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double mu        = config->GetViscosity_FreeStreamND();
+
+  const su2double cosFlowAngle = cos(flowAngle);
+  const su2double sinFlowAngle = sin(flowAngle);
+
+  /* Loop over the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Loop over the DOFs of this element. */
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double *coor = volElem[i].coorSolDOFs.data() + j*nDim;
+      su2double *solDOF     = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+      /*--- Set the exact solution in this DOF. ---*/
+      const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
+      const double yTilde = coor[0]*sinFlowAngle + coor[1]*cosFlowAngle;
+
+      solDOF[0]      =  1.0;
+      solDOF[1]      =  cosFlowAngle*yTilde*yTilde;
+      solDOF[2]      = -sinFlowAngle*yTilde*yTilde;
+      solDOF[3]      =  0.0;
+      solDOF[nVar-1] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
+                     +  0.5*yTilde*yTilde*yTilde*yTilde;
+    }
+  }
+
 #elif TAYLOR_GREEN
 
   /* Write a message that the solution is initialized for the Taylor-Green vortex
@@ -15167,18 +15208,19 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 
         /* Easier storage of the right solution for this integration point and
            the coordinates of this integration point. */
-        const su2double *coor = surfElem[l+ll].coorIntegrationPoints + i*nDim;
+        const su2double *coor = surfElem[l+ll].coorIntegrationPoints.data() + i*nDim;
               su2double *UR   = solIntR + NPad*i + ll*nVar;
 
         /*--- Set the exact solution in this integration point. ---*/
         const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
         const double yTilde = coor[0]*sinFlowAngle + coor[1]*cosFlowAngle;
 
-        UR[0] =  1.0;
-        UR[1] =  cosFlowAngle*yTilde*yTilde;
-        UR[2] = -sinFlowAngle*yTilde*yTilde;
-        UR[3] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
-              +  0.5*yTilde*yTilde*yTilde*yTilde;
+        UR[0]      =  1.0;
+        UR[1]      =  cosFlowAngle*yTilde*yTilde;
+        UR[2]      = -sinFlowAngle*yTilde*yTilde;
+        UR[3]      =  0.0;
+        UR[nVar-1] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
+                   +  0.5*yTilde*yTilde*yTilde*yTilde;
 
 #elif MANUFACTURED_SOLUTION
 
