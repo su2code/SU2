@@ -360,6 +360,39 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     }
   }
   
+  /*--- Store the value of the Total Pressure at the inlet BC ---*/
+  
+  Inlet_Ttotal = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ttotal[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Total Temperature at the inlet BC ---*/
+  
+  Inlet_Ptotal = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ptotal[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Flow direction at the inlet BC ---*/
+  
+  Inlet_FlowDir = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
+      }
+    }
+  }
+  
   /*--- Non-dimensional coefficients ---*/
 
   ForceInviscid  = new su2double[nDim];
@@ -1671,7 +1704,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
   
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   
   /*--- Local variables ---*/
   
@@ -1728,6 +1761,22 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
       Pressure_Thermodynamic = FluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
+      
+    case INC_IDEAL_GAS_POLY:
+      
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      FluidModel = new CIncIdealGasPolynomial(config->GetGas_Constant(), Pressure_Thermodynamic);
+      if (viscous) {
+        /*--- Variable Cp model via polynomial. ---*/
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
+        FluidModel->SetCpModel(config);
+      }
+      FluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = FluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
 
     default:
 
@@ -1745,6 +1794,9 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
     config->SetMu_SND(config->GetMu_S());
     config->SetMu_ConstantND(config->GetMu_Constant());
+    
+    for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar), iVar);
 
     /*--- Use the fluid model to compute the dimensional viscosity/conductivity. ---*/
 
@@ -1874,6 +1926,18 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
       FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
       
+    case INC_IDEAL_GAS_POLY:
+      FluidModel = new CIncIdealGasPolynomial(Gas_ConstantND, Pressure_ThermodynamicND);
+      if (viscous) {
+        /*--- Variable Cp model via polynomial. ---*/
+        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+        for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+        FluidModel->SetCpModel(config);
+      }
+      FluidModel->SetTDState_T(Temperature_FreeStreamND);
+      break;
+      
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1884,14 +1948,27 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
     config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
-    /*--- Sutherland's model ---*/    
+    /*--- Sutherland's model ---*/
+    
     config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
     config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
+    /*--- Viscosity model via polynomial. ---*/
+
+    config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(0)/Viscosity_Ref, 0);
+    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Viscosity_Ref, iVar);
+    
     /*--- Constant thermal conductivity model ---*/
 
     config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    
+    /*--- Conductivity model via polynomial. ---*/
+
+    config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(0)/Conductivity_Ref, 0);
+    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Conductivity_Ref, iVar);
     
     /*--- Set up the transport property models. ---*/
 
@@ -4815,6 +4892,147 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
   
 }
 
+void CIncEulerSolver::SetInletAtVertex(su2double *val_inlet,
+                                       unsigned short iMarker,
+                                       unsigned long iVertex) {
+  
+  /*--- Alias positions within inlet file for readability ---*/
+  
+  unsigned short T_position       = nDim;
+  unsigned short P_position       = nDim+1;
+  unsigned short FlowDir_position = nDim+2;
+  
+  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
+  
+  su2double norm = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    norm += pow(val_inlet[FlowDir_position + iDim], 2);
+  }
+  norm = sqrt(norm);
+  
+  /*--- The tolerance here needs to be loose.  When adding a very
+   * small number (1e-10 or smaller) to a number close to 1.0, floating
+   * point roundoff errors can occur. ---*/
+  
+  if (abs(norm - 1.0) > 1e-6) {
+    ostringstream error_msg;
+    error_msg << "ERROR: Found these values in columns ";
+    error_msg << FlowDir_position << " - ";
+    error_msg << FlowDir_position + nDim - 1 << endl;
+    error_msg << std::scientific;
+    error_msg << "  [" << val_inlet[FlowDir_position];
+    error_msg << ", " << val_inlet[FlowDir_position + 1];
+    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
+    error_msg << "]" << endl;
+    error_msg << "  These values should be components of a unit vector for direction," << endl;
+    error_msg << "  but their magnitude is: " << norm << endl;
+    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+  }
+  
+  /*--- Store the values in our inlet data structures. ---*/
+  
+  Inlet_Ttotal[iMarker][iVertex] = val_inlet[T_position];
+  Inlet_Ptotal[iMarker][iVertex] = val_inlet[P_position];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Inlet_FlowDir[iMarker][iVertex][iDim] =  val_inlet[FlowDir_position + iDim];
+  }
+  
+}
+
+su2double CIncEulerSolver::GetInletAtVertex(su2double *val_inlet,
+                                            unsigned long val_inlet_point,
+                                            unsigned short val_kind_marker,
+                                            CGeometry *geometry,
+                                            CConfig *config) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iMarker, iDim;
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+  
+  /*--- Alias positions within inlet file for readability ---*/
+  
+    unsigned short T_position       = nDim;
+    unsigned short P_position       = nDim+1;
+    unsigned short FlowDir_position = nDim+2;
+  
+  if (val_kind_marker == INLET_FLOW) {
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (iPoint == val_inlet_point) {
+            
+            /*-- Compute boundary face area for this vertex. ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+            
+            /*--- Access and store the inlet variables for this vertex. ---*/
+            
+            val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
+            val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
+            for (iDim = 0; iDim < nDim; iDim++) {
+              val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
+            }
+            
+            /*--- Exit once we find the point. ---*/
+            
+            return Area;
+            
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+  
+  return Area;
+  
+}
+
+void CIncEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+  
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    
+    string Marker_Tag   = config->GetMarker_All_TagBound(iMarker);
+    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
+    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
+    su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_Ttotal[iMarker][iVertex] = t_total;
+      Inlet_Ptotal[iMarker][iVertex] = p_total;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+    }
+    
+  } else {
+    
+    /*--- For now, non-inlets just get set to zero. In the future, we
+     can do more customization for other boundary types here. ---*/
+    
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_Ttotal[iMarker][iVertex] = 0.0;
+      Inlet_Ptotal[iMarker][iVertex] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
+    }
+  }
+  
+}
+
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
@@ -5305,20 +5523,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
-  /*--- Both types of inlets may use the prescribed flow direction.
-    Ensure that the flow direction is a unit vector. ---*/
-
-  Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-  Flow_Dir_Mag = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Flow_Dir_Mag += Flow_Dir[iDim]*Flow_Dir[iDim];
-  Flow_Dir_Mag = sqrt(Flow_Dir_Mag);
-
-  /*--- Store the unit flow direction vector. ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
-
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -5349,6 +5553,20 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
+    
+      /*--- Both types of inlets may use the prescribed flow direction.
+       Ensure that the flow direction is a unit vector. ---*/
+      
+      Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+      Flow_Dir_Mag = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Flow_Dir_Mag += Flow_Dir[iDim]*Flow_Dir[iDim];
+      Flow_Dir_Mag = sqrt(Flow_Dir_Mag);
+      
+      /*--- Store the unit flow direction vector. ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
 
       /*--- Retrieve solution at this boundary node. ---*/
       
@@ -5363,8 +5581,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         case VELOCITY_INLET:
 
         /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
-
-        Vel_Mag = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
+          
+        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
 
         /*--- Store the velocity in the primitive variable vector. ---*/
 
@@ -5407,8 +5625,8 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       V_inlet[0] = node[iPoint]->GetPressure();
 
       /*--- Dirichlet condition for temperature (if energy is active) ---*/
-
-      V_inlet[nDim+1] = config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref();
+      
+      V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
       /*--- Access density at the node. This is either constant by
         construction, or will be set fixed implicitly by the temperature
@@ -6877,6 +7095,39 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         CSkinFriction[iMarker][iDim][iVertex] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the Total Pressure at the inlet BC ---*/
+  
+  Inlet_Ttotal = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ttotal[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Total Temperature at the inlet BC ---*/
+  
+  Inlet_Ptotal = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ptotal[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Flow direction at the inlet BC ---*/
+  
+  Inlet_FlowDir = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
       }
     }
   }

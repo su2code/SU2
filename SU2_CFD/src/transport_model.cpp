@@ -1,7 +1,7 @@
 /*!
  * transport_model.cpp
  * \brief Source of the main transport properties subroutines of the SU2 solvers.
- * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
+ * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -98,6 +98,37 @@ void CSutherland::SetDerViscosity(su2double T, su2double rho) {
 
 }
 
+CPolynomialViscosity::CPolynomialViscosity(void) : CViscosityModel() {
+  nPolyCoeffs = 0;
+  b           = NULL;
+}
+
+CPolynomialViscosity::CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b) : CViscosityModel() {
+  
+  /*--- Attributes initialization ---*/
+  
+  nPolyCoeffs = val_nCoeffs;
+  b = new su2double[nPolyCoeffs];
+  
+  for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++)
+    b[iVar] = val_b[iVar];
+  
+}
+
+CPolynomialViscosity::~CPolynomialViscosity(void) {
+  if (b != NULL) delete [] b;
+}
+
+void CPolynomialViscosity::SetViscosity(su2double T, su2double rho) {
+  
+  /*--- Evaluate the new Mu from the coefficients and temperature. ---*/
+  
+  Mu = b[0];
+  for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
+    Mu += b[iVar]*pow(T,iVar);
+  
+}
+
 /*-------------------------------------------------*/
 /*---------- Thermal Conductivity Models ----------*/
 /*-------------------------------------------------*/
@@ -172,3 +203,34 @@ void CConstantPrandtlRANS::SetConductivity(su2double T, su2double rho, su2double
 }
 
 CConstantPrandtlRANS::~CConstantPrandtlRANS(void) { }
+
+CPolynomialConductivity::CPolynomialConductivity(void) : CConductivityModel() {
+  nPolyCoeffs = 0;
+  b           = NULL;
+}
+
+CPolynomialConductivity::CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b) : CConductivityModel() {
+  
+  /*--- Attributes initialization ---*/
+  
+  nPolyCoeffs = val_nCoeffs;
+  b = new su2double[nPolyCoeffs];
+  
+  for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++)
+    b[iVar] = val_b[iVar];
+  
+}
+
+CPolynomialConductivity::~CPolynomialConductivity(void) {
+  if (b != NULL) delete [] b;
+}
+
+void CPolynomialConductivity::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+  
+  /*--- Evaluate the new Kt from the coefficients and temperature. ---*/
+  
+  Kt = b[0];
+  for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
+    Kt += b[iVar]*pow(T,iVar);
+  
+}
