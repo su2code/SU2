@@ -179,6 +179,40 @@ public:
 };
 
 /*!
+ * \class CPolynomialViscosity
+ * \brief Defines viscosity as a polynomial function of temperature.
+ * \author T. Economon
+ */
+class CPolynomialViscosity : public CViscosityModel {
+protected:
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
+  su2double *b;               /*!< \brief Polynomial coefficients for viscosity as a function of temperature. */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPolynomialViscosity(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPolynomialViscosity(unsigned short val_nCoeffs, su2double* val_b);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPolynomialViscosity(void);
+  
+  /*!
+   * \brief Set Viscosity.
+   */
+  void SetViscosity(su2double T, su2double rho);
+  
+};
+
+/*!
  * \class CThermalConductivityModel
  * \brief Main class for defining the Transport-Physical Model
  * a child class for each particular Model (Prandtl-based, etc.)
@@ -331,6 +365,40 @@ public:
      */
     void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
 
+};
+
+/*!
+ * \class CPolynomialConductivity
+ * \brief Defines a non-constant thermal conductivity using polynomial function of temperature.
+ * \author T. Economon
+ */
+class CPolynomialConductivity : public CConductivityModel {
+protected:
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
+  su2double *b;               /*!< \brief Polynomial coefficients for thermal conductivity as a function of temperature. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPolynomialConductivity(void);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPolynomialConductivity(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPolynomialConductivity(unsigned short val_nCoeffs, su2double* val_b);
+  
+  /*!
+   * \brief Set Thermal conductivity.
+   */
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  
 };
 
 #include "transport_model.inl"

@@ -449,6 +449,8 @@ inline su2double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 
 inline su2double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
+inline su2double CConfig::GetMolecular_Weight(void) { return Molecular_Weight; }
+
 inline su2double CConfig::GetSpecific_Heat_Cp(void) { return Specific_Heat_Cp; }
 
 inline su2double CConfig::GetSpecific_Heat_Cp_Solid(void) { return Specific_Heat_Cp_Solid; }
@@ -867,6 +869,24 @@ inline su2double CConfig::GetMu_S(void) { return Mu_S; }
 
 inline su2double CConfig::GetMu_SND(void) { return Mu_SND; }
 
+inline unsigned short CConfig::GetnPolyCoeffs(void) { return nPolyCoeffs; }
+
+inline su2double CConfig::GetCp_PolyCoeff(unsigned short val_index) { return CpPolyCoefficients[val_index]; }
+
+inline su2double CConfig::GetCp_PolyCoeffND(unsigned short val_index) { return CpPolyCoefficientsND[val_index]; }
+
+inline su2double CConfig::GetMu_PolyCoeff(unsigned short val_index) { return MuPolyCoefficients[val_index]; }
+
+inline su2double CConfig::GetMu_PolyCoeffND(unsigned short val_index) { return MuPolyCoefficientsND[val_index]; }
+
+inline su2double* CConfig::GetMu_PolyCoeffND(void) { return MuPolyCoefficientsND; }
+
+inline su2double CConfig::GetKt_PolyCoeff(unsigned short val_index) { return KtPolyCoefficients[val_index]; }
+
+inline su2double CConfig::GetKt_PolyCoeffND(unsigned short val_index) { return KtPolyCoefficientsND[val_index]; }
+
+inline su2double* CConfig::GetKt_PolyCoeffND(void) { return KtPolyCoefficientsND; }
+
 inline void CConfig::SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
 
 inline void CConfig::SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
@@ -876,6 +896,12 @@ inline void CConfig::SetMu_Temperature_RefND(su2double mu_Tref) {Mu_Temperature_
 inline void CConfig::SetMu_SND(su2double mu_s) {Mu_SND = mu_s; }
 
 inline void CConfig::SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
+
+inline void CConfig::SetCp_PolyCoeffND(su2double val_coeff, unsigned short val_index) { CpPolyCoefficientsND[val_index] = val_coeff; }
+
+inline void CConfig::SetMu_PolyCoeffND(su2double val_coeff, unsigned short val_index) { MuPolyCoefficientsND[val_index] = val_coeff; }
+
+inline void CConfig::SetKt_PolyCoeffND(su2double val_coeff, unsigned short val_index) { KtPolyCoefficientsND[val_index] = val_coeff; }
 
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 
@@ -1128,6 +1154,12 @@ inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind
 inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) {	return Kind_ConvNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
+
+inline bool CConfig::GetInlet_Profile_From_File(void) { return Inlet_From_File; }
+
+inline string CConfig::GetInlet_FileName(void) { return Inlet_Filename; }
+
+inline su2double CConfig::GetInlet_Profile_Matching_Tolerance(void) { return Inlet_Matching_Tol; }
 
 inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
@@ -1629,6 +1661,10 @@ inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
+
+inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
+
+inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 

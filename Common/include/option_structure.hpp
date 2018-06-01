@@ -132,6 +132,8 @@ const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. 
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
+const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;  /*!< \brief Universal gas constant in J/(mol*K) */
+
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
 
@@ -504,7 +506,8 @@ enum ENUM_FLUIDMODEL {
 	PR_GAS = 3,
   CONSTANT_DENSITY = 4,
   INC_STANDARD_AIR = 5,
-  INC_IDEAL_GAS = 6 
+  INC_IDEAL_GAS = 6,
+  INC_IDEAL_GAS_POLY = 7
 
 };
 
@@ -515,7 +518,8 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("PR_GAS", PR_GAS)
 ("CONSTANT_DENSITY", CONSTANT_DENSITY)
 ("INC_STANDARD_AIR", INC_STANDARD_AIR)
-("INC_IDEAL_GAS", INC_IDEAL_GAS);
+("INC_IDEAL_GAS", INC_IDEAL_GAS)
+("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY);
 
 /*!
  * \brief types of density models
@@ -564,24 +568,28 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
-	SUTHERLAND = 1
+	SUTHERLAND = 1,
+  POLYNOMIAL_VISCOSITY = 2
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
-("SUTHERLAND", SUTHERLAND);
+("SUTHERLAND", SUTHERLAND)
+("POLYNOMIAL_VISCOSITY", POLYNOMIAL_VISCOSITY);
 
 /*!
  * \brief types of thermal conductivity model
  */
 enum ENUM_CONDUCTIVITYMODEL {
 	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
-	CONSTANT_PRANDTL = 1
+	CONSTANT_PRANDTL = 1,
+  POLYNOMIAL_CONDUCTIVITY = 2
 };
 
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
+("POLYNOMIAL_CONDUCTIVITY", POLYNOMIAL_CONDUCTIVITY);
 
 /*!
  * \brief types of unsteady mesh motion
