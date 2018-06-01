@@ -915,6 +915,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
 
+  /*!\brief OUTLET_TYPE  \n DESCRIPTION: Outlet boundary type \n OPTIONS: see \link Outl;et_Map \endlink \n DEFAULT: PRESSURE_OUTLET \ingroup Config*/
+  addEnumOption("OUTLET_TYPE", Kind_Outlet, Outlet_Map, PRESSURE_OUTLET);
+
   /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is

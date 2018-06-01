@@ -1161,14 +1161,27 @@ enum INLET_TYPE {
   MASS_FLOW = 2,           /*!< \brief User specifies density and velocity (mass flow). */
   INPUT_FILE = 3,           /*!< \brief User specifies an input file. */
   VELOCITY_INLET = 4,       /*!< \brief Velocity inlet for an incompressible flow. */
-  PRESSURE_INLET = 5        /*!< \brief Total pressure inlet for an incompressible flow. */
+  PRESSURE_INLET = 5,        /*!< \brief Total pressure inlet for an incompressible flow. */
+  SURFACE_OUTLET = 6              /*!< \brief Extract value from a surface. */
 };
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW)
 ("INPUT_FILE", INPUT_FILE)
 ("VELOCITY_INLET", VELOCITY_INLET)
-("PRESSURE_INLET", PRESSURE_INLET);
+("PRESSURE_INLET", PRESSURE_INLET)
+("SURFACE_OUTLET", SURFACE_OUTLET);
+
+/*!
+ * \brief types outlet boundary treatments
+ */
+enum OUTLET_TYPE {
+  PRESSURE_OUTLET = 1,        /*!< \brief Total pressure inlet for an incompressible flow. */
+  SURFACE_INLET = 2              /*!< \brief Extract value from a surface. */
+};
+static const map<string, OUTLET_TYPE> Outlet_Map = CCreateMap<string, OUTLET_TYPE>
+("PRESSURE_OUTLET", PRESSURE_OUTLET)
+("SURFACE_INLET", SURFACE_INLET);
 
 /*!
  * \brief types engine inflow boundary treatments

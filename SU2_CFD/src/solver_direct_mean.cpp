@@ -11159,7 +11159,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint;
   su2double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
   Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-  alpha, aa, bb, cc, dd, Area, UnitNormal[3];
+  alpha, aa, bb, cc, dd, Area, UnitNormal[3], NegUnitNormal[3];
   su2double *V_inlet, *V_domain;
   
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -11218,17 +11218,30 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Total properties have been specified at the inlet. ---*/
 
-        case TOTAL_CONDITIONS:
-
+        case TOTAL_CONDITIONS: case SURFACE_OUTLET:
+          
           /*--- Retrieve the specified total conditions for this inlet. ---*/
-
+          
           if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
           else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
           T_Total  = config->GetInlet_Ttotal(Marker_Tag);
           Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+          
+          if ((Kind_Inlet == SURFACE_OUTLET) && (config->GetExtIter() != 0)) {
+            
+            /*--- Retrieve the specified total conditions for this inlet. ---*/
+            
+            if (gravity) P_Total = config->GetSurface_TotalPressure(0) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
+            else P_Total  = config->GetSurface_TotalPressure(0);
+            T_Total  = config->GetSurface_TotalTemperature(0);
+            for (iDim = 0; iDim < nDim; iDim++)
+              NegUnitNormal[iDim] = -UnitNormal[iDim];
+            Flow_Dir = NegUnitNormal;
 
+          }
+          
           /*--- Non-dim. the inputs if necessary. ---*/
-
+          
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
 
@@ -11464,6 +11477,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   su2double Gas_Constant     = config->GetGas_ConstantND();
+  unsigned short Kind_Outlet = config->GetKind_Outlet();
   bool grid_movement      = config->GetGrid_Movement();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
@@ -11472,17 +11486,21 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     /*--- Allocate the value at the outlet ---*/
+    
     V_outlet = GetCharacPrimVar(val_marker, iVertex);
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
@@ -11495,19 +11513,28 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Current solution at this boundary node ---*/
+      
       V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Build the fictitious intlet state based on characteristics ---*/
-
+      
       /*--- Retrieve the specified back pressure for this outlet. ---*/
+      
       if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
       else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
+      
+      if ((Kind_Outlet == SURFACE_INLET) && (config->GetExtIter() != 0)) {
+        if (gravity) P_Exit = config->GetSurface_Pressure(1) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
+        else P_Exit = config->GetSurface_Pressure(1);
+      }
 
       /*--- Non-dim. the inputs if necessary. ---*/
+      
       P_Exit = P_Exit/config->GetPressure_Ref();
 
       /*--- Check whether the flow is supersonic at the exit. The type
          of boundary update depends on this. ---*/
+      
       Density = V_domain[nDim+2];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -11524,6 +11551,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Supersonic exit flow: there are no incoming characteristics,
            so no boundary condition is necessary. Set outlet state to current
            state so that upwinding handles the direction of propagation. ---*/
+        
         for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
 
       } else {

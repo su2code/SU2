@@ -4557,7 +4557,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
-    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
+    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq()/10)) == 0) ||
         ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
         ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-2))) ||
@@ -4575,13 +4575,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
             SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                          geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
-          }
-
-          /*--- For specific applications, evaluate and plot the surface. ---*/
-
-          if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-            SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the surface. ---*/

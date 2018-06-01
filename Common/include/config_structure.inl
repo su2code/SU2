@@ -1129,6 +1129,8 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) {	return Kind_Co
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline unsigned short CConfig::GetKind_Outlet(void) { return Kind_Outlet; }
+
 inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
 inline bool CConfig::GetInc_Inlet_UseNormal(void) { return Inc_Inlet_UseNormal;}
