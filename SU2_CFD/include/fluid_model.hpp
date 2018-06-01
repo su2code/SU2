@@ -1,7 +1,7 @@
 /*!
  * \file fluid_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
- * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
+ * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
  * \version 6.0.1 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -219,6 +219,11 @@ public:
 		 */
 		su2double GetdktdT_rho ();
 
+    /*!
+     * \brief Set specific heat Cp model.
+     */
+    virtual void SetCpModel (CConfig *config);
+  
 		/*!
 		 * \brief Set viscosity model.
 		 */
@@ -631,7 +636,6 @@ public:
  * \class CConstantDensity
  * \brief Child class for defining a constant density gas model (incompressible only).
  * \author: T. Economon
- * \version 5.0.0 "Raven"
  */
 class CConstantDensity : public CFluidModel {
 
@@ -666,39 +670,82 @@ public:
  * \class CIncIdealGas
  * \brief Child class for defining an incompressible ideal gas model.
  * \author: T. Economon
- * \version 5.0.0 "Raven"
  */
 class CIncIdealGas : public CFluidModel {
-
+  
 protected:
   su2double Gamma,             /*!< \brief Heat Capacity Ratio. */
-          Gamma_Minus_One,     /*!< \brief Heat Capacity Ratio Minus One. */
-          Gas_Constant;        /*!< \brief Gas Constant. */
-
+  Gamma_Minus_One,     /*!< \brief Heat Capacity Ratio Minus One. */
+  Gas_Constant;        /*!< \brief Gas Constant. */
+  
 public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncIdealGas(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncIdealGas(su2double val_Gamma, su2double val_Gas_Constant, su2double val_Pressure);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CIncIdealGas(void);
+  
+  /*!
+   * \brief Set the Dimensionless State using Temperature.
+   * \param[in] T - Temperature value at the point.
+   */
+  
+  void SetTDState_T(su2double val_Temperature);
+  
+};
 
-	   /*!
-		 * \brief Constructor of the class.
-		 */
-		CIncIdealGas(void);
-
-		/*!
-		 * \brief Constructor of the class.
-		 */
-		CIncIdealGas(su2double val_Gamma, su2double val_Gas_Constant, su2double val_Pressure);
-
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CIncIdealGas(void);
-
-		/*!
-		 * \brief Set the Dimensionless State using Temperature.
-		 * \param[in] T - Temperature value at the point.
-		 */
-
-		void SetTDState_T(su2double val_Temperature);
-
+/*!
+ * \class CIncIdealGasPolynomial
+ * \brief Child class for defining a custom incompressible ideal gas model.
+ * \author: T. Economon
+ */
+class CIncIdealGasPolynomial : public CFluidModel {
+  
+protected:
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
+  su2double Gas_Constant,     /*!< \brief Specific Gas Constant. */
+  *b,                         /*!< \brief Polynomial coefficients for Cp as a function of temperature. */
+  Gamma;                      /*!< \brief Ratio of specific heats. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncIdealGasPolynomial(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncIdealGasPolynomial(su2double val_gas_constant, su2double val_operating_pressure);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CIncIdealGasPolynomial(void);
+  
+  /*!
+   * \brief Set the temperature polynomial coefficients for variable Cp.
+   * \param[in] config - configuration container for the problem.
+   */
+  void SetCpModel(CConfig *config);
+  
+  /*!
+   * \brief Set the Dimensionless State using Temperature.
+   * \param[in] T - Temperature value at the point.
+   */
+  void SetTDState_T(su2double val_temperature);
+  
 };
 
 #include "fluid_model.inl"

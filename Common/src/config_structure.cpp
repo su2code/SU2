@@ -505,7 +505,14 @@ void CConfig::SetPointersNull(void) {
   default_body_force         = NULL;
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
-
+  
+  default_cp_polycoeffs = NULL;
+  default_mu_polycoeffs = NULL;
+  default_kt_polycoeffs = NULL;
+  CpPolyCoefficientsND  = NULL;
+  MuPolyCoefficientsND  = NULL;
+  KtPolyCoefficientsND  = NULL;
+  
   Riemann_FlowDir       = NULL;
   Giles_FlowDir         = NULL;
   CoordFFDBox           = NULL;
@@ -560,6 +567,8 @@ void CConfig::SetPointersNull(void) {
   ZoneSpecific_Problem = false;
 
   nSpanMaxAllZones = 1;
+
+  Wrt_InletFile = false;
   
 }
 
@@ -601,6 +610,27 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
+  
+  /*--- All temperature polynomial fits for the fluid models currently
+   assume a quartic form (5 coefficients). For example,
+   Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
+   are set to zero and will be properly non-dim. in the solver. ---*/
+  
+  nPolyCoeffs = 5;
+  default_cp_polycoeffs = new su2double[nPolyCoeffs];
+  default_mu_polycoeffs = new su2double[nPolyCoeffs];
+  default_kt_polycoeffs = new su2double[nPolyCoeffs];
+  CpPolyCoefficientsND  = new su2double[nPolyCoeffs];
+  MuPolyCoefficientsND  = new su2double[nPolyCoeffs];
+  KtPolyCoefficientsND  = new su2double[nPolyCoeffs];
+  for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+    default_cp_polycoeffs[iVar] = 0.0;
+    default_mu_polycoeffs[iVar] = 0.0;
+    default_kt_polycoeffs[iVar] = 0.0;
+    CpPolyCoefficientsND[iVar]  = 0.0;
+    MuPolyCoefficientsND[iVar]  = 0.0;
+    KtPolyCoefficientsND[iVar]  = 0.0;
+  }
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -669,7 +699,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SPECIFIC_HEAT_CP_SOLID", Specific_Heat_Cp_Solid, 896.0);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
-
+  /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
+  addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
+  
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
   /* DESCRIPTION: Critical Temperature, default value for AIR */
@@ -709,6 +741,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
  /* DESCRIPTION: default value for AIR */
   addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
+  
+  /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
+  
+  /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
+  addDoubleArrayOption("CP_POLYCOEFFS", nPolyCoeffs, CpPolyCoefficients, default_cp_polycoeffs);
+  /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
+  addDoubleArrayOption("MU_POLYCOEFFS", nPolyCoeffs, MuPolyCoefficients, default_mu_polycoeffs);
+  /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
+  addDoubleArrayOption("KT_POLYCOEFFS", nPolyCoeffs, KtPolyCoefficients, default_kt_polycoeffs);
 
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -914,7 +955,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
-
+  addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
+  /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
+  addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
+  /*!\brief INLET_MATCHING_TOLERANCE
+   * \n DESCRIPTION: If a file is provided to specify the inlet profile,
+   * this tolerance will be used to match the coordinates in the input file to
+   * the points on the grid. \n DEFAULT: 1E-6 \ingroup Config*/
+  addDoubleOption("INLET_MATCHING_TOLERANCE", Inlet_Matching_Tol, 1e-6);
   /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
@@ -2328,6 +2376,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_STANDARD_AIR) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
+                    (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR) || 
                       (Kind_FluidModel == INC_STANDARD_AIR));
@@ -3695,23 +3744,58 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Kind_DensityModel == VARIABLE) {
-    if (Kind_FluidModel != INC_STANDARD_AIR && Kind_FluidModel != INC_IDEAL_GAS) {
-      SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_STANDARD_AIR or INC_IDEAL_GAS).", CURRENT_FUNCTION);
+    if (Kind_FluidModel != INC_STANDARD_AIR && Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY) {
+      SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_STANDARD_AIR, INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
 
   if (Kind_Regime != INCOMPRESSIBLE) {
-    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_STANDARD_AIR) || (Kind_FluidModel == INC_IDEAL_GAS)) {
+    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_STANDARD_AIR) || (Kind_FluidModel == INC_IDEAL_GAS) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_STANDARD_AIR/INC_IDEAL_GAS are for incompressible only.", CURRENT_FUNCTION);
     }
   }
 
   if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_Solver != EULER) && (Kind_Solver != ADJ_EULER) && (Kind_Solver != DISC_ADJ_EULER)) {
     if (Kind_ViscosityModel == SUTHERLAND) {
-      if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS)) {
+      if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_STANDARD_AIR\n or FLUID_MODEL= INC_IDEAL_GAS for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
+  }
+  
+  /*--- Check the coefficients for the polynomial models. ---*/
+  
+  if (Kind_Regime != INCOMPRESSIBLE) {
+    if ((Kind_ViscosityModel == POLYNOMIAL_VISCOSITY) || (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+      SU2_MPI::Error("POLYNOMIAL_VISCOSITY and POLYNOMIAL_CONDUCTIVITY are for incompressible only currently.", CURRENT_FUNCTION);
+    }
+  }
+  
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+    su2double sum = 0.0;
+    for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+      sum += GetCp_PolyCoeff(iVar);
+    }
+    if ((nPolyCoeffs < 1) || (sum == 0.0))
+      SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model INC_IDEAL_GAS_POLY. \n"), CURRENT_FUNCTION);
+  }
+  
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_ViscosityModel == POLYNOMIAL_VISCOSITY)) {
+    su2double sum = 0.0;
+    for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+      sum += GetMu_PolyCoeff(iVar);
+    }
+    if ((nPolyCoeffs < 1) || (sum == 0.0))
+      SU2_MPI::Error(string("MU_POLYCOEFFS not set for viscosity model POLYNOMIAL_VISCOSITY. \n"), CURRENT_FUNCTION);
+  }
+  
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY)) {
+    su2double sum = 0.0;
+    for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+      sum += GetKt_PolyCoeff(iVar);
+    }
+    if ((nPolyCoeffs < 1) || (sum == 0.0))
+      SU2_MPI::Error(string("KT_POLYCOEFFS not set for conductivity model POLYNOMIAL_CONDUCTIVITY. \n"), CURRENT_FUNCTION);
   }
 
   /*--- Incompressible solver currently limited to SI units. ---*/
@@ -6591,6 +6675,13 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
+  
+  if (default_cp_polycoeffs != NULL) delete [] default_cp_polycoeffs;
+  if (default_mu_polycoeffs != NULL) delete [] default_mu_polycoeffs;
+  if (default_kt_polycoeffs != NULL) delete [] default_kt_polycoeffs;
+  if (CpPolyCoefficientsND  != NULL) delete [] CpPolyCoefficientsND;
+  if (MuPolyCoefficientsND  != NULL) delete [] MuPolyCoefficientsND;
+  if (KtPolyCoefficientsND  != NULL) delete [] KtPolyCoefficientsND;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;

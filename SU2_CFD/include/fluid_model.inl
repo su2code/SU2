@@ -37,6 +37,7 @@
 
 #pragma once
 
+inline void CFluidModel::SetCpModel(CConfig *config) { }
 inline su2double CFluidModel::GetPressure () { return Pressure; }
 inline su2double CFluidModel::GetSoundSpeed () { return sqrt(SoundSpeed2); }
 inline su2double CFluidModel::GetSoundSpeed2 () { return SoundSpeed2; }
