@@ -1867,7 +1867,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
     Mach = ModVel_FreeStream / sqrt(config->GetBulk_Modulus()/Density_FreeStream);
   } else {
-    Mach = ModVel_FreeStream / FluidModel->GetSoundSpeed();   
+    Mach = 0.0;
   }
   config->SetMach(Mach);
 
@@ -2085,6 +2085,30 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
         if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
         break;
+        
+      case INC_IDEAL_GAS_POLY:
+        cout << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
+        cout << "Variable density incompressible flow using ideal gas law." << endl;
+        cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+        cout << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol." << endl;
+        cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+        cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
+        cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
+        if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
+        else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
+        cout << "Cp(T) polynomial coefficients: \n  (";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          cout << config->GetCp_PolyCoeff(iVar);
+          if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+        }
+        cout << ")." << endl;
+        cout << "Cp(T) polynomial coefficients (non-dim.): \n  (";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          cout << config->GetCp_PolyCoeffND(iVar);
+          if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+        }
+        cout << ")." << endl;
+        break;
       
     }
     if (viscous) {
@@ -2113,7 +2137,22 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
           cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
           cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
           break;
-
+          
+        case POLYNOMIAL_VISCOSITY:
+          cout << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
+          cout << "Mu(T) polynomial coefficients: \n  (";
+          for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+            cout << config->GetMu_PolyCoeff(iVar);
+            if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+          }
+          cout << ")." << endl;
+          cout << "Mu(T) polynomial coefficients (non-dim.): \n  (";
+          for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+            cout << config->GetMu_PolyCoeffND(iVar);
+            if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+          }
+          cout << ")." << endl;
+          break;
       }
 
       if (energy) {
@@ -2131,6 +2170,21 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
             cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
             break;
 
+          case POLYNOMIAL_CONDUCTIVITY:
+            cout << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+            cout << "Kt(T) polynomial coefficients: \n  (";
+            for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+              cout << config->GetKt_PolyCoeff(iVar);
+              if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+            }
+            cout << ")." << endl;
+            cout << "Kt(T) polynomial coefficients (non-dim.): \n  (";
+            for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+              cout << config->GetKt_PolyCoeffND(iVar);
+              if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+            }
+            cout << ")." << endl;
+            break;
         }
       }
 
