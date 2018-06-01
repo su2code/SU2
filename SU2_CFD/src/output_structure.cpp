@@ -12909,6 +12909,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   bool grid_movement    = (config->GetGrid_Movement());
   bool Wrt_Halo         = config->GetWrt_Halo(), isPeriodic;
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool wrt_cp           = (variable_density &&
+                           (config->GetKind_FluidModel() == INC_IDEAL_GAS_POLY));
+  bool wrt_kt           = ((config->GetKind_ConductivityModel() != CONSTANT_CONDUCTIVITY) &&
+                           (config->GetViscous()));
+
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 
   int *Local_Halo = NULL;
@@ -13126,6 +13131,16 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     nVar_Par += 1;
     Variable_Names.push_back("Density");
+    
+    if (wrt_cp) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Specific_Heat");
+    }
+    
+    if (wrt_kt) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Thermal_Conductivity");
+    }
 
   }
 
@@ -13361,6 +13376,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
 
+        if (wrt_cp) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCp(); iVar++;
+        }
+        
+        if (wrt_kt) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
+        }
+        
       }
 
       /*--- Increment the point counter, as there may have been halos we
