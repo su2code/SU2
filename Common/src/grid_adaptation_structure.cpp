@@ -48,10 +48,6 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 	nDim = geometry->GetnDim();
 	
 	switch (config->GetKind_Solver()) {			
-		
-		case POISSON_EQUATION:
-			nVar = 1;
-			break;
 			
 		default:
 			nVar = geometry->GetnDim()+2;
