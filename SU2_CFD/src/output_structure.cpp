@@ -2326,7 +2326,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   switch (Kind_Solver) {
     case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; if(config->GetWeakly_Coupled_Heat()) SecondIndex = HEAT_SOL; else SecondIndex = NONE; ThirdIndex = NONE; break;
     case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE;  if(config->GetWeakly_Coupled_Heat()) ThirdIndex = HEAT_SOL; else ThirdIndex = NONE; break;
-    case POISSON_EQUATION: FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case FEM_ELASTICITY: FirstIndex = FEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
@@ -2395,9 +2394,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-    //if (Kind_Solver == POISSON_EQUATION) {
-    //  iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
-    //}
     
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
@@ -4112,11 +4108,6 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         restart_file << "\t\"Sharp_Edge_Dist\"";
       }
-    }
-    
-    if (Kind_Solver == POISSON_EQUATION) {
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-        restart_file << "\t\"poissonField_" << iDim+1 << "\"";
     }
     
     if ((Kind_Solver == ADJ_EULER              ) ||
@@ -12167,7 +12158,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
         LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
-      case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+      case WAVE_EQUATION: case HEAT_EQUATION: case HEAT_EQUATION_FVM:
         LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       default: break;
@@ -14116,7 +14107,6 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
    in this zone for output. ---*/
   
   switch (config->GetKind_Solver()) {
-    case POISSON_EQUATION:  FirstIndex = POISSON_SOL;  break;
     case WAVE_EQUATION:     FirstIndex = WAVE_SOL;     break;
     case HEAT_EQUATION:     FirstIndex = HEAT_SOL;     break;
     case HEAT_EQUATION_FVM: FirstIndex = HEAT_SOL;     break;

@@ -80,11 +80,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetHeat_FileName().c_str();
   }
   
-  if (Kind_Solver == POISSON_EQUATION) {
-    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
-    else filename = config->GetStructure_FileName().c_str();
-  }
-  
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol) filename = config->GetSurfSens_FileName();
     else filename = config->GetVolSens_FileName();
@@ -187,12 +182,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
         }
-      }
-      
-      if (Kind_Solver == POISSON_EQUATION) {
-        unsigned short iDim;
-        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-          Tecplot_File << ",\"poissonField_" << iDim+1 << "\"";
       }
       
       if (( Kind_Solver == ADJ_EULER              ) ||
@@ -847,11 +836,6 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   if (Kind_Solver == HEAT_EQUATION) {
     if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
     else filename = config->GetHeat_FileName().c_str();
-  }
-  
-  if (Kind_Solver == POISSON_EQUATION) {
-    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
-    else filename = config->GetStructure_FileName().c_str();
   }
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -1686,10 +1670,6 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
   if (Kind_Solver == HEAT_EQUATION) {
     buffer = config->GetHeat_FileName().c_str();
-  }
-  
-  if (Kind_Solver == POISSON_EQUATION) {
-    buffer = config->GetStructure_FileName().c_str();
   }
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -2614,10 +2594,6 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     buffer = config->GetSurfHeat_FileName().c_str();
   }
   
-  if (Kind_Solver == POISSON_EQUATION) {
-    buffer = config->GetSurfStructure_FileName().c_str();
-  }
-  
   if (config->GetKind_SU2() == SU2_DOT) {
     buffer = config->GetSurfSens_FileName();
   }
@@ -3053,12 +3029,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       }
     }
     
-    if (Kind_Solver == POISSON_EQUATION) {
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        variables << "poissonField_" << iDim+1 << " ";
-        *NVar += 1;
-      }
-    }
+
     
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||

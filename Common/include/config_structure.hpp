@@ -471,7 +471,6 @@ private:
   Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat, /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
@@ -4052,15 +4051,6 @@ public:
    * \return Kind of time stepping for the heat equation.
    */
   unsigned short GetKind_TimeStep_Heat(void);
-
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
-  unsigned short GetKind_TimeIntScheme_Poisson(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
