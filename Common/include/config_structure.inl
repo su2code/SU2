@@ -355,8 +355,6 @@ inline long CConfig::GetExtraHeatOutputZone(void) { return ExtraHeatOutputZone; 
 
 inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
-inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
-
 inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity; }
 
 inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
@@ -1053,8 +1051,6 @@ inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
-inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_TimeIntScheme_Wave; }
-
 inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_TimeStep_Heat(void) { return Kind_TimeStep_Heat; }
@@ -1414,19 +1410,11 @@ inline string CConfig::GetAdjStructure_FileName(void) { return Structure_FileNam
 
 inline string CConfig::GetAdjSurfStructure_FileName(void) { return SurfStructure_FileName; }
 
-inline string CConfig::GetSurfWave_FileName(void) { return SurfWave_FileName; }
-
 inline string CConfig::GetSurfHeat_FileName(void) { return SurfHeat_FileName; }
-
-inline string CConfig::GetWave_FileName(void) { return Wave_FileName; }
 
 inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
 
-inline string CConfig::GetAdjWave_FileName(void) { return AdjWave_FileName; }
-
 inline string CConfig::GetRestart_FlowFileName(void) { return Restart_FlowFileName; }
-
-inline string CConfig::GetRestart_WaveFileName(void) { return Restart_WaveFileName; }
 
 inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileName; }
 

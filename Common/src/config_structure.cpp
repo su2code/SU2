@@ -1120,8 +1120,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
@@ -1430,8 +1428,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
-  /*!\brief RESTART_WAVE_FILENAME \n DESCRIPTION: Output file restart wave \ingroup Config*/
-  addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
   /*!\brief RESTART_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
   addStringOption("RESTART_STRUCTURE_FILENAME", Restart_FEMFileName, string("restart_structure.dat"));
   /*!\brief RESTART_ADJ_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
@@ -1450,21 +1446,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_STRUCTURE_FILENAME
    *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
   addStringOption("SURFACE_ADJ_STRUCTURE_FILENAME", AdjSurfStructure_FileName, string("adj_surface_structure"));
-  /*!\brief SURFACE_WAVE_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
   /*!\brief SURFACE_HEAT_FILENAME
    *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config */
   addStringOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
-  /*!\brief VOLUME_WAVE_FILENAME
-   *  \n DESCRIPTION: Output file wave (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
   /*!\brief VOLUME_HEAT_FILENAME
    *  \n DESCRIPTION: Output file wave (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
-  /*!\brief VOLUME_ADJWAVE_FILENAME
-   *  \n DESCRIPTION: Output file adj. wave (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
   /*!\brief VOLUME_ADJ_FILENAME
    *  \n DESCRIPTION: Output file adjoint (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
@@ -1919,13 +1906,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
-
-
-  /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
-  /*--- options related to the wave solver ---*/
-
-  /* DESCRIPTION: Constant wave speed */
-  addDoubleOption("WAVE_SPEED", Wave_Speed, 331.79);
 
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
@@ -2496,8 +2476,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
-  if ((Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION)) {
+  if ((Kind_Solver == HEAT_EQUATION)) {
     nMGLevels = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
@@ -4434,7 +4413,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
-      case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
     	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
@@ -4463,7 +4441,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY) &&
-        (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+        (Kind_Solver != HEAT_EQUATION)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -5276,7 +5254,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != DISC_ADJ_FEM)
-        && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+        && (Kind_Solver != HEAT_EQUATION)) {
 
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
@@ -5457,7 +5435,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((!fea) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((!fea) && (Kind_Solver != HEAT_EQUATION)) {
       if (!ContinuousAdjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -6725,7 +6703,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_WAVE_SYS:      return WAVE_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
@@ -6857,12 +6834,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
                               MUSCL_AdjTurb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
-      }
-      break;
-    case WAVE_EQUATION:
-      if (val_system == RUNTIME_WAVE_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
       }
       break;
     case HEAT_EQUATION: case HEAT_EQUATION_FVM:

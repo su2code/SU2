@@ -70,11 +70,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION) {
-    if (surf_sol) filename = config->GetSurfWave_FileName().c_str();
-    else filename = config->GetWave_FileName().c_str();
-  }
-  
   if (Kind_Solver == HEAT_EQUATION || Kind_Solver == HEAT_EQUATION_FVM) {
     if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
     else filename = config->GetHeat_FileName().c_str();
@@ -826,11 +821,6 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
     else filename = config->GetStructure_FileName().c_str();
-  }
-  
-  if (Kind_Solver == WAVE_EQUATION) {
-    if (surf_sol) filename = config->GetSurfWave_FileName().c_str();
-    else filename = config->GetWave_FileName().c_str();
   }
   
   if (Kind_Solver == HEAT_EQUATION) {
@@ -1662,10 +1652,6 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
   if (Kind_Solver == FEM_ELASTICITY) {
     buffer = config->GetStructure_FileName().c_str();
-  }
-  
-  if (Kind_Solver == WAVE_EQUATION) {
-    buffer = config->GetWave_FileName().c_str();
   }
   
   if (Kind_Solver == HEAT_EQUATION) {
@@ -2584,10 +2570,6 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   if (Kind_Solver == FEM_ELASTICITY) {
     buffer = config->GetSurfStructure_FileName().c_str();
-  }
-  
-  if (Kind_Solver == WAVE_EQUATION) {
-    buffer = config->GetSurfWave_FileName().c_str();
   }
   
   if (Kind_Solver == HEAT_EQUATION) {

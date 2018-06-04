@@ -88,9 +88,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     else
       filename = config->GetAdjStructure_FileName().c_str();
   }
-  
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
@@ -1074,8 +1071,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
   
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
@@ -1873,9 +1868,6 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     else
       filename = config->GetStructure_FileName().c_str();
   }
-
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
