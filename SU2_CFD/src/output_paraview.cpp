@@ -89,7 +89,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetAdjStructure_FileName().c_str();
   }
 
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -1072,7 +1072,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   }
   
   
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
@@ -1869,7 +1869,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       filename = config->GetStructure_FileName().c_str();
   }
 
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
 
   if (config->GetKind_SU2() == SU2_DOT) {

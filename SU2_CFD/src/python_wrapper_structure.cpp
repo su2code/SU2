@@ -807,10 +807,6 @@ void CGeneralDriver::ResetConvergence() {
       if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][INST_0][TRANS_SOL]->SetConvergence(false);
     break;
 
-  case HEAT_EQUATION:
-    integration_container[ZONE_0][INST_0][HEAT_SOL]->SetConvergence(false);
-    break;
-
   case FEM_ELASTICITY:
     integration_container[ZONE_0][INST_0][FEA_SOL]->SetConvergence(false);
     break;
@@ -892,10 +888,6 @@ void CFluidDriver::ResetConvergence() {
       integration_container[iZone][INST_0][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][INST_0][TURB_SOL]->SetConvergence(false);
       if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][INST_0][TRANS_SOL]->SetConvergence(false);
-      break;
-
-    case HEAT_EQUATION:
-      integration_container[iZone][INST_0][HEAT_SOL]->SetConvergence(false);
       break;
 
     case FEM_ELASTICITY:
