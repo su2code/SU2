@@ -817,7 +817,6 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
     case RUNTIME_WAVE_SYS:    monitor = log10(solver_container[iZone][iInst][FinestMesh][WAVE_SOL]->GetRes_RMS(0));    break;
     case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][iInst][FinestMesh][FEA_SOL]->GetRes_RMS(0));     break;
     case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
-    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][iInst][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); break;
   }
   
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {

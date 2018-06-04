@@ -1127,8 +1127,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
-  /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
@@ -2495,15 +2493,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Nonphys_Points   = 0;
   Nonphys_Reconstr = 0;
-
-  if (Kind_Solver == POISSON_EQUATION) {
-    Unsteady_Simulation = STEADY;
-  }
   
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
   if ((Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+      (Kind_Solver == WAVE_EQUATION)) {
     nMGLevels = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
@@ -4440,7 +4434,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
-      case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
@@ -5112,10 +5105,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
-    }
-
-    if (Kind_Solver == POISSON_EQUATION) {
-      cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
     }
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
@@ -6736,7 +6725,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_POISSON_SYS:   return POISSON_SOL;
     case RUNTIME_WAVE_SYS:      return WAVE_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
@@ -6869,12 +6857,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
                               MUSCL_AdjTurb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
-      }
-      break;
-    case POISSON_EQUATION:
-      if (val_system == RUNTIME_POISSON_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson);
       }
       break;
     case WAVE_EQUATION:
