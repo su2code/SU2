@@ -815,9 +815,6 @@ void CGeneralDriver::ResetConvergence() {
     integration_container[ZONE_0][INST_0][HEAT_SOL]->SetConvergence(false);
     break;
 
-  case POISSON_EQUATION:
-    break;
-
   case FEM_ELASTICITY:
     integration_container[ZONE_0][INST_0][FEA_SOL]->SetConvergence(false);
     break;
@@ -907,9 +904,6 @@ void CFluidDriver::ResetConvergence() {
 
     case HEAT_EQUATION:
       integration_container[iZone][INST_0][HEAT_SOL]->SetConvergence(false);
-      break;
-
-    case POISSON_EQUATION:
       break;
 
     case FEM_ELASTICITY:
