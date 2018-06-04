@@ -59,9 +59,6 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
   
@@ -502,9 +499,6 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
-  
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
   
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
