@@ -70,7 +70,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == HEAT_EQUATION || Kind_Solver == HEAT_EQUATION_FVM) {
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
     if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
     else filename = config->GetHeat_FileName().c_str();
   }
@@ -86,7 +86,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
-       Kind_Solver == HEAT_EQUATION || Kind_Solver == HEAT_EQUATION_FVM) &&
+       Kind_Solver == HEAT_EQUATION_FVM) &&
       (val_nZone > 1) ) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
@@ -821,11 +821,6 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
     else filename = config->GetStructure_FileName().c_str();
-  }
-  
-  if (Kind_Solver == HEAT_EQUATION) {
-    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
-    else filename = config->GetHeat_FileName().c_str();
   }
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -1654,7 +1649,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
     buffer = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == HEAT_EQUATION) {
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
     buffer = config->GetHeat_FileName().c_str();
   }
   
@@ -2572,7 +2567,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     buffer = config->GetSurfStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == HEAT_EQUATION) {
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
     buffer = config->GetSurfHeat_FileName().c_str();
   }
   

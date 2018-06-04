@@ -923,15 +923,7 @@ void CHeatIteration::Iterate(COutput *output,
   
   /*--- Update global parameters ---*/
 
-  switch( config_container[val_iZone]->GetKind_Solver()) {
-
-    case HEAT_EQUATION:
-      config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
-      break;
-    case HEAT_EQUATION_FVM:
-      config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION_FVM, RUNTIME_HEAT_SYS, ExtIter);
-      break;
-  }
+  config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION_FVM, RUNTIME_HEAT_SYS, ExtIter);
 
   integration_container[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone, val_iInst);

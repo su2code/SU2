@@ -2105,10 +2105,6 @@ inline su2double CFEASolver::GetRelaxCoeff(void) { return RelaxCoeff; }
 
 inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
 
-inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
-
-inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
-
 inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
