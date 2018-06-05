@@ -74,7 +74,7 @@ CFEAOutput::CFEAOutput(CConfig *config, unsigned short val_iZone) : COutput(conf
     cout << "History filename: " << char_histfile << endl;
     HistFile.open(char_histfile, ios::out);
     HistFile.precision(15);
-    SetConvHistory_Header(NULL, config, val_iZone, INST_0);
+    SetConvHistory_Header(config, val_iZone, INST_0);
   }
 
 }
@@ -88,7 +88,7 @@ CFEAOutput::~CFEAOutput(void) {
 
 }
 
-void CFEAOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
+void CFEAOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
 
   bool incload = config->GetIncrementalLoad();
 
@@ -115,7 +115,7 @@ void CFEAOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config,
 
   /*--- Write the header, case depending ---*/
   HistFile << begin << fem_coeff;
-  if (incload) ConvHist_file[0] << fem_incload;
+  if (incload) HistFile << fem_incload;
   HistFile << fem_resid << endfea;
 
   if (config->GetOutput_FileFormat() == TECPLOT ||
@@ -128,8 +128,7 @@ void CFEAOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config,
 }
 
 
-void CFEAOutput::SetConvHistory_Body(ofstream *ConvHist_file,
-                                     CGeometry ****geometry,
+void CFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
                                      CSolver *****solver_container,
                                      CConfig **config,
                                      CIntegration ****integration,

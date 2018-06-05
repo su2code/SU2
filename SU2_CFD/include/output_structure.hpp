@@ -623,15 +623,13 @@ public:
   
   /*! 
    * \brief Write the header of the history file.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
 
-  virtual void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  virtual void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*! 
    * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -640,7 +638,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  virtual void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  virtual void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                               CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
   /*!
@@ -889,7 +887,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -902,7 +900,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };
@@ -937,7 +935,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -950,7 +948,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };
@@ -985,7 +983,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -998,7 +996,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };
@@ -1033,7 +1031,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -1046,7 +1044,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };
@@ -1081,7 +1079,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -1094,7 +1092,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };
@@ -1129,7 +1127,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -1142,7 +1140,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };
@@ -1177,7 +1175,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -1190,7 +1188,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 };

@@ -74,7 +74,7 @@ CAdjFlowOutput::CAdjFlowOutput(CConfig *config, unsigned short val_iZone) : COut
     cout << "History filename: " << char_histfile << endl;
     HistFile.open(char_histfile, ios::out);
     HistFile.precision(15);
-    SetConvHistory_Header(NULL, config, val_iZone, INST_0);
+    SetConvHistory_Header(config, val_iZone, INST_0);
   }
 
 }
@@ -87,7 +87,7 @@ CAdjFlowOutput::~CAdjFlowOutput(void) {
 
 }
 
-void CAdjFlowOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
+void CAdjFlowOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
   char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
@@ -300,8 +300,7 @@ void CAdjFlowOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *con
 }
 
 
-void CAdjFlowOutput::SetConvHistory_Body(ofstream *ConvHist_file,
-                                  CGeometry ****geometry,
+void CAdjFlowOutput::SetConvHistory_Body(CGeometry ****geometry,
                                   CSolver *****solver_container,
                                   CConfig **config,
                                   CIntegration ****integration,
