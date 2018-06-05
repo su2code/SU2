@@ -1,6 +1,6 @@
 /*!
- * \file output_direct_mean_inc.cpp
- * \brief Main subroutines for incompressible flow output
+ * \file output_direct_heat.cpp
+ * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
  * \version 6.0.1 "Falcon"
  *
@@ -35,10 +35,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../include/output_structure.hpp"
 
-CIncFlowOutput::CIncFlowOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
+CHeatOutput::CHeatOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
 
   char buffer[50];
 
@@ -80,16 +79,15 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, unsigned short val_iZone) : COut
 
 }
 
-CIncFlowOutput::~CIncFlowOutput(void) {
+CHeatOutput::~CHeatOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
   }
 
-
 }
 
-void CIncFlowOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
+void CHeatOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
   char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
@@ -302,7 +300,7 @@ void CIncFlowOutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *con
 }
 
 
-void CIncFlowOutput::SetConvHistory_Body(ofstream *ConvHist_file,
+void CHeatOutput::SetConvHistory_Body(ofstream *ConvHist_file,
                                   CGeometry ****geometry,
                                   CSolver *****solver_container,
                                   CConfig **config,
