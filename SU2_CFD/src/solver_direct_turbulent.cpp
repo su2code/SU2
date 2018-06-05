@@ -3088,7 +3088,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
         
-        T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
+        //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
+        T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
         
         /*--- Extrapolate the pressure from the interior & compute the
          wall density using the equation of state ---*/
@@ -3178,7 +3179,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
           
           counter++;
           if (counter > max_iter) {
-            cout << "WARNING: Tau_Wall evaluation has not converged." << endl;
+            cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_turbulent" << endl;
             break;
           }
 
