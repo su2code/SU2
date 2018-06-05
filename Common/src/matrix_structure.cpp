@@ -36,6 +36,9 @@
  */
 
 #include "../include/matrix_structure.hpp"
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
 
 CSysMatrix::CSysMatrix(void) {
   
@@ -543,7 +546,21 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 }
 
 void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
-  
+
+#ifdef HAVE_MKL
+
+  su2double one = 1.0;
+  su2double zero = 0.0;
+  cblas_dgemm( 
+               MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 
+               nVar, nVar, nVar,
+               one, matrix_a, nVar,
+               matrix_b, nVar,
+               zero, product, nVar
+             );
+
+#else
+
   unsigned short iVar, jVar, kVar;
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -554,7 +571,8 @@ void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, s
       }
     }
   }
-  
+
+#endif 
 }
 
 void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
