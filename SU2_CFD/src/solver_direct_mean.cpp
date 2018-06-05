@@ -17745,8 +17745,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   
-  unsigned short max_iter = 100;
-  su2double tol = 1e-10;
+  unsigned short max_iter = 10;
+  su2double tol = 1e-6;
   
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
   
@@ -17844,7 +17844,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
           
-          T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
+          //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
+          T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
           
           /*--- Extrapolate the pressure from the interior & compute the
            wall density using the equation of state ---*/
@@ -17934,7 +17935,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             
             counter++;
             if (counter > max_iter) {
-              cout << "WARNING: Tau_Wall evaluation has not converged." << endl;
+              cout << "WARNING: Tau_Wall evaluation has not converged in solver_direct_mean.cpp" << endl;
+              cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
               break;
             }
             
