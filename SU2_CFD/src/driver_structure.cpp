@@ -544,23 +544,6 @@ void CDriver::Postprocessing() {
     if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
       cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
 
-    /*--- Close the convergence history file. ---*/
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        if ((config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY) &&
-            (config_container[iZone]->GetKind_Solver() != EULER) &&
-            (config_container[iZone]->GetKind_Solver() != NAVIER_STOKES) &&
-            (config_container[iZone]->GetKind_Solver() != RANS))
-        ConvHist_file[iZone][iInst].close();
-      }
-      if ((config_container[iZone]->GetKind_Solver() != FEM_ELASTICITY) &&
-          (config_container[iZone]->GetKind_Solver() != EULER) &&
-          (config_container[iZone]->GetKind_Solver() != NAVIER_STOKES) &&
-          (config_container[iZone]->GetKind_Solver() != RANS))
-        delete [] ConvHist_file[iZone];
-    }
-    delete [] ConvHist_file;
-
   }
 
   if (rank == MASTER_NODE)
@@ -2994,28 +2977,10 @@ void CDriver::Output_Preprocessing(){
         output[iZone] = new CIncFlowOutput(config_container[iZone], iZone);
       break;
 
-    case WAVE_EQUATION:
-      if (rank == MASTER_NODE)
-        cout << ": wave output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
-      break;
-
-    case HEAT_EQUATION:
-      if (rank == MASTER_NODE)
-        cout << ": heat output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
-      break;
-
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
         cout << ": heat output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
-      break;
-
-    case POISSON_EQUATION:
-      if (rank == MASTER_NODE)
-        cout << ": poisson output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
+      output[iZone] = new CHeatOutput(config_container[iZone], iZone);
       break;
 
     case FEM_ELASTICITY:
@@ -3028,38 +2993,22 @@ void CDriver::Output_Preprocessing(){
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS output structure.." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
+      output[iZone] = new CAdjFlowOutput(config_container[iZone], iZone);
       break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
+      output[iZone] = new CDiscAdjFlowOutput(config_container[iZone], iZone);
       break;
 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEA output structure." << endl;
-      output[iZone] = new COutput(config_container[iZone]);
+      output[iZone] = new CDiscAdjFEAOutput(config_container[iZone], iZone);
       break;
     }
 
-  }
-
-  /*--- Open the convergence history file ---*/
-
-
-  ConvHist_file = NULL;
-  ConvHist_file = new ofstream*[nZone];
-  for (iZone = 0; iZone < nZone; iZone++) {
-    ConvHist_file[iZone] = NULL;
-    if (rank == MASTER_NODE){
-      ConvHist_file[iZone] = new ofstream[nInst[iZone]];
-      for (iInst = 0; iInst < nInst[iZone]; iInst++) {
-        if (!new_approach) output[iZone]->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
-      }
-    }
   }
 
 }
@@ -3315,7 +3264,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   if (!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        output[ZONE_0]->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+        output[ZONE_0]->SetConvHistory_Body(NULL, geometry_container, solver_container,
             config_container, integration_container, false, UsedTime, iZone, iInst);
     }
   }
@@ -3754,7 +3703,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iInst = 0; iInst < nInst[iZone]; iInst++)
-      output[iZone]->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
+      output[iZone]->SetConvHistory_Body(NULL, geometry_container, solver_container,
           config_container, integration_container, false, UsedTime, iZone, iInst);
   }
 
@@ -5027,7 +4976,7 @@ void CFSIDriver::Run() {
 
       /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-      output[ZONE_FLOW]->SetConvHistory_Body(&ConvHist_file[ZONE_FLOW][INST_0], geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
+      output[ZONE_FLOW]->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW, INST_0);
 
       /*--- If the convergence criteria is met for the flow, break the loop ---*/
       StopCalc_Flow = integration_container[ZONE_FLOW][INST_0][FLOW_SOL]->GetConvergence();
@@ -6728,10 +6677,8 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
   unsigned long BGS_Iter = config_container[ZONE_FLOW]->GetFSIIter();
 
 
-  ofstream ConvHist_file;
   if (rank == MASTER_NODE)
-    output[ZONE_0]->SetConvHistory_Header(&ConvHist_file, config_container[ZONE_0], ZONE_0, INST_0);
-
+    output[ZONE_0]->SetConvHistory_Header(NULL, config_container[ZONE_0], ZONE_0, INST_0);
 
   if (kind_recording == FLOW_CONS_VARS) {
 

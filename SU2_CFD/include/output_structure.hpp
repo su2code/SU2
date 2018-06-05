@@ -869,9 +869,9 @@ private:
 
   char char_histfile[200];
 
-  ofstream HistFile;
-
 public:
+
+  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
@@ -917,9 +917,9 @@ private:
 
   char char_histfile[200];
 
-  ofstream HistFile;
-
 public:
+
+  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
@@ -965,9 +965,9 @@ private:
 
   char char_histfile[200];
 
-  ofstream HistFile;
-
 public:
+
+  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
@@ -979,6 +979,198 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CFEAOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+};
+
+/*! \class CHeatOutput
+ *  \brief Output class for heat problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CHeatOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+public:
+
+  ofstream HistFile;
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHeatOutput(CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHeatOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+};
+
+/*! \class CAdjFlowOutput
+ *  \brief Output class for flow continuous adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CAdjFlowOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+public:
+
+  ofstream HistFile;
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAdjFlowOutput(CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CAdjFlowOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+};
+
+/*! \class CDiscAdjFlowOutput
+ *  \brief Output class for flow discrete adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CDiscAdjFlowOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+public:
+
+  ofstream HistFile;
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFlowOutput(CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFlowOutput(void);
+
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Write the history file and the convergence on the screen for serial computations.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
+   * \param[in] val_nZone - iZone index.
+   */
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+};
+
+/*! \class CDiscAdjFEAOutput
+ *  \brief Output class for elasticity discrete adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CDiscAdjFEAOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+public:
+
+  ofstream HistFile;
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFEAOutput(CConfig *config, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFEAOutput(void);
 
   /*!
    * \brief Write the header of the history file.
