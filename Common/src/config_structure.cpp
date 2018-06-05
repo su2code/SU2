@@ -2341,10 +2341,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
         Wall_Functions = true;
       
-      if ((Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
+      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
         || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
 
-        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, ADAPTIVE_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
     }
   }
