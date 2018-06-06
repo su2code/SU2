@@ -36,9 +36,6 @@
  */
 
 #include "../include/matrix_structure.hpp"
-#ifdef HAVE_MKL
-#include "mkl.h"
-#endif
 
 CSysMatrix::CSysMatrix(void) {
   
@@ -127,6 +124,10 @@ CSysMatrix::~CSysMatrix(void) {
   if (LFBlock != NULL)    delete [] LFBlock;
   if (LyVector != NULL)   delete [] LyVector;
   if (FzVector != NULL)   delete [] FzVector;
+
+#ifdef HAVE_MKL
+  mkl_jit_destroy( MatrixMatrixProductJitter );
+#endif
   
 }
 
@@ -215,7 +216,14 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
   
   SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
-  
+
+#ifdef HAVE_MKL
+  /*--- Create MKL JIT kernel ---*/
+
+  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
+  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+#endif
+ 
   /*--- Initialization matrix to zero ---*/
   
   SetValZero();
@@ -533,8 +541,19 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
 }
 
 void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2double *product) {
-  
+
   unsigned short iVar, jVar;
+
+  // 5 is a critical size -- allow compiler to generate a specific kernel.
+  if (nVar == 5) {
+    for (iVar = 0; iVar < 5; iVar++) {
+      product[iVar] = 0.0;
+      for (jVar = 0; jVar < 5; jVar++) {
+        product[iVar] += matrix[iVar*5+jVar] * vector[jVar];
+      }
+    }
+    return;
+  }
   
   for (iVar = 0; iVar < nVar; iVar++) {
     product[iVar] = 0.0;
@@ -548,18 +567,9 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
 
 #ifdef HAVE_MKL
-
-  su2double one = 1.0;
-  su2double zero = 0.0;
-  cblas_dgemm( 
-               MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 
-               nVar, nVar, nVar,
-               one, matrix_a, nVar,
-               matrix_b, nVar,
-               zero, product, nVar
-             );
-
-#else
+  MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
+  return;
+#endif
 
   unsigned short iVar, jVar, kVar;
 
@@ -571,8 +581,6 @@ void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, s
       }
     }
   }
-
-#endif 
 }
 
 void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
@@ -1514,7 +1522,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   }
   
   /*--- Transform system in Upper Matrix ---*/
-  
+ 
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     
     /*--- For each row (unknown), loop over all entries in A on this row
