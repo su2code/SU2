@@ -90,8 +90,6 @@ CDiscAdjFEAOutput::~CDiscAdjFEAOutput(void) {
 
 void CDiscAdjFEAOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
 
-  bool incload = config->GetIncrementalLoad();
-
   /*--- Begin of the header ---*/
   char begin[]= "\"Iteration\"";
 
@@ -115,7 +113,6 @@ void CDiscAdjFEAOutput::SetConvHistory_Header(CConfig *config, unsigned short va
 
   /*--- Write the header, case depending ---*/
   HistFile << begin << fem_coeff;
-  if (incload) HistFile << fem_incload;
   HistFile << fem_resid << endfea;
 
   if (config->GetOutput_FileFormat() == TECPLOT ||
@@ -157,45 +154,29 @@ void CDiscAdjFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
     unsigned short iVar;
     unsigned short nDim = geometry[val_iZone][INST_0][MESH_0]->GetnDim();
 
-    bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
-                (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
-    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
-    bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
 
     /*------------------------------------------------------------------------------------------------------*/
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
     /*------------------------------------------------------------------------------------------------------*/
 
     /*--- Initialize number of variables ---*/
-    unsigned short nVar_FEM = 0;
-    if (linear_analysis) nVar_FEM = nDim;
-    if (nonlinear_analysis) nVar_FEM = 3;
+    unsigned short nVar_FEM = nDim;
 
     /*--- Allocate memory for the residual ---*/
     su2double *residual_fem          = NULL;
     residual_fem        = new su2double[nVar_FEM];
 
     /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
-    su2double Total_VMStress   = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA();
-    su2double Total_ForceCoeff = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetForceCoeff();
-    su2double Total_IncLoad    = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetLoad_Increment();
-    unsigned long LinSolvIter  = (unsigned long) solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetIterLinSolver();
+    su2double Total_CFEM = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA();
+    su2double Total_SensE = 0.0, Total_SensNu = 0.0;
 
     /*--- Residuals: ---*/
     /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
     /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
 
-    if (linear_analysis) {
-      for (iVar = 0; iVar < nVar_FEM; iVar++) {
-        residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(iVar);
-      }
-    }
-    else if (nonlinear_analysis) {
-      for (iVar = 0; iVar < nVar_FEM; iVar++) {
-        residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(iVar);
-      }
+    for (iVar = 0; iVar < nVar_FEM; iVar++) {
+      residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(iVar);
     }
 
     bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
@@ -210,8 +191,6 @@ void CDiscAdjFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
     SPRINTF (begin_fem, "%12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet));
 
     /*--- Initial variables ---*/
-    if (incload) SPRINTF (fem_coeff, ", %14.8e, %14.8e, %14.8e", Total_VMStress, Total_ForceCoeff, Total_IncLoad);
-    else SPRINTF (fem_coeff, ", %14.8e, %14.8e", Total_VMStress, Total_ForceCoeff);
 
     /*--- FEM residual ---*/
     if (nVar_FEM == 2)
@@ -219,48 +198,23 @@ void CDiscAdjFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
     else
       SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
 
-    /*--- Linear solver iterations and time used ---*/
-    SPRINTF (end_fem, ", %lu, %12.10f\n", LinSolvIter, timeused/60.0);
-
     // Write to history file
 
-    HistFile << begin_fem << fem_coeff << fem_resid << end_fem;
+    HistFile << begin_fem << fem_resid << end_fem;
     HistFile.flush();
 
     /*------------------------------------------------------------------------------------------------------*/
     /*--- Write the screen header---------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------------------------------------*/
 
-    bool write_header;
-    if (nonlinear_analysis) write_header = (iIntIter == 0);
-    else write_header = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
+    bool write_header = (iIntIter == 0);
 
     if (write_header) {
 
-      if (dynamic && nonlinear_analysis) {
-        cout << endl << "Simulation time: " << config[val_iZone]->GetCurrent_DynTime() << ". Time step: " << config[val_iZone]->GetDelta_DynTime() << ".";
-      }
+      cout << endl << " IntIter" << " ExtIter";
 
-      if (!nonlinear_analysis) cout << endl << " Iter" << "    Time(s)";
-      else cout << endl << " IntIter" << " ExtIter";
-
-      if (linear_analysis) {
-        if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "      VMS(Max)"<<  endl;
-        if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "      VMS(Max)"<<  endl;
-      }
-      else if (nonlinear_analysis) {
-        switch (config[val_iZone]->GetResidual_Criteria_FEM()) {
-        case RESFEM_RELATIVE:
-          cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
-          break;
-        case RESFEM_ABSOLUTE:
-          cout << "   Res[UTOL-A]" << "   Res[RTOL-A]" << "   Res[ETOL-A]"  << "      VMS(Max)"<<  endl;
-          break;
-        default:
-          cout << "     Res[UTOL]" << "     Res[RTOL]" << "     Res[ETOL]"  << "      VMS(Max)"<<  endl;
-          break;
-        }
-      }
+      if (nDim == 2) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
+      if (nDim == 3) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "    Res[Uz_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
 
     }
 
@@ -268,31 +222,35 @@ void CDiscAdjFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
     /*--- Write the screen output---------------------------------------------------------------------------*/
     /*------------------------------------------------------------------------------------------------------*/
 
-    if (!nonlinear_analysis) {
-      cout.width(5); cout << iExtIter;
-      cout.width(11); cout << timeiter;
-
-    } else {
-      cout.width(8); cout << iIntIter;
-      cout.width(8); cout << iExtIter;
-    }
-
     cout.precision(6);
     cout.setf(ios::fixed, ios::floatfield);
-    if (linear_analysis) {
-      cout.width(14); cout << log10(residual_fem[0]);
-      cout.width(14); cout << log10(residual_fem[1]);
-      if (nDim == 3) { cout.width(14); cout << log10(residual_fem[2]); }
-    }
-    else if (nonlinear_analysis) {
-      cout.width(14); cout << log10(residual_fem[0]);
-      cout.width(14); cout << log10(residual_fem[1]);
-      cout.width(14); cout << log10(residual_fem[2]);
-    }
+
+    cout.width(15); cout << log10(residual_fem[0]);
+    cout.width(15); cout << log10(residual_fem[1]);
+    if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
 
     cout.precision(4);
     cout.setf(ios::scientific, ios::floatfield);
-    cout.width(14); cout << Total_VMStress;
+
+
+    if (config[val_iZone]->GetnElasticityMod() == 1){
+      cout.width(14); cout << solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+      cout.width(14); cout << solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+    }
+    else{
+      Total_SensE = 0.0; Total_SensNu = 0.0;
+      for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
+          Total_SensE += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+              *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+          Total_SensNu += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+              *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+      }
+      Total_SensE = sqrt(Total_SensE);
+      Total_SensNu = sqrt(Total_SensNu);
+      cout.width(14); cout << Total_SensE;
+      cout.width(14); cout << Total_SensNu;
+    }
+
     cout << endl;
 
     cout.unsetf(ios::fixed);
