@@ -56,6 +56,7 @@ public:
   su2double p0, 			// Reference pressure
         p_peak,   // Reference pressure for shock formation distance
   			w0,				// Reference angular frequency
+        w0_g,     // Angular frequency at the ground
   			rho0,			// Ambient density (function of altitude)
   			c0,				// Ambient sound speed (function of altitude)
         M_a,      // Acoustic Mach number
