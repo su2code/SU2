@@ -1863,3 +1863,7 @@ inline bool CConfig::GetQCR(void) {return QCR;}
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
+
+inline unsigned short CConfig::GetnScreenOutput(void) { return nScreenOutput; }
+
+inline unsigned short CConfig::GetScreenOutput_Field(unsigned short iField) { return Kind_ScreenOutput[iField]; }

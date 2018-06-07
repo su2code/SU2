@@ -867,15 +867,17 @@ private:
 
   char char_histfile[200];
 
+  ofstream HistFile;
+
 public:
 
-  ofstream HistFile;
+
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config, unsigned short iZone);
+  CFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -923,7 +925,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CIncFlowOutput(CConfig *config, unsigned short iZone);
+  CIncFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -961,17 +963,19 @@ public:
 class CFEAOutput : public COutput {
 private:
 
-  char char_histfile[200];
-
-public:
+protected:
 
   ofstream HistFile;
+  su2double *residual_fem;
+  unsigned short nVar_FEM;
+
+public:
 
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFEAOutput(CConfig *config, unsigned short iZone);
+  CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -1019,7 +1023,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CHeatOutput(CConfig *config, unsigned short iZone);
+  CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -1067,7 +1071,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CAdjFlowOutput(CConfig *config, unsigned short iZone);
+  CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -1115,7 +1119,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFlowOutput(CConfig *config, unsigned short iZone);
+  CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -1163,7 +1167,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEAOutput(CConfig *config, unsigned short iZone);
+  CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.

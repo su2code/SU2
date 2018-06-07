@@ -38,7 +38,7 @@
 
 #include "../include/output_structure.hpp"
 
-CIncFlowOutput::CIncFlowOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
+CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   char buffer[50];
 

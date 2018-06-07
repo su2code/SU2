@@ -37,7 +37,7 @@
 
 #include "../include/output_structure.hpp"
 
-CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
+CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   char buffer[50];
 

@@ -37,7 +37,7 @@
 
 #include "../include/output_structure.hpp"
 
-CHeatOutput::CHeatOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
+CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   char buffer[50];
 

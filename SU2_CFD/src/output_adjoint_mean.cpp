@@ -37,7 +37,7 @@
 
 #include "../include/output_structure.hpp"
 
-CAdjFlowOutput::CAdjFlowOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
+CAdjFlowOutput::CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   char buffer[50];
 

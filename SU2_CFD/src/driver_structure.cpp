@@ -513,13 +513,13 @@ CDriver::CDriver(char* confFile,
 
   /*--- Open the FSI convergence history file ---*/
 
-  if (fsi){
-      if (rank == MASTER_NODE) cout << endl <<"Opening FSI history file." << endl;
-      unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
-      output[ZONE_0]->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-                                config_container, integration_container, 0,
-                                ZONE_FLOW, ZONE_STRUCT, true);
-  }
+//  if (fsi){
+//      if (rank == MASTER_NODE) cout << endl <<"Opening FSI history file." << endl;
+//      unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+//      output[ZONE_0]->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+//                                config_container, integration_container, 0,
+//                                ZONE_FLOW, ZONE_STRUCT, true);
+//  }
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
 
@@ -2951,8 +2951,6 @@ void CDriver::InitStaticMeshMovement(){
 
 void CDriver::Output_Preprocessing(){
 
-  bool new_approach = false;
-
   /*--- Definition of the output class (one for each zone). The output class
    manages the writing of all restart, volume solution, surface solution,
    surface comma-separated value, and convergence history files (both in serial
@@ -2968,44 +2966,42 @@ void CDriver::Output_Preprocessing(){
     switch (config_container[iZone]->GetKind_Solver()) {
 
     case EULER: case NAVIER_STOKES: case RANS:
-      new_approach = true;
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
       if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE)
-        output[iZone] = new CFlowOutput(config_container[iZone], iZone);
+        output[iZone] = new CFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE)
-        output[iZone] = new CIncFlowOutput(config_container[iZone], iZone);
+        output[iZone] = new CIncFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case HEAT_EQUATION_FVM:
       if (rank == MASTER_NODE)
         cout << ": heat output structure." << endl;
-      output[iZone] = new CHeatOutput(config_container[iZone], iZone);
+      output[iZone] = new CHeatOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM output structure." << endl;
-      new_approach = true;
-      output[iZone] = new CFEAOutput(config_container[iZone], iZone);
+      output[iZone] = new CFEAOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS output structure.." << endl;
-      output[iZone] = new CAdjFlowOutput(config_container[iZone], iZone);
+      output[iZone] = new CAdjFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS output structure." << endl;
-      output[iZone] = new CDiscAdjFlowOutput(config_container[iZone], iZone);
+      output[iZone] = new CDiscAdjFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEA output structure." << endl;
-      output[iZone] = new CDiscAdjFEAOutput(config_container[iZone], iZone);
+      output[iZone] = new CDiscAdjFEAOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
     }
 
@@ -5054,9 +5050,9 @@ void CFSIDriver::Run() {
     /*-------------------- Output FSI history -------------------------*/
     /*-----------------------------------------------------------------*/
 
-    output[ZONE_0]->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-                              config_container, integration_container, 0,
-                              ZONE_FLOW, ZONE_STRUCT, false);
+//    output[ZONE_0]->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+//                              config_container, integration_container, 0,
+//                              ZONE_FLOW, ZONE_STRUCT, false);
 
     if (Convergence) break;
 

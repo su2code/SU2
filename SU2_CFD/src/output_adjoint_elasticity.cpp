@@ -37,7 +37,7 @@
 
 #include "../include/output_structure.hpp"
 
-CDiscAdjFEAOutput::CDiscAdjFEAOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
+CDiscAdjFEAOutput::CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   char buffer[50];
 

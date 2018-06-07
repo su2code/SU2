@@ -2099,6 +2099,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
   
+  /*--- options that are used for the output ---*/
+  /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
+
+  /* DESCRIPTION: Type of mesh motion */
+  addEnumListOption("SCREEN_OUTPUT", nScreenOutput, Kind_ScreenOutput, Screen_Output_Map);
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2483,7 +2489,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
-  ofstream ConvHistFile;
+//  ofstream ConvHistFile;
 
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
