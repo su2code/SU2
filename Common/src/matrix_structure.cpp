@@ -126,7 +126,7 @@ CSysMatrix::~CSysMatrix(void) {
   if (FzVector != NULL)   delete [] FzVector;
 
 #ifdef HAVE_MKL
-  mkl_jit_destroy( MatrixMatrixProductJitter );
+  if( rank == MASTER_NODE ) mkl_jit_destroy( MatrixMatrixProductJitter );
 #endif
   
 }
